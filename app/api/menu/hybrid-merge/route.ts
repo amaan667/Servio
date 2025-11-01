@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import OpenAI from "openai";
+import { extractMenuFromWebsite } from "@/lib/webMenuExtractor";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -45,54 +46,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 2: Scrape menu from URL
+    // Step 2: Scrape menu from URL using new Puppeteer + Vision AI
+    logger.info("[HYBRID MERGE] Starting web extraction with Puppeteer + Vision AI", {
+      url: menuUrl,
+      venueId,
+    });
 
     let urlMenuData;
     try {
-      // Use absolute URL for Railway deployment
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN
-          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-          : "https://servio-production.up.railway.app";
+      // Use new Puppeteer + Vision AI extraction directly
+      const extractedItems = await extractMenuFromWebsite(menuUrl);
 
-      const scrapeUrl = `${baseUrl}/api/scrape-menu`;
+      logger.info("[HYBRID MERGE] Web extraction complete", {
+        itemCount: extractedItems.length,
+        withImages: extractedItems.filter((i) => i.image_url).length,
+      });
 
-      // Create AbortController with 120s timeout (Playwright with scrolling can take 60-90s)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
-
-      try {
-        const scrapeResponse = await fetch(scrapeUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: menuUrl }),
-          signal: controller.signal,
-          // @ts-expect-error - Node.js fetch specific options
-          headersTimeout: 120000, // 2 minutes for headers
-          bodyTimeout: 120000, // 2 minutes for body
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!scrapeResponse.ok) {
-          const errorData = await scrapeResponse.json().catch(() => ({ error: "Unknown error" }));
-          throw new Error(errorData.error || `Scrape API returned ${scrapeResponse.status}`);
-        }
-
-        urlMenuData = await scrapeResponse.json();
-
-        if (!urlMenuData.ok) {
-          throw new Error(urlMenuData.error || "Scraping returned error status");
-        }
-
-        if (urlMenuData.items && urlMenuData.items.length > 0) {
-          /* Empty */
-        }
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        throw fetchError;
-      }
+      // Convert to expected format
+      urlMenuData = {
+        ok: true,
+        items: extractedItems.map((item) => ({
+          name: item.name,
+          description: item.description || "",
+          price: item.price || 0,
+          category: item.category || "Menu Items",
+          image_url: item.image_url || null,
+        })),
+      };
     } catch (scrapeError) {
+      logger.error("[HYBRID MERGE] Web extraction failed", {
+        error: scrapeError,
+        errorMessage: scrapeError instanceof Error ? scrapeError.message : String(scrapeError),
+      });
+
       return NextResponse.json(
         {
           ok: false,
