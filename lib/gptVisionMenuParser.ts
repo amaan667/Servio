@@ -37,8 +37,8 @@ CRITICAL RULES FOR CATEGORIES:
 1. SECTION HEADERS are categories:
    - A CATEGORY is a SECTION HEADER on the menu (like "Starters", "Mains", "Desserts", "Hot Drinks", "Coffee", "All Day Brunch")
    - Look for larger text, bold headers, or section dividers that group multiple items together
-   - If you see "BREAKFAST" heading with items below it, those items belong to category "Breakfast"
-   - If you see "COFFEE" heading with "Espresso", "Latte", etc. below, they all belong to category "Coffee"
+- If you see "BREAKFAST" heading with items below it, those items belong to category "Breakfast"
+- If you see "COFFEE" heading with "Espresso", "Latte", etc. below, they all belong to category "Coffee"
 
 2. CONTINUATION SECTIONS (items without a new header):
    - If items appear AFTER a category section but BEFORE the next category header, they likely belong to the PREVIOUS category

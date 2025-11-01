@@ -316,6 +316,59 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
+  const handleUrlOnlyImport = async () => {
+    if (!menuUrl || !menuUrl.trim()) {
+      toast({
+        title: "URL required",
+        description: "Please enter a menu URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Call catalog/replace with URL only (no file)
+      const formData = new FormData();
+      formData.append("venue_id", venueId);
+      formData.append("menu_url", menuUrl.trim());
+      formData.append("replace_mode", String(isReplacing));
+
+      const response = await fetch("/api/catalog/replace", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "URL import failed");
+      }
+
+      const result = await response.json();
+
+      if (result.ok) {
+        toast({
+          title: "URL import successful",
+          description: `Extracted ${result.items || 0} items from ${menuUrl}`,
+        });
+        setMenuUrl(""); // Clear URL after successful import
+        onSuccess?.();
+      } else {
+        throw new Error(result.error || "URL import failed");
+      }
+    } catch (error) {
+      console.error("URL import error:", error);
+      toast({
+        title: "URL import failed",
+        description: error instanceof Error ? error.message : "Failed to import from URL",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleClearCatalog = async () => {
     if (
       !confirm("Are you sure you want to clear the entire catalog? This action cannot be undone.")
@@ -387,7 +440,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           />
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground flex-1">
-              💡 Upload PDF first, then add URL to enhance with web data
+              💡 You can upload a PDF + URL (hybrid), PDF only, or URL only
             </p>
             {hasExistingUpload && menuUrl && menuUrl.trim() && (
               <Button
@@ -396,7 +449,17 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
                 size="sm"
                 variant="outline"
               >
-                {isProcessing ? "Processing..." : "Process"}
+                {isProcessing ? "Processing..." : "Enhance with URL"}
+              </Button>
+            )}
+            {menuUrl && menuUrl.trim() && !hasExistingUpload && (
+              <Button
+                onClick={handleUrlOnlyImport}
+                disabled={isProcessing}
+                size="sm"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                {isProcessing ? "Importing..." : "Import from URL"}
               </Button>
             )}
           </div>
