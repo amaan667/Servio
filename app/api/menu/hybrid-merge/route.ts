@@ -163,10 +163,10 @@ export async function POST(req: NextRequest) {
         logger.info("[HYBRID MERGE] Comparing matched item", {
           pdfName: pdfItem.name,
           urlName: bestMatch.name,
+          similarity: Math.round(bestSimilarity * 100) + "%",
           pdfPrice: pdfItem.price,
           urlPrice: bestMatch.price,
           pdfCategory: pdfItem.category,
-          urlCategory: bestMatch.category,
           pdfHasDesc: !!pdfItem.description,
           urlHasDesc: !!bestMatch.description,
           urlHasImage: !!bestMatch.image_url,
@@ -204,24 +204,8 @@ export async function POST(req: NextRequest) {
           changes.push(`description: ${pdfDescLength} → ${urlDescLength} chars`);
         }
 
-        // 4. CATEGORY: Choose most specific (avoid generic "Menu Items")
-        if (bestMatch.category && bestMatch.category !== "Menu Items") {
-          // Check if URL category is actually an item name (common scraping error)
-          const isCategoryAnItemName = urlItems.some(
-            (item: any) => item.name.toLowerCase() === bestMatch.category.toLowerCase()
-          );
-
-          if (!isCategoryAnItemName) {
-            if (!pdfItem.category || pdfItem.category === "Menu Items") {
-              // PDF has no/generic category - use URL
-              updateData.category = bestMatch.category;
-              hasChanges = true;
-              changes.push(`category: "${pdfItem.category || "none"}" → "${bestMatch.category}"`);
-            } else {
-              // Both have categories - keep PDF (usually more reliable from menu structure)
-            }
-          }
-        }
+        // 4. CATEGORY: Always keep PDF category (Vision AI is reliable)
+        // URL category extraction is disabled - too unreliable (picks up item names as categories)
 
         // 5. IMAGE: URL only (PDF never has images)
         if (bestMatch.image_url && bestMatch.image_url.startsWith("http")) {
@@ -281,7 +265,7 @@ export async function POST(req: NextRequest) {
             name: urlItem.name,
             description: urlItem.description || null,
             price: urlItem.price || 0,
-            category: urlItem.category || "Menu Items",
+            category: "Uncategorized", // URL items can't reliably determine category
             image_url: urlItem.image_url || null,
             is_available: true,
             position: existingItems.length + inserts.length,
@@ -289,7 +273,7 @@ export async function POST(req: NextRequest) {
           });
           stats.new++;
 
-          logger.info("[HYBRID MERGE] New item from URL", {
+          logger.info("[HYBRID MERGE] New item from URL (requires manual categorization)", {
             name: urlItem.name,
             hasImage: !!urlItem.image_url,
           });
@@ -405,13 +389,19 @@ function calculateStringSimilarity(str1: string, str2: string): number {
   // Quick exact match check
   if (str1 === str2) return 1.0;
 
-  // If one contains the other, high similarity
-  if (str1.includes(str2) || str2.includes(str1)) {
-    return 0.9;
-  }
-
+  // If one contains the other, high similarity ONLY if:
+  // - The shorter string is at least 5 characters (avoid "ice" matching "rice")
+  // - AND it's a WORD BOUNDARY match (not just substring)
   const longer = str1.length > str2.length ? str1 : str2;
   const shorter = str1.length > str2.length ? str2 : str1;
+
+  if (shorter.length >= 5) {
+    // Check if shorter is a complete word in longer (word boundary match)
+    const wordBoundaryRegex = new RegExp(`\\b${shorter}\\b`, "i");
+    if (wordBoundaryRegex.test(longer)) {
+      return 0.9;
+    }
+  }
 
   if (longer.length === 0) return 1.0;
 

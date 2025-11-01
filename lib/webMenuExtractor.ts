@@ -418,48 +418,9 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
           }
         }
 
-        // Find category (look BEFORE this item for section headers, not inside parents)
-        let category = "";
-
-        // Strategy 1: Look for preceding heading (h1, h2, h3) that's NOT an item name
-        let currentEl: Element | null = el;
-        for (let i = 0; i < 10; i++) {
-          const prevSibling: Element | null | undefined = currentEl?.previousElementSibling;
-          if (!prevSibling) break;
-
-          // Check if it's a heading
-          if (prevSibling.tagName && ["H1", "H2", "H3", "H4"].includes(prevSibling.tagName)) {
-            const headerText = prevSibling.textContent?.trim() || "";
-            // Make sure it's not an item name (no price in it)
-            if (headerText && headerText.length < 50 && !/[£$€]\s*\d+/.test(headerText)) {
-              category = headerText;
-              break;
-            }
-          }
-
-          currentEl = prevSibling;
-        }
-
-        // Strategy 2: Check parent for section container
-        if (!category) {
-          let parentEl = el.parentElement;
-          let depth = 0;
-          while (parentEl && depth < 3) {
-            // Look for heading BEFORE parent section
-            const precedingHeading = parentEl.querySelector(
-              'h2, h3, [class*="section-title"], [class*="category-title"]'
-            );
-            if (precedingHeading) {
-              const headerText = precedingHeading.textContent?.trim() || "";
-              if (headerText && headerText !== name && headerText.length < 50) {
-                category = headerText;
-                break;
-              }
-            }
-            parentEl = parentEl.parentElement;
-            depth++;
-          }
-        }
+        // SKIP category extraction from URL - it's unreliable (picks up item names)
+        // Only PDF extraction (Vision AI) can reliably detect categories from document structure
+        // URL scraping is ONLY for: images, prices, descriptions
 
         // Only add items with at least a name
         if (name) {
@@ -469,7 +430,7 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
             description: description || undefined,
             price: price,
             image_url: imageUrl || undefined,
-            category: category || undefined,
+            category: undefined, // Never extract categories from URL DOM
             source: "dom",
             index: index,
           });
