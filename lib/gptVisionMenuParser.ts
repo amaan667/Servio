@@ -34,18 +34,32 @@ From the image, extract structured JSON in the following format:
 ]
 
 CRITICAL RULES FOR CATEGORIES:
-- A CATEGORY is a SECTION HEADER on the menu (like "Starters", "Mains", "Desserts", "Hot Drinks", "Coffee")
-- A CATEGORY is NOT an item name - it's the heading ABOVE a group of items
-- Look for larger text, headers, or section dividers that group multiple items together
-- If you see "BREAKFAST" heading with items below it, those items belong to category "Breakfast"
-- If you see "COFFEE" heading with "Espresso", "Latte", etc. below, they all belong to category "Coffee"
-- DO NOT use item names like "Croissant" or "Latte" as categories
-- If no clear category header exists, use a generic category like "Menu Items"
+1. SECTION HEADERS are categories:
+   - A CATEGORY is a SECTION HEADER on the menu (like "Starters", "Mains", "Desserts", "Hot Drinks", "Coffee", "All Day Brunch")
+   - Look for larger text, bold headers, or section dividers that group multiple items together
+   - If you see "BREAKFAST" heading with items below it, those items belong to category "Breakfast"
+   - If you see "COFFEE" heading with "Espresso", "Latte", etc. below, they all belong to category "Coffee"
+
+2. CONTINUATION SECTIONS (items without a new header):
+   - If items appear AFTER a category section but BEFORE the next category header, they likely belong to the PREVIOUS category
+   - Example: If you see "ALL DAY BRUNCH" followed by items like "Matcha Bowl", "Granola", then more items like "Shakshuka", "Turkish Eggs", "Waffles" WITHOUT a new header before "KIDS" section, those items still belong to "All Day Brunch"
+   - Use visual spacing and layout to determine if items are part of the previous section
+
+3. INTELLIGENT CATEGORIZATION:
+   - Breakfast/brunch items include: eggs, pancakes, waffles, french toast, shakshuka, granola, yogurt bowls, breakfast platters, turkish eggs
+   - Coffee/tea items include: espresso, latte, cappuccino, americano, mocha, tea varieties
+   - Desserts include: cakes, pastries, sweet items
+   - ONLY use "Menu Items" as a LAST RESORT if the item truly doesn't fit any existing category
+
+4. DO NOT use item names as categories:
+   - "Croissant", "Latte", "Burger" are NOT categories - they are items
+   - A category groups MULTIPLE items together
 
 OTHER RULES:
 - Include all items that have names and prices.
 - Use the English translation if bilingual.
 - Add-ons should be included with "Add-on" in the name.
+- Preserve the exact category names as they appear in the menu headers.
   `;
 
   const response = await openai.chat.completions.create({

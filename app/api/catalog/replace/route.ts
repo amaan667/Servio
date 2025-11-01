@@ -102,6 +102,106 @@ export async function POST(req: NextRequest) {
       positionCount: extractionResult.positions.length,
     });
 
+    // Step 2.5: Post-process to fix "Menu Items" categorizations
+    const existingCategories = Array.from(
+      new Set(
+        extractionResult.items
+          .map((item: any) => item.category)
+          .filter((c: string) => c && c !== "Menu Items")
+      )
+    );
+
+    logger.info(`[MENU IMPORT ${requestId}] Post-processing categories`, {
+      existingCategories,
+      menuItemsCount: extractionResult.items.filter((item: any) => item.category === "Menu Items")
+        .length,
+    });
+
+    // Enhanced category keyword mapping for intelligent recategorization
+    const categoryKeywordMap: { [key: string]: string[] } = {
+      breakfast: [
+        "breakfast",
+        "eggs",
+        "pancake",
+        "waffle",
+        "french toast",
+        "shakshuka",
+        "omelette",
+        "benedict",
+        "brunch",
+        "granola",
+        "yogurt",
+        "porridge",
+        "chapati",
+        "turkish eggs",
+        "ful medames",
+        "avocado toast",
+      ],
+      coffee: [
+        "coffee",
+        "espresso",
+        "latte",
+        "cappuccino",
+        "americano",
+        "mocha",
+        "flat white",
+        "cortado",
+      ],
+      tea: ["tea", "chai", "matcha", "oolong", "green tea", "earl grey", "chamomile"],
+      drinks: ["juice", "smoothie", "water", "soda", "drink", "beverage", "lemonade", "milkshake"],
+      desserts: ["dessert", "cake", "cheesecake", "tiramisu", "mousse", "pudding", "sweet", "tart"],
+      mains: ["burger", "pasta", "pizza", "rice", "chicken", "beef", "lamb", "fish", "steak"],
+    };
+
+    // Fix "Menu Items" assignments
+    let recategorizedCount = 0;
+    for (const item of extractionResult.items) {
+      if (item.category === "Menu Items") {
+        const itemText = `${item.name} ${item.description || ""}`.toLowerCase();
+        let newCategory = null;
+
+        // Try to match to existing categories using keywords
+        for (const existingCat of existingCategories) {
+          const catNormalized = existingCat.toLowerCase();
+
+          // Check if item keywords match this category
+          for (const [genericCat, keywords] of Object.entries(categoryKeywordMap)) {
+            if (catNormalized.includes(genericCat)) {
+              for (const keyword of keywords) {
+                if (itemText.includes(keyword)) {
+                  newCategory = existingCat;
+                  break;
+                }
+              }
+              if (newCategory) break;
+            }
+          }
+          if (newCategory) break;
+        }
+
+        if (newCategory) {
+          logger.info(`[MENU IMPORT ${requestId}] Recategorizing item`, {
+            item: item.name,
+            from: "Menu Items",
+            to: newCategory,
+          });
+          item.category = newCategory;
+          recategorizedCount++;
+        }
+      }
+    }
+
+    if (recategorizedCount > 0) {
+      logger.info(
+        `[MENU IMPORT ${requestId}] Recategorized ${recategorizedCount} items from "Menu Items"`,
+        {
+          finalCategories: Array.from(
+            new Set(extractionResult.items.map((item: any) => item.category))
+          ),
+        }
+      );
+    }
+
     // Step 3: Replace or Append mode
     if (replaceMode) {
       logger.info(`[MENU IMPORT ${requestId}] REPLACE mode - deleting existing menu...`);

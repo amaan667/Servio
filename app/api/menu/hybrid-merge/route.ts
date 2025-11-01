@@ -1109,6 +1109,13 @@ function assignToPdfCategory(
       "granola",
       "yogurt",
       "porridge",
+      "chapati",
+      "turkish eggs",
+      "ful medames",
+      "foul",
+      "ful",
+      "avocado toast",
+      "avo",
     ],
     mains: [
       "burger",
