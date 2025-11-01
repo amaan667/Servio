@@ -176,9 +176,61 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     logger.info("[WEB EXTRACT] Step 19: Sending screenshot to GPT-4o Vision AI...");
 
     const visionItems = await extractMenuFromImage(screenshotDataUrl);
-    logger.info("[WEB EXTRACT] Step 20: Vision AI extraction complete", {
-      count: visionItems.length,
-      sample: visionItems.slice(0, 2).map((i) => ({ name: i.name, price: i.price })),
+
+    // Detailed logging for URL extraction (similar to PDF extraction)
+    logger.info("[WEB URL EXTRACT] ===== VISION AI EXTRACTION COMPLETE =====");
+    logger.info("[WEB URL EXTRACT] Total items extracted", { count: visionItems.length });
+
+    // Log categories from Vision AI
+    const visionCategories = Array.from(
+      new Set(visionItems.map((item: any) => item.category).filter(Boolean))
+    );
+    logger.info("[WEB URL EXTRACT] Categories from Vision AI", {
+      count: visionCategories.length,
+      categories: visionCategories,
+    });
+
+    // Category breakdown
+    const categoryBreakdown: Record<string, number> = {};
+    visionItems.forEach((item: any) => {
+      const cat = item.category || "Uncategorized";
+      categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+    });
+    logger.info("[WEB URL EXTRACT] Category breakdown from Vision AI", categoryBreakdown);
+
+    // Sample items by category
+    const samplesByCategory: Record<string, any[]> = {};
+    visionItems.forEach((item: any) => {
+      const cat = item.category || "Uncategorized";
+      if (!samplesByCategory[cat]) {
+        samplesByCategory[cat] = [];
+      }
+      if (samplesByCategory[cat].length < 3) {
+        samplesByCategory[cat].push({
+          name: item.name,
+          price: item.price,
+          hasDescription: !!item.description,
+        });
+      }
+    });
+    logger.info("[WEB URL EXTRACT] Sample items by category", samplesByCategory);
+
+    // Warnings for issues
+    const menuItemsCount = visionItems.filter((item: any) => item.category === "Menu Items").length;
+    if (menuItemsCount > 0) {
+      logger.warn("[WEB URL EXTRACT] ⚠️ CATEGORIZATION ISSUE DETECTED", {
+        menuItemsCount,
+        percentageInGeneric: Math.round((menuItemsCount / visionItems.length) * 100),
+        message:
+          "Many items assigned to generic 'Menu Items' category - Vision AI may not be detecting category headers from website layout",
+      });
+    }
+
+    logger.info("[WEB URL EXTRACT] ===== VISION AI SUMMARY =====", {
+      totalItems: visionItems.length,
+      totalCategories: visionCategories.length,
+      withDescription: visionItems.filter((i: any) => i.description).length,
+      withPrice: visionItems.filter((i: any) => i.price).length,
     });
 
     // Strategy 3: Intelligent merge
@@ -194,8 +246,38 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       },
     });
 
+    // Final category analysis after merge
+    const finalCategories = Array.from(
+      new Set(mergedItems.map((item) => item.category).filter(Boolean))
+    );
+    const finalCategoryBreakdown: Record<string, number> = {};
+    mergedItems.forEach((item) => {
+      const cat = item.category || "Uncategorized";
+      finalCategoryBreakdown[cat] = (finalCategoryBreakdown[cat] || 0) + 1;
+    });
+
+    logger.info("[WEB URL EXTRACT] ===== FINAL MERGED RESULT =====");
+    logger.info("[WEB URL EXTRACT] Final categories after merge", {
+      count: finalCategories.length,
+      categories: finalCategories,
+    });
+    logger.info("[WEB URL EXTRACT] Final category breakdown", finalCategoryBreakdown);
+
+    // Final warning if still have Menu Items
+    const finalMenuItemsCount = mergedItems.filter((item) => item.category === "Menu Items").length;
+    if (finalMenuItemsCount > 0) {
+      logger.warn("[WEB URL EXTRACT] ⚠️ FINAL WARNING: Generic categorization persists", {
+        menuItemsCount: finalMenuItemsCount,
+        percentage: Math.round((finalMenuItemsCount / mergedItems.length) * 100),
+        recommendation:
+          "Website layout may not have clear category headers. Consider using PDF mode or implementing post-processing categorization.",
+      });
+    }
+
     logger.info("[WEB EXTRACT] ===== EXTRACTION SUCCESSFUL =====", {
       totalItems: mergedItems.length,
+      categoriesDetected: finalCategories.length,
+      itemsWithImages: mergedItems.filter((i) => i.image_url).length,
     });
     return mergedItems;
   } catch (error) {
