@@ -424,7 +424,7 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
         // Strategy 1: Look for preceding heading (h1, h2, h3) that's NOT an item name
         let currentEl: Element | null = el;
         for (let i = 0; i < 10; i++) {
-          const prevSibling = currentEl?.previousElementSibling;
+          const prevSibling: Element | null | undefined = currentEl?.previousElementSibling;
           if (!prevSibling) break;
 
           // Check if it's a heading
