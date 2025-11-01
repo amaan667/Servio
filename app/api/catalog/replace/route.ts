@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
+import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for processing
@@ -221,6 +222,19 @@ export async function POST(req: NextRequest) {
       hotspotCount: hotspots.length,
       replaceMode,
     });
+
+    // Revalidate all pages that display menu data
+    try {
+      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
+      revalidatePath(`/dashboard/${venueId}`, "page");
+      revalidatePath(`/menu/${venueId}`, "page");
+      logger.info(`[MENU IMPORT ${requestId}] Cache revalidated for venue ${venueId}`);
+    } catch (revalidateError) {
+      logger.warn(
+        `[MENU IMPORT ${requestId}] Cache revalidation failed (non-critical)`,
+        revalidateError
+      );
+    }
 
     return NextResponse.json({
       ok: true,

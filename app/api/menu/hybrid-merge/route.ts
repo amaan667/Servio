@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import OpenAI from "openai";
 import { extractMenuFromWebsite } from "@/lib/webMenuExtractor";
+import { revalidatePath } from "next/cache";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -355,6 +356,16 @@ export async function POST(req: NextRequest) {
       stats,
       finalCount: existingItems.length + inserts.length,
     });
+
+    // Revalidate all pages that display menu data
+    try {
+      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
+      revalidatePath(`/dashboard/${venueId}`, "page");
+      revalidatePath(`/menu/${venueId}`, "page");
+      logger.info("[HYBRID MERGE] Cache revalidated");
+    } catch (revalidateError) {
+      logger.warn("[HYBRID MERGE] Cache revalidation failed (non-critical)", revalidateError);
+    }
 
     return NextResponse.json({
       ok: true,
