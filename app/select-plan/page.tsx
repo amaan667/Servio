@@ -1,17 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Loader2 } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { supabaseBrowser } from "@/lib/supabase";
+import { useAuth } from "@/app/auth/AuthProvider";
 
 export default function SelectPlanPage() {
   const router = useRouter();
+  const { session, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+
+  // Check if user already has venues - if so, redirect to dashboard
+  useEffect(() => {
+    const checkExistingVenues = async () => {
+      if (authLoading) return; // Wait for auth to load
+
+      if (!session?.user) {
+        // Not signed in - this is fine, they can view plans
+        setIsChecking(false);
+        return;
+      }
+
+      try {
+        const supabase = supabaseBrowser();
+        const { data: venues } = await supabase
+          .from("venues")
+          .select("venue_id")
+          .eq("owner_user_id", session.user.id)
+          .limit(1);
+
+        // If user already has venues, redirect to their dashboard
+        if (venues && venues.length > 0) {
+          console.log("[SELECT-PLAN] User already has venues - redirecting to dashboard");
+          router.replace(`/dashboard/${venues[0].venue_id}`);
+          return;
+        }
+
+        // User is signed in but has no venues - show plan selection
+        setIsChecking(false);
+      } catch (error) {
+        console.error("[SELECT-PLAN] Error checking venues:", error);
+        setIsChecking(false);
+      }
+    };
+
+    checkExistingVenues();
+  }, [session, authLoading, router]);
 
   const pricingPlans = [
     {
@@ -117,6 +158,18 @@ export default function SelectPlanPage() {
       setSelectedTier(null);
     }
   };
+
+  // Show loading state while checking
+  if (isChecking || authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-700">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
