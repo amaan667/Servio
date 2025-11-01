@@ -143,8 +143,8 @@ export async function POST(req: NextRequest) {
           urlItem.name.toLowerCase().trim()
         );
 
-        if (similarity > bestSimilarity && similarity > 0.7) {
-          // 70% similarity threshold
+        if (similarity > bestSimilarity && similarity > 0.75) {
+          // 75% similarity threshold - stricter to avoid false matches
           bestSimilarity = similarity;
           bestMatch = { ...urlItem, index };
         }
@@ -184,19 +184,19 @@ export async function POST(req: NextRequest) {
           changes.push(`description: ${pdfDescLength} → ${urlDescLength} chars`);
         }
 
-        // CATEGORY: Use URL category if different and valid
-        if (
-          bestMatch.category &&
-          bestMatch.category !== "Menu Items" &&
-          bestMatch.category !== pdfItem.category
-        ) {
+        // CATEGORY: Keep PDF category (more reliable) - only update if PDF has none
+        if (!pdfItem.category && bestMatch.category && bestMatch.category !== "Menu Items") {
           updateData.category = bestMatch.category;
           hasChanges = true;
-          changes.push(`category: ${pdfItem.category} → ${bestMatch.category}`);
+          changes.push(`category: added ${bestMatch.category}`);
         }
 
-        // NAME: Use URL name if it's longer/more detailed
-        if (bestMatch.name.length > pdfItem.name.length) {
+        // NAME: Keep PDF name (OCR from official menu) - it's more authoritative
+        // Only update if PDF name is clearly truncated or missing details
+        if (
+          bestMatch.name.length > pdfItem.name.length + 10 &&
+          bestMatch.name.toLowerCase().includes(pdfItem.name.toLowerCase())
+        ) {
           updateData.name = bestMatch.name;
           hasChanges = true;
           changes.push(`name: ${pdfItem.name} → ${bestMatch.name}`);
@@ -231,26 +231,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Add unmatched URL items as new items
+    // Add unmatched URL items as new items (with strict duplicate checking)
     urlItems.forEach((urlItem: any, index: number) => {
       if (!matchedUrlItems.has(index)) {
-        inserts.push({
-          venue_id: venueId,
-          name: urlItem.name,
-          description: urlItem.description || null,
-          price: urlItem.price || 0,
-          category: urlItem.category || "Menu Items",
-          image_url: urlItem.image_url || null,
-          is_available: true,
-          position: existingItems.length + inserts.length,
-          created_at: new Date().toISOString(),
+        // Double-check: is this REALLY a new item not in PDF?
+        // Check against all PDF items with lower threshold
+        const isDuplicate = existingItems.some((pdfItem: any) => {
+          const similarity = calculateStringSimilarity(
+            pdfItem.name.toLowerCase().trim(),
+            urlItem.name.toLowerCase().trim()
+          );
+          return similarity > 0.6; // Lower threshold for duplicate detection
         });
-        stats.new++;
 
-        logger.info("[HYBRID MERGE] New item from URL", {
-          name: urlItem.name,
-          hasImage: !!urlItem.image_url,
-        });
+        if (!isDuplicate) {
+          inserts.push({
+            venue_id: venueId,
+            name: urlItem.name,
+            description: urlItem.description || null,
+            price: urlItem.price || 0,
+            category: urlItem.category || "Menu Items",
+            image_url: urlItem.image_url || null,
+            is_available: true,
+            position: existingItems.length + inserts.length,
+            created_at: new Date().toISOString(),
+          });
+          stats.new++;
+
+          logger.info("[HYBRID MERGE] New item from URL", {
+            name: urlItem.name,
+            hasImage: !!urlItem.image_url,
+          });
+        } else {
+          logger.info("[HYBRID MERGE] Skipping duplicate URL item", {
+            name: urlItem.name,
+          });
+        }
       }
     });
 
@@ -289,8 +305,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Verify images were saved - spot check first updated item
+    if (updates.length > 0) {
+      const firstUpdate = updates[0];
+      const { data: verifyData } = await supabase
+        .from("menu_items")
+        .select("id, name, image_url")
+        .eq("id", firstUpdate.id)
+        .single();
+
+      logger.info("[HYBRID MERGE] Image save verification", {
+        itemId: firstUpdate.id,
+        imageUrlSaved: verifyData?.image_url ? "YES" : "NO",
+        imageUrl: verifyData?.image_url?.substring(0, 50),
+      });
+    }
+
     logger.info("[HYBRID MERGE] ===== MERGE COMPLETED SUCCESSFULLY =====", {
       stats,
+      finalCount: existingItems.length + inserts.length,
     });
 
     return NextResponse.json({
@@ -304,6 +337,7 @@ export async function POST(req: NextRequest) {
         imagesAdded: stats.imagesAdded,
         pricesUpdated: stats.pricesUpdated,
         descriptionsUpdated: stats.descriptionsUpdated,
+        totalItems: existingItems.length + inserts.length,
       },
     });
   } catch (_error) {
