@@ -90,6 +90,11 @@ export async function POST(req: NextRequest) {
 
     const urlItems = urlMenuData.items || [];
 
+    logger.info("[HYBRID MERGE] URL items processed", {
+      count: urlItems.length,
+      existingPdfItems: existingItems.length,
+    });
+
     if (urlItems.length === 0) {
       return NextResponse.json(
         {
@@ -105,6 +110,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 3: Use AI to intelligently match and merge items
+    logger.info("[HYBRID MERGE] Starting AI merge", {
+      pdfItems: existingItems.length,
+      urlItems: urlItems.length,
+    });
 
     const aiPrompt = `You are a menu data expert. Compare these two menus and intelligently merge them.
 
@@ -172,6 +181,7 @@ Be smart about matching:
 - Use fuzzy string matching
 - Consider price similarity as secondary indicator`;
 
+    logger.info("[HYBRID MERGE] Calling OpenAI for merge analysis...");
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -189,6 +199,8 @@ Be smart about matching:
       response_format: { type: "json_object" },
     });
 
+    logger.info("[HYBRID MERGE] OpenAI response received");
+
     const aiContent = aiResponse.choices[0]?.message?.content;
     if (!aiContent) {
       throw new Error("AI response was empty");
@@ -201,11 +213,16 @@ Be smart about matching:
       if (!Array.isArray(mergedItems)) {
         mergedItems = [mergedItems];
       }
+      logger.info("[HYBRID MERGE] AI merge parsed successfully", {
+        mergedCount: mergedItems.length,
+      });
     } catch (_parseError) {
+      logger.error("[HYBRID MERGE] Failed to parse AI response", { error: _parseError });
       throw new Error("AI returned invalid JSON");
     }
 
     // Step 4: Apply updates to database
+    logger.info("[HYBRID MERGE] Processing merge results for database updates...");
 
     const updates = [];
     const inserts = [];
@@ -273,6 +290,11 @@ Be smart about matching:
     }
 
     // Execute database updates
+    logger.info("[HYBRID MERGE] Applying database changes", {
+      updates: updates.length,
+      inserts: inserts.length,
+    });
+
     if (updates.length > 0) {
       for (const update of updates) {
         const { id, ...updateData } = update;
@@ -283,9 +305,10 @@ Be smart about matching:
           .eq("venue_id", venueId);
 
         if (error) {
-          /* Empty */
+          logger.error("[HYBRID MERGE] Update failed for item", { id, error: error.message });
         }
       }
+      logger.info("[HYBRID MERGE] Database updates completed", { count: updates.length });
     }
 
     // Execute database inserts
@@ -293,9 +316,15 @@ Be smart about matching:
       const { error: insertError } = await supabase.from("menu_items").insert(inserts);
 
       if (insertError) {
+        logger.error("[HYBRID MERGE] Insert failed", { error: insertError.message });
         throw new Error(`Failed to insert new items: ${insertError.message}`);
       }
+      logger.info("[HYBRID MERGE] Database inserts completed", { count: inserts.length });
     }
+
+    logger.info("[HYBRID MERGE] ===== MERGE COMPLETED SUCCESSFULLY =====", {
+      stats,
+    });
 
     return NextResponse.json({
       ok: true,
