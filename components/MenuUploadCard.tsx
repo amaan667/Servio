@@ -140,8 +140,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         formData.append("replace_mode", String(isReplacing)); // Send replace/append mode
 
         // Add menu URL if provided (for hybrid import)
-        if (menuUrl && menuUrl.trim()) {
+        const hasUrl = menuUrl && menuUrl.trim();
+        if (hasUrl) {
           formData.append("menu_url", menuUrl.trim());
+          console.log("[MENU UPLOAD] 🎯 HYBRID MODE: Uploading PDF + URL", {
+            pdfFile: file.name,
+            url: menuUrl.trim(),
+            replaceMode: isReplacing,
+          });
+          toast({
+            title: "Hybrid extraction starting...",
+            description: "Combining PDF structure with website images and data",
+          });
+        } else {
+          console.log("[MENU UPLOAD] 📄 PDF-ONLY MODE: No URL provided", {
+            pdfFile: file.name,
+            replaceMode: isReplacing,
+          });
         }
 
         const response = await fetch("/api/catalog/replace", {
@@ -157,13 +172,27 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         const result = await response.json();
 
         if (result.ok) {
+          const mode = result.mode || "unknown";
+          const modeLabels: Record<string, string> = {
+            hybrid: "🎯 Hybrid (PDF + URL)",
+            "pdf-only": "📄 PDF Only",
+            "url-only": "🌐 URL Only",
+          };
+
           toast({
             title: isReplacing ? "Menu replaced successfully" : "Menu items added successfully",
-            description: `${result.result.items_created} items, ${result.result.categories_created} categories`,
+            description: `${modeLabels[mode] || mode} • ${result.items || 0} items${result.mode === "hybrid" ? " • Images from URL added" : ""}`,
+          });
+
+          console.log("[MENU UPLOAD] ✅ Upload successful", {
+            mode: result.mode,
+            items: result.items,
+            hotspots: result.hotspots,
+            duration: result.duration,
           });
 
           // Save extracted style to database if available
-          if (result.result.extracted_text) {
+          if (result.result?.extracted_text) {
             await saveExtractedStyle(result.result.extracted_text);
           }
 
@@ -429,7 +458,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       <CardContent className="space-y-4">
         {/* Menu URL for Enhanced Matching */}
         <div className="space-y-2">
-          <Label htmlFor="menu-url-upload">Menu Website URL</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="menu-url-upload">Menu Website URL (Optional)</Label>
+            {menuUrl && menuUrl.trim() && (
+              <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                🎯 Hybrid Mode Ready
+              </Badge>
+            )}
+          </div>
           <Input
             id="menu-url-upload"
             type="url"
@@ -440,7 +476,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           />
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground flex-1">
-              💡 You can upload a PDF + URL (hybrid), PDF only, or URL only
+              {menuUrl && menuUrl.trim()
+                ? "🎯 When you upload PDF, it will combine with URL data automatically (order doesn't matter)"
+                : "💡 Add URL before or after PDF - order doesn't matter for hybrid mode"}
             </p>
             {hasExistingUpload && menuUrl && menuUrl.trim() && (
               <Button
