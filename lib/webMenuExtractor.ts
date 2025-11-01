@@ -63,6 +63,11 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
   const executablePath = await getChromiumPath();
   logger.info("[WEB EXTRACT] Chrome path:", { executablePath });
+  logger.info("[WEB EXTRACT] Environment:", {
+    nodeEnv: process.env.NODE_ENV,
+    isRailway: !!process.env.RAILWAY_ENVIRONMENT,
+    platform: process.platform,
+  });
 
   const browser = await puppeteer.launch({
     args: [
@@ -71,9 +76,27 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--disable-web-security", // Allow loading images from any domain
+      "--disable-web-security",
       "--hide-scrollbars",
       "--disable-features=VizDisplayCompositor",
+      // Additional args for Railway/serverless environment
+      "--disable-software-rasterizer",
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-breakpad",
+      "--disable-component-extensions-with-background-pages",
+      "--disable-features=TranslateUI,BlinkGenPropertyTrees",
+      "--disable-ipc-flooding-protection",
+      "--disable-renderer-backgrounding",
+      "--enable-features=NetworkService,NetworkServiceInProcess",
+      "--force-color-profile=srgb",
+      "--metrics-recording-only",
+      "--no-first-run",
+      "--disable-audio-output", // Fix PulseAudio error
+      "--no-zygote",
+      "--single-process", // Important for serverless
     ],
     defaultViewport: {
       width: 1920,
@@ -81,6 +104,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     },
     executablePath,
     headless: true,
+    ignoreDefaultArgs: ["--disable-extensions"],
   });
 
   try {
@@ -143,12 +167,21 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     return mergedItems;
   } catch (error) {
-    logger.error("[WEB EXTRACT] Extraction failed", { error });
+    logger.error("[WEB EXTRACT] Extraction failed", {
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
-      `Failed to extract menu from website: ${error instanceof Error ? error.message : "Unknown error"}`
+      `Failed to scrape menu from URL: ${error instanceof Error ? error.message : "Unknown error"}. ` +
+        `Check Railway logs for details. Common issues: site requires auth, blocks bots, or unusual structure.`
     );
   } finally {
-    await browser.close();
+    try {
+      await browser.close();
+    } catch (closeError) {
+      logger.warn("[WEB EXTRACT] Failed to close browser", { closeError });
+    }
   }
 }
 
