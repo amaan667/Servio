@@ -512,6 +512,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Extract existing PDF categories as source of truth (needed for intelligent categorization)
+    const pdfCategories = Array.from(
+      new Set(existingItems.map((item: any) => item.category).filter(Boolean))
+    );
+
+    logger.info("[HYBRID MERGE v2.0] PDF categories (source of truth)", {
+      count: pdfCategories.length,
+      categories: pdfCategories,
+    });
+
     // Step 3: PRODUCTION SMART MERGE with hierarchical matching
     logger.info("[HYBRID MERGE v2.0] Step 3: Starting production merge", {
       pdfItems: existingItems.length,
@@ -645,13 +655,50 @@ export async function POST(req: NextRequest) {
           changes.push(`description: ${pdfDescLength} → ${urlDescLength} chars`);
         }
 
-        // 4. CATEGORY: Keep PDF category (Vision AI is more reliable)
-        // But normalize it
-        const normalizedCategory = normalizeCategory(pdfItem.category);
-        if (normalizedCategory && normalizedCategory !== pdfItem.category) {
-          updateData.category = normalizedCategory;
-          hasChanges = true;
-          changes.push(`category normalized: "${pdfItem.category}" → "${normalizedCategory}"`);
+        // 4. CATEGORY: Keep PDF category BUT intelligently re-categorize generic ones
+        const currentCategory = pdfItem.category;
+        const genericCategories = [
+          "Menu Items",
+          "menu items",
+          "Other",
+          "Other Items",
+          "Items",
+          "Food",
+          "General",
+        ];
+
+        // Check if this item has a generic/meaningless category
+        if (
+          genericCategories.some((g) => normalizeText(currentCategory).includes(normalizeText(g)))
+        ) {
+          // Re-categorize this item intelligently using all PDF categories
+          const betterCategory = assignToPdfCategory(
+            pdfItem.name,
+            pdfItem.description,
+            pdfCategories
+          );
+
+          if (betterCategory !== currentCategory) {
+            updateData.category = betterCategory;
+            hasChanges = true;
+            changes.push(
+              `category reassigned: "${currentCategory}" → "${betterCategory}" (intelligent categorization)`
+            );
+            logger.info("[INTELLIGENT RECATEGORIZATION]", {
+              item: pdfItem.name,
+              from: currentCategory,
+              to: betterCategory,
+              reason: "generic_category_detected",
+            });
+          }
+        } else {
+          // Normal category - just normalize casing
+          const normalizedCategory = normalizeCategory(pdfItem.category);
+          if (normalizedCategory && normalizedCategory !== pdfItem.category) {
+            updateData.category = normalizedCategory;
+            hasChanges = true;
+            changes.push(`category normalized: "${pdfItem.category}" → "${normalizedCategory}"`);
+          }
         }
 
         // 5. IMAGE: URL only (PDF never has images)
@@ -697,24 +744,54 @@ export async function POST(req: NextRequest) {
           stats.unchanged++;
         }
       } else {
-        // No match found - keep PDF item as-is
-        stats.unchanged++;
-        logger.info("[HYBRID MERGE v2.0] No URL match for PDF item", {
-          name: pdfItem.name,
-          price: pdfItem.price,
-        });
+        // No match found - but still check if we should recategorize from generic category
+        const currentCategory = pdfItem.category;
+        const genericCategories = [
+          "Menu Items",
+          "menu items",
+          "Other",
+          "Other Items",
+          "Items",
+          "Food",
+          "General",
+        ];
+
+        if (
+          genericCategories.some((g) => normalizeText(currentCategory).includes(normalizeText(g)))
+        ) {
+          // Re-categorize this unmatched item
+          const betterCategory = assignToPdfCategory(
+            pdfItem.name,
+            pdfItem.description,
+            pdfCategories
+          );
+
+          if (betterCategory !== currentCategory) {
+            updates.push({
+              id: pdfItem.id,
+              category: betterCategory,
+              updated_at: new Date().toISOString(),
+            });
+            stats.updated++;
+
+            logger.info("[INTELLIGENT RECATEGORIZATION] Unmatched item", {
+              item: pdfItem.name,
+              from: currentCategory,
+              to: betterCategory,
+              reason: "generic_category_detected_no_url_match",
+            });
+          } else {
+            stats.unchanged++;
+          }
+        } else {
+          stats.unchanged++;
+          logger.info("[HYBRID MERGE v2.0] No URL match for PDF item", {
+            name: pdfItem.name,
+            price: pdfItem.price,
+          });
+        }
       }
     }
-
-    // Extract existing PDF categories as source of truth
-    const pdfCategories = Array.from(
-      new Set(existingItems.map((item: any) => item.category).filter(Boolean))
-    );
-
-    logger.info("[HYBRID MERGE v2.0] PDF categories (source of truth)", {
-      count: pdfCategories.length,
-      categories: pdfCategories,
-    });
 
     // Add unmatched URL items as new items (with strict duplicate checking)
     logger.info("[HYBRID MERGE v2.0] Step 4: Processing unmatched URL items", {

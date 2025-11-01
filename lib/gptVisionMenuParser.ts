@@ -99,18 +99,69 @@ OTHER RULES:
       return [];
     }
 
-    logger.info("[VISION] Extracted items:", { count: json.length });
+    logger.info("[VISION PDF] ===== EXTRACTION COMPLETE =====");
+    logger.info("[VISION PDF] Total items extracted:", { count: json.length });
 
     // Log categories for debugging
     const categories = Array.from(new Set(json.map((item: any) => item.category).filter(Boolean)));
     logger.info("[VISION PDF] Categories extracted:", {
       count: categories.length,
       categories: categories,
-      sampleItems: json.slice(0, 3).map((item: any) => ({
-        name: item.name,
-        category: item.category,
-        price: item.price,
-      })),
+    });
+
+    // Log detailed breakdown by category
+    const categoryBreakdown: Record<string, number> = {};
+    json.forEach((item: any) => {
+      const cat = item.category || "Uncategorized";
+      categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+    });
+
+    logger.info("[VISION PDF] Category breakdown:", categoryBreakdown);
+
+    // Log sample items from each category
+    const samplesByCategory: Record<string, any[]> = {};
+    json.forEach((item: any) => {
+      const cat = item.category || "Uncategorized";
+      if (!samplesByCategory[cat]) {
+        samplesByCategory[cat] = [];
+      }
+      if (samplesByCategory[cat].length < 3) {
+        samplesByCategory[cat].push({
+          name: item.name,
+          price: item.price,
+          hasDescription: !!item.description,
+        });
+      }
+    });
+
+    logger.info("[VISION PDF] Sample items by category:", samplesByCategory);
+
+    // Log any items with potential issues
+    const itemsWithoutName = json.filter((item: any) => !item.name);
+    const itemsWithoutPrice = json.filter((item: any) => !item.price && item.price !== 0);
+    const itemsWithoutCategory = json.filter((item: any) => !item.category);
+
+    if (itemsWithoutName.length > 0) {
+      logger.warn("[VISION PDF] Items without name:", { count: itemsWithoutName.length });
+    }
+    if (itemsWithoutPrice.length > 0) {
+      logger.warn("[VISION PDF] Items without price:", {
+        count: itemsWithoutPrice.length,
+        examples: itemsWithoutPrice.slice(0, 5).map((i: any) => i.name),
+      });
+    }
+    if (itemsWithoutCategory.length > 0) {
+      logger.warn("[VISION PDF] Items without category:", {
+        count: itemsWithoutCategory.length,
+        examples: itemsWithoutCategory.slice(0, 5).map((i: any) => i.name),
+      });
+    }
+
+    logger.info("[VISION PDF] ===== EXTRACTION SUMMARY =====", {
+      totalItems: json.length,
+      totalCategories: categories.length,
+      itemsComplete: json.filter((i: any) => i.name && i.price && i.category).length,
+      itemsPartial: json.filter((i: any) => !i.name || !i.price || !i.category).length,
     });
 
     return json;

@@ -223,15 +223,24 @@ export async function POST(req: NextRequest) {
       replaceMode,
     });
 
-    // Revalidate all pages that display menu data
+    // Revalidate all pages that display menu data - AGGRESSIVE CACHE BUSTING
     try {
-      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
+      // Revalidate the entire dashboard layout and all nested routes
+      revalidatePath(`/dashboard/${venueId}`, "layout");
       revalidatePath(`/dashboard/${venueId}`, "page");
+      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
+      revalidatePath(`/dashboard/${venueId}/menu-management`, "layout");
+
+      // Revalidate menu pages
       revalidatePath(`/menu/${venueId}`, "page");
-      logger.info(`[MENU IMPORT ${requestId}] Cache revalidated for venue ${venueId}`);
+      revalidatePath(`/order/${venueId}`, "page");
+
+      logger.info(
+        `[MENU IMPORT ${requestId}] ✅ Cache revalidated aggressively for venue ${venueId}`
+      );
     } catch (revalidateError) {
       logger.warn(
-        `[MENU IMPORT ${requestId}] Cache revalidation failed (non-critical)`,
+        `[MENU IMPORT ${requestId}] ⚠️ Cache revalidation failed (non-critical)`,
         revalidateError
       );
     }
