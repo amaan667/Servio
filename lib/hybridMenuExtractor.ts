@@ -502,16 +502,18 @@ function findBestMatch(
     }
   }
 
-  return bestScore >= 0.6 ? { item: bestMatch, score: bestScore, reason: bestReason } : null;
+  return bestScore >= 0.5 ? { item: bestMatch, score: bestScore, reason: bestReason } : null;
 }
 
 /**
  * Normalize name for matching (more aggressive than general normalization)
+ * Handles Arabic text, special characters, and common variants
  */
 function normalizeName(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^\w\s]/g, " ") // Remove all punctuation
+    .replace(/[^\w\s\u0600-\u06FF]/g, " ") // Remove punctuation but keep Arabic characters
+    .replace(/\(.*?\)/g, " ") // Remove content in parentheses for better matching
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -637,6 +639,17 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     unmatchedPdfItemsCount: unmatchedPdfItems.length,
   });
 
+  // Log sample of unmatched PDF items for debugging
+  if (unmatchedPdfItems.length > 0) {
+    logger.info("[HYBRID/MERGE] 🔍 Sample unmatched PDF items (first 10):", {
+      items: unmatchedPdfItems.slice(0, 10).map((i) => ({
+        name: i.name,
+        price: i.price,
+        category: i.category,
+      })),
+    });
+  }
+
   if (Object.keys(matchReasons).length > 0) {
     logger.info("[HYBRID/MERGE] 🎯 Match Quality Breakdown", matchReasons);
   }
@@ -736,6 +749,9 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   let aiCategorizedCount = 0;
   let newCategoriesCreated = new Set<string>();
 
+  // Track unmatched URL items for logging
+  const unmatchedUrlItems: any[] = [];
+
   // Import AI categorizer
   const { categorizeItemWithAI } = await import("./aiCategorizer");
 
@@ -747,12 +763,13 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       continue; // Skip items that were already matched to PDF items
     }
 
-    // Double-check with advanced matching to be safe
+    // Double-check with advanced matching to be safe (use same threshold as main matching)
     const matchResult = findBestMatch(webItem, merged);
-    const existsInPdf = matchResult !== null && matchResult.score >= 0.6;
+    const existsInPdf = matchResult !== null && matchResult.score >= 0.5;
 
     if (!existsInPdf && webItem.name && webItem.price) {
       webOnlyCount++;
+      unmatchedUrlItems.push(webItem);
 
       let assignedCategory = webItem.category;
       let shouldCreateNew = false;
@@ -824,6 +841,26 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     });
   }
 
+  // Log sample of unmatched URL items for debugging
+  if (unmatchedUrlItems.length > 0) {
+    logger.info("[HYBRID/MERGE] 🔍 Sample unmatched URL items (first 10):", {
+      items: unmatchedUrlItems.slice(0, 10).map((i) => ({
+        name: i.name,
+        price: i.price,
+        category: i.category,
+        hasImage: !!i.image_url,
+      })),
+    });
+
+    // Count how many unmatched URL items had images
+    const unmatchedWithImages = unmatchedUrlItems.filter((i) => i.image_url).length;
+    logger.info("[HYBRID/MERGE] 📊 Unmatched URL items with images:", {
+      total: unmatchedUrlItems.length,
+      withImages: unmatchedWithImages,
+      withoutImages: unmatchedUrlItems.length - unmatchedWithImages,
+    });
+  }
+
   logger.info("[HYBRID/MERGE] ========================================");
   logger.info("[HYBRID/MERGE] MERGE COMPLETE - Summary:");
   logger.info("[HYBRID/MERGE] ========================================");
@@ -845,6 +882,25 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     pdfEnhanced: merged.filter((i) => i.merge_source === "pdf_enhanced_with_url").length,
     pdfOnly: merged.filter((i) => i.merge_source === "pdf_only").length,
     urlNewItems: merged.filter((i) => i.merge_source === "url_only_new_item").length,
+  });
+
+  // Image flow analysis
+  const urlItemsWithImages = webItems.filter((i) => i.image_url).length;
+  const mergedWithImages = merged.filter((i) => i.image_url).length;
+  const pdfEnhancedWithImages = merged.filter(
+    (i) => i.merge_source === "pdf_enhanced_with_url" && i.image_url
+  ).length;
+  const urlOnlyWithImages = merged.filter(
+    (i) => i.merge_source === "url_only_new_item" && i.image_url
+  ).length;
+
+  logger.info("[HYBRID/MERGE] 📷 IMAGE FLOW ANALYSIS:", {
+    urlTotalImages: urlItemsWithImages,
+    finalTotalImages: mergedWithImages,
+    imagesLost: urlItemsWithImages - mergedWithImages,
+    pdfEnhancedWithImages,
+    urlOnlyWithImages,
+    pdfOnlyWithImages: merged.filter((i) => i.merge_source === "pdf_only" && i.image_url).length,
   });
 
   return merged;
