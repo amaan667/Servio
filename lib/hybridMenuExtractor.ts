@@ -397,11 +397,26 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   let pricesUpdatedCount = 0;
 
   // Import AI matcher for fallback
-  const { batchMatchItemsWithAI } = await import("./aiMatcher");
+  logger.info("[HYBRID/MERGE] 🔧 Importing AI matcher module...");
+  let batchMatchItemsWithAI: any;
+  try {
+    const aiMatcherModule = await import("./aiMatcher");
+    batchMatchItemsWithAI = aiMatcherModule.batchMatchItemsWithAI;
+    logger.info("[HYBRID/MERGE] ✅ AI matcher module imported successfully");
+  } catch (importError) {
+    logger.error("[HYBRID/MERGE] ❌ Failed to import AI matcher", {
+      error: importError instanceof Error ? importError.message : String(importError),
+    });
+    throw importError; // Re-throw to fail fast
+  }
 
   // Track unmatched items for AI fallback
   const unmatchedPdfItems: any[] = [];
   const matchedWebItems = new Set<string>();
+
+  logger.info("[HYBRID/MERGE] 🔄 Starting PDF item matching loop", {
+    totalPdfItems: pdfItems.length,
+  });
 
   // Start with PDF items (we have hotspot positions for these)
   const merged = pdfItems.map((pdfItem) => {
@@ -420,17 +435,20 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       if (enhancedDesc) descriptionsEnhancedCount++;
       if (updatedPrice) pricesUpdatedCount++;
 
-      logger.info("[HYBRID/MERGE] ✅ Matched & enhanced", {
-        pdf: pdfItem.name,
-        url: webMatch.name,
-        matchScore: matchResult?.score ? Math.round(matchResult.score * 100) + "%" : "unknown",
-        matchReason: matchResult?.reason || "similarity",
-        addedImage: addedImage,
-        enhancedDescription: enhancedDesc,
-        updatedPrice: updatedPrice ? `£${pdfItem.price} → £${webMatch.price}` : false,
-        pdfCategory: pdfItem.category,
-        urlCategory: webMatch.category,
-      });
+      // Only log first 3 matches to reduce noise
+      if (matchedCount <= 3) {
+        logger.info("[HYBRID/MERGE] ✅ Matched & enhanced", {
+          pdf: pdfItem.name,
+          url: webMatch.name,
+          matchScore: matchResult?.score ? Math.round(matchResult.score * 100) + "%" : "unknown",
+          matchReason: matchResult?.reason || "similarity",
+          addedImage: addedImage,
+          enhancedDescription: enhancedDesc,
+          updatedPrice: updatedPrice ? `£${pdfItem.price} → £${webMatch.price}` : false,
+          pdfCategory: pdfItem.category,
+          urlCategory: webMatch.category,
+        });
+      }
 
       return {
         ...pdfItem,
@@ -458,6 +476,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     };
   });
 
+  logger.info("[HYBRID/MERGE] ✅ PDF item matching loop COMPLETE");
   logger.info("[HYBRID/MERGE] PDF items processed", {
     matched: matchedCount,
     imagesAdded: imagesAddedCount,
