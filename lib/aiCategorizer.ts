@@ -47,21 +47,37 @@ Description: "${itemDescription || "No description"}"
 EXISTING CATEGORIES (with example items):
 ${categoryExamples.map((cat) => `- ${cat.name}: ${cat.examples.join(", ")}`).join("\n")}
 
+CRITICAL BEVERAGE DETECTION (READ THIS FIRST):
+⚠️ Brand names that are BEVERAGES (NOT desserts): San Pellegrino, Aspire, Dash Water, Red Bull, Monster, Evian, Fiji, Coca-Cola
+⚠️ If item contains these brands → Beverages/Drinks/Juices category (NEVER Desserts, even if has "Raspberry" or "Strawberry")
+⚠️ "Aspire Raspberry" = energy drink (Beverages), NOT a raspberry dessert
+⚠️ Any water (still, sparkling) = always Beverages
+⚠️ Energy drinks, soft drinks, bottled water = Beverages
+
 TASK:
-Determine which existing category this item belongs to, OR if it needs a new category.
+Determine which EXISTING category this item belongs to, OR if it needs a NEW category.
+
+CATEGORIZATION PRIORITY:
+1. FIRST: Check if it's a beverage brand (see list above) → Use Beverages/Drinks/Juices if exists
+2. SECOND: Check if similar items exist in current categories (match by type, not ingredients)
+3. THIRD: Only create NEW category if truly a different cuisine/type
 
 RULES:
-1. If the item clearly fits an existing category (same type of food/drink), return that category name
-2. If the item is a NEW type not represented in existing categories, return "NEW_CATEGORY: [suggested name]"
-3. Examples:
-   - "San Pellegrino Lemonade" → If "Drinks/Beverages/Juices" exists, use that
-   - "San Pellegrino Lemonade" → If no drink category exists, return "NEW_CATEGORY: Beverages"
-   - "Espresso" → "Coffee" (if Coffee category exists)
-   - "Sushi Roll" → "NEW_CATEGORY: Sushi" (if only pizza/burgers exist)
+1. Prefer EXISTING categories over creating new ones
+2. Match by ITEM TYPE (e.g., all drinks together, all desserts together)
+3. "Raspberry" in name doesn't mean dessert if it's a drink brand
+4. Return "NEW_CATEGORY: [Name]" only if genuinely new type
+
+EXAMPLES:
+✅ "San Pellegrino Lemonade" + Juices exists [Orange Juice] → "Juices"
+✅ "Aspire Raspberry" → This is Aspire brand energy drink → "Beverages" or "NEW_CATEGORY: Beverages"
+❌ "Aspire Raspberry" → "Desserts" (WRONG! It's a drink!)
+✅ "Espresso" + Coffee exists → "Coffee" or "Hot Coffee"
+✅ "Croissant" + NO pastry category → "NEW_CATEGORY: Pastries"
 
 RESPOND WITH ONLY:
-- Category name (if matches existing), OR
-- "NEW_CATEGORY: [Name]" (if new type needed)`;
+- Existing category name, OR
+- "NEW_CATEGORY: [Name]"`;
 
   try {
     const response = await openai.chat.completions.create({

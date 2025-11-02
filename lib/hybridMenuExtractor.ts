@@ -396,6 +396,13 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   let descriptionsEnhancedCount = 0;
   let pricesUpdatedCount = 0;
 
+  // Import AI matcher for fallback
+  const { batchMatchItemsWithAI } = await import("./aiMatcher");
+
+  // Track unmatched items for AI fallback
+  const unmatchedPdfItems: any[] = [];
+  const matchedWebItems = new Set<string>();
+
   // Start with PDF items (we have hotspot positions for these)
   const merged = pdfItems.map((pdfItem) => {
     // Find best matching web item using advanced algorithm
@@ -403,6 +410,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     const webMatch = matchResult?.item;
 
     if (webMatch) {
+      matchedWebItems.add(webMatch.name_normalized);
       matchedCount++;
       const addedImage = !pdfItem.image_url && webMatch.image_url;
       const enhancedDesc = !pdfItem.description && webMatch.description;
@@ -438,11 +446,15 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       };
     }
 
+    // No match found - add to unmatched list for AI fallback
+    unmatchedPdfItems.push(pdfItem);
+
     return {
       ...pdfItem,
       has_web_enhancement: false,
       has_image: false,
       merge_source: "pdf_only",
+      _unmatched: true, // Mark for AI fallback processing
     };
   });
 
@@ -453,6 +465,63 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     pricesUpdated: pricesUpdatedCount,
     pdfOnlyItems: pdfItems.length - matchedCount,
   });
+
+  // AI FALLBACK MATCHING: For unmatched PDF items, try AI matching
+  if (unmatchedPdfItems.length > 0 && unmatchedPdfItems.length <= 40) {
+    logger.info("[HYBRID/MERGE] 🤖 Running AI fallback matching for stubborn cases", {
+      unmatchedCount: unmatchedPdfItems.length,
+    });
+
+    let aiMatchedCount = 0;
+
+    // Get unmatched URL items
+    const unmatchedWebItems = webItems.filter((w) => !matchedWebItems.has(w.name_normalized));
+
+    for (const pdfItem of unmatchedPdfItems) {
+      // Try AI matching against unmatched URL items
+      const aiMatch = await batchMatchItemsWithAI(pdfItem, unmatchedWebItems);
+
+      if (aiMatch && aiMatch.confidence >= 0.8) {
+        // Found a match via AI! Update the merged item
+        const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
+
+        if (mergedIndex !== -1) {
+          aiMatchedCount++;
+          matchedWebItems.add(aiMatch.item.name_normalized);
+
+          // Enhance the item with URL data
+          merged[mergedIndex] = {
+            ...merged[mergedIndex],
+            image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
+            description: aiMatch.item.description || merged[mergedIndex].description,
+            price: aiMatch.item.price || merged[mergedIndex].price,
+            has_web_enhancement: true,
+            has_image: !!aiMatch.item.image_url,
+            merge_source: "pdf_enhanced_with_url_ai",
+            _unmatched: false,
+          };
+
+          if (aiMatch.item.image_url) imagesAddedCount++;
+
+          logger.info("[HYBRID/MERGE] 🤖✅ AI matched stubborn item", {
+            pdf: pdfItem.name,
+            url: aiMatch.item.name,
+            confidence: Math.round(aiMatch.confidence * 100) + "%",
+          });
+        }
+      }
+    }
+
+    if (aiMatchedCount > 0) {
+      logger.info("[HYBRID/MERGE] AI fallback matching complete", {
+        additionalMatches: aiMatchedCount,
+        totalMatched: matchedCount + aiMatchedCount,
+        stillUnmatched: unmatchedPdfItems.length - aiMatchedCount,
+      });
+
+      matchedCount += aiMatchedCount;
+    }
+  }
 
   // Extract PDF categories for intelligent categorization of new URL items
   const pdfCategories = Array.from(new Set(pdfItems.map((item) => item.category).filter(Boolean)));
@@ -468,7 +537,14 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   const { categorizeItemWithAI } = await import("./aiCategorizer");
 
   for (const webItem of webItems) {
-    // Check if this item already exists in merged items using SAME advanced matching
+    // Check if this item was already matched (don't add duplicates)
+    const alreadyMatched = matchedWebItems.has(webItem.name_normalized);
+
+    if (alreadyMatched) {
+      continue; // Skip items that were already matched to PDF items
+    }
+
+    // Double-check with advanced matching to be safe
     const matchResult = findBestMatch(webItem, merged);
     const existsInPdf = matchResult !== null && matchResult.score >= 0.6;
 
