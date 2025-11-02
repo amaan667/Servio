@@ -328,11 +328,11 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         {item.image_url && (
-                          <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200 p-1">
                             <img
                               src={item.image_url}
                               alt={item.item_name}
-                              className="w-full h-full object-contain"
+                              className="max-w-full max-h-full object-contain"
                             />
                           </div>
                         )}

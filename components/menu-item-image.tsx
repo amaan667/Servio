@@ -14,8 +14,8 @@ interface MenuItemImageProps {
 const MenuItemImage = memo(function MenuItemImage({
   src,
   alt,
-  className = "w-20 h-20 rounded-lg object-contain border border-gray-200",
-  fallbackIcon: _fallbackIcon = <UtensilsCrossed className="w-8 h-8 text-gray-700" />,
+  className = "w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-contain border border-gray-200",
+  fallbackIcon: _fallbackIcon = <UtensilsCrossed className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700" />,
   showLoadingState = true,
 }: MenuItemImageProps) {
   const [hasError, setHasError] = useState(false);
@@ -34,8 +34,8 @@ const MenuItemImage = memo(function MenuItemImage({
   // Show loading state
   if (showLoadingState && isLoading) {
     return (
-      <div className={`${className} bg-gray-100 flex items-center justify-center`}>
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+      <div className={`${className} bg-gray-100 flex items-center justify-center p-2`}>
+        <div className="animate-spin rounded-full h-4 w-4 sm:h-6 sm:w-6 border-b-2 border-purple-600"></div>
       </div>
     );
   }
@@ -43,9 +43,9 @@ const MenuItemImage = memo(function MenuItemImage({
   // Show error state
   if (hasError) {
     return (
-      <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+      <div className={`${className} bg-gray-100 flex items-center justify-center p-2`}>
         <div className="text-center">
-          <ImageOff className="w-6 h-6 text-gray-700 mx-auto mb-1" />
+          <ImageOff className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700 mx-auto mb-1" />
           <span className="text-xs text-gray-900">Image unavailable</span>
         </div>
       </div>
@@ -53,18 +53,20 @@ const MenuItemImage = memo(function MenuItemImage({
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onLoad={handleImageLoad}
-      onError={handleImageError}
-      loading="lazy"
-      style={{
-        transition: "opacity 0.2s ease-in-out",
-        opacity: isLoading ? 0 : 1,
-      }}
-    />
+    <div className={`${className} bg-gray-100 flex items-center justify-center p-1`}>
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-full max-h-full object-contain rounded-lg"
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        loading="lazy"
+        style={{
+          transition: "opacity 0.2s ease-in-out",
+          opacity: isLoading ? 0 : 1,
+        }}
+      />
+    </div>
   );
 });
 

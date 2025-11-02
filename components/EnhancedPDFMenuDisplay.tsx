@@ -394,7 +394,7 @@ export function EnhancedPDFMenuDisplay({
         <div className="space-y-4">
           <div
             ref={containerRef}
-            className="relative overflow-auto rounded-lg border border-gray-200 bg-gray-50 max-h-[80vh]"
+            className="relative overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-gray-50 max-h-[85vh] md:max-h-[80vh]"
             onWheel={handleWheel}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -405,10 +405,10 @@ export function EnhancedPDFMenuDisplay({
           >
             {pdfImages.map((imageUrl, index) => {
               return (
-                <div key={index} className="relative mb-4 last:mb-0">
+                <div key={index} className="relative mb-2 last:mb-0 px-2 py-2">
                   {/* Image container with transform */}
                   <div
-                    className="relative w-full"
+                    className="relative w-full flex items-center justify-center"
                     style={{
                       transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
                       transformOrigin: "center center",
@@ -418,11 +418,12 @@ export function EnhancedPDFMenuDisplay({
                     <img
                       src={imageUrl}
                       alt={`Menu Page ${index + 1}`}
-                      className="w-full h-auto object-contain max-w-full"
+                      className="w-full h-auto object-contain max-w-full block"
                       draggable={false}
                       onMouseDown={handleMouseDown}
                       loading="eager"
                       decoding="async"
+                      style={{ maxHeight: "75vh" }}
                     />
                   </div>
                 </div>
@@ -492,11 +493,11 @@ export function EnhancedPDFMenuDisplay({
                         >
                           {/* IMAGE - Show if available from hybrid merge */}
                           {item.image_url && (
-                            <div className="relative w-full h-48 bg-gray-100 flex items-center justify-center">
+                            <div className="relative w-full h-32 sm:h-40 md:h-48 bg-gray-100 flex items-center justify-center p-2">
                               <img
                                 src={item.image_url}
                                 alt={item.name}
-                                className="w-full h-full object-contain"
+                                className="max-w-full max-h-full object-contain"
                                 loading="lazy"
                                 onError={(e) => {
                                   // Hide image if it fails to load

@@ -13,6 +13,7 @@ interface MenuItem {
   description?: string | null;
   price: number;
   category: string;
+  image_url?: string | null;
   is_available: boolean;
   created_at?: string;
   venue_name?: string;
@@ -64,6 +65,18 @@ export function ItemDetailsModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Item Image (if available) */}
+          {item.image_url && (
+            <div className="relative w-full h-48 sm:h-56 bg-gray-100 rounded-lg flex items-center justify-center p-2">
+              <img
+                src={item.image_url}
+                alt={item.name}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                loading="lazy"
+              />
+            </div>
+          )}
+
           {/* Category */}
           <div className="flex items-center">
             <span className="text-sm font-medium text-muted-foreground bg-primary/10 px-2 py-1 rounded">
