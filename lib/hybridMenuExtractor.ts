@@ -446,14 +446,34 @@ function findBestMatch(
       return { item: webItem, score: 1.0, reason: "exact" }; // Early return
     }
 
-    // PHASE 2: Token overlap (simple, no Sets/arrays)
-    const pdfTokens = pdfNormalized.split(" ");
-    const urlTokens = urlNormalized.split(" ");
+    // PHASE 2: Token overlap with fuzzy word matching (handles "royal" vs "royale")
+    const pdfTokens = pdfNormalized.split(" ").filter((t) => t.length > 1);
+    const urlTokens = urlNormalized.split(" ").filter((t) => t.length > 1);
     let matchedTokens = 0;
 
     for (const pdfToken of pdfTokens) {
-      if (pdfToken.length > 2 && urlTokens.includes(pdfToken)) {
+      // Exact token match
+      if (urlTokens.includes(pdfToken)) {
         matchedTokens++;
+      } else {
+        // Fuzzy token match: check if any URL token starts with this PDF token (or vice versa)
+        // Handles: "royal" vs "royale", "cappuccino" vs "cappucino"
+        const fuzzyMatch = urlTokens.some((urlToken) => {
+          // Both tokens share significant prefix
+          const minLen = Math.min(pdfToken.length, urlToken.length);
+          if (minLen >= 4) {
+            const sharedPrefix = pdfToken.substring(0, minLen - 1);
+            return (
+              urlToken.startsWith(sharedPrefix) ||
+              pdfToken.startsWith(urlToken.substring(0, minLen - 1))
+            );
+          }
+          return false;
+        });
+
+        if (fuzzyMatch) {
+          matchedTokens += 0.9; // Slightly lower score for fuzzy matches
+        }
       }
     }
 
@@ -462,12 +482,12 @@ function findBestMatch(
       score = matchedTokens / maxTokens;
       reason = "token_overlap";
 
-      // Boost if all tokens from shorter match longer
-      if (pdfTokens.length <= urlTokens.length && matchedTokens === pdfTokens.length) {
-        score = Math.min(0.9, score + 0.2);
+      // Boost if all tokens from shorter match longer (order-independent)
+      if (pdfTokens.length <= urlTokens.length && matchedTokens >= pdfTokens.length * 0.9) {
+        score = Math.min(0.95, score + 0.2);
         reason = "full_subset";
-      } else if (urlTokens.length < pdfTokens.length && matchedTokens === urlTokens.length) {
-        score = Math.min(0.9, score + 0.2);
+      } else if (urlTokens.length < pdfTokens.length && matchedTokens >= urlTokens.length * 0.9) {
+        score = Math.min(0.95, score + 0.2);
         reason = "full_subset";
       }
     }
@@ -510,12 +530,22 @@ function findBestMatch(
  * Handles Arabic text, special characters, and common variants
  */
 function normalizeName(name: string): string {
-  return name
+  let normalized = name
     .toLowerCase()
     .replace(/[^\w\s\u0600-\u06FF]/g, " ") // Remove punctuation but keep Arabic characters
     .replace(/\(.*?\)/g, " ") // Remove content in parentheses for better matching
     .replace(/\s+/g, " ")
     .trim();
+
+  // Handle common word variations for better matching
+  normalized = normalized
+    .replace(/\broyal\b/g, "royale") // royal → royale
+    .replace(/\bchocolat\b/g, "chocolate") // chocolat → chocolate
+    .replace(/\bsandwhich\b/g, "sandwich") // common typo
+    .replace(/\bcappucino\b/g, "cappuccino") // common typo
+    .replace(/\btiramisu\b/g, "tiramisu"); // normalize spelling
+
+  return normalized;
 }
 
 /**
@@ -644,6 +674,8 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     logger.info("[HYBRID/MERGE] 🔍 Sample unmatched PDF items (first 10):", {
       items: unmatchedPdfItems.slice(0, 10).map((i) => ({
         name: i.name,
+        normalized: normalizeName(i.name),
+        tokens: normalizeName(i.name).split(" "),
         price: i.price,
         category: i.category,
       })),
@@ -846,6 +878,8 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     logger.info("[HYBRID/MERGE] 🔍 Sample unmatched URL items (first 10):", {
       items: unmatchedUrlItems.slice(0, 10).map((i) => ({
         name: i.name,
+        normalized: normalizeName(i.name),
+        tokens: normalizeName(i.name).split(" "),
         price: i.price,
         category: i.category,
         hasImage: !!i.image_url,
