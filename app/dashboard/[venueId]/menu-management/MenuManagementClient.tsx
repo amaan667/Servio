@@ -33,6 +33,7 @@ import {
   GripVertical,
   Palette,
   Info,
+  ImageIcon,
 } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
@@ -461,13 +462,33 @@ export default function MenuManagementClient({
                                                 : ""
                                             }`}
                                           >
-                                            <div className="flex items-center space-x-2 flex-1">
+                                            <div className="flex items-center space-x-3 flex-1">
                                               <div
                                                 {...provided.dragHandleProps}
                                                 className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
                                               >
                                                 <GripVertical className="h-5 w-5" />
                                               </div>
+
+                                              {/* IMAGE PREVIEW */}
+                                              <div className="w-16 h-16 flex-shrink-0">
+                                                {item.image_url ? (
+                                                  <img
+                                                    src={item.image_url}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover rounded border border-gray-200"
+                                                    onError={(e) => {
+                                                      (e.target as HTMLImageElement).src =
+                                                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect fill='%23f3f4f6' width='64' height='64'/%3E%3C/svg%3E";
+                                                    }}
+                                                  />
+                                                ) : (
+                                                  <div className="w-full h-full bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                                                    <ImageIcon className="w-6 h-6 text-gray-300" />
+                                                  </div>
+                                                )}
+                                              </div>
+
                                               <div className="flex-1">
                                                 <div className="flex items-center space-x-2">
                                                   <h4 className="font-medium text-foreground">

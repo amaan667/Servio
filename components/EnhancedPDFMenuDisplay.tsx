@@ -15,6 +15,7 @@ interface MenuItem {
   description?: string | null;
   price: number;
   category: string;
+  image_url?: string | null;
   is_available: boolean;
   created_at?: string;
   venue_name?: string;
@@ -774,27 +775,46 @@ export function EnhancedPDFMenuDisplay({
                       return (
                         <div
                           key={item.id}
-                          className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                          className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer bg-white"
                           onClick={() => {
                             setSelectedItem(item);
                             setIsModalOpen(true);
                           }}
                         >
-                          <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                              {item.description}
-                            </p>
+                          {/* IMAGE - Show if available from hybrid merge */}
+                          {item.image_url && (
+                            <div className="relative w-full h-48 bg-gray-100">
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                  // Hide image if it fails to load
+                                  (e.target as HTMLElement).style.display = "none";
+                                  (e.target as HTMLElement).parentElement!.style.display = "none";
+                                }}
+                              />
+                            </div>
                           )}
-                          <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-primary">
-                              {formatPriceWithCurrency(item.price, "£")}
-                            </span>
-                            {isOrdering && quantity > 0 && (
-                              <span className="text-sm text-muted-foreground">
-                                {quantity} in cart
-                              </span>
+
+                          <div className="p-4">
+                            <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
+                            {item.description && (
+                              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                                {item.description}
+                              </p>
                             )}
+                            <div className="flex items-center justify-between">
+                              <span className="text-lg font-bold text-primary">
+                                {formatPriceWithCurrency(item.price, "£")}
+                              </span>
+                              {isOrdering && quantity > 0 && (
+                                <span className="text-sm text-muted-foreground">
+                                  {quantity} in cart
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
