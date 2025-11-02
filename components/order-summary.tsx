@@ -329,13 +329,14 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                       <div className="flex items-center gap-3">
                         {item.image_url && (
                           <div
-                            className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden"
+                            className="bg-white rounded-lg border border-gray-200 overflow-hidden"
                             style={{ width: "60px", height: "60px" }}
                           >
                             <img
                               src={item.image_url}
                               alt={item.item_name}
                               className="w-full h-full object-cover"
+                              style={{ objectPosition: "center" }}
                             />
                           </div>
                         )}

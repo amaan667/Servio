@@ -496,12 +496,13 @@ export function EnhancedPDFMenuDisplay({
                         >
                           {/* IMAGE - Show if available from hybrid merge */}
                           {item.image_url && (
-                            <div className="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden">
+                            <div className="relative w-full aspect-square bg-white overflow-hidden flex items-center justify-center">
                               <img
                                 src={item.image_url}
                                 alt={item.name}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
+                                style={{ objectPosition: "center" }}
                                 onError={(e) => {
                                   // Hide image if it fails to load
                                   (e.target as HTMLElement).style.display = "none";

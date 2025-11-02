@@ -67,12 +67,13 @@ export function ItemDetailsModal({
         <div className="space-y-4">
           {/* Item Image (if available) */}
           {item.image_url && (
-            <div className="relative w-full aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden">
+            <div className="relative w-full aspect-square bg-white rounded-lg overflow-hidden">
               <img
                 src={item.image_url}
                 alt={item.name}
                 className="w-full h-full object-cover"
                 loading="lazy"
+                style={{ objectPosition: "center" }}
               />
             </div>
           )}
