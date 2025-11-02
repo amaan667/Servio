@@ -78,15 +78,6 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to clear menu: ${deleteItemsError.message}`);
     }
 
-    const { error: deleteHotspotsError } = await supabase
-      .from("menu_hotspots")
-      .delete()
-      .eq("venue_id", venueId);
-
-    if (deleteHotspotsError) {
-      logger.warn("[HYBRID ENHANCE] Failed to delete hotspots", { deleteHotspotsError });
-    }
-
     logger.info("[HYBRID ENHANCE] Step 4: Existing menu cleared successfully");
 
     // Step 5: Run THE ONE TRUE HYBRID EXTRACTION SYSTEM
@@ -106,14 +97,12 @@ export async function POST(req: NextRequest) {
     logger.info("[HYBRID ENHANCE] Step 6: Extraction complete!", {
       mode: extractionResult.mode,
       itemCount: extractionResult.itemCount,
-      positionCount: extractionResult.positions.length,
     });
 
-    // Step 7: Insert items and hotspots into database
+    // Step 7: Insert items into database
     logger.info("[HYBRID ENHANCE] Step 7: Inserting items into database...");
 
     const menuItems = [];
-    const hotspots = [];
 
     for (let i = 0; i < extractionResult.items.length; i++) {
       const item = extractionResult.items[i];
@@ -145,42 +134,12 @@ export async function POST(req: NextRequest) {
       logger.info("[HYBRID ENHANCE] Items inserted successfully");
     }
 
-    // Insert hotspots
-    for (let i = 0; i < extractionResult.positions.length; i++) {
-      const pos = extractionResult.positions[i];
-
-      hotspots.push({
-        venue_id: venueId,
-        page_index: pos.page_index || 0,
-        item_name: pos.name || pos.item_name,
-        x1_percent: pos.x1 || pos.x1_percent || 0,
-        y1_percent: pos.y1 || pos.y1_percent || 0,
-        x2_percent: pos.x2 || pos.x2_percent || 0,
-        y2_percent: pos.y2 || pos.y2_percent || 0,
-        button_x_percent: pos.button_x || pos.button_x_percent,
-        button_y_percent: pos.button_y || pos.button_y_percent,
-      });
-    }
-
-    if (hotspots.length > 0) {
-      const { error: hotspotsError } = await supabase.from("menu_hotspots").insert(hotspots);
-
-      if (hotspotsError) {
-        logger.warn("[HYBRID ENHANCE] Failed to insert hotspots", {
-          error: hotspotsError.message,
-        });
-      } else {
-        logger.info("[HYBRID ENHANCE] Hotspots inserted successfully");
-      }
-    }
-
     const duration = Date.now() - startTime;
 
     logger.info("[HYBRID ENHANCE] ===== ENHANCEMENT COMPLETED SUCCESSFULLY =====", {
       duration: `${(duration / 1000).toFixed(2)}s`,
       mode: extractionResult.mode,
       items: menuItems.length,
-      hotspots: hotspots.length,
     });
 
     // Revalidate all pages that display menu data
@@ -199,7 +158,6 @@ export async function POST(req: NextRequest) {
       message: "Menu enhanced with URL data successfully",
       mode: extractionResult.mode,
       items: menuItems.length,
-      hotspots: hotspots.length,
       duration: `${duration}ms`,
     });
   } catch (error) {

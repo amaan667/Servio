@@ -332,7 +332,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                             <img
                               src={item.image_url}
                               alt={item.item_name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain"
                             />
                           </div>
                         )}

@@ -112,10 +112,17 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq("venue_id", venueId)
       .eq("is_available", true);
 
+    // Log menu items count for debugging
+    console.log(`[DASHBOARD] Menu items query for venue ${venueId}:`, {
+      count: menuItems?.length || 0,
+      hasError: !!menuError,
+      errorMessage: menuError?.message || null,
+      venueId,
+      timestamp: new Date().toISOString(),
+    });
+
     if (menuError) {
-      /* Empty */
-    } else {
-      // Intentionally empty
+      console.error(`[DASHBOARD] Error fetching menu items for venue ${venueId}:`, menuError);
     }
 
     const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -126,6 +133,8 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       menuItems: menuItems?.length || 0,
       unpaid,
     };
+
+    console.log(`[DASHBOARD] Final initialStats for venue ${venueId}:`, initialStats);
   } catch (_error) {
     // Continue without initial data - client will load it
   }

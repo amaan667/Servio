@@ -28,16 +28,6 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to delete items: ${deleteItemsError.message}`);
     }
 
-    // Delete hotspots
-    const { error: deleteHotspotsError } = await supabase
-      .from("menu_hotspots")
-      .delete()
-      .eq("venue_id", venueId);
-
-    if (deleteHotspotsError) {
-      throw new Error(`Failed to delete hotspots: ${deleteHotspotsError.message}`);
-    }
-
     // Delete uploads
     const { error: deleteUploadsError } = await supabase
       .from("menu_uploads")

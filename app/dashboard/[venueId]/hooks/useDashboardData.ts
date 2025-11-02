@@ -71,10 +71,21 @@ export function useDashboardData(
   });
 
   // Priority: initialStats from server → cached → default 0
+  // IMPORTANT: Server data (initialStats) takes priority over cache for freshness
   const [stats, setStats] = useState<DashboardStats>(() => {
+    if (initialStats) {
+      console.log(
+        `[DASHBOARD CLIENT] Using initialStats from server for venue ${venueId}:`,
+        initialStats
+      );
+      return initialStats;
+    }
     const cached = getCachedStats();
-    if (cached) return cached;
-    if (initialStats) return initialStats;
+    if (cached) {
+      console.log(`[DASHBOARD CLIENT] Using cached stats for venue ${venueId}:`, cached);
+      return cached;
+    }
+    console.log(`[DASHBOARD CLIENT] Using default stats for venue ${venueId}`);
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
@@ -109,11 +120,18 @@ export function useDashboardData(
           .neq("order_status", "CANCELLED")
           .neq("order_status", "REFUNDED");
 
-        const { data: menuItems } = await supabase
+        const { data: menuItems, error: menuError } = await supabase
           .from("menu_items")
           .select("id")
           .eq("venue_id", venueId)
           .eq("is_available", true);
+
+        console.log(`[DASHBOARD CLIENT] Menu items query result for venue ${venueId}:`, {
+          count: menuItems?.length || 0,
+          hasError: !!menuError,
+          errorMessage: menuError?.message || null,
+          timestamp: new Date().toISOString(),
+        });
 
         // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -127,12 +145,15 @@ export function useDashboardData(
           menuItems: menuItems?.length || 0,
           unpaid,
         };
+
+        console.log(`[DASHBOARD CLIENT] Updating stats for venue ${venueId}:`, newStats);
         setStats(newStats);
+
         // Cache the stats to prevent flicker - IMPORTANT: Key includes venueId
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
         }
-        console.log(`[Dashboard] Stats cached for venue ${venueId}:`, newStats);
+        console.log(`[DASHBOARD CLIENT] Stats cached for venue ${venueId}:`, newStats);
       } catch (_error) {
         // Error handled silently
       }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { extractMenuFromImage, extractMenuItemPositions } from "@/lib/gptVisionMenuParser";
+import { extractMenuFromImage } from "@/lib/gptVisionMenuParser";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 
@@ -110,33 +110,16 @@ export async function POST(req: NextRequest) {
       // Continue with PDF-only extraction
     }
 
-    // Step 2: Extract positions from existing PDF images
+    // Step 2: Extract items from existing PDF images
     const pdfExtractedItems: PDFMenuItem[] = [];
-    const pdfPositions: Array<{
-      name: string;
-      x: number;
-      y: number;
-      page: number;
-      confidence: number;
-      x1: number;
-      y1: number;
-      x2: number;
-      y2: number;
-    }> = [];
 
     for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
       const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
       pdfExtractedItems.push(...extractedItems.map((item) => ({ ...item, page: pageIndex })));
-
-      const positions = await extractMenuItemPositions(pdfImages[pageIndex]);
-      positions.forEach((pos) => {
-        pdfPositions.push({ ...pos, page: pageIndex });
-      });
     }
 
     // Step 3: Combine data
     const menuItems = [];
-    const hotspots = [];
     const combinedItems = new Map();
 
     // Start with URL items (better quality data)
@@ -145,10 +128,6 @@ export async function POST(req: NextRequest) {
 
       const pdfMatch = pdfExtractedItems.find(
         (pdfItem) => calculateSimilarity(urlItem.name, pdfItem.name) > 0.7
-      );
-
-      const posMatch = pdfPositions.find(
-        (pos) => calculateSimilarity(urlItem.name, pos.name) > 0.7
       );
 
       menuItems.push({
@@ -163,24 +142,6 @@ export async function POST(req: NextRequest) {
         created_at: new Date().toISOString(),
       });
 
-      if (posMatch) {
-        hotspots.push({
-          id: uuidv4(),
-          venue_id: venueId,
-          menu_item_id: itemId,
-          page_index: posMatch.page,
-          x_percent: posMatch.x,
-          y_percent: posMatch.y,
-          width_percent: posMatch.x2 - posMatch.x1,
-          height_percent: posMatch.y2 - posMatch.y1,
-          x1_percent: posMatch.x1,
-          y1_percent: posMatch.y1,
-          x2_percent: posMatch.x2,
-          y2_percent: posMatch.y2,
-          created_at: new Date().toISOString(),
-        });
-      }
-
       combinedItems.set(urlItem.name.toLowerCase(), true);
     }
 
@@ -189,10 +150,6 @@ export async function POST(req: NextRequest) {
       if (!combinedItems.has(pdfItem.name.toLowerCase())) {
         const itemId = uuidv4();
 
-        const posMatch = pdfPositions.find(
-          (pos) => calculateSimilarity(pdfItem.name, pos.name) > 0.7
-        );
-
         menuItems.push({
           id: itemId,
           venue_id: venueId,
@@ -200,31 +157,12 @@ export async function POST(req: NextRequest) {
           is_available: true,
           created_at: new Date().toISOString(),
         });
-
-        if (posMatch) {
-          hotspots.push({
-            id: uuidv4(),
-            venue_id: venueId,
-            menu_item_id: itemId,
-            page_index: posMatch.page,
-            x_percent: posMatch.x,
-            y_percent: posMatch.y,
-            width_percent: posMatch.x2 - posMatch.x1,
-            height_percent: posMatch.y2 - posMatch.y1,
-            x1_percent: posMatch.x1,
-            y1_percent: posMatch.y1,
-            x2_percent: posMatch.x2,
-            y2_percent: posMatch.y2,
-            created_at: new Date().toISOString(),
-          });
-        }
       }
     }
 
     // Step 4: Replace or Append
     if (replaceMode) {
       await supabase.from("menu_items").delete().eq("venue_id", venueId);
-      await supabase.from("menu_hotspots").delete().eq("venue_id", venueId);
     } else {
       // Intentionally empty
     }
@@ -235,16 +173,10 @@ export async function POST(req: NextRequest) {
       if (insertError) throw new Error(`Insert failed: ${insertError.message}`);
     }
 
-    if (hotspots.length > 0) {
-      const { error: insertError } = await supabase.from("menu_hotspots").insert(hotspots);
-      if (insertError) throw new Error(`Insert hotspots failed: ${insertError.message}`);
-    }
-
     return NextResponse.json({
       ok: true,
       result: {
         items_created: menuItems.length,
-        hotspots_created: hotspots.length,
         categories_created: new Set(menuItems.map((i) => i.category)).size,
       },
     });

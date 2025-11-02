@@ -99,7 +99,6 @@ export async function POST(req: NextRequest) {
     logger.info(`[MENU IMPORT ${requestId}] Extraction complete`, {
       mode: extractionResult.mode,
       itemCount: extractionResult.itemCount,
-      positionCount: extractionResult.positions.length,
     });
 
     // Step 2.5: Post-process to fix "Menu Items" categorizations
@@ -217,16 +216,6 @@ export async function POST(req: NextRequest) {
         throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
       }
 
-      // Delete all existing hotspots
-      const { error: deleteHotspotsError } = await supabase
-        .from("menu_hotspots")
-        .delete()
-        .eq("venue_id", venueId);
-
-      if (deleteHotspotsError) {
-        logger.warn(`[MENU IMPORT ${requestId}] Failed to delete hotspots:`, deleteHotspotsError);
-      }
-
       logger.info(`[MENU IMPORT ${requestId}] Existing menu cleared`);
     } else {
       logger.info(`[MENU IMPORT ${requestId}] APPEND mode - keeping existing menu`);
@@ -234,7 +223,6 @@ export async function POST(req: NextRequest) {
 
     // Step 4: Prepare items for database
     const menuItems = [];
-    const hotspots = [];
 
     for (let i = 0; i < extractionResult.items.length; i++) {
       const item = extractionResult.items[i];
@@ -253,37 +241,6 @@ export async function POST(req: NextRequest) {
         position: i,
         created_at: new Date().toISOString(),
       });
-
-      // Find matching position for hotspot
-      const position = extractionResult.positions.find((pos) => {
-        const nameSimilarity = calculateSimilarity(
-          item.name.toLowerCase().trim(),
-          (pos.name_normalized || pos.name).toLowerCase().trim()
-        );
-        return nameSimilarity > 0.7;
-      });
-
-      // Create hotspot if position found
-      if (position) {
-        hotspots.push({
-          id: uuidv4(),
-          venue_id: venueId,
-          menu_item_id: itemId,
-          page_index: position.page_index || 0,
-          x_percent: position.x || (position.x1 + position.x2) / 2,
-          y_percent: position.y || (position.y1 + position.y2) / 2,
-          width_percent: position.x2 - position.x1,
-          height_percent: position.y2 - position.y1,
-          x1_percent: position.x1,
-          y1_percent: position.y1,
-          x2_percent: position.x2,
-          y2_percent: position.y2,
-          button_x_percent: position.button_x,
-          button_y_percent: position.button_y,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        });
-      }
     }
 
     // Step 5: Insert into database
@@ -300,26 +257,12 @@ export async function POST(req: NextRequest) {
       logger.info(`[MENU IMPORT ${requestId}] Items inserted successfully`);
     }
 
-    if (hotspots.length > 0) {
-      logger.info(`[MENU IMPORT ${requestId}] Inserting ${hotspots.length} hotspots...`);
-
-      const { error: insertHotspotsError } = await supabase.from("menu_hotspots").insert(hotspots);
-
-      if (insertHotspotsError) {
-        logger.error(`[MENU IMPORT ${requestId}] Failed to insert hotspots:`, insertHotspotsError);
-        // Non-critical - menu still works without hotspots
-      } else {
-        logger.info(`[MENU IMPORT ${requestId}] Hotspots inserted successfully`);
-      }
-    }
-
     const duration = Date.now() - startTime;
 
     logger.info(`[MENU IMPORT ${requestId}] Import complete!`, {
       duration: `${duration}ms`,
       mode: extractionResult.mode,
       itemCount: menuItems.length,
-      hotspotCount: hotspots.length,
       replaceMode,
     });
 
@@ -349,7 +292,6 @@ export async function POST(req: NextRequest) {
       ok: true,
       message: "Menu imported successfully",
       items: menuItems.length,
-      hotspots: hotspots.length,
       mode: extractionResult.mode,
       duration: `${duration}ms`,
     });
@@ -368,48 +310,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-/**
- * Calculate string similarity using Levenshtein distance
- */
-function calculateSimilarity(str1: string, str2: string): number {
-  const longer = str1.length > str2.length ? str1 : str2;
-  const shorter = str1.length > str2.length ? str2 : str1;
-
-  if (longer.length === 0) return 1.0;
-
-  const editDistance = levenshteinDistance(longer, shorter);
-  return (longer.length - editDistance) / longer.length;
-}
-
-/**
- * Levenshtein distance algorithm
- */
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= str2.length; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= str1.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
-      }
-    }
-  }
-
-  return matrix[str2.length][str1.length];
 }

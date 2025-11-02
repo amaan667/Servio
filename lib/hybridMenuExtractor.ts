@@ -8,7 +8,7 @@
  * 3. Hybrid (PDF + URL) - Combine both sources
  */
 
-import { extractMenuFromImage, extractMenuItemPositions } from "./gptVisionMenuParser";
+import { extractMenuFromImage } from "./gptVisionMenuParser";
 import { extractMenuFromWebsite } from "./webMenuExtractor";
 import { logger } from "./logger";
 
@@ -20,7 +20,6 @@ interface HybridExtractionOptions {
 
 interface HybridMenuResult {
   items: any[];
-  positions: any[];
   itemCount: number;
   hasWebData: boolean;
   hasPdfData: boolean;
@@ -62,7 +61,6 @@ export async function extractMenuHybrid(
 
     return {
       items: webItems,
-      positions: [], // No PDF = no hotspots
       itemCount: webItems.length,
       hasWebData: true,
       hasPdfData: false,
@@ -77,7 +75,6 @@ export async function extractMenuHybrid(
 
     return {
       items: pdfData.items,
-      positions: pdfData.positions,
       itemCount: pdfData.items.length,
       hasWebData: false,
       hasPdfData: true,
@@ -113,7 +110,6 @@ export async function extractMenuHybrid(
       categories: pdfCategories,
       itemsWithImages: pdfWithImages,
       itemsWithDescriptions: pdfWithDescriptions,
-      hotspots: pdfData.positions.length,
     });
 
     // URL Analysis
@@ -177,7 +173,6 @@ export async function extractMenuHybrid(
       totalCategories: mergedCategories.length,
       categories: mergedCategories,
       itemsWithImages: mergedWithImages,
-      hotspots: pdfData.positions.length,
     });
 
     logger.info("[HYBRID] 📈 COMPARISON SUMMARY:");
@@ -211,7 +206,6 @@ export async function extractMenuHybrid(
 
     return {
       items: mergedItems,
-      positions: pdfData.positions, // Keep PDF hotspot positions
       itemCount: mergedItems.length,
       hasWebData: true,
       hasPdfData: true,
@@ -233,11 +227,10 @@ function getExtractionMode(hasPdf: boolean, hasUrl: boolean): "url-only" | "pdf-
 }
 
 /**
- * Extract menu items and positions from PDF images
+ * Extract menu items from PDF images
  */
 async function extractFromPDF(pdfImages: string[]) {
   const items: any[] = [];
-  const positions: any[] = [];
 
   logger.info("[HYBRID/PDF] Processing PDF pages", { count: pdfImages.length });
 
@@ -246,11 +239,8 @@ async function extractFromPDF(pdfImages: string[]) {
 
     logger.info(`[HYBRID/PDF] Processing page ${i + 1}/${pdfImages.length}`);
 
-    // Extract items and positions in parallel
-    const [pageItems, pagePositions] = await Promise.all([
-      extractMenuFromImage(imageUrl),
-      extractMenuItemPositions(imageUrl),
-    ]);
+    // Extract items from page
+    const pageItems = await extractMenuFromImage(imageUrl);
 
     // Add page index to each item
     pageItems.forEach((item: any) => {
@@ -261,25 +251,14 @@ async function extractFromPDF(pdfImages: string[]) {
       });
     });
 
-    // Add page index to each position
-    pagePositions.forEach((pos: any) => {
-      positions.push({
-        ...pos,
-        page_index: i,
-      });
-    });
-
-    logger.info(
-      `[HYBRID/PDF] Page ${i + 1}: ${pageItems.length} items, ${pagePositions.length} positions`
-    );
+    logger.info(`[HYBRID/PDF] Page ${i + 1}: ${pageItems.length} items`);
   }
 
   logger.info("[HYBRID/PDF] PDF extraction complete", {
     totalItems: items.length,
-    totalPositions: positions.length,
   });
 
-  return { items, positions };
+  return { items };
 }
 
 /**

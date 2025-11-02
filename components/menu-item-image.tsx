@@ -14,7 +14,7 @@ interface MenuItemImageProps {
 const MenuItemImage = memo(function MenuItemImage({
   src,
   alt,
-  className = "w-20 h-20 rounded-lg object-cover border border-gray-200",
+  className = "w-20 h-20 rounded-lg object-contain border border-gray-200",
   fallbackIcon: _fallbackIcon = <UtensilsCrossed className="w-8 h-8 text-gray-700" />,
   showLoadingState = true,
 }: MenuItemImageProps) {

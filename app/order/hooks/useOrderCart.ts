@@ -1,10 +1,18 @@
 import { useState, useCallback, useEffect } from "react";
 import { CartItem, MenuItem } from "../types";
-
-const CART_STORAGE_KEY = "servio-order-cart";
+import { useSearchParams } from "next/navigation";
 
 export function useOrderCart() {
-  // Initialize cart from localStorage
+  const searchParams = useSearchParams();
+
+  // Get venue and table from URL to scope the cart
+  const venueSlug = searchParams?.get("venue") || "";
+  const tableNumber = searchParams?.get("table") || searchParams?.get("counter") || "";
+
+  // Create a scoped cart storage key (venue + table specific)
+  const CART_STORAGE_KEY = `servio-order-cart-${venueSlug}-${tableNumber}`;
+
+  // Initialize cart from localStorage (scoped to venue + table)
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -20,7 +28,26 @@ export function useOrderCart() {
     if (typeof window !== "undefined") {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
     }
-  }, [cart]);
+  }, [cart, CART_STORAGE_KEY]);
+
+  // Clear cart when venue or table changes (new QR code scanned)
+  useEffect(() => {
+    if (typeof window !== "undefined" && venueSlug && tableNumber) {
+      // Check if this is a different venue/table than the last one
+      const lastKey = localStorage.getItem("servio-last-cart-key");
+      const currentKey = CART_STORAGE_KEY;
+
+      if (lastKey && lastKey !== currentKey) {
+        // New QR code scanned - reset cart
+        console.log("[CART] New QR code detected, clearing old cart", { lastKey, currentKey });
+        setCart([]);
+        localStorage.removeItem(lastKey);
+      }
+
+      // Store the current key
+      localStorage.setItem("servio-last-cart-key", currentKey);
+    }
+  }, [venueSlug, tableNumber, CART_STORAGE_KEY]);
 
   const addToCart = useCallback((item: MenuItem) => {
     setCart((prev) => {
