@@ -298,6 +298,7 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
   let matchedCount = 0;
   let imagesAddedCount = 0;
   let descriptionsEnhancedCount = 0;
+  let pricesUpdatedCount = 0;
 
   // Start with PDF items (we have hotspot positions for these)
   const merged = pdfItems.map((pdfItem) => {
@@ -314,15 +315,18 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
       matchedCount++;
       const addedImage = !pdfItem.image_url && webMatch.image_url;
       const enhancedDesc = !pdfItem.description && webMatch.description;
+      const updatedPrice = webMatch.price && webMatch.price !== pdfItem.price;
 
       if (addedImage) imagesAddedCount++;
       if (enhancedDesc) descriptionsEnhancedCount++;
+      if (updatedPrice) pricesUpdatedCount++;
 
       logger.info("[HYBRID/MERGE] ✅ Matched & enhanced", {
         pdf: pdfItem.name,
         url: webMatch.name,
         addedImage: addedImage,
         enhancedDescription: enhancedDesc,
+        updatedPrice: updatedPrice ? `£${pdfItem.price} → £${webMatch.price}` : false,
         pdfCategory: pdfItem.category,
         urlCategory: webMatch.category,
       });
@@ -332,9 +336,9 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
         // Enhance with web data
         image_url: webMatch.image_url || pdfItem.image_url,
         description: webMatch.description || pdfItem.description,
-        // Keep PDF price if it exists, otherwise use web price
-        price: pdfItem.price || webMatch.price,
-        category: pdfItem.category || webMatch.category, // Prefer PDF category
+        // PRIORITIZE URL PRICE (more current/up-to-date than PDF)
+        price: webMatch.price || pdfItem.price, // URL first, PDF fallback
+        category: pdfItem.category || webMatch.category, // Prefer PDF category (more accurate)
         has_web_enhancement: true,
         has_image: !!webMatch.image_url,
         merge_source: "pdf_enhanced_with_url",
@@ -353,11 +357,17 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
     matched: matchedCount,
     imagesAdded: imagesAddedCount,
     descriptionsEnhanced: descriptionsEnhancedCount,
+    pricesUpdated: pricesUpdatedCount,
     pdfOnlyItems: pdfItems.length - matchedCount,
   });
 
-  // Add web-only items that PDF didn't find
+  // Extract PDF categories for intelligent categorization of new URL items
+  const pdfCategories = Array.from(new Set(pdfItems.map((item) => item.category).filter(Boolean)));
+
+  // Add web-only items that PDF didn't find with INTELLIGENT CATEGORIZATION
   let webOnlyCount = 0;
+  let recategorizedCount = 0;
+
   webItems.forEach((webItem) => {
     const existsInPdf = merged.some(
       (m) => calculateSimilarity(m.name?.toLowerCase().trim() || "", webItem.name_normalized) > 0.8
@@ -365,16 +375,44 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
 
     if (!existsInPdf && webItem.name && webItem.price) {
       webOnlyCount++;
+
+      // INTELLIGENT CATEGORIZATION: Use PDF categories as source of truth
+      let assignedCategory = webItem.category;
+      const originalCategory = webItem.category;
+
+      // If URL category is generic/missing, intelligently assign to PDF category
+      if (
+        !assignedCategory ||
+        assignedCategory === "Menu Items" ||
+        assignedCategory === "Uncategorized"
+      ) {
+        assignedCategory = intelligentlyAssignToPdfCategory(
+          webItem.name,
+          webItem.description,
+          pdfCategories
+        );
+
+        if (assignedCategory !== originalCategory) {
+          recategorizedCount++;
+          logger.info("[HYBRID/MERGE] 🎯 Intelligently categorized new URL item", {
+            name: webItem.name,
+            urlCategory: originalCategory || "none",
+            assignedCategory: assignedCategory,
+          });
+        }
+      }
+
       logger.info("[HYBRID/MERGE] ➕ Adding new item from URL", {
         name: webItem.name,
-        category: webItem.category,
+        category: assignedCategory,
         hasImage: !!webItem.image_url,
       });
+
       merged.push({
         name: webItem.name,
         description: webItem.description,
         price: webItem.price,
-        category: webItem.category || "Menu Items",
+        category: assignedCategory,
         image_url: webItem.image_url,
         source: "web_only",
         has_web_enhancement: true,
@@ -383,6 +421,14 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
       });
     }
   });
+
+  if (recategorizedCount > 0) {
+    logger.info("[HYBRID/MERGE] Recategorization summary", {
+      newUrlItems: webOnlyCount,
+      recategorized: recategorizedCount,
+      keptOriginal: webOnlyCount - recategorizedCount,
+    });
+  }
 
   logger.info("[HYBRID/MERGE] ========================================");
   logger.info("[HYBRID/MERGE] MERGE COMPLETE - Summary:");
@@ -396,6 +442,8 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
   logger.info("[HYBRID/MERGE] Enhancements Applied:", {
     imagesAdded: imagesAddedCount,
     descriptionsEnhanced: descriptionsEnhancedCount,
+    pricesUpdated: pricesUpdatedCount,
+    urlItemsRecategorized: recategorizedCount,
     itemsWithImages: merged.filter((i) => i.has_image).length,
     itemsEnhanced: merged.filter((i) => i.has_web_enhancement).length,
   });
@@ -406,6 +454,202 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
   });
 
   return merged;
+}
+
+/**
+ * Intelligently assign URL-only items to appropriate PDF categories
+ * Uses keyword matching against PDF categories as source of truth
+ */
+function intelligentlyAssignToPdfCategory(
+  itemName: string,
+  itemDescription: string | undefined,
+  pdfCategories: string[]
+): string {
+  const name = itemName.toLowerCase();
+  const desc = (itemDescription || "").toLowerCase();
+  const text = `${name} ${desc}`;
+
+  // Comprehensive category keyword mapping
+  const categoryKeywords: { [key: string]: string[] } = {
+    // Beverages
+    coffee: [
+      "coffee",
+      "espresso",
+      "latte",
+      "cappuccino",
+      "americano",
+      "mocha",
+      "flat white",
+      "cortado",
+      "macchiato",
+    ],
+    tea: [
+      "tea",
+      "chai",
+      "matcha",
+      "oolong",
+      "green tea",
+      "black tea",
+      "earl grey",
+      "chamomile",
+      "moroccan mint",
+    ],
+    drinks: [
+      "juice",
+      "smoothie",
+      "water",
+      "soda",
+      "drink",
+      "beverage",
+      "lemonade",
+      "milkshake",
+      "pellegrino",
+      "aspire",
+      "dash water",
+    ],
+
+    // Meals
+    breakfast: [
+      "breakfast",
+      "eggs",
+      "pancake",
+      "waffle",
+      "french toast",
+      "shakshuka",
+      "omelette",
+      "benedict",
+      "brunch",
+      "granola",
+      "yogurt",
+    ],
+    mains: [
+      "burger",
+      "pasta",
+      "pizza",
+      "rice",
+      "chicken",
+      "beef",
+      "lamb",
+      "fish",
+      "steak",
+      "curry",
+      "taco",
+    ],
+    salads: ["salad", "bowl", "quinoa", "tabbouleh", "caesar", "greek"],
+    sandwiches: ["sandwich", "wrap", "panini", "shawarma"],
+
+    // Sweet
+    desserts: [
+      "dessert",
+      "cake",
+      "cheesecake",
+      "tiramisu",
+      "mousse",
+      "pudding",
+      "sweet",
+      "tart",
+      "baklava",
+    ],
+
+    // Other
+    starters: ["starter", "appetizer", "houmous", "hummus", "dip", "mezze"],
+    sides: ["fries", "chips", "side", "extra", "add-on", "bread"],
+    dips: ["ketchup", "mayo", "sauce", "periperi", "chilli", "garlic sauce"],
+  };
+
+  // Step 1: Try to match to existing PDF categories using keywords
+  for (const pdfCategory of pdfCategories) {
+    const catLower = pdfCategory.toLowerCase();
+
+    // Direct keyword match
+    if (text.includes(catLower) || catLower.includes(name.split(" ")[0])) {
+      return pdfCategory;
+    }
+
+    // Check if PDF category matches any known type and item has those keywords
+    for (const [genericCat, keywords] of Object.entries(categoryKeywords)) {
+      if (catLower.includes(genericCat)) {
+        for (const keyword of keywords) {
+          if (text.includes(keyword)) {
+            return pdfCategory;
+          }
+        }
+      }
+    }
+  }
+
+  // Step 2: Try to assign based on item characteristics
+  const itemTypeMap: { [key: string]: string | null } = {
+    coffee: null,
+    tea: null,
+    drinks: null,
+    breakfast: null,
+    mains: null,
+    dessert: null,
+    starter: null,
+    dips: null,
+  };
+
+  // Find best PDF category for each item type
+  for (const pdfCat of pdfCategories) {
+    const normalized = pdfCat.toLowerCase();
+    if (normalized.includes("coffee") || normalized.includes("espresso"))
+      itemTypeMap.coffee = pdfCat;
+    if (normalized.includes("tea")) itemTypeMap.tea = pdfCat;
+    if (
+      normalized.includes("drink") ||
+      normalized.includes("beverage") ||
+      normalized.includes("juice")
+    )
+      itemTypeMap.drinks = pdfCat;
+    if (normalized.includes("breakfast") || normalized.includes("brunch"))
+      itemTypeMap.breakfast = pdfCat;
+    if (normalized.includes("main") || normalized.includes("entree")) itemTypeMap.mains = pdfCat;
+    if (normalized.includes("dessert") || normalized.includes("sweet"))
+      itemTypeMap.dessert = pdfCat;
+    if (normalized.includes("starter") || normalized.includes("appetizer"))
+      itemTypeMap.starter = pdfCat;
+    if (normalized.includes("dip") || normalized.includes("sauce")) itemTypeMap.dips = pdfCat;
+  }
+
+  // Match item to appropriate category
+  if (text.match(/coffee|espresso|latte|cappuccino|americano|mocha|cortado|brew/)) {
+    return itemTypeMap.coffee || "Hot Coffee";
+  }
+  if (text.match(/tea|chai|matcha|earl grey|chamomile|green tea/)) {
+    return itemTypeMap.tea || "Tea";
+  }
+  if (text.match(/pellegrino|aspire|dash|water|juice|smoothie|lemonade|beverage/)) {
+    return itemTypeMap.drinks || "Beverages";
+  }
+  if (text.match(/ketchup|mayo|sauce|periperi|chilli|garlic/)) {
+    return itemTypeMap.dips || "Dips";
+  }
+  if (text.match(/breakfast|eggs|pancake|waffle|shakshuka|granola/)) {
+    return itemTypeMap.breakfast || "Breakfast";
+  }
+  if (text.match(/burger|sandwich|wrap|taco|pizza|pasta|rice|chicken|beef/)) {
+    return itemTypeMap.mains || "Mains";
+  }
+  if (text.match(/cake|dessert|sweet|baklava|tart/)) {
+    return itemTypeMap.dessert || "Desserts";
+  }
+  if (text.match(/starter|appetizer|houmous|dip/)) {
+    return itemTypeMap.starter || "Starters";
+  }
+
+  // Fallback to most general PDF category
+  if (pdfCategories.length > 0) {
+    const preferredOrder = ["extras", "mains", "main", "food", "menu"];
+    for (const preferred of preferredOrder) {
+      const match = pdfCategories.find((cat) => cat.toLowerCase().includes(preferred));
+      if (match) return match;
+    }
+    return pdfCategories[0];
+  }
+
+  // Last resort
+  return "Menu Items";
 }
 
 /**
