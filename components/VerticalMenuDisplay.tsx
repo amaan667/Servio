@@ -269,13 +269,13 @@ export function VerticalMenuDisplay({
                             {/* Item Image (if available) */}
                             {item.image_url && (
                               <div
-                                className="flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center p-2"
-                                style={{ width: "120px", minHeight: "120px" }}
+                                className="flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden"
+                                style={{ width: "110px", height: "110px" }}
                               >
                                 <img
                                   src={item.image_url}
                                   alt={item.name}
-                                  className="w-full h-auto object-contain rounded-lg max-h-32"
+                                  className="w-full h-full object-contain"
                                 />
                               </div>
                             )}

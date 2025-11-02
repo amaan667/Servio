@@ -67,11 +67,11 @@ export function ItemDetailsModal({
         <div className="space-y-4">
           {/* Item Image (if available) */}
           {item.image_url && (
-            <div className="relative w-full bg-gray-100 rounded-lg flex items-center justify-center p-3">
+            <div className="relative w-full aspect-[16/10] bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
               <img
                 src={item.image_url}
                 alt={item.name}
-                className="w-full h-auto object-contain rounded-lg max-h-72"
+                className="w-full h-full object-contain"
                 loading="lazy"
               />
             </div>
