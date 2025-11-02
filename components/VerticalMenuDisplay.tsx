@@ -275,7 +275,7 @@ export function VerticalMenuDisplay({
                                 <img
                                   src={item.image_url}
                                   alt={item.name}
-                                  className="w-full h-full object-contain"
+                                  className="w-full h-full object-cover"
                                 />
                               </div>
                             )}

@@ -35,7 +35,7 @@ const MenuItemImage = memo(function MenuItemImage({
   if (showLoadingState && isLoading) {
     return (
       <div
-        className={`${className} bg-gray-100 flex items-center justify-center overflow-hidden`}
+        className={`${className} bg-gray-100 flex items-center justify-center`}
         style={{ width: "90px", height: "90px" }}
       >
         <div className="animate-spin rounded-full h-4 w-4 sm:h-6 sm:w-6 border-b-2 border-purple-600"></div>
@@ -47,7 +47,7 @@ const MenuItemImage = memo(function MenuItemImage({
   if (hasError) {
     return (
       <div
-        className={`${className} bg-gray-100 flex items-center justify-center overflow-hidden`}
+        className={`${className} bg-gray-100 flex items-center justify-center`}
         style={{ width: "90px", height: "90px" }}
       >
         <div className="text-center">
@@ -60,13 +60,13 @@ const MenuItemImage = memo(function MenuItemImage({
 
   return (
     <div
-      className={`${className} bg-gray-100 flex items-center justify-center overflow-hidden`}
+      className={`${className} bg-gray-100 overflow-hidden`}
       style={{ width: "90px", height: "90px" }}
     >
       <img
         src={src}
         alt={alt}
-        className="w-full h-full object-contain"
+        className="w-full h-full object-cover"
         onLoad={handleImageLoad}
         onError={handleImageError}
         loading="lazy"
