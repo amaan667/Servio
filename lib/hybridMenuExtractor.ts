@@ -464,9 +464,15 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     descriptionsEnhanced: descriptionsEnhancedCount,
     pricesUpdated: pricesUpdatedCount,
     pdfOnlyItems: pdfItems.length - matchedCount,
+    unmatchedPdfItemsCount: unmatchedPdfItems.length,
   });
 
   // AI FALLBACK MATCHING: For unmatched PDF items, try AI matching
+  logger.info("[HYBRID/MERGE] Checking AI fallback conditions", {
+    unmatchedCount: unmatchedPdfItems.length,
+    willRunAiFallback: unmatchedPdfItems.length > 0 && unmatchedPdfItems.length <= 40,
+  });
+
   if (unmatchedPdfItems.length > 0 && unmatchedPdfItems.length <= 40) {
     logger.info("[HYBRID/MERGE] 🤖 Running AI fallback matching for stubborn cases", {
       unmatchedCount: unmatchedPdfItems.length,
@@ -477,50 +483,73 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     // Get unmatched URL items
     const unmatchedWebItems = webItems.filter((w) => !matchedWebItems.has(w.name_normalized));
 
-    for (const pdfItem of unmatchedPdfItems) {
-      // Try AI matching against unmatched URL items
-      const aiMatch = await batchMatchItemsWithAI(pdfItem, unmatchedWebItems);
+    logger.info("[HYBRID/MERGE] AI fallback setup", {
+      unmatchedPdfItems: unmatchedPdfItems.length,
+      unmatchedUrlItems: unmatchedWebItems.length,
+      sampleUnmatchedPdf: unmatchedPdfItems.slice(0, 3).map((i) => i.name),
+    });
 
-      if (aiMatch && aiMatch.confidence >= 0.8) {
-        // Found a match via AI! Update the merged item
-        const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
+    try {
+      for (const pdfItem of unmatchedPdfItems) {
+        logger.info("[HYBRID/MERGE] 🤖 AI matching item", { name: pdfItem.name });
 
-        if (mergedIndex !== -1) {
-          aiMatchedCount++;
-          matchedWebItems.add(aiMatch.item.name_normalized);
+        // Try AI matching against unmatched URL items
+        const aiMatch = await batchMatchItemsWithAI(pdfItem, unmatchedWebItems);
 
-          // Enhance the item with URL data
-          merged[mergedIndex] = {
-            ...merged[mergedIndex],
-            image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
-            description: aiMatch.item.description || merged[mergedIndex].description,
-            price: aiMatch.item.price || merged[mergedIndex].price,
-            has_web_enhancement: true,
-            has_image: !!aiMatch.item.image_url,
-            merge_source: "pdf_enhanced_with_url_ai",
-            _unmatched: false,
-          };
+        if (aiMatch && aiMatch.confidence >= 0.8) {
+          // Found a match via AI! Update the merged item
+          const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
 
-          if (aiMatch.item.image_url) imagesAddedCount++;
+          if (mergedIndex !== -1) {
+            aiMatchedCount++;
+            matchedWebItems.add(aiMatch.item.name_normalized);
 
-          logger.info("[HYBRID/MERGE] 🤖✅ AI matched stubborn item", {
-            pdf: pdfItem.name,
-            url: aiMatch.item.name,
-            confidence: Math.round(aiMatch.confidence * 100) + "%",
-          });
+            // Enhance the item with URL data
+            merged[mergedIndex] = {
+              ...merged[mergedIndex],
+              image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
+              description: aiMatch.item.description || merged[mergedIndex].description,
+              price: aiMatch.item.price || merged[mergedIndex].price,
+              has_web_enhancement: true,
+              has_image: !!aiMatch.item.image_url,
+              merge_source: "pdf_enhanced_with_url_ai",
+              _unmatched: false,
+            };
+
+            if (aiMatch.item.image_url) imagesAddedCount++;
+
+            logger.info("[HYBRID/MERGE] 🤖✅ AI matched stubborn item", {
+              pdf: pdfItem.name,
+              url: aiMatch.item.name,
+              confidence: Math.round(aiMatch.confidence * 100) + "%",
+            });
+          }
         }
       }
-    }
 
-    if (aiMatchedCount > 0) {
-      logger.info("[HYBRID/MERGE] AI fallback matching complete", {
-        additionalMatches: aiMatchedCount,
-        totalMatched: matchedCount + aiMatchedCount,
-        stillUnmatched: unmatchedPdfItems.length - aiMatchedCount,
+      if (aiMatchedCount > 0) {
+        logger.info("[HYBRID/MERGE] AI fallback matching complete", {
+          additionalMatches: aiMatchedCount,
+          totalMatched: matchedCount + aiMatchedCount,
+          stillUnmatched: unmatchedPdfItems.length - aiMatchedCount,
+        });
+
+        matchedCount += aiMatchedCount;
+      } else {
+        logger.info("[HYBRID/MERGE] AI fallback found no additional matches");
+      }
+    } catch (aiFallbackError) {
+      logger.error("[HYBRID/MERGE] AI fallback matching failed", {
+        error: aiFallbackError instanceof Error ? aiFallbackError.message : String(aiFallbackError),
       });
-
-      matchedCount += aiMatchedCount;
+      // Continue without AI matching - not critical
     }
+  } else {
+    logger.info("[HYBRID/MERGE] Skipping AI fallback", {
+      reason:
+        unmatchedPdfItems.length === 0 ? "No unmatched items" : "Too many unmatched items (> 40)",
+      unmatchedCount: unmatchedPdfItems.length,
+    });
   }
 
   // Extract PDF categories for intelligent categorization of new URL items
