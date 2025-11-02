@@ -7,7 +7,7 @@ export interface MenuItem {
   description?: string | null;
   price: number;
   category: string;
-  image_url?: string;
+  image_url?: string | null;
   is_available: boolean;
   created_at?: string;
   venue_name?: string;
@@ -31,6 +31,5 @@ export interface OrderParams {
   isDemo: boolean;
   isCounterOrder: boolean;
   orderLocation: string;
-  orderType: 'counter' | 'table';
+  orderType: "counter" | "table";
 }
-

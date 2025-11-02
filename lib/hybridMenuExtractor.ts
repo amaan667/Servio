@@ -155,7 +155,7 @@ export async function extractMenuHybrid(
     logger.info("[HYBRID] ========================================");
 
     // Intelligent merge
-    const mergedItems = mergeWebAndPdfData(pdfData.items, webItems);
+    const mergedItems = await mergeWebAndPdfData(pdfData.items, webItems);
 
     // Merge Analysis
     const mergedCategories = Array.from(
@@ -385,7 +385,7 @@ function normalizeName(name: string): string {
  * - Enrich with web data (images, better descriptions)
  * - Add web-only items that PDF missed
  */
-function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
+async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any[]> {
   logger.info("[HYBRID/MERGE] Starting intelligent merge", {
     pdfCount: pdfItems.length,
     webCount: webItems.length,
@@ -558,7 +558,7 @@ function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): any[] {
     imagesAdded: imagesAddedCount,
     descriptionsEnhanced: descriptionsEnhancedCount,
     pricesUpdated: pricesUpdatedCount,
-    urlItemsRecategorized: recategorizedCount,
+    urlItemsRecategorized: aiCategorizedCount,
     itemsWithImages: merged.filter((i) => i.has_image).length,
     itemsEnhanced: merged.filter((i) => i.has_web_enhancement).length,
   });
