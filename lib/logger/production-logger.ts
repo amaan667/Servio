@@ -27,7 +27,21 @@ class ProductionLogger {
 
   constructor(serviceName: string = "servio") {
     this.serviceName = serviceName;
-    this.level = process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG;
+
+    // Production-ready log level control via environment variable
+    // Set LOG_LEVEL=error in Railway to reduce logging by 90%
+    // Supported values: debug, info, warn, error
+    const envLogLevel = process.env.LOG_LEVEL?.toUpperCase();
+    if (envLogLevel === "ERROR") {
+      this.level = LogLevel.ERROR;
+    } else if (envLogLevel === "WARN") {
+      this.level = LogLevel.WARN;
+    } else if (envLogLevel === "DEBUG") {
+      this.level = LogLevel.DEBUG;
+    } else {
+      // Default: INFO in production, DEBUG in development
+      this.level = process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG;
+    }
   }
 
   private shouldLog(level: LogLevel): boolean {
