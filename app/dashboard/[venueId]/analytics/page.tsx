@@ -24,10 +24,9 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
 
   // Fetch analytics data on server WITHOUT auth (use admin client like dashboard does)
   // The AnalyticsClient component will handle auth checking in the browser
-  const [ordersData, menuData, feedbackData, revenueData] = await Promise.all([
+  const [ordersData, menuData, revenueData] = await Promise.all([
     fetchOrderAnalytics(venueId),
     fetchMenuAnalytics(venueId),
-    fetchFeedbackAnalytics(venueId),
     fetchRevenueAnalytics(venueId),
   ]);
 
@@ -36,7 +35,6 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
       venueId={venueId}
       ordersData={ordersData}
       menuData={menuData}
-      feedbackData={feedbackData}
       revenueData={revenueData}
     />
   );
@@ -107,35 +105,6 @@ async function fetchMenuAnalytics(venueId: string) {
     itemsWithImages: menuItems?.filter((i) => i.image_url).length || 0,
     unavailableItems: menuItems?.filter((i) => !i.is_available).length || 0,
     topSellingItems: topItems,
-  };
-}
-
-/**
- * Fetch feedback analytics
- */
-async function fetchFeedbackAnalytics(venueId: string) {
-  const supabase = createAdminClient();
-
-  const { data: feedback } = await supabase
-    .from("customer_feedback")
-    .select("overall_rating, food_quality, service_quality, value_rating, created_at")
-    .eq("venue_id", venueId)
-    .order("created_at", { ascending: false });
-
-  const avgRating =
-    (feedback?.reduce((sum, f) => sum + (f.overall_rating || 0), 0) || 0) / (feedback?.length || 1);
-
-  return {
-    totalFeedback: feedback?.length || 0,
-    avgOverallRating: avgRating,
-    avgFoodQuality:
-      (feedback?.reduce((sum, f) => sum + (f.food_quality || 0), 0) || 0) / (feedback?.length || 1),
-    avgServiceQuality:
-      (feedback?.reduce((sum, f) => sum + (f.service_quality || 0), 0) || 0) /
-      (feedback?.length || 1),
-    avgValueRating:
-      (feedback?.reduce((sum, f) => sum + (f.value_rating || 0), 0) || 0) / (feedback?.length || 1),
-    recentFeedback: feedback?.slice(0, 5) || [],
   };
 }
 

@@ -9,7 +9,6 @@ import {
   DollarSign,
   ShoppingBag,
   Users,
-  Star,
   BarChart3,
   PieChart,
 } from "lucide-react";
@@ -20,7 +19,6 @@ interface AnalyticsClientProps {
   venueId: string;
   ordersData: any;
   menuData: any;
-  feedbackData: any;
   revenueData: any;
 }
 
@@ -28,7 +26,6 @@ export default function AnalyticsClient({
   venueId,
   ordersData,
   menuData,
-  feedbackData,
   revenueData,
 }: AnalyticsClientProps) {
   const router = useRouter();
@@ -110,7 +107,7 @@ export default function AnalyticsClient({
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <MetricCard
           title="Total Revenue"
           value={`£${revenueData.totalRevenue.toFixed(2)}`}
@@ -132,20 +129,12 @@ export default function AnalyticsClient({
           icon={<TrendingUp className="h-4 w-4 text-purple-600" />}
           trend={+5.2}
         />
-        <MetricCard
-          title="Customer Rating"
-          value={feedbackData.avgOverallRating.toFixed(1)}
-          subtitle="Out of 5 stars"
-          icon={<Star className="h-4 w-4 text-yellow-600" />}
-          trend={+0.3}
-        />
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="menu">Menu Performance</TabsTrigger>
-          <TabsTrigger value="feedback">Customer Feedback</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
         </TabsList>
 
@@ -249,65 +238,6 @@ export default function AnalyticsClient({
               icon={<PieChart className="h-4 w-4" />}
             />
           </div>
-        </TabsContent>
-
-        <TabsContent value="feedback" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <MetricCard
-              title="Overall Rating"
-              value={feedbackData.avgOverallRating.toFixed(1)}
-              subtitle="Out of 5 stars"
-              icon={<Star className="h-4 w-4 text-yellow-600" />}
-            />
-            <MetricCard
-              title="Food Quality"
-              value={feedbackData.avgFoodQuality.toFixed(1)}
-              subtitle="Average rating"
-              icon={<Star className="h-4 w-4 text-orange-600" />}
-            />
-            <MetricCard
-              title="Service Quality"
-              value={feedbackData.avgServiceQuality.toFixed(1)}
-              subtitle="Average rating"
-              icon={<Star className="h-4 w-4 text-blue-600" />}
-            />
-            <MetricCard
-              title="Value Rating"
-              value={feedbackData.avgValueRating.toFixed(1)}
-              subtitle="Average rating"
-              icon={<Star className="h-4 w-4 text-green-600" />}
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Feedback</CardTitle>
-              <CardDescription>Latest customer reviews</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {feedbackData.recentFeedback.map((feedback: any) => (
-                  <div key={feedback.id} className="border-b pb-4 last:border-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < feedback.overall_rating
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(feedback.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="trends" className="space-y-4">
