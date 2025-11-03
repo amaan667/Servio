@@ -28,7 +28,10 @@ From the image, extract structured JSON in the following format:
     "name": "Dish Name",
     "description": "Optional description",
     "price": 12.50,
-    "category": "Starters"
+    "category": "Starters",
+    "allergens": ["nuts", "dairy", "gluten"],
+    "dietary": ["vegetarian", "vegan", "gluten-free"],
+    "spiceLevel": "mild"
   },
   ...
 ]
@@ -55,11 +58,32 @@ CRITICAL RULES FOR CATEGORIES:
    - "Croissant", "Latte", "Burger" are NOT categories - they are items
    - A category groups MULTIPLE items together
 
+ALLERGEN & DIETARY EXTRACTION RULES:
+1. ALLERGENS (look for symbols, icons, or text):
+   - Common allergens: "nuts", "peanuts", "tree nuts", "dairy", "milk", "eggs", "fish", "shellfish", "soy", "wheat", "gluten", "sesame", "celery", "mustard", "sulphites", "lupin", "molluscs"
+   - Look for allergen symbols (V, VG, GF, DF, N, etc.)
+   - Check item descriptions for allergen mentions
+   - If no allergens mentioned, return empty array []
+
+2. DIETARY INFORMATION (look for symbols or descriptions):
+   - Common dietary tags: "vegetarian", "vegan", "gluten-free", "dairy-free", "nut-free", "halal", "kosher", "keto", "paleo", "low-carb", "pescatarian"
+   - Look for standard symbols: V = vegetarian, VG/VE = vegan, GF = gluten-free, DF = dairy-free
+   - If item contains meat/fish, don't mark as vegetarian
+   - If no dietary info mentioned, return empty array []
+
+3. SPICE LEVEL (if indicated):
+   - Look for chili symbols 🌶️ or text like "mild", "medium", "hot", "spicy", "extra hot"
+   - If 1 chili: "mild"
+   - If 2 chilies: "medium"
+   - If 3+ chilies: "hot"
+   - If no spice indication, omit this field entirely (don't include null)
+
 OTHER RULES:
 - Include all items that have names and prices.
 - Use the English translation if bilingual.
 - Add-ons should be included with "Add-on" in the name.
 - Preserve the exact category names as they appear in the menu headers.
+- IMPORTANT: allergens, dietary, and spiceLevel are OPTIONAL - only include if clearly indicated on menu.
   `;
 
   const response = await openai.chat.completions.create({
@@ -168,6 +192,43 @@ OTHER RULES:
       logger.warn("[VISION PDF] Items without category:", {
         count: itemsWithoutCategory.length,
         examples: itemsWithoutCategory.slice(0, 5).map((i: any) => i.name),
+      });
+    }
+
+    // Log allergen and dietary information extraction
+    const itemsWithAllergens = json.filter(
+      (item: any) => item.allergens && item.allergens.length > 0
+    );
+    const itemsWithDietary = json.filter((item: any) => item.dietary && item.dietary.length > 0);
+    const itemsWithSpiceLevel = json.filter((item: any) => item.spiceLevel);
+
+    if (itemsWithAllergens.length > 0) {
+      logger.info("[VISION PDF] 🥜 Allergen information extracted", {
+        count: itemsWithAllergens.length,
+        examples: itemsWithAllergens.slice(0, 3).map((i: any) => ({
+          name: i.name,
+          allergens: i.allergens,
+        })),
+      });
+    }
+
+    if (itemsWithDietary.length > 0) {
+      logger.info("[VISION PDF] 🌱 Dietary information extracted", {
+        count: itemsWithDietary.length,
+        examples: itemsWithDietary.slice(0, 3).map((i: any) => ({
+          name: i.name,
+          dietary: i.dietary,
+        })),
+      });
+    }
+
+    if (itemsWithSpiceLevel.length > 0) {
+      logger.info("[VISION PDF] 🌶️ Spice level information extracted", {
+        count: itemsWithSpiceLevel.length,
+        examples: itemsWithSpiceLevel.slice(0, 3).map((i: any) => ({
+          name: i.name,
+          spiceLevel: i.spiceLevel,
+        })),
       });
     }
 

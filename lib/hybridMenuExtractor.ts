@@ -227,6 +227,17 @@ function getExtractionMode(hasPdf: boolean, hasUrl: boolean): "url-only" | "pdf-
 }
 
 /**
+ * Utility: Chunk array into batches
+ */
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+/**
  * Extract menu items from PDF images
  */
 async function extractFromPDF(pdfImages: string[]) {
@@ -335,8 +346,10 @@ function extractSlashVariants(name: string): string[] {
 /**
  * ENHANCEMENT 3: Remove descriptor words
  * "Signature Smashed Burger" → "smashed burger"
+ * EXPANDED: Now includes 50+ common restaurant descriptors
  */
 const DESCRIPTOR_WORDS = [
+  // Quality descriptors
   "signature",
   "special",
   "classic",
@@ -344,14 +357,65 @@ const DESCRIPTOR_WORDS = [
   "homemade",
   "fresh",
   "organic",
-  "our",
-  "house",
-  "original",
   "authentic",
   "delicious",
   "amazing",
   "famous",
   "best",
+  "finest",
+  "premium",
+  "gourmet",
+  "artisan",
+  "handcrafted",
+  "craft",
+  "seasonal",
+  "daily",
+  "local",
+  "imported",
+  "exotic",
+  "rare",
+  "unique",
+  "exclusive",
+  "limited",
+
+  // Origin/style descriptors
+  "our",
+  "house",
+  "original",
+  "chef's",
+  "chef",
+  "chef's special",
+  "restaurant's",
+  "kitchen",
+  "recommended",
+  "popular",
+  "favorite",
+  "bestselling",
+  "top",
+
+  // Preparation descriptors
+  "handmade",
+  "homestyle",
+  "rustic",
+  "farmhouse",
+  "country",
+  "urban",
+  "modern",
+  "contemporary",
+  "fusion",
+  "nouvelle",
+
+  // Taste descriptors
+  "tasty",
+  "flavorful",
+  "savory",
+  "rich",
+  "succulent",
+  "tender",
+  "juicy",
+  "crispy",
+  "creamy",
+  "smooth",
 ];
 
 function removeDescriptors(name: string): string {
@@ -423,11 +487,12 @@ function calculateFlexibleMatch(name1: string, name2: string): number {
 /**
  * ULTRA-LIGHTWEIGHT MATCHING - NO HEAP OVERFLOW
  * Simple but effective - 90%+ match rate with minimal memory
+ * NOW WITH CONFIDENCE SCORES FOR ALL MATCHES
  */
 function findBestMatch(
   pdfItem: any,
   webItems: any[]
-): { item: any; score: number; reason: string } | null {
+): { item: any; score: number; reason: string; confidence: number } | null {
   const pdfName = pdfItem.name;
   const pdfPrice = pdfItem.price;
   const pdfNormalized = normalizeName(pdfName);
@@ -443,7 +508,7 @@ function findBestMatch(
 
     // PHASE 1: Exact match
     if (pdfNormalized === urlNormalized) {
-      return { item: webItem, score: 1.0, reason: "exact" }; // Early return
+      return { item: webItem, score: 1.0, reason: "exact", confidence: 1.0 }; // Early return
     }
 
     // PHASE 2: Token overlap with fuzzy word matching (handles "royal" vs "royale")
@@ -512,7 +577,8 @@ function findBestMatch(
 
     // Early termination for great matches
     if (score >= 0.95) {
-      return { item: webItem, score, reason };
+      const confidence = calculateConfidence(score, reason, pdfPrice, webItem.price);
+      return { item: webItem, score, reason, confidence };
     }
 
     if (score > bestScore) {
@@ -522,7 +588,43 @@ function findBestMatch(
     }
   }
 
-  return bestScore >= 0.5 ? { item: bestMatch, score: bestScore, reason: bestReason } : null;
+  if (bestScore >= 0.5) {
+    const confidence = calculateConfidence(bestScore, bestReason, pdfPrice, bestMatch?.price);
+    return { item: bestMatch, score: bestScore, reason: bestReason, confidence };
+  }
+
+  return null;
+}
+
+/**
+ * Calculate confidence score based on match quality
+ * Confidence reflects how reliable the match is for the user
+ */
+function calculateConfidence(
+  score: number,
+  reason: string,
+  pdfPrice?: number,
+  urlPrice?: number
+): number {
+  let confidence = score;
+
+  // Boost confidence for certain match types
+  if (reason === "exact") {
+    confidence = 1.0;
+  } else if (reason.includes("full_subset")) {
+    confidence = Math.min(1.0, score + 0.05);
+  } else if (reason.includes("price")) {
+    // Price match adds reliability
+    if (pdfPrice && urlPrice && Math.abs(pdfPrice - urlPrice) <= 0.5) {
+      confidence = Math.min(1.0, confidence + 0.1);
+    }
+  } else if (reason === "substring") {
+    // Substring matches are less reliable
+    confidence = Math.max(0.5, score - 0.1);
+  }
+
+  // Ensure confidence stays in bounds
+  return Math.max(0.0, Math.min(1.0, confidence));
 }
 
 /**
@@ -611,6 +713,9 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
           pdf: pdfItem.name,
           url: webMatch.name,
           matchScore: matchResult?.score ? Math.round(matchResult.score * 100) + "%" : "unknown",
+          confidence: matchResult?.confidence
+            ? Math.round(matchResult.confidence * 100) + "%"
+            : "unknown",
           matchReason: matchResult?.reason || "similarity",
           addedImage: addedImage,
           enhancedDescription: enhancedDesc,
@@ -628,10 +733,16 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
         // PRIORITIZE URL PRICE (more current/up-to-date than PDF)
         price: webMatch.price || pdfItem.price, // URL first, PDF fallback
         category: pdfItem.category || webMatch.category, // Prefer PDF category (more accurate)
+        // Preserve allergen and dietary information from PDF (more accurate from Vision AI)
+        allergens: pdfItem.allergens || webMatch.allergens || [],
+        dietary: pdfItem.dietary || webMatch.dietary || [],
+        spiceLevel: pdfItem.spiceLevel || webMatch.spiceLevel || null,
         has_web_enhancement: true,
         has_image: !!webMatch.image_url,
         merge_source: "pdf_enhanced_with_url",
         _matchReason: matchResult?.reason, // Track match quality
+        _matchConfidence: matchResult?.confidence, // Track confidence
+        _matchScore: matchResult?.score, // Track raw score
       };
     }
 
@@ -687,14 +798,17 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   }
 
   // AI FALLBACK MATCHING: For unmatched PDF items, try AI matching
+  // NO MORE 40-ITEM LIMIT! Process ALL unmatched items in batches
   logger.info("[HYBRID/MERGE] Checking AI fallback conditions", {
     unmatchedCount: unmatchedPdfItems.length,
-    willRunAiFallback: unmatchedPdfItems.length > 0 && unmatchedPdfItems.length <= 40,
+    willRunAiFallback: unmatchedPdfItems.length > 0,
   });
 
-  if (unmatchedPdfItems.length > 0 && unmatchedPdfItems.length <= 40) {
-    logger.info("[HYBRID/MERGE] 🤖 Running AI fallback matching for stubborn cases", {
+  if (unmatchedPdfItems.length > 0) {
+    logger.info("[HYBRID/MERGE] 🤖 Running AI fallback matching for ALL stubborn cases", {
       unmatchedCount: unmatchedPdfItems.length,
+      batchSize: 20,
+      estimatedBatches: Math.ceil(unmatchedPdfItems.length / 20),
     });
 
     let aiMatchedCount = 0;
@@ -709,41 +823,58 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     });
 
     try {
-      for (const pdfItem of unmatchedPdfItems) {
-        logger.info("[HYBRID/MERGE] 🤖 AI matching item", { name: pdfItem.name });
+      // Process in batches of 20 for efficiency
+      const BATCH_SIZE = 20;
+      const batches = chunkArray(unmatchedPdfItems, BATCH_SIZE);
 
-        // Try AI matching against unmatched URL items
-        const aiMatch = await batchMatchItemsWithAI(pdfItem, unmatchedWebItems);
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        logger.info(`[HYBRID/MERGE] 🤖 Processing AI batch ${batchIndex + 1}/${batches.length}`, {
+          batchSize: batch.length,
+        });
 
-        if (aiMatch && aiMatch.confidence >= 0.8) {
-          // Found a match via AI! Update the merged item
-          const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
+        for (const pdfItem of batch) {
+          // Try AI matching against unmatched URL items
+          const aiMatch = await batchMatchItemsWithAI(pdfItem, unmatchedWebItems);
 
-          if (mergedIndex !== -1) {
-            aiMatchedCount++;
-            matchedWebItems.add(aiMatch.item.name_normalized);
+          if (aiMatch && aiMatch.confidence >= 0.8) {
+            // Found a match via AI! Update the merged item
+            const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
 
-            // Enhance the item with URL data
-            merged[mergedIndex] = {
-              ...merged[mergedIndex],
-              image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
-              description: aiMatch.item.description || merged[mergedIndex].description,
-              price: aiMatch.item.price || merged[mergedIndex].price,
-              has_web_enhancement: true,
-              has_image: !!aiMatch.item.image_url,
-              merge_source: "pdf_enhanced_with_url_ai",
-              _unmatched: false,
-            };
+            if (mergedIndex !== -1) {
+              aiMatchedCount++;
+              matchedWebItems.add(aiMatch.item.name_normalized);
 
-            if (aiMatch.item.image_url) imagesAddedCount++;
+              // Enhance the item with URL data
+              merged[mergedIndex] = {
+                ...merged[mergedIndex],
+                image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
+                description: aiMatch.item.description || merged[mergedIndex].description,
+                price: aiMatch.item.price || merged[mergedIndex].price,
+                allergens: merged[mergedIndex].allergens || aiMatch.item.allergens || [],
+                dietary: merged[mergedIndex].dietary || aiMatch.item.dietary || [],
+                spiceLevel: merged[mergedIndex].spiceLevel || aiMatch.item.spiceLevel || null,
+                has_web_enhancement: true,
+                has_image: !!aiMatch.item.image_url,
+                merge_source: "pdf_enhanced_with_url_ai",
+                _unmatched: false,
+                _matchConfidence: aiMatch.confidence,
+              };
 
-            logger.info("[HYBRID/MERGE] 🤖✅ AI matched stubborn item", {
-              pdf: pdfItem.name,
-              url: aiMatch.item.name,
-              confidence: Math.round(aiMatch.confidence * 100) + "%",
-            });
+              if (aiMatch.item.image_url) imagesAddedCount++;
+
+              logger.info("[HYBRID/MERGE] 🤖✅ AI matched stubborn item", {
+                pdf: pdfItem.name,
+                url: aiMatch.item.name,
+                confidence: Math.round(aiMatch.confidence * 100) + "%",
+              });
+            }
           }
         }
+
+        logger.info(
+          `[HYBRID/MERGE] Batch ${batchIndex + 1}/${batches.length} complete. Matches so far: ${aiMatchedCount}`
+        );
       }
 
       if (aiMatchedCount > 0) {
@@ -751,6 +882,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
           additionalMatches: aiMatchedCount,
           totalMatched: matchedCount + aiMatchedCount,
           stillUnmatched: unmatchedPdfItems.length - aiMatchedCount,
+          batchesProcessed: batches.length,
         });
 
         matchedCount += aiMatchedCount;
@@ -764,11 +896,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       // Continue without AI matching - not critical
     }
   } else {
-    logger.info("[HYBRID/MERGE] Skipping AI fallback", {
-      reason:
-        unmatchedPdfItems.length === 0 ? "No unmatched items" : "Too many unmatched items (> 40)",
-      unmatchedCount: unmatchedPdfItems.length,
-    });
+    logger.info("[HYBRID/MERGE] Skipping AI fallback - no unmatched items");
   }
 
   // Extract PDF categories for intelligent categorization of new URL items
@@ -856,6 +984,9 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
         price: webItem.price,
         category: assignedCategory,
         image_url: webItem.image_url,
+        allergens: webItem.allergens || [],
+        dietary: webItem.dietary || [],
+        spiceLevel: webItem.spiceLevel || null,
         source: "web_only",
         has_web_enhancement: true,
         has_image: !!webItem.image_url,
@@ -937,7 +1068,129 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     pdfOnlyWithImages: merged.filter((i) => i.merge_source === "pdf_only" && i.image_url).length,
   });
 
-  return merged;
+  // FINAL DEDUPLICATION PASS
+  logger.info("[HYBRID/MERGE] ========================================");
+  logger.info("[HYBRID/MERGE] Running final deduplication pass...");
+  const dedupeResult = deduplicateMergedItems(merged);
+
+  if (dedupeResult.duplicatesRemoved > 0) {
+    logger.info("[HYBRID/MERGE] ✅ Deduplication removed duplicates", {
+      removed: dedupeResult.duplicatesRemoved,
+      beforeCount: merged.length,
+      afterCount: dedupeResult.deduplicated.length,
+    });
+  } else {
+    logger.info("[HYBRID/MERGE] ✅ No duplicates found - merge is clean!");
+  }
+
+  return dedupeResult.deduplicated;
+}
+
+/**
+ * DEDUPLICATION: Remove duplicate items from merged results
+ * Keeps the first occurrence (prefer PDF items over URL items)
+ */
+function deduplicateMergedItems(items: any[]): {
+  deduplicated: any[];
+  duplicatesRemoved: number;
+  duplicatePairs: Array<{ kept: string; removed: string; reason: string }>;
+} {
+  logger.info("[HYBRID/DEDUPE] Starting deduplication pass", {
+    totalItems: items.length,
+  });
+
+  const kept: any[] = [];
+  const duplicatePairs: Array<{ kept: string; removed: string; reason: string }> = [];
+  let duplicatesRemoved = 0;
+
+  for (const item of items) {
+    // Check if this item is a duplicate of any kept item
+    let isDuplicate = false;
+
+    for (const keptItem of kept) {
+      // Use same matching logic as main merge
+      const matchResult = findBestMatchForDedupe(item, keptItem);
+
+      if (matchResult.isDuplicate) {
+        isDuplicate = true;
+        duplicatesRemoved++;
+        duplicatePairs.push({
+          kept: keptItem.name,
+          removed: item.name,
+          reason: matchResult.reason,
+        });
+
+        // Log first few duplicates
+        if (duplicatesRemoved <= 5) {
+          logger.info("[HYBRID/DEDUPE] 🗑️ Duplicate removed", {
+            kept: keptItem.name,
+            removed: item.name,
+            keptSource: keptItem.merge_source,
+            removedSource: item.merge_source,
+            reason: matchResult.reason,
+          });
+        }
+        break;
+      }
+    }
+
+    if (!isDuplicate) {
+      kept.push(item);
+    }
+  }
+
+  logger.info("[HYBRID/DEDUPE] Deduplication complete", {
+    originalCount: items.length,
+    finalCount: kept.length,
+    duplicatesRemoved,
+  });
+
+  if (duplicatesRemoved > 5) {
+    logger.info("[HYBRID/DEDUPE] Sample duplicates (first 5):", {
+      samples: duplicatePairs.slice(0, 5),
+    });
+  }
+
+  return {
+    deduplicated: kept,
+    duplicatesRemoved,
+    duplicatePairs,
+  };
+}
+
+/**
+ * Simplified matching for deduplication (faster, stricter)
+ */
+function findBestMatchForDedupe(item1: any, item2: any): { isDuplicate: boolean; reason: string } {
+  const name1 = normalizeName(item1.name);
+  const name2 = normalizeName(item2.name);
+
+  // Exact match
+  if (name1 === name2) {
+    return { isDuplicate: true, reason: "exact_match" };
+  }
+
+  // Very high similarity threshold for deduplication (more conservative)
+  const tokens1 = name1.split(" ").filter((t) => t.length > 1);
+  const tokens2 = name2.split(" ").filter((t) => t.length > 1);
+
+  if (tokens1.length > 0 && tokens2.length > 0) {
+    const matchedTokens = tokens1.filter((t) => tokens2.includes(t)).length;
+    const maxTokens = Math.max(tokens1.length, tokens2.length);
+    const tokenOverlap = matchedTokens / maxTokens;
+
+    // Price check (if both have prices and they match, more likely duplicate)
+    const priceMatch = item1.price && item2.price && Math.abs(item1.price - item2.price) <= 0.5;
+
+    // High threshold: 90% token overlap OR 80% overlap + price match
+    if (tokenOverlap >= 0.9) {
+      return { isDuplicate: true, reason: "high_token_overlap" };
+    } else if (tokenOverlap >= 0.8 && priceMatch) {
+      return { isDuplicate: true, reason: "token_overlap_price_match" };
+    }
+  }
+
+  return { isDuplicate: false, reason: "no_match" };
 }
 
 /**
