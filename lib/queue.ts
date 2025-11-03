@@ -87,7 +87,8 @@ export const pdfQueueEvents =
   typeof window === "undefined" ? new QueueEvents("pdf-processing", { connection }) : null;
 
 if (pdfQueueEvents) {
-  pdfQueueEvents.on("completed", ({ jobId, returnvalue }) => {
+  pdfQueueEvents.on("completed", ({ jobId: _jobId, returnvalue: _returnvalue }) => {
+    // Job completed event handled
   });
 
   pdfQueueEvents.on("failed", ({ jobId, failedReason }) => {

@@ -176,7 +176,7 @@ export class PerformanceMonitor {
   /**
    * Record database query time
    */
-  static recordDatabaseQuery(queryName: string, duration: number) {
+  static recordDatabaseQuery(_queryName: string, duration: number) {
     this.recordMetric("databaseQueryTime", duration);
   }
 

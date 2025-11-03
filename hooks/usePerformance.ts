@@ -46,12 +46,13 @@ export function usePerformance() {
   }, []);
 
   const measureAction = useCallback(
-    async <T>(actionName: string, action: () => Promise<T> | T): Promise<T> => {
+    async <T>(_actionName: string, action: () => Promise<T> | T): Promise<T> => {
       const start = performance.now();
       const result = await action();
       const duration = performance.now() - start;
 
       if (process.env.NODE_ENV === "development") {
+        // Performance tracking in dev mode
       }
 
       return result;

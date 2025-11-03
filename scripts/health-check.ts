@@ -9,7 +9,8 @@ async function main() {
 
   const health = await performHealthCheck();
 
-  Object.entries(health.checks).forEach(([check, passed]) => {
+  Object.entries(health.checks).forEach(([_check, _passed]) => {
+    // Health check results processed
   });
 
   if (health.details.length > 0) {

@@ -190,7 +190,8 @@ export function useTableOrdersRealtime(venueId: string) {
           }
         }
       )
-      .subscribe((status: string) => {
+      .subscribe((_status: string) => {
+        // Subscription maintained for real-time updates
       });
 
     return () => {
