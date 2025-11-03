@@ -144,6 +144,15 @@ const nextConfig = {
   },
   // Bundle optimization
   webpack: (config, { dev, isServer, webpack }) => {
+    // Performance budget - prevent bundle size regressions
+    if (!dev && !isServer) {
+      config.performance = {
+        maxAssetSize: 500000, // 500kb per asset
+        maxEntrypointSize: 500000, // 500kb per entrypoint
+        hints: 'warning', // Show warnings, don't fail build
+      };
+    }
+
     // Only for client-side builds: ignore playwright-core
     if (!isServer) {
       config.plugins.push(
