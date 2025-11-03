@@ -95,6 +95,7 @@ export function useMenuItems(venueId: string) {
     menuItems,
     loading,
     categoryOrder,
+    setCategoryOrder,
     setMenuItems,
     loadMenuItems,
   };

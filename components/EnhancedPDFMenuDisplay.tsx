@@ -315,7 +315,11 @@ export function EnhancedPDFMenuDisplay({
                   setSelectedCategory(null);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="whitespace-nowrap text-white hover:text-white dark:text-white dark:hover:text-white"
+                className={`whitespace-nowrap ${
+                  selectedCategory === null
+                    ? "bg-purple-600 text-white hover:bg-purple-700 hover:text-white"
+                    : "bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-purple-600"
+                }`}
               >
                 All
               </Button>
@@ -325,7 +329,11 @@ export function EnhancedPDFMenuDisplay({
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => scrollToCategory(category)}
-                  className="shrink-0 min-w-fit text-white hover:text-white dark:text-white dark:hover:text-white"
+                  className={`shrink-0 min-w-fit ${
+                    selectedCategory === category
+                      ? "bg-purple-600 text-white hover:bg-purple-700 hover:text-white"
+                      : "bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-purple-600"
+                  }`}
                 >
                   <span className="truncate max-w-[120px] px-1">{category}</span>
                 </Button>
