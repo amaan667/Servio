@@ -90,16 +90,25 @@ export async function POST(req: NextRequest) {
     // Step 2: Hybrid Extraction (handles all 3 modes automatically)
     logger.info(`[MENU IMPORT ${requestId}] Starting extraction...`);
 
-    const extractionResult = await extractMenuHybrid({
-      pdfImages,
-      websiteUrl: menuUrl || undefined,
-      venueId,
-    });
+    let extractionResult;
+    try {
+      extractionResult = await extractMenuHybrid({
+        pdfImages,
+        websiteUrl: menuUrl || undefined,
+        venueId,
+      });
 
-    logger.info(`[MENU IMPORT ${requestId}] Extraction complete`, {
-      mode: extractionResult.mode,
-      itemCount: extractionResult.itemCount,
-    });
+      logger.info(`[MENU IMPORT ${requestId}] Extraction complete`, {
+        mode: extractionResult.mode,
+        itemCount: extractionResult.itemCount,
+      });
+    } catch (extractionError) {
+      logger.error(`[MENU IMPORT ${requestId}] Extraction failed`, {
+        error: extractionError instanceof Error ? extractionError.message : String(extractionError),
+        stack: extractionError instanceof Error ? extractionError.stack : undefined,
+      });
+      throw extractionError;
+    }
 
     // Step 2.5: Post-process to fix "Menu Items" categorizations
     const existingCategories = Array.from(
@@ -248,16 +257,33 @@ export async function POST(req: NextRequest) {
 
     // Step 5: Insert into database
     if (menuItems.length > 0) {
-      logger.info(`[MENU IMPORT ${requestId}] Inserting ${menuItems.length} items...`);
+      logger.info(
+        `[MENU IMPORT ${requestId}] Inserting ${menuItems.length} items into database...`
+      );
+      logger.info(`[MENU IMPORT ${requestId}] Sample item for debugging:`, {
+        sample: menuItems[0],
+      });
 
-      const { error: insertItemsError } = await supabase.from("menu_items").insert(menuItems);
+      const { data, error: insertItemsError } = await supabase
+        .from("menu_items")
+        .insert(menuItems)
+        .select();
 
       if (insertItemsError) {
-        logger.error(`[MENU IMPORT ${requestId}] Failed to insert items:`, insertItemsError);
+        logger.error(`[MENU IMPORT ${requestId}] Database insert failed`, {
+          error: insertItemsError.message,
+          code: insertItemsError.code,
+          details: insertItemsError.details,
+          hint: insertItemsError.hint,
+        });
         throw new Error(`Failed to insert items: ${insertItemsError.message}`);
       }
 
-      logger.info(`[MENU IMPORT ${requestId}] Items inserted successfully`);
+      logger.info(
+        `[MENU IMPORT ${requestId}] ✅ ${data.length} items inserted successfully into database`
+      );
+    } else {
+      logger.warn(`[MENU IMPORT ${requestId}] ⚠️ No items to insert - extraction returned 0 items`);
     }
 
     const duration = Date.now() - startTime;

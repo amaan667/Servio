@@ -88,10 +88,38 @@ export async function extractMenuHybrid(
     logger.info("[HYBRID] ========================================");
 
     // Extract from both sources in parallel for speed
-    const [pdfData, webItems] = await Promise.all([
-      extractFromPDF(pdfImages),
-      extractMenuFromWebsite(websiteUrl),
-    ]);
+    let pdfData;
+    let webItems;
+
+    try {
+      logger.info("[HYBRID] Starting parallel extraction (PDF + URL)...");
+      [pdfData, webItems] = await Promise.all([
+        extractFromPDF(pdfImages),
+        extractMenuFromWebsite(websiteUrl),
+      ]);
+      logger.info("[HYBRID] Parallel extraction complete", {
+        pdfItems: pdfData.items.length,
+        urlItems: webItems.length,
+      });
+    } catch (parallelError) {
+      logger.error("[HYBRID] Parallel extraction failed, falling back to PDF only", {
+        error: parallelError instanceof Error ? parallelError.message : String(parallelError),
+      });
+
+      // Fallback: If parallel fails, try PDF only
+      try {
+        pdfData = await extractFromPDF(pdfImages);
+        webItems = [];
+        logger.info("[HYBRID] PDF-only fallback successful", {
+          pdfItems: pdfData.items.length,
+        });
+      } catch (pdfError) {
+        logger.error("[HYBRID] PDF extraction also failed", {
+          error: pdfError instanceof Error ? pdfError.message : String(pdfError),
+        });
+        throw pdfError;
+      }
+    }
 
     logger.info("[HYBRID] ========================================");
     logger.info("[HYBRID] EXTRACTION COMPARISON - PDF vs URL");
@@ -250,23 +278,33 @@ async function extractFromPDF(pdfImages: string[]) {
 
     logger.info(`[HYBRID/PDF] Processing page ${i + 1}/${pdfImages.length}`);
 
-    // Extract items from page
-    const pageItems = await extractMenuFromImage(imageUrl);
+    try {
+      // Extract items from page
+      const pageItems = await extractMenuFromImage(imageUrl);
 
-    // Add page index to each item
-    pageItems.forEach((item: any) => {
-      items.push({
-        ...item,
-        page_index: i,
-        source: "pdf",
+      // Add page index to each item
+      pageItems.forEach((item: any) => {
+        items.push({
+          ...item,
+          page_index: i,
+          source: "pdf",
+        });
       });
-    });
 
-    logger.info(`[HYBRID/PDF] Page ${i + 1}: ${pageItems.length} items`);
+      logger.info(`[HYBRID/PDF] Page ${i + 1}: ${pageItems.length} items extracted successfully`);
+    } catch (pageError) {
+      logger.error(`[HYBRID/PDF] Page ${i + 1} extraction failed`, {
+        error: pageError instanceof Error ? pageError.message : String(pageError),
+      });
+
+      // Continue with other pages instead of failing completely
+      logger.warn(`[HYBRID/PDF] Skipping page ${i + 1}, continuing with remaining pages`);
+    }
   }
 
   logger.info("[HYBRID/PDF] PDF extraction complete", {
     totalItems: items.length,
+    pagesProcessed: pdfImages.length,
   });
 
   return { items };
