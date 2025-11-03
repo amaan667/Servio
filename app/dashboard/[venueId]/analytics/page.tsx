@@ -5,7 +5,7 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import { redirect } from "next/navigation";
-import { AnalyticsClient } from "./AnalyticsClient";
+import AnalyticsClient from "./AnalyticsClient";
 
 export const metadata = {
   title: "Analytics | Servio",
