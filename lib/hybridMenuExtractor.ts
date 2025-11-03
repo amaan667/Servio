@@ -952,11 +952,13 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       continue; // Skip items that were already matched to PDF items
     }
 
-    // Double-check with advanced matching to be safe (use same threshold as main matching)
+    // Check if URL item is a duplicate using STRICTER threshold (0.85 instead of 0.5)
+    // Lower threshold = more items preserved = more images captured
+    // This ensures "Grilled Chicken Burger" and "Chicken Burger" both get added
     const matchResult = findBestMatch(webItem, merged);
-    const existsInPdf = matchResult !== null && matchResult.score >= 0.5;
+    const isDuplicate = matchResult !== null && matchResult.score >= 0.85;
 
-    if (!existsInPdf && webItem.name && webItem.price) {
+    if (!isDuplicate && webItem.name && webItem.price) {
       webOnlyCount++;
       unmatchedUrlItems.push(webItem);
 
