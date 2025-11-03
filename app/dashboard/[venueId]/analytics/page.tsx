@@ -3,9 +3,10 @@
  * Provides business insights and performance metrics
  */
 
-import { createAdminClient } from "@/lib/supabase";
+import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 import AnalyticsClient from "./AnalyticsClient";
+import { logger } from "@/lib/logger";
 
 export const metadata = {
   title: "Analytics | Servio",
@@ -14,19 +15,21 @@ export const metadata = {
 
 export default async function AnalyticsPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  const supabase = createAdminClient();
 
-  // Check authentication
+  // Use createServerSupabaseReadOnly to respect user's auth cookies
+  const supabase = await createServerSupabaseReadOnly();
+
+  // Check authentication from user's session
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    console.log("[ANALYTICS] No user found, redirecting to sign-in");
+    logger.info("[ANALYTICS] No user found, redirecting to sign-in");
     redirect("/sign-in");
   }
 
-  console.log("[ANALYTICS] User authenticated:", user.id, "checking access to venue:", venueId);
+  logger.info("[ANALYTICS] User authenticated:", { userId: user.id, venueId });
 
   // Check if user is the venue owner
   const { data: venue } = await supabase
@@ -37,7 +40,7 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
     .maybeSingle();
 
   const isOwner = !!venue;
-  console.log("[ANALYTICS] Is owner?", isOwner);
+  logger.info("[ANALYTICS] Is owner?", { isOwner });
 
   // Check if user has staff role for this venue
   const { data: staff } = await supabase
@@ -48,14 +51,14 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
     .maybeSingle();
 
   const isStaff = !!staff;
-  console.log("[ANALYTICS] Is staff?", isStaff, "role:", staff?.role);
+  logger.info("[ANALYTICS] Is staff?", { isStaff, role: staff?.role });
 
   if (!isOwner && !isStaff) {
-    console.log("[ANALYTICS] No access to venue, redirecting to dashboard");
+    logger.info("[ANALYTICS] No access to venue, redirecting to dashboard");
     redirect("/dashboard");
   }
 
-  console.log("[ANALYTICS] Access granted, loading analytics data");
+  logger.info("[ANALYTICS] Access granted, loading analytics data");
 
   // Fetch analytics data
   const [ordersData, menuData, feedbackData, revenueData] = await Promise.all([
@@ -80,7 +83,7 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
  * Fetch order analytics
  */
 async function fetchOrderAnalytics(venueId: string) {
-  const supabase = createAdminClient();
+  const supabase = await createServerSupabaseReadOnly();
 
   // Get orders from last 30 days
   const thirtyDaysAgo = new Date();
@@ -107,7 +110,7 @@ async function fetchOrderAnalytics(venueId: string) {
  * Fetch menu analytics
  */
 async function fetchMenuAnalytics(venueId: string) {
-  const supabase = createAdminClient();
+  const supabase = await createServerSupabaseReadOnly();
 
   const { data: menuItems } = await supabase
     .from("menu_items")
@@ -148,7 +151,7 @@ async function fetchMenuAnalytics(venueId: string) {
  * Fetch feedback analytics
  */
 async function fetchFeedbackAnalytics(venueId: string) {
-  const supabase = createAdminClient();
+  const supabase = await createServerSupabaseReadOnly();
 
   const { data: feedback } = await supabase
     .from("customer_feedback")
@@ -177,7 +180,7 @@ async function fetchFeedbackAnalytics(venueId: string) {
  * Fetch revenue analytics
  */
 async function fetchRevenueAnalytics(venueId: string) {
-  const supabase = createAdminClient();
+  const supabase = await createServerSupabaseReadOnly();
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
