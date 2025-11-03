@@ -705,7 +705,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   let imagesAddedCount = 0;
   let descriptionsEnhancedCount = 0;
   let pricesUpdatedCount = 0;
-  let aggressiveImageMatches = 0; // Track images assigned from weak matches
 
   // Import AI matcher for fallback
   logger.info("[HYBRID/MERGE] 🔧 Importing AI matcher module...");
@@ -953,33 +952,10 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       continue; // Skip items that were already matched to PDF items
     }
 
-    // AGGRESSIVE IMAGE MATCHING: Try to assign URL images to similar PDF items
-    // Even if similarity is low (0.3-0.49), give the image to the closest PDF match
+    // Check if URL item is a TRUE DUPLICATE (85%+ similarity)
+    // Anything below 85% is considered a different item and should be added to the menu
     const matchResult = findBestMatch(webItem, merged);
-
-    if (matchResult && matchResult.score >= 0.3 && matchResult.score < 0.5 && webItem.image_url) {
-      // Weak match (30-49%) but has image → give image to closest PDF item
-      const mergedIndex = merged.findIndex((m: any) => m.name === matchResult.item.name);
-      if (mergedIndex !== -1 && !merged[mergedIndex].image_url) {
-        merged[mergedIndex].image_url = webItem.image_url;
-        merged[mergedIndex].has_image = true;
-        imagesAddedCount++;
-        aggressiveImageMatches++;
-
-        // Log first few aggressive matches to show it's working
-        if (aggressiveImageMatches <= 5) {
-          logger.info("[HYBRID/MERGE] 🖼️ Assigned image from similar URL item", {
-            urlItem: webItem.name,
-            pdfItem: merged[mergedIndex].name,
-            similarity: Math.round(matchResult.score * 100) + "%",
-          });
-        }
-      }
-      continue; // Don't add as new item - just gave away the image
-    }
-
-    // Only add as new item if truly different (similarity < 30%)
-    const isDuplicate = matchResult !== null && matchResult.score >= 0.3;
+    const isDuplicate = matchResult !== null && matchResult.score >= 0.85;
 
     if (!isDuplicate && webItem.name && webItem.price) {
       webOnlyCount++;
@@ -1079,7 +1055,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   });
   logger.info("[HYBRID/MERGE] Enhancements Applied:", {
     imagesAdded: imagesAddedCount,
-    imagesFromAggressiveMatching: aggressiveImageMatches,
     descriptionsEnhanced: descriptionsEnhancedCount,
     pricesUpdated: pricesUpdatedCount,
     urlItemsRecategorized: aiCategorizedCount,
