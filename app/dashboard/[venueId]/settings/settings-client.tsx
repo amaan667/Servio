@@ -25,14 +25,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   const router = useRouter();
   const { session, loading: authLoading } = useAuth(); // Get session from AuthProvider
 
-    venueId,
-    hasInitialData: !!initialData,
-    hasSession: !!session,
-    hasUser: !!session?.user,
-    userId: session?.user?.id,
-    authLoading,
-  });
-
   // Fetch data on client if not provided by server
   const [data, setData] = useState(initialData || null);
   const [loading, setLoading] = useState(!initialData);
@@ -46,17 +38,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
     // Otherwise, fetch data on client (and skip cache since we fixed the query)
     const fetchData = async () => {
-        hasWindow: typeof window !== "undefined",
-        venueId,
-      });
-
       try {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userId: session?.user?.id,
-          authLoading,
-        });
-
         // Wait for auth to finish loading
         if (authLoading) {
           return;
@@ -146,10 +128,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         setData(fetchedData);
         sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
-          hasUser: !!fetchedData.user,
-          hasVenue: !!fetchedData.venue,
-          userRole: fetchedData.userRole,
-        });
       } catch (error) {
         console.error("[SETTINGS] ❌ Error fetching data:", error);
       } finally {
@@ -171,15 +149,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
   // If no data after loading, wait for session or show minimal UI
   if (!data || !data.user || !data.venue) {
-      hasData: !!data,
-      hasUser: !!data?.user,
-      hasVenue: !!data?.venue,
-      hasSession: !!session,
-      hasSessionUser: !!session?.user,
-      authLoading,
-      loading,
-    });
-
     // If still loading or auth loading, show spinner
     if (loading || authLoading) {
       return (

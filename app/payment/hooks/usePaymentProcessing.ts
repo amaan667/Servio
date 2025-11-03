@@ -124,7 +124,6 @@ export function usePaymentProcessing() {
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
-
         const tillPayload = {
           order_id: orderId,
           venueId: checkoutData.venueId,
@@ -133,16 +132,10 @@ export function usePaymentProcessing() {
           customerPhone: checkoutData.customerPhone,
         };
 
-
         const response = await fetch("/api/pay/till", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(tillPayload),
-        });
-
-          ok: response.ok,
-          status: response.status,
-          statusText: response.statusText,
         });
 
         if (!response.ok) {
@@ -169,7 +162,6 @@ export function usePaymentProcessing() {
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
-
         const laterPayload = {
           order_id: orderId,
           venueId: checkoutData.venueId,
@@ -179,16 +171,10 @@ export function usePaymentProcessing() {
           sessionId: checkoutData.sessionId || `session_${Date.now()}`,
         };
 
-
         const response = await fetch("/api/pay/later", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(laterPayload),
-        });
-
-          ok: response.ok,
-          status: response.status,
-          statusText: response.statusText,
         });
 
         if (!response.ok) {

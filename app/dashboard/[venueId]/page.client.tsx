@@ -89,6 +89,15 @@ const DashboardClient = React.memo(function DashboardClient({
   const venueTz = "Europe/London"; // Default timezone
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
 
+  // Log when counts change to track updates
+  useEffect(() => {
+    console.log("[Dashboard Client] 📊 Counts updated:", {
+      live_count: dashboardData.counts.live_count,
+      today_orders_count: dashboardData.counts.today_orders_count,
+      earlier_today_count: dashboardData.counts.earlier_today_count,
+    });
+  }, [dashboardData.counts]);
+
   useDashboardRealtime({
     venueId,
     todayWindow: dashboardData.todayWindow,
@@ -173,15 +182,12 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Check authentication and venue access
   useEffect(() => {
-
     async function checkAuth() {
       // ALWAYS fetch role if we don't have it, regardless of cache
       // This ensures fresh sign-ins get the correct role immediately
-      if (!userRole) {
-      } else if (authCheckComplete) {
+      if (userRole && authCheckComplete) {
         // Only skip if we have role AND auth check is already complete
         return;
-      } else {
       }
 
       try {
@@ -194,34 +200,24 @@ const DashboardClient = React.memo(function DashboardClient({
         const maxRetries = 3;
 
         while (retries < maxRetries) {
-
           // Try getSession first
           const sessionResult = await supabase.auth.getSession();
           sessionError = sessionResult.error;
           session = sessionResult.data.session;
 
-            `📊 CLIENT: getSession() - hasSession: ${!!session}, hasUser: ${!!session?.user}, error: ${sessionError?.message || "none"}`
-          );
-
           // If getSession fails, try getUser() which makes a server request
           if (!session?.user) {
             const userResult = await supabase.auth.getUser();
-
-              `📊 CLIENT: getUser() - hasUser: ${!!userResult.data?.user}, error: ${userResult.error?.message || "none"}`
-            );
 
             if (userResult.data?.user && !userResult.error) {
               // After getUser(), try getSession again
               const retrySession = await supabase.auth.getSession();
               session = retrySession.data.session;
               sessionError = retrySession.error;
-
             }
           }
 
           if (session?.user) {
-              `✅ Session found on attempt ${retries + 1} - userId: ${session.user.id.substring(0, 8)}`
-            );
             break;
           }
 
@@ -247,7 +243,6 @@ const DashboardClient = React.memo(function DashboardClient({
           sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(session.user));
         }
         const userId = session.user.id;
-
 
         // Check if user is the venue owner
         const { data: venueData, error: venueError } = await supabase
@@ -322,16 +317,14 @@ const DashboardClient = React.memo(function DashboardClient({
     }
 
     checkAuth()
-      .then(() => {
-      })
+      .then(() => {})
       .catch((err) => {
         console.error("❌ CLIENT: checkAuth() failed:", err);
       });
   }, [venueId]);
 
   // Log whenever userRole changes for dashboard rendering
-  useEffect(() => {
-  }, [userRole]);
+  useEffect(() => {}, [userRole]);
 
   // NO AUTH REDIRECTS - User requested ZERO sign-in redirects
   // If there's truly no user data (after trying cache), just render anyway

@@ -112,14 +112,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq("venue_id", venueId)
       .eq("is_available", true);
 
-    // Log menu items count for debugging
-      count: menuItems?.length || 0,
-      hasError: !!menuError,
-      errorMessage: menuError?.message || null,
-      venueId,
-      timestamp: new Date().toISOString(),
-    });
-
     if (menuError) {
       console.error(`[DASHBOARD] Error fetching menu items for venue ${venueId}:`, menuError);
     }
@@ -132,7 +124,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       menuItems: menuItems?.length || 0,
       unpaid,
     };
-
   } catch (_error) {
     // Continue without initial data - client will load it
   }

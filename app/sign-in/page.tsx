@@ -28,8 +28,6 @@ function SignInPageContent() {
       const isOAuthCallback = window.location.pathname.includes("/auth/callback");
 
       if (hasRefreshToken && !hasAccessToken && !isOAuthCallback) {
-          "[SIGN-IN] Detected broken session - clearing cookies only (preserving PKCE)..."
-        );
         try {
           // DON'T call signOut() - it clears PKCE verifier needed for OAuth!
           // Clear broken auth cookies AND localStorage items manually
@@ -48,13 +46,11 @@ function SignInPageContent() {
               localStorage.removeItem(key);
             }
           });
-
-            "[SIGN-IN] Broken session cookies and localStorage cleared (PKCE verifier preserved)"
-          );
         } catch (e) {
           console.error("[SIGN-IN] Error clearing broken session:", e);
         }
       } else if (hasRefreshToken && !hasAccessToken && isOAuthCallback) {
+        // OAuth callback detected with refresh token
       }
     };
 
@@ -94,24 +90,9 @@ function SignInPageContent() {
           .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
           .limit(5); // Get first 5 to debug
 
-          venueCount: venues?.length,
-          venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
-          firstVenue: venues?.[0]?.venue_id,
-          allVenueIds: venues?.map((v) => v.venue_id),
-          willRedirectTo:
-            nextParam ||
-            (venues?.[0]?.venue_id ? `/dashboard/${venues[0].venue_id}` : "/select-plan"),
-        });
-
         if (nextParam) {
-            "[SIGN-IN PAGE] ✅ ALREADY SIGNED IN - Redirecting to next param:",
-            nextParam
-          );
           router.push(nextParam);
         } else if (venues && venues.length > 0) {
-            venueId: venues[0]?.venue_id,
-            createdAt: venues[0]?.created_at,
-          });
           router.push(`/dashboard/${venues[0]?.venue_id}`);
         } else {
           router.push("/select-plan");
@@ -163,10 +144,6 @@ function SignInPageContent() {
       // Log localStorage after OAuth initiation
       const allKeys = Object.keys(localStorage);
       const verifierKeys = allKeys.filter((k) => k.includes("verifier") || k.includes("code"));
-        allKeys: allKeys.length,
-        verifierKeys,
-        allSupabaseKeys: allKeys.filter((k) => k.includes("sb-") || k.includes("supabase")),
-      });
 
       if (error) {
         const msg = error?.message || "Sign in failed.";

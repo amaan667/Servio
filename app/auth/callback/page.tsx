@@ -64,9 +64,6 @@ function CallbackContent() {
           return;
         }
 
-          "[AUTH CALLBACK CLIENT] ⚠️ Session NOT auto-detected, trying manual exchange..."
-        );
-
         // Check if PKCE verifier exists before attempting exchange
         // Search for any Supabase code verifier in localStorage
         const allKeys = Object.keys(localStorage);
@@ -80,15 +77,6 @@ function CallbackContent() {
           allStorageItems[key] = value ? `${value.substring(0, 30)}...` : "null";
         });
 
-          hasVerifier: !!verifierValue,
-          verifierKey,
-          verifierLength: verifierValue?.length,
-          verifierPreview: verifierValue?.substring(0, 20),
-          verifierIsEmpty: verifierValue === "",
-          allAuthKeys: allKeys.filter((k) => k.includes("sb-") || k.includes("supabase")),
-          allKeyCount: allKeys.length,
-        });
-
         logger.info("[AUTH CALLBACK CLIENT] PKCE verifier check:", {
           hasVerifier: !!verifierValue,
           verifierKey,
@@ -96,24 +84,14 @@ function CallbackContent() {
           isEmpty: verifierValue === "",
         });
 
-          "[AUTH CALLBACK CLIENT] 🚀 Calling exchangeCodeForSession with code:",
-          code?.substring(0, 20)
-        );
-
         // Try to explicitly use the verifier if found
         let exchangeOptions = {};
         if (verifierValue && verifierKey) {
-            "[AUTH CALLBACK CLIENT] 📦 Attempting to use explicit verifier from localStorage"
-          );
           // The Supabase client should automatically use the verifier from storage
           // but let's ensure it's available
         }
 
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          hasData: !!data,
-          hasSession: !!data?.session,
-          hasError: !!exchangeError,
-        });
 
         if (exchangeError) {
           console.error("[AUTH CALLBACK CLIENT] ❌ Exchange error:", {
@@ -168,10 +146,6 @@ function CallbackContent() {
           credentials: "include",
         });
 
-          status: response.status,
-          ok: response.ok,
-        });
-
         if (!response.ok) {
           const errorData = await response.json();
           console.error("[AUTH CALLBACK CLIENT] Sync failed:", errorData);
@@ -196,18 +170,8 @@ function CallbackContent() {
           .order("created_at", { ascending: true })
           .limit(5); // Get first 5 to debug
 
-          venueCount: venues?.length,
-          venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
-          firstVenue: venues?.[0]?.venue_id,
-          allVenueIds: venues?.map((v) => v.venue_id),
-          error: venuesError?.message,
-        });
-
         if (venues && venues.length > 0 && venues[0]) {
           const targetVenue = venues[0].venue_id;
-            venueId: targetVenue,
-            createdAt: venues[0].created_at,
-          });
           router.push(`/dashboard/${targetVenue}`);
           return;
         }
@@ -219,11 +183,13 @@ function CallbackContent() {
           .eq("user_id", data.session.user.id)
           .limit(1);
 
+        logger.info("[AUTH CALLBACK CLIENT] Staff roles check:", {
           roleCount: staffRoles?.length,
           firstVenue: staffRoles?.[0]?.venue_id,
         });
 
         if (staffRoles && staffRoles.length > 0 && staffRoles[0]?.venue_id) {
+          logger.info(
             "[AUTH CALLBACK CLIENT] ✅ Redirecting to staff venue:",
             staffRoles[0].venue_id
           );

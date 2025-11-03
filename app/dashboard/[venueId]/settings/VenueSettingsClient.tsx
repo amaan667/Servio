@@ -50,6 +50,7 @@ export default function VenueSettingsClient({
   organization,
   isOwner = true,
 }: VenueSettingsClientProps) {
+  console.log("[VENUE SETTINGS CLIENT] Initializing:", {
     hasUser: !!user,
     hasVenue: !!venue,
     venueCount: venues?.length,

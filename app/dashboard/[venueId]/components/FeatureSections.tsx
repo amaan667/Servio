@@ -39,8 +39,7 @@ interface FeatureSectionsProps {
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
   // Track role changes
-  useEffect(() => {
-  }, [userRole]);
+  useEffect(() => {}, [userRole]);
 
   const handleFeatureClick = (_feature: Feature, _section: string) => {
     // Feature click logging removed for cleaner logs
@@ -150,12 +149,8 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
       ],
     });
   } else {
+    // Staff role - sections configured above
   }
-
-    "📊 TOTAL SECTIONS:",
-    sections.length,
-    "(Operations, Management" + (sections.length > 2 ? ", Insights)" : ")")
-  );
 
   return (
     <div className="space-y-8">

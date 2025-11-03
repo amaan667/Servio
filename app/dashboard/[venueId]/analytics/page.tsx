@@ -22,20 +22,40 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
   } = await supabase.auth.getUser();
 
   if (!user) {
+    console.log("[ANALYTICS] No user found, redirecting to sign-in");
     redirect("/sign-in");
   }
 
-  // Verify user has access to this venue
+  console.log("[ANALYTICS] User authenticated:", user.id, "checking access to venue:", venueId);
+
+  // Check if user is the venue owner
+  const { data: venue } = await supabase
+    .from("venues")
+    .select("venue_id, owner_user_id")
+    .eq("venue_id", venueId)
+    .eq("owner_user_id", user.id)
+    .maybeSingle();
+
+  const isOwner = !!venue;
+  console.log("[ANALYTICS] Is owner?", isOwner);
+
+  // Check if user has staff role for this venue
   const { data: staff } = await supabase
-    .from("staff")
+    .from("user_venue_roles")
     .select("role")
     .eq("venue_id", venueId)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (!staff) {
+  const isStaff = !!staff;
+  console.log("[ANALYTICS] Is staff?", isStaff, "role:", staff?.role);
+
+  if (!isOwner && !isStaff) {
+    console.log("[ANALYTICS] No access to venue, redirecting to dashboard");
     redirect("/dashboard");
   }
+
+  console.log("[ANALYTICS] Access granted, loading analytics data");
 
   // Fetch analytics data
   const [ordersData, menuData, feedbackData, revenueData] = await Promise.all([

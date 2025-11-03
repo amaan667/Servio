@@ -31,11 +31,6 @@ export default function AuthProvider({
   initialSession: Session | null;
   children: React.ReactNode;
 }) {
-    hasInitialSession: !!initialSession,
-    hasUser: !!initialSession?.user,
-    hasAccessToken: !!initialSession?.access_token,
-    userId: initialSession?.user?.id,
-  });
   // Get initial session from server OR from stored auth
   const getInitialSession = () => {
     if (initialSession) return initialSession;
@@ -138,7 +133,7 @@ export default function AuthProvider({
 
     // No initialSession - fetch on client (only if no initialSession provided)
     if (!initialSession) {
-      let supabase;
+      let supabase: ReturnType<typeof supabaseBrowser>;
       try {
         supabase = supabaseBrowser();
       } catch {

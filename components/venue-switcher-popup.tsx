@@ -380,6 +380,7 @@ export default function VenueSwitcherPopup({
                       sessionStorage.setItem(`venue_name_${venue.venue_id}`, venue.venue_name);
                       // DON'T clear old cache - prevents white flash during switch
                       // Dashboard will auto-refresh with new data when it mounts
+                      console.log(
                         `[Venue Switch] Pre-cached name for ${venue.venue_id} (${venue.venue_name}), navigating...`
                       );
                     }

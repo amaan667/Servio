@@ -143,17 +143,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         const hasUrl = menuUrl && menuUrl.trim();
         if (hasUrl) {
           formData.append("menu_url", menuUrl.trim());
-            pdfFile: file.name,
-            url: menuUrl.trim(),
-            replaceMode: isReplacing,
-          });
           toast({
             title: "Hybrid extraction starting...",
             description: "Combining PDF structure with website images and data",
-          });
-        } else {
-            pdfFile: file.name,
-            replaceMode: isReplacing,
           });
         }
 
@@ -180,12 +172,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           toast({
             title: isReplacing ? "Menu replaced successfully" : "Menu items added successfully",
             description: `${modeLabels[mode] || mode} • ${result.items || 0} items${result.mode === "hybrid" ? " • Images from URL added" : ""}`,
-          });
-
-            mode: result.mode,
-            items: result.items,
-            hotspots: result.hotspots,
-            duration: result.duration,
           });
 
           // Save extracted style to database if available

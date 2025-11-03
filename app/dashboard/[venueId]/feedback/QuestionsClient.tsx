@@ -202,10 +202,6 @@ export default function QuestionsClient({
         is_active: formData.is_active,
       };
 
-        ...payload,
-        choices: payload.choices?.length || 0,
-      });
-
       const response = await fetch("/api/feedback/questions", {
         method: "POST",
         headers: {
@@ -214,7 +210,6 @@ export default function QuestionsClient({
         credentials: "include",
         body: JSON.stringify(payload),
       });
-
 
       if (response.ok) {
         const result = await response.json();

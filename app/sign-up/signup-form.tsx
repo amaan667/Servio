@@ -47,10 +47,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
       // If invitation signup, pre-populate email and skip tier selection
       if (invitationParam && emailParam && venueParam && roleParam) {
-          email: emailParam,
-          venue: venueParam,
-          role: roleParam,
-        });
         setInvitationToken(invitationParam);
         setInvitationVenueId(venueParam);
         setInvitationRole(roleParam);
@@ -76,7 +72,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
     // For invitation signups, only validate name, email, and password
     if (invitationToken) {
-
       // Basic validation for invitation signup
       if (!formData.fullName.trim()) {
         setError("Full name is required.");
@@ -111,7 +106,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           throw new Error(data.error || "Failed to accept invitation");
         }
 
-
         // Sign in with the new credentials
         const supabase = supabaseBrowser();
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -122,7 +116,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         if (signInError) {
           throw new Error("Account created but failed to sign in. Please try signing in manually.");
         }
-
 
         // Redirect to the venue dashboard
         router.push(`/dashboard/${invitationVenueId}`);

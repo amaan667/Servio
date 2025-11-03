@@ -174,7 +174,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         if (ctaText.includes("Downgrade")) {
           const targetTier = ctaText.includes("Basic") ? "basic" : "standard";
 
-
           const response = await apiClient.post("/api/stripe/downgrade-plan", {
             organizationId: venues.organization_id,
             newTier: targetTier,
@@ -250,14 +249,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
   // Get CTA text and variant based on user's current plan
   const getPlanCTA = (planName: string) => {
-    // Debug logging
-      planName,
-      isSignedIn,
-      userPlan,
-      loadingPlan,
-      hasUser: !!user,
-    });
-
     // Show loading state while fetching plan
     if (isSignedIn && loadingPlan) {
       return "Loading...";

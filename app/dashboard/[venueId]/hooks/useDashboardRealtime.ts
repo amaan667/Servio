@@ -31,6 +31,12 @@ export function useDashboardRealtime({
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
 
+  // Store refreshCounts in a ref to avoid recreating callbacks
+  const refreshCountsRef = useRef(refreshCounts);
+  useEffect(() => {
+    refreshCountsRef.current = refreshCounts;
+  }, [refreshCounts]);
+
   // Debounced refresh function to prevent excessive calls
   const debouncedRefresh = useCallback(async () => {
     if (debounceTimeoutRef.current) {
@@ -39,23 +45,39 @@ export function useDashboardRealtime({
 
     debounceTimeoutRef.current = setTimeout(async () => {
       if (!isMountedRef.current) return;
+      console.log("[Dashboard Realtime] 🔄 DEBOUNCED REFRESH triggered");
       try {
-        await refreshCounts();
+        await refreshCountsRef.current();
+        console.log("[Dashboard Realtime] ✅ DEBOUNCED REFRESH completed");
       } catch (_error) {
-        console.error("[Dashboard Realtime] Error refreshing counts:", _error);
+        console.error("[Dashboard Realtime] ❌ Error refreshing counts:", _error);
       }
     }, 300); // 300ms debounce
-  }, [refreshCounts]);
+  }, []); // No dependencies - uses ref
 
   // Immediate refresh (no debounce) for critical updates
   const immediateRefresh = useCallback(async () => {
     if (!isMountedRef.current) return;
+    console.log("[Dashboard Realtime] 🔄 IMMEDIATE REFRESH triggered");
     try {
-      await refreshCounts();
+      await refreshCountsRef.current();
+      console.log("[Dashboard Realtime] ✅ IMMEDIATE REFRESH completed successfully");
     } catch (_error) {
-      console.error("[Dashboard Realtime] Error in immediate refresh:", _error);
+      console.error("[Dashboard Realtime] ❌ Error in immediate refresh:", _error);
     }
-  }, [refreshCounts]);
+  }, []); // No dependencies - uses ref
+
+  // Store loadStats in a ref to avoid recreating callbacks
+  const loadStatsRef = useRef(loadStats);
+  useEffect(() => {
+    loadStatsRef.current = loadStats;
+  }, [loadStats]);
+
+  // Store updateRevenueIncrementally in a ref
+  const updateRevenueIncrementallyRef = useRef(updateRevenueIncrementally);
+  useEffect(() => {
+    updateRevenueIncrementallyRef.current = updateRevenueIncrementally;
+  }, [updateRevenueIncrementally]);
 
   // Debounced stats load function
   const debouncedLoadStats = useCallback(async () => {
@@ -68,12 +90,12 @@ export function useDashboardRealtime({
 
     if (venueIdForStats && todayWindow) {
       try {
-        await loadStats(venueIdForStats, todayWindow);
+        await loadStatsRef.current(venueIdForStats, todayWindow);
       } catch (_error) {
         // Error handled silently
       }
     }
-  }, [venueId, venue, todayWindow, loadStats]);
+  }, [venueId, venue, todayWindow]); // Removed loadStats from deps, using ref
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -123,16 +145,22 @@ export function useDashboardRealtime({
           async (payload: RealtimePayload) => {
             if (!isMountedRef.current) return;
 
-              "[Dashboard Realtime] Order change detected:",
-              payload.eventType,
-              payload.new?.id || payload.old?.id
-            );
+            console.log("[Dashboard Realtime] Order change detected:", {
+              eventType: payload.eventType,
+              orderId: payload.new?.id || payload.old?.id,
+              orderStatus: payload.new?.order_status || payload.old?.order_status,
+              venueId,
+            });
 
             // For INSERT (new orders), refresh immediately to show new data
             // For UPDATE/DELETE, use debounced refresh
             if (payload.eventType === "INSERT") {
+              console.log("[Dashboard Realtime] New order inserted, triggering immediate refresh");
               immediateRefresh();
             } else {
+              console.log(
+                "[Dashboard Realtime] Order updated/deleted, triggering debounced refresh"
+              );
               debouncedRefresh();
             }
             debouncedLoadStats();
@@ -140,6 +168,10 @@ export function useDashboardRealtime({
             if (payload.eventType === "INSERT" && payload.new) {
               const order = payload.new as { order_status: string; total_amount?: number };
               const orderCreatedAt = payload.new?.created_at as string | undefined;
+              console.log("[Dashboard Realtime] Checking if order is within today's window:", {
+                orderCreatedAt,
+                todayWindow,
+              });
               // Only incrementally update if order is from today's window
               if (
                 orderCreatedAt &&
@@ -147,7 +179,14 @@ export function useDashboardRealtime({
                 orderCreatedAt >= todayWindow.startUtcISO &&
                 orderCreatedAt < todayWindow.endUtcISO
               ) {
-                updateRevenueIncrementally(order);
+                console.log(
+                  "[Dashboard Realtime] Order within today's window, updating revenue incrementally"
+                );
+                updateRevenueIncrementallyRef.current(order);
+              } else {
+                console.log(
+                  "[Dashboard Realtime] Order outside today's window, skipping incremental update"
+                );
               }
             }
           }
@@ -202,9 +241,12 @@ export function useDashboardRealtime({
           }
         )
         .subscribe((status: string) => {
+          console.log("[Dashboard Realtime] Subscription status:", status, "for venue:", venueId);
           if (status === "SUBSCRIBED") {
+            console.log("[Dashboard Realtime] Successfully subscribed to realtime updates");
             channelRef.current = channel;
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            console.error("[Dashboard Realtime] Channel error or timeout:", status);
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);
@@ -240,9 +282,10 @@ export function useDashboardRealtime({
 
     const handleOrderCreated = (event: CustomEvent) => {
       if (event.detail.venueId === venueId) {
-        refreshCounts();
+        console.log("[Dashboard Realtime] Custom orderCreated event received", event.detail);
+        refreshCountsRef.current();
         if (event.detail.order) {
-          updateRevenueIncrementally(event.detail.order);
+          updateRevenueIncrementallyRef.current(event.detail.order);
         }
       }
     };
@@ -271,11 +314,8 @@ export function useDashboardRealtime({
     };
   }, [
     venueId,
-    venue,
     todayWindow,
-    debouncedRefresh,
-    immediateRefresh,
-    debouncedLoadStats,
-    updateRevenueIncrementally,
+    // Removed callback dependencies to prevent re-subscription
+    // Using refs for functions instead
   ]);
 }

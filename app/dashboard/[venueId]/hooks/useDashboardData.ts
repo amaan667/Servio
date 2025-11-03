@@ -74,9 +74,6 @@ export function useDashboardData(
   // IMPORTANT: Server data (initialStats) takes priority over cache for freshness
   const [stats, setStats] = useState<DashboardStats>(() => {
     if (initialStats) {
-        `[DASHBOARD CLIENT] Using initialStats from server for venue ${venueId}:`,
-        initialStats
-      );
       return initialStats;
     }
     const cached = getCachedStats();
@@ -123,12 +120,6 @@ export function useDashboardData(
           .eq("venue_id", venueId)
           .eq("is_available", true);
 
-          count: menuItems?.length || 0,
-          hasError: !!menuError,
-          errorMessage: menuError?.message || null,
-          timestamp: new Date().toISOString(),
-        });
-
         // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
         // Count unpaid orders based on payment_status, not order_status
@@ -157,6 +148,7 @@ export function useDashboardData(
 
   const refreshCounts = useCallback(async () => {
     try {
+      console.log("[Dashboard] Refreshing counts for venue:", venueId);
       setError(null);
       const supabase = createClient();
 
@@ -177,6 +169,7 @@ export function useDashboardData(
         return;
       }
 
+      console.log("[Dashboard] Received counts from RPC:", newCounts);
 
       // Fetch REAL table counts directly (no RPC, no caching)
       const { data: allTables } = await withSupabaseRetry(
@@ -218,6 +211,7 @@ export function useDashboardData(
           active_tables_count: activeTables.length, // Same as tables_set_up
         };
 
+        console.log("[Dashboard] Setting new counts:", finalCounts);
         setCounts(finalCounts);
         // Cache the counts to prevent flicker (but allow refresh)
         if (typeof window !== "undefined") {
@@ -249,7 +243,6 @@ export function useDashboardData(
       if (hasFreshCache) {
         return;
       }
-
 
       // Clear old venue's cache when switching to ensure fresh data
       if (typeof window !== "undefined") {

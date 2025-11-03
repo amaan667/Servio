@@ -6,7 +6,6 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-
     // Step 1: Parse request body
     const body = await req.json();
 
@@ -34,14 +33,7 @@ export async function POST(req: Request) {
     // Step 2: Create Supabase client
     const supabase = createAdminClient();
 
-    // Step 3: Check environment variables
-      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      supabaseUrlLength: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
-      serviceRoleKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
-    });
-
-    // Step 4: Attempt to update order
+    // Step 3: Attempt to update order
     const updateData = {
       payment_status: "PAY_LATER",
       payment_method: "later",
@@ -54,15 +46,6 @@ export async function POST(req: Request) {
       .eq("id", order_id)
       .select()
       .single();
-
-      success: !!order,
-      hasError: !!updateError,
-      errorMessage: updateError?.message,
-      errorDetails: updateError?.details,
-      errorHint: updateError?.hint,
-      errorCode: updateError?.code,
-      orderReturned: !!order,
-    });
 
     if (updateError || !order) {
       console.error("[PAY LATER] ❌ Update failed:", {
@@ -84,13 +67,6 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-
-      orderId: order.id,
-      tableNumber: order.table_number,
-      total: order.total_amount,
-      orderNumber: order.order_number,
-      paymentStatus: order.payment_status,
-    });
 
     logger.info("✅ [PAY LATER] Order marked as pay later successfully", {
       orderId: order.id,

@@ -16,9 +16,6 @@ interface SettingsClientPageProps {
 }
 
 export default function SettingsClientPage({ venueId, initialData }: SettingsClientPageProps) {
-    venueId,
-    hasInitialData: !!initialData,
-  });
   // Client will fetch data if initialData not provided
   return <SettingsPageClient venueId={venueId} initialData={initialData} />;
 }
