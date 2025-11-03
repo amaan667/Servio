@@ -88,8 +88,8 @@ export async function extractMenuHybrid(
     logger.info("[HYBRID] ========================================");
 
     // Extract from both sources in parallel for speed
-    let pdfData;
-    let webItems;
+    let pdfData: { items: any[] };
+    let webItems: any[] = [];
 
     try {
       logger.info("[HYBRID] Starting parallel extraction (PDF + URL)...");
