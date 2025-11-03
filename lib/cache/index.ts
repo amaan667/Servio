@@ -206,3 +206,20 @@ export interface CacheInterface {
   mset<T>(keyValues: Record<string, T>, options?: CacheOptions): Promise<boolean>;
   clear(): Promise<boolean>;
 }
+
+/**
+ * AI Response caching helpers
+ */
+export const AICache = {
+  categorization: {
+    get: (itemName: string, categories: string[]) =>
+      cache.get(`ai:cat:${itemName}:${categories.join(",")}`),
+    set: (itemName: string, categories: string[], result: any) =>
+      cache.set(`ai:cat:${itemName}:${categories.join(",")}`, result, { ttl: cacheTTL.long }), // 30 min
+  },
+  matching: {
+    get: (pdfItem: string, urlItem: string) => cache.get(`ai:match:${pdfItem}:${urlItem}`),
+    set: (pdfItem: string, urlItem: string, result: any) =>
+      cache.set(`ai:match:${pdfItem}:${urlItem}`, result, { ttl: cacheTTL.long }), // 30 min
+  },
+};

@@ -76,7 +76,7 @@ async function fetchOrderAnalytics(venueId: string) {
   return {
     totalOrders: orders?.length || 0,
     avgOrderValue:
-      orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) / (orders?.length || 1),
+      (orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0) / (orders?.length || 1),
     ordersByStatus: groupBy(orders || [], "status"),
     ordersByDay: groupByDay(orders || []),
     recentOrders: orders?.slice(0, 10) || [],
@@ -137,17 +137,18 @@ async function fetchFeedbackAnalytics(venueId: string) {
     .order("created_at", { ascending: false });
 
   const avgRating =
-    feedback?.reduce((sum, f) => sum + (f.overall_rating || 0), 0) / (feedback?.length || 1);
+    (feedback?.reduce((sum, f) => sum + (f.overall_rating || 0), 0) || 0) / (feedback?.length || 1);
 
   return {
     totalFeedback: feedback?.length || 0,
     avgOverallRating: avgRating,
     avgFoodQuality:
-      feedback?.reduce((sum, f) => sum + (f.food_quality || 0), 0) / (feedback?.length || 1),
+      (feedback?.reduce((sum, f) => sum + (f.food_quality || 0), 0) || 0) / (feedback?.length || 1),
     avgServiceQuality:
-      feedback?.reduce((sum, f) => sum + (f.service_quality || 0), 0) / (feedback?.length || 1),
+      (feedback?.reduce((sum, f) => sum + (f.service_quality || 0), 0) || 0) /
+      (feedback?.length || 1),
     avgValueRating:
-      feedback?.reduce((sum, f) => sum + (f.value_rating || 0), 0) / (feedback?.length || 1),
+      (feedback?.reduce((sum, f) => sum + (f.value_rating || 0), 0) || 0) / (feedback?.length || 1),
     recentFeedback: feedback?.slice(0, 5) || [],
   };
 }

@@ -22,7 +22,7 @@ interface AnalyticsClientProps {
   revenueData: any;
 }
 
-export function AnalyticsClient({
+export default function AnalyticsClient({
   venueId: _venueId,
   ordersData,
   menuData,
