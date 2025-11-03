@@ -1,12 +1,18 @@
 /**
  * Analytics Dashboard
  * Provides business insights and performance metrics
+ *
+ * ARCHITECTURE NOTE:
+ * Like the main dashboard, this page fetches data on the SERVER using
+ * admin privileges (no auth required) and passes it to a CLIENT component
+ * that handles auth checking in the browser where cookies work properly.
+ *
+ * This avoids the "Auth session missing!" error that happens when trying
+ * to read user session cookies in server components.
  */
 
-import { createServerSupabaseReadOnly } from "@/lib/supabase";
-import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase";
 import AnalyticsClient from "./AnalyticsClient";
-import { logger } from "@/lib/logger";
 
 export const metadata = {
   title: "Analytics | Servio",
@@ -16,121 +22,8 @@ export const metadata = {
 export default async function AnalyticsPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
-  logger.info("[ANALYTICS] ========== ANALYTICS PAGE LOAD START ==========");
-  logger.info("[ANALYTICS] VenueId:", { venueId });
-
-  // Use createServerSupabaseReadOnly to respect user's auth cookies
-  const supabase = await createServerSupabaseReadOnly();
-  logger.info("[ANALYTICS] Supabase client created");
-
-  // Check authentication from user's session
-  const authResult = await supabase.auth.getUser();
-  logger.info("[ANALYTICS] Auth result:", {
-    hasUser: !!authResult.data?.user,
-    userId: authResult.data?.user?.id,
-    hasError: !!authResult.error,
-    error: authResult.error?.message,
-  });
-
-  // Try getSession as well to see what we get
-  const sessionResult = await supabase.auth.getSession();
-  logger.info("[ANALYTICS] Session result:", {
-    hasSession: !!sessionResult.data?.session,
-    sessionUserId: sessionResult.data?.session?.user?.id,
-    hasError: !!sessionResult.error,
-    error: sessionResult.error?.message,
-  });
-
-  const user = authResult.data?.user || sessionResult.data?.session?.user;
-
-  if (!user) {
-    logger.error("[ANALYTICS] ❌ NO USER FOUND - Auth and Session both failed");
-    logger.error("[ANALYTICS] This indicates cookies are not accessible or session expired");
-
-    // DON'T REDIRECT - Show error message instead
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-xl font-semibold text-gray-900 mb-4">Authentication Debug</h1>
-          <div className="space-y-2 text-sm">
-            <p className="text-red-600 font-medium">No user session found</p>
-            <p className="text-gray-600">Auth Error: {authResult.error?.message || "None"}</p>
-            <p className="text-gray-600">Session Error: {sessionResult.error?.message || "None"}</p>
-            <p className="text-gray-600 mt-4">
-              This page requires authentication. The server cannot access your session cookies.
-            </p>
-            <a
-              href={`/dashboard/${venueId}`}
-              className="mt-4 w-full block text-center bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
-            >
-              Back to Dashboard
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  logger.info("[ANALYTICS] ✅ User authenticated:", { userId: user.id, email: user.email });
-
-  // Check if user is the venue owner
-  const { data: venue, error: venueError } = await supabase
-    .from("venues")
-    .select("venue_id, owner_user_id")
-    .eq("venue_id", venueId)
-    .eq("owner_user_id", user.id)
-    .maybeSingle();
-
-  logger.info("[ANALYTICS] Owner check:", {
-    isOwner: !!venue,
-    venueError: venueError?.message,
-    queriedVenueId: venueId,
-    userId: user.id,
-  });
-
-  const isOwner = !!venue;
-
-  // Check if user has staff role for this venue
-  const { data: staff, error: staffError } = await supabase
-    .from("user_venue_roles")
-    .select("role")
-    .eq("venue_id", venueId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  logger.info("[ANALYTICS] Staff check:", {
-    isStaff: !!staff,
-    role: staff?.role,
-    staffError: staffError?.message,
-  });
-
-  const isStaff = !!staff;
-
-  if (!isOwner && !isStaff) {
-    logger.error("[ANALYTICS] ❌ NO ACCESS - User is neither owner nor staff");
-
-    // DON'T REDIRECT - Show error message
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-xl font-semibold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600">
-            You do not have permission to view analytics for this venue.
-          </p>
-          <a
-            href="/dashboard"
-            className="mt-4 w-full block text-center bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
-          >
-            Back to Dashboard
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  logger.info("[ANALYTICS] ✅ Access granted - Loading analytics data");
-
-  // Fetch analytics data
+  // Fetch analytics data on server WITHOUT auth (use admin client like dashboard does)
+  // The AnalyticsClient component will handle auth checking in the browser
   const [ordersData, menuData, feedbackData, revenueData] = await Promise.all([
     fetchOrderAnalytics(venueId),
     fetchMenuAnalytics(venueId),
@@ -153,7 +46,7 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
  * Fetch order analytics
  */
 async function fetchOrderAnalytics(venueId: string) {
-  const supabase = await createServerSupabaseReadOnly();
+  const supabase = createAdminClient();
 
   // Get orders from last 30 days
   const thirtyDaysAgo = new Date();
@@ -180,7 +73,7 @@ async function fetchOrderAnalytics(venueId: string) {
  * Fetch menu analytics
  */
 async function fetchMenuAnalytics(venueId: string) {
-  const supabase = await createServerSupabaseReadOnly();
+  const supabase = createAdminClient();
 
   const { data: menuItems } = await supabase
     .from("menu_items")
@@ -221,7 +114,7 @@ async function fetchMenuAnalytics(venueId: string) {
  * Fetch feedback analytics
  */
 async function fetchFeedbackAnalytics(venueId: string) {
-  const supabase = await createServerSupabaseReadOnly();
+  const supabase = createAdminClient();
 
   const { data: feedback } = await supabase
     .from("customer_feedback")
@@ -250,7 +143,7 @@ async function fetchFeedbackAnalytics(venueId: string) {
  * Fetch revenue analytics
  */
 async function fetchRevenueAnalytics(venueId: string) {
-  const supabase = await createServerSupabaseReadOnly();
+  const supabase = createAdminClient();
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

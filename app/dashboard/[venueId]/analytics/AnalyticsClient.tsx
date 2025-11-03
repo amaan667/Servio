@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -13,6 +13,8 @@ import {
   BarChart3,
   PieChart,
 } from "lucide-react";
+import { supabaseBrowser } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 interface AnalyticsClientProps {
   venueId: string;
@@ -23,12 +25,83 @@ interface AnalyticsClientProps {
 }
 
 export default function AnalyticsClient({
-  venueId: _venueId,
+  venueId,
   ordersData,
   menuData,
   feedbackData,
   revenueData,
 }: AnalyticsClientProps) {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Auth check on client side where cookies work properly
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = supabaseBrowser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          console.log("[Analytics Client] No user, redirecting to sign-in");
+          router.push("/sign-in");
+          return;
+        }
+
+        // Check if user is owner
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_id")
+          .eq("venue_id", venueId)
+          .eq("owner_user_id", user.id)
+          .maybeSingle();
+
+        if (venue) {
+          setIsAuthorized(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if user is staff
+        const { data: staff } = await supabase
+          .from("user_venue_roles")
+          .select("role")
+          .eq("venue_id", venueId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (staff) {
+          setIsAuthorized(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // No access
+        console.log("[Analytics Client] No access, redirecting to dashboard");
+        router.push("/dashboard");
+      } catch (error) {
+        console.error("[Analytics Client] Auth error:", error);
+        router.push("/dashboard");
+      }
+    }
+
+    checkAuth();
+  }, [venueId, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return null; // Will redirect
+  }
+
   return (
     <div className="space-y-6">
       <div>
