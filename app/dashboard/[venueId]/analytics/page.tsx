@@ -3,7 +3,7 @@
  * Provides business insights and performance metrics
  */
 
-import { createServerSupabase } from "@/lib/supabase-server";
+import { createAdminClient } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 import { AnalyticsClient } from "./AnalyticsClient";
 
@@ -14,7 +14,7 @@ export const metadata = {
 
 export default async function AnalyticsPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  const supabase = await createServerSupabase();
+  const supabase = createAdminClient();
 
   // Check authentication
   const {
@@ -60,7 +60,7 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
  * Fetch order analytics
  */
 async function fetchOrderAnalytics(venueId: string) {
-  const supabase = await createServerSupabase();
+  const supabase = createAdminClient();
 
   // Get orders from last 30 days
   const thirtyDaysAgo = new Date();
@@ -87,7 +87,7 @@ async function fetchOrderAnalytics(venueId: string) {
  * Fetch menu analytics
  */
 async function fetchMenuAnalytics(venueId: string) {
-  const supabase = await createServerSupabase();
+  const supabase = createAdminClient();
 
   const { data: menuItems } = await supabase
     .from("menu_items")
@@ -128,7 +128,7 @@ async function fetchMenuAnalytics(venueId: string) {
  * Fetch feedback analytics
  */
 async function fetchFeedbackAnalytics(venueId: string) {
-  const supabase = await createServerSupabase();
+  const supabase = createAdminClient();
 
   const { data: feedback } = await supabase
     .from("customer_feedback")
@@ -156,7 +156,7 @@ async function fetchFeedbackAnalytics(venueId: string) {
  * Fetch revenue analytics
  */
 async function fetchRevenueAnalytics(venueId: string) {
-  const supabase = await createServerSupabase();
+  const supabase = createAdminClient();
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

@@ -13,7 +13,7 @@ export interface FeatureFlag {
   description?: string;
 }
 
-export const FEATURES = {
+export const FEATURES: Record<string, FeatureFlag> = {
   // Performance features
   parallelAI: {
     enabled: true,
@@ -64,7 +64,7 @@ export const FEATURES = {
     rolloutPercentage: 10,
     description: "Advanced analytics dashboard with predictive insights",
   },
-} as const;
+};
 
 type FeatureName = keyof typeof FEATURES;
 

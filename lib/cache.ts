@@ -123,6 +123,9 @@ class MemoryCache {
 // Singleton instance
 const cache = new MemoryCache();
 
+// Export cache instance for backward compatibility
+export { cache };
+
 // Run cleanup every 5 minutes
 if (typeof setInterval !== "undefined") {
   setInterval(() => cache.cleanup(), 5 * 60 * 1000);
@@ -209,4 +212,23 @@ export const AICache = {
     set: (pdfItem: string, urlItem: string, result: any) =>
       cache.set(`ai:match:${pdfItem}:${urlItem}`, result, 3600), // 1 hour
   },
+};
+
+/**
+ * Cache keys (for backward compatibility with existing code)
+ */
+export const cacheKeys = {
+  menuItems: (venueId: string) => `menu:${venueId}`,
+  categories: (venueId: string) => `categories:${venueId}`,
+  orders: (venueId: string) => `orders:${venueId}`,
+  venue: (venueId: string) => `venue:${venueId}`,
+};
+
+/**
+ * Cache TTL values (for backward compatibility)
+ */
+export const cacheTTL = {
+  short: 60, // 1 minute
+  medium: 300, // 5 minutes
+  long: 3600, // 1 hour
 };

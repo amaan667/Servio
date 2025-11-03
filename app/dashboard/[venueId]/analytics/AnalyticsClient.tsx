@@ -23,7 +23,7 @@ interface AnalyticsClientProps {
 }
 
 export function AnalyticsClient({
-  venueId,
+  venueId: _venueId,
   ordersData,
   menuData,
   feedbackData,

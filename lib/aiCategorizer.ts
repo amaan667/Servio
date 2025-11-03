@@ -32,7 +32,7 @@ export async function categorizeItemWithAI(
   const cached = await AICache.categorization.get(itemName, pdfCategories);
   if (cached) {
     logger.debug("[AI CATEGORIZER] Cache hit", { itemName });
-    return cached;
+    return cached as { category: string; confidence: number; shouldCreateNew: boolean };
   }
 
   // Build category examples from PDF items

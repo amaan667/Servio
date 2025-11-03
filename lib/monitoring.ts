@@ -190,8 +190,6 @@ class MonitoringService {
 // Singleton instance
 const monitoring = new MonitoringService();
 
-export { monitoring };
-
 /**
  * Quick alert helpers
  */
