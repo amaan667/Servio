@@ -16,49 +16,119 @@ export const metadata = {
 export default async function AnalyticsPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
+  logger.info("[ANALYTICS] ========== ANALYTICS PAGE LOAD START ==========");
+  logger.info("[ANALYTICS] VenueId:", { venueId });
+
   // Use createServerSupabaseReadOnly to respect user's auth cookies
   const supabase = await createServerSupabaseReadOnly();
+  logger.info("[ANALYTICS] Supabase client created");
 
   // Check authentication from user's session
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const authResult = await supabase.auth.getUser();
+  logger.info("[ANALYTICS] Auth result:", {
+    hasUser: !!authResult.data?.user,
+    userId: authResult.data?.user?.id,
+    hasError: !!authResult.error,
+    error: authResult.error?.message,
+  });
+
+  // Try getSession as well to see what we get
+  const sessionResult = await supabase.auth.getSession();
+  logger.info("[ANALYTICS] Session result:", {
+    hasSession: !!sessionResult.data?.session,
+    sessionUserId: sessionResult.data?.session?.user?.id,
+    hasError: !!sessionResult.error,
+    error: sessionResult.error?.message,
+  });
+
+  const user = authResult.data?.user || sessionResult.data?.session?.user;
 
   if (!user) {
-    logger.info("[ANALYTICS] No user found, redirecting to sign-in");
-    redirect("/sign-in");
+    logger.error("[ANALYTICS] ❌ NO USER FOUND - Auth and Session both failed");
+    logger.error("[ANALYTICS] This indicates cookies are not accessible or session expired");
+
+    // DON'T REDIRECT - Show error message instead
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <h1 className="text-xl font-semibold text-gray-900 mb-4">Authentication Debug</h1>
+          <div className="space-y-2 text-sm">
+            <p className="text-red-600 font-medium">No user session found</p>
+            <p className="text-gray-600">Auth Error: {authResult.error?.message || "None"}</p>
+            <p className="text-gray-600">Session Error: {sessionResult.error?.message || "None"}</p>
+            <p className="text-gray-600 mt-4">
+              This page requires authentication. The server cannot access your session cookies.
+            </p>
+            <a
+              href={`/dashboard/${venueId}`}
+              className="mt-4 w-full block text-center bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
+            >
+              Back to Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  logger.info("[ANALYTICS] User authenticated:", { userId: user.id, venueId });
+  logger.info("[ANALYTICS] ✅ User authenticated:", { userId: user.id, email: user.email });
 
   // Check if user is the venue owner
-  const { data: venue } = await supabase
+  const { data: venue, error: venueError } = await supabase
     .from("venues")
     .select("venue_id, owner_user_id")
     .eq("venue_id", venueId)
     .eq("owner_user_id", user.id)
     .maybeSingle();
 
+  logger.info("[ANALYTICS] Owner check:", {
+    isOwner: !!venue,
+    venueError: venueError?.message,
+    queriedVenueId: venueId,
+    userId: user.id,
+  });
+
   const isOwner = !!venue;
-  logger.info("[ANALYTICS] Is owner?", { isOwner });
 
   // Check if user has staff role for this venue
-  const { data: staff } = await supabase
+  const { data: staff, error: staffError } = await supabase
     .from("user_venue_roles")
     .select("role")
     .eq("venue_id", venueId)
     .eq("user_id", user.id)
     .maybeSingle();
 
+  logger.info("[ANALYTICS] Staff check:", {
+    isStaff: !!staff,
+    role: staff?.role,
+    staffError: staffError?.message,
+  });
+
   const isStaff = !!staff;
-  logger.info("[ANALYTICS] Is staff?", { isStaff, role: staff?.role });
 
   if (!isOwner && !isStaff) {
-    logger.info("[ANALYTICS] No access to venue, redirecting to dashboard");
-    redirect("/dashboard");
+    logger.error("[ANALYTICS] ❌ NO ACCESS - User is neither owner nor staff");
+
+    // DON'T REDIRECT - Show error message
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <h1 className="text-xl font-semibold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600">
+            You do not have permission to view analytics for this venue.
+          </p>
+          <a
+            href="/dashboard"
+            className="mt-4 w-full block text-center bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
+          >
+            Back to Dashboard
+          </a>
+        </div>
+      </div>
+    );
   }
 
-  logger.info("[ANALYTICS] Access granted, loading analytics data");
+  logger.info("[ANALYTICS] ✅ Access granted - Loading analytics data");
 
   // Fetch analytics data
   const [ordersData, menuData, feedbackData, revenueData] = await Promise.all([
