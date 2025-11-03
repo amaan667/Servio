@@ -251,7 +251,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
   // Get CTA text and variant based on user's current plan
   const getPlanCTA = (planName: string) => {
     // Debug logging
-    console.log("[PRICING CTA] State:", {
       planName,
       isSignedIn,
       userPlan,

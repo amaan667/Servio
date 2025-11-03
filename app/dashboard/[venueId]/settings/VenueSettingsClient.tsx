@@ -50,7 +50,6 @@ export default function VenueSettingsClient({
   organization,
   isOwner = true,
 }: VenueSettingsClientProps) {
-  console.log("[VENUE SETTINGS CLIENT] 🎯 Rendering with props", {
     hasUser: !!user,
     hasVenue: !!venue,
     venueCount: venues?.length,

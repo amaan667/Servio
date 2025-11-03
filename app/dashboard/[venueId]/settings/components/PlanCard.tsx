@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, ExternalLink, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Crown, Check, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 interface PlanCardProps {
   organization?: {
@@ -42,13 +43,46 @@ const PLAN_FEATURES = {
 
 export function PlanCard({ organization, venueId }: PlanCardProps) {
   const [loadingPortal, setLoadingPortal] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [currentTier, setCurrentTier] = useState(organization?.subscription_tier || "basic");
 
-  const tier = organization?.subscription_tier || "basic";
   const hasStripeCustomer = !!organization?.stripe_customer_id;
 
   // Capitalize tier name
-  const planName = tier.charAt(0).toUpperCase() + tier.slice(1);
-  const features = PLAN_FEATURES[tier as keyof typeof PLAN_FEATURES] || PLAN_FEATURES.basic;
+  const planName = currentTier.charAt(0).toUpperCase() + currentTier.slice(1);
+  const features = PLAN_FEATURES[currentTier as keyof typeof PLAN_FEATURES] || PLAN_FEATURES.basic;
+
+  // Sync plan from Stripe on mount
+  useEffect(() => {
+    if (organization?.id && hasStripeCustomer) {
+      syncPlanFromStripe();
+    }
+  }, [organization?.id, hasStripeCustomer]);
+
+  const syncPlanFromStripe = async () => {
+    if (!organization?.id) return;
+
+    setSyncing(true);
+    try {
+      const response = await fetch("/api/subscription/sync-from-stripe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: organization.id }),
+      });
+
+      const data = await response.json();
+
+      if (data.synced && data.newTier) {
+        setCurrentTier(data.newTier);
+      } else if (data.tier) {
+        setCurrentTier(data.tier);
+      }
+    } catch (error) {
+      logger.error("[PLAN CARD] Sync failed", { error });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleManageBilling = async () => {
     setLoadingPortal(true);

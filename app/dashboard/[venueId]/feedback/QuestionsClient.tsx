@@ -202,7 +202,6 @@ export default function QuestionsClient({
         is_active: formData.is_active,
       };
 
-      console.log("[FEEDBACK DEBUG] Payload:", {
         ...payload,
         choices: payload.choices?.length || 0,
       });

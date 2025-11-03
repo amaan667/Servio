@@ -140,7 +140,6 @@ export function usePaymentProcessing() {
           body: JSON.stringify(tillPayload),
         });
 
-        console.log("[PAYMENT] 📥 Response from /api/pay/till:", {
           ok: response.ok,
           status: response.status,
           statusText: response.statusText,
@@ -187,7 +186,6 @@ export function usePaymentProcessing() {
           body: JSON.stringify(laterPayload),
         });
 
-        console.log("[PAYMENT] 📥 Response from /api/pay/later:", {
           ok: response.ok,
           status: response.status,
           statusText: response.statusText,

@@ -173,7 +173,6 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Check authentication and venue access
   useEffect(() => {
-    console.log("🔄 CLIENT: authCheckComplete:", authCheckComplete);
 
     async function checkAuth() {
       // ALWAYS fetch role if we don't have it, regardless of cache
@@ -201,7 +200,6 @@ const DashboardClient = React.memo(function DashboardClient({
           sessionError = sessionResult.error;
           session = sessionResult.data.session;
 
-          console.log(
             `📊 CLIENT: getSession() - hasSession: ${!!session}, hasUser: ${!!session?.user}, error: ${sessionError?.message || "none"}`
           );
 
@@ -209,7 +207,6 @@ const DashboardClient = React.memo(function DashboardClient({
           if (!session?.user) {
             const userResult = await supabase.auth.getUser();
 
-            console.log(
               `📊 CLIENT: getUser() - hasUser: ${!!userResult.data?.user}, error: ${userResult.error?.message || "none"}`
             );
 
@@ -223,7 +220,6 @@ const DashboardClient = React.memo(function DashboardClient({
           }
 
           if (session?.user) {
-            console.log(
               `✅ Session found on attempt ${retries + 1} - userId: ${session.user.id.substring(0, 8)}`
             );
             break;

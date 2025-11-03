@@ -47,7 +47,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
       // If invitation signup, pre-populate email and skip tier selection
       if (invitationParam && emailParam && venueParam && roleParam) {
-        console.log("[SIGNUP] Invitation signup detected", {
           email: emailParam,
           venue: venueParam,
           role: roleParam,

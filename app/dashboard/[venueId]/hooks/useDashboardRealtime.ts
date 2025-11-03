@@ -123,7 +123,6 @@ export function useDashboardRealtime({
           async (payload: RealtimePayload) => {
             if (!isMountedRef.current) return;
 
-            console.log(
               "[Dashboard Realtime] Order change detected:",
               payload.eventType,
               payload.new?.id || payload.old?.id
@@ -205,7 +204,6 @@ export function useDashboardRealtime({
         .subscribe((status: string) => {
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
-            console.log("[Dashboard Realtime] Successfully subscribed to channel:", channelName);
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {

@@ -28,7 +28,6 @@ function SignInPageContent() {
       const isOAuthCallback = window.location.pathname.includes("/auth/callback");
 
       if (hasRefreshToken && !hasAccessToken && !isOAuthCallback) {
-        console.log(
           "[SIGN-IN] Detected broken session - clearing cookies only (preserving PKCE)..."
         );
         try {
@@ -50,7 +49,6 @@ function SignInPageContent() {
             }
           });
 
-          console.log(
             "[SIGN-IN] Broken session cookies and localStorage cleared (PKCE verifier preserved)"
           );
         } catch (e) {
@@ -96,7 +94,6 @@ function SignInPageContent() {
           .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
           .limit(5); // Get first 5 to debug
 
-        console.log("[SIGN-IN PAGE] 📊 ALREADY SIGNED IN - User venues:", {
           venueCount: venues?.length,
           venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
           firstVenue: venues?.[0]?.venue_id,
@@ -107,13 +104,11 @@ function SignInPageContent() {
         });
 
         if (nextParam) {
-          console.log(
             "[SIGN-IN PAGE] ✅ ALREADY SIGNED IN - Redirecting to next param:",
             nextParam
           );
           router.push(nextParam);
         } else if (venues && venues.length > 0) {
-          console.log("[SIGN-IN PAGE] ✅ ALREADY SIGNED IN - Redirecting to FIRST venue:", {
             venueId: venues[0]?.venue_id,
             createdAt: venues[0]?.created_at,
           });
@@ -168,7 +163,6 @@ function SignInPageContent() {
       // Log localStorage after OAuth initiation
       const allKeys = Object.keys(localStorage);
       const verifierKeys = allKeys.filter((k) => k.includes("verifier") || k.includes("code"));
-      console.log("[SIGN-IN] 🔍 localStorage after OAuth init:", {
         allKeys: allKeys.length,
         verifierKeys,
         allSupabaseKeys: allKeys.filter((k) => k.includes("sb-") || k.includes("supabase")),

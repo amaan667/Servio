@@ -22,7 +22,6 @@ export default function GlobalNav() {
   // This prevents ALL flicker by using session from context immediately
   const isAuthenticated = !!(session?.user && session?.access_token);
 
-  console.log("[GLOBAL NAV] 🎨 Rendering navigation", {
     hasSession: !!session,
     hasUser: !!session?.user,
     hasAccessToken: !!session?.access_token,

@@ -35,7 +35,6 @@ export async function POST(req: Request) {
     const supabase = createAdminClient();
 
     // Step 3: Check environment variables
-    console.log("[PAY LATER] 🔑 Environment check:", {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       supabaseUrlLength: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
@@ -56,7 +55,6 @@ export async function POST(req: Request) {
       .select()
       .single();
 
-    console.log("[PAY LATER] 📊 Update result:", {
       success: !!order,
       hasError: !!updateError,
       errorMessage: updateError?.message,
@@ -87,7 +85,6 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("[PAY LATER] ✅ Order updated successfully:", {
       orderId: order.id,
       tableNumber: order.table_number,
       total: order.total_amount,

@@ -64,7 +64,6 @@ function CallbackContent() {
           return;
         }
 
-        console.log(
           "[AUTH CALLBACK CLIENT] ⚠️ Session NOT auto-detected, trying manual exchange..."
         );
 
@@ -81,7 +80,6 @@ function CallbackContent() {
           allStorageItems[key] = value ? `${value.substring(0, 30)}...` : "null";
         });
 
-        console.log("[AUTH CALLBACK CLIENT] 🔍 PKCE verifier DEBUG:", {
           hasVerifier: !!verifierValue,
           verifierKey,
           verifierLength: verifierValue?.length,
@@ -98,7 +96,6 @@ function CallbackContent() {
           isEmpty: verifierValue === "",
         });
 
-        console.log(
           "[AUTH CALLBACK CLIENT] 🚀 Calling exchangeCodeForSession with code:",
           code?.substring(0, 20)
         );
@@ -106,7 +103,6 @@ function CallbackContent() {
         // Try to explicitly use the verifier if found
         let exchangeOptions = {};
         if (verifierValue && verifierKey) {
-          console.log(
             "[AUTH CALLBACK CLIENT] 📦 Attempting to use explicit verifier from localStorage"
           );
           // The Supabase client should automatically use the verifier from storage
@@ -114,7 +110,6 @@ function CallbackContent() {
         }
 
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        console.log("[AUTH CALLBACK CLIENT] 📝 Exchange result:", {
           hasData: !!data,
           hasSession: !!data?.session,
           hasError: !!exchangeError,
@@ -173,7 +168,6 @@ function CallbackContent() {
           credentials: "include",
         });
 
-        console.log("[AUTH CALLBACK CLIENT] Sync response:", {
           status: response.status,
           ok: response.ok,
         });
@@ -202,7 +196,6 @@ function CallbackContent() {
           .order("created_at", { ascending: true })
           .limit(5); // Get first 5 to debug
 
-        console.log("[AUTH CALLBACK CLIENT] 📊 GOOGLE OAUTH - Venues query result:", {
           venueCount: venues?.length,
           venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
           firstVenue: venues?.[0]?.venue_id,
@@ -212,7 +205,6 @@ function CallbackContent() {
 
         if (venues && venues.length > 0 && venues[0]) {
           const targetVenue = venues[0].venue_id;
-          console.log("[AUTH CALLBACK CLIENT] ✅ GOOGLE OAUTH - Redirecting to FIRST venue:", {
             venueId: targetVenue,
             createdAt: venues[0].created_at,
           });
@@ -227,13 +219,11 @@ function CallbackContent() {
           .eq("user_id", data.session.user.id)
           .limit(1);
 
-        console.log("[AUTH CALLBACK CLIENT] Staff roles result:", {
           roleCount: staffRoles?.length,
           firstVenue: staffRoles?.[0]?.venue_id,
         });
 
         if (staffRoles && staffRoles.length > 0 && staffRoles[0]?.venue_id) {
-          console.log(
             "[AUTH CALLBACK CLIENT] ✅ Redirecting to staff venue:",
             staffRoles[0].venue_id
           );

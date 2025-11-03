@@ -152,7 +152,6 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
   } else {
   }
 
-  console.log(
     "📊 TOTAL SECTIONS:",
     sections.length,
     "(Operations, Management" + (sections.length > 2 ? ", Insights)" : ")")

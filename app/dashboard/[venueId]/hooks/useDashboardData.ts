@@ -74,7 +74,6 @@ export function useDashboardData(
   // IMPORTANT: Server data (initialStats) takes priority over cache for freshness
   const [stats, setStats] = useState<DashboardStats>(() => {
     if (initialStats) {
-      console.log(
         `[DASHBOARD CLIENT] Using initialStats from server for venue ${venueId}:`,
         initialStats
       );
@@ -124,7 +123,6 @@ export function useDashboardData(
           .eq("venue_id", venueId)
           .eq("is_available", true);
 
-        console.log(`[DASHBOARD CLIENT] Menu items query result for venue ${venueId}:`, {
           count: menuItems?.length || 0,
           hasError: !!menuError,
           errorMessage: menuError?.message || null,

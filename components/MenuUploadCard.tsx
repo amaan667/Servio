@@ -143,7 +143,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         const hasUrl = menuUrl && menuUrl.trim();
         if (hasUrl) {
           formData.append("menu_url", menuUrl.trim());
-          console.log("[MENU UPLOAD] 🎯 HYBRID MODE: Uploading PDF + URL", {
             pdfFile: file.name,
             url: menuUrl.trim(),
             replaceMode: isReplacing,
@@ -153,7 +152,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             description: "Combining PDF structure with website images and data",
           });
         } else {
-          console.log("[MENU UPLOAD] 📄 PDF-ONLY MODE: No URL provided", {
             pdfFile: file.name,
             replaceMode: isReplacing,
           });
@@ -184,7 +182,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             description: `${modeLabels[mode] || mode} • ${result.items || 0} items${result.mode === "hybrid" ? " • Images from URL added" : ""}`,
           });
 
-          console.log("[MENU UPLOAD] ✅ Upload successful", {
             mode: result.mode,
             items: result.items,
             hotspots: result.hotspots,

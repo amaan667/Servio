@@ -113,7 +113,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq("is_available", true);
 
     // Log menu items count for debugging
-    console.log(`[DASHBOARD] Menu items query for venue ${venueId}:`, {
       count: menuItems?.length || 0,
       hasError: !!menuError,
       errorMessage: menuError?.message || null,

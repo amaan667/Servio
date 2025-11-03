@@ -25,7 +25,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   const router = useRouter();
   const { session, loading: authLoading } = useAuth(); // Get session from AuthProvider
 
-  console.log("[SETTINGS PAGE] 🚀 Settings page component mounted", {
     venueId,
     hasInitialData: !!initialData,
     hasSession: !!session,
@@ -47,13 +46,11 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
     // Otherwise, fetch data on client (and skip cache since we fixed the query)
     const fetchData = async () => {
-      console.log("[SETTINGS] 🚀 fetchData() STARTED - will fetch fresh (no cache)", {
         hasWindow: typeof window !== "undefined",
         venueId,
       });
 
       try {
-        console.log("[SETTINGS] 🔄 Fetching data on client...", {
           hasSession: !!session,
           hasUser: !!session?.user,
           userId: session?.user?.id,
@@ -149,7 +146,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         setData(fetchedData);
         sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
-        console.log("[SETTINGS] ✅ Data fetched and cached", {
           hasUser: !!fetchedData.user,
           hasVenue: !!fetchedData.venue,
           userRole: fetchedData.userRole,
@@ -175,7 +171,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
   // If no data after loading, wait for session or show minimal UI
   if (!data || !data.user || !data.venue) {
-    console.log("[SETTINGS] ⏳ Waiting for data...", {
       hasData: !!data,
       hasUser: !!data?.user,
       hasVenue: !!data?.venue,

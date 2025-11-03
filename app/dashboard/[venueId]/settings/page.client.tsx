@@ -16,7 +16,6 @@ interface SettingsClientPageProps {
 }
 
 export default function SettingsClientPage({ venueId, initialData }: SettingsClientPageProps) {
-  console.log("[SETTINGS PAGE CLIENT] 🔧 Rendering settings page client wrapper", {
     venueId,
     hasInitialData: !!initialData,
   });
