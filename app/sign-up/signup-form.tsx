@@ -77,7 +77,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
     // For invitation signups, only validate name, email, and password
     if (invitationToken) {
-      console.log("[SIGNUP] Processing invitation signup...");
 
       // Basic validation for invitation signup
       if (!formData.fullName.trim()) {
@@ -113,7 +112,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           throw new Error(data.error || "Failed to accept invitation");
         }
 
-        console.log("[SIGNUP] Invitation accepted, signing in...");
 
         // Sign in with the new credentials
         const supabase = supabaseBrowser();
@@ -126,7 +124,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           throw new Error("Account created but failed to sign in. Please try signing in manually.");
         }
 
-        console.log("[SIGNUP] Sign-in successful, redirecting to venue...");
 
         // Redirect to the venue dashboard
         router.push(`/dashboard/${invitationVenueId}`);

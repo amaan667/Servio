@@ -40,9 +40,6 @@ interface FeatureSectionsProps {
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
   // Track role changes
   useEffect(() => {
-    console.log("═══════════════════════════════════════════════════");
-    console.log("📋 FEATURE CARDS RENDERING - Role:", userRole || "NULL");
-    console.log("═══════════════════════════════════════════════════");
   }, [userRole]);
 
   const handleFeatureClick = (_feature: Feature, _section: string) => {
@@ -122,7 +119,6 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
 
   // Add Insights section for owners/managers
   if (userRole === "owner" || userRole === "manager") {
-    console.log("✅ Adding INSIGHTS SECTION (role: " + userRole + ")");
     sections.push({
       title: "Insights",
       description: "Analytics and customer feedback",
@@ -154,7 +150,6 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
       ],
     });
   } else {
-    console.log("❌ NOT adding Insights section (role: " + (userRole || "NULL") + ")");
   }
 
   console.log(

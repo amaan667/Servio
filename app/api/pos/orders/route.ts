@@ -20,11 +20,9 @@ export async function GET(req: NextRequest) {
     const cachedOrders = await cache.get(cacheKey);
 
     if (cachedOrders) {
-      logger.debug("[POS ORDERS] Cache hit for:", { value: venueId });
       return NextResponse.json(cachedOrders);
     }
 
-    logger.debug("[POS ORDERS] Cache miss for:", { value: venueId });
 
     // Use admin client - no auth needed (venueId is sufficient)
     const supabase = createAdminClient();

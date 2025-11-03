@@ -63,7 +63,6 @@ async function getPendingMigrations(applied: string[]): Promise<string[]> {
   const migrationsDir = path.join(process.cwd(), "supabase/migrations");
 
   if (!fs.existsSync(migrationsDir)) {
-    console.log("⚠️ No migrations directory found");
     return [];
   }
 
@@ -84,7 +83,6 @@ async function executeMigration(filename: string): Promise<boolean> {
   const migrationsDir = path.join(process.cwd(), "supabase/migrations");
   const filepath = path.join(migrationsDir, filename);
 
-  console.log(`\n🔄 Executing migration: ${filename}`);
 
   try {
     const sql = fs.readFileSync(filepath, "utf-8");
@@ -133,7 +131,6 @@ function generateChecksum(content: string): string {
  * Main migration runner
  */
 async function runMigrations() {
-  console.log("🚀 Starting automated migrations...\n");
 
   try {
     // Step 1: Ensure migrations table exists
@@ -141,17 +138,14 @@ async function runMigrations() {
 
     // Step 2: Get applied migrations
     const applied = await getAppliedMigrations();
-    console.log(`📋 Applied migrations: ${applied.length}`);
 
     // Step 3: Get pending migrations
     const pending = await getPendingMigrations(applied);
 
     if (pending.length === 0) {
-      console.log("\n✅ No pending migrations - database is up to date!");
       return;
     }
 
-    console.log(`📦 Pending migrations: ${pending.length}`);
     pending.forEach((file) => console.log(`  - ${file}`));
 
     // Step 4: Execute pending migrations
@@ -172,12 +166,9 @@ async function runMigrations() {
     }
 
     // Step 5: Summary
-    console.log("\n" + "=".repeat(50));
     console.log("📊 Migration Summary:");
     console.log(`  ✅ Successful: ${successCount}`);
     console.log(`  ❌ Failed: ${failCount}`);
-    console.log(`  📋 Total applied: ${applied.length + successCount}`);
-    console.log("=".repeat(50));
 
     if (failCount > 0) {
       process.exit(1);

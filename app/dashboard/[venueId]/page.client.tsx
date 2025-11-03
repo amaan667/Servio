@@ -78,9 +78,6 @@ const DashboardClient = React.memo(function DashboardClient({
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
   // CRITICAL LOG: Dashboard initialization
-  console.log("═══════════════════════════════════════════════════");
-  console.log("🚀 DASHBOARD INIT - venueId:", venueId, "| userRole:", userRole || "NULL");
-  console.log("═══════════════════════════════════════════════════");
 
   // Monitor connection status (must be at top before any returns)
   useConnectionMonitor();
@@ -143,7 +140,6 @@ const DashboardClient = React.memo(function DashboardClient({
   // DON'T clear cache immediately - prevents flicker
   useEffect(() => {
     const handleFocus = () => {
-      console.log("[Dashboard] Window focused - background refresh (no cache clear)");
       // Refresh data in background without clearing cache first
       // This prevents flicker by showing cached data while new data loads
       handleRefresh();
@@ -177,29 +173,20 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Check authentication and venue access
   useEffect(() => {
-    console.log("═══════════════════════════════════════════════════");
-    console.log("🔄 CLIENT: useEffect STARTED - venueId:", venueId);
-    console.log("🔄 CLIENT: Current userRole:", userRole || "NULL");
     console.log("🔄 CLIENT: authCheckComplete:", authCheckComplete);
-    console.log("═══════════════════════════════════════════════════");
 
     async function checkAuth() {
       // ALWAYS fetch role if we don't have it, regardless of cache
       // This ensures fresh sign-ins get the correct role immediately
       if (!userRole) {
-        console.log("⚠️  NO USER ROLE - Fetching from database...");
       } else if (authCheckComplete) {
         // Only skip if we have role AND auth check is already complete
-        console.log("✅ SKIPPING: Already have role and auth complete");
         return;
       } else {
-        console.log("🔄 Have role but auth not complete, will re-check");
       }
 
       try {
-        console.log("🔍 CLIENT: Getting supabase browser client...");
         const supabase = supabaseBrowser();
-        console.log("✅ CLIENT: Supabase client obtained");
 
         // Try BOTH getSession() and getUser() to ensure we have valid auth
         let session = null;
@@ -207,9 +194,7 @@ const DashboardClient = React.memo(function DashboardClient({
         let retries = 0;
         const maxRetries = 3;
 
-        console.log("🔄 CLIENT: Starting session detection loop...");
         while (retries < maxRetries) {
-          console.log(`🔄 CLIENT: Session check attempt ${retries + 1}/${maxRetries}`);
 
           // Try getSession first
           const sessionResult = await supabase.auth.getSession();
@@ -222,7 +207,6 @@ const DashboardClient = React.memo(function DashboardClient({
 
           // If getSession fails, try getUser() which makes a server request
           if (!session?.user) {
-            console.log("🔄 CLIENT: getSession() failed, trying getUser()...");
             const userResult = await supabase.auth.getUser();
 
             console.log(
@@ -230,13 +214,11 @@ const DashboardClient = React.memo(function DashboardClient({
             );
 
             if (userResult.data?.user && !userResult.error) {
-              console.log("✅ CLIENT: getUser() succeeded, session should be available now");
               // After getUser(), try getSession again
               const retrySession = await supabase.auth.getSession();
               session = retrySession.data.session;
               sessionError = retrySession.error;
 
-              console.log(`📊 CLIENT: Retry getSession() - hasSession: ${!!session}`);
             }
           }
 
@@ -248,7 +230,6 @@ const DashboardClient = React.memo(function DashboardClient({
           }
 
           if (retries < maxRetries - 1) {
-            console.log(`⏳ Retrying session check (attempt ${retries + 1}/${maxRetries})...`);
             await new Promise((resolve) => setTimeout(resolve, 1000)); // Increased to 1 second
           }
           retries++;
@@ -271,7 +252,6 @@ const DashboardClient = React.memo(function DashboardClient({
         }
         const userId = session.user.id;
 
-        console.log("🔍 ROLE CHECK START - userId:", userId.substring(0, 8));
 
         // Check if user is the venue owner
         const { data: venueData, error: venueError } = await supabase
@@ -282,7 +262,6 @@ const DashboardClient = React.memo(function DashboardClient({
           .maybeSingle();
 
         const isOwner = !!venueData;
-        console.log(isOwner ? "✅ IS OWNER" : "❌ NOT OWNER");
 
         // Check if user has a staff role for this venue
         const { data: roleData, error: roleError } = await supabase
@@ -293,7 +272,6 @@ const DashboardClient = React.memo(function DashboardClient({
           .maybeSingle();
 
         const isStaff = !!roleData;
-        console.log(isStaff ? `✅ IS STAFF (role: ${roleData?.role})` : "❌ NOT STAFF");
 
         // Auth check completed
         if (!isOwner && !isStaff) {
@@ -335,9 +313,6 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         // CRITICAL LOG: Role assignment result
-        console.log("═══════════════════════════════════════════════════");
-        console.log("🎭 ROLE ASSIGNED:", finalRole || "NULL");
-        console.log("═══════════════════════════════════════════════════");
 
         if (!finalRole) {
           console.error("❌❌❌ CRITICAL: Role not set after auth check!");
@@ -350,10 +325,8 @@ const DashboardClient = React.memo(function DashboardClient({
       }
     }
 
-    console.log("🚀 CLIENT: Calling checkAuth()...");
     checkAuth()
       .then(() => {
-        console.log("✅ CLIENT: checkAuth() completed");
       })
       .catch((err) => {
         console.error("❌ CLIENT: checkAuth() failed:", err);
@@ -362,10 +335,6 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Log whenever userRole changes for dashboard rendering
   useEffect(() => {
-    console.log("═══════════════════════════════════════════════════");
-    console.log("👤 ROLE STATE CHANGED:", userRole || "NULL");
-    console.log("📊 This affects: Analytics button, Kitchen button, Insights section");
-    console.log("═══════════════════════════════════════════════════");
   }, [userRole]);
 
   // NO AUTH REDIRECTS - User requested ZERO sign-in redirects

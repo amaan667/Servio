@@ -102,7 +102,6 @@ export async function POST(_request: NextRequest) {
         );
       }
 
-      logger.debug("[SUBSCRIPTION REFRESH] Successfully updated organization subscription status");
 
       return NextResponse.json({
         success: true,

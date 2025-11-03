@@ -7,7 +7,6 @@ export const runtime = "nodejs";
 export async function POST(_req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    logger.debug("[SETUP KDS] Starting KDS setup...");
 
     // Create KDS Stations table
     const createStationsTable = `
@@ -119,7 +118,6 @@ export async function POST(_req: Request) {
       }
     }
 
-    logger.debug("[SETUP KDS] KDS setup completed successfully");
 
     return NextResponse.json({
       ok: true,

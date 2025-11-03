@@ -31,9 +31,6 @@ export function QuickActionsToolbar({
 }: QuickActionsToolbarProps) {
   // Track role changes
   useEffect(() => {
-    console.log("═══════════════════════════════════════════════════");
-    console.log("🔘 SHORTCUT MENU RENDERING - Role:", userRole || "NULL");
-    console.log("═══════════════════════════════════════════════════");
   }, [userRole]);
 
   const actions: QuickAction[] = [
@@ -61,7 +58,6 @@ export function QuickActionsToolbar({
   ];
 
   if (userRole === "owner" || userRole === "manager") {
-    console.log("✅ Adding ANALYTICS shortcut (role: " + userRole + ")");
     actions.push({
       label: "Analytics",
       href: `/dashboard/${venueId}/analytics`,
@@ -70,11 +66,9 @@ export function QuickActionsToolbar({
       color: "bg-indigo-600 hover:bg-indigo-700",
     });
   } else {
-    console.log("❌ NOT adding Analytics (role: " + (userRole || "NULL") + ")");
   }
 
   if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
-    console.log("✅ Adding KITCHEN shortcut (role: " + userRole + ")");
     actions.push({
       label: "Kitchen",
       href: `/dashboard/${venueId}/kds`,
@@ -83,10 +77,8 @@ export function QuickActionsToolbar({
       color: "bg-red-600 hover:bg-red-700",
     });
   } else {
-    console.log("❌ NOT adding Kitchen (role: " + (userRole || "NULL") + ")");
   }
 
-  console.log("📊 TOTAL SHORTCUTS:", actions.length, "buttons");
 
   return (
     <TooltipProvider>

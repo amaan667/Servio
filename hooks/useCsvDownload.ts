@@ -61,7 +61,6 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
     // Clean up the URL object
     URL.revokeObjectURL(url);
 
-    logger.debug(`[CSV Download] Successfully downloaded: ${sanitizedFilename}`);
   } catch (_error) {
     logger.warn("[CSV Download] Failed to download CSV:", _error as Record<string, unknown>);
 

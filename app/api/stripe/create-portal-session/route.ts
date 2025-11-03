@@ -40,21 +40,17 @@ export async function POST(_request: NextRequest) {
       ? `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard/${venueId}/settings`
       : `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard`;
 
-    logger.debug("[STRIPE PORTAL] Creating session for customer:", (org as any).stripe_customer_id);
-    logger.debug("[STRIPE PORTAL] Return URL:", { value: returnUrl });
 
     // Try to get or create a billing portal configuration
     let configurationId: string | undefined;
 
     try {
       // First, try to list existing configurations
-      logger.debug("[STRIPE PORTAL] Checking for existing configurations...");
       const configurations = await stripe.billingPortal.configurations.list({ limit: 1 });
 
       const firstConfig = configurations.data[0];
       if (firstConfig && firstConfig.active) {
         configurationId = firstConfig.id;
-        logger.debug("[STRIPE PORTAL] Using existing configuration:", { value: configurationId });
       } else {
         // No active configuration found, create a new one
         logger.debug(
@@ -89,12 +85,10 @@ export async function POST(_request: NextRequest) {
         });
 
         configurationId = configuration.id;
-        logger.debug("[STRIPE PORTAL] Created new configuration:", { value: configurationId });
       }
     } catch (configError: unknown) {
       logger.error("[STRIPE PORTAL] Failed to get/create configuration:", { value: configError });
       // Continue without configuration - Stripe will use default if available
-      logger.debug("[STRIPE PORTAL] Continuing without explicit configuration...");
     }
 
     // Create billing portal session

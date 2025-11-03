@@ -37,8 +37,6 @@ const template = `-- Migration: ${description}
 
 async function createMigration() {
   await writeFile(filepath, template);
-  console.log(`✓ Created migration: ${filename}`);
-  console.log(`  Path: ${filepath}`);
 }
 
 createMigration().catch(console.error);

@@ -82,10 +82,8 @@ export function useDashboardData(
     }
     const cached = getCachedStats();
     if (cached) {
-      console.log(`[DASHBOARD CLIENT] Using cached stats for venue ${venueId}:`, cached);
       return cached;
     }
-    console.log(`[DASHBOARD CLIENT] Using default stats for venue ${venueId}`);
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
@@ -146,14 +144,12 @@ export function useDashboardData(
           unpaid,
         };
 
-        console.log(`[DASHBOARD CLIENT] Updating stats for venue ${venueId}:`, newStats);
         setStats(newStats);
 
         // Cache the stats to prevent flicker - IMPORTANT: Key includes venueId
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(newStats));
         }
-        console.log(`[DASHBOARD CLIENT] Stats cached for venue ${venueId}:`, newStats);
       } catch (_error) {
         // Error handled silently
       }
@@ -162,7 +158,6 @@ export function useDashboardData(
   );
 
   const refreshCounts = useCallback(async () => {
-    console.log("[Dashboard] refreshCounts called for venue:", venueId);
     try {
       setError(null);
       const supabase = createClient();
@@ -184,7 +179,6 @@ export function useDashboardData(
         return;
       }
 
-      console.log("[Dashboard] Counts fetched:", newCounts);
 
       // Fetch REAL table counts directly (no RPC, no caching)
       const { data: allTables } = await withSupabaseRetry(
@@ -226,7 +220,6 @@ export function useDashboardData(
           active_tables_count: activeTables.length, // Same as tables_set_up
         };
 
-        console.log("[Dashboard] Setting counts:", finalCounts);
         setCounts(finalCounts);
         // Cache the counts to prevent flicker (but allow refresh)
         if (typeof window !== "undefined") {
@@ -256,11 +249,9 @@ export function useDashboardData(
       })();
 
       if (hasFreshCache) {
-        console.log("[Dashboard] Using fresh cached data, skipping refresh");
         return;
       }
 
-      console.log("[Dashboard] Mount/VenueChange: refreshing counts for venue:", venueId);
 
       // Clear old venue's cache when switching to ensure fresh data
       if (typeof window !== "undefined") {
@@ -282,7 +273,6 @@ export function useDashboardData(
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && venueId) {
-        console.log("[Dashboard] Page visible - background refresh (cache preserved)");
         // Refresh data WITHOUT clearing cache first
         // Old data shows instantly, new data updates smoothly
         refreshCounts();

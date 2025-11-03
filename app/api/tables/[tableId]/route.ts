@@ -188,7 +188,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       );
 
       if (!ordersError && activeOrders && activeOrders.length > 0) {
-        logger.info(`[TABLES API] Force completing ${activeOrders.length} active orders`);
         const { error: completeOrdersError } = await (supabase as any)
           .from("orders")
           .update({

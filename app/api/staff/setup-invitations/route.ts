@@ -7,7 +7,6 @@ import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
-    logger.debug("[STAFF INVITATION SETUP] Starting staff invitation system setup...");
 
     const supabase = await createClient();
 
@@ -41,7 +40,6 @@ export async function POST(_request: NextRequest) {
       });
     }
 
-    logger.debug("[STAFF INVITATION SETUP] Creating staff_invitations table...");
 
     // Create the staff_invitations table
     const createTableSQL = `
@@ -107,7 +105,6 @@ export async function POST(_request: NextRequest) {
 
     // Indexes and RLS will be set up via migration scripts
 
-    logger.debug("[STAFF INVITATION SETUP] Setup completed successfully");
 
     return NextResponse.json({
       success: true,

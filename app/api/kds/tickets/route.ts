@@ -7,7 +7,6 @@ async function autoBackfillMissingTickets(venueId: string) {
   try {
     const supabaseAdmin = createAdminClient();
 
-    logger.debug("[KDS AUTO-BACKFILL] Checking for orders without KDS tickets...");
 
     // Get today's orders that should have KDS tickets but don't
     const todayStart = new Date();
@@ -23,7 +22,6 @@ async function autoBackfillMissingTickets(venueId: string) {
       .not("id", "in", `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
 
     if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
-      logger.debug("[KDS AUTO-BACKFILL] No orders found without KDS tickets");
       return;
     }
 
@@ -42,7 +40,6 @@ async function autoBackfillMissingTickets(venueId: string) {
       .single();
 
     if (!expoStation) {
-      logger.debug("[KDS AUTO-BACKFILL] No expo station found, skipping backfill");
       return;
     }
 
@@ -73,7 +70,6 @@ async function autoBackfillMissingTickets(venueId: string) {
         await supabaseAdmin.from("kds_tickets").insert(ticketData);
       }
 
-      logger.debug(`[KDS AUTO-BACKFILL] Created tickets for order ${order.id}`);
     }
 
     logger.debug(

@@ -35,7 +35,6 @@ export async function extractMenuHybrid(
 ): Promise<HybridMenuResult> {
   const { pdfImages, websiteUrl, venueId } = options;
 
-  logger.info("[HYBRID] ===== STARTING HYBRID EXTRACTION =====");
 
   // Validation
   if (!pdfImages && !websiteUrl) {
@@ -53,11 +52,9 @@ export async function extractMenuHybrid(
 
   // Determine extraction mode
   const mode = getExtractionMode(!!pdfImages, !!websiteUrl);
-  logger.info("[HYBRID] Step 2: Determined extraction mode", { mode });
 
   // MODE 1: URL Only
   if (mode === "url-only" && websiteUrl) {
-    logger.info("[HYBRID] MODE 1: URL-only extraction");
     const webItems = await extractMenuFromWebsite(websiteUrl);
 
     return {
@@ -71,7 +68,6 @@ export async function extractMenuHybrid(
 
   // MODE 2: PDF Only
   if (mode === "pdf-only" && pdfImages) {
-    logger.info("[HYBRID] MODE 2: PDF-only extraction");
     const pdfData = await extractFromPDF(pdfImages);
 
     return {
@@ -85,15 +81,12 @@ export async function extractMenuHybrid(
 
   // MODE 3: Hybrid (PDF + URL)
   if (mode === "hybrid" && pdfImages && websiteUrl) {
-    logger.info("[HYBRID] MODE 3: Hybrid extraction (PDF + URL) - Best of both worlds");
-    logger.info("[HYBRID] ========================================");
 
     // Extract from both sources in parallel for speed
     let pdfData: { items: any[] };
     let webItems: any[] = [];
 
     try {
-      logger.info("[HYBRID] Starting parallel extraction (PDF + URL)...");
       [pdfData, webItems] = await Promise.all([
         extractFromPDF(pdfImages),
         extractMenuFromWebsite(websiteUrl),
@@ -122,9 +115,6 @@ export async function extractMenuHybrid(
       }
     }
 
-    logger.info("[HYBRID] ========================================");
-    logger.info("[HYBRID] EXTRACTION COMPARISON - PDF vs URL");
-    logger.info("[HYBRID] ========================================");
 
     // PDF Analysis
     const pdfCategories = Array.from(
@@ -171,13 +161,7 @@ export async function extractMenuHybrid(
       urlCategoryBreakdown[cat] = (urlCategoryBreakdown[cat] || 0) + 1;
     });
 
-    logger.info("[HYBRID] 📊 CATEGORY BREAKDOWN COMPARISON");
-    logger.info("[HYBRID] PDF Categories:", pdfCategoryBreakdown);
-    logger.info("[HYBRID] URL Categories:", urlCategoryBreakdown);
 
-    logger.info("[HYBRID] ========================================");
-    logger.info("[HYBRID] STARTING INTELLIGENT MERGE");
-    logger.info("[HYBRID] ========================================");
 
     // Intelligent merge
     const mergedItems = await mergeWebAndPdfData(pdfData.items, webItems);
@@ -190,9 +174,6 @@ export async function extractMenuHybrid(
     const mergedEnhanced = mergedItems.filter((i: any) => i.has_web_enhancement).length;
     const mergedWebOnly = mergedItems.filter((i: any) => i.source === "web_only").length;
 
-    logger.info("[HYBRID] ========================================");
-    logger.info("[HYBRID] 🎯 FINAL HYBRID RESULT (BEST OF BOTH)");
-    logger.info("[HYBRID] ========================================");
     logger.info("[HYBRID] Final Stats:", {
       totalItems: mergedItems.length,
       fromPdf: pdfData.items.length,
@@ -204,7 +185,6 @@ export async function extractMenuHybrid(
       itemsWithImages: mergedWithImages,
     });
 
-    logger.info("[HYBRID] 📈 COMPARISON SUMMARY:");
     logger.info(
       "[HYBRID] Items: PDF=" +
         pdfData.items.length +
@@ -229,9 +209,7 @@ export async function extractMenuHybrid(
         " | HYBRID=" +
         mergedWithImages
     );
-    logger.info("[HYBRID] Accuracy: PDF=99%+ | URL=~10% | HYBRID=99%+ (using PDF structure)");
 
-    logger.info("[HYBRID] ========================================");
 
     return {
       items: mergedItems,
@@ -272,12 +250,10 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 async function extractFromPDF(pdfImages: string[]) {
   const items: any[] = [];
 
-  logger.info("[HYBRID/PDF] Processing PDF pages", { count: pdfImages.length });
 
   for (let i = 0; i < pdfImages.length; i++) {
     const imageUrl = pdfImages[i];
 
-    logger.info(`[HYBRID/PDF] Processing page ${i + 1}/${pdfImages.length}`);
 
     try {
       // Extract items from page
@@ -292,7 +268,6 @@ async function extractFromPDF(pdfImages: string[]) {
         });
       });
 
-      logger.info(`[HYBRID/PDF] Page ${i + 1}: ${pageItems.length} items extracted successfully`);
     } catch (pageError) {
       logger.error(`[HYBRID/PDF] Page ${i + 1} extraction failed`, {
         error: pageError instanceof Error ? pageError.message : String(pageError),
@@ -708,12 +683,10 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   let pricesUpdatedCount = 0;
 
   // Import AI matcher for fallback
-  logger.info("[HYBRID/MERGE] 🔧 Importing AI matcher module...");
   let batchMatchItemsWithAI: any;
   try {
     const aiMatcherModule = await import("./aiMatcher");
     batchMatchItemsWithAI = aiMatcherModule.batchMatchItemsWithAI;
-    logger.info("[HYBRID/MERGE] ✅ AI matcher module imported successfully");
   } catch (importError) {
     logger.error("[HYBRID/MERGE] ❌ Failed to import AI matcher", {
       error: importError instanceof Error ? importError.message : String(importError),
@@ -787,7 +760,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     };
   });
 
-  logger.info("[HYBRID/MERGE] ✅ PDF item matching loop COMPLETE");
 
   // Analyze match reasons to show algorithm performance
   const matchReasons: Record<string, number> = {};
@@ -823,7 +795,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   }
 
   if (Object.keys(matchReasons).length > 0) {
-    logger.info("[HYBRID/MERGE] 🎯 Match Quality Breakdown", matchReasons);
   }
 
   // AI FALLBACK MATCHING: For unmatched PDF items, try AI matching
@@ -927,7 +898,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
 
         matchedCount += aiMatchedCount;
       } else {
-        logger.info("[HYBRID/MERGE] AI fallback found no additional matches");
       }
     } catch (aiFallbackError) {
       logger.error("[HYBRID/MERGE] AI fallback matching failed", {
@@ -936,13 +906,11 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       // Continue without AI matching - not critical
     }
   } else {
-    logger.info("[HYBRID/MERGE] Skipping AI fallback - no unmatched items");
   }
 
   // Extract PDF categories for intelligent categorization of new URL items
   const pdfCategories = Array.from(new Set(pdfItems.map((item) => item.category).filter(Boolean)));
 
-  logger.info("[HYBRID/MERGE] Categorizing new URL items with AI...");
 
   // Add web-only items that PDF didn't find with AI-POWERED CATEGORIZATION
   let webOnlyCount = 0;
@@ -1057,7 +1025,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
         });
       });
 
-      logger.info(`[HYBRID/MERGE] ✅ Parallel batch ${batchIdx + 1}/${batches.length} categorized`);
     }
   }
 
@@ -1092,9 +1059,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     });
   }
 
-  logger.info("[HYBRID/MERGE] ========================================");
-  logger.info("[HYBRID/MERGE] MERGE COMPLETE - Summary:");
-  logger.info("[HYBRID/MERGE] ========================================");
   logger.info("[HYBRID/MERGE] Matching Results:", {
     pdfItemsMatched: matchedCount,
     pdfItemsUnmatched: pdfItems.length - matchedCount,
@@ -1135,8 +1099,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   });
 
   // FINAL DEDUPLICATION PASS
-  logger.info("[HYBRID/MERGE] ========================================");
-  logger.info("[HYBRID/MERGE] Running final deduplication pass...");
   const dedupeResult = deduplicateMergedItems(merged);
 
   if (dedupeResult.duplicatesRemoved > 0) {
@@ -1146,7 +1108,6 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       afterCount: dedupeResult.deduplicated.length,
     });
   } else {
-    logger.info("[HYBRID/MERGE] ✅ No duplicates found - merge is clean!");
   }
 
   return dedupeResult.deduplicated;

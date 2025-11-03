@@ -39,7 +39,6 @@ export function useOrderCart() {
 
       if (lastKey && lastKey !== currentKey) {
         // New QR code scanned - reset cart
-        console.log("[CART] New QR code detected, clearing old cart", { lastKey, currentKey });
         setCart([]);
         localStorage.removeItem(lastKey);
       }

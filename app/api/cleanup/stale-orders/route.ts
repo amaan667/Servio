@@ -63,7 +63,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    logger.debug(`[STALE ORDERS CLEANUP] Found ${staleOrders.length} stale orders to clean up`);
 
     // Update orders to completed
     const orderIds = staleOrders.map((order) => order.id);
@@ -109,7 +108,6 @@ export async function POST(req: NextRequest) {
     cleanupResults.forEach((result, index) => {
       if (result.status === "fulfilled" && result.value.success) {
         successfulCleanups++;
-        logger.debug(`[STALE ORDERS CLEANUP] Table cleanup ${index + 1} successful`);
       } else {
         logger.error(
           `[STALE ORDERS CLEANUP] Table cleanup ${index + 1} failed:`,

@@ -87,7 +87,6 @@ export function initWebVitals() {
     onINP(sendToAnalytics); // Interaction to Next Paint
     onTTFB(sendToAnalytics); // Time to First Byte
 
-    logger.debug("[WEB_VITALS] Tracking initialized");
   } catch (_error) {
     logger.error("[WEB_VITALS] Failed to initialize", { error: _error });
   }
@@ -190,7 +189,6 @@ export class PerformanceTracker {
             loadComplete: perfData.loadEventEnd - perfData.fetchStart,
           };
 
-          logger.debug("[PERFORMANCE] Page load metrics", { data: metrics });
 
           // Send to analytics
           fetch("/api/analytics/vitals", {
@@ -274,5 +272,4 @@ export function initPerformanceMonitoring() {
   PerformanceTracker.trackResources();
   PerformanceTracker.trackLongTasks();
 
-  logger.debug("[PERFORMANCE] Monitoring initialized");
 }

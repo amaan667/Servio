@@ -16,18 +16,6 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    logger.debug("📧 DEVELOPMENT EMAIL SENDING:");
-    logger.debug("To:", email);
-    logger.debug("Subject: You're invited to join " + venueName + " on Servio");
-    logger.debug("Role:", role);
-    logger.debug("Invitation Link:", invitationLink);
-    logger.debug("---");
-    logger.debug("📋 INSTRUCTIONS FOR MANUAL EMAIL SENDING:");
-    logger.debug("1. Copy the invitation link above");
-    logger.debug("2. Send an email to:", email);
-    logger.debug("3. Subject: You're invited to join " + venueName + " on Servio");
-    logger.debug("4. Body: Click this link to accept your invitation: " + invitationLink);
-    logger.debug("---");
 
     // For development, we'll return success and log the details
     return NextResponse.json({

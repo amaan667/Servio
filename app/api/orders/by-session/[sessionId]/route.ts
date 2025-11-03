@@ -10,8 +10,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
     const supabaseAdmin = createAdminClient();
     const { sessionId } = await params;
 
-    logger.debug("[ORDER SESSION LOOKUP DEBUG] ===== LOOKING UP ORDER BY SESSION =====");
-    logger.debug("[ORDER SESSION LOOKUP DEBUG] Session ID:", { value: sessionId });
 
     if (!sessionId) {
       logger.error("[ORDER SESSION LOOKUP DEBUG] No session ID provided");
@@ -20,7 +18,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
 
     // Look up order by stripe_session_id with all fields including Stripe details
     // Items are stored as JSONB in orders table, not in separate order_items table
-    logger.debug("[ORDER SESSION LOOKUP DEBUG] Querying orders table for stripe_session_id...");
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .select("*")
@@ -55,7 +52,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
       );
     }
 
-    logger.debug("[ORDER SESSION LOOKUP DEBUG] ===== ORDER FOUND =====");
     logger.debug("[ORDER SESSION LOOKUP DEBUG] Order details:", {
       id: order.id,
       customer_name: order.customer_name,
@@ -76,7 +72,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
       items: order.items || [],
     };
 
-    logger.debug("[ORDER SESSION LOOKUP DEBUG] ===== RETURNING TRANSFORMED ORDER =====");
     logger.debug(
       "[ORDER SESSION LOOKUP DEBUG] Transformed order keys:",
       Object.keys(transformedOrder)

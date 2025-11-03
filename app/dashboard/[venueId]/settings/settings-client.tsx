@@ -41,9 +41,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   useEffect(() => {
     // If we have initial data, cache it (overwriting any stale cache)
     if (initialData && typeof window !== "undefined") {
-      console.log("[SETTINGS] 💾 Caching fresh server data (overwriting any stale cache)");
       sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(initialData));
-      console.log("[SETTINGS] ✅ Server data cached, organization tier:", initialData.organization);
       return;
     }
 
@@ -64,7 +62,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         // Wait for auth to finish loading
         if (authLoading) {
-          console.log("[SETTINGS] ⏳ Auth still loading, waiting...");
           return;
         }
 
@@ -80,7 +77,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           return;
         }
 
-        console.log("[SETTINGS] ✅ Using user from AuthProvider:", user.id);
         const supabase = supabaseBrowser();
 
         // Fetch all required data
@@ -170,7 +166,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
   // Show loading state while fetching
   if (loading || authLoading) {
-    console.log("[SETTINGS] 🔄 Showing loading state", { loading, authLoading });
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>

@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    logger.debug("[RECENT PAID] Fetching most recent paid order...");
 
     // Get the most recent paid order from the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -46,7 +45,6 @@ export async function GET(_req: Request) {
     }
 
     if (!recentOrder) {
-      logger.debug("[RECENT PAID] No recent paid orders found");
       return NextResponse.json(
         {
           error: "No recent paid orders found",

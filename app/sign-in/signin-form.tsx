@@ -86,13 +86,10 @@ export default function SignInForm({
       }
 
       if (data.success && data.redirectTo) {
-        console.log("═══════════════════════════════════════════════════");
-        console.log("✅ EMAIL/PASSWORD SIGN-IN SUCCESS");
 
         // Set session in browser storage BEFORE redirecting
         // This ensures the browser Supabase client can read it immediately
         if (data.session) {
-          console.log("🔧 Setting session in browser storage...");
           const { createClient } = await import("@/lib/supabase");
           const supabase = await createClient();
 
@@ -104,12 +101,9 @@ export default function SignInForm({
           if (setSessionError) {
             console.error("❌ Failed to set session:", setSessionError);
           } else {
-            console.log("✅ Session set in browser storage");
           }
         }
 
-        console.log("➡️  REDIRECTING to:", data.redirectTo);
-        console.log("═══════════════════════════════════════════════════");
         window.location.href = data.redirectTo;
       }
     } catch (_err) {

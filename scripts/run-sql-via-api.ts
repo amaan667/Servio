@@ -74,12 +74,6 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("🔧 Attempting to create get_invitation_by_token function...");
-  console.log("\n⚠️  Note: This requires manual execution in Supabase Dashboard SQL Editor");
-  console.log("\n📋 Copy and paste this SQL into your Supabase SQL Editor:\n");
-  console.log("==================== START SQL ====================");
-  console.log(sql);
-  console.log("===================== END SQL =====================\n");
   console.log(
     "📍 Go to: " +
       SUPABASE_URL.replace("https://", "https://supabase.com/dashboard/project/")

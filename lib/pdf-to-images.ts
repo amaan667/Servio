@@ -27,7 +27,6 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
       imageUrls.push(imageDataUrl);
     }
 
-    logger.info("[PDF-TO-IMAGES] Converted pages:", { count: imageUrls.length });
     return imageUrls;
   } catch (_error) {
     logger.error("[PDF-TO-IMAGES] Error:", _error);

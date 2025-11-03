@@ -38,7 +38,6 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to delete uploads: ${deleteUploadsError.message}`);
     }
 
-    logger.info("Catalog cleared successfully", { venueId, deletedCount: itemsCount });
 
     return NextResponse.json({
       ok: true,

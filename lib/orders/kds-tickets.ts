@@ -9,7 +9,6 @@ export async function createKDSTickets(
   order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }
 ) {
   try {
-    logger.debug("[KDS TICKETS] Creating KDS tickets for order:", { orderId: order.id });
 
     // First, ensure KDS stations exist for this venue
     const { data: existingStations } = await supabase

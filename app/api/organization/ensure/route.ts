@@ -46,13 +46,11 @@ export async function POST() {
       );
     }
 
-    logger.debug("[ORG ENSURE] User authenticated:", user.id);
 
     // Use admin client to bypass RLS for organization operations
     let adminClient;
     try {
       adminClient = createAdminClient();
-      logger.debug("[ORG ENSURE] Admin client created successfully");
     } catch (adminError) {
       logger.error("[ORG ENSURE] Failed to create admin client:", { error: adminError });
       return NextResponse.json(
@@ -71,7 +69,6 @@ export async function POST() {
     }
 
     // Check if user already has an organization (by created_by or owner_user_id)
-    logger.debug("[ORG ENSURE] Checking for existing organization for user:", user.id);
 
     // First try owner_user_id (if column exists)
     let { data: existingOrg, error: orgCheckError } = await adminClient
@@ -102,7 +99,6 @@ export async function POST() {
 
     // If organization exists, return it with no-cache headers
     if (existingOrg && !orgCheckError) {
-      logger.debug("[ORG ENSURE] Found existing organization:", existingOrg.id);
       const response = NextResponse.json({
         success: true,
         organization: existingOrg,
@@ -120,7 +116,6 @@ export async function POST() {
       return response;
     }
 
-    logger.debug("[ORG ENSURE] No existing organization, creating new one");
 
     // Create organization for the user using admin client to bypass RLS
     // Use the user's actual creation date as trial start date for accurate trial calculation

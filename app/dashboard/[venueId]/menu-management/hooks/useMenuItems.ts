@@ -17,7 +17,6 @@ export function useMenuItems(venueId: string) {
       // CACHE BUSTING: Add timestamp to query to force fresh data
       // This prevents Supabase PostgREST from returning cached results
       const cacheBuster = Date.now();
-      console.log(`[MENU ITEMS] Loading menu items (cache bust: ${cacheBuster})`);
 
       const { data: items, error } = await supabase
         .from("menu_items")
@@ -35,7 +34,6 @@ export function useMenuItems(venueId: string) {
         return;
       }
 
-      console.log(`[MENU ITEMS] Loaded ${items?.length || 0} items from database`);
       setMenuItems(items || []);
 
       if (items && items.length > 0) {
@@ -70,14 +68,12 @@ export function useMenuItems(venueId: string) {
   // Auto-refresh when window regains focus to prevent stale data
   useEffect(() => {
     const handleFocus = () => {
-      console.log("[MENU ITEMS] Window focused - refreshing menu items");
       loadMenuItems();
     };
 
     // Also refresh on visibility change (tab switching)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log("[MENU ITEMS] Tab became visible - refreshing menu items");
         loadMenuItems();
       }
     };

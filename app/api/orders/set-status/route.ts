@@ -59,7 +59,6 @@ export async function POST(req: Request) {
         if (!cleanupResult.success) {
           logger.error("[SET STATUS] Table cleanup failed:", cleanupResult.error);
         } else {
-          logger.debug("[SET STATUS] Table cleanup successful:", cleanupResult.details);
         }
       }
     }

@@ -37,7 +37,6 @@ export class FeatureFlagsManager {
     const cached = await redisCache.get<FeatureFlag[]>(this.CACHE_KEY);
     if (cached) {
       cached.forEach((flag) => this.flags.set(flag.key, flag));
-      logger.debug("[FEATURE_FLAGS] Loaded from cache", { data: { count: cached.length } });
       return;
     }
 
@@ -47,7 +46,6 @@ export class FeatureFlagsManager {
     // Cache the flags
     await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
 
-    logger.debug("[FEATURE_FLAGS] Initialized with defaults", { data: { count: this.flags.size } });
   }
 
   /**
@@ -170,7 +168,6 @@ export class FeatureFlagsManager {
     const flag = this.flags.get(flagKey);
 
     if (!flag) {
-      logger.debug(`[FEATURE_FLAGS] Flag not found: ${flagKey}`);
       return false;
     }
 
@@ -253,7 +250,6 @@ export class FeatureFlagsManager {
     // Update cache
     await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
 
-    logger.debug(`[FEATURE_FLAGS] Updated flag: ${flagKey}`, { data: updates });
 
     return true;
   }
@@ -287,7 +283,6 @@ export class FeatureFlagsManager {
     // Update cache
     await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
 
-    logger.debug(`[FEATURE_FLAGS] Created flag: ${flag.key}`);
   }
 
   /**
@@ -301,7 +296,6 @@ export class FeatureFlagsManager {
       await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), {
         ttl: this.CACHE_TTL,
       });
-      logger.debug(`[FEATURE_FLAGS] Deleted flag: ${flagKey}`);
     }
 
     return deleted;

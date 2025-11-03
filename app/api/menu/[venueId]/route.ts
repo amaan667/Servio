@@ -29,11 +29,9 @@ export async function GET(
     const cachedMenu = await cache.get(cacheKey);
 
     if (cachedMenu) {
-      logger.debug("[MENU API] Cache hit for:", { value: venueId });
       return NextResponse.json(cachedMenu);
     }
 
-    logger.debug("[MENU API] Cache miss for:", { value: venueId });
 
     // Use admin client to bypass RLS for public menu access
     const supabase = createAdminClient();

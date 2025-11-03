@@ -14,7 +14,6 @@ export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
 
-    logger.debug("[KDS BACKFILL ALL] Starting comprehensive KDS backfill...");
 
     const { venueId } = await req.json();
 
@@ -36,7 +35,6 @@ export async function POST(req: Request) {
     const scopes = ["live", "today"];
 
     for (const scope of scopes) {
-      logger.debug(`[KDS BACKFILL ALL] Processing ${scope} scope...`);
 
       // First, ensure KDS stations exist for this venue
       const { data: existingStations } = await supabaseAdmin
@@ -141,7 +139,6 @@ export async function POST(req: Request) {
         continue;
       }
 
-      logger.debug(`[KDS BACKFILL ALL] Found ${orders.length} orders for ${scope} scope`);
 
       let scopeOrdersProcessed = 0;
       let scopeTicketsCreated = 0;
@@ -158,7 +155,6 @@ export async function POST(req: Request) {
             .limit(1);
 
           if (existingTickets && existingTickets.length > 0) {
-            logger.debug(`[KDS BACKFILL ALL] Order ${order.id} already has KDS tickets, skipping`);
             continue;
           }
 

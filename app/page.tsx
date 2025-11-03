@@ -19,7 +19,6 @@ export default async function HomePage() {
       isSignedIn = true;
       user = authUser;
 
-      logger.info("[HOME PAGE] User authenticated on server", { userId: authUser.id });
 
       // Fetch user's venue and plan
       const { data: venues } = await supabase
@@ -41,7 +40,6 @@ export default async function HomePage() {
 
           if (org?.subscription_tier) {
             userPlan = org.subscription_tier.toLowerCase() as "basic" | "standard" | "premium";
-            logger.info("[HOME PAGE] User plan detected", { plan: userPlan });
           }
         }
       }

@@ -55,7 +55,6 @@ export default function QuestionsClient({
 
   // Log venueId on mount for debugging
   useEffect(() => {
-    console.log("[FEEDBACK DEBUG] QuestionsClient mounted with venueId:", venueId);
     if (!venueId) {
       console.error("[FEEDBACK DEBUG] WARNING: venueId is missing!");
     }
@@ -181,7 +180,6 @@ export default function QuestionsClient({
 
     try {
       // Debug log
-      console.log("[FEEDBACK DEBUG] Submitting question with venueId:", venueId);
 
       if (!venueId) {
         toast({
@@ -218,7 +216,6 @@ export default function QuestionsClient({
         body: JSON.stringify(payload),
       });
 
-      console.log("[FEEDBACK DEBUG] Response status:", response.status);
 
       if (response.ok) {
         const result = await response.json();

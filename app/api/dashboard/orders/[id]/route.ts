@@ -40,7 +40,6 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         p_order_id: id,
         p_venue_id: data.venue_id,
       });
-      logger.debug('[INVENTORY] Stock deducted for order:', { value: id });
     } catch (inventoryError) {
       logger.error('[INVENTORY] Error deducting stock:', { value: inventoryError });
       // Don't fail the order completion if inventory deduction fails
@@ -62,7 +61,6 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       if (!cleanupResult.success) {
         logger.error('[DASHBOARD ORDER] Table cleanup failed:', { error: cleanupResult.error });
       } else {
-        logger.debug('[DASHBOARD ORDER] Table cleanup successful:', { details: cleanupResult.details });
       }
     }
   }

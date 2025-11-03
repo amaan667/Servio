@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
       isDemo: data?.isDemo,
     };
 
-    logger.debug("[ORDER ACCESS]", logData);
 
     return NextResponse.json({ ok: true });
   } catch (_err) {

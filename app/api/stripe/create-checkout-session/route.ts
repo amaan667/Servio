@@ -65,7 +65,6 @@ const ensureStripeProducts = async () => {
       });
 
       priceIds[product.tier] = price.id;
-      logger.debug(`[STRIPE SETUP] Created ${product.tier} price: ${price.id}`);
     } catch (_error) {
       logger.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, {
         error: _error instanceof Error ? _error.message : "Unknown _error",
@@ -153,7 +152,6 @@ export async function POST(_request: NextRequest) {
 
     if (orgByOwner) {
       org = orgByOwner;
-      logger.debug("[STRIPE DEBUG] Found existing organization by owner_user_id:", org.id);
     } else if (ownerError) {
       logger.debug("[STRIPE DEBUG] Error querying organization by owner_user_id:", {
         value: ownerError,
@@ -170,13 +168,11 @@ export async function POST(_request: NextRequest) {
 
       if (orgById && orgById.owner_user_id === user.id) {
         org = orgById;
-        logger.debug("[STRIPE DEBUG] Found organization by provided ID:", { id: org.id });
       } else if (orgById) {
         logger.warn("[STRIPE DEBUG] Organization exists but belongs to different user", {
           organizationId,
         });
       } else if (idError) {
-        logger.debug("[STRIPE DEBUG] Error querying organization by ID:", { error: idError });
       }
     }
 
@@ -207,7 +203,6 @@ export async function POST(_request: NextRequest) {
       }
 
       org = newOrg;
-      logger.debug("[STRIPE DEBUG] ✅ Created new organization:", org.id);
 
       // Link unknown existing venues to this organization
       const { error: venueUpdateError } = await supabase
@@ -221,7 +216,6 @@ export async function POST(_request: NextRequest) {
           value: venueUpdateError,
         });
       } else {
-        logger.debug("[STRIPE DEBUG] Linked user venues to organization:", org.id);
       }
     }
 
@@ -271,7 +265,6 @@ export async function POST(_request: NextRequest) {
         data: { customerId, orgId: actualOrgId },
       });
     } else {
-      logger.debug("[STRIPE DEBUG] Using existing Stripe customer:", { value: customerId });
     }
 
     // Create checkout session
@@ -302,7 +295,6 @@ export async function POST(_request: NextRequest) {
       },
     };
 
-    logger.debug("[STRIPE DEBUG] Creating checkout session with data:", { value: sessionData });
 
     const session = await stripe.checkout.sessions.create(sessionData);
 

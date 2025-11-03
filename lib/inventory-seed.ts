@@ -161,7 +161,6 @@ const SAMPLE_RECIPES: RecipeMapping[] = [
 export async function seedInventoryData(venueId: string) {
   const supabase = createAdminClient();
 
-  logger.debug("[INVENTORY SEED] Starting seed", { venueId });
 
   // Step 1: Create ingredients
   const createdIngredients: Record<string, string> = {
@@ -179,7 +178,6 @@ export async function seedInventoryData(venueId: string) {
         .single();
 
       if (existing) {
-        logger.debug(`[INVENTORY SEED] Ingredient "${ingredient.name}" already exists`);
         createdIngredients[ingredient.name] = existing.id;
         continue;
       }
@@ -222,7 +220,6 @@ export async function seedInventoryData(venueId: string) {
         });
       }
 
-      logger.debug(`[INVENTORY SEED] Created ingredient: ${ingredient.name} (${data.id})`);
     } catch (_error) {
       logger.error(
         `[INVENTORY SEED] Unexpected _error for ingredient "${ingredient.name}":`,
@@ -282,7 +279,6 @@ export async function seedInventoryData(venueId: string) {
             errorToContext(error)
           );
         } else {
-          logger.debug(`[INVENTORY SEED] Created recipe for: ${menuItem.name}`);
         }
       }
     } catch (_error) {
@@ -293,7 +289,6 @@ export async function seedInventoryData(venueId: string) {
     }
   }
 
-  logger.debug("[INVENTORY SEED] Seed complete!");
 
   return {
     success: true,

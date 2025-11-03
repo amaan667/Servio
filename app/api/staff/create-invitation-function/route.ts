@@ -8,7 +8,6 @@ import { logger } from "@/lib/logger";
  */
 export async function POST(_request: NextRequest) {
   try {
-    logger.debug("[CREATE INVITATION FUNCTION] Starting function creation...");
 
     const supabase = createAdminClient();
 
@@ -94,7 +93,6 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    logger.debug("[CREATE INVITATION FUNCTION] Function created successfully");
 
     return NextResponse.json({
       success: true,

@@ -70,7 +70,6 @@ export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOpt
         role: selectedStaffForInvite.role,
       };
 
-      console.log("Sending invitation with:", requestBody);
 
       const res = await fetch("/api/staff/invitations", {
         method: "POST",

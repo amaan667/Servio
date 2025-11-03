@@ -7,7 +7,6 @@ export async function POST() {
   try {
     const supabase = createAdminClient();
 
-    logger.debug("[COLUMN FIX] Starting owner column name fix...");
 
     // Check current column names
     const { data: columns, error: columnError } = await supabase.rpc("exec_sql", {
@@ -28,7 +27,6 @@ export async function POST() {
       );
     }
 
-    logger.debug("[COLUMN FIX] Current columns:", columns);
 
     // Try to rename the column
     const { error: renameError } = await supabase.rpc("exec_sql", {
@@ -38,9 +36,7 @@ export async function POST() {
     if (renameError) {
       logger.error("[COLUMN FIX] Error renaming column:", { error: renameError.message });
       // Column might already be renamed or not exist
-      logger.debug("[COLUMN FIX] Column rename failed, checking if already correct...");
     } else {
-      logger.debug("[COLUMN FIX] Column renamed successfully");
     }
 
     // Update indexes
@@ -52,7 +48,6 @@ export async function POST() {
     if (indexError) {
       logger.warn("[COLUMN FIX] Index update warning:", { error: indexError.message });
     } else {
-      logger.debug("[COLUMN FIX] Indexes updated successfully");
     }
 
     // Verify the fix worked
@@ -67,7 +62,6 @@ export async function POST() {
       logger.error("[COLUMN FIX] Error verifying fix:", { error: finalError.message });
     }
 
-    logger.debug("[COLUMN FIX] Final columns:", finalColumns);
 
     return NextResponse.json({
       success: true,

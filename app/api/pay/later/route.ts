@@ -6,14 +6,11 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    console.log("[PAY LATER] 🚀 Starting pay later endpoint");
 
     // Step 1: Parse request body
     const body = await req.json();
-    console.log("[PAY LATER] 📦 Request body received:", JSON.stringify(body, null, 2));
 
     const { order_id, sessionId } = body;
-    console.log("[PAY LATER] 🆔 Extracted data:", { order_id, sessionId });
 
     logger.info("⏰ [PAY LATER] Pay later requested", {
       orderId: order_id,
@@ -35,9 +32,7 @@ export async function POST(req: Request) {
     }
 
     // Step 2: Create Supabase client
-    console.log("[PAY LATER] 🔧 Creating Supabase admin client...");
     const supabase = createAdminClient();
-    console.log("[PAY LATER] ✅ Supabase client created:", !!supabase);
 
     // Step 3: Check environment variables
     console.log("[PAY LATER] 🔑 Environment check:", {
@@ -48,13 +43,11 @@ export async function POST(req: Request) {
     });
 
     // Step 4: Attempt to update order
-    console.log("[PAY LATER] 💾 Attempting to update order:", order_id);
     const updateData = {
       payment_status: "PAY_LATER",
       payment_method: "later",
       updated_at: new Date().toISOString(),
     };
-    console.log("[PAY LATER] 📝 Update data:", JSON.stringify(updateData, null, 2));
 
     const { data: order, error: updateError } = await supabase
       .from("orders")
@@ -121,7 +114,6 @@ export async function POST(req: Request) {
       },
     };
 
-    console.log("[PAY LATER] 📤 Sending response:", JSON.stringify(response, null, 2));
     return NextResponse.json(response);
   } catch (_error) {
     console.error("[PAY LATER] 💥 EXCEPTION CAUGHT:", {

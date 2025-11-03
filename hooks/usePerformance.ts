@@ -52,7 +52,6 @@ export function usePerformance() {
       const duration = performance.now() - start;
 
       if (process.env.NODE_ENV === "development") {
-        logger.debug(`[Performance] ${actionName} completed in ${duration.toFixed(2)}ms`);
       }
 
       return result;

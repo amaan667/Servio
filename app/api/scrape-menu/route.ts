@@ -285,7 +285,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "URL is required" }, { status: 400 });
     }
 
-    logger.info(`[MENU SCRAPE] Starting scrape`, { url, requestId });
 
     // Detect site type for optimal strategy
     const siteType = await detectSiteType(url);

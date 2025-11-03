@@ -42,7 +42,6 @@ export async function POST(req: Request) {
             p_order_id: orderId,
             p_venue_id: order.venue_id,
           });
-          logger.debug("[INVENTORY] Stock deducted for order:", { value: orderId });
         } catch (inventoryError) {
           logger.error("[INVENTORY] Error deducting stock:", { value: inventoryError });
           // Don't fail the order completion if inventory deduction fails
@@ -65,7 +64,6 @@ export async function POST(req: Request) {
         if (!cleanupResult.success) {
           logger.error("[ORDER UPDATE] Table cleanup failed:", cleanupResult.error);
         } else {
-          logger.debug("[ORDER UPDATE] Table cleanup successful:", cleanupResult.details);
         }
 
         // If order is completed and paid, check if reservations should be auto-completed

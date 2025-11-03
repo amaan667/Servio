@@ -6,10 +6,8 @@ import { apiLogger as logger } from "@/lib/logger";
 export async function POST(req: Request) {
   try {
     const startedAt = new Date().toISOString();
-    logger.debug("[ORDERS SERVE][START]", { startedAt });
 
     const { orderId } = await req.json();
-    logger.debug("[ORDERS SERVE] Incoming request body", { orderId });
 
     if (!orderId) {
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
@@ -17,7 +15,6 @@ export async function POST(req: Request) {
 
     // Use admin client - no authentication required for customer-facing flow
     const admin = createAdminClient();
-    logger.debug("[ORDERS SERVE] Using admin client (no auth required)");
 
     // Get the order details
     const { data: orderData, error: fetchError } = await admin
@@ -75,7 +72,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order missing venue_id" }, { status: 400 });
     }
 
-    logger.debug("[ORDERS SERVE] No auth required - customer-facing feature");
 
     // Update the order status to SERVING (which is allowed by DB constraint)
     // SERVED may not be in the constraint, so use SERVING as intermediate status
@@ -95,7 +91,6 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    logger.debug("[ORDERS SERVE] Order updated to SERVING", { data: { orderId, extra: venueId } });
 
     // Also update table_sessions if present (best-effort)
     try {

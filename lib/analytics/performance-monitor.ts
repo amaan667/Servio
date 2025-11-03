@@ -171,7 +171,6 @@ export class PerformanceMonitor {
     // Send to analytics service
     this.sendToAnalytics(name, value);
 
-    logger.debug("[PERFORMANCE] Metric recorded:", { name, value });
   }
 
   /**
@@ -179,7 +178,6 @@ export class PerformanceMonitor {
    */
   static recordDatabaseQuery(queryName: string, duration: number) {
     this.recordMetric("databaseQueryTime", duration);
-    logger.debug("[PERFORMANCE] Database query:", { queryName, duration });
   }
 
   /**

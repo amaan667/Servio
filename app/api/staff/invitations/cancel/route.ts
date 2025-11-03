@@ -14,9 +14,7 @@ export async function POST(_request: NextRequest) {
 
     // Optional: Log user context if provided
     if (user_id) {
-      logger.debug("[INVITATION API] Cancel request received:", { data: { id, user_id } });
     } else {
-      logger.debug("[INVITATION API] Cancel request received (cookie-free):", { data: { id } });
     }
 
     const supabase = createAdminClient();
@@ -35,7 +33,6 @@ export async function POST(_request: NextRequest) {
         errorCode === "PGRST116" ||
         errorMessage?.includes('relation "staff_invitations" does not exist')
       ) {
-        logger.debug("[INVITATION API] staff_invitations table does not exist");
         return NextResponse.json(
           {
             error: "Staff invitation system not set up. Please run the database migration first.",
@@ -81,7 +78,6 @@ export async function POST(_request: NextRequest) {
         });
       }
     } else {
-      logger.info("ℹ️ [INVITATION CANCEL] No user context provided (cookie-free operation)");
     }
 
     // Check if invitation can be cancelled
@@ -115,9 +111,7 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    logger.debug("[INVITATION API] Invitation marked as cancelled");
 
-    logger.debug("[INVITATION API] Invitation cancelled and removed successfully:", id);
 
     return NextResponse.json({
       success: true,

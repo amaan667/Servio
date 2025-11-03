@@ -6,7 +6,6 @@ import { createAdminClient } from "@/lib/supabase";
 export default async function SettingsPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
-  logger.info("[SETTINGS PAGE] 🔧 Settings page accessed", { venueId });
 
   // Fetch ALL data on server-side using ADMIN client (no auth required!)
   const supabase = createAdminClient();
@@ -28,7 +27,6 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
     return <SettingsClientPage venueId={venueId} />;
   }
 
-  logger.info("[SETTINGS PAGE] User authenticated on server", { userId: user.id });
 
   // Fetch all settings data on server using admin client (bypasses RLS)
   const [venueResult, userRoleResult, allVenuesResult, firstVenueResult] = await Promise.all([

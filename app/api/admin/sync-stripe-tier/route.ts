@@ -134,7 +134,6 @@ export async function POST(_request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    logger.info("[SYNC STRIPE TIER] Updating database with Stripe data", updateData);
 
     const { error } = await supabase
       .from("organizations")

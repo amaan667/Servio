@@ -22,7 +22,6 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  console.log("📂 Loading migration SQL...");
 
   const migrationPath = join(
     process.cwd(),
@@ -33,7 +32,6 @@ async function main() {
 
   const sql = await readFile(migrationPath, "utf-8");
 
-  console.log("🔧 Applying fix for get_invitation_by_token function...");
 
   try {
     // Try to execute using rpc if available
@@ -41,21 +39,11 @@ async function main() {
 
     if (error) {
       console.error("❌ Failed to execute via rpc:", error);
-      console.log("\n📋 Please run this SQL manually in your Supabase dashboard:\n");
-      console.log("=========================================");
-      console.log(sql);
-      console.log("=========================================\n");
       process.exit(1);
     }
 
-    console.log("✅ Function created/updated successfully!");
-    console.log("The get_invitation_by_token function now properly joins with auth.users");
   } catch (err) {
     console.error("❌ Error:", err);
-    console.log("\n📋 Please run this SQL manually in your Supabase dashboard:\n");
-    console.log("=========================================");
-    console.log(sql);
-    console.log("=========================================\n");
     process.exit(1);
   }
 }

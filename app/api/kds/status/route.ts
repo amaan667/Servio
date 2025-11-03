@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const supabaseAdmin = createAdminClient();
-    logger.debug("[KDS STATUS] Checking KDS system status...");
 
     // Check if KDS tables exist
     const { data: tables, error: tablesError } = await supabaseAdmin
@@ -29,7 +28,6 @@ export async function GET() {
     }
 
     const tableNames = tables?.map((t) => t.table_name) || [];
-    logger.debug("[KDS STATUS] Found KDS tables:", { tables: tableNames });
 
     // Check if there are unknown KDS stations
     let stationsCount = 0;
@@ -71,7 +69,6 @@ export async function GET() {
       system_ready: tableNames.length === 3 && stationsCount > 0,
     };
 
-    logger.debug("[KDS STATUS] System status:", status);
 
     return NextResponse.json({
       ok: true,

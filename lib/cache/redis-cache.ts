@@ -24,7 +24,6 @@ class RedisCache {
 
         this.redis.on("connect", () => {
           this.isConnected = true;
-          logger.info("[REDIS] Connected to Redis cache");
         });
 
         this.redis.on("error", (error) => {
@@ -37,7 +36,6 @@ class RedisCache {
 
         await this.redis.connect();
       } else {
-        logger.info("[REDIS] Redis URL not provided, using in-memory cache fallback");
       }
     } catch (_error) {
       logger.warn("[REDIS] Failed to initialize Redis cache:", _error as Record<string, unknown>);

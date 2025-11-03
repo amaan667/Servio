@@ -164,7 +164,6 @@ export function useTableOrdersRealtime(venueId: string) {
   useEffect(() => {
     if (!venueId) return;
 
-    logger.debug("[TABLE ORDERS] Setting up real-time subscription", { venueId });
     const supabase = createClient();
 
     const channel = supabase
@@ -185,7 +184,6 @@ export function useTableOrdersRealtime(venueId: string) {
           // Check if this is a table order (QR order)
           const order = payload.new || payload.old;
           if (order?.source === "qr") {
-            logger.debug("[TABLE ORDERS] Table order update received:", payload.eventType);
             // Invalidate both queries to trigger refetch
             queryClient.invalidateQueries({ queryKey: ["table-orders", venueId] });
             queryClient.invalidateQueries({ queryKey: ["table-order-counts", venueId] });
@@ -193,11 +191,9 @@ export function useTableOrdersRealtime(venueId: string) {
         }
       )
       .subscribe((status: string) => {
-        logger.debug("[TABLE ORDERS] Realtime subscription status", { status });
       });
 
     return () => {
-      logger.debug("[TABLE ORDERS] Cleaning up real-time subscription");
       supabase.removeChannel(channel);
     };
   }, [venueId, queryClient]);

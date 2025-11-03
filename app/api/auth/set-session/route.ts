@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.info("[AUTH SET-SESSION] Setting session from client tokens");
 
     // Create server-side Supabase client
     const supabase = await createServerSupabase();
@@ -47,7 +46,6 @@ export async function POST(request: NextRequest) {
     // Don't manually override them - let Supabase handle the chunking properly
     const response = NextResponse.json({ success: true });
 
-    logger.info("[AUTH SET-SESSION] ✅ Cookies automatically set by Supabase SSR client");
 
     return response;
   } catch (err) {

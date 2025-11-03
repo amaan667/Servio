@@ -31,7 +31,6 @@ export async function categorizeItemWithAI(
   // Check cache first to avoid duplicate AI calls
   const cached = await AICache.categorization.get(itemName, pdfCategories);
   if (cached) {
-    logger.debug("[AI CATEGORIZER] Cache hit", { itemName });
     return cached as { category: string; confidence: number; shouldCreateNew: boolean };
   }
 

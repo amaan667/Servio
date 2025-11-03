@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.info("[AUTH SYNC] Syncing session to server cookies");
 
     // Create response object first so we can set cookies on it
     const response = NextResponse.json({ success: true });

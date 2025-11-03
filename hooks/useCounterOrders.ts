@@ -127,7 +127,6 @@ export function useCounterOrdersRealtime(venueId: string) {
   useEffect(() => {
     if (!venueId) return;
 
-    logger.debug("[COUNTER ORDERS] Setting up real-time subscription", { venueId });
     const supabase = createClient();
 
     const channel = supabase
@@ -148,7 +147,6 @@ export function useCounterOrdersRealtime(venueId: string) {
           // Check if this is a counter order
           const order = payload.new || payload.old;
           if (order?.source === "counter") {
-            logger.debug("[COUNTER ORDERS] Counter order update received:", payload.eventType);
             // Invalidate both queries to trigger refetch
             queryClient.invalidateQueries({ queryKey: ["counter-orders", venueId] });
             queryClient.invalidateQueries({ queryKey: ["counter-order-counts", venueId] });
@@ -156,11 +154,9 @@ export function useCounterOrdersRealtime(venueId: string) {
         }
       )
       .subscribe((status: string) => {
-        logger.debug("[COUNTER ORDERS] Realtime subscription status", { status });
       });
 
     return () => {
-      logger.debug("[COUNTER ORDERS] Cleaning up real-time subscription");
       supabase.removeChannel(channel);
     };
   }, [venueId, queryClient]);

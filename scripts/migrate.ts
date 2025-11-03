@@ -141,17 +141,14 @@ async function main() {
     const pending = migrations.filter((m) => !executed.includes(m.filename));
 
     if (pending.length === 0) {
-      logger.info("No pending migrations");
       return;
     }
 
-    logger.info(`Found ${pending.length} pending migrations`);
 
     for (const migration of pending) {
       await runMigration(supabase, migration);
     }
 
-    logger.info("All migrations completed successfully");
   } catch (error) {
     logger.error("Migration process failed", { error });
     process.exit(1);

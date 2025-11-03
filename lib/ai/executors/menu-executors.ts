@@ -20,7 +20,6 @@ export async function executeMenuUpdatePrices(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
-  logger.debug(`[AI ASSISTANT] Updating prices for ${params.items.length} items`);
 
   if (!params.items || params.items.length === 0) {
     throw new AIAssistantError("No items specified for price update", "INVALID_PARAMS");
@@ -112,7 +111,6 @@ export async function executeMenuUpdatePrices(
     };
   }
 
-  logger.debug(`[AI ASSISTANT] Executing price updates for ${params.items.length} items`);
   let updatedCount = 0;
   const failedUpdates: unknown[] = [];
 
@@ -137,7 +135,6 @@ export async function executeMenuUpdatePrices(
       logger.error(`[AI ASSISTANT] No item updated for "${itemName}"`);
       failedUpdates.push({ id: item.id, name: itemName, error: "Item not found or access denied" });
     } else {
-      logger.debug(`[AI ASSISTANT] Successfully updated "${itemName}" to £${item.newPrice}`);
       updatedCount++;
     }
   }
@@ -150,7 +147,6 @@ export async function executeMenuUpdatePrices(
     );
   }
 
-  logger.debug(`[AI ASSISTANT] Price update complete: ${updatedCount} items updated successfully`);
 
   return {
     success: true,

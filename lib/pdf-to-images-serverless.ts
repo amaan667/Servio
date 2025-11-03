@@ -25,7 +25,6 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
     const pdfDoc = await pdfLib.PDFDocument.load(pdfBuffer);
     const pageCount = pdfDoc.getPageCount();
 
-    logger.info("[PDF-TO-IMAGES] Converting pages:", { count: pageCount });
 
     // Convert each page
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
@@ -35,7 +34,6 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
       }
     }
 
-    logger.info("[PDF-TO-IMAGES] Converted pages:", { count: imageBuffers.length });
     return imageBuffers;
   } catch (_error) {
     logger.error("[PDF-TO-IMAGES] Error:", _error);

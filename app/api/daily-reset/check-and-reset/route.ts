@@ -10,7 +10,6 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
     }
 
-    logger.info(`🔄 [DAILY RESET CHECK] Starting reset check for venue ${venueId}, force=${force}`);
 
     // Check if service role key is available
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -78,7 +77,6 @@ export async function POST(_request: NextRequest) {
 
     // If we already reset today, return success (unless force=true)
     if (resetRecord && !force) {
-      logger.info(`🔄 [DAILY RESET CHECK] Already reset today for venue ${venueId}`);
       return NextResponse.json({
         success: true,
         message: "Already reset today",

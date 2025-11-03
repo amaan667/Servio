@@ -14,8 +14,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ orderId
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
-    logger.debug("[ORDER FETCH DEBUG] ===== FETCHING ORDER BY ID =====");
-    logger.debug("[ORDER FETCH DEBUG] Order ID:", { value: orderId });
 
     // Fetch order with items (items are stored as JSONB in orders table)
     const { data: order, error: orderError } = await supabaseAdmin
@@ -50,12 +48,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ orderId
     }
 
     // Log payment details
-    logger.debug("[ORDER FETCH DEBUG] ===== ORDER FOUND - PAYMENT DETAILS =====");
-    logger.debug("[ORDER FETCH DEBUG] Payment method:", order.payment_method);
-    logger.debug("[ORDER FETCH DEBUG] Payment status:", order.payment_status);
-    logger.debug("[ORDER FETCH DEBUG] Stripe session ID:", order.stripe_session_id);
-    logger.debug("[ORDER FETCH DEBUG] Stripe payment intent ID:", order.stripe_payment_intent_id);
-    logger.debug("[ORDER FETCH DEBUG] Order notes:", order.notes);
 
     // Items are already in the order object as JSONB
     // Ensure items array exists (fallback to empty array if null)
@@ -64,8 +56,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ orderId
       items: order.items || [],
     };
 
-    logger.debug("[ORDER FETCH DEBUG] ===== RETURNING TRANSFORMED ORDER =====");
-    logger.debug("[ORDER FETCH DEBUG] Transformed order keys:", Object.keys(transformedOrder));
     logger.debug(
       "[ORDER FETCH DEBUG] Items count:",
       Array.isArray(transformedOrder.items) ? transformedOrder.items.length : 0

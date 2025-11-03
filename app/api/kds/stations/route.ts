@@ -24,7 +24,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
     }
 
-    logger.debug("[KDS STATIONS] Authenticated:", { userId: auth.user.id });
 
     const { user, supabase } = auth;
 

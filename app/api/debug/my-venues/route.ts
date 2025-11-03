@@ -55,7 +55,6 @@ export async function GET(_request: NextRequest) {
         : "/select-plan",
     };
 
-    logger.info("[DEBUG MY VENUES] Venue list fetched", result);
 
     return NextResponse.json(result);
   } catch (err) {

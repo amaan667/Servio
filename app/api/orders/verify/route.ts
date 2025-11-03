@@ -11,7 +11,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get("sessionId");
 
-    logger.debug("[VERIFY] Starting verification for session:", { value: sessionId });
 
     if (!sessionId) {
       return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
@@ -42,7 +41,6 @@ export async function GET(req: Request) {
       };
     const orderId = metadata.orderId;
 
-    logger.debug("[VERIFY] Order ID from metadata:", { value: orderId });
 
     if (!orderId) {
       return NextResponse.json(
@@ -54,7 +52,6 @@ export async function GET(req: Request) {
     }
 
     // Fetch the existing order (should have been created in order page)
-    logger.debug("[VERIFY] Fetching existing order:", { value: orderId });
 
     const supabase = await createClient();
 
@@ -76,7 +73,6 @@ export async function GET(req: Request) {
     }
 
     // Update payment status to PAID
-    logger.debug("[VERIFY] Updating order payment status to PAID for order:", { value: orderId });
 
     const { data: updatedOrder, error: updateError } = await supabase
       .from("orders")
@@ -100,7 +96,6 @@ export async function GET(req: Request) {
       );
     }
 
-    logger.debug("[VERIFY] Payment status updated successfully for order:", { value: orderId });
 
     return NextResponse.json({
       order: updatedOrder,

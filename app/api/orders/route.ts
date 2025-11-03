@@ -138,7 +138,6 @@ async function createKDSTickets(
   order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }
 ) {
   try {
-    logger.debug("[KDS TICKETS] Creating KDS tickets for order:", { orderId: order.id });
 
     // First, ensure KDS stations exist for this venue
     const { data: existingStations } = await supabase
@@ -324,7 +323,6 @@ export async function POST(req: Request) {
   );
 
   try {
-    logger.info("===== ORDER CREATION STARTED =====");
 
     const body = (await req.json()) as Partial<OrderPayload>;
 
@@ -452,7 +450,6 @@ export async function POST(req: Request) {
             seatCount = groupSession.total_group_size;
           }
         } catch (groupError) {
-          logger.debug("[ORDERS] No group session found:", { error: groupError });
         }
 
         // Insert new table. Avoid UPSERT because the database may not have
@@ -601,7 +598,6 @@ export async function POST(req: Request) {
     }
 
     // Final validation before insertion
-    logger.debug("[ORDER CREATION DEBUG] ===== CREATING NEW ORDER =====");
     logger.debug("[ORDER CREATION DEBUG] Order details:", {
       data: {
         customer: payload.customer_name,
@@ -624,9 +620,6 @@ export async function POST(req: Request) {
       .insert(payload)
       .select("*");
 
-    logger.debug("[ORDER CREATION DEBUG] Insert result:");
-    logger.debug("[ORDER CREATION DEBUG] - Inserted data:", { value: inserted });
-    logger.debug("[ORDER CREATION DEBUG] - Insert error:", { value: insertErr });
 
     if (insertErr) {
       logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");
@@ -644,7 +637,6 @@ export async function POST(req: Request) {
 
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
-    logger.info("💾💾💾 DATABASE INSERT SUCCESSFUL 💾💾💾", { requestId });
 
     if (!inserted || inserted.length === 0) {
       logger.error("❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌", { requestId });
@@ -657,8 +649,6 @@ export async function POST(req: Request) {
       requestId,
     });
 
-    logger.debug("[ORDER CREATION DEBUG] ===== ORDER CREATED SUCCESSFULLY =====");
-    logger.debug("[ORDER CREATION DEBUG] Order ID:", inserted[0].id);
     logger.debug("[ORDER CREATION DEBUG] Created order details:", {
       id: inserted[0].id,
       customer_name: inserted[0].customer_name,
@@ -681,7 +671,6 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (checkError) {
-        logger.debug("[ORDERS] Error checking existing session:", { error: checkError });
       }
 
       if (existingSession) {
@@ -748,7 +737,6 @@ export async function POST(req: Request) {
       display_name: orderSource === "counter" ? `Counter ${table_number}` : `Table ${table_number}`, // Include display name for UI
     };
 
-    logger.debug("[ORDER CREATION DEBUG] ===== RETURNING RESPONSE =====");
     logger.debug("[ORDER CREATION DEBUG] Response data:", {
       data: JSON.stringify(response, null, 2),
     });

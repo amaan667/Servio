@@ -6,14 +6,11 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    console.log("[PAY TILL] 🚀 Starting pay till endpoint");
 
     // Step 1: Parse request body
     const body = await req.json();
-    console.log("[PAY TILL] 📦 Request body received:", JSON.stringify(body, null, 2));
 
     const { order_id } = body;
-    console.log("[PAY TILL] 🆔 Extracted order_id:", order_id);
 
     logger.info("💳 [PAY TILL] Payment at till requested", {
       orderId: order_id,
@@ -34,9 +31,7 @@ export async function POST(req: Request) {
     }
 
     // Step 2: Create Supabase client
-    console.log("[PAY TILL] 🔧 Creating Supabase admin client...");
     const supabase = createAdminClient();
-    console.log("[PAY TILL] ✅ Supabase client created:", !!supabase);
 
     // Step 3: Check environment variables
     console.log("[PAY TILL] 🔑 Environment check:", {
@@ -47,13 +42,11 @@ export async function POST(req: Request) {
     });
 
     // Step 4: Attempt to update order
-    console.log("[PAY TILL] 💾 Attempting to update order:", order_id);
     const updateData = {
       payment_status: "TILL",
       payment_method: "till",
       updated_at: new Date().toISOString(),
     };
-    console.log("[PAY TILL] 📝 Update data:", JSON.stringify(updateData, null, 2));
 
     const { data: order, error: updateError } = await supabase
       .from("orders")
@@ -119,7 +112,6 @@ export async function POST(req: Request) {
       },
     };
 
-    console.log("[PAY TILL] 📤 Sending response:", JSON.stringify(response, null, 2));
     return NextResponse.json(response);
   } catch (_error) {
     console.error("[PAY TILL] 💥 EXCEPTION CAUGHT:", {

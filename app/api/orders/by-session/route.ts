@@ -11,8 +11,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get("sessionId");
 
-    logger.debug("[ORDER BY SESSION] Request URL:", req.url);
-    logger.debug("[ORDER BY SESSION] Session ID from params:", { value: sessionId });
 
     if (!sessionId) {
       return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
@@ -42,7 +40,6 @@ export async function GET(req: Request) {
 
     // If not found by session ID, try to find recent orders that might be related
     if (orderError && orderError.code === "PGRST116") {
-      logger.debug("[ORDER BY SESSION] No order found with session ID, checking recent orders...");
 
       // Look for orders created in the last 15 minutes that are paid
       const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
@@ -68,7 +65,6 @@ export async function GET(req: Request) {
         .limit(1);
 
       if (recentPaidOrders && recentPaidOrders.length > 0) {
-        logger.debug("[ORDER BY SESSION] Found recent paid order:", recentPaidOrders[0].id);
         const recentOrder = recentPaidOrders[0];
 
         // Transform the order to include items array

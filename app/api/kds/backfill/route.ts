@@ -13,7 +13,6 @@ export const runtime = "nodejs"; // KDS backfill endpoint
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createAdminClient();
-    logger.debug("[KDS BACKFILL] Starting KDS backfill for existing orders...");
 
     const { venueId, scope = "today" } = await req.json();
 
@@ -137,7 +136,6 @@ export async function POST(req: Request) {
       });
     }
 
-    logger.debug(`[KDS BACKFILL] Found ${orders.length} orders to process`);
 
     let ordersProcessed = 0;
     let ticketsCreated = 0;
@@ -154,7 +152,6 @@ export async function POST(req: Request) {
           .limit(1);
 
         if (existingTickets && existingTickets.length > 0) {
-          logger.debug(`[KDS BACKFILL] Order ${order.id} already has KDS tickets, skipping`);
           continue;
         }
 
@@ -188,7 +185,6 @@ export async function POST(req: Request) {
         }
 
         ordersProcessed++;
-        logger.debug(`[KDS BACKFILL] Processed order ${order.id} with ${items.length} items`);
       } catch (_error) {
         logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, {
           error: _error instanceof Error ? _error.message : "Unknown _error",

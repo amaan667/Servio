@@ -134,7 +134,6 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       unpaid,
     };
 
-    console.log(`[DASHBOARD] Final initialStats for venue ${venueId}:`, initialStats);
   } catch (_error) {
     // Continue without initial data - client will load it
   }

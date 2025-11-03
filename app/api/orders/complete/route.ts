@@ -7,10 +7,8 @@ import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 export async function POST(req: Request) {
   try {
     const startedAt = new Date().toISOString();
-    logger.debug("[ORDERS COMPLETE][START]", { startedAt });
 
     const { orderId } = await req.json();
-    logger.debug("[ORDERS COMPLETE] Incoming request body", { orderId });
 
     if (!orderId) {
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
@@ -18,7 +16,6 @@ export async function POST(req: Request) {
 
     // Use admin client - no authentication required for customer-facing flow
     const admin = createAdminClient();
-    logger.debug("[ORDERS COMPLETE] Using admin client (no auth required)");
 
     // Get the order details
     const { data: orderData, error: fetchError } = await admin
@@ -80,7 +77,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order missing venue_id" }, { status: 400 });
     }
 
-    logger.debug("[ORDERS COMPLETE] No auth required - customer-facing feature");
 
     // Update the order status to COMPLETED
     const { error } = await admin

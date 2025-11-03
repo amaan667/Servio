@@ -77,7 +77,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       };
     }
 
-    logger.debug("[TABLE CLEANUP] No active orders found, proceeding with table cleanup");
 
     let sessionsCleared = 0;
     let runtimeStateCleared = false;
@@ -108,7 +107,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       logger.error("[TABLE CLEANUP] Error clearing table sessions:", sessionClearError);
     } else {
       sessionsCleared = sessionData?.length || 0;
-      logger.debug(`[TABLE CLEANUP] Cleared ${sessionsCleared} table sessions`);
     }
 
     // 2. Clear table runtime state
@@ -127,7 +125,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         logger.error("[TABLE CLEANUP] Error clearing table runtime state:", runtimeClearError);
       } else {
         runtimeStateCleared = true;
-        logger.debug("[TABLE CLEANUP] Cleared table runtime state");
       }
     }
 
@@ -150,11 +147,9 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         );
       } else {
         runtimeStateCleared = true;
-        logger.debug("[TABLE CLEANUP] Cleared table runtime state by ID");
       }
     }
 
-    logger.debug("[TABLE CLEANUP] Table cleanup completed successfully");
 
     return {
       success: true,

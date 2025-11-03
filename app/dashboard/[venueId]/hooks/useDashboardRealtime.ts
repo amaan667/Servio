@@ -79,7 +79,6 @@ export function useDashboardRealtime({
     isMountedRef.current = true;
 
     if (!todayWindow || !todayWindow.startUtcISO || !todayWindow.endUtcISO) {
-      console.log("[Dashboard Realtime] Waiting for todayWindow to be set...", { todayWindow });
       return;
     }
 
@@ -88,11 +87,9 @@ export function useDashboardRealtime({
         ? (venue as { venue_id?: string }).venue_id
         : venueId;
     if (!venueId_check) {
-      console.log("[Dashboard Realtime] Waiting for venueId...", { venue, venueId });
       return;
     }
 
-    console.log("[Dashboard Realtime] Setting up real-time subscription for venue:", venueId_check);
     const supabase = supabaseBrowser();
 
     // Set up session refresh listener to reconnect when token refreshes
@@ -135,10 +132,8 @@ export function useDashboardRealtime({
             // For INSERT (new orders), refresh immediately to show new data
             // For UPDATE/DELETE, use debounced refresh
             if (payload.eventType === "INSERT") {
-              console.log("[Dashboard Realtime] New order inserted, refreshing immediately");
               immediateRefresh();
             } else {
-              console.log("[Dashboard Realtime] Order updated/deleted, using debounced refresh");
               debouncedRefresh();
             }
             debouncedLoadStats();
@@ -208,7 +203,6 @@ export function useDashboardRealtime({
           }
         )
         .subscribe((status: string) => {
-          console.log("[Dashboard Realtime] Channel subscription status:", status, { channelName });
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
             console.log("[Dashboard Realtime] Successfully subscribed to channel:", channelName);

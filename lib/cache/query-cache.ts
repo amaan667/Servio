@@ -32,12 +32,10 @@ export class QueryCache {
       // Try to get from cache first
       const cached = await redisCache.get<T>(key);
       if (cached !== null) {
-        logger.debug("[QUERY CACHE] Cache hit:", { key });
         return cached;
       }
 
       // Execute query and cache result
-      logger.debug("[QUERY CACHE] Cache miss, executing query:", { key });
       const result = await queryFn();
 
       await redisCache.set(key, result, { ttl, tags });
@@ -146,7 +144,6 @@ export class QueryCache {
     ];
 
     await redisCache.invalidateByTags(tags);
-    logger.info("[QUERY CACHE] Invalidated venue cache:", { venueId });
   }
 
   /**
@@ -155,7 +152,6 @@ export class QueryCache {
   static async invalidateUser(userId: string): Promise<void> {
     const tags = [cacheUtils.tags.user(userId)];
     await redisCache.invalidateByTags(tags);
-    logger.info("[QUERY CACHE] Invalidated user cache:", { userId });
   }
 
   /**
@@ -164,7 +160,6 @@ export class QueryCache {
   static async invalidateOrders(venueId: string): Promise<void> {
     const tags = [cacheUtils.tags.orders(venueId)];
     await redisCache.invalidateByTags(tags);
-    logger.info("[QUERY CACHE] Invalidated orders cache:", { venueId });
   }
 
   /**
@@ -173,7 +168,6 @@ export class QueryCache {
   static async invalidateMenu(venueId: string): Promise<void> {
     const tags = [cacheUtils.tags.menu(venueId)];
     await redisCache.invalidateByTags(tags);
-    logger.info("[QUERY CACHE] Invalidated menu cache:", { venueId });
   }
 
   /**
@@ -182,7 +176,6 @@ export class QueryCache {
   static async invalidateTables(venueId: string): Promise<void> {
     const tags = [cacheUtils.tags.tables(venueId)];
     await redisCache.invalidateByTags(tags);
-    logger.info("[QUERY CACHE] Invalidated tables cache:", { venueId });
   }
 
   /**
@@ -190,7 +183,6 @@ export class QueryCache {
    */
   static async clearAll(): Promise<void> {
     await redisCache.clear();
-    logger.info("[QUERY CACHE] Cleared all cache");
   }
 
   /**

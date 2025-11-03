@@ -145,7 +145,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       (cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")
     );
 
-    logger.info("[ROOT LAYOUT] 🔐 Auth cookie check", { hasAuthCookies });
 
     if (hasAuthCookies) {
       // Use read-only client in layout to prevent cookie modification errors
@@ -153,7 +152,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
       // Use getSession() to get the full session with tokens
       try {
-        logger.info("[ROOT LAYOUT] 📡 Calling supabase.auth.getSession()...");
 
         // Log all cookies for debugging
         logger.info("[ROOT LAYOUT] 🍪 Auth cookies details", {
@@ -199,7 +197,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         });
       }
     } else {
-      logger.info("[ROOT LAYOUT] ℹ️ No auth cookies found - user not authenticated");
     }
   } catch (err) {
     logger.error("[ROOT LAYOUT] ❌ Error in root layout", {

@@ -7,7 +7,6 @@ export async function POST() {
   try {
     const supabase = createAdminClient();
 
-    logger.debug("[CLEANUP] Starting invitation cleanup...");
 
     // Step 1: Delete all cancelled invitations to clean up the database
     const { data: deletedInvitations, error: deleteError } = await supabase
@@ -29,7 +28,6 @@ export async function POST() {
       );
     }
 
-    logger.debug(`[CLEANUP] Deleted ${deletedInvitations?.length || 0} cancelled invitations`);
 
     // Step 2: Try to fix the database constraint
     try {
@@ -45,7 +43,6 @@ export async function POST() {
               WHERE status = 'pending';`,
       });
 
-      logger.debug("[CLEANUP] Database constraint fixed successfully");
     } catch (constraintError) {
       logger.warn("[CLEANUP] Could not fix constraint (this is okay)", {
         error: constraintError instanceof Error ? constraintError.message : "Unknown error",

@@ -81,7 +81,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
   useEffect(() => {
     // If we have initialUserPlan from server, use it
     if (initialUserPlan !== null && userPlan !== initialUserPlan) {
-      console.log("[PRICING] Using server-provided plan:", initialUserPlan);
       setUserPlan(initialUserPlan);
     }
   }, [initialUserPlan]);
@@ -175,7 +174,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         if (ctaText.includes("Downgrade")) {
           const targetTier = ctaText.includes("Basic") ? "basic" : "standard";
 
-          console.log("[PRICING] Downgrading to:", targetTier, "Org ID:", venues.organization_id);
 
           const response = await apiClient.post("/api/stripe/downgrade-plan", {
             organizationId: venues.organization_id,
@@ -267,7 +265,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     }
 
     if (!isSignedIn || !userPlan) {
-      console.log("[PRICING CTA] Showing default CTA - not signed in or no plan");
       return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
     }
 

@@ -57,7 +57,6 @@ function SignInPageContent() {
           console.error("[SIGN-IN] Error clearing broken session:", e);
         }
       } else if (hasRefreshToken && !hasAccessToken && isOAuthCallback) {
-        console.log("[SIGN-IN] Skipping broken session cleanup - OAuth callback in progress");
       }
     };
 
@@ -120,7 +119,6 @@ function SignInPageContent() {
           });
           router.push(`/dashboard/${venues[0]?.venue_id}`);
         } else {
-          console.log("[SIGN-IN PAGE] No venues - redirecting to select-plan");
           router.push("/select-plan");
         }
       };

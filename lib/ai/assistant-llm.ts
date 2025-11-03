@@ -70,11 +70,9 @@ function selectModel(userPrompt: string, firstToolName?: ToolName): string {
   // If we know the tool name, use it for decision
   if (firstToolName) {
     if (COMPLEX_TOOLS.has(firstToolName)) {
-      logger.debug(`[AI ASSISTANT] Using GPT-4o (full) for complex tool: ${firstToolName}`);
       return MODEL_FULL;
     }
     if (SIMPLE_TOOLS.has(firstToolName)) {
-      logger.debug(`[AI ASSISTANT] Using GPT-4o-mini for simple tool: ${firstToolName}`);
       return MODEL_MINI;
     }
   }
@@ -99,12 +97,10 @@ function selectModel(userPrompt: string, firstToolName?: ToolName): string {
   ];
 
   if (complexIndicators.some((indicator) => promptLower.includes(indicator))) {
-    logger.debug(`[AI ASSISTANT] Using GPT-4o (full) - detected complex prompt`);
     return MODEL_FULL;
   }
 
   // Default to mini for cost savings
-  logger.debug(`[AI ASSISTANT] Using GPT-4o-mini (default)`);
   return MODEL_MINI;
 }
 
@@ -402,7 +398,6 @@ export async function planAssistantAction(
 
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {
-      logger.debug("[AI ASSISTANT] Falling back to GPT-4o (full) after mini failure");
       usedFallback = true;
       selectedModel = MODEL_FULL;
 

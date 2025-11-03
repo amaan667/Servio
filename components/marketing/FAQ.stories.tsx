@@ -23,21 +23,19 @@ export function BasicFAQ() {
  * Track when users interact with the FAQ for insights.
  */
 export function FAQWithAnalytics() {
-  const handleToggle = (question: string, isOpen: boolean) => {
+  const handleToggle = (_question: string, _isOpen: boolean) => {
     // Send to your analytics service
-    logger.debug('FAQ Toggle:', { question, state: isOpen ? 'open' : 'closed' });
     
     // Example with Google Analytics
     // if (typeof window !== 'undefined' && window.gtag) {
     //   window.gtag('event', 'faq_toggle', {
-    //     question: question,
-    //     state: isOpen ? 'open' : 'closed',
+    //     question: _question,
+    //     state: _isOpen ? 'open' : 'closed',
     //   });
     // }
   };
 
-  const handleCTAClick = (type: 'contact' | 'trial') => {
-    logger.debug('FAQ CTA Click:', type);
+  const handleCTAClick = (_type: 'contact' | 'trial') => {
     
     // Example with Google Analytics
     // if (typeof window !== 'undefined' && window.gtag) {

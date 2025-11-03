@@ -88,7 +88,6 @@ export default function CustomerOrderPage() {
     });
 
     // Also log client-side for development
-    logger.info("🔍 [QR SCAN - CLIENT] Order page accessed", logData);
   }, [venueSlug, tableNumber, counterNumber, orderType, isDemo]);
 
   const orderParams: OrderParams = {

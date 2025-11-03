@@ -43,7 +43,6 @@ export function loadGoogleMapsAPI(): Promise<void> {
       return;
     }
 
-    logger.debug("Loading Google Maps API", { keyPrefix: apiKey.substring(0, 10) + "..." });
 
     isLoading = true;
 

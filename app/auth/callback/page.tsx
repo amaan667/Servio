@@ -42,7 +42,6 @@ function CallbackContent() {
           data: { session: autoSession },
         } = await supabase.auth.getSession();
         if (autoSession) {
-          console.log("[AUTH CALLBACK CLIENT] ✅ Session auto-detected from URL!");
           logger.info("[AUTH CALLBACK CLIENT] Session auto-detected", {
             userId: autoSession.user.id,
             email: autoSession.user.email,
@@ -82,7 +81,6 @@ function CallbackContent() {
           allStorageItems[key] = value ? `${value.substring(0, 30)}...` : "null";
         });
 
-        console.log("[AUTH CALLBACK CLIENT] 🔍 FULL localStorage DUMP:", allStorageItems);
         console.log("[AUTH CALLBACK CLIENT] 🔍 PKCE verifier DEBUG:", {
           hasVerifier: !!verifierValue,
           verifierKey,
@@ -162,7 +160,6 @@ function CallbackContent() {
         });
 
         // Now call server endpoint to SET COOKIES from the session using setSession
-        console.log("[AUTH CALLBACK CLIENT] Calling set-session endpoint...");
         const response = await fetch("/api/auth/set-session", {
           method: "POST",
           headers: {
@@ -190,18 +187,14 @@ function CallbackContent() {
         }
 
         const syncData = await response.json();
-        console.log("[AUTH CALLBACK CLIENT] Sync successful:", syncData);
-        logger.info("[AUTH CALLBACK CLIENT] ✅ Session synced to server cookies");
 
         // Verify cookies were set by making a test request
         const checkResponse = await fetch("/api/auth/check-cookies", {
           credentials: "include",
         });
         const cookieCheck = await checkResponse.json();
-        console.log("[AUTH CALLBACK CLIENT] Cookie check after sync:", cookieCheck);
 
         // Check if user has a venue (get FIRST venue - oldest)
-        console.log("[AUTH CALLBACK CLIENT] Checking user venues...");
         const { data: venues, error: venuesError } = await supabase
           .from("venues")
           .select("venue_id, created_at")
@@ -228,7 +221,6 @@ function CallbackContent() {
         }
 
         // Check if staff member
-        console.log("[AUTH CALLBACK CLIENT] Checking staff roles...");
         const { data: staffRoles } = await supabase
           .from("user_venue_roles")
           .select("venue_id")
@@ -250,7 +242,6 @@ function CallbackContent() {
         }
 
         // New user - redirect to select plan
-        console.log("[AUTH CALLBACK CLIENT] No venues found - redirecting to select-plan");
         router.push("/select-plan");
       } catch (err) {
         logger.error("[AUTH CALLBACK CLIENT] Unexpected error:", { error: err });

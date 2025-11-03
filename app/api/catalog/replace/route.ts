@@ -55,7 +55,6 @@ export async function POST(req: NextRequest) {
     let pdfImages: string[] | undefined;
 
     if (file) {
-      logger.info(`[MENU IMPORT ${requestId}] Converting PDF to images...`);
       const pdfBuffer = Buffer.from(await file.arrayBuffer());
 
       try {
@@ -88,7 +87,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Hybrid Extraction (handles all 3 modes automatically)
-    logger.info(`[MENU IMPORT ${requestId}] Starting extraction...`);
 
     let extractionResult;
     try {
@@ -212,7 +210,6 @@ export async function POST(req: NextRequest) {
 
     // Step 3: Replace or Append mode
     if (replaceMode) {
-      logger.info(`[MENU IMPORT ${requestId}] REPLACE mode - deleting existing menu...`);
 
       // Delete all existing items
       const { error: deleteItemsError } = await supabase
@@ -225,9 +222,7 @@ export async function POST(req: NextRequest) {
         throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
       }
 
-      logger.info(`[MENU IMPORT ${requestId}] Existing menu cleared`);
     } else {
-      logger.info(`[MENU IMPORT ${requestId}] APPEND mode - keeping existing menu`);
     }
 
     // Step 4: Prepare items for database

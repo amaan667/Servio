@@ -64,7 +64,6 @@ async function getMenuState(venueId: string) {
 }
 
 async function translateMenu(venueId: string, targetLanguage: string) {
-  console.log(`  → Translating to ${targetLanguage}...`);
 
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/ai-assistant/execute`,
@@ -107,7 +106,6 @@ async function testRoundTrip(venueId: string, targetLang: string): Promise<TestR
 
   try {
     // Get initial state
-    console.log(`\n🧪 Testing round-trip: English → ${targetLang} → English`);
     const before = await getMenuState(venueId);
     result.itemCountBefore = before.itemCount;
     result.categoryCountBefore = before.categoryCount;
@@ -205,9 +203,7 @@ async function testRoundTrip(venueId: string, targetLang: string): Promise<TestR
     result.success = result.translationErrors.length === 0;
 
     if (result.success) {
-      console.log(`  ✅ Round-trip test PASSED for ${targetLang}`);
     } else {
-      console.log(`  ❌ Round-trip test FAILED for ${targetLang}`);
       result.translationErrors.forEach((err) => console.log(`     - ${err}`));
     }
   } catch (error) {
@@ -226,17 +222,10 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("═══════════════════════════════════════════════════════");
-  console.log("  🌍 Translation Accuracy Test Suite");
-  console.log("═══════════════════════════════════════════════════════");
-  console.log(`Venue ID: ${venueId}`);
-  console.log(`Testing ${SUPPORTED_LANGUAGES.length - 1} language pairs\n`);
 
   // Get initial menu state
   const initialState = await getMenuState(venueId);
   console.log(`📊 Initial menu state:`);
-  console.log(`   Items: ${initialState.itemCount}`);
-  console.log(`   Categories: ${initialState.categoryCount}`);
 
   if (initialState.itemCount === 0) {
     console.error("\n❌ No menu items found. Please add some menu items before running tests.");
@@ -256,14 +245,10 @@ async function main() {
   }
 
   // Print summary
-  console.log("\n═══════════════════════════════════════════════════════");
-  console.log("  📊 Test Summary");
-  console.log("═══════════════════════════════════════════════════════\n");
 
   const passed = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;
 
-  console.log(`✅ Passed: ${passed}/${results.length}`);
   console.log(`❌ Failed: ${failed}/${results.length}`);
 
   if (failed > 0) {
@@ -271,7 +256,6 @@ async function main() {
     results
       .filter((r) => !r.success)
       .forEach((r) => {
-        console.log(`\n  ${r.language}:`);
         r.translationErrors.forEach((err) => console.log(`    - ${err}`));
       });
   }
@@ -279,17 +263,13 @@ async function main() {
   // Check for duplicates
   const duplicates = results.filter((r) => r.duplicatesCreated);
   if (duplicates.length > 0) {
-    console.log("\n⚠️  Duplicates detected in:");
     duplicates.forEach((r) => console.log(`    - ${r.language}`));
   }
 
-  console.log("\n═══════════════════════════════════════════════════════");
 
   if (failed === 0) {
-    console.log("✅ All tests passed! Translations are working correctly.");
     process.exit(0);
   } else {
-    console.log("❌ Some tests failed. Please review the errors above.");
     process.exit(1);
   }
 }

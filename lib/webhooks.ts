@@ -107,7 +107,6 @@ class WebhookService {
       });
 
       if (response.ok) {
-        console.log(`Webhook delivered successfully: ${webhook.name}`);
       } else {
         throw new Error(`Webhook delivery failed: ${response.status}`);
       }

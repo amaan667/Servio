@@ -35,7 +35,6 @@ class ConnectionMonitor {
   }
 
   private async handleOnline() {
-    logger.debug("[CONNECTION] Network is back online");
     await this.checkConnectionQuality();
   }
 

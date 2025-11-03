@@ -1189,7 +1189,6 @@ function detectSourceLanguage(
 
   // If we have a clear winner (more than 3 matches), use it
   if (counts[0].count > 3) {
-    logger.debug("[TRANSLATION] Detected source language:", counts[0].lang);
     return counts[0].lang;
   }
 
@@ -1480,7 +1479,6 @@ OUTPUT FORMAT:
       );
     }
 
-    logger.debug(`[AI ASSISTANT] Updating ${translatedItems.length} translated items in database`);
     let updatedCount = 0;
     let failedCount = 0;
 
@@ -1531,7 +1529,6 @@ OUTPUT FORMAT:
     try {
       const { revalidatePath } = await import("next/cache");
       revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
-      logger.debug("[AI ASSISTANT] Revalidated menu management page after translation");
     } catch (revalidateError) {
       logger.warn("[AI ASSISTANT] Failed to revalidate path:", revalidateError);
       // Don't fail the whole operation if revalidation fails

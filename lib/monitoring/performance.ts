@@ -218,7 +218,6 @@ export async function reportPerformanceMetrics(): Promise<void> {
   const summary = performanceMonitor.getSummary();
 
   // Log to Sentry or your monitoring service
-  logger.info("[PERFORMANCE SUMMARY]", { data: summary });
 
   // Check for performance degradation
   for (const [operation, stats] of Object.entries(summary)) {

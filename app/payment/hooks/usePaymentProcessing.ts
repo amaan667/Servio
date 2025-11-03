@@ -121,11 +121,9 @@ export function usePaymentProcessing() {
         }
       } else if (action === "till") {
         // Till payment - create order immediately, show "Order Confirmed!"
-        console.log("[PAYMENT] 💳 Processing TILL payment...");
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
-        console.log("[PAYMENT] 📝 Order created:", { orderId, orderResult });
 
         const tillPayload = {
           order_id: orderId,
@@ -135,7 +133,6 @@ export function usePaymentProcessing() {
           customerPhone: checkoutData.customerPhone,
         };
 
-        console.log("[PAYMENT] 📤 Calling /api/pay/till with payload:", tillPayload);
 
         const response = await fetch("/api/pay/till", {
           method: "POST",
@@ -162,21 +159,17 @@ export function usePaymentProcessing() {
         }
 
         const result = await response.json();
-        console.log("[PAYMENT] ✅ Pay till successful:", result);
 
         // Clear cart after successful order (keep checkout-data for order summary page)
         localStorage.removeItem("servio-order-cart");
 
         // Redirect to order summary page
-        console.log("[PAYMENT] 🔀 Redirecting to order summary...");
         window.location.href = `/order-summary?orderId=${orderId}`;
       } else if (action === "later") {
         // Pay later - create order immediately, show "Order Confirmed!"
-        console.log("[PAYMENT] ⏰ Processing PAY LATER...");
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
-        console.log("[PAYMENT] 📝 Order created:", { orderId, orderResult });
 
         const laterPayload = {
           order_id: orderId,
@@ -187,7 +180,6 @@ export function usePaymentProcessing() {
           sessionId: checkoutData.sessionId || `session_${Date.now()}`,
         };
 
-        console.log("[PAYMENT] 📤 Calling /api/pay/later with payload:", laterPayload);
 
         const response = await fetch("/api/pay/later", {
           method: "POST",
@@ -212,11 +204,9 @@ export function usePaymentProcessing() {
         }
 
         const result = await response.json();
-        console.log("[PAYMENT] ✅ Pay later successful:", result);
 
         // Store session for re-scanning
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
-        console.log("[PAYMENT] 💾 Storing session data:", { sessionId });
         localStorage.setItem("servio-current-session", sessionId);
         localStorage.setItem(
           `servio-order-${sessionId}`,
@@ -236,7 +226,6 @@ export function usePaymentProcessing() {
         localStorage.removeItem("servio-order-cart");
 
         // Redirect to order summary page
-        console.log("[PAYMENT] 🔀 Redirecting to order summary...");
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
     } catch (_err) {

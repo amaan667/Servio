@@ -59,17 +59,14 @@ async function getChromiumPath() {
  * Uses Puppeteer + Vision AI hybrid approach
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
-  logger.info("[WEB EXTRACT] ===== STARTING EXTRACTION =====", { url });
 
   const executablePath = await getChromiumPath();
-  logger.info("[WEB EXTRACT] Step 1: Resolved Chrome path", { executablePath });
   logger.info("[WEB EXTRACT] Step 2: Environment details", {
     nodeEnv: process.env.NODE_ENV,
     isRailway: !!process.env.RAILWAY_ENVIRONMENT,
     platform: process.platform,
   });
 
-  logger.info("[WEB EXTRACT] Step 3: Launching Puppeteer browser...");
   const browser = await puppeteer.launch({
     args: [
       ...chromium.args,
@@ -113,25 +110,18 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
   });
 
   try {
-    logger.info("[WEB EXTRACT] Step 5: Creating new page...");
     const page = await browser.newPage();
-    logger.info("[WEB EXTRACT] Step 6: Page created successfully");
 
     // Set viewport for consistent rendering
-    logger.info("[WEB EXTRACT] Step 7: Setting viewport to 1920x1080...");
     await page.setViewport({ width: 1920, height: 1080 });
-    logger.info("[WEB EXTRACT] Step 8: Viewport set successfully");
 
     // Navigate with simple, reliable wait strategy (NO networkidle!)
-    logger.info("[WEB EXTRACT] Step 9: Navigating to URL...", { url });
     await page.goto(url, {
       waitUntil: "domcontentloaded", // Fast and reliable
       timeout: 20000,
     });
-    logger.info("[WEB EXTRACT] Step 10: Navigation completed, DOM loaded");
 
     // Wait for menu content to appear with fallback
-    logger.info("[WEB EXTRACT] Step 11: Waiting for menu content...");
     await Promise.race([
       // Try to find menu-related elements
       page
@@ -144,14 +134,10 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     ]).catch(() => {
       logger.warn("[WEB EXTRACT] Step 11a: No specific menu selectors found, continuing anyway");
     });
-    logger.info("[WEB EXTRACT] Step 12: Content wait completed");
 
     // Additional wait for dynamic content
-    logger.info("[WEB EXTRACT] Step 13: Waiting 2s for dynamic content...");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    logger.info("[WEB EXTRACT] Step 14: Dynamic content wait completed");
 
-    logger.info("[WEB EXTRACT] Step 15: Starting DOM extraction...");
     // Strategy 1: DOM Scraping (fast, gets images/URLs)
     const domItems = await extractFromDOM(page);
     logger.info("[WEB EXTRACT] Step 16: DOM extraction complete", {
@@ -162,7 +148,6 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     });
 
     // Strategy 2: Screenshot + Vision AI (accurate, handles any layout)
-    logger.info("[WEB EXTRACT] Step 17: Taking full-page screenshot...");
     const screenshot = (await page.screenshot({
       fullPage: true, // Captures entire page without manual scrolling
       type: "png",
@@ -173,13 +158,10 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     });
 
     const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
-    logger.info("[WEB EXTRACT] Step 19: Sending screenshot to GPT-4o Vision AI...");
 
     const visionItems = await extractMenuFromImage(screenshotDataUrl);
 
     // Detailed logging for URL extraction (similar to PDF extraction)
-    logger.info("[WEB URL EXTRACT] ===== VISION AI EXTRACTION COMPLETE =====");
-    logger.info("[WEB URL EXTRACT] Total items extracted", { count: visionItems.length });
 
     // Log categories from Vision AI
     const visionCategories = Array.from(
@@ -196,7 +178,6 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       const cat = item.category || "Uncategorized";
       categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
     });
-    logger.info("[WEB URL EXTRACT] Category breakdown from Vision AI", categoryBreakdown);
 
     // Sample items by category
     const samplesByCategory: Record<string, any[]> = {};
@@ -213,7 +194,6 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
         });
       }
     });
-    logger.info("[WEB URL EXTRACT] Sample items by category", samplesByCategory);
 
     // Warnings for issues
     const menuItemsCount = visionItems.filter((item: any) => item.category === "Menu Items").length;
@@ -234,7 +214,6 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     });
 
     // Strategy 3: Intelligent merge
-    logger.info("[WEB EXTRACT] Step 21: Merging DOM and Vision AI data...");
     const mergedItems = mergeExtractedData(domItems, visionItems);
     logger.info("[WEB EXTRACT] Step 22: Merge complete", {
       total: mergedItems.length,
@@ -256,12 +235,10 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       finalCategoryBreakdown[cat] = (finalCategoryBreakdown[cat] || 0) + 1;
     });
 
-    logger.info("[WEB URL EXTRACT] ===== FINAL MERGED RESULT =====");
     logger.info("[WEB URL EXTRACT] Final categories after merge", {
       count: finalCategories.length,
       categories: finalCategories,
     });
-    logger.info("[WEB URL EXTRACT] Final category breakdown", finalCategoryBreakdown);
 
     // Final warning if still have Menu Items
     const finalMenuItemsCount = mergedItems.filter((item) => item.category === "Menu Items").length;
@@ -297,7 +274,6 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
         isConnected: browser.isConnected(),
       });
       await browser.close();
-      logger.info("[WEB EXTRACT] Step 24: Browser closed successfully");
     } catch (closeError) {
       logger.warn("[WEB EXTRACT] Failed to close browser", {
         closeError,
@@ -341,13 +317,11 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
       if (found.length > 3) {
         // Likely found menu items (lowered from 5 to catch smaller menus)
         elements = found;
-        console.log(`[DOM] Found ${elements.length} items with selector: ${selector}`);
         break;
       }
     }
 
     if (elements.length === 0) {
-      console.log("[DOM] No menu items found with standard selectors, trying fallback...");
       // Fallback: look for any element with both text and price pattern
       const allElements = document.querySelectorAll("div, li, article, section");
       elements = Array.from(allElements).filter((el) => {
@@ -355,7 +329,6 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
         // Has both name-like text and price pattern
         return text.length > 10 && text.length < 500 && /[£$€]?\d+[.,]\d{2}/.test(text);
       });
-      console.log(`[DOM] Fallback found ${elements.length} potential items`);
     }
 
     elements.forEach((el, index) => {
@@ -597,7 +570,6 @@ function mergeExtractedData(domItems: any[], visionItems: any[]): WebMenuItem[] 
     );
 
     if (!exists && domItem.name && domItem.price) {
-      logger.info("[MERGE] Adding DOM-only item", { name: domItem.name });
       merged.push({
         name: domItem.name,
         name_normalized: domItem.name_normalized,

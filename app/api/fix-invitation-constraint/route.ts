@@ -7,7 +7,6 @@ export async function POST() {
   try {
     const supabase = createAdminClient();
 
-    logger.debug("[CONSTRAINT FIX] Starting direct constraint fix...");
 
     // Step 1: Get all cancelled invitations and delete them
     const { data: cancelledInvitations, error: fetchError } = await supabase
@@ -36,12 +35,10 @@ export async function POST() {
         error: deleteError.message,
       });
     } else {
-      logger.debug("[CONSTRAINT FIX] Deleted all cancelled invitations");
     }
 
     // Step 3: Try to work around the constraint by using a different approach
     // We'll modify the cancel logic to handle this better
-    logger.debug("[CONSTRAINT FIX] Constraint fix completed");
 
     return NextResponse.json({
       success: true,

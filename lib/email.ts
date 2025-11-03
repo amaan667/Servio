@@ -150,10 +150,8 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
 
     if (process.env.RESEND_API_KEY) {
       try {
-        logger.debug("📦 [EMAIL] Importing Resend library...");
         const { Resend } = await import("resend");
         const resend = new Resend(process.env.RESEND_API_KEY);
-        logger.debug("✓ [EMAIL] Resend client initialized");
 
         const emailPayload = {
           from: "Team Invitations <invite@servio.uk>",
@@ -224,7 +222,6 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
           text: template.text,
         });
 
-        logger.debug("✅ Email sent successfully via SendGrid");
         return true;
       } catch (sendgridError) {
         logger.warn(
@@ -257,7 +254,6 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
           text: template.text,
         });
 
-        logger.debug("✅ Email sent successfully via SMTP");
         return true;
       } catch (smtpError) {
         logger.warn(
@@ -274,11 +270,9 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
       process.env.EMAILJS_PUBLIC_KEY
     ) {
       try {
-        logger.debug("📧 Using EmailJS for development email sending");
 
         // For now, we'll simulate success and log the details
         // In a real implementation, you'd use EmailJS API
-        logger.debug("📧 EMAIL TO SEND via EmailJS:");
         logger.debug("Email details", {
           to: template.to,
           subject: template.subject,
@@ -292,7 +286,6 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     }
 
     // Fallback: Log to console (for development/testing)
-    logger.debug("📧 EMAIL TO SEND (No email service configured):");
     logger.debug("Email details", {
       to: template.to,
       subject: template.subject,

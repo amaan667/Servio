@@ -68,7 +68,6 @@ class ProductionLogger {
     } else if (level === LogLevel.INFO) {
       console.info(formattedMessage);
     } else {
-      console.log(formattedMessage);
     }
 
     // Sentry integration for errors and warnings in production

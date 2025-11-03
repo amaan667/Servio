@@ -337,12 +337,10 @@ export default function MenuManagementClient({
             <MenuUploadCard
               venueId={venueId}
               onSuccess={() => {
-                console.log("[MENU MANAGEMENT] Upload successful - refreshing data");
                 // Refresh menu items list (client-side)
                 loadMenuItems();
                 // Force router refresh to update server-rendered dashboard stats
                 router.refresh();
-                console.log("[MENU MANAGEMENT] Router refreshed - dashboard stats should update");
               }}
             />
 

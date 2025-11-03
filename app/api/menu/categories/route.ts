@@ -17,11 +17,9 @@ export async function GET(_request: NextRequest) {
     const cachedCategories = await cache.get(cacheKey);
 
     if (cachedCategories) {
-      logger.debug("[CATEGORIES API] Cache hit for:", { value: venueId });
       return NextResponse.json(cachedCategories);
     }
 
-    logger.debug("[CATEGORIES API] Cache miss for:", { value: venueId });
 
     const supabase = await createClient();
 

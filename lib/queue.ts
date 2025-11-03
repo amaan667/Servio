@@ -88,7 +88,6 @@ export const pdfQueueEvents =
 
 if (pdfQueueEvents) {
   pdfQueueEvents.on("completed", ({ jobId, returnvalue }) => {
-    logger.info("PDF job completed", { jobId, returnvalue });
   });
 
   pdfQueueEvents.on("failed", ({ jobId, failedReason }) => {
@@ -156,7 +155,6 @@ export const jobHelpers = {
     if (!job) return false;
 
     await job.remove();
-    logger.info("PDF job cancelled", { jobId });
     return true;
   },
 

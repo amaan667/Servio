@@ -33,12 +33,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    logger.info("[HYBRID ENHANCE] ===== STARTING URL ENHANCEMENT =====");
-    logger.info("[HYBRID ENHANCE] Using unified hybrid extraction system");
-    logger.info("[HYBRID ENHANCE] Input:", { venueId, menuUrl });
 
     // Step 1: Fetch stored PDF images from database
-    logger.info("[HYBRID ENHANCE] Step 1: Fetching stored PDF images from database...");
 
     const { data: uploadData, error: uploadError } = await supabase
       .from("menu_uploads")
@@ -66,7 +62,6 @@ export async function POST(req: NextRequest) {
     });
 
     // Step 3: Clear existing menu for clean re-extraction
-    logger.info("[HYBRID ENHANCE] Step 3: Clearing existing menu for clean re-extraction...");
 
     const { error: deleteItemsError } = await supabase
       .from("menu_items")
@@ -78,10 +73,8 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to clear menu: ${deleteItemsError.message}`);
     }
 
-    logger.info("[HYBRID ENHANCE] Step 4: Existing menu cleared successfully");
 
     // Step 5: Run THE ONE TRUE HYBRID EXTRACTION SYSTEM
-    logger.info("[HYBRID ENHANCE] Step 5: Running unified hybrid extraction...");
     logger.info(
       "[HYBRID ENHANCE] ⭐ Using the SAME system as initial upload - no duplicate logic!"
     );
@@ -100,7 +93,6 @@ export async function POST(req: NextRequest) {
     });
 
     // Step 7: Insert items into database
-    logger.info("[HYBRID ENHANCE] Step 7: Inserting items into database...");
 
     const menuItems = [];
 
@@ -140,7 +132,6 @@ export async function POST(req: NextRequest) {
         throw new Error(`Failed to insert menu items: ${insertError.message}`);
       }
 
-      logger.info("[HYBRID ENHANCE] Items inserted successfully");
     }
 
     const duration = Date.now() - startTime;
@@ -157,7 +148,6 @@ export async function POST(req: NextRequest) {
       revalidatePath(`/dashboard/${venueId}`, "page");
       revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
       revalidatePath(`/menu/${venueId}`, "page");
-      logger.info("[HYBRID ENHANCE] Cache revalidated");
     } catch (revalidateError) {
       logger.warn("[HYBRID ENHANCE] Cache revalidation failed (non-critical)", revalidateError);
     }

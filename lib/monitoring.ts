@@ -60,7 +60,6 @@ class MonitoringService {
         break;
       case "info":
       default:
-        logger.info(`[MONITOR] ${message}`, logData);
         break;
     }
   }

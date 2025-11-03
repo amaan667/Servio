@@ -38,7 +38,6 @@ export default function SelectPlanPage() {
 
         // If user already has venues, redirect to their dashboard
         if (venues && venues.length > 0) {
-          console.log("[SELECT-PLAN] User already has venues - redirecting to dashboard");
           router.replace(`/dashboard/${venues[0].venue_id}`);
           return;
         }

@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    logger.info("[AUTH SIGN-IN] Email/password sign-in attempt:", { email });
 
     // Create server-side Supabase client that can set cookies
     const supabase = await createServerSupabase();
@@ -85,7 +84,6 @@ export async function POST(request: NextRequest) {
 
     // DON'T manually set cookies - let Supabase SSR handle it!
     // The createServerSupabase() client already sets cookies via the signInWithPassword call
-    logger.info("[AUTH SIGN-IN] ✅ Cookies automatically set by Supabase SSR client");
 
     return response;
   } catch (err) {

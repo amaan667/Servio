@@ -37,7 +37,6 @@ export async function signInWithGoogle() {
       testErrorMessage: testError?.message,
     });
   } catch (testErr) {
-    logger.debug("[AUTH] Session test error:", testErr as Record<string, unknown>);
   }
 
   // Clear unknown existing OAuth state before starting
@@ -45,7 +44,6 @@ export async function signInWithGoogle() {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
   } catch (_e) {
-    logger.debug("[AUTH] Session storage error:", _e as Record<string, unknown>);
   }
 
   const { data, error } = await sb.auth.signInWithOAuth({

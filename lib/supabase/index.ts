@@ -202,7 +202,6 @@ export async function createServerSupabase() {
               path: "/",
             });
 
-            logger.info("[createServerSupabase] ✅ Cookie set:", { name });
           });
 
           logger.info("[createServerSupabase] ✅ All cookies set successfully", {

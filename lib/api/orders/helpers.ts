@@ -28,7 +28,6 @@ interface Order {
  */
 export async function createKDSTickets(supabase: SupabaseClient, order: Order): Promise<void> {
   try {
-    logger.debug("[KDS TICKETS] Creating KDS tickets for order:", { orderId: order.id });
 
     // First, ensure KDS stations exist for this venue
     const { data: existingStations } = await supabase
@@ -171,7 +170,6 @@ export async function ensureTableExists(
     return { tableId: null, autoCreated: false };
   }
 
-  logger.debug("[TABLE] Auto-created table:", { tableId: newTable.id, tableNumber });
   return { tableId: newTable.id, autoCreated: true };
 }
 
