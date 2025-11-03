@@ -193,6 +193,7 @@ export interface MenuItemRow {
   preparation_time: number | null;
   tags: string[];
   allergens: string[];
+  dietary: string[];
   calories: number | null;
   spice_level: number | null;
   display_order: number;

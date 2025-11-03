@@ -745,21 +745,11 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       if (enhancedDesc) descriptionsEnhancedCount++;
       if (updatedPrice) pricesUpdatedCount++;
 
-      // Only log first 3 matches to reduce noise
-      if (matchedCount <= 3) {
-        logger.info("[HYBRID/MERGE] ✅ Matched & enhanced", {
-          pdf: pdfItem.name,
-          url: webMatch.name,
-          matchScore: matchResult?.score ? Math.round(matchResult.score * 100) + "%" : "unknown",
-          confidence: matchResult?.confidence
-            ? Math.round(matchResult.confidence * 100) + "%"
-            : "unknown",
-          matchReason: matchResult?.reason || "similarity",
-          addedImage: addedImage,
-          enhancedDescription: enhancedDesc,
-          updatedPrice: updatedPrice ? `£${pdfItem.price} → £${webMatch.price}` : false,
-          pdfCategory: pdfItem.category,
-          urlCategory: webMatch.category,
+      // Reduced logging - only progress updates every 25 items for speed
+      if (matchedCount === 1 || matchedCount % 25 === 0) {
+        logger.info("[HYBRID/MERGE] ✅ Matching progress", {
+          matched: matchedCount,
+          imagesAdded: imagesAddedCount,
         });
       }
 
@@ -901,11 +891,12 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
 
               if (aiMatch.item.image_url) imagesAddedCount++;
 
-              logger.info("[HYBRID/MERGE] 🤖✅ AI matched stubborn item", {
-                pdf: pdfItem.name,
-                url: aiMatch.item.name,
-                confidence: Math.round(aiMatch.confidence * 100) + "%",
-              });
+              // Reduced logging - only log every 5th AI match for speed
+              if (aiMatchedCount % 5 === 1) {
+                logger.info("[HYBRID/MERGE] 🤖✅ AI matching progress", {
+                  matched: aiMatchedCount,
+                });
+              }
             }
           }
         }
@@ -978,9 +969,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
         assignedCategory === "Menu Items" ||
         assignedCategory === "Uncategorized"
       ) {
-        logger.info("[HYBRID/MERGE] 🤖 Using AI to categorize new item", {
-          name: webItem.name,
-        });
+        // Reduced logging - categorizing in progress (no per-item logs for speed)
 
         const aiResult = await categorizeItemWithAI(
           webItem.name,
@@ -995,26 +984,16 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
 
         if (shouldCreateNew) {
           newCategoriesCreated.add(assignedCategory);
-          logger.info("[HYBRID/MERGE] 🆕 AI suggests creating new category", {
-            item: webItem.name,
-            newCategory: assignedCategory,
-            reason: "Item doesn't fit existing categories",
-          });
-        } else {
-          logger.info("[HYBRID/MERGE] 🎯 AI categorized to existing category", {
-            item: webItem.name,
-            category: assignedCategory,
-            confidence: Math.round(aiResult.confidence * 100) + "%",
-          });
         }
+        // Reduced logging for speed - summary will show categorization results
       }
 
-      logger.info("[HYBRID/MERGE] ➕ Adding new item from URL", {
-        name: webItem.name,
-        category: assignedCategory,
-        hasImage: !!webItem.image_url,
-        isNewCategory: shouldCreateNew,
-      });
+      // Reduced logging - only log every 5th new URL item for speed
+      if (webOnlyCount % 5 === 1) {
+        logger.info("[HYBRID/MERGE] ➕ Adding URL items progress", {
+          added: webOnlyCount,
+        });
+      }
 
       merged.push({
         name: webItem.name,

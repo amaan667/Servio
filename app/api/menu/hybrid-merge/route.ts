@@ -107,6 +107,12 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < extractionResult.items.length; i++) {
       const item = extractionResult.items[i];
 
+      // Convert spice level string to integer for database
+      let spiceLevelInt = null;
+      if (item.spiceLevel === "mild") spiceLevelInt = 1;
+      else if (item.spiceLevel === "medium") spiceLevelInt = 2;
+      else if (item.spiceLevel === "hot") spiceLevelInt = 3;
+
       menuItems.push({
         venue_id: venueId,
         name: item.name,
@@ -116,7 +122,7 @@ export async function POST(req: NextRequest) {
         image_url: item.image_url || null,
         allergens: item.allergens || [],
         dietary: item.dietary || [],
-        spice_level: item.spiceLevel || null,
+        spice_level: spiceLevelInt,
         is_available: true,
         position: i,
         page_index: item.page_index || 0,

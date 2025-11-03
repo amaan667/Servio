@@ -238,6 +238,12 @@ export async function POST(req: NextRequest) {
       const itemId = uuidv4();
 
       // Insert menu item
+      // Convert spice level string to integer for database
+      let spiceLevelInt = null;
+      if (item.spiceLevel === "mild") spiceLevelInt = 1;
+      else if (item.spiceLevel === "medium") spiceLevelInt = 2;
+      else if (item.spiceLevel === "hot") spiceLevelInt = 3;
+
       menuItems.push({
         id: itemId,
         venue_id: venueId,
@@ -248,7 +254,7 @@ export async function POST(req: NextRequest) {
         image_url: item.image_url || null,
         allergens: item.allergens || [],
         dietary: item.dietary || [],
-        spice_level: item.spiceLevel || null,
+        spice_level: spiceLevelInt,
         is_available: true,
         position: i,
         created_at: new Date().toISOString(),
