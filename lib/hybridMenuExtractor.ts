@@ -11,6 +11,7 @@
 import { extractMenuFromImage } from "./gptVisionMenuParser";
 import { extractMenuFromWebsite } from "./webMenuExtractor";
 import { logger } from "./logger";
+import { trackPerformance } from "./performance";
 
 interface HybridExtractionOptions {
   pdfImages?: string[]; // Array of image data URLs from PDF pages
@@ -861,44 +862,54 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
           batchSize: batch.length,
         });
 
-        for (const pdfItem of batch) {
-          // Try AI matching against unmatched URL items
-          const aiMatch = await batchMatchItemsWithAI(pdfItem, unmatchedWebItems);
+        // PARALLEL AI FALLBACK MATCHING - Process 5 items at once within each batch
+        const PARALLEL_SIZE = 5;
+        const parallelBatches = chunkArray(batch, PARALLEL_SIZE);
 
-          if (aiMatch && aiMatch.confidence >= 0.8) {
-            // Found a match via AI! Update the merged item
-            const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
+        for (const parallelBatch of parallelBatches) {
+          const matchResults = await Promise.all(
+            parallelBatch.map((pdfItem) => batchMatchItemsWithAI(pdfItem, unmatchedWebItems))
+          );
 
-            if (mergedIndex !== -1) {
-              aiMatchedCount++;
-              matchedWebItems.add(aiMatch.item.name_normalized);
+          // Apply match results
+          parallelBatch.forEach((pdfItem, idx) => {
+            const aiMatch = matchResults[idx];
 
-              // Enhance the item with URL data
-              merged[mergedIndex] = {
-                ...merged[mergedIndex],
-                image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
-                description: aiMatch.item.description || merged[mergedIndex].description,
-                price: aiMatch.item.price || merged[mergedIndex].price,
-                allergens: merged[mergedIndex].allergens || aiMatch.item.allergens || [],
-                dietary: merged[mergedIndex].dietary || aiMatch.item.dietary || [],
-                spiceLevel: merged[mergedIndex].spiceLevel || aiMatch.item.spiceLevel || null,
-                has_web_enhancement: true,
-                has_image: !!aiMatch.item.image_url,
-                merge_source: "pdf_enhanced_with_url_ai",
-                _unmatched: false,
-                _matchConfidence: aiMatch.confidence,
-              };
+            if (aiMatch && aiMatch.confidence >= 0.8) {
+              // Found a match via AI! Update the merged item
+              const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
 
-              if (aiMatch.item.image_url) imagesAddedCount++;
+              if (mergedIndex !== -1) {
+                aiMatchedCount++;
+                matchedWebItems.add(aiMatch.item.name_normalized);
 
-              // Reduced logging - only log every 5th AI match for speed
-              if (aiMatchedCount % 5 === 1) {
-                logger.info("[HYBRID/MERGE] 🤖✅ AI matching progress", {
-                  matched: aiMatchedCount,
-                });
+                // Enhance the item with URL data
+                merged[mergedIndex] = {
+                  ...merged[mergedIndex],
+                  image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
+                  description: aiMatch.item.description || merged[mergedIndex].description,
+                  price: aiMatch.item.price || merged[mergedIndex].price,
+                  allergens: merged[mergedIndex].allergens || aiMatch.item.allergens || [],
+                  dietary: merged[mergedIndex].dietary || aiMatch.item.dietary || [],
+                  spiceLevel: merged[mergedIndex].spiceLevel || aiMatch.item.spiceLevel || null,
+                  has_web_enhancement: true,
+                  has_image: !!aiMatch.item.image_url,
+                  merge_source: "pdf_enhanced_with_url_ai",
+                  _unmatched: false,
+                  _matchConfidence: aiMatch.confidence,
+                };
+
+                if (aiMatch.item.image_url) imagesAddedCount++;
+
+                // Reduced logging - only log every 5th AI match for speed
+                if (aiMatchedCount % 5 === 1) {
+                  logger.info("[HYBRID/MERGE] 🤖✅ AI matching progress", {
+                    matched: aiMatchedCount,
+                  });
+                }
               }
             }
-          }
+          });
         }
 
         logger.info(
@@ -944,6 +955,12 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   // Import AI categorizer
   const { categorizeItemWithAI } = await import("./aiCategorizer");
 
+  // Collect items that need categorization for parallel processing
+  const itemsNeedingCategorization: Array<{
+    webItem: any;
+    index: number;
+  }> = [];
+
   for (const webItem of webItems) {
     // Check if this item was already matched (don't add duplicates)
     const alreadyMatched = matchedWebItems.has(webItem.name_normalized);
@@ -962,54 +979,85 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       unmatchedUrlItems.push(webItem);
 
       let assignedCategory = webItem.category;
-      let shouldCreateNew = false;
 
-      // If URL category is generic/missing, use AI to categorize
+      // If URL category is generic/missing, collect for parallel AI categorization
       if (
         !assignedCategory ||
         assignedCategory === "Menu Items" ||
         assignedCategory === "Uncategorized"
       ) {
-        // Reduced logging - categorizing in progress (no per-item logs for speed)
+        itemsNeedingCategorization.push({
+          webItem,
+          index: unmatchedUrlItems.length - 1,
+        });
+      } else {
+        // Has valid category already
+        merged.push({
+          name: webItem.name,
+          description: webItem.description,
+          price: webItem.price,
+          category: assignedCategory,
+          image_url: webItem.image_url,
+          allergens: webItem.allergens || [],
+          dietary: webItem.dietary || [],
+          spiceLevel: webItem.spiceLevel || null,
+          source: "web_only",
+          has_web_enhancement: true,
+          has_image: !!webItem.image_url,
+          merge_source: "url_only_new_item",
+        });
+      }
+    }
+  }
 
-        const aiResult = await categorizeItemWithAI(
-          webItem.name,
-          webItem.description,
-          pdfCategories,
-          pdfItems
-        );
+  // PARALLEL AI CATEGORIZATION - Process 10 items at once for 10x speed improvement
+  if (itemsNeedingCategorization.length > 0) {
+    logger.info("[HYBRID/MERGE] 🚀 Starting parallel AI categorization", {
+      itemCount: itemsNeedingCategorization.length,
+      batchSize: 10,
+    });
 
-        assignedCategory = aiResult.category;
-        shouldCreateNew = aiResult.shouldCreateNew;
+    const BATCH_SIZE = 10;
+    const batches = chunkArray(itemsNeedingCategorization, BATCH_SIZE);
+
+    for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
+      const batch = batches[batchIdx];
+
+      // Process batch in parallel
+      const results = await Promise.all(
+        batch.map(({ webItem }) =>
+          categorizeItemWithAI(webItem.name, webItem.description, pdfCategories, pdfItems)
+        )
+      );
+
+      // Apply results
+      batch.forEach(({ webItem }, idx) => {
+        const aiResult = results[idx];
+        const assignedCategory = aiResult.category;
+        const shouldCreateNew = aiResult.shouldCreateNew;
         aiCategorizedCount++;
 
         if (shouldCreateNew) {
           newCategoriesCreated.add(assignedCategory);
         }
-        // Reduced logging for speed - summary will show categorization results
-      }
 
-      // Reduced logging - only log every 5th new URL item for speed
-      if (webOnlyCount % 5 === 1) {
-        logger.info("[HYBRID/MERGE] ➕ Adding URL items progress", {
-          added: webOnlyCount,
+        merged.push({
+          name: webItem.name,
+          description: webItem.description,
+          price: webItem.price,
+          category: assignedCategory,
+          image_url: webItem.image_url,
+          allergens: webItem.allergens || [],
+          dietary: webItem.dietary || [],
+          spiceLevel: webItem.spiceLevel || null,
+          source: "web_only",
+          has_web_enhancement: true,
+          has_image: !!webItem.image_url,
+          merge_source: "url_only_new_item",
         });
-      }
-
-      merged.push({
-        name: webItem.name,
-        description: webItem.description,
-        price: webItem.price,
-        category: assignedCategory,
-        image_url: webItem.image_url,
-        allergens: webItem.allergens || [],
-        dietary: webItem.dietary || [],
-        spiceLevel: webItem.spiceLevel || null,
-        source: "web_only",
-        has_web_enhancement: true,
-        has_image: !!webItem.image_url,
-        merge_source: "url_only_new_item",
       });
+
+      logger.info(`[HYBRID/MERGE] ✅ Parallel batch ${batchIdx + 1}/${batches.length} categorized`);
     }
   }
 

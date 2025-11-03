@@ -28,8 +28,15 @@
     "docs:api": "swagger-jsdoc -d docs/swagger.config.js -o api-docs.json",
     "migrate": "tsx scripts/migrate.ts",
     "migrate:create": "tsx scripts/create-migration.ts",
+    "migrate:auto": "tsx scripts/run-migrations.ts",
+    "migrate:prod": "NODE_ENV=production tsx scripts/run-migrations.ts",
+    "cache:clear": "tsx scripts/clear-cache.ts",
+    "cache:stats": "tsx scripts/cache-stats.ts",
+    "perf:analyze": "tsx scripts/analyze-performance.ts",
+    "health:check": "tsx scripts/health-check.ts",
     "prepare": "husky install",
-    "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test"
+    "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test",
+    "test:all": "pnpm run test && pnpm run test:e2e && pnpm run test:integration"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

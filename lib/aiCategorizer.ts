@@ -11,6 +11,7 @@
 
 import { getOpenAI } from "./openai";
 import { logger } from "./logger";
+import { AICache } from "./cache";
 
 interface CategoryWithExamples {
   name: string;
@@ -27,6 +28,13 @@ export async function categorizeItemWithAI(
   pdfCategories: string[],
   pdfItems: any[]
 ): Promise<{ category: string; confidence: number; shouldCreateNew: boolean }> {
+  // Check cache first to avoid duplicate AI calls
+  const cached = await AICache.categorization.get(itemName, pdfCategories);
+  if (cached) {
+    logger.debug("[AI CATEGORIZER] Cache hit", { itemName });
+    return cached;
+  }
+
   // Build category examples from PDF items
   const categoryExamples: CategoryWithExamples[] = pdfCategories.map((category) => ({
     name: category,
@@ -97,11 +105,13 @@ RESPOND WITH ONLY:
     // Check if AI suggests new category
     if (result.startsWith("NEW_CATEGORY:")) {
       const newCategoryName = result.replace("NEW_CATEGORY:", "").trim();
-      return {
+      const categoryResult = {
         category: newCategoryName,
         confidence: 0.9,
         shouldCreateNew: true,
       };
+      await AICache.categorization.set(itemName, pdfCategories, categoryResult);
+      return categoryResult;
     }
 
     // Validate it matches an existing category (case-insensitive)
@@ -109,21 +119,25 @@ RESPOND WITH ONLY:
     const matchedCategory = pdfCategories.find((c) => c.toLowerCase() === normalized);
 
     if (matchedCategory) {
-      return {
+      const categoryResult = {
         category: matchedCategory,
         confidence: 0.95,
         shouldCreateNew: false,
       };
+      await AICache.categorization.set(itemName, pdfCategories, categoryResult);
+      return categoryResult;
     }
 
     // If AI returned something that doesn't match, try fuzzy matching
     for (const pdfCat of pdfCategories) {
       if (pdfCat.toLowerCase().includes(normalized) || normalized.includes(pdfCat.toLowerCase())) {
-        return {
+        const categoryResult = {
           category: pdfCat,
           confidence: 0.85,
           shouldCreateNew: false,
         };
+        await AICache.categorization.set(itemName, pdfCategories, categoryResult);
+        return categoryResult;
       }
     }
 
@@ -133,18 +147,20 @@ RESPOND WITH ONLY:
       aiSuggestion: result,
     });
 
-    return {
+    const categoryResult = {
       category: result,
       confidence: 0.7,
       shouldCreateNew: true,
     };
+    await AICache.categorization.set(itemName, pdfCategories, categoryResult);
+    return categoryResult;
   } catch (error) {
     logger.error("[AI CATEGORIZER] Failed, using fallback", {
       error: error instanceof Error ? error.message : String(error),
       item: itemName,
     });
 
-    // Fallback to most common PDF category
+    // Fallback to most common PDF category (don't cache failures)
     return {
       category: pdfCategories[0] || "Menu Items",
       confidence: 0.5,

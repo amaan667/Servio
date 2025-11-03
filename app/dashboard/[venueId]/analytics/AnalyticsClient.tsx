@@ -1,165 +1,307 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { BarChart } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useCsvDownload } from "@/hooks/useCsvDownload";
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  ShoppingBag,
+  Users,
+  Star,
+  BarChart3,
+  PieChart,
+} from "lucide-react";
 
-// Hooks
-import { useAnalyticsData, TimePeriod } from "./hooks/useAnalyticsData";
-
-// Components
-import { StatCard } from "./components/StatCard";
-import { RevenueChart } from "./components/RevenueChart";
-import { TopSellingItemsChart } from "./components/TopSellingItemsChart";
-import { TimePeriodSelector } from "./components/TimePeriodSelector";
-
-// Utils
-import { prepareCSVData, generateCSV, getCSVFilename } from "./utils/csvExport";
-import { Clock, DollarSign, ShoppingBag } from "lucide-react";
-
-/**
- * Analytics Client Component
- * Displays venue analytics including revenue, orders, and top-selling items
- *
- * Refactored: Extracted hooks, components, and utilities for better organization
- * Original: 868 lines → Now: ~150 lines
- */
-
-export default function AnalyticsClient({
-  venueId,
-  venueName: _venueName,
-}: {
+interface AnalyticsClientProps {
   venueId: string;
-  venueName: string;
-}) {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("30d");
-  const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(
-    null
-  );
+  ordersData: any;
+  menuData: any;
+  feedbackData: any;
+  revenueData: any;
+}
 
-  const { loading, error, analyticsData, filteredOrders, refetch } = useAnalyticsData(
-    venueId,
-    timePeriod,
-    customDateRange
-  );
-  const { toast } = useToast();
-  const { downloadCSV, isDownloading } = useCsvDownload();
-
-  const handleExportCSV = useCallback(() => {
-    if (filteredOrders.length === 0) {
-      toast({
-        title: "No Data to Export",
-        description: "No data to export for the selected date range.",
-        variant: "default",
-      });
-      return;
-    }
-
-    try {
-      const csvRows = prepareCSVData(filteredOrders);
-      const csv = generateCSV(csvRows);
-      const filename = getCSVFilename();
-
-      downloadCSV({ filename, csv });
-
-      toast({
-        title: "CSV Downloaded",
-        description: `Analytics data exported successfully (${csvRows.length} rows).`,
-        variant: "default",
-      });
-    } catch (_error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export analytics data. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [filteredOrders, downloadCSV, toast]);
-
-  // Removed loading check - render immediately with empty state
-
+export function AnalyticsClient({
+  venueId,
+  ordersData,
+  menuData,
+  feedbackData,
+  revenueData,
+}: AnalyticsClientProps) {
   return (
     <div className="space-y-6">
-      {/* Time Period Selector */}
-      <TimePeriodSelector
-        timePeriod={timePeriod}
-        onTimePeriodChange={setTimePeriod}
-        customDateRange={customDateRange}
-        onCustomDateRangeChange={setCustomDateRange}
-        onExportCSV={handleExportCSV}
-        isDownloading={isDownloading}
-        hasData={filteredOrders.length > 0}
-      />
+      <div>
+        <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+        <p className="text-muted-foreground">Track your business performance and insights</p>
+      </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Orders"
-          value={analyticsData.totalOrders}
-          icon={Clock}
-          iconColor="text-blue-600"
-          iconBgColor="bg-blue-100"
-        />
-        <StatCard
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
           title="Total Revenue"
-          value={`£${analyticsData.totalRevenue.toFixed(2)}`}
-          icon={DollarSign}
-          iconColor="text-green-600"
-          iconBgColor="bg-green-100"
+          value={`£${revenueData.totalRevenue.toFixed(2)}`}
+          subtitle="Last 30 days"
+          icon={<DollarSign className="h-4 w-4 text-green-600" />}
+          trend={+12.5}
         />
-        <StatCard
-          title="Average Order"
-          value={`£${analyticsData.averageOrderValue.toFixed(2)}`}
-          icon={BarChart}
-          iconColor="text-purple-600"
-          iconBgColor="bg-purple-100"
+        <MetricCard
+          title="Total Orders"
+          value={ordersData.totalOrders.toString()}
+          subtitle="Last 30 days"
+          icon={<ShoppingBag className="h-4 w-4 text-blue-600" />}
+          trend={+8.3}
         />
-        <StatCard
-          title="Menu Items"
-          value={analyticsData.menuItemsCount}
-          icon={ShoppingBag}
-          iconColor="text-orange-600"
-          iconBgColor="bg-orange-100"
+        <MetricCard
+          title="Avg Order Value"
+          value={`£${ordersData.avgOrderValue.toFixed(2)}`}
+          subtitle="Per order"
+          icon={<TrendingUp className="h-4 w-4 text-purple-600" />}
+          trend={+5.2}
+        />
+        <MetricCard
+          title="Customer Rating"
+          value={feedbackData.avgOverallRating.toFixed(1)}
+          subtitle="Out of 5 stars"
+          icon={<Star className="h-4 w-4 text-yellow-600" />}
+          trend={+0.3}
         />
       </div>
 
-      {/* Enhanced Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <RevenueChart
-          revenueOverTime={analyticsData.revenueOverTime}
-          trendline={analyticsData.trendline}
-          peakDay={analyticsData.peakDay}
-          lowestDay={analyticsData.lowestDay}
-          timePeriod={timePeriod}
-        />
-        <TopSellingItemsChart topSellingItems={analyticsData.topSellingItems} />
-      </div>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="menu">Menu Performance</TabsTrigger>
+          <TabsTrigger value="feedback">Customer Feedback</TabsTrigger>
+          <TabsTrigger value="trends">Trends</TabsTrigger>
+        </TabsList>
 
-      {/* No Data State */}
-      {analyticsData.totalOrders === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <BarChart className="h-16 w-16 text-gray-700 mx-auto mb-6" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Analytics Data Yet</h3>
-            <p className="text-gray-900 mb-6 max-w-md mx-auto">
-              Analytics will appear here once you start receiving orders. Generate QR codes and
-              start taking orders to see your business insights.
-            </p>
-            <div className="flex justify-center space-x-4">
-              <Button asChild>
-                <Link href={`/dashboard/${venueId}/qr-codes`}>Generate QR Codes</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href={`/dashboard/${venueId}/live-orders`}>View Live Orders</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Revenue Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Revenue Trend
+                </CardTitle>
+                <CardDescription>Daily revenue over the last 30 days</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Object.entries(revenueData.revenueByDay)
+                    .slice(-7)
+                    .map(([date, revenue]) => (
+                      <div key={date} className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">{date}</span>
+                        <span className="font-semibold">£{(revenue as number).toFixed(2)}</span>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Orders by Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Order Status Distribution
+                </CardTitle>
+                <CardDescription>Current order breakdown</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(ordersData.ordersByStatus).map(([status, count]) => (
+                    <div key={status} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${getStatusColor(status)}`}></div>
+                        <span className="text-sm font-medium capitalize">
+                          {status.replace("_", " ")}
+                        </span>
+                      </div>
+                      <span className="font-semibold">{count as number}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="menu" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Selling Items</CardTitle>
+              <CardDescription>Most popular menu items by order count</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {menuData.topSellingItems.map((item: any, index: number) => (
+                  <div key={item.id} className="flex items-center gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-600">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">{item.category}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{item.ordersCount} orders</p>
+                      <p className="text-sm text-muted-foreground">£{item.price.toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <MetricCard
+              title="Total Menu Items"
+              value={menuData.totalItems.toString()}
+              subtitle="Active items"
+              icon={<ShoppingBag className="h-4 w-4" />}
+            />
+            <MetricCard
+              title="Items with Images"
+              value={menuData.itemsWithImages.toString()}
+              subtitle={`${Math.round((menuData.itemsWithImages / menuData.totalItems) * 100)}% coverage`}
+              icon={<Users className="h-4 w-4" />}
+            />
+            <MetricCard
+              title="Categories"
+              value={Object.keys(menuData.itemsByCategory).length.toString()}
+              subtitle="Menu sections"
+              icon={<PieChart className="h-4 w-4" />}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="feedback" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <MetricCard
+              title="Overall Rating"
+              value={feedbackData.avgOverallRating.toFixed(1)}
+              subtitle="Out of 5 stars"
+              icon={<Star className="h-4 w-4 text-yellow-600" />}
+            />
+            <MetricCard
+              title="Food Quality"
+              value={feedbackData.avgFoodQuality.toFixed(1)}
+              subtitle="Average rating"
+              icon={<Star className="h-4 w-4 text-orange-600" />}
+            />
+            <MetricCard
+              title="Service Quality"
+              value={feedbackData.avgServiceQuality.toFixed(1)}
+              subtitle="Average rating"
+              icon={<Star className="h-4 w-4 text-blue-600" />}
+            />
+            <MetricCard
+              title="Value Rating"
+              value={feedbackData.avgValueRating.toFixed(1)}
+              subtitle="Average rating"
+              icon={<Star className="h-4 w-4 text-green-600" />}
+            />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Feedback</CardTitle>
+              <CardDescription>Latest customer reviews</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {feedbackData.recentFeedback.map((feedback: any) => (
+                  <div key={feedback.id} className="border-b pb-4 last:border-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < feedback.overall_rating
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(feedback.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="trends" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Trends</CardTitle>
+              <CardDescription>Track your business metrics over time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Trend analysis coming soon with historical comparisons and predictions
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
+}
+
+function MetricCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  trend,
+}: {
+  title: string;
+  value: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  trend?: number;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          {subtitle}
+          {trend !== undefined && (
+            <span className={`flex items-center ${trend > 0 ? "text-green-600" : "text-red-600"}`}>
+              {trend > 0 ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {Math.abs(trend)}%
+            </span>
+          )}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getStatusColor(status: string): string {
+  const colors: Record<string, string> = {
+    placed: "bg-yellow-500",
+    in_prep: "bg-blue-500",
+    ready: "bg-green-500",
+    serving: "bg-purple-500",
+    completed: "bg-gray-500",
+    cancelled: "bg-red-500",
+  };
+  return colors[status.toLowerCase()] || "bg-gray-400";
 }
