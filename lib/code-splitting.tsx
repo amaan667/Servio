@@ -12,18 +12,9 @@ import { logger } from "@/lib/logger";
  * Create a lazy-loaded component with loading state
  */
 export function createLazyComponent<P extends object>(
-  importFn: () => Promise<{ default: ComponentType<P> }>,
-  FallbackComponent?: ComponentType
-): ComponentType<P> {
-  const LazyComponent = lazy(importFn);
-
-  const WrappedComponent = (props: P) => (
-    <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <div>Loading...</div>}>
-      <LazyComponent {...props} />
-    </Suspense>
-  );
-
-  return WrappedComponent;
+  importFn: () => Promise<{ default: ComponentType<P> }>
+) {
+  return lazy(importFn);
 }
 
 /**

@@ -11,7 +11,7 @@ import type { User } from "@supabase/supabase-js";
 interface AuthResult {
   success: boolean;
   user?: User;
-  supabase?: ReturnType<typeof createClient>;
+  supabase?: ReturnType<typeof createClient> | unknown;
   error?: string;
 }
 

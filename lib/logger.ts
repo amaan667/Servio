@@ -3,7 +3,8 @@
  * All logging disabled - errors tracked via Sentry instrumentation only
  */
 
-const noop = () => {};
+// No-op function that accepts any arguments
+const noop = (..._args: unknown[]) => {};
 
 export const logger = {
   debug: noop,
@@ -66,10 +67,5 @@ export const aiLogger = {
 export default logger;
 
 // No-op helpers
-export function logApiCall(
-  _endpoint: string,
-  _method: string,
-  _duration: number,
-  _status: number
-) {}
-export function logDbQuery(_query: string, _duration: number, _rows?: number) {}
+export function logApiCall(..._args: unknown[]) {}
+export function logDbQuery(..._args: unknown[]) {}

@@ -120,12 +120,7 @@ export function useLiveOrders(venueId: string) {
         };
       });
 
-      interface OrderItem {
-        order_id: string;
-        [key: string]: unknown;
-      }
-
-      setData(transformedOrders as OrderItem[]);
+      setData(transformedOrders);
     } catch (err) {
       setIsError(true);
       setError((err as Error)?.message || "Failed to load orders");

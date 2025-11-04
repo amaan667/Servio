@@ -64,8 +64,8 @@ export default function ConditionalBottomNav() {
 
         if (!error && data) {
           setCounts({
-            live_orders: data.live_count || 0,
-            total_orders: data.today_orders_count || 0,
+            live_orders: ((data as Record<string, unknown>).live_count as number) || 0,
+            total_orders: ((data as Record<string, unknown>).today_orders_count as number) || 0,
             notifications: 0,
           });
         }

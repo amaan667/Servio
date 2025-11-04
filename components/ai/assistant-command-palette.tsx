@@ -40,6 +40,15 @@ interface ExecutionResult {
   tool: string;
   result: {
     topItems?: Array<{ name: string; revenue: number }>;
+    message?: string;
+    revenue?: number;
+    total?: number;
+    quantitySold?: number;
+    orderCount?: number;
+    averagePerOrder?: number;
+    count?: number;
+    average?: number;
+    page?: string;
     [key: string]: unknown;
   };
 }
@@ -256,7 +265,7 @@ export function AssistantCommandPalette({
       }
 
       setSuccess(true);
-      setExecutionResults(results);
+      setExecutionResults(results as ExecutionResult[]);
 
       // Check if unknown tool was analytics
       const hasAnalytics = plan.tools.some((tool) => tool.name.startsWith("analytics."));
@@ -270,7 +279,9 @@ export function AssistantCommandPalette({
           setOpen(false);
 
           // Find the navigation tool result
-          const navResult = results.find((r) => r.tool === "navigation.go_to_page");
+          const navResult = (results as ExecutionResult[]).find(
+            (r) => r.tool === "navigation.go_to_page"
+          );
           if (
             navResult &&
             typeof navResult === "object" &&

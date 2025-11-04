@@ -89,6 +89,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         total_amount: number | null;
         order_status: string | null;
         order_updated_at: string | null;
+        updated_at: string | null;
       }
 
       // Transform the data to match the expected TableGridItem interface

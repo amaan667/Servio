@@ -228,7 +228,7 @@ export class BusinessMetricsService {
    * Get customer metrics
    */
   private static async getCustomerMetrics(
-    supabase: unknown,
+    supabase: SupabaseClient,
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
