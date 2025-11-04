@@ -119,18 +119,21 @@ async function fetchRevenueAnalytics(venueId: string) {
 
   const { data: orders } = await supabase
     .from("orders")
-    .select("total_amount, created_at, payment_status")
+    .select("total_amount, created_at, payment_status, order_status")
     .eq("venue_id", venueId)
-    .gte("created_at", thirtyDaysAgo.toISOString());
+    .gte("created_at", thirtyDaysAgo.toISOString())
+    .neq("order_status", "CANCELLED")
+    .neq("order_status", "REFUNDED");
 
-  const paidOrders = orders?.filter((o) => o.payment_status === "paid") || [];
-  const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+  // Calculate revenue from all non-cancelled orders (matches dashboard logic)
+  const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
+  const totalOrders = orders?.length || 0;
 
   return {
     totalRevenue,
-    totalOrders: paidOrders.length,
-    avgOrderValue: totalRevenue / (paidOrders.length || 1),
-    revenueByDay: groupByDay(paidOrders, "total_amount"),
+    totalOrders,
+    avgOrderValue: totalRevenue / (totalOrders || 1),
+    revenueByDay: groupByDay(orders || [], "total_amount"),
   };
 }
 
