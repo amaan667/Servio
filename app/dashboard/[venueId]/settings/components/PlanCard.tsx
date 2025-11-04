@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Crown, Check, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import { PRICING_TIERS, getTierDisplayName } from "@/lib/pricing-tiers";
+import { useToast } from "@/hooks/use-toast";
 
 interface PlanCardProps {
   organization?: {
@@ -13,44 +15,19 @@ interface PlanCardProps {
   venueId?: string;
 }
 
-const PLAN_FEATURES = {
-  basic: [
-    "Up to 50 orders per month",
-    "Basic menu management",
-    "QR code ordering",
-    "Email support",
-  ],
-  standard: [
-    "Up to 500 orders per month",
-    "Advanced menu management",
-    "QR code ordering",
-    "Table management",
-    "Basic analytics",
-    "Priority email support",
-  ],
-  premium: [
-    "Unlimited orders",
-    "Advanced menu management",
-    "QR code ordering",
-    "Full table management",
-    "Advanced analytics & insights",
-    "Inventory tracking",
-    "Staff management",
-    "Priority support (24/7)",
-    "Custom branding",
-  ],
-};
-
 export function PlanCard({ organization, venueId }: PlanCardProps) {
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [currentTier, setCurrentTier] = useState(organization?.subscription_tier || "basic");
+  const { toast } = useToast();
 
   const hasStripeCustomer = !!organization?.stripe_customer_id;
 
-  // Capitalize tier name
-  const planName = currentTier.charAt(0).toUpperCase() + currentTier.slice(1);
-  const features = PLAN_FEATURES[currentTier as keyof typeof PLAN_FEATURES] || PLAN_FEATURES.basic;
+  // Get tier info from shared configuration
+  const tierKey = currentTier.toLowerCase();
+  const tierInfo = PRICING_TIERS[tierKey] || PRICING_TIERS.basic;
+  const planName = tierInfo.name;
+  const features = tierInfo.features;
 
   // Sync plan from Stripe on mount
   useEffect(() => {
@@ -96,17 +73,32 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
       const data = await response.json();
 
       if (data.error) {
-        alert(`Failed to open billing portal: ${data.error}`);
+        toast({
+          title: "Error",
+          description: `Failed to open billing portal: ${data.error}`,
+          variant: "destructive",
+        });
         return;
       }
 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Failed to open billing portal - no URL received");
+        toast({
+          title: "Error",
+          description: "Failed to open billing portal - no URL received",
+          variant: "destructive",
+        });
       }
-    } catch {
-      alert("Failed to open billing portal. Please try again.");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to open billing portal. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoadingPortal(false);
     }

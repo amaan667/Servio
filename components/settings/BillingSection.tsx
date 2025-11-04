@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { UpgradeModal } from "@/components/upgrade-modal";
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { useToast } from "@/hooks/use-toast";
 
 interface BillingSectionProps {
   user?: {
@@ -36,10 +38,29 @@ interface BillingSectionProps {
 export default function BillingSection({ organization, venueId }: BillingSectionProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
+  const { toast } = useToast();
 
   const tier = organization?.subscription_tier || "basic";
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
+
+  // Mobile debugging - log button visibility
+  useEffect(() => {
+    console.log("[BILLING DEBUG] Current tier:", tier);
+    console.log("[BILLING DEBUG] Is grandfathered:", isGrandfathered);
+    console.log(
+      "[BILLING DEBUG] Should show upgrade button:",
+      !isGrandfathered && tier !== "premium"
+    );
+    console.log(
+      "[BILLING DEBUG] Should show downgrade button:",
+      !isGrandfathered && tier === "standard"
+    );
+    console.log(
+      "[BILLING DEBUG] Window width:",
+      typeof window !== "undefined" ? window.innerWidth : "SSR"
+    );
+  }, [tier, isGrandfathered]);
 
   const handleManageBilling = async () => {
     setLoadingPortal(true);
@@ -53,50 +74,45 @@ export default function BillingSection({ organization, venueId }: BillingSection
       const data = await response.json();
 
       if (data.error) {
-        alert(`Failed to open billing portal: ${data.error}`);
+        toast({
+          title: "Error",
+          description: `Failed to open billing portal: ${data.error}`,
+          variant: "destructive",
+        });
         return;
       }
 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Failed to open billing portal - no URL received");
+        toast({
+          title: "Error",
+          description: "Failed to open billing portal - no URL received",
+          variant: "destructive",
+        });
       }
-    } catch {
-      alert("Failed to open billing portal. Please try again.");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to open billing portal. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoadingPortal(false);
     }
   };
 
-  const handleSwitchToBasic = async () => {
-    setLoadingPortal(true);
-    try {
-      const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.post("/api/stripe/downgrade-plan", {
-        organizationId: organization?.id,
-        newTier: "basic",
-      });
+  // Downgrade through Stripe portal (same as manage billing)
+  // This allows Stripe to handle the downgrade with proper confirmation
+  const handleDowngrade = async () => {
+    console.log("[BILLING DEBUG] Downgrade button clicked - redirecting to Stripe portal");
 
-      const data = await response.json();
-
-      if (data.error) {
-        alert(`Failed to switch to basic plan: ${data.error}`);
-        return;
-      }
-
-      if (data.success) {
-        alert(
-          "Successfully switched to Basic plan! The change has been applied immediately and will be reflected in your billing portal."
-        );
-        // Refresh the page to show updated plan
-        window.location.reload();
-      }
-    } catch {
-      alert("Failed to switch to basic plan. Please try again.");
-    } finally {
-      setLoadingPortal(false);
-    }
+    // Use the same portal redirect as manage billing
+    // Stripe portal will allow the user to change their plan
+    await handleManageBilling();
   };
 
   const getTierInfo = () => {
@@ -161,11 +177,14 @@ export default function BillingSection({ organization, venueId }: BillingSection
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {!isGrandfathered && tier !== "premium" && (
                 <Button
-                  onClick={() => setShowUpgradeModal(true)}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  onClick={() => {
+                    console.log("[BILLING DEBUG] Upgrade button clicked");
+                    setShowUpgradeModal(true);
+                  }}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
                   Upgrade Plan
@@ -174,17 +193,19 @@ export default function BillingSection({ organization, venueId }: BillingSection
               {!isGrandfathered && tier === "standard" && (
                 <Button
                   variant="outline"
-                  onClick={handleSwitchToBasic}
+                  onClick={handleDowngrade}
                   disabled={loadingPortal}
-                  className="text-gray-600 hover:text-gray-800"
+                  className="text-gray-600 hover:text-gray-800 border-gray-300"
                 >
                   {loadingPortal ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Switching...
+                      Opening Portal...
                     </>
                   ) : (
-                    "Switch to Basic"
+                    <>
+                      <span className="text-gray-900 font-medium">Change Plan</span>
+                    </>
                   )}
                 </Button>
               )}

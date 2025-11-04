@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -22,45 +23,6 @@ interface UpgradeModalProps {
   currentTier?: string;
   organizationId: string;
 }
-
-const TIERS = {
-  basic: {
-    name: "Basic",
-    price: "£99",
-    features: [
-      "Up to 10 tables",
-      "QR ordering",
-      "Basic menu management",
-      "Order tracking",
-      "Email support",
-    ],
-  },
-  standard: {
-    name: "Standard",
-    price: "£249",
-    popular: true,
-    features: [
-      "Everything in Basic, plus:",
-      "Up to 20 tables",
-      "Kitchen Display System (KDS)",
-      "Inventory management",
-      "Advanced analytics",
-      "Priority support",
-    ],
-  },
-  premium: {
-    name: "Premium",
-    price: "£449+",
-    features: [
-      "Everything in Standard, plus:",
-      "Unlimited tables & venues",
-      "AI Assistant",
-      "Multi-venue management",
-      "Custom integrations",
-      "Dedicated account manager",
-    ],
-  },
-};
 
 export function UpgradeModal({
   open,
@@ -91,8 +53,8 @@ export function UpgradeModal({
         if (stripe) {
           const { error } = await stripe.redirectToCheckout({ sessionId });
           if (error) {
-      // Empty block
-    }
+            // Empty block
+          }
         }
       }
     } catch (_error) {
@@ -113,7 +75,7 @@ export function UpgradeModal({
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          {Object.entries(TIERS).map(([tierKey, tier]) => {
+          {Object.entries(PRICING_TIERS).map(([tierKey, tier]) => {
             const isCurrentTier = tierKey === currentTier;
             const canUpgrade = tierKey !== currentTier;
 
@@ -121,14 +83,12 @@ export function UpgradeModal({
               <Card
                 key={tierKey}
                 className={`relative ${
-                  'popular' in tier && tier.popular ? "border-2 border-purple-500 shadow-lg" : ""
+                  "popular" in tier && tier.popular ? "border-2 border-purple-500 shadow-lg" : ""
                 }`}
               >
-                {'popular' in tier && tier.popular && (
+                {"popular" in tier && tier.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-purple-500 hover:bg-purple-600">
-                      Most Popular
-                    </Badge>
+                    <Badge className="bg-purple-500 hover:bg-purple-600">Most Popular</Badge>
                   </div>
                 )}
 
@@ -137,9 +97,7 @@ export function UpgradeModal({
                     <h3 className="text-2xl font-semibold mb-2">{tier.name}</h3>
                     <div className="text-3xl font-bold mb-4">
                       {tier.price}
-                      <span className="text-lg font-normal text-muted-foreground">
-                        /month
-                      </span>
+                      <span className="text-lg font-normal text-muted-foreground">/month</span>
                     </div>
 
                     {isCurrentTier ? (
@@ -151,7 +109,7 @@ export function UpgradeModal({
                         onClick={() => handleUpgrade(tierKey)}
                         disabled={loading !== null}
                         className="w-full mb-4"
-                        variant={'popular' in tier && tier.popular ? "default" : "outline"}
+                        variant={"popular" in tier && tier.popular ? "default" : "outline"}
                       >
                         {loading === tierKey ? (
                           <>
@@ -184,12 +142,11 @@ export function UpgradeModal({
 
         <div className="mt-6 p-4 bg-muted rounded-lg">
           <p className="text-sm text-muted-foreground text-center">
-            🎉 <strong>14-day free trial</strong> on all plans. No credit card required.
-            Cancel anytime.
+            🎉 <strong>14-day free trial</strong> on all plans. No credit card required. Cancel
+            anytime.
           </p>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-

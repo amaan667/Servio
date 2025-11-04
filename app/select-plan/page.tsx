@@ -9,6 +9,7 @@ import { Check, X, Loader2 } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
 
 export default function SelectPlanPage() {
   const router = useRouter();
@@ -16,8 +17,9 @@ export default function SelectPlanPage() {
   const [loading, setLoading] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [currentTier, setCurrentTier] = useState<string | null>(null);
 
-  // Check if user already has venues - if so, redirect to dashboard
+  // Check if user already has venues and get their current plan
   useEffect(() => {
     const checkExistingVenues = async () => {
       if (authLoading) return; // Wait for auth to load
@@ -30,19 +32,31 @@ export default function SelectPlanPage() {
 
       try {
         const supabase = supabaseBrowser();
+
+        // Check for venues
         const { data: venues } = await supabase
           .from("venues")
-          .select("venue_id")
+          .select("venue_id, organization_id")
           .eq("owner_user_id", session.user.id)
           .limit(1);
 
-        // If user already has venues, redirect to their dashboard
         if (venues && venues.length > 0) {
-          router.replace(`/dashboard/${venues[0].venue_id}`);
-          return;
+          // User has venues - get their current plan
+          if (venues[0].organization_id) {
+            const { data: organization } = await supabase
+              .from("organizations")
+              .select("subscription_tier")
+              .eq("id", venues[0].organization_id)
+              .single();
+
+            if (organization?.subscription_tier) {
+              setCurrentTier(organization.subscription_tier.toLowerCase());
+              console.log("[SELECT-PLAN] Current tier:", organization.subscription_tier);
+            }
+          }
         }
 
-        // User is signed in but has no venues - show plan selection
+        // User is signed in - show plan selection with current plan highlighted
         setIsChecking(false);
       } catch (error) {
         console.error("[SELECT-PLAN] Error checking venues:", error);
@@ -53,72 +67,48 @@ export default function SelectPlanPage() {
     checkExistingVenues();
   }, [session, authLoading, router]);
 
-  const pricingPlans = [
-    {
-      name: "Basic",
-      price: "£99",
-      period: "month",
-      tier: "basic",
-      description: "Perfect for small cafes and restaurants",
-      features: [
-        "QR code ordering system",
-        "Up to 3 staff accounts",
-        "Basic analytics dashboard",
-        "Table management (up to 20 tables)",
-        "Menu management",
-        "Email support",
-      ],
-      notIncluded: [
-        "Advanced AI insights",
-        "Priority support",
-        "Custom branding",
-        "Multi-location support",
-      ],
-      popular: false,
-      cta: "Start Free Trial",
-    },
-    {
-      name: "Standard",
-      price: "£199",
-      period: "month",
-      tier: "standard",
-      description: "Ideal for growing businesses",
-      features: [
-        "Everything in Basic",
-        "Up to 10 staff accounts",
-        "Advanced analytics & AI insights",
-        "Table management (up to 50 tables)",
-        "Customer feedback system",
-        "Inventory management",
-        "Priority email support",
-      ],
-      notIncluded: ["Custom branding", "Multi-location support", "Dedicated account manager"],
-      popular: true,
-      cta: "Start Free Trial",
-    },
-    {
-      name: "Premium",
-      price: "£399",
-      period: "month",
-      tier: "premium",
-      description: "For established restaurants & chains",
-      features: [
-        "Everything in Standard",
-        "Unlimited staff accounts",
-        "Multi-location support",
-        "Custom branding",
-        "Unlimited tables",
-        "Advanced reporting & exports",
-        "Kitchen Display System (KDS)",
-        "API access",
-        "Dedicated account manager",
-        "24/7 priority support",
-      ],
-      notIncluded: [],
-      popular: false,
-      cta: "Start Free Trial",
-    },
-  ];
+  // Get CTA button text based on current tier
+  const getPlanCTA = (planTier: string) => {
+    console.log("[SELECT-PLAN DEBUG] getPlanCTA called", { planTier, currentTier });
+
+    if (!currentTier) {
+      console.log("[SELECT-PLAN DEBUG] No current tier, showing Start Free Trial");
+      return "Start Free Trial";
+    }
+
+    if (currentTier === planTier) {
+      console.log("[SELECT-PLAN DEBUG] Is current plan");
+      return "Current Plan";
+    }
+
+    const tierOrder = { basic: 1, standard: 2, premium: 3 };
+    const currentLevel = tierOrder[currentTier as keyof typeof tierOrder] || 0;
+    const planLevel = tierOrder[planTier as keyof typeof tierOrder] || 0;
+
+    console.log("[SELECT-PLAN DEBUG] Tier comparison", { currentLevel, planLevel });
+
+    if (planLevel > currentLevel) {
+      console.log("[SELECT-PLAN DEBUG] Showing Upgrade");
+      return "Upgrade";
+    } else if (planLevel < currentLevel) {
+      console.log("[SELECT-PLAN DEBUG] Showing Downgrade to", PRICING_TIERS[planTier]?.name);
+      return `Downgrade to ${PRICING_TIERS[planTier]?.name}`;
+    }
+
+    return "Select Plan";
+  };
+
+  // Use shared pricing configuration
+  const pricingPlans = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
+    name: tierData.name,
+    price: tierData.price,
+    period: "month",
+    tier: tierKey,
+    description: tierData.description,
+    features: tierData.features,
+    notIncluded: [] as string[], // Can be customized if needed
+    popular: tierData.popular || false,
+  }));
 
   const handleSelectPlan = async (tier: string) => {
     setLoading(true);
@@ -217,8 +207,11 @@ export default function SelectPlanPage() {
                   ))}
                 </ul>
                 <Button
-                  onClick={() => handleSelectPlan(plan.tier)}
-                  disabled={loading && selectedTier !== plan.tier}
+                  onClick={() => {
+                    console.log("[SELECT-PLAN DEBUG] Button clicked for", plan.tier);
+                    handleSelectPlan(plan.tier);
+                  }}
+                  disabled={(loading && selectedTier !== plan.tier) || currentTier === plan.tier}
                   className={`w-full ${plan.popular ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
                   variant={plan.popular ? "default" : "outline"}
                   size="lg"
@@ -229,7 +222,19 @@ export default function SelectPlanPage() {
                       Processing...
                     </>
                   ) : (
-                    plan.cta
+                    <span
+                      className="font-medium text-current"
+                      style={{
+                        color: "inherit",
+                        WebkitTextFillColor: "inherit",
+                      }}
+                    >
+                      {(() => {
+                        const ctaText = getPlanCTA(plan.tier);
+                        console.log("[SELECT-PLAN DEBUG] Button text for", plan.tier, ":", ctaText);
+                        return ctaText;
+                      })()}
+                    </span>
                   )}
                 </Button>
               </CardContent>

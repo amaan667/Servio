@@ -216,19 +216,18 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
         const { apiClient } = await import("@/lib/api-client");
 
-        // Handle downgrades
+        // Handle downgrades - redirect to Stripe portal
         if (ctaText.includes("Downgrade")) {
-          const targetTier = ctaText.includes("Basic") ? "basic" : "standard";
-
-          const response = await apiClient.post("/api/stripe/downgrade-plan", {
+          // Open Stripe portal where users can manage/downgrade their plan
+          const response = await apiClient.post("/api/stripe/create-portal-session", {
             organizationId: venues.organization_id,
-            newTier: targetTier,
+            venueId: venues.venue_id,
           });
 
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error("[PRICING] Downgrade failed:", response.status, errorText);
-            alert(`Failed to downgrade: ${response.status} ${errorText}`);
+            const data = await response.json();
+            console.error("[PRICING] Failed to open billing portal:", data);
+            alert(`Unable to open billing portal. ${data.error || "Please try again."}`);
             setLoadingPlan(false);
             return;
           }
@@ -236,15 +235,17 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           const data = await response.json();
 
           if (data.error) {
-            alert(`Failed to downgrade: ${data.error}`);
+            alert(`Unable to open billing portal: ${data.error}`);
+            setLoadingPlan(false);
             return;
           }
 
-          if (data.success) {
-            alert(
-              `Successfully downgraded to ${targetTier === "basic" ? "Basic" : "Standard"} plan! Refreshing...`
-            );
-            window.location.reload();
+          if (data.url) {
+            // Redirect to Stripe portal where they can change their plan
+            window.location.href = data.url;
+          } else {
+            alert("Unable to open billing portal. Please try again.");
+            setLoadingPlan(false);
           }
         }
         // Handle upgrades
