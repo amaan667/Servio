@@ -11,12 +11,43 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, Minus, Brain, Target, Zap } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 
+interface KPI {
+  name: string;
+  value: number;
+  trend: "up" | "down" | "stable";
+  change: number;
+}
+
+interface Insight {
+  id: string;
+  title: string;
+  description: string;
+  recommendation: string;
+  impact: "high" | "medium" | "low";
+  confidence: number;
+}
+
+interface Forecasts {
+  revenue: number[];
+  orders: number[];
+  customers: number[];
+}
+
+interface BusinessIntelligence {
+  kpis: KPI[];
+  insights: Insight[];
+  forecasts: Forecasts;
+  recommendations: string[];
+}
+
 interface AdvancedAnalyticsProps {
   venueId: string;
 }
 
 export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId }) => {
-  const [businessIntelligence, setBusinessIntelligence] = useState<unknown>(null);
+  const [businessIntelligence, setBusinessIntelligence] = useState<BusinessIntelligence | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,31 +94,29 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
     <div className="space-y-6">
       {/* KPIs Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {(businessIntelligence as any).kpis.map((kpi: unknown, index: number) => (
+        {businessIntelligence.kpis.map((kpi, index) => (
           <Card key={index} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{(kpi as any).name}</p>
-                  <p className="text-2xl font-bold">{(kpi as any).value.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-600">{kpi.name}</p>
+                  <p className="text-2xl font-bold">{kpi.value.toLocaleString()}</p>
                 </div>
                 <div className="flex items-center space-x-1">
-                  {(kpi as any).trend === "up" && <TrendingUp className="h-4 w-4 text-green-500" />}
-                  {(kpi as any).trend === "down" && (
-                    <TrendingDown className="h-4 w-4 text-red-500" />
-                  )}
-                  {(kpi as any).trend === "stable" && <Minus className="h-4 w-4 text-gray-500" />}
+                  {kpi.trend === "up" && <TrendingUp className="h-4 w-4 text-green-500" />}
+                  {kpi.trend === "down" && <TrendingDown className="h-4 w-4 text-red-500" />}
+                  {kpi.trend === "stable" && <Minus className="h-4 w-4 text-gray-500" />}
                   <span
                     className={`text-sm font-medium ${
-                      (kpi as any).trend === "up"
+                      kpi.trend === "up"
                         ? "text-green-600"
-                        : (kpi as any).trend === "down"
+                        : kpi.trend === "down"
                           ? "text-red-600"
                           : "text-gray-600"
                     }`}
                   >
-                    {(kpi as any).change > 0 ? "+" : ""}
-                    {(kpi as any).change}%
+                    {kpi.change > 0 ? "+" : ""}
+                    {kpi.change}%
                   </span>
                 </div>
               </div>
@@ -106,34 +135,32 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {(businessIntelligence as any).insights.map((insight: unknown) => (
+            {businessIntelligence.insights.map((insight) => (
               <div
-                key={(insight as any).id}
+                key={insight.id}
                 className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold">{(insight as any).title}</h3>
+                      <h3 className="font-semibold">{insight.title}</h3>
                       <Badge
                         variant={
-                          (insight as any).impact === "high"
+                          insight.impact === "high"
                             ? "destructive"
-                            : (insight as any).impact === "medium"
+                            : insight.impact === "medium"
                               ? "default"
                               : "secondary"
                         }
                       >
-                        {(insight as any).impact} impact
+                        {insight.impact} impact
                       </Badge>
                       <Badge variant="outline">
-                        {Math.round((insight as any).confidence * 100)}% confidence
+                        {Math.round(insight.confidence * 100)}% confidence
                       </Badge>
                     </div>
-                    <p className="text-gray-600 mb-2">{(insight as any).description}</p>
-                    <p className="text-sm font-medium text-blue-600">
-                      {(insight as any).recommendation}
-                    </p>
+                    <p className="text-gray-600 mb-2">{insight.description}</p>
+                    <p className="text-sm font-medium text-blue-600">{insight.recommendation}</p>
                   </div>
                 </div>
               </div>
@@ -160,14 +187,12 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {(businessIntelligence as any).forecasts.revenue
-                    .slice(0, 7)
-                    .map((value: number, index: number) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Day {index + 1}</span>
-                        <span className="font-medium">${value.toFixed(2)}</span>
-                      </div>
-                    ))}
+                  {businessIntelligence.forecasts.revenue.slice(0, 7).map((value, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Day {index + 1}</span>
+                      <span className="font-medium">${value.toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -181,14 +206,12 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {(businessIntelligence as any).forecasts.orders
-                    .slice(0, 7)
-                    .map((value: number, index: number) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Day {index + 1}</span>
-                        <span className="font-medium">{value} orders</span>
-                      </div>
-                    ))}
+                  {businessIntelligence.forecasts.orders.slice(0, 7).map((value, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Day {index + 1}</span>
+                      <span className="font-medium">{value} orders</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -202,7 +225,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {(businessIntelligence as any).forecasts.customers
+                  {businessIntelligence.forecasts.customers
                     .slice(0, 7)
                     .map((value: number, index: number) => (
                       <div key={index} className="flex justify-between items-center">
@@ -223,17 +246,12 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(businessIntelligence as any).recommendations.map(
-                  (recommendation: string, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg"
-                    >
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                      <p className="text-sm text-gray-700">{recommendation}</p>
-                    </div>
-                  )
-                )}
+                {businessIntelligence.recommendations.map((recommendation, index) => (
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <p className="text-sm text-gray-700">{recommendation}</p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

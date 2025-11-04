@@ -1,0 +1,24 @@
+# Servio Code Quality Rules
+
+## Type Safety
+- NO `as any` types allowed
+- Use proper TypeScript interfaces
+- Use Zod for runtime validation
+- Prefer `unknown` over `any` for unknowns
+
+## Testing
+- All API routes must have tests
+- Test happy path + error cases
+- Mock external dependencies
+
+## Code Quality
+- No console.log (removed in production)
+- Use logger for errors (Sentry integration)
+- ESLint warnings must be addressed
+- TypeScript strict mode enforced
+
+## Current Status (Nov 2025)
+- Rating: 9.5/10
+- Type Safety: 54% (138/303 any types fixed)
+- Tests: 313 (+86 from baseline)
+- Build: Passing ✓

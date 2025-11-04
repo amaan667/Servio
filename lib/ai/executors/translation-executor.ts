@@ -1311,11 +1311,19 @@ OUTPUT FORMAT:
             description: i.description || "",
             category: i.category || "",
           })),
-          after: translatedArray.map((i: unknown) => ({
-            name: (i as any).name || (i as any).originalName,
-            description: (i as any).description || "",
-            category: (i as any).category || "",
-          })),
+          after: translatedArray.map((i: unknown) => {
+            const item = i as {
+              name?: string;
+              originalName?: string;
+              description?: string;
+              category?: string;
+            };
+            return {
+              name: item.name || item.originalName || "",
+              description: item.description || "",
+              category: item.category || "",
+            };
+          }),
           impact: {
             itemsAffected: items.length,
             categoriesAffected: uniqueCategories.length,
@@ -1482,29 +1490,44 @@ OUTPUT FORMAT:
     let updatedCount = 0;
     let failedCount = 0;
 
+    interface TranslatedItem {
+      id: string;
+      name: string;
+      category?: string;
+      description?: string;
+    }
+
     for (const translatedItem of translatedItems) {
-      if (!translatedItem || !(translatedItem as any).id || !(translatedItem as any).name) {
+      const item = translatedItem as TranslatedItem;
+      if (!translatedItem || !item.id || !item.name) {
         failedCount++;
         continue;
       }
 
-      const updateData: unknown = {
-        name: (translatedItem as any).name,
+      interface UpdateData {
+        name: string;
+        updated_at: string;
+        category?: string;
+        description?: string;
+      }
+
+      const updateData: UpdateData = {
+        name: item.name,
         updated_at: new Date().toISOString(),
       };
 
-      if ((translatedItem as any).category) {
-        (updateData as any).category = (translatedItem as any).category;
+      if (item.category) {
+        updateData.category = item.category;
       }
 
-      if (typedParams.includeDescriptions && (translatedItem as any).description) {
-        (updateData as any).description = (translatedItem as any).description;
+      if (typedParams.includeDescriptions && item.description) {
+        updateData.description = item.description;
       }
 
       const { error } = await supabase
         .from("menu_items")
         .update(updateData)
-        .eq("id", (translatedItem as any).id)
+        .eq("id", item.id)
         .eq("venue_id", venueId);
 
       if (!error) {

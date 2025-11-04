@@ -92,7 +92,8 @@ export function useCounterOrderCounts(venueId: string) {
       const byStatus =
         data?.reduce(
           (acc: Record<string, number>, order: unknown) => {
-            acc[(order as any).order_status] = (acc[(order as any).order_status] || 0) + 1;
+            const orderStatus = (order as { order_status: string }).order_status;
+            acc[orderStatus] = (acc[orderStatus] || 0) + 1;
             return acc;
           },
           {

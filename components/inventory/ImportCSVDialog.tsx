@@ -22,10 +22,18 @@ interface ImportCSVDialogProps {
   onSuccess: () => void;
 }
 
+interface ImportResult {
+  success: boolean;
+  error_count: number;
+  imported_count?: number;
+  error?: string;
+  errors?: unknown[];
+}
+
 export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: ImportCSVDialogProps) {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,26 +98,21 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
 
             {result ? (
               <Alert
-                variant={
-                  (result as any).success && (result as any).error_count === 0
-                    ? "default"
-                    : "destructive"
-                }
+                variant={result.success && result.error_count === 0 ? "default" : "destructive"}
               >
-                {(result as any).success && (result as any).error_count === 0 ? (
+                {result.success && result.error_count === 0 ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : (
                   <XCircle className="h-4 w-4" />
                 )}
                 <AlertDescription>
-                  {(result as any).success ? (
+                  {result.success ? (
                     <>
-                      Successfully imported {(result as any).imported_count} ingredient(s).
-                      {(result as any).error_count > 0 &&
-                        ` ${(result as any).error_count} error(s) occurred.`}
+                      Successfully imported {result.imported_count} ingredient(s).
+                      {result.error_count > 0 && ` ${result.error_count} error(s) occurred.`}
                     </>
                   ) : (
-                    (result as any).error || "Failed to import CSV"
+                    result.error || "Failed to import CSV"
                   )}
                 </AlertDescription>
               </Alert>

@@ -489,9 +489,12 @@ export async function POST(req: Request) {
         }
 
         // Auto-navigate after menu item creation
-        if (toolCall.function.name === "add_menu_item" && (result as any).shouldNavigate) {
+        if (
+          toolCall.function.name === "add_menu_item" &&
+          (result as Record<string, unknown>).shouldNavigate
+        ) {
           navigationInfo = {
-            route: getNavigationRoute((result as any).navigateTo, venueId),
+            route: getNavigationRoute((result as Record<string, unknown>).navigateTo, venueId),
           };
         }
       }

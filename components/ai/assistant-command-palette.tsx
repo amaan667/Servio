@@ -31,6 +31,26 @@ import { AIAssistantFloat } from "./ai-assistant-float";
 import { ChatInterfaceV2 } from "./chat-interface-v2";
 import { aiLogger } from "@/lib/logger";
 
+interface Tool {
+  name: string;
+  params: Record<string, unknown>;
+}
+
+interface ExecutionResult {
+  tool: string;
+  result: {
+    topItems?: Array<{ name: string; revenue: number }>;
+    [key: string]: unknown;
+  };
+}
+
+interface PreviewItem {
+  name?: string;
+  id?: string;
+  price?: number;
+  onHand?: number;
+}
+
 interface AssistantCommandPaletteProps {
   venueId: string;
   page?: "menu" | "inventory" | "kds" | "orders" | "analytics" | "general";
@@ -57,7 +77,7 @@ export function AssistantCommandPalette({
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [executionResults, setExecutionResults] = useState<unknown[]>([]);
+  const [executionResults, setExecutionResults] = useState<ExecutionResult[]>([]);
   const [showChatInterface, setShowChatInterface] = useState(false);
 
   // Keyboard shortcut: ⌘K / Ctrl-K - Opens expanded chat interface directly
@@ -150,8 +170,8 @@ export function AssistantCommandPalette({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   venueId,
-                  toolName: (tool as any).name,
-                  params: (tool as any).params,
+                  toolName: (tool as Tool).name,
+                  params: (tool as Tool).params,
                   preview: true,
                 }),
               }).then((res) => res.json())
@@ -176,8 +196,8 @@ export function AssistantCommandPalette({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 venueId,
-                toolName: (tool as any).name,
-                params: (tool as any).params,
+                toolName: (tool as Tool).name,
+                params: (tool as Tool).params,
                 preview: true,
               }),
             });
@@ -250,7 +270,7 @@ export function AssistantCommandPalette({
           setOpen(false);
 
           // Find the navigation tool result
-          const navResult = results.find((r) => (r as any).tool === "navigation.go_to_page");
+          const navResult = results.find((r) => r.tool === "navigation.go_to_page");
           if (
             navResult &&
             typeof navResult === "object" &&
@@ -409,10 +429,10 @@ export function AssistantCommandPalette({
                 {executionResults.length > 0 && (
                   <div className="space-y-3">
                     {executionResults.map((item, idx) => {
-                      const result = (item as any).result;
+                      const result = item.result;
 
                       // Analytics results display
-                      if ((item as any).tool.startsWith("analytics.")) {
+                      if (item.tool.startsWith("analytics.")) {
                         return (
                           <div
                             key={idx}
@@ -503,11 +523,11 @@ export function AssistantCommandPalette({
                                   Top Items
                                 </p>
                                 <div className="space-y-1">
-                                  {result.topItems.slice(0, 5).map((item: unknown, i: number) => (
+                                  {result.topItems?.slice(0, 5).map((item, i) => (
                                     <div key={i} className="flex justify-between text-sm">
-                                      <span>{(item as any).name}</span>
+                                      <span>{item.name}</span>
                                       <span className="font-semibold">
-                                        £{(item as any).revenue.toFixed(2)}
+                                        £{item.revenue.toFixed(2)}
                                       </span>
                                     </div>
                                   ))}
@@ -519,7 +539,7 @@ export function AssistantCommandPalette({
                       }
 
                       // Navigation results
-                      if ((item as any).tool === "navigation.go_to_page") {
+                      if (item.tool === "navigation.go_to_page") {
                         return (
                           <div key={idx} className="text-sm text-muted-foreground">
                             Navigating to {result.page}...
@@ -594,12 +614,15 @@ export function AssistantCommandPalette({
                           <div>
                             <p className="font-medium mb-2">Before</p>
                             <div className="space-y-1">
-                              {preview.before.slice(0, 5).map((item: unknown, j: number) => (
-                                <div key={j} className="text-muted-foreground">
-                                  {(item as any).name || (item as any).id}: £
-                                  {(item as any).price?.toFixed(2) || (item as any).onHand || "-"}
-                                </div>
-                              ))}
+                              {preview.before.slice(0, 5).map((item: unknown, j: number) => {
+                                const previewItem = item as PreviewItem;
+                                return (
+                                  <div key={j} className="text-muted-foreground">
+                                    {previewItem.name || previewItem.id}: £
+                                    {previewItem.price?.toFixed(2) || previewItem.onHand || "-"}
+                                  </div>
+                                );
+                              })}
                               {preview.before.length > 5 && (
                                 <div className="text-xs text-muted-foreground">
                                   +{preview.before.length - 5} more...
@@ -610,17 +633,19 @@ export function AssistantCommandPalette({
                           <div>
                             <p className="font-medium mb-2">After</p>
                             <div className="space-y-1">
-                              {(preview.after as any)
-                                .slice(0, 5)
-                                .map((item: unknown, j: number) => (
-                                  <div key={j} className="text-green-600 dark:text-green-400">
-                                    {(item as any).name || (item as any).id}: £
-                                    {(item as any).price?.toFixed(2) || (item as any).onHand || "-"}
-                                  </div>
-                                ))}
-                              {(preview.after as any).length > 5 && (
+                              {Array.isArray(preview.after) &&
+                                preview.after.slice(0, 5).map((item: unknown, j: number) => {
+                                  const previewItem = item as PreviewItem;
+                                  return (
+                                    <div key={j} className="text-green-600 dark:text-green-400">
+                                      {previewItem.name || previewItem.id}: £
+                                      {previewItem.price?.toFixed(2) || previewItem.onHand || "-"}
+                                    </div>
+                                  );
+                                })}
+                              {Array.isArray(preview.after) && preview.after.length > 5 && (
                                 <div className="text-xs text-muted-foreground">
-                                  +{(preview.after as any).length - 5} more...
+                                  +{preview.after.length - 5} more...
                                 </div>
                               )}
                             </div>

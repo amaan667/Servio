@@ -1,22 +1,75 @@
 /**
- * Unified Logger
- * Single source of truth for all logging in the application
- * Production-ready with Sentry integration
+ * Silent Logger - Production Mode
+ * All logging disabled - errors tracked via Sentry instrumentation only
  */
 
-export { logger, apiLogger, authLogger, dbLogger, cacheLogger, aiLogger } from './logger/production-logger';
+const noop = () => {};
 
-// Re-export as default for convenience
-export { logger as default } from './logger/production-logger';
+export const logger = {
+  debug: noop,
+  info: noop,
+  warn: noop,
+  error: noop,
+  log: noop,
+};
 
-// Helper for API routes
-export function logApiCall(endpoint: string, method: string, duration: number, status: number) {
-  const { apiLogger } = require('./logger/production-logger');
-  apiLogger.apiResponse(method, endpoint, status, duration);
-}
+export const apiLogger = {
+  apiRequest: noop,
+  apiResponse: noop,
+  apiError: noop,
+  info: noop,
+  error: noop,
+  warn: noop,
+  debug: noop,
+};
 
-// Helper for database queries
-export function logDbQuery(query: string, duration: number, rows?: number) {
-  const { dbLogger } = require('./logger/production-logger');
-  dbLogger.dbQuery(query, duration, { rows });
-}
+export const authLogger = {
+  authSuccess: noop,
+  authFailure: noop,
+  authAttempt: noop,
+  info: noop,
+  error: noop,
+  warn: noop,
+  debug: noop,
+};
+
+export const dbLogger = {
+  dbQuery: noop,
+  dbError: noop,
+  dbConnection: noop,
+  info: noop,
+  error: noop,
+  warn: noop,
+  debug: noop,
+};
+
+export const cacheLogger = {
+  cacheHit: noop,
+  cacheMiss: noop,
+  cacheSet: noop,
+  info: noop,
+  error: noop,
+  warn: noop,
+  debug: noop,
+};
+
+export const aiLogger = {
+  aiRequest: noop,
+  aiResponse: noop,
+  aiError: noop,
+  info: noop,
+  error: noop,
+  warn: noop,
+  debug: noop,
+};
+
+export default logger;
+
+// No-op helpers
+export function logApiCall(
+  _endpoint: string,
+  _method: string,
+  _duration: number,
+  _status: number
+) {}
+export function logDbQuery(_query: string, _duration: number, _rows?: number) {}

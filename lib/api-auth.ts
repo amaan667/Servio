@@ -73,7 +73,7 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
     return {
       success: true,
       user,
-      supabase: supabase as any,
+      supabase,
     };
   } catch (_error) {
     return {
@@ -111,8 +111,8 @@ export async function verifyVenueAccess(
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (staffAccess) {
-    return { hasAccess: true, role: (staffAccess as any).role };
+  if (staffAccess && "role" in staffAccess) {
+    return { hasAccess: true, role: staffAccess.role as string };
   }
 
   return { hasAccess: false };

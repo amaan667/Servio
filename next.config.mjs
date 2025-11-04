@@ -25,14 +25,25 @@ const nextConfig = {
   },
   // Performance optimizations
   experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
+    optimizePackageImports: [
+      'lucide-react', 
+      'recharts', 
+      '@radix-ui/react-icons',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-popover',
+      'date-fns',
+      'framer-motion',
+    ],
     // Exclude server-only packages from bundling
-    serverComponentsExternalPackages: ['playwright-core', 'playwright'],
+    serverComponentsExternalPackages: ['playwright-core', 'playwright', '@sparticuz/chromium', 'puppeteer-core'],
   },
   compiler: {
-    // Keep ALL console logs in production for debugging (including .log, .info)
-    // Only remove console in production build if explicitly needed later
-    removeConsole: false,
+    // Remove ALL console logs in production
+    removeConsole: {
+      exclude: [], // Remove all console methods
+    },
   },
   // Production optimizations
   poweredByHeader: false,
@@ -154,9 +165,9 @@ const nextConfig = {
     // Realistic limits for production SaaS (vendor bundle is typically 2-4MB)
     if (!dev && !isServer) {
       config.performance = {
-        maxAssetSize: 4000000, // 4MB per asset (vendor bundles can be large)
-        maxEntrypointSize: 4000000, // 4MB per entrypoint
-        hints: 'warning', // Show warnings, don't fail build
+        maxAssetSize: 5000000, // 5MB per asset - realistic for vendor bundles
+        maxEntrypointSize: 5000000, // 5MB per entrypoint - realistic for SPA pages
+        hints: 'warning', // Warn but don't fail build
       };
     }
 

@@ -116,9 +116,13 @@ export function useQRCodeManagement(venueId: string) {
     items.forEach((item: TableItem | CounterItem) => {
       let name = "";
       if (qrCodeType === "tables") {
-        name = String(item.label || (item as any).table_number || item.name || "");
+        name = String(
+          item.label || (item as Record<string, unknown>).table_number || item.name || ""
+        );
       } else {
-        name = String((item as any).counter_name || item.label || item.name || "");
+        name = String(
+          (item as Record<string, unknown>).counter_name || item.label || item.name || ""
+        );
       }
 
       if (name && name !== "undefined" && name !== "null" && name.trim() !== "") {

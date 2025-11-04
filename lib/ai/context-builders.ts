@@ -128,18 +128,25 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     { sales: number; revenue: number; name: string; price: number }
   >();
 
+  interface OrderItem {
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+  }
+
   orderItems?.forEach((oi: unknown) => {
-    const existing = salesMap.get((oi as any).menu_item_id) || {
+    const orderItem = oi as OrderItem;
+    const existing = salesMap.get(orderItem.menu_item_id) || {
       sales: 0,
       revenue: 0,
       name: "",
       price: 0,
     };
-    salesMap.set((oi as any).menu_item_id, {
-      sales: existing.sales + (oi as any).quantity,
-      revenue: existing.revenue + (oi as any).price * (oi as any).quantity,
-      name: items.find((i) => i.id === (oi as any).menu_item_id)?.name || "",
-      price: items.find((i) => i.id === (oi as any).menu_item_id)?.price || 0,
+    salesMap.set(orderItem.menu_item_id, {
+      sales: existing.sales + orderItem.quantity,
+      revenue: existing.revenue + orderItem.price * orderItem.quantity,
+      name: items.find((i) => i.id === orderItem.menu_item_id)?.name || "",
+      price: items.find((i) => i.id === orderItem.menu_item_id)?.price || 0,
     });
   });
 
@@ -308,24 +315,36 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
     .eq("venue_id", venueId)
     .in("status", ["pending", "in_progress"]);
 
+  interface KDSTicket {
+    id: string;
+    order_id: string;
+    station_name: string;
+    status: string;
+    started_at: string | null;
+    completed_at: string | null;
+    items: Array<{ name: string }>;
+  }
+
   // Find overdue tickets (> 10 minutes in progress)
   const now = new Date();
   const overdueTickets =
     kdsTickets
       ?.filter((ticket: unknown) => {
-        if ((ticket as any).status !== "in_progress" || !(ticket as any).started_at) return false;
-        const startedAt = new Date((ticket as any).started_at);
+        const t = ticket as KDSTicket;
+        if (t.status !== "in_progress" || !t.started_at) return false;
+        const startedAt = new Date(t.started_at);
         const minutesElapsed = (now.getTime() - startedAt.getTime()) / 1000 / 60;
         return minutesElapsed > 10;
       })
       .map((ticket: unknown) => {
-        const startedAt = new Date((ticket as any).started_at);
+        const t = ticket as KDSTicket;
+        const startedAt = new Date(t.started_at!);
         const minutesOverdue = (now.getTime() - startedAt.getTime()) / 1000 / 60 - 10;
         return {
-          id: (ticket as any).id,
-          orderId: (ticket as any).order_id,
-          station: (ticket as any).station_name,
-          items: (ticket as any).items.map((i: unknown) => (i as any).name),
+          id: t.id,
+          orderId: t.order_id,
+          station: t.station_name,
+          items: t.items.map((i) => i.name),
           minutesOverdue: Math.round(minutesOverdue),
         };
       }) || [];
@@ -347,15 +366,17 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
   const stationStats = new Map<string, { totalTime: number; count: number }>();
 
   completedTickets?.forEach((ticket: unknown) => {
-    const startedAt = new Date((ticket as any).started_at);
-    const completedAt = new Date((ticket as any).completed_at);
+    const t = ticket as KDSTicket;
+    if (!t.started_at || !t.completed_at) return;
+    const startedAt = new Date(t.started_at);
+    const completedAt = new Date(t.completed_at);
     const prepTime = (completedAt.getTime() - startedAt.getTime()) / 1000 / 60;
 
-    const existing = stationStats.get((ticket as any).station_name) || {
+    const existing = stationStats.get(t.station_name) || {
       totalTime: 0,
       count: 0,
     };
-    stationStats.set((ticket as any).station_name, {
+    stationStats.set(t.station_name, {
       totalTime: existing.totalTime + prepTime,
       count: existing.count + 1,
     });
@@ -522,18 +543,30 @@ async function cacheContext(
 // Get All Summaries Helper
 // ============================================================================
 
-export async function getAllSummaries(venueId: string, features: unknown) {
-  const summaries: unknown = {
+interface Features {
+  inventoryEnabled?: boolean;
+  kdsEnabled?: boolean;
+}
+
+interface AllSummaries {
+  menu: MenuSummary;
+  analytics: AnalyticsSummary;
+  inventory?: InventorySummary;
+  orders?: OrdersSummary;
+}
+
+export async function getAllSummaries(venueId: string, features: Features): Promise<AllSummaries> {
+  const summaries: AllSummaries = {
     menu: await getMenuSummary(venueId),
     analytics: await getAnalyticsSummary(venueId),
   };
 
-  if ((features as any).inventoryEnabled) {
-    (summaries as any).inventory = await getInventorySummary(venueId);
+  if (features.inventoryEnabled) {
+    summaries.inventory = await getInventorySummary(venueId);
   }
 
-  if ((features as any).kdsEnabled) {
-    (summaries as any).orders = await getOrdersSummary(venueId);
+  if (features.kdsEnabled) {
+    summaries.orders = await getOrdersSummary(venueId);
   }
 
   return summaries;

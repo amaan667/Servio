@@ -78,8 +78,9 @@ export function useDragAndDrop<T extends MenuItem>(
   const handleDragUpdate = useCallback(
     (update: unknown) => {
       // Optional: Handle drag updates for visual feedback
-      if ((update as any).draggableId) {
-        const item = items.find((i) => i.id === (update as any).draggableId);
+      const dragUpdate = update as { draggableId?: string };
+      if (dragUpdate.draggableId) {
+        const item = items.find((i) => i.id === dragUpdate.draggableId);
         if (item) {
           setDraggedOverItem(item);
         }

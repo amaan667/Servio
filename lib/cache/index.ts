@@ -101,8 +101,12 @@ class Cache {
   async invalidate(pattern: string): Promise<boolean> {
     try {
       // Try Redis first if available
-      if (this.useRedis) {
-        await (redisCache as any).invalidate(pattern);
+      if (
+        this.useRedis &&
+        "invalidate" in redisCache &&
+        typeof redisCache.invalidate === "function"
+      ) {
+        await redisCache.invalidate(pattern);
       }
 
       // Also clear matching memory cache entries
@@ -214,12 +218,12 @@ export const AICache = {
   categorization: {
     get: (itemName: string, categories: string[]) =>
       cache.get(`ai:cat:${itemName}:${categories.join(",")}`),
-    set: (itemName: string, categories: string[], result: any) =>
+    set: (itemName: string, categories: string[], result: unknown) =>
       cache.set(`ai:cat:${itemName}:${categories.join(",")}`, result, { ttl: cacheTTL.long }), // 30 min
   },
   matching: {
     get: (pdfItem: string, urlItem: string) => cache.get(`ai:match:${pdfItem}:${urlItem}`),
-    set: (pdfItem: string, urlItem: string, result: any) =>
+    set: (pdfItem: string, urlItem: string, result: unknown) =>
       cache.set(`ai:match:${pdfItem}:${urlItem}`, result, { ttl: cacheTTL.long }), // 30 min
   },
 };

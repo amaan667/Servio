@@ -3,9 +3,13 @@
 
 const AUTH_COOKIE_PREFIXES = ["sb-", "supabase.auth.token", "supabase-auth-token"];
 
-export function getOriginFromHeaders(h: unknown) {
-  const proto = (h as any).get("x-forwarded-proto") ?? "https";
-  const host = (h as any).get("host") ?? "servio-production.up.railway.app";
+interface HeadersLike {
+  get(name: string): string | null;
+}
+
+export function getOriginFromHeaders(h: HeadersLike) {
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("host") ?? "servio-production.up.railway.app";
   return `${proto}://${host}`;
 }
 
@@ -44,7 +48,8 @@ export function getPlatformRedirectUrl(baseUrl: string, userAgent: string): stri
 
 // Handle authentication errors consistently
 export function handleAuthError(error: unknown): { message: string; code: string } {
-  const errorObj = error as { message?: string; code?: string };
+  const errorObj =
+    error && typeof error === "object" ? (error as { message?: string; code?: string }) : {};
   const errorMessage = errorObj?.message || "Unknown authentication error";
   const errorCode = errorObj?.code || "unknown_error";
 
@@ -81,21 +86,29 @@ export function handleAuthError(error: unknown): { message: string; code: string
   }
 }
 
+interface SessionData {
+  user?: { id: string };
+  access_token?: string;
+  expires_at?: number;
+}
+
 // Validate session data
 export function validateSession(session: unknown): { isValid: boolean; error?: string } {
   if (!session) {
     return { isValid: false, error: "No session data" };
   }
 
-  if (!(session as any).user?.id) {
+  const sessionData = session as SessionData;
+
+  if (!sessionData.user?.id) {
     return { isValid: false, error: "No user ID in session" };
   }
 
-  if (!(session as any).access_token) {
+  if (!sessionData.access_token) {
     return { isValid: false, error: "No access token in session" };
   }
 
-  if ((session as any).expires_at && new Date((session as any).expires_at * 1000) < new Date()) {
+  if (sessionData.expires_at && new Date(sessionData.expires_at * 1000) < new Date()) {
     return { isValid: false, error: "Session has expired" };
   }
 

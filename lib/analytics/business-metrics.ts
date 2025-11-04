@@ -1,5 +1,6 @@
 import { supabaseBrowser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface BusinessMetrics {
   // Revenue metrics
@@ -101,11 +102,11 @@ export class BusinessMetricsService {
    * Get revenue metrics
    */
   private static async getRevenueMetrics(
-    supabase: unknown,
+    supabase: SupabaseClient,
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
-    const { data: orders } = await (supabase as any)
+    const { data: orders } = await supabase
       .from("orders")
       .select("total_amount, created_at")
       .eq("venue_id", venueId)
@@ -127,7 +128,7 @@ export class BusinessMetricsService {
     );
     const previousEnd = new Date(dateRange.start);
 
-    const { data: previousOrders } = await (supabase as any)
+    const { data: previousOrders } = await supabase
       .from("orders")
       .select("total_amount")
       .eq("venue_id", venueId)
@@ -152,8 +153,8 @@ export class BusinessMetricsService {
   /**
    * Get order metrics
    */
-  private static async getOrderMetrics(supabase: unknown, venueId: string) {
-    const { data: allOrders } = await (supabase as any)
+  private static async getOrderMetrics(supabase: SupabaseClient, venueId: string) {
+    const { data: allOrders } = await supabase
       .from("orders")
       .select("created_at")
       .eq("venue_id", venueId);
@@ -166,7 +167,7 @@ export class BusinessMetricsService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const { data: todayOrders } = await (supabase as any)
+    const { data: todayOrders } = await supabase
       .from("orders")
       .select("created_at")
       .eq("venue_id", venueId)
@@ -179,7 +180,7 @@ export class BusinessMetricsService {
     const weekStart = new Date(today);
     weekStart.setDate(weekStart.getDate() - today.getDay());
 
-    const { data: weekOrders } = await (supabase as any)
+    const { data: weekOrders } = await supabase
       .from("orders")
       .select("created_at")
       .eq("venue_id", venueId)
@@ -190,7 +191,7 @@ export class BusinessMetricsService {
     // This month's orders
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const { data: monthOrders } = await (supabase as any)
+    const { data: monthOrders } = await supabase
       .from("orders")
       .select("created_at")
       .eq("venue_id", venueId)
@@ -203,7 +204,7 @@ export class BusinessMetricsService {
     previousWeekStart.setDate(previousWeekStart.getDate() - 7);
     const previousWeekEnd = new Date(weekStart);
 
-    const { data: previousWeekOrders } = await (supabase as any)
+    const { data: previousWeekOrders } = await supabase
       .from("orders")
       .select("created_at")
       .eq("venue_id", venueId)
@@ -231,7 +232,7 @@ export class BusinessMetricsService {
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
-    const { data: customers } = await (supabase as any)
+    const { data: customers } = await supabase
       .from("orders")
       .select("customer_name, created_at")
       .eq("venue_id", venueId)
@@ -244,7 +245,7 @@ export class BusinessMetricsService {
     const totalCustomers = uniqueCustomers.size;
 
     // New customers (first order in this period)
-    const { data: allCustomerOrders } = await (supabase as any)
+    const { data: allCustomerOrders } = await supabase
       .from("orders")
       .select("customer_name, created_at")
       .eq("venue_id", venueId)
@@ -282,7 +283,7 @@ export class BusinessMetricsService {
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
-    const { data: orders } = await (supabase as any)
+    const { data: orders } = await supabase
       .from("orders")
       .select("created_at, updated_at, status")
       .eq("venue_id", venueId)
@@ -343,7 +344,7 @@ export class BusinessMetricsService {
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
-    const { data: orderItems } = await (supabase as any)
+    const { data: orderItems } = await supabase
       .from("order_items")
       .select(
         `
@@ -392,12 +393,12 @@ export class BusinessMetricsService {
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
-    const { data: tables } = await (supabase as any)
+    const { data: tables } = await supabase
       .from("tables")
       .select("id, seat_count")
       .eq("venue_id", venueId);
 
-    const { data: orders } = await (supabase as any)
+    const { data: orders } = await supabase
       .from("orders")
       .select("table_id, created_at")
       .eq("venue_id", venueId)
@@ -434,13 +435,13 @@ export class BusinessMetricsService {
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
-    const { data: staff } = await (supabase as any)
+    const { data: staff } = await supabase
       .from("user_venue_roles")
       .select("user_id, role")
       .eq("venue_id", venueId)
       .neq("role", "owner");
 
-    const { data: orders } = await (supabase as any)
+    const { data: orders } = await supabase
       .from("orders")
       .select("created_at")
       .eq("venue_id", venueId)

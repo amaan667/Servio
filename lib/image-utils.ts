@@ -141,6 +141,19 @@ export function dataURLtoBlob(dataUrl: string): Blob {
   return new Blob([u8arr], { type: mime });
 }
 
+interface SupabaseStorage {
+  storage: {
+    from: (bucket: string) => {
+      upload: (
+        path: string,
+        blob: Blob,
+        options: { contentType: string; upsert: boolean }
+      ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      getPublicUrl: (path: string) => { data: { publicUrl: string } };
+    };
+  };
+}
+
 /**
  * Upload image to Supabase Storage
  * @param supabase - Supabase client
@@ -150,12 +163,12 @@ export function dataURLtoBlob(dataUrl: string): Blob {
  * @returns Promise<string> - Public URL of the uploaded image
  */
 export async function uploadImageToStorage(
-  supabase: unknown,
+  supabase: SupabaseStorage,
   bucket: string,
   path: string,
   imageBlob: Blob
 ): Promise<string> {
-  const { data, error } = await (supabase as any).storage.from(bucket).upload(path, imageBlob, {
+  const { data, error } = await supabase.storage.from(bucket).upload(path, imageBlob, {
     contentType: imageBlob.type,
     upsert: true,
   });
@@ -164,7 +177,7 @@ export async function uploadImageToStorage(
     throw new Error(`Failed to upload image: ${error.message}`);
   }
 
-  const { data: urlData } = (supabase as any).storage.from(bucket).getPublicUrl(path);
+  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
 
   return urlData.publicUrl;
 }

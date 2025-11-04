@@ -3,12 +3,21 @@
  * These should only be imported in server components and API routes
  */
 
+interface Cookie {
+  name: string;
+  value: string;
+}
+
+interface CookieStore {
+  getAll(): Cookie[];
+}
+
 /**
- * Check if the request has unknown Supabase auth cookies
+ * Check if the request has Supabase auth cookies
  * This helps prevent unnecessary auth calls on requests that obviously won't have a session
  */
-export function hasSbAuthCookie(cookies: unknown) {
-  return (cookies as any).getAll().some((c: unknown) => (c as any).name.includes("-auth-token"));
+export function hasSbAuthCookie(cookies: CookieStore) {
+  return cookies.getAll().some((c) => c.name.includes("-auth-token"));
 }
 
 /**
@@ -18,7 +27,7 @@ export function hasSbAuthCookie(cookies: unknown) {
 export async function hasServerAuthCookie() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  return cookieStore.getAll().some((c: unknown) => (c as any).name.includes("-auth-token"));
+  return cookieStore.getAll().some((c) => c.name.includes("-auth-token"));
 }
 
 /**

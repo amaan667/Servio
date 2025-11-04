@@ -1,8 +1,21 @@
 import { logger } from "@/lib/logger";
+
 /**
  * Google Maps API Loader
  * Loads Google Maps JavaScript API with Places library
  */
+
+// Extend window interface for Google Maps
+declare global {
+  interface Window {
+    google?: {
+      maps?: {
+        places?: unknown;
+      };
+    };
+    initGoogleMaps?: () => void;
+  }
+}
 
 let isLoading = false;
 let isLoaded = false;
@@ -10,7 +23,7 @@ let isLoaded = false;
 export function loadGoogleMapsAPI(): Promise<void> {
   return new Promise((resolve, reject) => {
     // Check if already loaded
-    if (isLoaded || (window as any).google?.maps?.places) {
+    if (isLoaded || window.google?.maps?.places) {
       isLoaded = true;
       resolve();
       return;
@@ -20,7 +33,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
     if (isLoading) {
       // Wait for the existing load to complete
       const checkInterval = setInterval(() => {
-        if (isLoaded || (window as any).google?.maps?.places) {
+        if (isLoaded || window.google?.maps?.places) {
           isLoaded = true;
           clearInterval(checkInterval);
           resolve();
@@ -43,7 +56,6 @@ export function loadGoogleMapsAPI(): Promise<void> {
       return;
     }
 
-
     isLoading = true;
 
     // Create script element
@@ -53,7 +65,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
     script.defer = true;
 
     // Define global callback
-    (window as any).initGoogleMaps = () => {
+    window.initGoogleMaps = () => {
       isLoaded = true;
       isLoading = false;
       resolve();

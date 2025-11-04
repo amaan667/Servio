@@ -19,11 +19,11 @@ export function createLazyComponent<P extends object>(
 
   const WrappedComponent = (props: P) => (
     <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <div>Loading...</div>}>
-      <LazyComponent {...(props as any)} />
+      <LazyComponent {...props} />
     </Suspense>
   );
 
-  return WrappedComponent as ComponentType<P>;
+  return WrappedComponent;
 }
 
 /**

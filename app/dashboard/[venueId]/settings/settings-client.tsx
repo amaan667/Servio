@@ -8,13 +8,19 @@ import VenueSettingsClient from "./VenueSettingsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { User } from "@supabase/supabase-js";
 
+interface Organization {
+  id: string;
+  subscription_tier?: string;
+  [key: string]: unknown;
+}
+
 interface SettingsPageClientProps {
   venueId: string;
   initialData?: {
     user: { id: string; email?: string; user_metadata?: Record<string, unknown> };
     venue: Record<string, unknown>;
     venues: Record<string, unknown>[];
-    organization: Record<string, unknown> | null;
+    organization: Organization | null;
     isOwner: boolean;
     isManager: boolean;
     userRole: string;
@@ -35,7 +41,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
       console.log("[SETTINGS CLIENT] 🎯 Using initialData from server:", {
         hasOrganization: !!initialData.organization,
         organizationId: initialData.organization?.id,
-        subscriptionTier: (initialData.organization as any)?.subscription_tier,
+        subscriptionTier: initialData.organization?.subscription_tier,
         fullOrganization: initialData.organization,
       });
       sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(initialData));
@@ -163,8 +169,8 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         console.log("[SETTINGS CLIENT] 📥 Fetched data from client-side:", {
           hasOrganization: !!organization,
-          organizationId: (organization as any)?.id,
-          subscriptionTier: (organization as any)?.subscription_tier,
+          organizationId: (organization as Organization)?.id,
+          subscriptionTier: (organization as Organization)?.subscription_tier,
           fullOrganization: organization,
         });
 
@@ -245,15 +251,15 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           <>
             {console.log("[SETTINGS CLIENT] 🚀 Passing data to VenueSettingsClient:", {
               hasOrganization: !!data.organization,
-              organizationId: (data.organization as any)?.id,
-              subscriptionTier: (data.organization as any)?.subscription_tier,
+              organizationId: (data.organization as Organization)?.id,
+              subscriptionTier: (data.organization as Organization)?.subscription_tier,
               organizationObject: data.organization,
             })}
             <VenueSettingsClient
-              user={data.user as any}
-              venue={data.venue as any}
-              venues={data.venues as any}
-              organization={data.organization as any}
+              user={data.user as User}
+              venue={data.venue as Record<string, unknown>}
+              venues={data.venues as Record<string, unknown>[]}
+              organization={data.organization as Organization | null}
               isOwner={data.isOwner}
             />
           </>

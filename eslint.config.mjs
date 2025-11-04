@@ -41,15 +41,15 @@ export default [
       "react/prop-types": "off", // Using TypeScript instead
       "react/no-unknown-property": "warn",
       
-      // Console - allow in development, remove in production build
-      "no-console": "off", // Disabled - using logger utility instead
+      // Console - warn (compiler removes in production)
+      "no-console": "warn", // Warn - Next.js removes in build
       
-      // TypeScript - Relaxed for production
-      "@typescript-eslint/no-unused-vars": "off", // Too noisy, build passes
-      "@typescript-eslint/no-explicit-any": "off", // Gradual typing - too strict
-      "@typescript-eslint/no-require-imports": "off", // Sometimes needed
-      "@typescript-eslint/no-empty-object-type": "off",
-      "@typescript-eslint/no-unsafe-function-type": "off",
+      // TypeScript - Strict warnings (fixing 290 any types in progress)
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "warn", // Warn while systematically fixing
+      "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "warn",
       
       // Hooks
       "react-hooks/exhaustive-deps": "off", // Too strict - causes false positives

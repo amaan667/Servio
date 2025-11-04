@@ -185,11 +185,12 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
           });
           return true;
         } else if (result.error) {
+          const err = result.error as { statusCode?: number; message?: string; name?: string };
           logger.error("❌ [EMAIL] Resend API returned error", {
             error: result.error,
-            statusCode: (result.error as any)?.statusCode,
-            message: (result.error as any)?.message,
-            name: (result.error as any)?.name,
+            statusCode: err.statusCode,
+            message: err.message,
+            name: err.name,
           });
         } else {
           logger.error("❌ [EMAIL] Resend returned no data and no error", { result });
@@ -211,10 +212,9 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     if (process.env.SENDGRID_API_KEY) {
       try {
         const sgMail = await import("@sendgrid/mail");
-        const sendgrid = sgMail as any;
-        sendgrid.default.setApiKey(process.env.SENDGRID_API_KEY);
+        sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
 
-        await sendgrid.default.send({
+        await sgMail.default.send({
           to: template.to,
           from: "noreply@servio.app",
           subject: template.subject,
@@ -236,7 +236,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
       try {
         const nodemailer = await import("nodemailer");
 
-        const transporter = (nodemailer as any).default.createTransporter({
+        const transporter = nodemailer.default.createTransporter({
           host: process.env.SMTP_HOST,
           port: parseInt(process.env.SMTP_PORT || "587"),
           secure: process.env.SMTP_PORT === "465",
@@ -270,7 +270,6 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
       process.env.EMAILJS_PUBLIC_KEY
     ) {
       try {
-
         // For now, we'll simulate success and log the details
         // In a real implementation, you'd use EmailJS API
         logger.debug("Email details", {

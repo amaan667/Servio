@@ -81,15 +81,27 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       const now = new Date();
       // Use the configurable lead time - reservations become active X minutes before start
 
+      interface TableSession {
+        table_id: string;
+        status: string;
+        opened_at: string | null;
+        order_id: string | null;
+        total_amount: number | null;
+        order_status: string | null;
+        order_updated_at: string | null;
+      }
+
       // Transform the data to match the expected TableGridItem interface
       return tableData.map((item: Record<string, unknown>) => {
         // Find active table session for this table
-        const activeSession = tableSessions.find((s: unknown) => (s as any).table_id === item.id);
+        const activeSession = tableSessions.find(
+          (s: unknown) => (s as TableSession).table_id === item.id
+        ) as TableSession | undefined;
 
         // Find reservations for this table
         const tableReservations = reservations.filter(
-          (r: unknown) => (r as any).table_id === item.id
-        );
+          (r: unknown) => (r as Reservation).table_id === item.id
+        ) as Reservation[];
 
         let reservationStatus = "NONE";
         let activeReservation: unknown = null;

@@ -44,7 +44,10 @@ export async function retrySupabaseQuery<T>(
 
       // Check if error is retryable (503, network errors, timeouts)
       const errorMessage = (result.error as Error)?.message || String(result.error);
-      const errorCode = (result.error as any)?.code;
+      const errorCode =
+        result.error && typeof result.error === "object" && "code" in result.error
+          ? (result.error as { code: string }).code
+          : undefined;
       const isRetryable =
         errorMessage.includes("503") ||
         errorMessage.includes("Service Unavailable") ||

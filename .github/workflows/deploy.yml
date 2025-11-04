@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy to Railway
 
 on:
   push:
@@ -7,22 +7,36 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to Railway
     runs-on: ubuntu-latest
-    environment: production
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Run tests
+        run: pnpm test
+        
+      - name: Build
+        run: pnpm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          
       - name: Deploy to Railway
-        run: railway up --service servio-production
+        run: |
+          echo "✅ Build successful - Railway will auto-deploy"
+          echo "Deploy via: railway up (if needed manually)"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      
-      - name: Notify deployment
-        if: success()
-        run: echo "Deployment successful to Railway"

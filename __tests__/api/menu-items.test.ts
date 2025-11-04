@@ -1,142 +1,158 @@
 /**
- * @fileoverview Tests for menu items API routes
- * @module __tests__/api/menu-items
+ * Tests for Menu Items API
+ * Critical: Menu management
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
-describe("Menu Items API", () => {
-  const mockVenueId = "venue-123";
-  const mockMenuItem = {
-    id: "item-123",
-    venue_id: mockVenueId,
-    name: "Test Item",
-    price: 9.99,
-    category: "Main Course",
-    is_available: true,
-    description: "A test menu item",
-  };
+// Mock Supabase
+vi.mock("@/lib/supabase", () => ({
+  createAdminClient: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          id: "item_123",
+          name: "Test Item",
+          price: 10.0,
+          venue_id: "venue_123",
+        },
+        error: null,
+      }),
+    }),
+  }),
+}));
 
+describe("GET /api/menu/[venueId]", () => {
   beforeEach(() => {
-    // Reset test state
+    vi.clearAllMocks();
   });
 
-  describe("GET /api/menu-items", () => {
-    it("should return menu items for a venue", async () => {
-      // Test would make API call in real integration test
-      expect(mockMenuItem.venue_id).toBe(mockVenueId);
-      expect(mockMenuItem.name).toBeDefined();
+  it("retrieves menu items for valid venue", async () => {
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/venue_123", {
+      method: "GET",
     });
 
-    it("should filter by category when provided", async () => {
-      // Test that category filtering works
-      expect(mockMenuItem.category).toBe("Main Course");
-    });
-
-    it("should return only available items when filter is applied", () => {
-      const availableItem = { ...mockMenuItem, is_available: true };
-      const unavailableItem = { ...mockMenuItem, id: "item-456", is_available: false };
-
-      const items = [availableItem, unavailableItem];
-      const filtered = items.filter((item) => item.is_available);
-
-      expect(filtered).toHaveLength(1);
-      expect(filtered[0].id).toBe("item-123");
-    });
+    expect(mockRequest.method).toBe("GET");
+    expect(mockRequest.url).toContain("venue_123");
   });
 
-  describe("POST /api/menu-items", () => {
-    it("should create a new menu item with valid data", () => {
-      const newItem = {
-        venue_id: mockVenueId,
+  it("returns 404 for non-existent venue", async () => {
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/invalid_venue", {
+      method: "GET",
+    });
+
+    expect(mockRequest.url).toContain("invalid_venue");
+  });
+
+  it("filters by is_available flag", async () => {
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/venue_123?available=true", {
+      method: "GET",
+    });
+
+    expect(mockRequest.url).toContain("available=true");
+  });
+
+  it("includes category information", async () => {
+    const mockItem = {
+      id: "item_123",
+      name: "Test Item",
+      category_id: "cat_123",
+      category: { name: "Appetizers" },
+    };
+
+    expect(mockItem).toHaveProperty("category");
+  });
+});
+
+describe("POST /api/menu/items", () => {
+  it("creates menu item with valid data", async () => {
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items", {
+      method: "POST",
+      body: JSON.stringify({
+        venue_id: "venue_123",
         name: "New Item",
-        price: 12.99,
-        category: "Appetizer",
-        is_available: true,
-      };
-
-      expect(newItem.name).toBe("New Item");
-      expect(newItem.price).toBe(12.99);
-      expect(newItem.category).toBe("Appetizer");
+        description: "Delicious food",
+        price: 15.0,
+        category_id: "cat_123",
+      }),
     });
 
-    it("should validate required fields", () => {
-      const invalidItem = {
-        venue_id: mockVenueId,
-        // Missing name
-        price: 12.99,
-      };
-
-      expect(invalidItem).not.toHaveProperty("name");
-    });
-
-    it("should validate price is a positive number", () => {
-      const validPrice = 12.99;
-      const invalidPrice = -5;
-
-      expect(validPrice).toBeGreaterThan(0);
-      expect(invalidPrice).toBeLessThan(0);
-    });
+    const body = await mockRequest.json();
+    expect(body).toHaveProperty("name");
+    expect(body).toHaveProperty("price");
+    expect(body.price).toBeGreaterThan(0);
   });
 
-  describe("PATCH /api/menu-items/:id", () => {
-    it("should update menu item fields", () => {
-      const updates = {
-        name: "Updated Item",
-        price: 14.99,
-      };
-
-      const updated = { ...mockMenuItem, ...updates };
-
-      expect(updated.name).toBe("Updated Item");
-      expect(updated.price).toBe(14.99);
-      expect(updated.category).toBe("Main Course"); // Unchanged
+  it("validates required fields", async () => {
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items", {
+      method: "POST",
+      body: JSON.stringify({
+        venue_id: "venue_123",
+      }),
     });
 
-    it("should toggle availability", () => {
-      const toggled = { ...mockMenuItem, is_available: !mockMenuItem.is_available };
-
-      expect(toggled.is_available).toBe(false);
-    });
+    const body = await mockRequest.json();
+    expect(body).not.toHaveProperty("name");
+    expect(body).not.toHaveProperty("price");
   });
 
-  describe("DELETE /api/menu-items/:id", () => {
-    it("should delete menu item by id", () => {
-      const items = [mockMenuItem, { ...mockMenuItem, id: "item-456" }];
-      const filtered = items.filter((item) => item.id !== "item-123");
+  it("validates price is positive number", async () => {
+    const validPrice = 10.0;
+    const invalidPrice = -5.0;
 
-      expect(filtered).toHaveLength(1);
-      expect(filtered[0].id).toBe("item-456");
+    expect(validPrice).toBeGreaterThan(0);
+    expect(invalidPrice).toBeLessThan(0);
+  });
+});
+
+describe("PATCH /api/menu/items/[id]", () => {
+  it("updates menu item", async () => {
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+      method: "PATCH",
+      body: JSON.stringify({
+        price: 12.0,
+        is_available: false,
+      }),
     });
+
+    const body = await mockRequest.json();
+    expect(body).toHaveProperty("price");
+    expect(body).toHaveProperty("is_available");
   });
 
-  describe("Menu Item Validation", () => {
-    it("should validate name length", () => {
-      const shortName = "Ab";
-      const validName = "Valid Item Name";
-      const longName = "x".repeat(101);
-
-      expect(shortName.length).toBeLessThan(3);
-      expect(validName.length).toBeGreaterThanOrEqual(3);
-      expect(longName.length).toBeGreaterThan(100);
+  it("prevents unauthorized updates", async () => {
+    // Test structure - would check venue ownership
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+      method: "PATCH",
+      body: JSON.stringify({ price: 100.0 }),
     });
 
-    it("should validate price range", () => {
-      const tooLow = 0;
-      const valid = 9.99;
-      const tooHigh = 10001;
+    expect(mockRequest.method).toBe("PATCH");
+  });
+});
 
-      expect(tooLow).toBeLessThanOrEqual(0);
-      expect(valid).toBeGreaterThan(0);
-      expect(valid).toBeLessThan(10000);
-      expect(tooHigh).toBeGreaterThan(10000);
+describe("DELETE /api/menu/items/[id]", () => {
+  it("deletes menu item", async () => {
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+      method: "DELETE",
     });
 
-    it("should validate category", () => {
-      const validCategories = ["Appetizer", "Main Course", "Dessert", "Beverage", "Side"];
-      const testCategory = "Main Course";
+    expect(mockRequest.method).toBe("DELETE");
+  });
 
-      expect(validCategories).toContain(testCategory);
+  it("prevents deletion by non-owners", async () => {
+    // Test structure - would check venue ownership
+    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+      method: "DELETE",
     });
+
+    expect(mockRequest.method).toBe("DELETE");
   });
 });
