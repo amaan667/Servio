@@ -69,29 +69,68 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
   );
   const [loadingPlan, setLoadingPlan] = useState(false);
 
+  // Debug logging
+  useEffect(() => {
+    console.log("[HOMEPAGE] Auth state:", {
+      isSignedIn,
+      userPlan,
+      initialUserPlan,
+      user: user ? "present" : "null",
+    });
+  }, [isSignedIn, userPlan, initialUserPlan, user]);
+
   // Sync with auth context when it updates (but only if different)
   useEffect(() => {
     const currentAuthState = !!user;
     if (currentAuthState !== isSignedIn) {
+      console.log("[HOMEPAGE] Auth state changed:", { from: isSignedIn, to: currentAuthState });
       setIsSignedIn(currentAuthState);
+
+      // If user logged out, reset plan
+      if (!currentAuthState) {
+        setUserPlan(null);
+      }
     }
   }, [user, isSignedIn]);
 
-  // Sync plan from server-side initial data
+  // Fetch user plan from client if not provided by server
   useEffect(() => {
-    // If we have initialUserPlan from server, use it
-    if (initialUserPlan !== null && userPlan !== initialUserPlan) {
-      setUserPlan(initialUserPlan);
-    }
-  }, [initialUserPlan]);
+    const fetchUserPlan = async () => {
+      // Only fetch if:
+      // 1. User is signed in
+      // 2. We don't already have a plan from server (initialUserPlan is null)
+      // 3. We haven't already fetched it (userPlan is null)
+      if (isSignedIn && user && !userPlan && initialUserPlan === null) {
+        console.log("[HOMEPAGE] Fetching user plan from client...");
+        try {
+          const supabase = supabaseBrowser();
+          const { data: venues } = await supabase
+            .from("venues")
+            .select("organization_id")
+            .eq("owner_user_id", user.id)
+            .limit(1);
 
-  // Sync auth state with client-side auth context
-  useEffect(() => {
-    const currentAuthState = !!user;
-    if (currentAuthState !== isSignedIn) {
-      setIsSignedIn(currentAuthState);
-    }
-  }, [user, isSignedIn]);
+          if (venues && venues.length > 0 && venues[0].organization_id) {
+            const { data: org } = await supabase
+              .from("organizations")
+              .select("subscription_tier")
+              .eq("id", venues[0].organization_id)
+              .maybeSingle();
+
+            if (org?.subscription_tier) {
+              const plan = org.subscription_tier.toLowerCase() as "basic" | "standard" | "premium";
+              console.log("[HOMEPAGE] Fetched plan from client:", plan);
+              setUserPlan(plan);
+            }
+          }
+        } catch (error) {
+          console.error("[HOMEPAGE] Error fetching user plan:", error);
+        }
+      }
+    };
+
+    fetchUserPlan();
+  }, [isSignedIn, user, userPlan, initialUserPlan]);
 
   // Clean up URL params on mount
   useEffect(() => {
@@ -254,7 +293,14 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       return "Loading...";
     }
 
-    if (!isSignedIn || !userPlan) {
+    // If not signed in, show default CTAs
+    if (!isSignedIn) {
+      return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
+    }
+
+    // User is signed in - check their plan
+    if (!userPlan) {
+      // Signed in but no plan yet (shouldn't happen, but handle gracefully)
       return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
     }
 
@@ -281,6 +327,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       if (planLower === "premium") return "Upgrade to Premium";
     }
 
+    // Fallback (shouldn't reach here)
     return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
   };
 

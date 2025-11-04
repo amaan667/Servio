@@ -19,7 +19,6 @@ export default async function HomePage() {
       isSignedIn = true;
       user = authUser;
 
-
       // Fetch user's venue and plan
       const { data: venues } = await supabase
         .from("venues")
@@ -32,14 +31,25 @@ export default async function HomePage() {
 
         // Get subscription tier from organization table
         if (firstVenue?.organization_id) {
-          const { data: org } = await supabase
+          const { data: org, error: orgError } = await supabase
             .from("organizations")
             .select("subscription_tier")
             .eq("id", firstVenue.organization_id)
             .maybeSingle();
 
+          logger.info("[HOME PAGE] Fetched organization", {
+            organizationId: firstVenue.organization_id,
+            subscriptionTier: org?.subscription_tier,
+            error: orgError,
+          });
+
           if (org?.subscription_tier) {
             userPlan = org.subscription_tier.toLowerCase() as "basic" | "standard" | "premium";
+            logger.info("[HOME PAGE] Set user plan", { userPlan });
+          } else {
+            logger.warn("[HOME PAGE] No subscription tier found for organization", {
+              organizationId: firstVenue.organization_id,
+            });
           }
         }
       }
