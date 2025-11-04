@@ -99,6 +99,15 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
             error: orgError,
           });
 
+          if (orgData) {
+            console.log("[SETTINGS CLIENT] 🎯 ACTUAL SUBSCRIPTION TIER FROM DB:", {
+              subscriptionTier: orgData.subscription_tier,
+              id: orgData.id,
+              stripeCustomerId: orgData.stripe_customer_id,
+              status: orgData.subscription_status,
+            });
+          }
+
           organization = orgData;
         } else {
           console.log("[SETTINGS CLIENT] ⚠️ No organization_id found in venues!");

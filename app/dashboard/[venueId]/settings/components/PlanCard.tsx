@@ -59,6 +59,11 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
     }
 
     console.log("[PLAN CARD] 🔄 Starting Stripe sync for organization:", organization.id);
+    console.log(
+      "[PLAN CARD] 🔍 Current tier from props BEFORE sync:",
+      organization.subscription_tier
+    );
+
     setSyncing(true);
     try {
       const response = await fetch("/api/subscription/sync-from-stripe", {
@@ -69,6 +74,14 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
 
       const data = await response.json();
       console.log("[PLAN CARD] 📥 Stripe sync response:", data);
+      console.log("[PLAN CARD] 🎯 Stripe sync details:", {
+        synced: data.synced,
+        updated: data.updated,
+        oldTier: data.oldTier,
+        newTier: data.newTier,
+        tier: data.tier,
+        message: data.message,
+      });
 
       if (data.synced && data.newTier) {
         console.log("[PLAN CARD] ✅ Synced new tier:", data.newTier);

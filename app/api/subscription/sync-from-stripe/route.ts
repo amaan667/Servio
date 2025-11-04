@@ -52,10 +52,17 @@ export async function POST(req: NextRequest) {
       limit: 1,
     });
 
+    logger.info("[SUBSCRIPTION SYNC] Stripe subscriptions fetched", {
+      organizationId,
+      stripeCustomerId: org.stripe_customer_id,
+      activeSubscriptionCount: subscriptions.data.length,
+    });
+
     if (subscriptions.data.length === 0) {
       logger.warn("[SUBSCRIPTION SYNC] No active Stripe subscription", {
         organizationId,
         stripeCustomerId: org.stripe_customer_id,
+        currentTierInDB: org.subscription_tier,
       });
       return NextResponse.json({
         synced: false,
@@ -67,6 +74,13 @@ export async function POST(req: NextRequest) {
     const subscription = subscriptions.data[0];
     const priceId = subscription.items.data[0]?.price.id;
 
+    logger.info("[SUBSCRIPTION SYNC] Active subscription found", {
+      organizationId,
+      subscriptionId: subscription.id,
+      priceId,
+      status: subscription.status,
+    });
+
     // Map Stripe price ID to tier
     const PRICE_TO_TIER: Record<string, string> = {
       [process.env.STRIPE_BASIC_PRICE_ID || ""]: "basic",
@@ -75,6 +89,18 @@ export async function POST(req: NextRequest) {
     };
 
     const tierFromStripe = PRICE_TO_TIER[priceId] || "basic";
+
+    logger.info("[SUBSCRIPTION SYNC] Price ID mapping", {
+      organizationId,
+      priceId,
+      tierFromStripe,
+      currentTierInDB: org.subscription_tier,
+      priceIdMatches: {
+        isBasic: priceId === process.env.STRIPE_BASIC_PRICE_ID,
+        isStandard: priceId === process.env.STRIPE_STANDARD_PRICE_ID,
+        isPremium: priceId === process.env.STRIPE_PREMIUM_PRICE_ID,
+      },
+    });
 
     // Update organization if tier changed
     if (tierFromStripe !== org.subscription_tier) {
@@ -126,4 +152,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-
