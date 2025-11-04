@@ -68,6 +68,12 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     initialUserPlan
   );
   const [loadingPlan, setLoadingPlan] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Set mounted state on client-side only
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Debug logging
   useEffect(() => {
@@ -76,8 +82,9 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       userPlan,
       initialUserPlan,
       user: user ? "present" : "null",
+      mounted,
     });
-  }, [isSignedIn, userPlan, initialUserPlan, user]);
+  }, [isSignedIn, userPlan, initialUserPlan, user, mounted]);
 
   // Sync with auth context when it updates (but only if different)
   useEffect(() => {
@@ -287,7 +294,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
   };
 
   // Get CTA text and variant based on user's current plan
-  const getPlanCTA = (planName: string) => {
+  const getPlanCTA = (planName: string): string => {
     // Show loading state while fetching plan
     if (isSignedIn && loadingPlan) {
       return "Loading...";
@@ -301,6 +308,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     // User is signed in - check their plan
     if (!userPlan) {
       // Signed in but no plan yet (shouldn't happen, but handle gracefully)
+      // Return default CTA for signed-in users without a plan
       return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
     }
 
@@ -327,7 +335,8 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       if (planLower === "premium") return "Upgrade to Premium";
     }
 
-    // Fallback (shouldn't reach here)
+    // Fallback (shouldn't reach here but ensures we always return a string)
+    console.warn("[HOMEPAGE] getPlanCTA fallback reached", { planName, userPlan, isSignedIn });
     return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
   };
 
@@ -442,53 +451,58 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
-              <Card
-                key={index}
-                className={`border-2 shadow-lg ${plan.popular ? "border-purple-500 relative" : ""}`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-purple-600 text-white px-4 py-1">Most Popular</Badge>
-                  </div>
-                )}
-                <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
-                    {plan.period && <span className="text-gray-800 ml-2">/{plan.period}</span>}
-                  </div>
-                  <CardDescription className="mt-4">{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-800">{feature}</span>
-                      </li>
-                    ))}
-                    {plan.notIncluded.map((feature, idx) => (
-                      <li key={idx} className="flex items-start opacity-50">
-                        <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-800">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    onClick={() => handlePlanAction(getPlanCTA(plan.name))}
-                    className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md active:scale-95"
-                    style={{ color: "white" }}
-                    size="lg"
-                    disabled={getPlanCTA(plan.name) === "Current Plan" || loadingPlan}
-                  >
-                    <span className="!text-white" style={{ color: "white" }}>
-                      {getPlanCTA(plan.name)}
-                    </span>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {pricingPlans.map((plan, index) => {
+              const ctaText = getPlanCTA(plan.name);
+              const isCurrentPlan = ctaText === "Current Plan";
+
+              return (
+                <Card
+                  key={index}
+                  className={`border-2 shadow-lg ${plan.popular ? "border-purple-500 relative" : ""}`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <Badge className="bg-purple-600 text-white px-4 py-1">Most Popular</Badge>
+                    </div>
+                  )}
+                  <CardHeader className="text-center pb-8">
+                    <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                    <div className="flex items-baseline justify-center">
+                      <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+                      {plan.period && <span className="text-gray-800 ml-2">/{plan.period}</span>}
+                    </div>
+                    <CardDescription className="mt-4">{plan.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <ul className="space-y-3">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-800">{feature}</span>
+                        </li>
+                      ))}
+                      {plan.notIncluded.map((feature, idx) => (
+                        <li key={idx} className="flex items-start opacity-50">
+                          <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-800">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      onClick={() => handlePlanAction(ctaText)}
+                      variant={null}
+                      className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md active:scale-95 text-white border-0"
+                      size="lg"
+                      disabled={isCurrentPlan || loadingPlan}
+                    >
+                      <span className="text-white font-semibold">
+                        {ctaText || "Start Free Trial"}
+                      </span>
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
