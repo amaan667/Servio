@@ -1,12 +1,14 @@
 /**
  * Force Sync Subscription from Stripe
  * Call this endpoint to manually sync when database and Stripe are out of sync
+ * Uses metadata and product name - NO hardcoded Price IDs needed
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
+import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 
 export async function POST(req: NextRequest) {
   try {
@@ -82,37 +84,20 @@ export async function POST(req: NextRequest) {
     }
 
     const subscription = subscriptions.data[0];
-    const priceId = subscription.items.data[0]?.price.id;
 
     logger.info("[FORCE SYNC] Stripe subscription details", {
       subscriptionId: subscription.id,
       status: subscription.status,
-      priceId: priceId,
     });
 
-    // Map price ID to tier
-    const PRICE_TO_TIER: Record<string, string> = {
-      [process.env.STRIPE_BASIC_PRICE_ID || ""]: "basic",
-      [process.env.STRIPE_STANDARD_PRICE_ID || ""]: "standard",
-      [process.env.STRIPE_PREMIUM_PRICE_ID || ""]: "premium",
-    };
+    // Extract tier from Stripe using metadata or product name - NO env vars needed
+    const tierFromStripe = await getTierFromStripeSubscription(subscription, stripe);
 
-    logger.info("[FORCE SYNC] Price ID matching", {
-      priceId,
-      matchesBasic: priceId === process.env.STRIPE_BASIC_PRICE_ID,
-      matchesStandard: priceId === process.env.STRIPE_STANDARD_PRICE_ID,
-      matchesPremium: priceId === process.env.STRIPE_PREMIUM_PRICE_ID,
-      basicPriceId: process.env.STRIPE_BASIC_PRICE_ID,
-      standardPriceId: process.env.STRIPE_STANDARD_PRICE_ID,
-      premiumPriceId: process.env.STRIPE_PREMIUM_PRICE_ID,
-    });
-
-    const tierFromStripe = PRICE_TO_TIER[priceId] || "basic";
-
-    logger.info("[FORCE SYNC] Tier mapping", {
+    logger.info("[FORCE SYNC] Tier extracted from Stripe", {
       tierFromStripe,
       currentTierInDB: org.subscription_tier,
       needsUpdate: tierFromStripe !== org.subscription_tier,
+      extractionMethod: "metadata or product name",
     });
 
     // Update database

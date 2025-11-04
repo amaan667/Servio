@@ -1,12 +1,14 @@
 /**
  * Sync Subscription Tier from Stripe
  * Ensures organization.subscription_tier matches Stripe subscription
+ * Uses metadata and product name - NO hardcoded Price IDs needed
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
+import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 
 export async function POST(req: NextRequest) {
   try {
@@ -72,34 +74,21 @@ export async function POST(req: NextRequest) {
     }
 
     const subscription = subscriptions.data[0];
-    const priceId = subscription.items.data[0]?.price.id;
 
     logger.info("[SUBSCRIPTION SYNC] Active subscription found", {
       organizationId,
       subscriptionId: subscription.id,
-      priceId,
       status: subscription.status,
     });
 
-    // Map Stripe price ID to tier
-    const PRICE_TO_TIER: Record<string, string> = {
-      [process.env.STRIPE_BASIC_PRICE_ID || ""]: "basic",
-      [process.env.STRIPE_STANDARD_PRICE_ID || ""]: "standard",
-      [process.env.STRIPE_PREMIUM_PRICE_ID || ""]: "premium",
-    };
+    // Extract tier from Stripe using metadata or product name - NO env vars needed
+    const tierFromStripe = await getTierFromStripeSubscription(subscription, stripe);
 
-    const tierFromStripe = PRICE_TO_TIER[priceId] || "basic";
-
-    logger.info("[SUBSCRIPTION SYNC] Price ID mapping", {
+    logger.info("[SUBSCRIPTION SYNC] Tier extracted from Stripe", {
       organizationId,
-      priceId,
       tierFromStripe,
       currentTierInDB: org.subscription_tier,
-      priceIdMatches: {
-        isBasic: priceId === process.env.STRIPE_BASIC_PRICE_ID,
-        isStandard: priceId === process.env.STRIPE_STANDARD_PRICE_ID,
-        isPremium: priceId === process.env.STRIPE_PREMIUM_PRICE_ID,
-      },
+      needsUpdate: tierFromStripe !== org.subscription_tier,
     });
 
     // Update organization if tier changed
@@ -124,7 +113,6 @@ export async function POST(req: NextRequest) {
         organizationId,
         oldTier: org.subscription_tier,
         newTier: tierFromStripe,
-        stripePriceId: priceId,
       });
 
       return NextResponse.json({
