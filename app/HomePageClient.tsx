@@ -466,36 +466,42 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     </div>
                   )}
                   <CardHeader className="text-center pb-8">
-                    <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                    <CardTitle className="text-2xl mb-2 text-gray-900 font-bold">
+                      {plan.name}
+                    </CardTitle>
                     <div className="flex items-baseline justify-center">
                       <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
-                      {plan.period && <span className="text-gray-800 ml-2">/{plan.period}</span>}
+                      {plan.period && (
+                        <span className="text-gray-900 ml-2 font-medium">/{plan.period}</span>
+                      )}
                     </div>
-                    <CardDescription className="mt-4">{plan.description}</CardDescription>
+                    <CardDescription className="mt-4 text-gray-800 font-medium">
+                      {plan.description}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <ul className="space-y-3">
                       {plan.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start">
                           <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                          <span className="text-gray-800">{feature}</span>
+                          <span className="text-gray-900 font-medium">{feature}</span>
                         </li>
                       ))}
                       {plan.notIncluded.map((feature, idx) => (
                         <li key={idx} className="flex items-start opacity-50">
                           <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                          <span className="text-gray-800">{feature}</span>
+                          <span className="text-gray-900 font-medium">{feature}</span>
                         </li>
                       ))}
                     </ul>
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
                       variant={null}
-                      className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md active:scale-95 text-white border-0"
+                      className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 border-0"
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
-                      <span className="text-white font-semibold">
+                      <span className="text-white font-bold text-base" style={{ color: "white" }}>
                         {ctaText || "Start Free Trial"}
                       </span>
                     </Button>
