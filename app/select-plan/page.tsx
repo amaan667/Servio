@@ -212,7 +212,11 @@ export default function SelectPlanPage() {
                     handleSelectPlan(plan.tier);
                   }}
                   disabled={(loading && selectedTier !== plan.tier) || currentTier === plan.tier}
-                  className={`w-full ${plan.popular ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+                  className={`w-full font-semibold ${
+                    plan.popular
+                      ? "bg-purple-600 hover:bg-purple-700 text-white"
+                      : "border-2 border-purple-600 text-purple-600 hover:bg-purple-50 bg-white"
+                  }`}
                   variant={plan.popular ? "default" : "outline"}
                   size="lg"
                 >
@@ -222,19 +226,11 @@ export default function SelectPlanPage() {
                       Processing...
                     </>
                   ) : (
-                    <span
-                      className="font-medium text-current"
-                      style={{
-                        color: "inherit",
-                        WebkitTextFillColor: "inherit",
-                      }}
-                    >
-                      {(() => {
-                        const ctaText = getPlanCTA(plan.tier);
-                        console.log("[SELECT-PLAN DEBUG] Button text for", plan.tier, ":", ctaText);
-                        return ctaText;
-                      })()}
-                    </span>
+                    (() => {
+                      const ctaText = getPlanCTA(plan.tier);
+                      console.log("[SELECT-PLAN DEBUG] Button text for", plan.tier, ":", ctaText);
+                      return ctaText;
+                    })()
                   )}
                 </Button>
               </CardContent>
