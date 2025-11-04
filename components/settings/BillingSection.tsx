@@ -40,27 +40,28 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const [loadingPortal, setLoadingPortal] = useState(false);
   const { toast } = useToast();
 
-  const tier = organization?.subscription_tier || "basic";
+  // NO HARDCODED DEFAULTS - let it be undefined if not provided
+  const tier = organization?.subscription_tier;
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 
-  // Mobile debugging - log button visibility
+  // Comprehensive logging
   useEffect(() => {
-    console.log("[BILLING DEBUG] Current tier:", tier);
-    console.log("[BILLING DEBUG] Is grandfathered:", isGrandfathered);
-    console.log(
-      "[BILLING DEBUG] Should show upgrade button:",
-      !isGrandfathered && tier !== "premium"
-    );
-    console.log(
-      "[BILLING DEBUG] Should show downgrade button:",
-      !isGrandfathered && tier === "standard"
-    );
-    console.log(
-      "[BILLING DEBUG] Window width:",
-      typeof window !== "undefined" ? window.innerWidth : "SSR"
-    );
-  }, [tier, isGrandfathered]);
+    console.log("[BILLING SECTION] 🔍 Component initialized with:", {
+      organizationReceived: !!organization,
+      organizationId: organization?.id,
+      subscriptionTier: organization?.subscription_tier,
+      tierVariable: tier,
+      hasStripeCustomer,
+      isGrandfathered,
+      venueId,
+    });
+    console.log("[BILLING SECTION] 📊 Button visibility logic:", {
+      shouldShowUpgrade: !isGrandfathered && tier !== "premium",
+      shouldShowDowngrade: !isGrandfathered && tier === "standard",
+      windowWidth: typeof window !== "undefined" ? window.innerWidth : "SSR",
+    });
+  }, [tier, isGrandfathered, organization, venueId]);
 
   const handleManageBilling = async () => {
     setLoadingPortal(true);
@@ -116,6 +117,8 @@ export default function BillingSection({ organization, venueId }: BillingSection
   };
 
   const getTierInfo = () => {
+    console.log("[BILLING SECTION] 🎨 Getting tier info for tier:", tier);
+
     if (isGrandfathered) {
       return {
         name: "Grandfathered",
@@ -128,6 +131,15 @@ export default function BillingSection({ organization, venueId }: BillingSection
     }
 
     switch (tier) {
+      case "basic":
+        return {
+          name: "Basic",
+          icon: CreditCard,
+          color: "text-gray-600",
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-200",
+          description: "Essential features for small businesses",
+        };
       case "standard":
         return {
           name: "Standard",
@@ -147,18 +159,44 @@ export default function BillingSection({ organization, venueId }: BillingSection
           description: "Enterprise plan with all features",
         };
       default:
-        return {
-          name: "Basic",
-          icon: CreditCard,
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-          borderColor: "border-gray-200",
-          description: "Essential features for small businesses",
-        };
+        console.log("[BILLING SECTION] ⚠️ Unknown tier - returning null:", tier);
+        // NO HARDCODED DEFAULT - return null for unknown/missing tiers
+        return null;
     }
   };
 
   const tierInfo = getTierInfo();
+  console.log("[BILLING SECTION] 🏷️ Tier info result:", tierInfo);
+
+  // Show error if no tier info (unknown or missing tier)
+  if (!tierInfo) {
+    console.log("[BILLING SECTION] ❌ No tier info - showing error state");
+    return (
+      <div className="space-y-6">
+        <Card className="border-2 border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-xl text-red-800">Unable to Load Plan Information</CardTitle>
+            <CardDescription className="text-red-600">
+              Could not determine your current subscription tier.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Tier received: <strong>{tier || "none"}</strong>
+                <br />
+                Organization ID: <strong>{organization?.id || "none"}</strong>
+                <br />
+                Please contact support or refresh the page.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const TierIcon = tierInfo.icon;
 
   return (

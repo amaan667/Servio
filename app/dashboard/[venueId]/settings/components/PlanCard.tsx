@@ -18,16 +18,32 @@ interface PlanCardProps {
 export function PlanCard({ organization, venueId }: PlanCardProps) {
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [currentTier, setCurrentTier] = useState(organization?.subscription_tier || "basic");
+  const [currentTier, setCurrentTier] = useState(organization?.subscription_tier);
   const { toast } = useToast();
+
+  console.log("[PLAN CARD] 🔍 Rendering with props:", {
+    organizationReceived: !!organization,
+    organizationId: organization?.id,
+    subscriptionTierFromProps: organization?.subscription_tier,
+    currentTierState: currentTier,
+    hasStripeCustomer: !!organization?.stripe_customer_id,
+    venueId,
+  });
 
   const hasStripeCustomer = !!organization?.stripe_customer_id;
 
-  // Get tier info from shared configuration
-  const tierKey = currentTier.toLowerCase();
-  const tierInfo = PRICING_TIERS[tierKey] || PRICING_TIERS.basic;
-  const planName = tierInfo.name;
-  const features = tierInfo.features;
+  // Get tier info from shared configuration - NO DEFAULTS
+  const tierKey = currentTier?.toLowerCase();
+  const tierInfo = tierKey ? PRICING_TIERS[tierKey] : null;
+  const planName = tierInfo?.name;
+  const features = tierInfo?.features;
+
+  console.log("[PLAN CARD] 📊 Tier info computed:", {
+    tierKey,
+    hasTierInfo: !!tierInfo,
+    planName,
+    featureCount: features?.length,
+  });
 
   // Sync plan from Stripe on mount
   useEffect(() => {
@@ -37,8 +53,12 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
   }, [organization?.id, hasStripeCustomer]);
 
   const syncPlanFromStripe = async () => {
-    if (!organization?.id) return;
+    if (!organization?.id) {
+      console.log("[PLAN CARD] ⚠️ Cannot sync - no organization ID");
+      return;
+    }
 
+    console.log("[PLAN CARD] 🔄 Starting Stripe sync for organization:", organization.id);
     setSyncing(true);
     try {
       const response = await fetch("/api/subscription/sync-from-stripe", {
@@ -48,13 +68,17 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
       });
 
       const data = await response.json();
+      console.log("[PLAN CARD] 📥 Stripe sync response:", data);
 
       if (data.synced && data.newTier) {
+        console.log("[PLAN CARD] ✅ Synced new tier:", data.newTier);
         setCurrentTier(data.newTier);
       } else if (data.tier) {
+        console.log("[PLAN CARD] ℹ️ Using existing tier:", data.tier);
         setCurrentTier(data.tier);
       }
     } catch (error) {
+      console.error("[PLAN CARD] ❌ Sync failed:", error);
       logger.error("[PLAN CARD] Sync failed", { error });
     } finally {
       setSyncing(false);
@@ -103,6 +127,75 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
       setLoadingPortal(false);
     }
   };
+
+  // Show error state if no organization data
+  if (!organization) {
+    console.log("[PLAN CARD] ⚠️ No organization data - showing error state");
+    return (
+      <Card className="shadow-lg rounded-xl border-gray-200">
+        <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <Crown className="h-5 w-5 text-amber-600" />
+            Current Plan
+          </CardTitle>
+          <CardDescription>Unable to load subscription information</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              Unable to load your subscription information. Please refresh the page or contact
+              support.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show loading state while syncing
+  if (syncing) {
+    console.log("[PLAN CARD] ⏳ Syncing from Stripe...");
+    return (
+      <Card className="shadow-lg rounded-xl border-gray-200">
+        <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <Crown className="h-5 w-5 text-amber-600" />
+            Current Plan
+          </CardTitle>
+          <CardDescription>Syncing subscription information...</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show error if tier info not found
+  if (!tierInfo || !planName || !features) {
+    console.log("[PLAN CARD] ⚠️ No tier info found for tier:", currentTier);
+    return (
+      <Card className="shadow-lg rounded-xl border-gray-200">
+        <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <Crown className="h-5 w-5 text-amber-600" />
+            Current Plan
+          </CardTitle>
+          <CardDescription>Subscription information</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-800">
+              Unable to determine your current plan. Tier received: {currentTier || "none"}
+            </p>
+            <p className="text-xs text-red-600 mt-2">Organization ID: {organization.id}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  console.log("[PLAN CARD] ✅ Rendering plan card for:", planName);
 
   return (
     <Card className="shadow-lg rounded-xl border-gray-200">
