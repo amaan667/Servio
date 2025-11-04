@@ -54,7 +54,9 @@ export async function getTierFromStripeSubscription(
 
     // 2. Check product metadata
     const product = typeof price.product === "string" ? null : price.product;
-    if (product?.metadata?.tier) {
+
+    // Type guard: Check if product is not deleted and has metadata
+    if (product && !product.deleted && "metadata" in product && product.metadata?.tier) {
       const tier = normalizeTier(product.metadata.tier);
       logger.info("[STRIPE TIER] Found tier in product metadata", {
         tier,
@@ -64,7 +66,7 @@ export async function getTierFromStripeSubscription(
     }
 
     // 3. Parse from product name
-    if (product?.name) {
+    if (product && !product.deleted && "name" in product && product.name) {
       const tier = parseTierFromName(product.name);
       logger.info("[STRIPE TIER] Parsed tier from product name", {
         tier,
@@ -76,7 +78,7 @@ export async function getTierFromStripeSubscription(
     // 4. Default
     logger.warn("[STRIPE TIER] Could not determine tier, defaulting to basic", {
       priceId: price.id,
-      productName: product?.name,
+      productName: product && "name" in product ? product.name : "unknown",
     });
     return "basic";
   } catch (error) {
