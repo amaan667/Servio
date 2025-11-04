@@ -32,9 +32,17 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   useEffect(() => {
     // If we have initial data, cache it (overwriting any stale cache)
     if (initialData && typeof window !== "undefined") {
+      console.log("[SETTINGS CLIENT] 🎯 Using initialData from server:", {
+        hasOrganization: !!initialData.organization,
+        organizationId: initialData.organization?.id,
+        subscriptionTier: (initialData.organization as any)?.subscription_tier,
+        fullOrganization: initialData.organization,
+      });
       sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(initialData));
       return;
     }
+
+    console.log("[SETTINGS CLIENT] ⚠️ No initialData - will fetch from client");
 
     // Otherwise, fetch data on client (and skip cache since we fixed the query)
     const fetchData = async () => {
@@ -126,6 +134,13 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           userRole: userRole?.role || (isOwner ? "owner" : "staff"),
         };
 
+        console.log("[SETTINGS CLIENT] 📥 Fetched data from client-side:", {
+          hasOrganization: !!organization,
+          organizationId: (organization as any)?.id,
+          subscriptionTier: (organization as any)?.subscription_tier,
+          fullOrganization: organization,
+        });
+
         setData(fetchedData);
         sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
       } catch (error) {
@@ -200,13 +215,21 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         </div>
 
         {canAccessSettings ? (
-          <VenueSettingsClient
-            user={data.user as any}
-            venue={data.venue as any}
-            venues={data.venues as any}
-            organization={data.organization as any}
-            isOwner={data.isOwner}
-          />
+          <>
+            {console.log("[SETTINGS CLIENT] 🚀 Passing data to VenueSettingsClient:", {
+              hasOrganization: !!data.organization,
+              organizationId: (data.organization as any)?.id,
+              subscriptionTier: (data.organization as any)?.subscription_tier,
+              organizationObject: data.organization,
+            })}
+            <VenueSettingsClient
+              user={data.user as any}
+              venue={data.venue as any}
+              venues={data.venues as any}
+              organization={data.organization as any}
+              isOwner={data.isOwner}
+            />
+          </>
         ) : (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
