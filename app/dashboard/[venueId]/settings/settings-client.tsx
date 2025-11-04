@@ -66,8 +66,46 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         const supabase = supabaseBrowser();
 
+        // Fetch venues first to get organization_id
+        const { data: venuesForOrg, error: venuesError } = await supabase
+          .from("venues")
+          .select("organization_id")
+          .eq("owner_user_id", user.id)
+          .limit(1);
+
+        console.log("[SETTINGS CLIENT] 🔍 Venues query for organization:", {
+          hasData: !!venuesForOrg,
+          dataLength: venuesForOrg?.length,
+          firstVenue: venuesForOrg?.[0],
+          error: venuesError,
+        });
+
+        // Fetch organization
+        let organization = null;
+        if (venuesForOrg && venuesForOrg.length > 0 && venuesForOrg[0]?.organization_id) {
+          console.log(
+            "[SETTINGS CLIENT] 🔍 Fetching organization:",
+            venuesForOrg[0].organization_id
+          );
+          const { data: orgData, error: orgError } = await supabase
+            .from("organizations")
+            .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
+            .eq("id", venuesForOrg[0].organization_id)
+            .single();
+
+          console.log("[SETTINGS CLIENT] 📥 Organization query result:", {
+            hasData: !!orgData,
+            data: orgData,
+            error: orgError,
+          });
+
+          organization = orgData;
+        } else {
+          console.log("[SETTINGS CLIENT] ⚠️ No organization_id found in venues!");
+        }
+
         // Fetch all required data
-        const [venueResult, userRoleResult, allVenuesResult, orgResult] = await Promise.all([
+        const [venueResult, userRoleResult, allVenuesResult] = await Promise.all([
           supabase
             .from("venues")
             .select("*")
@@ -85,31 +123,11 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
             .select("*")
             .eq("owner_user_id", user.id)
             .order("created_at", { ascending: true }),
-          // FIXED: Use same logic as server and home page - fetch by owner, not by specific venue
-          supabase
-            .from("venues")
-            .select("organization_id")
-            .eq("owner_user_id", user.id)
-            .limit(1)
-            .then(async (result) => {
-              const firstVenue = result.data?.[0];
-              if (firstVenue?.organization_id) {
-                return supabase
-                  .from("organizations")
-                  .select(
-                    "id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at"
-                  )
-                  .eq("id", firstVenue.organization_id)
-                  .single();
-              }
-              return { data: null };
-            }),
         ]);
 
         const venue = venueResult.data;
         const userRole = userRoleResult.data;
         const allVenues = allVenuesResult.data || [];
-        const organization = "error" in orgResult ? null : orgResult.data;
 
         const isOwner = !!venue;
         const isManager = userRole?.role === "manager";
