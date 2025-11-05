@@ -30,8 +30,8 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
   },
   standard: {
     name: "Standard",
-    price: "£199",
-    priceNumeric: 199,
+    price: "£249",
+    priceNumeric: 249,
     description: "Ideal for growing businesses",
     features: [
       "Everything in Basic",
@@ -46,8 +46,8 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
   },
   premium: {
     name: "Premium",
-    price: "£399",
-    priceNumeric: 399,
+    price: "£449",
+    priceNumeric: 449,
     description: "For established restaurants & chains",
     features: [
       "Everything in Standard",
@@ -94,5 +94,3 @@ export function isTierHigher(tierA: string, tierB: string): boolean {
 export function isTierLower(tierA: string, tierB: string): boolean {
   return getTierLevel(tierA) < getTierLevel(tierB);
 }
-
-
