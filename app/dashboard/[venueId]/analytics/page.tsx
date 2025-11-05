@@ -52,23 +52,33 @@ async function fetchOrderAnalytics(venueId: string) {
 
   const { data: orders } = await supabase
     .from("orders")
-    .select("id, created_at, total_amount, status, payment_status")
+    .select("id, created_at, total_amount, order_status, payment_status")
     .eq("venue_id", venueId)
     .gte("created_at", thirtyDaysAgo.toISOString())
     .order("created_at", { ascending: false });
 
-  const ordersByStatus = groupBy(orders || [], "status");
-  const pendingStatuses = ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"];
-  const completedStatuses = ["COMPLETED", "SERVED"];
-  
+  const ordersByStatus = groupBy(orders || [], "order_status");
+  const pendingStatuses = [
+    "PLACED",
+    "ACCEPTED",
+    "IN_PREP",
+    "READY",
+    "SERVING",
+    "placed",
+    "accepted",
+    "preparing",
+    "ready",
+  ];
+  const completedStatuses = ["COMPLETED", "SERVED", "completed", "served"];
+
   const pendingOrders = Object.entries(ordersByStatus)
     .filter(([status]) => pendingStatuses.includes(status))
     .reduce((sum, [, count]) => sum + count, 0);
-  
+
   const completedOrders = Object.entries(ordersByStatus)
     .filter(([status]) => completedStatuses.includes(status))
     .reduce((sum, [, count]) => sum + count, 0);
-    
+
   return {
     totalOrders: orders?.length || 0,
     pendingOrders,
@@ -179,14 +189,14 @@ function groupBy<T>(array: T[], key: keyof T): Record<string, number> {
 /**
  * Group by day for time series
  */
-function groupByDay(array: Array<Record<string, unknown>>, sumKey?: string): Record<string, number> {
-  return array.reduce<Record<string, number>>(
-    (acc, item) => {
-      const date = new Date(item.created_at as string).toISOString().split("T")[0];
-      const value = sumKey ? (item[sumKey] as number) || 0 : 1;
-      acc[date] = (acc[date] || 0) + value;
-      return acc;
-    },
-    {}
-  );
+function groupByDay(
+  array: Array<Record<string, unknown>>,
+  sumKey?: string
+): Record<string, number> {
+  return array.reduce<Record<string, number>>((acc, item) => {
+    const date = new Date(item.created_at as string).toISOString().split("T")[0];
+    const value = sumKey ? (item[sumKey] as number) || 0 : 1;
+    acc[date] = (acc[date] || 0) + value;
+    return acc;
+  }, {});
 }
