@@ -892,13 +892,50 @@ export interface AnalyticsSummary {
     orders: number;
     avgOrderValue: number;
   };
+  last30Days: {
+    revenue: number;
+    orders: number;
+    avgOrderValue: number;
+  };
+  thisWeek: {
+    revenue: number;
+    orders: number;
+    avgOrderValue: number;
+  };
+  thisMonth: {
+    revenue: number;
+    orders: number;
+    avgOrderValue: number;
+  };
   trending: {
     topItems: Array<{ name: string; count: number; revenue: number }>;
-    categoryPerformance: Record<string, number>;
+    categoryPerformance: Record<string, { revenue: number; orders: number; itemCount: number }>;
   };
   growth: {
     revenueGrowth: number; // Percentage change from previous period
     ordersGrowth: number;
+  };
+  timeAnalysis: {
+    byDayOfWeek: Array<{ day: string; revenue: number; orders: number; avgOrderValue: number }>;
+    byHour: Array<{ hour: number; revenue: number; orders: number }>;
+    peakHours: Array<{ hour: number; orderCount: number }>;
+    busiestDay: string;
+  };
+  paymentMethods: Record<string, { count: number; revenue: number }>;
+  orderPatterns: {
+    avgItemsPerOrder: number;
+    takeawayVsDineIn: { takeaway: number; dineIn: number };
+    avgPreparationTime?: number;
+  };
+  itemPerformance: {
+    neverOrdered: string[];
+    rarelyOrdered: Array<{ name: string; count: number }>;
+    topByRevenue: Array<{ name: string; revenue: number; count: number }>;
+  };
+  tableMetrics?: {
+    avgTurnoverTime: number;
+    totalSessions: number;
+    revenueByTable: Array<{ tableNumber: number; revenue: number; sessions: number }>;
   };
 }
 

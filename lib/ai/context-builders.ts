@@ -438,119 +438,402 @@ export async function getAnalyticsSummary(
     if (cached) return cached as AnalyticsSummary;
   }
 
-  // Get today's data
-  const todayStart = new Date();
+  const now = new Date();
+
+  // ========== TIME RANGES ==========
+  // Today
+  const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
 
-  const { data: todayOrders } = await supabase
+  // This week (Monday to today)
+  const thisWeekStart = new Date(now);
+  const dayOfWeek = now.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0 is Sunday
+  thisWeekStart.setDate(now.getDate() - daysFromMonday);
+  thisWeekStart.setHours(0, 0, 0, 0);
+
+  // This month (1st of month to today)
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+
+  // Last 7 days
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(now.getDate() - 7);
+
+  // Last 30 days
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+
+  // Previous 7 days (for growth comparison)
+  const fourteenDaysAgo = new Date(now);
+  fourteenDaysAgo.setDate(now.getDate() - 14);
+
+  // ========== FETCH ALL ORDERS (30 days) ==========
+  const { data: allOrders } = await supabase
     .from("orders")
-    .select("id, total_amount, currency, items")
+    .select("id, total_amount, created_at, items, payment_method, table_number, order_type")
     .eq("venue_id", venueId)
-    .gte("created_at", todayStart.toISOString())
+    .gte("created_at", thirtyDaysAgo.toISOString())
     .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
-  const todayRevenue = todayOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
-  const todayOrderCount = todayOrders?.length || 0;
-  const todayAvgOrderValue = todayOrderCount > 0 ? todayRevenue / todayOrderCount : 0;
-
-  // Get last 7 days data
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-  const { data: last7DaysOrders } = await supabase
-    .from("orders")
-    .select("id, total_amount, items")
-    .eq("venue_id", venueId)
-    .gte("created_at", sevenDaysAgo.toISOString())
-    .not("order_status", "in", '("CANCELLED","REFUNDED")');
-
-  const last7DaysRevenue = last7DaysOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
-  const last7DaysOrderCount = last7DaysOrders?.length || 0;
-  const last7DaysAvgOrderValue =
-    last7DaysOrderCount > 0 ? last7DaysRevenue / last7DaysOrderCount : 0;
-
-  // Get previous 7 days for growth comparison
-  const fourteenDaysAgo = new Date();
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-
-  const { data: previous7DaysOrders } = await supabase
-    .from("orders")
-    .select("id, total_amount")
-    .eq("venue_id", venueId)
-    .gte("created_at", fourteenDaysAgo.toISOString())
-    .lt("created_at", sevenDaysAgo.toISOString())
-    .not("order_status", "in", '("CANCELLED","REFUNDED")');
-
-  const previous7DaysRevenue =
-    previous7DaysOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
-  const previous7DaysOrderCount = previous7DaysOrders?.length || 0;
-
-  // Calculate growth percentages
-  const revenueGrowth =
-    previous7DaysRevenue > 0
-      ? ((last7DaysRevenue - previous7DaysRevenue) / previous7DaysRevenue) * 100
-      : 0;
-  const ordersGrowth =
-    previous7DaysOrderCount > 0
-      ? ((last7DaysOrderCount - previous7DaysOrderCount) / previous7DaysOrderCount) * 100
-      : 0;
-
-  // Count by item from orders.items JSONB array with revenue
-  const itemStats = new Map<string, { name: string; count: number; revenue: number }>();
-
-  interface OrderWithItems {
+  interface OrderWithDetails {
+    id: string;
+    total_amount: number;
+    created_at: string;
+    payment_method?: string;
+    table_number?: number;
+    order_type?: string;
     items: Array<{
       item_name?: string;
       quantity?: number;
       price?: number;
+      category?: string;
     }>;
   }
 
-  (last7DaysOrders as unknown as OrderWithItems[] | null)?.forEach((order) => {
-    if (!order.items || !Array.isArray(order.items)) return;
+  const orders = (allOrders || []) as unknown as OrderWithDetails[];
 
+  // ========== GET MENU ITEMS ==========
+  const { data: menuItems } = await supabase
+    .from("menu_items")
+    .select("id, name, category")
+    .eq("venue_id", venueId)
+    .eq("is_available", true);
+
+  // ========== FILTER ORDERS BY TIME PERIOD ==========
+  const todayOrders = orders.filter((o) => new Date(o.created_at) >= todayStart);
+  const thisWeekOrders = orders.filter((o) => new Date(o.created_at) >= thisWeekStart);
+  const thisMonthOrders = orders.filter((o) => new Date(o.created_at) >= thisMonthStart);
+  const last7DaysOrders = orders.filter((o) => new Date(o.created_at) >= sevenDaysAgo);
+  const last30DaysOrders = orders;
+  const previous7DaysOrders = orders.filter(
+    (o) => new Date(o.created_at) >= fourteenDaysAgo && new Date(o.created_at) < sevenDaysAgo
+  );
+
+  // ========== CALCULATE METRICS ==========
+  const calculatePeriodMetrics = (periodOrders: OrderWithDetails[]) => {
+    const revenue = periodOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+    const orderCount = periodOrders.length;
+    const avgOrderValue = orderCount > 0 ? revenue / orderCount : 0;
+    return { revenue, orders: orderCount, avgOrderValue };
+  };
+
+  const todayMetrics = calculatePeriodMetrics(todayOrders);
+  const thisWeekMetrics = calculatePeriodMetrics(thisWeekOrders);
+  const thisMonthMetrics = calculatePeriodMetrics(thisMonthOrders);
+  const last7DaysMetrics = calculatePeriodMetrics(last7DaysOrders);
+  const last30DaysMetrics = calculatePeriodMetrics(last30DaysOrders);
+  const previous7DaysMetrics = calculatePeriodMetrics(previous7DaysOrders);
+
+  // Growth calculations
+  const revenueGrowth =
+    previous7DaysMetrics.revenue > 0
+      ? ((last7DaysMetrics.revenue - previous7DaysMetrics.revenue) / previous7DaysMetrics.revenue) *
+        100
+      : 0;
+  const ordersGrowth =
+    previous7DaysMetrics.orders > 0
+      ? ((last7DaysMetrics.orders - previous7DaysMetrics.orders) / previous7DaysMetrics.orders) *
+        100
+      : 0;
+
+  // ========== ITEM PERFORMANCE ==========
+  const itemStats = new Map<
+    string,
+    { name: string; count: number; revenue: number; category?: string }
+  >();
+
+  last7DaysOrders.forEach((order) => {
+    if (!order.items || !Array.isArray(order.items)) return;
     order.items.forEach((item) => {
       const name = item.item_name || "Unknown";
       const quantity = item.quantity || 0;
       const price = item.price || 0;
       const revenue = quantity * price;
+      const category = item.category;
 
-      const existing = itemStats.get(name) || { name, count: 0, revenue: 0 };
+      const existing = itemStats.get(name) || { name, count: 0, revenue: 0, category };
       itemStats.set(name, {
         name,
         count: existing.count + quantity,
         revenue: existing.revenue + revenue,
+        category: category || existing.category,
       });
     });
   });
 
-  const topItems = Array.from(itemStats.values())
+  const topItemsByCount = Array.from(itemStats.values())
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+    .slice(0, 10);
 
+  const topItemsByRevenue = Array.from(itemStats.values())
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10)
+    .map((item) => ({
+      name: item.name,
+      revenue: Number(item.revenue.toFixed(2)),
+      count: item.count,
+    }));
+
+  // Never ordered items
+  const orderedItemNames = new Set(Array.from(itemStats.keys()));
+  const neverOrdered = (menuItems || [])
+    .filter((item) => !orderedItemNames.has(item.name))
+    .map((item) => item.name);
+
+  // Rarely ordered items (1-2 orders in last 7 days)
+  const rarelyOrdered = Array.from(itemStats.values())
+    .filter((item) => item.count <= 2)
+    .sort((a, b) => a.count - b.count)
+    .slice(0, 10)
+    .map((item) => ({ name: item.name, count: item.count }));
+
+  // ========== CATEGORY PERFORMANCE ==========
+  const categoryStats = new Map<
+    string,
+    { revenue: number; orders: Set<string>; itemCount: number }
+  >();
+
+  last7DaysOrders.forEach((order) => {
+    if (!order.items || !Array.isArray(order.items)) return;
+    order.items.forEach((item) => {
+      const category = item.category || "Uncategorized";
+      const quantity = item.quantity || 0;
+      const price = item.price || 0;
+      const revenue = quantity * price;
+
+      const existing = categoryStats.get(category) || {
+        revenue: 0,
+        orders: new Set<string>(),
+        itemCount: 0,
+      };
+      existing.revenue += revenue;
+      existing.orders.add(order.id);
+      categoryStats.set(category, existing);
+    });
+  });
+
+  // Count items per category from menu
+  const categoryItemCounts = new Map<string, number>();
+  (menuItems || []).forEach((item) => {
+    const category = item.category || "Uncategorized";
+    categoryItemCounts.set(category, (categoryItemCounts.get(category) || 0) + 1);
+  });
+
+  const categoryPerformance: Record<
+    string,
+    { revenue: number; orders: number; itemCount: number }
+  > = {};
+  categoryStats.forEach((stats, category) => {
+    categoryPerformance[category] = {
+      revenue: Number(stats.revenue.toFixed(2)),
+      orders: stats.orders.size,
+      itemCount: categoryItemCounts.get(category) || 0,
+    };
+  });
+
+  // ========== TIME ANALYSIS ==========
+  // By day of week
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayStats = new Map<number, { revenue: number; orders: number }>();
+
+  last30DaysOrders.forEach((order) => {
+    const day = new Date(order.created_at).getDay();
+    const existing = dayStats.get(day) || { revenue: 0, orders: 0 };
+    existing.revenue += order.total_amount || 0;
+    existing.orders += 1;
+    dayStats.set(day, existing);
+  });
+
+  const byDayOfWeek = Array.from({ length: 7 }, (_, i) => {
+    const stats = dayStats.get(i) || { revenue: 0, orders: 0 };
+    return {
+      day: dayNames[i],
+      revenue: Number(stats.revenue.toFixed(2)),
+      orders: stats.orders,
+      avgOrderValue: stats.orders > 0 ? Number((stats.revenue / stats.orders).toFixed(2)) : 0,
+    };
+  });
+
+  // Find busiest day
+  const busiestDayIndex = byDayOfWeek.reduce(
+    (maxIdx, day, idx, arr) => (day.orders > arr[maxIdx].orders ? idx : maxIdx),
+    0
+  );
+  const busiestDay = dayNames[busiestDayIndex];
+
+  // By hour
+  const hourStats = new Map<number, { revenue: number; orders: number }>();
+
+  last30DaysOrders.forEach((order) => {
+    const hour = new Date(order.created_at).getHours();
+    const existing = hourStats.get(hour) || { revenue: 0, orders: 0 };
+    existing.revenue += order.total_amount || 0;
+    existing.orders += 1;
+    hourStats.set(hour, existing);
+  });
+
+  const byHour = Array.from({ length: 24 }, (_, hour) => {
+    const stats = hourStats.get(hour) || { revenue: 0, orders: 0 };
+    return {
+      hour,
+      revenue: Number(stats.revenue.toFixed(2)),
+      orders: stats.orders,
+    };
+  });
+
+  // Peak hours (top 5)
+  const peakHours = Array.from(hourStats.entries())
+    .sort((a, b) => b[1].orders - a[1].orders)
+    .slice(0, 5)
+    .map(([hour, stats]) => ({ hour, orderCount: stats.orders }));
+
+  // ========== PAYMENT METHODS ==========
+  const paymentStats = new Map<string, { count: number; revenue: number }>();
+
+  last30DaysOrders.forEach((order) => {
+    const method = order.payment_method || "Unknown";
+    const existing = paymentStats.get(method) || { count: 0, revenue: 0 };
+    existing.count += 1;
+    existing.revenue += order.total_amount || 0;
+    paymentStats.set(method, existing);
+  });
+
+  const paymentMethods: Record<string, { count: number; revenue: number }> = {};
+  paymentStats.forEach((stats, method) => {
+    paymentMethods[method] = {
+      count: stats.count,
+      revenue: Number(stats.revenue.toFixed(2)),
+    };
+  });
+
+  // ========== ORDER PATTERNS ==========
+  let totalItemsInOrders = 0;
+  let takeawayCount = 0;
+  let dineInCount = 0;
+
+  last30DaysOrders.forEach((order) => {
+    if (order.items && Array.isArray(order.items)) {
+      totalItemsInOrders += order.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    }
+    if (order.order_type === "takeaway" || order.table_number === null) {
+      takeawayCount += 1;
+    } else {
+      dineInCount += 1;
+    }
+  });
+
+  const avgItemsPerOrder =
+    last30DaysOrders.length > 0 ? totalItemsInOrders / last30DaysOrders.length : 0;
+
+  // ========== TABLE METRICS (if applicable) ==========
+  const { data: tableSessions } = await supabase
+    .from("table_sessions")
+    .select("table_number, started_at, ended_at, total_amount")
+    .eq("venue_id", venueId)
+    .gte("started_at", thirtyDaysAgo.toISOString())
+    .not("session_status", "eq", "CANCELLED");
+
+  let tableMetrics;
+  if (tableSessions && tableSessions.length > 0) {
+    const tableStats = new Map<number, { revenue: number; sessions: number; totalTime: number }>();
+    let totalTurnoverTime = 0;
+    let sessionsWithEndTime = 0;
+
+    tableSessions.forEach((session: Record<string, unknown>) => {
+      const tableNumber = session.table_number as number;
+      const startedAt = session.started_at as string;
+      const endedAt = session.ended_at as string | null;
+      const totalAmount = (session.total_amount as number) || 0;
+
+      const existing = tableStats.get(tableNumber) || { revenue: 0, sessions: 0, totalTime: 0 };
+      existing.revenue += totalAmount;
+      existing.sessions += 1;
+
+      if (endedAt) {
+        const duration = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+        existing.totalTime += duration;
+        totalTurnoverTime += duration;
+        sessionsWithEndTime += 1;
+      }
+
+      tableStats.set(tableNumber, existing);
+    });
+
+    const avgTurnoverTime =
+      sessionsWithEndTime > 0 ? totalTurnoverTime / sessionsWithEndTime / 60000 : 0; // in minutes
+
+    const revenueByTable = Array.from(tableStats.entries())
+      .sort((a, b) => b[1].revenue - a[1].revenue)
+      .slice(0, 10)
+      .map(([tableNumber, stats]) => ({
+        tableNumber,
+        revenue: Number(stats.revenue.toFixed(2)),
+        sessions: stats.sessions,
+      }));
+
+    tableMetrics = {
+      avgTurnoverTime: Number(avgTurnoverTime.toFixed(2)),
+      totalSessions: tableSessions.length,
+      revenueByTable,
+    };
+  }
+
+  // ========== BUILD SUMMARY ==========
   const summary: AnalyticsSummary = {
     today: {
-      revenue: Number(todayRevenue.toFixed(2)),
-      orders: todayOrderCount,
-      avgOrderValue: Number(todayAvgOrderValue.toFixed(2)),
+      revenue: Number(todayMetrics.revenue.toFixed(2)),
+      orders: todayMetrics.orders,
+      avgOrderValue: Number(todayMetrics.avgOrderValue.toFixed(2)),
     },
     last7Days: {
-      revenue: Number(last7DaysRevenue.toFixed(2)),
-      orders: last7DaysOrderCount,
-      avgOrderValue: Number(last7DaysAvgOrderValue.toFixed(2)),
+      revenue: Number(last7DaysMetrics.revenue.toFixed(2)),
+      orders: last7DaysMetrics.orders,
+      avgOrderValue: Number(last7DaysMetrics.avgOrderValue.toFixed(2)),
+    },
+    last30Days: {
+      revenue: Number(last30DaysMetrics.revenue.toFixed(2)),
+      orders: last30DaysMetrics.orders,
+      avgOrderValue: Number(last30DaysMetrics.avgOrderValue.toFixed(2)),
+    },
+    thisWeek: {
+      revenue: Number(thisWeekMetrics.revenue.toFixed(2)),
+      orders: thisWeekMetrics.orders,
+      avgOrderValue: Number(thisWeekMetrics.avgOrderValue.toFixed(2)),
+    },
+    thisMonth: {
+      revenue: Number(thisMonthMetrics.revenue.toFixed(2)),
+      orders: thisMonthMetrics.orders,
+      avgOrderValue: Number(thisMonthMetrics.avgOrderValue.toFixed(2)),
     },
     trending: {
-      topItems: topItems.map((item) => ({
+      topItems: topItemsByCount.slice(0, 5).map((item) => ({
         name: item.name,
         count: item.count,
         revenue: Number(item.revenue.toFixed(2)),
       })),
-      categoryPerformance: {},
+      categoryPerformance,
     },
     growth: {
       revenueGrowth: Number(revenueGrowth.toFixed(2)),
       ordersGrowth: Number(ordersGrowth.toFixed(2)),
     },
+    timeAnalysis: {
+      byDayOfWeek,
+      byHour,
+      peakHours,
+      busiestDay,
+    },
+    paymentMethods,
+    orderPatterns: {
+      avgItemsPerOrder: Number(avgItemsPerOrder.toFixed(2)),
+      takeawayVsDineIn: { takeaway: takeawayCount, dineIn: dineInCount },
+    },
+    itemPerformance: {
+      neverOrdered: neverOrdered.slice(0, 20),
+      rarelyOrdered,
+      topByRevenue,
+    },
+    ...(tableMetrics && { tableMetrics }),
   };
 
   await cacheContext(venueId, "analytics_summary", summary as unknown as Record<string, unknown>);

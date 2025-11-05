@@ -274,45 +274,290 @@ function canAnswerDirectly(
   }
 ): { canAnswer: boolean; answer?: string } {
   const prompt = userPrompt.toLowerCase().trim();
+  const analytics = dataSummaries.analytics;
+  const menu = dataSummaries.menu;
 
-  // Category count questions
+  // ========== MENU QUESTIONS ==========
   if (prompt.includes("how many categories") || prompt.includes("number of categories")) {
-    if (dataSummaries.menu?.categories) {
-      const count = dataSummaries.menu.categories.length;
+    if (menu?.categories) {
+      const count = menu.categories.length;
       return {
         canAnswer: true,
-        answer: `You have ${count} menu categories: ${dataSummaries.menu.categories.map((c) => c.name).join(", ")}`,
+        answer: `You have ${count} menu categories: ${menu.categories.map((c) => c.name).join(", ")}`,
       };
     }
   }
 
-  // Total menu items count
-  if (
-    prompt.includes("how many menu items") ||
-    prompt.includes("total menu items") ||
-    prompt.includes("how many items")
-  ) {
-    if (dataSummaries.menu?.totalItems !== undefined) {
+  if (prompt.includes("how many menu items") || prompt.includes("total menu items")) {
+    if (menu?.totalItems !== undefined) {
       return {
         canAnswer: true,
-        answer: `You have ${dataSummaries.menu.totalItems} menu items total`,
+        answer: `You have ${menu.totalItems} menu items total`,
       };
     }
   }
 
-  // Categories list
-  if (
-    prompt.includes("what categories") ||
-    prompt.includes("list categories") ||
-    prompt.includes("categories")
-  ) {
-    if (dataSummaries.menu?.categories && dataSummaries.menu.categories.length > 0) {
-      const categoriesList = dataSummaries.menu.categories
+  if (prompt.includes("what categories") || prompt.includes("list categories")) {
+    if (menu?.categories && menu.categories.length > 0) {
+      const categoriesList = menu.categories
         .map((c) => `- ${c.name} (${c.itemCount} items)`)
         .join("\n");
       return {
         canAnswer: true,
         answer: `Your menu categories:\n${categoriesList}`,
+      };
+    }
+  }
+
+  if (prompt.includes("items with images") || prompt.includes("image coverage")) {
+    if (menu?.itemsWithImages !== undefined) {
+      const total = menu.totalItems;
+      const withImages = menu.itemsWithImages;
+      const percentage = total > 0 ? ((withImages / total) * 100).toFixed(1) : 0;
+      return {
+        canAnswer: true,
+        answer: `${withImages} out of ${total} items have images (${percentage}% coverage). ${menu.itemsWithoutImages} items are missing images.`,
+      };
+    }
+  }
+
+  if (prompt.includes("never ordered") || prompt.includes("items never sold")) {
+    if (analytics?.itemPerformance?.neverOrdered) {
+      const items = analytics.itemPerformance.neverOrdered;
+      if (items.length === 0) {
+        return {
+          canAnswer: true,
+          answer: "Great news! All your menu items have been ordered at least once.",
+        };
+      }
+      return {
+        canAnswer: true,
+        answer: `${items.length} items haven't been ordered in the last 7 days:\n${items
+          .slice(0, 10)
+          .map((item) => `- ${item}`)
+          .join("\n")}${items.length > 10 ? `\n...and ${items.length - 10} more` : ""}`,
+      };
+    }
+  }
+
+  // ========== REVENUE & PERFORMANCE QUESTIONS ==========
+  if (prompt.includes("revenue today") || prompt.includes("today's revenue")) {
+    if (analytics?.today) {
+      return {
+        canAnswer: true,
+        answer: `Today's revenue is £${analytics.today.revenue.toFixed(2)} from ${analytics.today.orders} orders (avg £${analytics.today.avgOrderValue.toFixed(2)} per order)`,
+      };
+    }
+  }
+
+  if (
+    prompt.includes("revenue this week") ||
+    (prompt.includes("week") && prompt.includes("revenue"))
+  ) {
+    if (analytics?.thisWeek) {
+      return {
+        canAnswer: true,
+        answer: `This week's revenue is £${analytics.thisWeek.revenue.toFixed(2)} from ${analytics.thisWeek.orders} orders (avg £${analytics.thisWeek.avgOrderValue.toFixed(2)} per order)`,
+      };
+    }
+  }
+
+  if (
+    prompt.includes("revenue this month") ||
+    (prompt.includes("month") && prompt.includes("revenue"))
+  ) {
+    if (analytics?.thisMonth) {
+      return {
+        canAnswer: true,
+        answer: `This month's revenue is £${analytics.thisMonth.revenue.toFixed(2)} from ${analytics.thisMonth.orders} orders (avg £${analytics.thisMonth.avgOrderValue.toFixed(2)} per order)`,
+      };
+    }
+  }
+
+  if (prompt.includes("last 7 days") || prompt.includes("last week")) {
+    if (analytics?.last7Days) {
+      return {
+        canAnswer: true,
+        answer: `Last 7 days: £${analytics.last7Days.revenue.toFixed(2)} revenue from ${analytics.last7Days.orders} orders (avg £${analytics.last7Days.avgOrderValue.toFixed(2)} per order)`,
+      };
+    }
+  }
+
+  if (prompt.includes("last 30 days") || prompt.includes("last month")) {
+    if (analytics?.last30Days) {
+      return {
+        canAnswer: true,
+        answer: `Last 30 days: £${analytics.last30Days.revenue.toFixed(2)} revenue from ${analytics.last30Days.orders} orders (avg £${analytics.last30Days.avgOrderValue.toFixed(2)} per order)`,
+      };
+    }
+  }
+
+  // ========== GROWTH & COMPARISON QUESTIONS ==========
+  if (prompt.includes("growth") || prompt.includes("compared to last week")) {
+    if (analytics?.growth) {
+      const revenueDir = analytics.growth.revenueGrowth > 0 ? "up" : "down";
+      const ordersDir = analytics.growth.ordersGrowth > 0 ? "up" : "down";
+      return {
+        canAnswer: true,
+        answer: `Revenue is ${revenueDir} ${Math.abs(analytics.growth.revenueGrowth).toFixed(1)}% and orders are ${ordersDir} ${Math.abs(analytics.growth.ordersGrowth).toFixed(1)}% compared to the previous week.`,
+      };
+    }
+  }
+
+  // ========== TOP SELLING ITEMS ==========
+  if (
+    prompt.includes("top selling") ||
+    prompt.includes("best selling") ||
+    prompt.includes("most popular") ||
+    prompt.includes("top items")
+  ) {
+    if (analytics?.trending?.topItems && analytics.trending.topItems.length > 0) {
+      const items = analytics.trending.topItems
+        .map(
+          (item, i) =>
+            `${i + 1}. ${item.name} - ${item.count} sold, £${item.revenue.toFixed(2)} revenue`
+        )
+        .join("\n");
+      return {
+        canAnswer: true,
+        answer: `Top selling items (last 7 days):\n${items}`,
+      };
+    }
+  }
+
+  if (prompt.includes("top by revenue") || prompt.includes("highest revenue items")) {
+    if (
+      analytics?.itemPerformance?.topByRevenue &&
+      analytics.itemPerformance.topByRevenue.length > 0
+    ) {
+      const items = analytics.itemPerformance.topByRevenue
+        .slice(0, 5)
+        .map(
+          (item, i) => `${i + 1}. ${item.name} - £${item.revenue.toFixed(2)} (${item.count} sold)`
+        )
+        .join("\n");
+      return {
+        canAnswer: true,
+        answer: `Top items by revenue:\n${items}`,
+      };
+    }
+  }
+
+  // ========== TIME-BASED ANALYTICS ==========
+  if (prompt.includes("busiest day") || prompt.includes("best day")) {
+    if (analytics?.timeAnalysis?.busiestDay) {
+      const day = analytics.timeAnalysis.byDayOfWeek.find(
+        (d) => d.day === analytics.timeAnalysis.busiestDay
+      );
+      return {
+        canAnswer: true,
+        answer: `${analytics.timeAnalysis.busiestDay} is your busiest day with ${day?.orders || 0} orders and £${day?.revenue.toFixed(2) || 0} revenue on average.`,
+      };
+    }
+  }
+
+  if (prompt.includes("peak hours") || prompt.includes("busiest hours")) {
+    if (analytics?.timeAnalysis?.peakHours && analytics.timeAnalysis.peakHours.length > 0) {
+      const hours = analytics.timeAnalysis.peakHours
+        .map((h) => `${h.hour}:00 (${h.orderCount} orders)`)
+        .join(", ");
+      return {
+        canAnswer: true,
+        answer: `Peak hours: ${hours}`,
+      };
+    }
+  }
+
+  if (prompt.includes("day of week") || prompt.includes("by day")) {
+    if (analytics?.timeAnalysis?.byDayOfWeek) {
+      const days = analytics.timeAnalysis.byDayOfWeek
+        .map((d) => `${d.day}: ${d.orders} orders, £${d.revenue.toFixed(2)}`)
+        .join("\n");
+      return {
+        canAnswer: true,
+        answer: `Performance by day:\n${days}`,
+      };
+    }
+  }
+
+  // ========== CATEGORY PERFORMANCE ==========
+  if (prompt.includes("category performance") || prompt.includes("categories revenue")) {
+    if (analytics?.trending?.categoryPerformance) {
+      const categories = Object.entries(analytics.trending.categoryPerformance)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .map(
+          ([name, stats]) =>
+            `- ${name}: £${stats.revenue.toFixed(2)} from ${stats.orders} orders (${stats.itemCount} items)`
+        )
+        .join("\n");
+      return {
+        canAnswer: true,
+        answer: `Category performance (last 7 days):\n${categories}`,
+      };
+    }
+  }
+
+  // ========== PAYMENT METHODS ==========
+  if (prompt.includes("payment methods") || prompt.includes("payment breakdown")) {
+    if (analytics?.paymentMethods) {
+      const methods = Object.entries(analytics.paymentMethods)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .map(
+          ([method, stats]) => `- ${method}: ${stats.count} orders, £${stats.revenue.toFixed(2)}`
+        )
+        .join("\n");
+      return {
+        canAnswer: true,
+        answer: `Payment methods:\n${methods}`,
+      };
+    }
+  }
+
+  // ========== ORDER PATTERNS ==========
+  if (prompt.includes("average items per order") || prompt.includes("items per order")) {
+    if (analytics?.orderPatterns?.avgItemsPerOrder) {
+      return {
+        canAnswer: true,
+        answer: `Average items per order: ${analytics.orderPatterns.avgItemsPerOrder.toFixed(1)} items`,
+      };
+    }
+  }
+
+  if (prompt.includes("takeaway") || prompt.includes("dine in") || prompt.includes("delivery")) {
+    if (analytics?.orderPatterns?.takeawayVsDineIn) {
+      const { takeaway, dineIn } = analytics.orderPatterns.takeawayVsDineIn;
+      const total = takeaway + dineIn;
+      const takeawayPct = total > 0 ? ((takeaway / total) * 100).toFixed(1) : 0;
+      const dineInPct = total > 0 ? ((dineIn / total) * 100).toFixed(1) : 0;
+      return {
+        canAnswer: true,
+        answer: `Order types: ${takeaway} takeaway (${takeawayPct}%), ${dineIn} dine-in (${dineInPct}%)`,
+      };
+    }
+  }
+
+  // ========== TABLE METRICS ==========
+  if (prompt.includes("table turnover") || prompt.includes("average table time")) {
+    if (analytics?.tableMetrics?.avgTurnoverTime) {
+      return {
+        canAnswer: true,
+        answer: `Average table turnover time: ${analytics.tableMetrics.avgTurnoverTime.toFixed(0)} minutes`,
+      };
+    }
+  }
+
+  if (prompt.includes("top tables") || prompt.includes("best tables")) {
+    if (
+      analytics?.tableMetrics?.revenueByTable &&
+      analytics.tableMetrics.revenueByTable.length > 0
+    ) {
+      const tables = analytics.tableMetrics.revenueByTable
+        .slice(0, 5)
+        .map((t) => `Table ${t.tableNumber}: £${t.revenue.toFixed(2)} from ${t.sessions} sessions`)
+        .join("\n");
+      return {
+        canAnswer: true,
+        answer: `Top performing tables:\n${tables}`,
       };
     }
   }
