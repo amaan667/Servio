@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 import { AIAssistantFloat } from "./ai-assistant-float";
-import { ProductionChatInterface } from "./production-chat-interface";
+import { SimpleChatInterface } from "./simple-chat-interface";
 import { aiLogger } from "@/lib/logger";
 
 interface Tool {
@@ -354,7 +354,7 @@ export function AssistantCommandPalette({
 
       {/* Chat Interface */}
       {showChatHistory && (
-        <ProductionChatInterface
+        <SimpleChatInterface
           venueId={venueId}
           isOpen={showChatInterface}
           onClose={() => setShowChatInterface(false)}
