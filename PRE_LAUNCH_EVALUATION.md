@@ -298,10 +298,11 @@
 - [x] Performance optimized
 
 ### **Business** ✅
-- [x] Pricing tiers defined
-- [x] Trial period set (14 days)
-- [x] Payment processing tested
-- [x] Legal pages (terms, privacy)
+- [x] Pricing tiers defined (£99, £249, £449/mo)
+- [x] Trial period set (14 days, no credit card)
+- [x] 6-month price lock offer
+- [x] Payment processing tested (Stripe)
+- [x] Legal pages (terms, privacy, refund)
 - [x] Customer support email set up
 
 ### **User Experience** ✅
@@ -381,10 +382,21 @@
 ### **Your Positioning:**
 > "The modern, AI-powered restaurant management platform that's actually beautiful to use."
 
-**Pricing Advantage:**
-- **Basic (£29/mo):** vs Toast ($69/mo)
-- **Standard (£79/mo):** vs Lightspeed ($109/mo)
-- **Premium (£149/mo):** vs Toast ($165/mo)
+**Pricing Strategy:**
+- **Basic (£99/mo):** All-in-one solution vs competitors' £150-200/mo
+- **Standard (£249/mo):** Enterprise features at competitive rates
+- **Premium (£449/mo):** Full-service platform for multi-venue operations
+
+**Launch Offer:**
+- ✅ **14-day free trial** - No credit card required
+- ✅ **6-month price lock** - Lock in current pricing before increases
+- ✅ **Premium support** - Setup assistance included
+
+**vs Competitors:**
+- Toast: $69-165/mo + hardware costs
+- Lightspeed: $109-399/mo + transaction fees
+- Square: Free + 2.9% per transaction
+- TouchBistro: $69-399/mo + iPad costs
 
 ---
 
