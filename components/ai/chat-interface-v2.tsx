@@ -91,7 +91,10 @@ export function ChatInterfaceV2({ venueId, isOpen, onClose, currentPage }: ChatI
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Important: send cookies for auth
         body: JSON.stringify({
           messages: [
             ...messages.map((m) => ({
