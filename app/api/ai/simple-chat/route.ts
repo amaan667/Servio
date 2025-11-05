@@ -9,8 +9,13 @@ import { logger } from "@/lib/logger";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  let requestBody: { message?: string; venueId?: string; currentPage?: string } = {};
+
   try {
+    logger.info("[AI SIMPLE CHAT] 1. Request received");
+
     const supabase = await createServerSupabase();
+    logger.info("[AI SIMPLE CHAT] 2. Supabase client created");
 
     // Check auth - get user instead of session for better reliability
     const {
@@ -18,27 +23,46 @@ export async function POST(request: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser();
 
+    logger.info("[AI SIMPLE CHAT] 3. Auth check complete:", {
+      hasUser: !!user,
+      userId: user?.id,
+      authError: authError?.message,
+    });
+
     if (!user || authError) {
-      logger.error("[AI SIMPLE CHAT] Auth failed:", {
-        hasUser: !!user,
-        authError: authError?.message,
-        headers: Object.fromEntries(request.headers.entries()),
-      });
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      logger.error("[AI SIMPLE CHAT] ❌ Auth failed - returning 401");
+      return NextResponse.json({ error: "Unauthorized - Please sign in again" }, { status: 401 });
     }
 
-    const { message, venueId, currentPage } = await request.json();
+    requestBody = await request.json();
+    const { message, venueId, currentPage } = requestBody;
+
+    logger.info("[AI SIMPLE CHAT] 4. Request parsed:", {
+      hasMessage: !!message,
+      venueId,
+      currentPage,
+    });
 
     if (!message || !venueId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    logger.info("[AI SIMPLE CHAT] 5. Getting context and summaries");
+
     // Get context and data summaries
     const context = await getAssistantContext(venueId, user.id);
+    logger.info("[AI SIMPLE CHAT] 6. Context retrieved");
+
     const summaries = await getAllSummaries(venueId, context.features);
+    logger.info("[AI SIMPLE CHAT] 7. Summaries retrieved");
 
     // Plan the action
+    logger.info("[AI SIMPLE CHAT] 8. Planning action for:", message);
     const plan = await planAssistantAction(message, context, summaries);
+    logger.info("[AI SIMPLE CHAT] 9. Plan created:", {
+      hasDirectAnswer: !!plan.directAnswer,
+      toolCount: plan.tools?.length || 0,
+    });
 
     let response = "";
     let navigationInfo = null;
