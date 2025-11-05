@@ -846,6 +846,8 @@ export interface MenuSummary {
   }>;
   avgPrice: number;
   priceRange: { min: number; max: number };
+  itemsWithImages: number;
+  itemsWithoutImages: number;
 }
 
 export interface InventorySummary {
@@ -885,9 +887,18 @@ export interface AnalyticsSummary {
     orders: number;
     avgOrderValue: number;
   };
+  last7Days: {
+    revenue: number;
+    orders: number;
+    avgOrderValue: number;
+  };
   trending: {
-    topItems: string[];
+    topItems: Array<{ name: string; count: number; revenue: number }>;
     categoryPerformance: Record<string, number>;
+  };
+  growth: {
+    revenueGrowth: number; // Percentage change from previous period
+    ordersGrowth: number;
   };
 }
 

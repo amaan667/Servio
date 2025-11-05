@@ -87,10 +87,10 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     if (cached) return cached as MenuSummary;
   }
 
-  // Get total items and categories
+  // Get total items and categories with image data
   const { data: items } = await supabase
     .from("menu_items")
-    .select("id, name, price, category")
+    .select("id, name, price, category, image_url, is_available")
     .eq("venue_id", venueId)
     .eq("is_available", true);
 
@@ -102,51 +102,63 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
       allItems: [], // Added: required by MenuSummary interface
       avgPrice: 0,
       priceRange: { min: 0, max: 0 },
+      itemsWithImages: 0,
+      itemsWithoutImages: 0,
     };
   }
 
-  // Get sales data for last 7 days
+  // Count items with/without images
+  const itemsWithImages = items.filter((item: Record<string, unknown>) => {
+    const imageUrl = item.image_url as string | null | undefined;
+    return imageUrl && imageUrl.trim() !== "";
+  }).length;
+  const itemsWithoutImages = items.length - itemsWithImages;
+
+  // Get sales data for last 7 days from orders.items JSONB
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const { data: orderItems } = await supabase
-    .from("order_items")
-    .select(
-      `
-      menu_item_id,
-      quantity,
-      price,
-      orders!inner(created_at, venue_id)
-    `
-    )
-    .eq("orders.venue_id", venueId)
-    .gte("orders.created_at", sevenDaysAgo.toISOString());
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("items")
+    .eq("venue_id", venueId)
+    .gte("created_at", sevenDaysAgo.toISOString())
+    .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
-  // Calculate sales per item
+  // Calculate sales per item from JSONB array
   const salesMap = new Map<
     string,
     { sales: number; revenue: number; name: string; price: number }
   >();
 
-  interface OrderItem {
-    menu_item_id: string;
-    quantity: number;
-    price: number;
+  interface OrderWithItems {
+    items: Array<{
+      menu_item_id: string;
+      item_name: string;
+      quantity: number;
+      price: number;
+    }>;
   }
 
-  orderItems?.forEach((oi: unknown) => {
-    const orderItem = oi as OrderItem;
-    const existing = salesMap.get(orderItem.menu_item_id) || {
-      sales: 0,
-      revenue: 0,
-      name: "",
-      price: 0,
-    };
-    salesMap.set(orderItem.menu_item_id, {
-      sales: existing.sales + orderItem.quantity,
-      revenue: existing.revenue + orderItem.price * orderItem.quantity,
-      name: items.find((i) => i.id === orderItem.menu_item_id)?.name || "",
-      price: items.find((i) => i.id === orderItem.menu_item_id)?.price || 0,
+  (orders as unknown as OrderWithItems[] | null)?.forEach((order) => {
+    if (!order.items || !Array.isArray(order.items)) return;
+
+    order.items.forEach((item) => {
+      const menuItem = items.find((i) => i.id === item.menu_item_id);
+      if (!menuItem) return;
+
+      const existing = salesMap.get(item.menu_item_id) || {
+        sales: 0,
+        revenue: 0,
+        name: menuItem.name as string,
+        price: menuItem.price as number,
+      };
+      salesMap.set(item.menu_item_id, {
+        sales: existing.sales + item.quantity,
+        revenue: existing.revenue + item.quantity * item.price,
+        name: menuItem.name as string,
+        price: menuItem.price as number,
+      });
     });
   });
 
@@ -206,6 +218,8 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     allItems, // Added: full list of all menu items for AI to reference
     avgPrice: Number(avgPrice.toFixed(2)),
     priceRange: { min: minPrice, max: maxPrice },
+    itemsWithImages,
+    itemsWithoutImages,
   };
 
   // Cache for 1 minute
@@ -430,62 +444,112 @@ export async function getAnalyticsSummary(
 
   const { data: todayOrders } = await supabase
     .from("orders")
-    .select("id, total_amount, currency")
+    .select("id, total_amount, currency, items")
     .eq("venue_id", venueId)
     .gte("created_at", todayStart.toISOString())
     .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
   const todayRevenue = todayOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
   const todayOrderCount = todayOrders?.length || 0;
-  const avgOrderValue = todayOrderCount > 0 ? todayRevenue / todayOrderCount : 0;
+  const todayAvgOrderValue = todayOrderCount > 0 ? todayRevenue / todayOrderCount : 0;
 
-  // Get trending items (last 7 days) - query through orders first
+  // Get last 7 days data
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const { data: recentOrders } = await supabase
+  const { data: last7DaysOrders } = await supabase
     .from("orders")
-    .select("items")
+    .select("id, total_amount, items")
     .eq("venue_id", venueId)
     .gte("created_at", sevenDaysAgo.toISOString())
     .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
-  // Count by item from orders.items JSONB array
-  const itemCounts = new Map<string, { name: string; count: number }>();
-  const categoryPerformance: Record<string, number> = {};
+  const last7DaysRevenue = last7DaysOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
+  const last7DaysOrderCount = last7DaysOrders?.length || 0;
+  const last7DaysAvgOrderValue =
+    last7DaysOrderCount > 0 ? last7DaysRevenue / last7DaysOrderCount : 0;
 
-  recentOrders?.forEach((order: Record<string, unknown>) => {
-    const items = order.items as Array<{
+  // Get previous 7 days for growth comparison
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+  const { data: previous7DaysOrders } = await supabase
+    .from("orders")
+    .select("id, total_amount")
+    .eq("venue_id", venueId)
+    .gte("created_at", fourteenDaysAgo.toISOString())
+    .lt("created_at", sevenDaysAgo.toISOString())
+    .not("order_status", "in", '("CANCELLED","REFUNDED")');
+
+  const previous7DaysRevenue =
+    previous7DaysOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
+  const previous7DaysOrderCount = previous7DaysOrders?.length || 0;
+
+  // Calculate growth percentages
+  const revenueGrowth =
+    previous7DaysRevenue > 0
+      ? ((last7DaysRevenue - previous7DaysRevenue) / previous7DaysRevenue) * 100
+      : 0;
+  const ordersGrowth =
+    previous7DaysOrderCount > 0
+      ? ((last7DaysOrderCount - previous7DaysOrderCount) / previous7DaysOrderCount) * 100
+      : 0;
+
+  // Count by item from orders.items JSONB array with revenue
+  const itemStats = new Map<string, { name: string; count: number; revenue: number }>();
+
+  interface OrderWithItems {
+    items: Array<{
       item_name?: string;
       quantity?: number;
-      menu_item_id?: string;
+      price?: number;
     }>;
-    if (Array.isArray(items)) {
-      items.forEach((item) => {
-        const name = item.item_name || "Unknown";
-        const quantity = item.quantity || 0;
+  }
 
-        // Count items
-        const existing = itemCounts.get(name) || { name, count: 0 };
-        itemCounts.set(name, { name, count: existing.count + quantity });
+  (last7DaysOrders as unknown as OrderWithItems[] | null)?.forEach((order) => {
+    if (!order.items || !Array.isArray(order.items)) return;
+
+    order.items.forEach((item) => {
+      const name = item.item_name || "Unknown";
+      const quantity = item.quantity || 0;
+      const price = item.price || 0;
+      const revenue = quantity * price;
+
+      const existing = itemStats.get(name) || { name, count: 0, revenue: 0 };
+      itemStats.set(name, {
+        name,
+        count: existing.count + quantity,
+        revenue: existing.revenue + revenue,
       });
-    }
+    });
   });
 
-  const topItems = Array.from(itemCounts.values())
+  const topItems = Array.from(itemStats.values())
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-    .map((i) => i.name);
+    .slice(0, 5);
 
   const summary: AnalyticsSummary = {
     today: {
       revenue: Number(todayRevenue.toFixed(2)),
       orders: todayOrderCount,
-      avgOrderValue: Number(avgOrderValue.toFixed(2)),
+      avgOrderValue: Number(todayAvgOrderValue.toFixed(2)),
+    },
+    last7Days: {
+      revenue: Number(last7DaysRevenue.toFixed(2)),
+      orders: last7DaysOrderCount,
+      avgOrderValue: Number(last7DaysAvgOrderValue.toFixed(2)),
     },
     trending: {
-      topItems,
-      categoryPerformance: categoryPerformance || {},
+      topItems: topItems.map((item) => ({
+        name: item.name,
+        count: item.count,
+        revenue: Number(item.revenue.toFixed(2)),
+      })),
+      categoryPerformance: {},
+    },
+    growth: {
+      revenueGrowth: Number(revenueGrowth.toFixed(2)),
+      ordersGrowth: Number(ordersGrowth.toFixed(2)),
     },
   };
 
