@@ -138,7 +138,6 @@ async function createKDSTickets(
   order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }
 ) {
   try {
-
     // First, ensure KDS stations exist for this venue
     const { data: existingStations } = await supabase
       .from("kds_stations")
@@ -206,6 +205,28 @@ async function createKDSTickets(
       throw new Error("No KDS station available");
     }
 
+    // Get customer name from order
+    const customerName = (order as Record<string, unknown>).customer_name as string | undefined;
+    const tableNumber = (order as Record<string, unknown>).table_number as number | null;
+
+    // Get actual table label if table_id exists
+    let tableLabel = customerName || "Guest"; // Default to customer name
+    const tableId = (order as Record<string, unknown>).table_id as string | undefined;
+
+    if (tableId) {
+      const { data: tableData } = await supabase
+        .from("tables")
+        .select("label")
+        .eq("id", tableId)
+        .single();
+
+      if (tableData?.label) {
+        tableLabel = tableData.label;
+      }
+    } else if (tableNumber) {
+      tableLabel = `Table ${tableNumber}`;
+    }
+
     // Create tickets for each order item
     const items = Array.isArray(order.items) ? (order.items as Array<Record<string, unknown>>) : [];
 
@@ -215,21 +236,68 @@ async function createKDSTickets(
         quantity?: string | number;
         specialInstructions?: string;
       };
+
+      // Smart station routing based on item name
+      const itemName = (itemData.item_name || "").toLowerCase();
+      let assignedStation = expoStation;
+
+      // Route to appropriate station based on item keywords
+      if (
+        itemName.includes("coffee") ||
+        itemName.includes("latte") ||
+        itemName.includes("cappuccino") ||
+        itemName.includes("espresso") ||
+        itemName.includes("tea") ||
+        itemName.includes("drink")
+      ) {
+        const baristaStation = existingStations.find(
+          (s: Record<string, unknown>) =>
+            (s as { station_type?: string }).station_type === "barista"
+        );
+        if (baristaStation) assignedStation = baristaStation;
+      } else if (
+        itemName.includes("burger") ||
+        itemName.includes("steak") ||
+        itemName.includes("chicken") ||
+        itemName.includes("grill")
+      ) {
+        const grillStation = existingStations.find(
+          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "grill"
+        );
+        if (grillStation) assignedStation = grillStation;
+      } else if (
+        itemName.includes("fries") ||
+        itemName.includes("chips") ||
+        itemName.includes("fried") ||
+        itemName.includes("fryer")
+      ) {
+        const fryerStation = existingStations.find(
+          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "fryer"
+        );
+        if (fryerStation) assignedStation = fryerStation;
+      } else if (
+        itemName.includes("salad") ||
+        itemName.includes("sandwich") ||
+        itemName.includes("cold")
+      ) {
+        const coldStation = existingStations.find(
+          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "cold"
+        );
+        if (coldStation) assignedStation = coldStation;
+      }
+
       const ticketData = {
         venue_id: order.venue_id,
         order_id: order.id,
-        station_id: (expoStation as { id: string }).id,
+        station_id: (assignedStation as { id: string }).id,
         item_name: itemData.item_name || "Unknown Item",
         quantity:
           typeof itemData.quantity === "string"
             ? parseInt(itemData.quantity)
             : itemData.quantity || 1,
         special_instructions: itemData.specialInstructions || null,
-        table_number: (order as Record<string, unknown>).table_number as number | null,
-        table_label:
-          ((order as Record<string, unknown>).table_id as string) ||
-          ((order as Record<string, unknown>).table_number as number | undefined)?.toString() ||
-          "Unknown",
+        table_number: tableNumber,
+        table_label: tableLabel,
         status: "new",
       };
 
@@ -323,7 +391,6 @@ export async function POST(req: Request) {
   );
 
   try {
-
     const body = (await req.json()) as Partial<OrderPayload>;
 
     logger.info("📥📥📥 REQUEST RECEIVED 📥📥📥", {
@@ -450,8 +517,8 @@ export async function POST(req: Request) {
             seatCount = groupSession.total_group_size;
           }
         } catch (e) {
-    // Error handled
-  }
+          // Error handled
+        }
 
         // Insert new table. Avoid UPSERT because the database may not have
         // a unique constraint on (venue_id, label) in some environments.
@@ -620,7 +687,6 @@ export async function POST(req: Request) {
       .from("orders")
       .insert(payload)
       .select("*");
-
 
     if (insertErr) {
       logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");

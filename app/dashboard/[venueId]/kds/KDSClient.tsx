@@ -229,7 +229,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   // Set up realtime subscription with token refresh handling
   useEffect(() => {
     const supabase = createClient();
-    let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
+    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null = null;
     let authSubscription: { unsubscribe: () => void } | null = null;
     let isMounted = true;
 
@@ -458,9 +458,14 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="font-semibold text-lg">{ticket.item_name}</div>
-                        <div className="text-sm text-gray-500">
-                          {ticket.table_label || `Table ${ticket.table_number}`}
+                        <div className="text-sm text-gray-600 font-medium">
+                          {ticket.orders?.customer_name ||
+                            ticket.table_label ||
+                            `Table ${ticket.table_number}`}
                         </div>
+                        {ticket.orders?.customer_name && ticket.table_number && (
+                          <div className="text-xs text-gray-500">Table {ticket.table_number}</div>
+                        )}
                       </div>
                       <Badge className="text-lg font-bold shrink-0">{ticket.quantity}x</Badge>
                     </div>
