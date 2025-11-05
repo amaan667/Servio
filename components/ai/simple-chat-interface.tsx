@@ -57,6 +57,7 @@ export function SimpleChatInterface({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           message: userMessage,
           venueId,
