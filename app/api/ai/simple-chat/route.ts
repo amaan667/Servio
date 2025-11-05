@@ -1,6 +1,6 @@
 // Simple AI Chat API - No conversation history, direct Q&A
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
 import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
 import { executeTool } from "@/lib/ai/tool-executors";
@@ -10,7 +10,7 @@ export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabase();
 
     // Check auth - get user instead of session for better reliability
     const {
