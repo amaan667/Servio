@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
+import { getAuthUserForAPI } from "@/lib/auth/server";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
 
@@ -7,6 +8,13 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
+    // Authenticate user
+    const { user, error: authError } = await getAuthUserForAPI();
+
+    if (authError || !user) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { orderId, status } = await req.json();
 
     if (!orderId || !status) {
@@ -16,8 +24,38 @@ export async function POST(req: Request) {
       );
     }
 
-    // Use admin client - no auth needed
-    const supabase = createAdminClient();
+    // Create authenticated supabase client (respects RLS)
+    const supabase = await createServerSupabase();
+
+    // First verify the order belongs to a venue the user has access to
+    const { data: orderCheck } = await supabase
+      .from("orders")
+      .select("venue_id")
+      .eq("id", orderId)
+      .single();
+
+    if (!orderCheck) {
+      return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+    }
+
+    // Verify venue access
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", orderCheck.venue_id)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", orderCheck.venue_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+    }
 
     const { data, error } = await supabase
       .from("orders")
@@ -64,9 +102,7 @@ export async function POST(req: Request) {
         if (!cleanupResult.success) {
           logger.error("[ORDER UPDATE] Table cleanup failed:", cleanupResult.error);
         } else {
-
           // Block handled
-
         }
 
         // If order is completed and paid, check if reservations should be auto-completed

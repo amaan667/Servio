@@ -1,6 +1,7 @@
 import React from "react";
+import { redirect } from "next/navigation";
 import DashboardClient from "./page.client";
-import { createAdminClient } from "@/lib/supabase";
+import { createServerSupabaseReadOnly, getAuthenticatedUser } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
@@ -11,14 +12,40 @@ export const revalidate = 0;
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
-  // Fetch initial dashboard data on server WITHOUT auth (use admin client)
+  // Authenticate user (respects cookies, RLS applies)
+  const { user } = await getAuthenticatedUser();
 
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  // Fetch initial dashboard data on server with authenticated client (respects RLS)
   let initialCounts: DashboardCounts | undefined = undefined;
-
   let initialStats: DashboardStats | undefined = undefined;
 
   try {
-    const supabase = createAdminClient(); // Use admin client - no auth required!
+    // Use read-only client for server component (can't modify cookies in layout/page)
+    const supabase = await createServerSupabaseReadOnly();
+
+    // Verify user has access to this venue
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venueId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      // User doesn't have access to this venue
+      redirect("/dashboard");
+    }
     const venueTz = "Europe/London";
     const window = todayWindowForTZ(venueTz);
 

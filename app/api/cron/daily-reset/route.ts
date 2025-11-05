@@ -4,6 +4,11 @@ import { logger } from "@/lib/logger";
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
+//
+// NOTE: Uses createAdminClient() - This is CORRECT for cron jobs:
+// - System-initiated task (not user request)
+// - Authenticates via CRON_SECRET
+// - Needs system-level access to reset all venues
 export async function POST(_request: NextRequest) {
   try {
     // Verify this is a legitimate cron request (you can add authentication here)

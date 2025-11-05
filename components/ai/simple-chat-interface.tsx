@@ -52,12 +52,23 @@ export function SimpleChatInterface({
     setError(null);
 
     try {
+      // Get session token from client-side Supabase
+      const { supabaseBrowser } = await import("@/lib/supabase");
+      const supabase = supabaseBrowser();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Not authenticated - please sign in");
+      }
+
       const response = await fetch("/api/ai/simple-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
-        credentials: "include",
         body: JSON.stringify({
           message: userMessage,
           venueId,

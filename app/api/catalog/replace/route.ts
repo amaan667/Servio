@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
+import { getAuthUserForAPI } from "@/lib/auth/server";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
@@ -21,6 +22,13 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
+    // Authenticate user
+    const { user, error: authError } = await getAuthUserForAPI();
+
+    if (authError || !user) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const venueId = formData.get("venue_id") as string;
@@ -42,14 +50,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "venue_id required" }, { status: 400 });
     }
 
+    // Create authenticated Supabase client
+    const supabase = await createServerSupabase();
+
+    // Verify venue access
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venueId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+    }
+
     logger.info(`[MENU IMPORT ${requestId}] Starting menu import`, {
       venueId,
+      userId: user.id,
       hasFile: !!file,
       hasUrl: !!menuUrl,
       replaceMode,
     });
-
-    const supabase = createAdminClient();
 
     // Step 1: Convert PDF to images (if PDF provided)
     let pdfImages: string[] | undefined;
@@ -201,16 +230,13 @@ export async function POST(req: NextRequest) {
       logger.info(
         `[MENU IMPORT ${requestId}] Recategorized ${recategorizedCount} items from "Menu Items"`,
         {
-          finalCategories: Array.from(
-            new Set(extractionResult.items.map((item) => item.category))
-          ),
+          finalCategories: Array.from(new Set(extractionResult.items.map((item) => item.category))),
         }
       );
     }
 
     // Step 3: Replace or Append mode
     if (replaceMode) {
-
       // Delete all existing items
       const { error: deleteItemsError } = await supabase
         .from("menu_items")
@@ -221,7 +247,6 @@ export async function POST(req: NextRequest) {
         logger.error(`[MENU IMPORT ${requestId}] Failed to delete items:`, deleteItemsError);
         throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
       }
-
     } else {
       // Append mode - keep existing items
     }

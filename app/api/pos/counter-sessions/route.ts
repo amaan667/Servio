@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
+import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
+    // Authenticate user
+    const { user, error: authError } = await getAuthUserForAPI();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venue_id");
 
@@ -11,8 +19,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
     }
 
-    // Use admin client - no auth needed (venueId is sufficient)
-    const supabase = createAdminClient();
+    // Create authenticated supabase client
+    const supabase = await createServerSupabase();
+
+    // Verify venue access
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venueId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Get counter status using the function
     const { data: counterStatus, error } = await supabase.rpc("get_counter_status", {
@@ -37,6 +64,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Authenticate user
+    const { user, error: authError } = await getAuthUserForAPI();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { venue_id, counter_id, action, server_id, notes } = body;
 
@@ -47,8 +81,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use admin client - no auth needed
-    const supabase = createAdminClient();
+    // Create authenticated supabase client
+    const supabase = await createServerSupabase();
+
+    // Verify venue access
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venue_id)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venue_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     let result;
 

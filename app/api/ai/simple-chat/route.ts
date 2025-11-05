@@ -14,24 +14,48 @@ export async function POST(request: NextRequest) {
   try {
     logger.info("[AI SIMPLE CHAT] 1. Request received");
 
-    const supabase = await createServerSupabase();
-    logger.info("[AI SIMPLE CHAT] 2. Supabase client created");
+    // Get auth token from header
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "");
 
-    // Check auth - get user instead of session for better reliability
+    if (!token) {
+      logger.error("[AI SIMPLE CHAT] ❌ No auth token in header");
+      return NextResponse.json({ error: "Unauthorized - No token" }, { status: 401 });
+    }
+
+    logger.info("[AI SIMPLE CHAT] 2. Token found, creating Supabase client");
+
+    // Create Supabase client with the token
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
+
+    logger.info("[AI SIMPLE CHAT] 3. Verifying token");
+
+    // Verify the token
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser(token);
 
-    logger.info("[AI SIMPLE CHAT] 3. Auth check complete:", {
+    logger.info("[AI SIMPLE CHAT] 4. Auth check complete:", {
       hasUser: !!user,
       userId: user?.id,
       authError: authError?.message,
     });
 
     if (!user || authError) {
-      logger.error("[AI SIMPLE CHAT] ❌ Auth failed - returning 401");
-      return NextResponse.json({ error: "Unauthorized - Please sign in again" }, { status: 401 });
+      logger.error("[AI SIMPLE CHAT] ❌ Auth failed - invalid token");
+      return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
     }
 
     requestBody = await request.json();

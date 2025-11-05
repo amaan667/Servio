@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
+import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
 import {
   handleStartPreparing,
@@ -25,6 +26,13 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
+    // Authenticate user
+    const { user, error: authError } = await getAuthUserForAPI();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
       action,
@@ -45,8 +53,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use admin client - no auth needed
-    const supabase = createAdminClient();
+    // Verify venue access
+    const supabase = await createServerSupabase();
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venue_id)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", venue_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      return NextResponse.json({ error: "Forbidden - no access to this venue" }, { status: 403 });
+    }
 
     // Route to appropriate handler based on action
     switch (action) {

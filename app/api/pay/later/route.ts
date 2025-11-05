@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
+import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
+    // Authenticate user
+    const { user, error: authError } = await getAuthUserForAPI();
+
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     // Step 1: Parse request body
     const body = await req.json();
 
@@ -14,6 +22,7 @@ export async function POST(req: Request) {
     logger.info("⏰ [PAY LATER] Pay later requested", {
       orderId: order_id,
       sessionId,
+      userId: user.id,
       fullBody: body,
       timestamp: new Date().toISOString(),
     });
@@ -30,8 +39,38 @@ export async function POST(req: Request) {
       );
     }
 
-    // Step 2: Create Supabase client
-    const supabase = createAdminClient();
+    // Step 2: Create authenticated Supabase client
+    const supabase = await createServerSupabase();
+
+    // Verify order access
+    const { data: orderCheck } = await supabase
+      .from("orders")
+      .select("venue_id")
+      .eq("id", order_id)
+      .single();
+
+    if (!orderCheck) {
+      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+    }
+
+    // Verify venue access
+    const { data: venueAccess } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", orderCheck.venue_id)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    const { data: staffAccess } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("venue_id", orderCheck.venue_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!venueAccess && !staffAccess) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
 
     // Step 3: Attempt to update order
     const updateData = {

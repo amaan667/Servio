@@ -15,6 +15,11 @@ const webhookSecret = process.env.STRIPE_CUSTOMER_WEBHOOK_SECRET!;
 /**
  * Stripe Webhook for CUSTOMER ORDER PAYMENTS
  * This is separate from /api/stripe/webhooks which handles SUBSCRIPTIONS
+ *
+ * NOTE: Uses createAdminClient() - This is CORRECT for webhooks:
+ * - External service (Stripe) makes the request
+ * - Authenticates via webhook signature verification
+ * - Needs system-level access to update orders
  */
 export async function POST(_request: NextRequest) {
   const supabaseAdmin = createAdminClient();
