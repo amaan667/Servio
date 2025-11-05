@@ -831,7 +831,7 @@ export async function getAnalyticsSummary(
     itemPerformance: {
       neverOrdered: neverOrdered.slice(0, 20),
       rarelyOrdered,
-      topByRevenue,
+      topByRevenue: topItemsByRevenue,
     },
     ...(tableMetrics && { tableMetrics }),
   };
