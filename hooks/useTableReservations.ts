@@ -16,6 +16,7 @@ export interface TableGridItem {
   order_id: string | null;
   total_amount: number | null;
   order_status: string | null;
+  payment_status: string | null;
   order_updated_at: string | null;
 }
 
@@ -88,6 +89,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         order_id: string | null;
         total_amount: number | null;
         order_status: string | null;
+        payment_status: string | null;
         order_updated_at: string | null;
         updated_at: string | null;
       }
@@ -137,6 +139,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         let orderId = null;
         let totalAmount = null;
         let orderStatus = null;
+        let paymentStatus = null;
         let orderUpdatedAt = null;
 
         // Priority 1: If there's an active table session with non-FREE status, table is OCCUPIED
@@ -145,7 +148,8 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           openedAt = activeSession.opened_at;
           orderId = activeSession.order_id;
           totalAmount = activeSession.total_amount;
-          orderStatus = activeSession.status;
+          orderStatus = activeSession.order_status;
+          paymentStatus = activeSession.payment_status;
           orderUpdatedAt = activeSession.updated_at;
         }
         // Priority 2: If there's an active reservation, the table is RESERVED (overrides FREE session)
@@ -181,6 +185,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           order_id: orderId,
           total_amount: totalAmount,
           order_status: orderStatus,
+          payment_status: paymentStatus,
           order_updated_at: orderUpdatedAt,
         };
       }) as TableGridItem[];

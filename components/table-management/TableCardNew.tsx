@@ -30,6 +30,7 @@ import { GroupSession } from "@/hooks/useGroupSessions";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { TableSelectionDialog } from "./TableSelectionDialog";
 import { ReservationDialog } from "./ReservationDialog";
+import { PaymentCollectionDialog } from "@/components/orders/PaymentCollectionDialog";
 
 import {
   Dialog,
@@ -65,6 +66,14 @@ export function TableCardNew({
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isMerged, setIsMerged] = useState(false);
   const [mergedTableId, setMergedTableId] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<{
+    id: string;
+    number: string;
+    customer: string;
+    items: Array<{ item_name: string; quantity: number; price: number }>;
+    total: number;
+  } | null>(null);
   const closeTable = useCloseTable();
   const { occupyTable, unmergeTable } = useTableActions();
   const deleteTable = useDeleteTable(venueId);
@@ -220,6 +229,32 @@ export function TableCardNew({
     );
   };
 
+  const handleCollectPayment = async () => {
+    if (!table.order_id) return;
+
+    try {
+      const supabase = createClient();
+      const { data: order } = await supabase
+        .from("orders")
+        .select("id, order_number, customer_name, items, total_amount, payment_status")
+        .eq("id", table.order_id)
+        .single();
+
+      if (order && order.payment_status !== "PAID") {
+        setOrderDetails({
+          id: order.id,
+          number: order.order_number || "N/A",
+          customer: order.customer_name || "Guest",
+          items: order.items || [],
+          total: order.total_amount || 0,
+        });
+        setShowPaymentDialog(true);
+      }
+    } catch (error) {
+      console.error("Error loading order for payment:", error);
+    }
+  };
+
   const getContextualActions = () => {
     const actions = [];
 
@@ -239,6 +274,27 @@ export function TableCardNew({
     }
 
     if (table.session_status === "OCCUPIED") {
+      // Add collect payment option if order is served and unpaid
+      const needsPayment =
+        table.order_status === "SERVED" &&
+        table.payment_status !== "PAID" &&
+        (table.payment_status === "PAY_AT_TILL" ||
+          table.payment_status === "TILL" ||
+          table.payment_status === "UNPAID");
+
+      if (table.order_id && needsPayment) {
+        actions.push(
+          <DropdownMenuItem
+            key="collect-payment"
+            onClick={handleCollectPayment}
+            className="text-orange-600 font-medium"
+          >
+            <Receipt className="h-4 w-4 mr-2" />
+            Collect Payment at Till
+          </DropdownMenuItem>
+        );
+      }
+
       if (table.order_id) {
         actions.push(
           <DropdownMenuItem
@@ -445,11 +501,25 @@ export function TableCardNew({
               </div>
 
               {table.total_amount && (
-                <div className="flex items-center gap-2">
-                  <span>£{(table.total_amount / 100).toFixed(2)}</span>
-                  {table.order_status && (
-                    <Badge variant="outline" className="text-xs">
-                      {table.order_status}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span>£{(table.total_amount / 100).toFixed(2)}</span>
+                    {table.order_status && (
+                      <Badge variant="outline" className="text-xs">
+                        {table.order_status}
+                      </Badge>
+                    )}
+                  </div>
+                  {table.payment_status && table.payment_status !== "PAID" && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-orange-50 text-orange-700 border-orange-200"
+                    >
+                      {table.payment_status === "PAY_AT_TILL" || table.payment_status === "TILL"
+                        ? "💳 Pay at Till"
+                        : table.payment_status === "PAY_LATER"
+                          ? "⏰ Pay Later"
+                          : "Unpaid"}
                     </Badge>
                   )}
                 </div>
@@ -565,6 +635,25 @@ export function TableCardNew({
         tableStatus={table.session_status}
         onReservationComplete={onActionComplete}
       />
+
+      {/* Payment Collection Dialog */}
+      {orderDetails && (
+        <PaymentCollectionDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          orderId={orderDetails.id}
+          orderNumber={orderDetails.number}
+          customerName={orderDetails.customer}
+          totalAmount={orderDetails.total}
+          venueId={venueId}
+          items={orderDetails.items}
+          onSuccess={() => {
+            setShowPaymentDialog(false);
+            setOrderDetails(null);
+            onActionComplete?.();
+          }}
+        />
+      )}
 
       {/* Remove Table Confirmation Dialog */}
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>

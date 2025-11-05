@@ -139,7 +139,7 @@ export async function handleMarkAwaitingBill(supabase: SupabaseClient, table_id:
 
 export async function handleCloseTable(supabase: SupabaseClient, table_id: string) {
   try {
-    // Get the venue_id for the table
+    // Get the venue_id and current order for the table
     const { data: table, error: tableError } = await supabase
       .from("tables")
       .select("venue_id")
@@ -151,6 +151,35 @@ export async function handleCloseTable(supabase: SupabaseClient, table_id: strin
         error: tableError instanceof Error ? tableError.message : "Unknown error",
       });
       return NextResponse.json({ error: "Table not found" }, { status: 404 });
+    }
+
+    // Get current session with order details
+    const { data: currentSession } = await supabase
+      .from("table_sessions")
+      .select("order_id, order_status, payment_status")
+      .eq("table_id", table_id)
+      .is("closed_at", null)
+      .single();
+
+    // If there's an active order and it's PAID, mark it as COMPLETED
+    if (currentSession?.order_id && currentSession.payment_status === "PAID") {
+      logger.info("[TABLE ACTIONS] Order is paid, marking as COMPLETED before closing table", {
+        orderId: currentSession.order_id,
+      });
+
+      const { error: completeError } = await supabase
+        .from("orders")
+        .update({
+          order_status: "COMPLETED",
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", currentSession.order_id);
+
+      if (completeError) {
+        logger.error("[TABLE ACTIONS] Error completing order:", { value: completeError });
+        // Continue with table close anyway
+      }
     }
 
     // Close the current session

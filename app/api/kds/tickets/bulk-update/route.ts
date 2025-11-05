@@ -65,40 +65,66 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    // If bumping tickets, update the main order status to READY (not SERVED - that comes later)
+    // If bumping tickets, check if ALL tickets for this order are now bumped
     if (status === "bumped" && orderId) {
-      // First check current order status
-      const { data: currentOrder } = await supabase
-        .from("orders")
-        .select("order_status")
-        .eq("id", orderId)
-        .single();
+      // Check if all tickets for this order are bumped
+      const { data: allOrderTickets } = await supabase
+        .from("kds_tickets")
+        .select("id, status")
+        .eq("order_id", orderId);
 
-      logger.debug("[KDS] Updating order status after bump", {
+      const allBumped = allOrderTickets?.every((t) => t.status === "bumped") || false;
+
+      logger.debug("[KDS] Checking if all tickets bumped", {
         orderId,
-        currentStatus: currentOrder?.order_status,
-        updatingTo: "READY",
+        totalTickets: allOrderTickets?.length,
+        bumpedTickets: allOrderTickets?.filter((t) => t.status === "bumped").length,
+        allBumped,
       });
 
-      const { error: orderUpdateError } = await supabase
-        .from("orders")
-        .update({
-          order_status: "READY",
-          updated_at: now,
-        })
-        .eq("id", orderId);
+      // Only update order status if ALL tickets are bumped
+      if (allBumped) {
+        const { data: currentOrder } = await supabase
+          .from("orders")
+          .select("order_status")
+          .eq("id", orderId)
+          .single();
 
-      if (orderUpdateError) {
-        logger.error("[KDS] Error updating order status after bump:", {
-          error: orderUpdateError.message,
+        logger.debug("[KDS] All tickets bumped - updating order status", {
           orderId,
           currentStatus: currentOrder?.order_status,
+          updatingTo: "READY",
         });
+
+        const { error: orderUpdateError } = await supabase
+          .from("orders")
+          .update({
+            order_status: "READY",
+            updated_at: now,
+          })
+          .eq("id", orderId);
+
+        if (orderUpdateError) {
+          logger.error("[KDS] Error updating order status after bump:", {
+            error: orderUpdateError.message,
+            orderId,
+            currentStatus: currentOrder?.order_status,
+          });
+        } else {
+          logger.info(
+            "[KDS] Order status updated to READY - all items bumped, staff can mark as SERVED",
+            {
+              orderId,
+              previousStatus: currentOrder?.order_status,
+            }
+          );
+        }
       } else {
-        logger.info(
-          "[KDS] Order status updated to READY after bump - staff can now mark as SERVING",
-          { orderId, previousStatus: currentOrder?.order_status }
-        );
+        logger.debug("[KDS] Not all tickets bumped yet - order status unchanged", {
+          orderId,
+          bumpedCount: allOrderTickets?.filter((t) => t.status === "bumped").length,
+          totalCount: allOrderTickets?.length,
+        });
       }
 
       // Clean up table session after bumping
