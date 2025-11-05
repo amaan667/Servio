@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,8 +49,8 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Update form data when item changes
-  useState(() => {
-    if (item) {
+  useEffect(() => {
+    if (item && open) {
       setFormData({
         name: item.name,
         description: item.description || "",
@@ -61,7 +61,7 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
       setImagePreview(item.image_url || null);
       setImageFile(null);
     }
-  });
+  }, [item, open]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -213,13 +213,14 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
               <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
                 <img
                   src={imagePreview}
-                  alt={formData.name}
-                  className="w-full h-full object-contain"
+                  alt={formData.name || "Menu item"}
+                  className="w-full h-full object-cover"
                 />
                 <button
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
                   type="button"
+                  aria-label="Remove image"
                 >
                   <X className="h-4 w-4" />
                 </button>
