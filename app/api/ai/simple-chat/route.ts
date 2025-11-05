@@ -18,12 +18,19 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
 
+    logger.info("[AI SIMPLE CHAT] 2. Auth header check:", {
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader?.substring(0, 10),
+      hasToken: !!token,
+      tokenLength: token?.length,
+    });
+
     if (!token) {
       logger.error("[AI SIMPLE CHAT] ❌ No auth token in header");
-      return NextResponse.json({ error: "Unauthorized - No token" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
     }
 
-    logger.info("[AI SIMPLE CHAT] 2. Token found, creating Supabase client");
+    logger.info("[AI SIMPLE CHAT] 3. Token found, creating Supabase client");
 
     // Create Supabase client with the token
     const { createClient } = await import("@supabase/supabase-js");
@@ -39,7 +46,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    logger.info("[AI SIMPLE CHAT] 3. Verifying token");
+    logger.info("[AI SIMPLE CHAT] 4. Verifying token");
 
     // Verify the token
     const {
@@ -47,21 +54,31 @@ export async function POST(request: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser(token);
 
-    logger.info("[AI SIMPLE CHAT] 4. Auth check complete:", {
+    logger.info("[AI SIMPLE CHAT] 5. Auth check complete:", {
       hasUser: !!user,
       userId: user?.id,
+      userEmail: user?.email,
       authError: authError?.message,
+      authErrorName: authError?.name,
     });
 
     if (!user || authError) {
-      logger.error("[AI SIMPLE CHAT] ❌ Auth failed - invalid token");
-      return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
+      logger.error("[AI SIMPLE CHAT] ❌ Auth failed - invalid or expired token:", {
+        error: authError?.message,
+        errorName: authError?.name,
+      });
+      return NextResponse.json(
+        {
+          error: `Authentication failed: ${authError?.message || "Invalid token"}`,
+        },
+        { status: 401 }
+      );
     }
 
     requestBody = await request.json();
     const { message, venueId, currentPage } = requestBody;
 
-    logger.info("[AI SIMPLE CHAT] 4. Request parsed:", {
+    logger.info("[AI SIMPLE CHAT] 6. Request parsed:", {
       hasMessage: !!message,
       venueId,
       currentPage,
@@ -71,19 +88,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    logger.info("[AI SIMPLE CHAT] 5. Getting context and summaries");
+    logger.info("[AI SIMPLE CHAT] 7. Getting context and summaries");
 
     // Get context and data summaries
     const context = await getAssistantContext(venueId, user.id);
-    logger.info("[AI SIMPLE CHAT] 6. Context retrieved");
+    logger.info("[AI SIMPLE CHAT] 8. Context retrieved");
 
     const summaries = await getAllSummaries(venueId, context.features);
-    logger.info("[AI SIMPLE CHAT] 7. Summaries retrieved");
+    logger.info("[AI SIMPLE CHAT] 9. Summaries retrieved");
 
     // Plan the action
-    logger.info("[AI SIMPLE CHAT] 8. Planning action for:", message);
+    logger.info("[AI SIMPLE CHAT] 10. Planning action for:", message);
     const plan = await planAssistantAction(message, context, summaries);
-    logger.info("[AI SIMPLE CHAT] 9. Plan created:", {
+    logger.info("[AI SIMPLE CHAT] 11. Plan created:", {
       hasDirectAnswer: !!plan.directAnswer,
       toolCount: plan.tools?.length || 0,
     });

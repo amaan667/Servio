@@ -55,13 +55,26 @@ export function SimpleChatInterface({
       // Get session token from client-side Supabase
       const { supabaseBrowser } = await import("@/lib/supabase");
       const supabase = supabaseBrowser();
-      const {
+
+      // First try to get session
+      let {
         data: { session },
       } = await supabase.auth.getSession();
 
+      // If no session or token, try to refresh
       if (!session?.access_token) {
-        throw new Error("Not authenticated - please sign in");
+        console.log("[AI CHAT] No session found, attempting refresh...");
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        session = refreshData.session;
       }
+
+      // If still no session, user needs to sign in
+      if (!session?.access_token) {
+        console.error("[AI CHAT] No valid session after refresh");
+        throw new Error("Session expired. Please refresh the page and sign in again.");
+      }
+
+      console.log("[AI CHAT] Session found, sending request with token");
 
       const response = await fetch("/api/ai/simple-chat", {
         method: "POST",
@@ -78,6 +91,10 @@ export function SimpleChatInterface({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("[AI CHAT] API Error:", {
+          status: response.status,
+          error: errorData.error,
+        });
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
