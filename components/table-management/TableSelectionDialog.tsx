@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,10 +9,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Users, Clock, CheckCircle2 } from 'lucide-react';
-import { useTableActions } from '@/hooks/useTableActions';
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Users, Clock, CheckCircle2 } from "lucide-react";
+import { useTableActions } from "@/hooks/useTableActions";
 
 interface Table {
   id: string;
@@ -29,7 +29,7 @@ interface TableSelectionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   sourceTable: Table;
-  action: 'move' | 'merge';
+  action: "move" | "merge";
   venueId: string;
   availableTables: Table[];
   onActionComplete?: () => void;
@@ -42,44 +42,57 @@ export function TableSelectionDialog({
   action,
   venueId,
   availableTables,
-  onActionComplete
+  onActionComplete,
 }: TableSelectionDialogProps) {
-  const [selectedTableId, setSelectedTableId] = useState<string>('');
+  const [selectedTableId, setSelectedTableId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const { moveTable, mergeTable } = useTableActions();
 
   // Filter available tables based on action
   const getAvailableTables = () => {
-
-    if (action === 'move') {
-      // For move, only show FREE tables
-      const filtered = availableTables.filter(table => 
-        table.id !== sourceTable.id && 
-        table.status === 'FREE'
+    if (action === "move") {
+      // Move logic: Can only move OCCUPIED or RESERVED to FREE
+      if (sourceTable.status === "FREE") {
+        return []; // Cannot move a free table
+      }
+      return availableTables.filter(
+        (table) => table.id !== sourceTable.id && table.status === "FREE"
       );
-      return filtered;
     } else {
-      // For merge, apply strict eligibility rules
-      const filtered = availableTables.filter(table => {
-        if (table.id === sourceTable.id) {
-          return false;
+      // Merge logic: Follow the specification rules
+      const filtered = availableTables.filter((table) => {
+        if (table.id === sourceTable.id) return false;
+
+        const sourceStatus = sourceTable.status;
+        const targetStatus = table.status;
+
+        // FREE + FREE → ✅ Allowed
+        if (sourceStatus === "FREE" && targetStatus === "FREE") return true;
+
+        // OCCUPIED + FREE → ✅ Allowed (join free table to current diners)
+        if (sourceStatus === "OCCUPIED" && targetStatus === "FREE") return true;
+
+        // RESERVED + FREE → ✅ Allowed (expand reserved area)
+        if (sourceStatus === "RESERVED" && targetStatus === "FREE") return true;
+
+        // RESERVED + RESERVED (same reservation) → ✅ Allowed
+        if (sourceStatus === "RESERVED" && targetStatus === "RESERVED") {
+          // Only if same reservation ID
+          return sourceTable.order_id === table.order_id;
         }
-        
-        // Source table status determines what we can merge with
-        if (sourceTable.status === 'FREE') {
-          // FREE can only merge with other FREE tables
-          const canMerge = table.status === 'FREE';
-          return canMerge;
-        } else if (sourceTable.status === 'RESERVED') {
-          // RESERVED can only merge with FREE
-          const canMerge = table.status === 'FREE';
-          return canMerge;
-        } else if (['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(sourceTable.status)) {
-          // OCCUPIED tables (unknown occupied status) can only merge with FREE
-          const canMerge = table.status === 'FREE';
-          return canMerge;
-        }
-        
+
+        // OCCUPIED + OCCUPIED → ❌ Not allowed (conflicting orders)
+        if (sourceStatus === "OCCUPIED" && targetStatus === "OCCUPIED") return false;
+
+        // RESERVED + OCCUPIED → ❌ Not allowed
+        if (sourceStatus === "RESERVED" && targetStatus === "OCCUPIED") return false;
+
+        // FREE + OCCUPIED → ✅ Allowed (add free table to occupied)
+        if (sourceStatus === "FREE" && targetStatus === "OCCUPIED") return true;
+
+        // FREE + RESERVED → ✅ Allowed (add free table to reservation)
+        if (sourceStatus === "FREE" && targetStatus === "RESERVED") return true;
+
         return false;
       });
       return filtered;
@@ -95,13 +108,13 @@ export function TableSelectionDialog({
 
     try {
       setIsLoading(true);
-      
-      if (action === 'move') {
+
+      if (action === "move") {
         await moveTable(sourceTable.id, venueId, selectedTableId);
       } else {
         const result = await mergeTable(sourceTable.id, venueId, selectedTableId);
       }
-      
+
       onActionComplete?.();
       onClose();
     } catch (_error) {
@@ -112,35 +125,51 @@ export function TableSelectionDialog({
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dateString).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'FREE': return 'bg-green-100 text-green-800';
-      case 'ORDERING': return 'bg-yellow-100 text-yellow-800';
-      case 'IN_PREP': return 'bg-orange-100 text-orange-800';
-      case 'READY': return 'bg-violet-100 text-violet-800';
-      case 'SERVED': return 'bg-violet-100 text-violet-800';
-      case 'AWAITING_BILL': return 'bg-slate-100 text-slate-800';
-      case 'RESERVED': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "FREE":
+        return "bg-green-100 text-green-800";
+      case "ORDERING":
+        return "bg-yellow-100 text-yellow-800";
+      case "IN_PREP":
+        return "bg-orange-100 text-orange-800";
+      case "READY":
+        return "bg-violet-100 text-violet-800";
+      case "SERVED":
+        return "bg-violet-100 text-violet-800";
+      case "AWAITING_BILL":
+        return "bg-slate-100 text-slate-800";
+      case "RESERVED":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'FREE': return <CheckCircle2 className="h-3 w-3" />;
-      case 'ORDERING': return <Clock className="h-3 w-3" />;
-      case 'IN_PREP': return <Clock className="h-3 w-3" />;
-      case 'READY': return <CheckCircle2 className="h-3 w-3" />;
-      case 'SERVED': return <CheckCircle2 className="h-3 w-3" />;
-      case 'AWAITING_BILL': return <Clock className="h-3 w-3" />;
-      case 'RESERVED': return <Clock className="h-3 w-3" />;
-      default: return <Clock className="h-3 w-3" />;
+      case "FREE":
+        return <CheckCircle2 className="h-3 w-3" />;
+      case "ORDERING":
+        return <Clock className="h-3 w-3" />;
+      case "IN_PREP":
+        return <Clock className="h-3 w-3" />;
+      case "READY":
+        return <CheckCircle2 className="h-3 w-3" />;
+      case "SERVED":
+        return <CheckCircle2 className="h-3 w-3" />;
+      case "AWAITING_BILL":
+        return <Clock className="h-3 w-3" />;
+      case "RESERVED":
+        return <Clock className="h-3 w-3" />;
+      default:
+        return <Clock className="h-3 w-3" />;
     }
   };
 
@@ -148,18 +177,20 @@ export function TableSelectionDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {action === 'move' ? 'Move Table' : 'Merge Table'}
-          </DialogTitle>
+          <DialogTitle>{action === "move" ? "Move Table" : "Merge Table"}</DialogTitle>
           <DialogDescription>
-            {action === 'move' 
+            {action === "move"
               ? `Move the session from ${sourceTable.label} to another table`
-              : `Merge the session from ${sourceTable.label} with another table`
-            }
-            {action === 'merge' && (
+              : `Merge ${sourceTable.label} with another table to create a larger seating area`}
+            {action === "merge" && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                <strong>Merge Rules:</strong> FREE tables can only merge with other FREE tables. 
-                RESERVED and occupied tables can only merge with FREE tables.
+                <strong>Merge Rules:</strong> FREE+FREE, OCCUPIED+FREE, RESERVED+FREE allowed.
+                Cannot merge OCCUPIED+OCCUPIED or RESERVED+OCCUPIED.
+              </div>
+            )}
+            {action === "move" && sourceTable.status === "FREE" && (
+              <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700">
+                Cannot move a FREE table (no active session to transfer)
               </div>
             )}
           </DialogDescription>
@@ -193,15 +224,14 @@ export function TableSelectionDialog({
           {/* Available Tables */}
           <div>
             <h4 className="font-medium text-sm text-gray-700 mb-3">
-              {action === 'move' ? 'Available Tables:' : 'Select Table to Merge With:'}
+              {action === "move" ? "Available Tables:" : "Select Table to Merge With:"}
             </h4>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {filteredTables.length === 0 ? (
                 <p className="text-sm text-gray-900 text-center py-4">
-                  {action === 'move' 
-                    ? 'No available tables for moving'
-                    : 'No other tables available for merging'
-                  }
+                  {action === "move"
+                    ? "No available tables for moving"
+                    : "No other tables available for merging"}
                 </p>
               ) : (
                 filteredTables.map((table) => (
@@ -209,8 +239,8 @@ export function TableSelectionDialog({
                     key={table.id}
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedTableId === table.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => setSelectedTableId(table.id)}
                   >
@@ -232,7 +262,7 @@ export function TableSelectionDialog({
                         </div>
                       )}
                     </div>
-                    
+
                     {table.order_id && (
                       <div className="mt-2 text-sm text-gray-900">
                         <span>Order #{table.order_id.slice(-6)}</span>
@@ -255,18 +285,20 @@ export function TableSelectionDialog({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleConfirm} 
+          <Button
+            onClick={handleConfirm}
             disabled={!selectedTableId || isLoading}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {action === 'move' ? 'Moving...' : 'Merging...'}
+                {action === "move" ? "Moving..." : "Merging..."}
               </>
+            ) : action === "move" ? (
+              "Move Table"
             ) : (
-              action === 'move' ? 'Move Table' : 'Merge Tables'
+              "Merge Tables"
             )}
           </Button>
         </DialogFooter>

@@ -537,6 +537,14 @@ export async function handleMoveTable(
     return NextResponse.json({ error: "No active session found for table" }, { status: 400 });
   }
 
+  // Cannot move FREE tables (no session to transfer)
+  if (currentSession.status === "FREE") {
+    return NextResponse.json(
+      { error: "Cannot move a FREE table - no active session to transfer" },
+      { status: 400 }
+    );
+  }
+
   // Check if destination table is FREE
   const { data: destSession, error: destError } = await supabase
     .from("table_sessions")
@@ -546,7 +554,7 @@ export async function handleMoveTable(
     .single();
 
   if (destError || !destSession || destSession.status !== "FREE") {
-    return NextResponse.json({ error: "Destination table is not available" }, { status: 400 });
+    return NextResponse.json({ error: "Destination table must be FREE" }, { status: 400 });
   }
 
   // Close current session
@@ -569,6 +577,10 @@ export async function handleMoveTable(
     .update({
       status: currentSession.status,
       order_id: currentSession.order_id,
+      customer_name: currentSession.customer_name,
+      total_amount: currentSession.total_amount,
+      payment_status: currentSession.payment_status,
+      order_status: currentSession.order_status,
       updated_at: new Date().toISOString(),
     })
     .eq("id", destSession.id);
@@ -576,6 +588,22 @@ export async function handleMoveTable(
   if (updateError) {
     logger.error("[TABLE ACTIONS] Error updating destination session:", { value: updateError });
     return NextResponse.json({ error: "Failed to update destination session" }, { status: 500 });
+  }
+
+  // Update the order's table_id to point to new table
+  if (currentSession.order_id) {
+    const { error: orderUpdateError } = await supabase
+      .from("orders")
+      .update({
+        table_id: destination_table_id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", currentSession.order_id);
+
+    if (orderUpdateError) {
+      logger.error("[TABLE ACTIONS] Error updating order table_id:", { value: orderUpdateError });
+      // Continue anyway - session was moved successfully
+    }
   }
 
   return NextResponse.json({ success: true });
