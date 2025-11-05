@@ -726,56 +726,65 @@ export async function getAnalyticsSummary(
     last30DaysOrders.length > 0 ? totalItemsInOrders / last30DaysOrders.length : 0;
 
   // ========== TABLE METRICS (if applicable) ==========
-  const { data: tableSessions } = await supabase
-    .from("table_sessions")
-    .select("table_number, started_at, ended_at, total_amount")
-    .eq("venue_id", venueId)
-    .gte("started_at", thirtyDaysAgo.toISOString())
-    .not("session_status", "eq", "CANCELLED");
-
   let tableMetrics;
-  if (tableSessions && tableSessions.length > 0) {
-    const tableStats = new Map<number, { revenue: number; sessions: number; totalTime: number }>();
-    let totalTurnoverTime = 0;
-    let sessionsWithEndTime = 0;
+  try {
+    const { data: tableSessions } = await supabase
+      .from("table_sessions")
+      .select("table_number, started_at, ended_at, total_amount")
+      .eq("venue_id", venueId)
+      .gte("started_at", thirtyDaysAgo.toISOString())
+      .not("session_status", "eq", "CANCELLED");
 
-    tableSessions.forEach((session: Record<string, unknown>) => {
-      const tableNumber = session.table_number as number;
-      const startedAt = session.started_at as string;
-      const endedAt = session.ended_at as string | null;
-      const totalAmount = (session.total_amount as number) || 0;
+    if (tableSessions && tableSessions.length > 0) {
+      const tableStats = new Map<
+        number,
+        { revenue: number; sessions: number; totalTime: number }
+      >();
+      let totalTurnoverTime = 0;
+      let sessionsWithEndTime = 0;
 
-      const existing = tableStats.get(tableNumber) || { revenue: 0, sessions: 0, totalTime: 0 };
-      existing.revenue += totalAmount;
-      existing.sessions += 1;
+      tableSessions.forEach((session: Record<string, unknown>) => {
+        const tableNumber = session.table_number as number;
+        const startedAt = session.started_at as string;
+        const endedAt = session.ended_at as string | null;
+        const totalAmount = (session.total_amount as number) || 0;
 
-      if (endedAt) {
-        const duration = new Date(endedAt).getTime() - new Date(startedAt).getTime();
-        existing.totalTime += duration;
-        totalTurnoverTime += duration;
-        sessionsWithEndTime += 1;
-      }
+        const existing = tableStats.get(tableNumber) || { revenue: 0, sessions: 0, totalTime: 0 };
+        existing.revenue += totalAmount;
+        existing.sessions += 1;
 
-      tableStats.set(tableNumber, existing);
-    });
+        if (endedAt) {
+          const duration = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+          existing.totalTime += duration;
+          totalTurnoverTime += duration;
+          sessionsWithEndTime += 1;
+        }
 
-    const avgTurnoverTime =
-      sessionsWithEndTime > 0 ? totalTurnoverTime / sessionsWithEndTime / 60000 : 0; // in minutes
+        tableStats.set(tableNumber, existing);
+      });
 
-    const revenueByTable = Array.from(tableStats.entries())
-      .sort((a, b) => b[1].revenue - a[1].revenue)
-      .slice(0, 10)
-      .map(([tableNumber, stats]) => ({
-        tableNumber,
-        revenue: Number(stats.revenue.toFixed(2)),
-        sessions: stats.sessions,
-      }));
+      const avgTurnoverTime =
+        sessionsWithEndTime > 0 ? totalTurnoverTime / sessionsWithEndTime / 60000 : 0; // in minutes
 
-    tableMetrics = {
-      avgTurnoverTime: Number(avgTurnoverTime.toFixed(2)),
-      totalSessions: tableSessions.length,
-      revenueByTable,
-    };
+      const revenueByTable = Array.from(tableStats.entries())
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .slice(0, 10)
+        .map(([tableNumber, stats]) => ({
+          tableNumber,
+          revenue: Number(stats.revenue.toFixed(2)),
+          sessions: stats.sessions,
+        }));
+
+      tableMetrics = {
+        avgTurnoverTime: Number(avgTurnoverTime.toFixed(2)),
+        totalSessions: tableSessions.length,
+        revenueByTable,
+      };
+    }
+  } catch (tableError) {
+    // Table sessions table might not exist or have errors - this is okay
+    aiLogger.debug("[AI ASSISTANT] Table metrics unavailable:", tableError);
+    tableMetrics = undefined;
   }
 
   // ========== BUILD SUMMARY ==========
