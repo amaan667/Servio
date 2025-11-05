@@ -126,13 +126,23 @@ export function SimpleChatInterface({
         {/* Messages */}
         <ScrollArea className="flex-1 p-4">
           {messages.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
+            <div className="text-center text-muted-foreground py-8 px-4">
               <Sparkles className="h-12 w-12 mx-auto mb-4 text-purple-300" />
-              <p className="text-sm">Ask me anything about your venue!</p>
-              <p className="text-xs mt-2">
-                Examples: "What's my revenue today?", "Top selling items", "Add image to Avocado
-                Toast"
+              <h3 className="text-lg font-semibold text-foreground mb-2">Servio AI Assistant</h3>
+              <p className="text-sm mb-4">
+                I can help you with analytics, menu management, orders, and more!
               </p>
+              <div className="bg-muted/50 rounded-lg p-4 text-left space-y-2">
+                <p className="text-xs font-medium text-foreground">Try asking:</p>
+                <ul className="text-xs space-y-1">
+                  <li>💰 "What's my revenue today?"</li>
+                  <li>🔥 "Show me top selling items"</li>
+                  <li>📊 "What's my busiest day?"</li>
+                  <li>🖼️ "Which items don't have images?"</li>
+                  <li>📈 "How is business compared to last week?"</li>
+                  <li>🍽️ "Add image to Avocado Toast"</li>
+                </ul>
+              </div>
             </div>
           )}
 

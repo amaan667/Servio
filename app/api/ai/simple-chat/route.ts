@@ -12,13 +12,18 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Check auth
+    // Check auth - get user instead of session for better reliability
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const user = session?.user;
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user || authError) {
+      logger.error("[AI SIMPLE CHAT] Auth failed:", {
+        hasUser: !!user,
+        authError: authError?.message,
+        headers: Object.fromEntries(request.headers.entries()),
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
