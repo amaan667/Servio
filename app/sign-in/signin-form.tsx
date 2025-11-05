@@ -101,6 +101,9 @@ export default function SignInForm({
           if (setSessionError) {
             console.error("❌ Failed to set session:", setSessionError);
           } else {
+
+            // Block handled
+
           }
         }
 

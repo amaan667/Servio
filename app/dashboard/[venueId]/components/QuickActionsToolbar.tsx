@@ -66,6 +66,9 @@ export function QuickActionsToolbar({
       color: "bg-indigo-600 hover:bg-indigo-700",
     });
   } else {
+
+    // Block handled
+
   }
 
   if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
@@ -77,6 +80,9 @@ export function QuickActionsToolbar({
       color: "bg-red-600 hover:bg-red-700",
     });
   } else {
+
+    // Block handled
+
   }
 
 

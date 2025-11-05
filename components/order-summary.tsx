@@ -437,17 +437,17 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
         )}
 
         {/* Feedback Form */}
-        {showFeedback && !feedbackSubmitted && (
+        {showFeedback && !feedbackSubmitted && order && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Share Your Feedback</CardTitle>
             </CardHeader>
             <CardContent>
               <UnifiedFeedbackForm
-                orderId={(order as any).id}
-                venueId={(order as any).venue_id}
-                customerName={(order as any).customer_name}
-                customerPhone={(order as any).customer_phone}
+                orderId={order.id}
+                venueId={order.venue_id}
+                customerName={order.customer_name || undefined}
+                customerPhone={order.customer_phone || undefined}
                 onSubmit={() => {
                   setFeedbackSubmitted(true);
                   setShowFeedback(false);

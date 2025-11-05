@@ -21,7 +21,7 @@ export function MenuManagementWrapper({ venueId, session }: MenuManagementWrappe
   return (
     <div className="space-y-6">
       <MenuUploadCard venueId={venueId} onSuccess={handleUploadSuccess} />
-      <MenuManagement venueId={venueId} session={session as any} refreshTrigger={refreshTrigger} />
+      <MenuManagement venueId={venueId} session={session as AuthSession} refreshTrigger={refreshTrigger} />
     </div>
   );
 }

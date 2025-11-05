@@ -22,11 +22,17 @@ interface CategoryWithExamples {
  * Intelligently categorize a new item using AI
  * Returns either an existing category or suggests creating a new one
  */
+interface MenuItem {
+  name: string;
+  category?: string;
+  description?: string;
+}
+
 export async function categorizeItemWithAI(
   itemName: string,
   itemDescription: string | undefined,
   pdfCategories: string[],
-  pdfItems: any[]
+  pdfItems: MenuItem[]
 ): Promise<{ category: string; confidence: number; shouldCreateNew: boolean }> {
   // Check cache first to avoid duplicate AI calls
   const cached = await AICache.categorization.get(itemName, pdfCategories);
@@ -174,7 +180,7 @@ RESPOND WITH ONLY:
 export async function categorizeItemsBatch(
   items: Array<{ name: string; description?: string }>,
   pdfCategories: string[],
-  pdfItems: any[]
+  pdfItems: MenuItem[]
 ): Promise<Map<string, { category: string; confidence: number; shouldCreateNew: boolean }>> {
   const results = new Map();
 

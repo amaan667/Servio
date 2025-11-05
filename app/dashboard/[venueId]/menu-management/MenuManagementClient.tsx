@@ -650,7 +650,7 @@ export default function MenuManagementClient({
             <MenuPreview
               key={`styled-${designRefreshKey}`}
               venueId={venueId}
-              menuItems={menuItems as any}
+              menuItems={menuItems as unknown as import('@/components/MenuPreview').MenuItem[]}
               categoryOrder={categoryOrder}
             />
           ) : (

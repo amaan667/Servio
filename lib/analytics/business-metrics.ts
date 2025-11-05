@@ -279,7 +279,7 @@ export class BusinessMetricsService {
    * Get performance metrics
    */
   private static async getPerformanceMetrics(
-    supabase: unknown,
+    supabase: SupabaseClient,
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
@@ -340,7 +340,7 @@ export class BusinessMetricsService {
    * Get menu metrics
    */
   private static async getMenuMetrics(
-    supabase: unknown,
+    supabase: SupabaseClient,
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
@@ -361,16 +361,20 @@ export class BusinessMetricsService {
 
     const itemStats = new Map<string, { quantity: number; revenue: number }>();
 
-    orderItems?.forEach(
-      (item: { menu_items?: { name: string }; quantity: number; price: number }) => {
-        const name = item.menu_items?.name || "Unknown";
-        const existing = itemStats.get(name) || { quantity: 0, revenue: 0 };
-        itemStats.set(name, {
-          quantity: existing.quantity + item.quantity,
-          revenue: existing.revenue + item.quantity * item.price,
-        });
-      }
-    );
+    interface OrderItemWithMenu {
+      quantity: number;
+      price: number;
+      menu_items: { name: string } | null;
+    }
+
+    (orderItems as unknown as OrderItemWithMenu[] | null)?.forEach((item) => {
+      const name = item.menu_items?.name || "Unknown";
+      const existing = itemStats.get(name) || { quantity: 0, revenue: 0 };
+      itemStats.set(name, {
+        quantity: existing.quantity + item.quantity,
+        revenue: existing.revenue + item.quantity * item.price,
+      });
+    });
 
     const sortedItems = Array.from(itemStats.entries())
       .map(([name, stats]) => ({ name, ...stats }))
@@ -389,7 +393,7 @@ export class BusinessMetricsService {
    * Get table metrics
    */
   private static async getTableMetrics(
-    supabase: unknown,
+    supabase: SupabaseClient,
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {
@@ -431,7 +435,7 @@ export class BusinessMetricsService {
    * Get staff metrics
    */
   private static async getStaffMetrics(
-    supabase: unknown,
+    supabase: SupabaseClient,
     venueId: string,
     dateRange: { start: Date; end: Date }
   ) {

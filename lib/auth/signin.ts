@@ -36,14 +36,16 @@ export async function signInWithGoogle() {
       hasTestError: !!testError,
       testErrorMessage: testError?.message,
     });
-  } catch (testErr) {
+  } catch (e) {
+    // Error handled
   }
 
   // Clear unknown existing OAuth state before starting
   try {
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
-  } catch (_e) {
+  } catch (e) {
+    // Error handled
   }
 
   const { data, error } = await sb.auth.signInWithOAuth({

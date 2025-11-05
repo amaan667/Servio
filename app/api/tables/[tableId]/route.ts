@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
       updateData.qr_version = qr_version;
     }
 
-    const { data: table, error } = await (supabase as any)
+    const { data: table, error } = await supabase
       .from("tables")
       .update(updateData)
       .eq("id", tableId)
@@ -188,7 +188,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       );
 
       if (!ordersError && activeOrders && activeOrders.length > 0) {
-        const { error: completeOrdersError } = await (supabase as any)
+        const { error: completeOrdersError } = await supabase
           .from("orders")
           .update({
             order_status: "COMPLETED",
@@ -211,7 +211,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         logger.info(
           `[TABLES API] Force canceling ${activeReservations.length} active reservations`
         );
-        const { error: cancelReservationsError } = await (supabase as any)
+        const { error: cancelReservationsError } = await supabase
           .from("reservations")
           .update({
             status: "CANCELLED",
@@ -262,7 +262,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     // Clear table_id references in orders to avoid foreign key constraint issues
-    const { error: clearTableRefsError } = await (supabase as any)
+    const { error: clearTableRefsError } = await supabase
       .from("orders")
       .update({ table_id: null })
       .eq("table_id", tableId)

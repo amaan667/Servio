@@ -64,7 +64,7 @@ export function getCSVColumns() {
 
 export function generateCSV(csvRows: Record<string, unknown>[]): string {
   const columns = getCSVColumns();
-  return toCSV(csvRows, columns as any);
+  return toCSV(csvRows, columns as { key: string; header: string }[]);
 }
 
 export function getCSVFilename() {

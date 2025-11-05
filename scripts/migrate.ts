@@ -4,7 +4,7 @@
  * Manages Supabase database migrations
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 import { logger } from "@/lib/logger";
@@ -44,7 +44,7 @@ async function loadMigrations(): Promise<Migration[]> {
   return migrations.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 }
 
-async function ensureMigrationsTable(supabase: ReturnType<typeof createClient>) {
+async function ensureMigrationsTable(supabase: SupabaseClient) {
   // Try to create migrations table if it doesn't exist
   const createTableSQL = `
     CREATE TABLE IF NOT EXISTS migrations (
@@ -57,8 +57,12 @@ async function ensureMigrationsTable(supabase: ReturnType<typeof createClient>) 
   `;
 
   // Use raw SQL execution if rpc is not available
+  interface SupabaseWithRPC {
+    rpc(fn: string, args: { sql: string }): Promise<{ data: unknown; error: unknown }>;
+    from(table: string): { select(columns: string): Promise<{ data: unknown; error: unknown }>; insert(row: unknown): Promise<{ data: unknown; error: unknown }> };
+  }
   try {
-    const { error } = await (supabase as any).rpc("exec_sql", { sql: createTableSQL });
+    const { error } = await (supabase as unknown as SupabaseWithRPC).rpc("exec_sql", { sql: createTableSQL });
     if (error) {
       logger.error("Failed to create migrations table", { error });
       throw error;
@@ -69,9 +73,12 @@ async function ensureMigrationsTable(supabase: ReturnType<typeof createClient>) 
   }
 }
 
-async function getExecutedMigrations(supabase: ReturnType<typeof createClient>): Promise<string[]> {
+async function getExecutedMigrations(supabase: SupabaseClient): Promise<string[]> {
+  interface SupabaseWithMigrations {
+    from(table: string): { select(columns: string): Promise<{ data: unknown; error: unknown }> };
+  }
   try {
-    const { data, error } = await (supabase as any).from("migrations").select("filename");
+    const { data, error } = await (supabase as unknown as SupabaseWithMigrations).from("migrations").select("filename");
 
     if (error) {
       logger.error("Failed to fetch executed migrations", { error });
@@ -85,10 +92,13 @@ async function getExecutedMigrations(supabase: ReturnType<typeof createClient>):
 }
 
 async function markMigrationExecuted(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   migration: Migration
 ) {
-  const { error } = await (supabase as any).from("migrations").insert({
+  interface SupabaseWithMigrations {
+    from(table: string): { insert(row: unknown): Promise<{ data: unknown; error: unknown }> };
+  }
+  const { error } = await (supabase as unknown as SupabaseWithMigrations).from("migrations").insert({
     filename: migration.filename,
     timestamp: migration.timestamp,
     description: migration.description,
@@ -100,14 +110,17 @@ async function markMigrationExecuted(
   }
 }
 
-async function runMigration(supabase: ReturnType<typeof createClient>, migration: Migration) {
+async function runMigration(supabase: SupabaseClient, migration: Migration) {
   logger.info("Running migration", {
     filename: migration.filename,
     description: migration.description,
   });
 
+  interface SupabaseWithRPC {
+    rpc(fn: string, args: { sql: string }): Promise<{ data: unknown; error: unknown }>;
+  }
   try {
-    const { error } = await (supabase as any).rpc("exec_sql", { sql: migration.sql });
+    const { error } = await (supabase as unknown as SupabaseWithRPC).rpc("exec_sql", { sql: migration.sql });
 
     if (error) {
       logger.error("Migration failed", { filename: migration.filename, error });
@@ -130,7 +143,7 @@ async function main() {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
-  }) as any;
+  });
 
   try {
     await ensureMigrationsTable(supabase);

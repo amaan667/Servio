@@ -310,9 +310,13 @@ export async function POST(_request: NextRequest) {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 
-    if ((_error as any)?.name === "ZodError") {
+    interface ZodError extends Error {
+      errors: unknown[];
+    }
+    const zodError = _error as ZodError;
+    if (zodError?.name === "ZodError") {
       return NextResponse.json(
-        { error: "Invalid request data", details: (_error as any)?.errors },
+        { error: "Invalid request data", details: zodError?.errors },
         { status: 400 }
       );
     }

@@ -2,7 +2,17 @@ import { getOpenAI } from "./openai";
 import fs from "fs";
 import { logger } from "@/lib/logger";
 
-export async function extractMenuFromImage(imagePathOrDataUrl: string) {
+export interface ExtractedMenuItem {
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  allergens?: string[];
+  dietary?: string[];
+  spiceLevel?: string | null;
+}
+
+export async function extractMenuFromImage(imagePathOrDataUrl: string): Promise<ExtractedMenuItem[]> { 
   const openai = getOpenAI();
 
   // Handle both file paths and data URLs
@@ -138,7 +148,7 @@ OTHER RULES:
 
 
     // Log categories for debugging
-    const categories = Array.from(new Set(json.map((item: any) => item.category).filter(Boolean)));
+    const categories = Array.from(new Set(json.map((item) => item.category).filter(Boolean)));
     logger.info("[VISION PDF] Categories extracted:", {
       count: categories.length,
       categories: categories,
@@ -146,15 +156,15 @@ OTHER RULES:
 
     // Log detailed breakdown by category
     const categoryBreakdown: Record<string, number> = {};
-    json.forEach((item: any) => {
+    json.forEach((item) => {
       const cat = item.category || "Uncategorized";
       categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
     });
 
 
     // Log sample items from each category
-    const samplesByCategory: Record<string, any[]> = {};
-    json.forEach((item: any) => {
+    const samplesByCategory: Record<string, ExtractedMenuItem[]> = {};
+    json.forEach((item) => {
       const cat = item.category || "Uncategorized";
       if (!samplesByCategory[cat]) {
         samplesByCategory[cat] = [];
@@ -164,15 +174,15 @@ OTHER RULES:
           name: item.name,
           price: item.price,
           hasDescription: !!item.description,
-        });
+        } as ExtractedMenuItem);
       }
     });
 
 
     // Log any items with potential issues
-    const itemsWithoutName = json.filter((item: any) => !item.name);
-    const itemsWithoutPrice = json.filter((item: any) => !item.price && item.price !== 0);
-    const itemsWithoutCategory = json.filter((item: any) => !item.category);
+    const itemsWithoutName = json.filter((item) => !item.name);
+    const itemsWithoutPrice = json.filter((item) => !item.price && item.price !== 0);
+    const itemsWithoutCategory = json.filter((item) => !item.category);
 
     if (itemsWithoutName.length > 0) {
       logger.warn("[VISION PDF] Items without name:", { count: itemsWithoutName.length });
@@ -180,27 +190,27 @@ OTHER RULES:
     if (itemsWithoutPrice.length > 0) {
       logger.warn("[VISION PDF] Items without price:", {
         count: itemsWithoutPrice.length,
-        examples: itemsWithoutPrice.slice(0, 5).map((i: any) => i.name),
+        examples: itemsWithoutPrice.slice(0, 5).map((i) => i.name),
       });
     }
     if (itemsWithoutCategory.length > 0) {
       logger.warn("[VISION PDF] Items without category:", {
         count: itemsWithoutCategory.length,
-        examples: itemsWithoutCategory.slice(0, 5).map((i: any) => i.name),
+        examples: itemsWithoutCategory.slice(0, 5).map((i) => i.name),
       });
     }
 
     // Log allergen and dietary information extraction
     const itemsWithAllergens = json.filter(
-      (item: any) => item.allergens && item.allergens.length > 0
+      (item) => item.allergens && item.allergens.length > 0
     );
-    const itemsWithDietary = json.filter((item: any) => item.dietary && item.dietary.length > 0);
-    const itemsWithSpiceLevel = json.filter((item: any) => item.spiceLevel);
+    const itemsWithDietary = json.filter((item) => item.dietary && item.dietary.length > 0);
+    const itemsWithSpiceLevel = json.filter((item) => item.spiceLevel);
 
     if (itemsWithAllergens.length > 0) {
       logger.info("[VISION PDF] 🥜 Allergen information extracted", {
         count: itemsWithAllergens.length,
-        examples: itemsWithAllergens.slice(0, 3).map((i: any) => ({
+        examples: itemsWithAllergens.slice(0, 3).map((i) => ({
           name: i.name,
           allergens: i.allergens,
         })),
@@ -210,7 +220,7 @@ OTHER RULES:
     if (itemsWithDietary.length > 0) {
       logger.info("[VISION PDF] 🌱 Dietary information extracted", {
         count: itemsWithDietary.length,
-        examples: itemsWithDietary.slice(0, 3).map((i: any) => ({
+        examples: itemsWithDietary.slice(0, 3).map((i) => ({
           name: i.name,
           dietary: i.dietary,
         })),
@@ -220,7 +230,7 @@ OTHER RULES:
     if (itemsWithSpiceLevel.length > 0) {
       logger.info("[VISION PDF] 🌶️ Spice level information extracted", {
         count: itemsWithSpiceLevel.length,
-        examples: itemsWithSpiceLevel.slice(0, 3).map((i: any) => ({
+        examples: itemsWithSpiceLevel.slice(0, 3).map((i) => ({
           name: i.name,
           spiceLevel: i.spiceLevel,
         })),
@@ -230,11 +240,11 @@ OTHER RULES:
     logger.info("[VISION PDF] ===== EXTRACTION SUMMARY =====", {
       totalItems: json.length,
       totalCategories: categories.length,
-      itemsComplete: json.filter((i: any) => i.name && i.price && i.category).length,
-      itemsPartial: json.filter((i: any) => !i.name || !i.price || !i.category).length,
+      itemsComplete: json.filter((i) => i.name && i.price && i.category).length,
+      itemsPartial: json.filter((i) => !i.name || !i.price || !i.category).length,
     });
 
-    return json;
+    return json as ExtractedMenuItem[];
   } catch (_err) {
     logger.error("Failed to parse item extraction JSON:", text);
     logger.error("Parse error details:", _err);

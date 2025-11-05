@@ -37,6 +37,7 @@ export async function POST() {
       logger.error("[COLUMN FIX] Error renaming column:", { error: renameError.message });
       // Column might already be renamed or not exist
     } else {
+      // Column renamed successfully
     }
 
     // Update indexes
@@ -48,6 +49,7 @@ export async function POST() {
     if (indexError) {
       logger.warn("[COLUMN FIX] Index update warning:", { error: indexError.message });
     } else {
+      // Index updated successfully
     }
 
     // Verify the fix worked

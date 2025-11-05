@@ -104,20 +104,21 @@ export function useLiveOrders(venueId: string) {
 
       // Transform orders to include table_label
       const dataArray = Array.isArray(data) ? data : [];
-      const transformedOrders = dataArray.map((order: Record<string, unknown>) => {
-        const tables = order.tables as { label?: string } | undefined;
-        const orderStatus = order.order_status as string;
+      const transformedOrders = dataArray.map((order: unknown) => {
+        const orderRecord = order as Record<string, unknown>;
+        const tables = orderRecord.tables as { label?: string } | undefined;
+        const orderStatus = orderRecord.order_status as string;
         const statusLabel =
           ORDER_STATUS_LABELS[orderStatus as keyof typeof ORDER_STATUS_LABELS] || orderStatus;
         return {
-          ...order,
+          ...orderRecord,
           table_label:
             tables?.label ||
-            (order.source === "counter"
-              ? `Counter ${order.table_number}`
-              : `Table ${order.table_number}`),
+            (orderRecord.source === "counter"
+              ? `Counter ${orderRecord.table_number}`
+              : `Table ${orderRecord.table_number}`),
           status_label: statusLabel,
-        };
+        } as unknown as Order;
       });
 
       setData(transformedOrders);

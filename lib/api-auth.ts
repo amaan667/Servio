@@ -5,13 +5,13 @@
  * Uses Authorization header instead of cookies for better reliability.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthResult {
   success: boolean;
   user?: User;
-  supabase?: ReturnType<typeof createClient> | unknown;
+  supabase?: SupabaseClient;
   error?: string;
 }
 
@@ -87,7 +87,7 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
  * Verify user has access to a venue (owner or staff)
  */
 export async function verifyVenueAccess(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   userId: string,
   venueId: string
 ): Promise<{ hasAccess: boolean; role?: string }> {

@@ -64,6 +64,9 @@ export async function POST(req: Request) {
         if (!cleanupResult.success) {
           logger.error("[ORDER UPDATE] Table cleanup failed:", cleanupResult.error);
         } else {
+
+          // Block handled
+
         }
 
         // If order is completed and paid, check if reservations should be auto-completed

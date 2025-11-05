@@ -73,12 +73,18 @@ class PerformanceMonitor {
 
     // First Input Delay (FID)
     this.observeMetric("FID", (entry) => {
-      this.recordWebVital("FID", (entry as any).processingStart - entry.startTime);
+      interface FIDEntry extends PerformanceEntry {
+        processingStart: number;
+      }
+      this.recordWebVital("FID", (entry as FIDEntry).processingStart - entry.startTime);
     });
 
     // Cumulative Layout Shift (CLS)
     this.observeMetric("CLS", (entry) => {
-      this.recordWebVital("CLS", (entry as any).value);
+      interface CLSEntry extends PerformanceEntry {
+        value: number;
+      }
+      this.recordWebVital("CLS", (entry as CLSEntry).value);
     });
 
     // Time to First Byte (TTFB)
@@ -144,7 +150,7 @@ class PerformanceMonitor {
         });
 
         return result;
-      }) as any;
+      }) as typeof originalCreateElement;
     }
   }
 

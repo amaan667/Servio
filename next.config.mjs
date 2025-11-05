@@ -40,9 +40,9 @@ const nextConfig = {
     serverComponentsExternalPackages: ['playwright-core', 'playwright', '@sparticuz/chromium', 'puppeteer-core'],
   },
   compiler: {
-    // Remove ALL console logs in production
+    // Remove console logs in production (keep console.error for Sentry)
     removeConsole: {
-      exclude: [], // Remove all console methods
+      exclude: ['error'], // Keep console.error for error tracking
     },
   },
   // Production optimizations

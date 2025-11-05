@@ -142,22 +142,27 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
                     {activity.error && (
                       <p className="text-xs text-destructive mt-1">{activity.error}</p>
                     )}
-                    {
-                      (activity.result && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {typeof activity.result === "object" && activity.result !== null ? (
-                            <span>
-                              {(activity.result as any).updatedCount &&
-                                `${(activity.result as any).updatedCount} items affected`}
-                              {(activity.result as any).revenue &&
-                                ` • Revenue: £${(activity.result as any).revenue.toFixed(2)}`}
-                            </span>
-                          ) : (
-                            <span>{String(activity.result)}</span>
-                          )}
-                        </div>
-                      )) as React.ReactNode
-                    }
+                    {activity.result !== undefined && activity.result !== null && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {typeof activity.result === "object" ? (
+                          <span>
+                            {(() => {
+                              const resultObj = activity.result as Record<string, unknown>;
+                              const parts: string[] = [];
+                              if (typeof resultObj.updatedCount === 'number') {
+                                parts.push(`${resultObj.updatedCount} items affected`);
+                              }
+                              if (typeof resultObj.revenue === 'number') {
+                                parts.push(`Revenue: £${resultObj.revenue.toFixed(2)}`);
+                              }
+                              return parts.join(' • ');
+                            })()}
+                          </span>
+                        ) : (
+                          <span>{String(activity.result)}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

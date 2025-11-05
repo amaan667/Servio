@@ -44,6 +44,13 @@ interface Feedback {
   updated_at: string;
 }
 
+interface FeedbackQuestion {
+  id: string;
+  prompt: string;
+  type: string;
+  is_active: boolean;
+}
+
 interface FeedbackStats {
   totalFeedback: number;
   averageRating: number;
@@ -61,7 +68,7 @@ interface FeedbackSystemProps {
 export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
-  const [questions, setQuestions] = useState<unknown[]>([]);
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
@@ -138,10 +145,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       // Apply search filter (only filter not handled by query)
       if (searchQuery.trim()) {
         filteredFeedback = filteredFeedback.filter(
-          (f: unknown) =>
-            (f as any).customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (f as any).comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (f as any).category?.toLowerCase().includes(searchQuery.toLowerCase())
+          (f) =>
+            f.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            f.category?.toLowerCase().includes(searchQuery.toLowerCase())
         );
       }
 
@@ -450,7 +457,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                     <div className="space-y-4">
                       {questions.map((question, index) => (
                         <div
-                          key={(question as any).id}
+                          key={question.id}
                           className="flex items-center justify-between p-4 border rounded-lg"
                         >
                           <div className="flex-1">
@@ -458,13 +465,13 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                               <span className="text-sm font-medium text-gray-900">
                                 #{index + 1}
                               </span>
-                              <span className="font-medium">{(question as any).prompt}</span>
+                              <span className="font-medium">{question.prompt}</span>
                               <Badge
-                                variant={(question as any).is_active ? "default" : "secondary"}
+                                variant={question.is_active ? "default" : "secondary"}
                               >
-                                {(question as any).type}
+                                {question.type}
                               </Badge>
-                              {!(question as any).is_active && (
+                              {!question.is_active && (
                                 <Badge variant="outline">Inactive</Badge>
                               )}
                             </div>

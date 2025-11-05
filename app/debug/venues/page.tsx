@@ -84,51 +84,61 @@ export default function DebugVenuesPage() {
 
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">All Venues (in order):</h2>
-          {data?.venues?.map((venue: any, index: number) => (
-            <Card key={venue.venue_id} className={index === 0 ? "border-purple-600 border-2" : ""}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {index === 0 && (
-                    <Badge className="bg-purple-600">FIRST - Sign-in goes here</Badge>
-                  )}
-                  {venue.venue_name || venue.venue_id}
-                </CardTitle>
-                <CardDescription>
-                  Created: {new Date(venue.created_at).toLocaleString()}
+          {data?.venues?.map((venue: Record<string, unknown>, index: number) => {
+            const venueName = venue.venue_name as string || venue.venue_id as string;
+            const createdAt = new Date(venue.created_at as string).toLocaleString();
+            return (
+              <Card key={venue.venue_id as string} className={index === 0 ? "border-purple-600 border-2" : ""}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {index === 0 && (
+                      <Badge className="bg-purple-600">FIRST - Sign-in goes here</Badge>
+                    )}
+                    {venueName}
+                  </CardTitle>
+                  <CardDescription>
+                    Created: {createdAt}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600">Venue ID:</p>
-                  <p className="font-mono text-xs">{venue.venue_id}</p>
+                  <p className="font-mono text-xs">{venue.venue_id as string}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Organization ID:</p>
-                  <p className="font-mono text-xs">{venue.organization_id || "None"}</p>
+                  <p className="font-mono text-xs">{(venue.organization_id as string) || "None"}</p>
                 </div>
-                {venue.organization && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-                    <p className="text-sm font-semibold text-green-800">✅ Has Organization</p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Tier: {venue.organization.subscription_tier || "None"}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Stripe:{" "}
-                      {venue.organization.stripe_customer_id ? "✓ Connected" : "✗ Not connected"}
-                    </p>
-                  </div>
-                )}
-                {!venue.organization && (
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-sm font-semibold text-yellow-800">⚠️ No Organization</p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Settings page will show "No organization found"
-                    </p>
-                  </div>
-                )}
+                {(() => {
+                  const org = venue.organization as Record<string, unknown> | undefined | null;
+                  if (org) {
+                    return (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+                        <p className="text-sm font-semibold text-green-800">✅ Has Organization</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Tier: {(org.subscription_tier as string) || "None"}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Stripe:{" "}
+                          {org.stripe_customer_id ? "✓ Connected" : "✗ Not connected"}
+                        </p>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <p className="text-sm font-semibold text-yellow-800">⚠️ No Organization</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Settings page will show "No organization found"
+                        </p>
+                      </div>
+                    );
+                  }
+                })()}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

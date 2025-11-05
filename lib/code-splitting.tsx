@@ -37,8 +37,8 @@ const LoadingSpinner = () => (
 
 export function createLazyRoute<P extends object>(
   importFn: () => Promise<{ default: ComponentType<P> }>
-): ComponentType<P> {
-  return createLazyComponent(importFn, LoadingSpinner);
+) {
+  return createLazyComponent(importFn);
 }
 
 /**

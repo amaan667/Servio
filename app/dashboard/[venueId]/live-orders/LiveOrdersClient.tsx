@@ -219,7 +219,7 @@ export default function LiveOrdersClient({
 
     return (
       <OrderCard
-        key={(order as any).id}
+        key={(order as { id: string }).id}
         order={orderForCard}
         variant="auto"
         venueId={venueId}
@@ -235,7 +235,7 @@ export default function LiveOrdersClient({
 
   const renderOrdersSection = (ordersToRender: unknown[], title: string, iconColor: string) => {
     const filteredOrders = ordersToRender.filter(
-      (order) => !parsedTableFilter || (order as any).table_number?.toString() === parsedTableFilter
+      (order) => !parsedTableFilter || (order as { table_number?: number }).table_number?.toString() === parsedTableFilter
     );
 
     // If we have a table filter but no orders in this section, return null

@@ -95,7 +95,7 @@ export async function POST(_request: NextRequest) {
         reason: "receive",
         ref_type: "manual",
         note: "Initial stock",
-        created_by: (currentUser as any)?.session?.user?.id,
+        created_by: currentUser?.session?.user?.id || null,
       });
 
       if (ledgerError) {

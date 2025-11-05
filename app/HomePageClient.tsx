@@ -75,22 +75,10 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     setMounted(true);
   }, []);
 
-  // Debug logging
-  useEffect(() => {
-    console.log("[HOMEPAGE] Auth state:", {
-      isSignedIn,
-      userPlan,
-      initialUserPlan,
-      user: user ? "present" : "null",
-      mounted,
-    });
-  }, [isSignedIn, userPlan, initialUserPlan, user, mounted]);
-
   // Sync with auth context when it updates (but only if different)
   useEffect(() => {
     const currentAuthState = !!user;
     if (currentAuthState !== isSignedIn) {
-      console.log("[HOMEPAGE] Auth state changed:", { from: isSignedIn, to: currentAuthState });
       setIsSignedIn(currentAuthState);
 
       // If user logged out, reset plan
@@ -108,7 +96,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       // 2. We don't already have a plan from server (initialUserPlan is null)
       // 3. We haven't already fetched it (userPlan is null)
       if (isSignedIn && user && !userPlan && initialUserPlan === null) {
-        console.log("[HOMEPAGE] Fetching user plan from client...");
         try {
           const supabase = supabaseBrowser();
           const { data: venues } = await supabase
@@ -126,7 +113,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
             if (org?.subscription_tier) {
               const plan = org.subscription_tier.toLowerCase() as "basic" | "standard" | "premium";
-              console.log("[HOMEPAGE] Fetched plan from client:", plan);
               setUserPlan(plan);
             }
           }

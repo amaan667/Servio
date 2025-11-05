@@ -50,19 +50,6 @@ export default function VenueSettingsClient({
   organization,
   isOwner = true,
 }: VenueSettingsClientProps) {
-  console.log("[VENUE SETTINGS CLIENT] 🔍 Initializing:", {
-    hasUser: !!user,
-    hasVenue: !!venue,
-    venueCount: venues?.length,
-    hasOrganization: !!organization,
-    organizationId: organization?.id,
-    subscriptionTier: organization?.subscription_tier,
-    stripeCustomerId: organization?.stripe_customer_id,
-    isOwner,
-  });
-
-  console.log("[VENUE SETTINGS CLIENT] 📦 Full organization object:", organization);
-
   if (!organization) {
     console.error(
       "[VENUE SETTINGS CLIENT] ❌ ORGANIZATION IS NULL/UNDEFINED - This will cause PlanCard to show error!"

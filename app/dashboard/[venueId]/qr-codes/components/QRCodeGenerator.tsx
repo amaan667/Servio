@@ -14,6 +14,9 @@ import { QrCode, Plus } from "lucide-react";
 interface TableItem {
   id: string;
   label: string;
+  table_number?: number;
+  table_id?: string;
+  name?: string;
 }
 
 interface CounterItem {
@@ -22,6 +25,8 @@ interface CounterItem {
   name?: string;
   label?: string;
   counter_name?: string;
+  table_number?: number;
+  table_id?: string;
 }
 
 interface QRCodeGeneratorProps {
@@ -92,19 +97,29 @@ export function QRCodeGenerator({
               </SelectTrigger>
               <SelectContent>
                 {items.map((item: TableItem | CounterItem) => {
+                  const isCounter = 'counter_id' in item || 'counter_name' in item;
                   const key = String(
-                    item.id || (item as any).counter_id || (item as any).table_id || Math.random()
+                    item.id || 
+                    (isCounter && 'counter_id' in item ? item.counter_id : undefined) || 
+                    (isCounter && 'table_id' in item ? item.table_id : undefined) || 
+                    Math.random()
                   );
 
                   // Get display value - handle both table and counter naming variations
                   let displayValue = "";
                   if (qrCodeType === "tables") {
                     displayValue = String(
-                      item.label || (item as any).table_number || (item as any).name || ""
+                      item.label || 
+                      ('table_number' in item ? item.table_number : undefined) || 
+                      ('name' in item ? item.name : undefined) || 
+                      ""
                     );
                   } else {
                     displayValue = String(
-                      (item as any).counter_name || item.label || (item as any).name || ""
+                      (isCounter && 'counter_name' in item ? item.counter_name : undefined) || 
+                      item.label || 
+                      ('name' in item ? item.name : undefined) || 
+                      ""
                     );
                   }
 

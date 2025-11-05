@@ -153,7 +153,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
       {/* Table Grid Section */}
       <TableGridSection
-        tables={state.tables as any}
+        tables={state.tables}
         searchQuery={state.searchQuery}
         venueId={venueId}
         onTableActionComplete={handleTableActionComplete}

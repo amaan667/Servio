@@ -138,9 +138,9 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
   logger.info("[SETTINGS PAGE] Data fetched on server", {
     hasVenue: !!finalVenue,
     hasOrganization: !!organization,
-    organizationId: (organization as any)?.id,
-    subscriptionTier: (organization as any)?.subscription_tier,
-    hasStripeCustomer: !!(organization as any)?.stripe_customer_id,
+    organizationId: organization?.id,
+    subscriptionTier: organization?.subscription_tier,
+    hasStripeCustomer: !!organization?.stripe_customer_id,
     userRole: initialData.userRole,
     venueCount: allVenues.length,
   });

@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       if (sessionCloseError) {
         logger.error("[CLOSE TABLE SESSION] Error closing table session:", sessionCloseError);
       } else {
+        // Session closed successfully
       }
     }
 
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
       if (runtimeError) {
         logger.error("[CLOSE TABLE SESSION] Error updating table runtime state:", runtimeError);
       } else {
+        // Runtime state updated successfully
       }
     }
 

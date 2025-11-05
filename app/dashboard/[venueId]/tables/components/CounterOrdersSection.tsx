@@ -3,7 +3,7 @@ import { mapCounterOrderToCardData } from "@/lib/orders/mapCounterOrderToCardDat
 import type { CounterOrder } from "@/hooks/useCounterOrders";
 
 interface CounterOrdersSectionProps {
-  counterOrders: unknown[];
+  counterOrders: CounterOrder[];
 }
 
 export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProps) {
@@ -25,13 +25,13 @@ export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProp
           {counterOrders
             .sort(
               (a, b) =>
-                new Date((a as any).created_at).getTime() -
-                new Date((b as any).created_at).getTime()
+                new Date(a.created_at).getTime() -
+                new Date(b.created_at).getTime()
             )
             .map((order) => (
-              <div key={(order as any).id} className="flex-shrink-0 w-80">
+              <div key={order.id} className="flex-shrink-0 w-80">
                 <OrderCard
-                  order={mapCounterOrderToCardData(order as unknown as CounterOrder)}
+                  order={mapCounterOrderToCardData(order)}
                   variant="counter"
                 />
               </div>

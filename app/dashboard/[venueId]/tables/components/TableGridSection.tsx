@@ -1,8 +1,9 @@
 import { TableCardNew } from "@/components/table-management/TableCardNew";
 import { TableRuntimeState } from "@/types/table-management";
+import { TableGridItem } from "@/hooks/useTableReservations";
 
 interface TableGridSectionProps {
-  tables: TableRuntimeState[];
+  tables: TableGridItem[];
   searchQuery: string;
   venueId: string;
   onTableActionComplete: () => void;
@@ -19,8 +20,9 @@ export function TableGridSection({
     const query = searchQuery.toLowerCase();
     return (
       table.label?.toLowerCase().includes(query) ||
-      (table as any).table_number?.toString().includes(query) ||
-      (table as any).session_status?.toLowerCase().includes(query)
+      table.id?.toString().includes(query) ||
+      table.session_status?.toLowerCase().includes(query) ||
+      table.reservation_status?.toLowerCase().includes(query)
     );
   });
 
@@ -36,8 +38,8 @@ export function TableGridSection({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredTables.map((table) => (
           <TableCardNew
-            key={(table as any).id}
-            table={table as any}
+            key={table.id}
+            table={table}
             venueId={venueId}
             onActionComplete={onTableActionComplete}
           />

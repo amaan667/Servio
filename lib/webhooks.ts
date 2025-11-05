@@ -107,6 +107,7 @@ class WebhookService {
       });
 
       if (response.ok) {
+        // Webhook delivered successfully
       } else {
         throw new Error(`Webhook delivery failed: ${response.status}`);
       }

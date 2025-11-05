@@ -9,12 +9,21 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
+interface StripeSessionData {
+  id: string;
+  customer_email?: string;
+  metadata: {
+    full_name: string;
+    tier: string;
+  };
+}
+
 export default function CreateAccountPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "form" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
-  const [sessionData, setSessionData] = useState<unknown>(null);
+  const [sessionData, setSessionData] = useState<StripeSessionData | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -73,12 +82,12 @@ export default function CreateAccountPage() {
         body: JSON.stringify({
           email: formData.email, // Use form data email (editable by user)
           password: formData.password,
-          fullName: (sessionData as any).metadata.full_name,
+          fullName: sessionData?.metadata.full_name,
           venueName: formData.venueName,
           venueType: formData.businessType,
           serviceType: formData.serviceType,
-          tier: (sessionData as any).metadata.tier,
-          stripeSessionId: (sessionData as any).id,
+          tier: sessionData?.metadata.tier,
+          stripeSessionId: sessionData?.id,
         }),
       });
 
@@ -150,7 +159,7 @@ export default function CreateAccountPage() {
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  {(sessionData as any).customer_email &&
+                  {sessionData?.customer_email &&
                     "Pre-filled from your account • You can change this if needed"}
                 </p>
               </div>

@@ -57,11 +57,25 @@ async function fetchOrderAnalytics(venueId: string) {
     .gte("created_at", thirtyDaysAgo.toISOString())
     .order("created_at", { ascending: false });
 
+  const ordersByStatus = groupBy(orders || [], "status");
+  const pendingStatuses = ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"];
+  const completedStatuses = ["COMPLETED", "SERVED"];
+  
+  const pendingOrders = Object.entries(ordersByStatus)
+    .filter(([status]) => pendingStatuses.includes(status))
+    .reduce((sum, [, count]) => sum + count, 0);
+  
+  const completedOrders = Object.entries(ordersByStatus)
+    .filter(([status]) => completedStatuses.includes(status))
+    .reduce((sum, [, count]) => sum + count, 0);
+    
   return {
     totalOrders: orders?.length || 0,
+    pendingOrders,
+    completedOrders,
     avgOrderValue:
       (orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0) / (orders?.length || 1),
-    ordersByStatus: groupBy(orders || [], "status"),
+    ordersByStatus,
     ordersByDay: groupByDay(orders || []),
     recentOrders: orders?.slice(0, 10) || [],
   };
@@ -92,15 +106,24 @@ async function fetchMenuAnalytics(venueId: string) {
   });
 
   const topItems = (menuItems || [])
-    .map((item) => ({
-      ...item,
-      ordersCount: popularityMap.get(item.id) || 0,
-    }))
+    .map((item) => {
+      const quantity = popularityMap.get(item.id) || 0;
+      const revenue = quantity * (item.price || 0);
+      return {
+        name: item.name,
+        quantity,
+        revenue,
+        category: item.category,
+        ordersCount: quantity,
+        price: item.price,
+      };
+    })
     .sort((a, b) => b.ordersCount - a.ordersCount)
     .slice(0, 10);
 
   return {
     totalItems: menuItems?.length || 0,
+    activeItems: menuItems?.filter((i) => i.is_available).length || 0,
     itemsByCategory: groupBy(menuItems || [], "category"),
     itemsWithImages: menuItems?.filter((i) => i.image_url).length || 0,
     unavailableItems: menuItems?.filter((i) => !i.is_available).length || 0,
@@ -133,7 +156,9 @@ async function fetchRevenueAnalytics(venueId: string) {
     totalRevenue,
     totalOrders,
     avgOrderValue: totalRevenue / (totalOrders || 1),
+    averageOrderValue: totalRevenue / (totalOrders || 1),
     revenueByDay: groupByDay(orders || [], "total_amount"),
+    revenueByHour: [], // Placeholder - can be calculated if needed
   };
 }
 
@@ -154,14 +179,14 @@ function groupBy<T>(array: T[], key: keyof T): Record<string, number> {
 /**
  * Group by day for time series
  */
-function groupByDay(array: any[], sumKey?: string): Record<string, number> {
-  return array.reduce(
+function groupByDay(array: Array<Record<string, unknown>>, sumKey?: string): Record<string, number> {
+  return array.reduce<Record<string, number>>(
     (acc, item) => {
-      const date = new Date(item.created_at).toISOString().split("T")[0];
-      const value = sumKey ? item[sumKey] || 0 : 1;
+      const date = new Date(item.created_at as string).toISOString().split("T")[0];
+      const value = sumKey ? (item[sumKey] as number) || 0 : 1;
       acc[date] = (acc[date] || 0) + value;
       return acc;
     },
-    {} as Record<string, number>
+    {}
   );
 }

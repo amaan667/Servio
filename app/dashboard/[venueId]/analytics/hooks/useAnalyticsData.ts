@@ -342,7 +342,10 @@ function findPeakAndLowestDays(
   return { peakDay, lowestDay };
 }
 
-function markCurrentPeriod(revenueOverTime: unknown[], timePeriod: TimePeriod) {
+function markCurrentPeriod(
+  revenueOverTime: Array<{ date: string; revenue: number; orders: number; isCurrentPeriod?: boolean }>,
+  timePeriod: TimePeriod
+) {
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0];
 
@@ -351,25 +354,25 @@ function markCurrentPeriod(revenueOverTime: unknown[], timePeriod: TimePeriod) {
   else if (timePeriod === "1y") dateFormat = "month";
 
   revenueOverTime.forEach((period) => {
-    if (dateFormat === "day" && (period as any).date === todayStr) {
-      (period as any).isCurrentPeriod = true;
+    if (dateFormat === "day" && period.date === todayStr) {
+      period.isCurrentPeriod = true;
     } else if (dateFormat === "week") {
-      const periodDate = new Date((period as any).date);
+      const periodDate = new Date(period.date);
       const weekStart = new Date(periodDate);
       weekStart.setDate(periodDate.getDate() - periodDate.getDay());
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
 
       if (now >= weekStart && now <= weekEnd) {
-        (period as any).isCurrentPeriod = true;
+        period.isCurrentPeriod = true;
       }
     } else if (dateFormat === "month") {
-      const periodDate = new Date((period as any).date);
+      const periodDate = new Date(period.date);
       if (
         now.getMonth() === periodDate.getMonth() &&
         now.getFullYear() === periodDate.getFullYear()
       ) {
-        (period as any).isCurrentPeriod = true;
+        period.isCurrentPeriod = true;
       }
     }
   });

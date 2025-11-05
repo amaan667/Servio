@@ -449,8 +449,9 @@ export async function POST(req: Request) {
           if (groupSession && groupSession.total_group_size) {
             seatCount = groupSession.total_group_size;
           }
-        } catch (groupError) {
-        }
+        } catch (e) {
+    // Error handled
+  }
 
         // Insert new table. Avoid UPSERT because the database may not have
         // a unique constraint on (venue_id, label) in some environments.
@@ -671,6 +672,7 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (checkError) {
+        // Error checking for existing session
       }
 
       if (existingSession) {

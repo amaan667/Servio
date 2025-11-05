@@ -5,6 +5,12 @@ import { authenticateRequest } from "@/lib/api-auth";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
 
+interface Organization {
+  id: string;
+  stripe_customer_id?: string | null;
+  owner_user_id: string;
+}
+
 export async function POST(_request: NextRequest) {
   try {
     // Authenticate using Authorization header
@@ -26,11 +32,13 @@ export async function POST(_request: NextRequest) {
       .eq("owner_user_id", user.id)
       .single();
 
-    if (!org) {
+    const typedOrg = org as unknown as Organization | null;
+
+    if (!typedOrg) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    if (!(org as any).stripe_customer_id) {
+    if (!typedOrg.stripe_customer_id) {
       return NextResponse.json({ error: "No billing account found" }, { status: 400 });
     }
 
@@ -94,7 +102,7 @@ export async function POST(_request: NextRequest) {
     // Create billing portal session
     try {
       const sessionParams: Stripe.BillingPortal.SessionCreateParams = {
-        customer: (org as any).stripe_customer_id,
+        customer: typedOrg.stripe_customer_id!,
         return_url: returnUrl,
       };
 
@@ -103,7 +111,7 @@ export async function POST(_request: NextRequest) {
       }
 
       logger.debug("[STRIPE PORTAL] Creating session with params:", {
-        customer: (org as any).stripe_customer_id,
+        customer: typedOrg.stripe_customer_id,
         configuration: configurationId || "default",
       });
 

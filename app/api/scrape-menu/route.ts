@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  * Browser instance cache for reuse across requests
  */
 
-let browserInstance: any = null;
+let browserInstance: import('playwright-core').Browser | null = null;
 
 /**
  * Get or create browser instance with Playwright

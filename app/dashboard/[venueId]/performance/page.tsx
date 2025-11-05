@@ -5,6 +5,7 @@
 
 import { PerformanceDashboardClient } from "./PerformanceDashboardClient";
 
-export default function PerformancePage({ params }: { params: Promise<{ venueId: string }> }) {
-  return <PerformanceDashboardClient venueId={(params as any).venueId} />;
+export default async function PerformancePage({ params }: { params: Promise<{ venueId: string }> }) {
+  const { venueId } = await params;
+  return <PerformanceDashboardClient venueId={venueId} />;
 }

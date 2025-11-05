@@ -68,6 +68,9 @@ class ProductionLogger {
     } else if (level === LogLevel.INFO) {
       console.info(formattedMessage);
     } else {
+
+      // Block handled
+
     }
 
     // Sentry integration for errors and warnings in production
@@ -79,16 +82,16 @@ class ProductionLogger {
             service: this.serviceName,
             level: levelName,
           },
-          extra: context as any,
-        } as any);
+          extra: context as Record<string, unknown> | undefined,
+        });
       } else if (level === LogLevel.WARN) {
         Sentry.captureMessage(message, {
           level: "warning",
           tags: {
             service: this.serviceName,
           },
-          extra: context as any,
-        } as any);
+          extra: context as Record<string, unknown> | undefined,
+        });
       }
     }
   }

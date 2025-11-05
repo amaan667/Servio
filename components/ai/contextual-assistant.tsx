@@ -10,10 +10,17 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, ChevronRight } from "lucide-react";
 import { AssistantCommandPalette } from "./assistant-command-palette";
 
+interface DataSummary {
+  lowStock?: Array<{ name: string; quantity: number }>;
+  topSellers?: Array<{ name: string; sales7d: number }>;
+  overdueTickets?: Array<{ id: string; station: string }>;
+  bottlenecks?: Array<{ station: string; avgWaitTime: number }>;
+}
+
 interface ContextualAssistantProps {
   venueId: string;
   page: "menu" | "inventory" | "kds" | "orders" | "analytics";
-  dataSummary?: unknown;
+  dataSummary?: DataSummary;
 }
 
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -63,24 +70,24 @@ export function ContextualAssistant({ venueId, page, dataSummary }: ContextualAs
     const newInsights: string[] = [];
 
     // Inventory-specific insights
-    if (page === "inventory" && (dataSummary as any).lowStock?.length > 0) {
-      newInsights.push(`${(dataSummary as any).lowStock.length} items below reorder level`);
+    if (page === "inventory" && dataSummary?.lowStock && dataSummary.lowStock.length > 0) {
+      newInsights.push(`${dataSummary.lowStock.length} items below reorder level`);
     }
 
     // Menu-specific insights
-    if (page === "menu" && (dataSummary as any).topSellers?.length > 0) {
-      const top = (dataSummary as any).topSellers[0];
+    if (page === "menu" && dataSummary?.topSellers && dataSummary.topSellers.length > 0) {
+      const top = dataSummary.topSellers[0];
       newInsights.push(`${top.name} is your top seller (${top.sales7d} sales)`);
     }
 
     // Orders-specific insights
-    if (page === "orders" && (dataSummary as any).overdueTickets?.length > 0) {
-      newInsights.push(`${(dataSummary as any).overdueTickets.length} tickets overdue`);
+    if (page === "orders" && dataSummary?.overdueTickets && dataSummary.overdueTickets.length > 0) {
+      newInsights.push(`${dataSummary.overdueTickets.length} tickets overdue`);
     }
 
     // KDS-specific insights
-    if (page === "kds" && (dataSummary as any).bottlenecks?.length > 0) {
-      const bottleneck = (dataSummary as any).bottlenecks[0];
+    if (page === "kds" && dataSummary?.bottlenecks && dataSummary.bottlenecks.length > 0) {
+      const bottleneck = dataSummary.bottlenecks[0];
       newInsights.push(`${bottleneck.station} has ${bottleneck.avgWaitTime}min avg wait`);
     }
 

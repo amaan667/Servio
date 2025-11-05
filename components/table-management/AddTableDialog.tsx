@@ -58,15 +58,16 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       onTableAdded?.();
     } catch (_error) {
       // Handle specific constraint error
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
       if (
-        (error as any).message?.includes("CONSTRAINT_ERROR") ||
-        (error as any).message?.includes("temporarily unavailable")
+        errorMessage.includes("CONSTRAINT_ERROR") ||
+        errorMessage.includes("temporarily unavailable")
       ) {
         setError(
           "Table creation is temporarily unavailable due to a database constraint issue. Please try again in a few moments."
         );
       } else {
-        setError((error as any).message || "Failed to create table. Please try again.");
+        setError(errorMessage || "Failed to create table. Please try again.");
       }
     }
   };

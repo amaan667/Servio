@@ -2,6 +2,26 @@ import { createClient } from "@/lib/supabase";
 import { AIPreviewDiff, AIExecutionResult, AIAssistantError } from "@/types/ai-assistant";
 import type { AnalyticsInsightsParams } from "@/types/ai-params";
 
+interface OrderItemWithOrders {
+  menu_item_id: string;
+  quantity: number;
+  price: number;
+  orders: {
+    id: string;
+    created_at: string;
+    venue_id: string;
+  };
+}
+
+interface OrderItemWithMenuItems {
+  menu_item_id: string;
+  quantity: number;
+  price: number;
+  menu_items: {
+    name: string;
+  };
+}
+
 export async function executeAnalyticsGetInsights(
   params: AnalyticsInsightsParams,
   venueId: string,
@@ -72,7 +92,7 @@ export async function executeAnalyticsGetInsights(
       orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
     const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
     const orderCount = new Set(
-      orderItems?.map((item: Record<string, unknown>) => (item.orders as any).id)
+      (orderItems as unknown as OrderItemWithOrders[])?.map((item) => item.orders.id)
     ).size;
 
     const insights = {
@@ -165,7 +185,7 @@ export async function executeAnalyticsGetStats(
       impact: {
         itemsAffected: 0,
         estimatedRevenue: 0,
-        description: `Will generate ${(params as any).metric} statistics for ${params.timeRange}${itemContext}`,
+        description: `Will generate statistics for ${params.timeRange}${itemContext}`,
       },
     };
   }
@@ -201,7 +221,7 @@ export async function executeAnalyticsGetStats(
         orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
       const totalQuantity = orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       const orderCount = new Set(
-        orderItems?.map((item: Record<string, unknown>) => (item.orders as any).id)
+        (orderItems as unknown as OrderItemWithOrders[])?.map((item) => item.orders.id)
       ).size;
 
       stats = {
@@ -221,75 +241,59 @@ export async function executeAnalyticsGetStats(
         .eq("venue_id", venueId)
         .gte("created_at", timeStart);
 
-      switch ((params as any).metric) {
-        case "revenue": {
-          const totalRevenue =
-            orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-          stats = {
-            total: totalRevenue,
-            count: orders?.length || 0,
-            average: orders?.length ? totalRevenue / orders.length : 0,
-            timeRange: params.timeRange,
-            message: `Total revenue for ${params.timeRange}: £${totalRevenue.toFixed(2)} from ${orders?.length || 0} orders.`,
-          };
-          break;
-        }
-        case "orders_count":
-          stats = {
-            count: orders?.length || 0,
-            timeRange: params.timeRange,
-            message: `Total orders for ${params.timeRange}: ${orders?.length || 0}`,
-          };
-          break;
-        case "top_items": {
-          const { data: topItems } = await supabase
-            .from("order_items")
-            .select(
-              `
-                menu_item_id,
-                quantity,
-                price,
-                menu_items!inner(name),
-                orders!inner(venue_id, created_at)
-              `
-            )
-            .eq("orders.venue_id", venueId)
-            .gte("orders.created_at", timeStart);
+      // Generate revenue stats by default
+      const totalRevenue =
+        orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+      
+      // Get top items
+      const topItemsQuery = await supabase
+        .from("order_items")
+        .select(
+          `
+            menu_item_id,
+            quantity,
+            price,
+            menu_items!inner(name),
+            orders!inner(venue_id, created_at)
+          `
+        )
+        .eq("orders.venue_id", venueId)
+        .gte("orders.created_at", timeStart);
 
-          const itemSales = new Map();
-          topItems?.forEach((item: Record<string, unknown>) => {
-            const existing = itemSales.get(item.menu_item_id) || {
-              name: (item.menu_items as any).name,
-              quantity: 0,
-              revenue: 0,
-            };
-            itemSales.set(item.menu_item_id, {
-              name: existing.name,
-              quantity: existing.quantity + item.quantity,
-              revenue:
-                existing.revenue +
-                (typeof item.price === "number" ? item.price : 0) *
-                  (typeof item.quantity === "number" ? item.quantity : 0),
-            });
-          });
+      const itemSales = new Map();
+      (topItemsQuery.data as unknown as OrderItemWithMenuItems[] | null)?.forEach((item) => {
+        const existing = itemSales.get(item.menu_item_id) || {
+          name: item.menu_items.name,
+          quantity: 0,
+          revenue: 0,
+        };
+        itemSales.set(item.menu_item_id, {
+          name: existing.name,
+          quantity: existing.quantity + item.quantity,
+          revenue:
+            existing.revenue +
+            (typeof item.price === "number" ? item.price : 0) *
+              (typeof item.quantity === "number" ? item.quantity : 0),
+        });
+      });
 
-          const top10 = Array.from(itemSales.values())
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 10);
+      const top10 = Array.from(itemSales.values())
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
 
-          stats = {
-            topItems: top10,
-            timeRange: params.timeRange,
-            message: `Top ${top10.length} items by revenue for ${params.timeRange}`,
-          };
-          break;
-        }
-        default:
-          stats = {
-            message: `${(params as any).metric} analysis for ${params.timeRange}`,
-            timeRange: params.timeRange,
-          };
-      }
+      stats = {
+        revenue: {
+          total: totalRevenue,
+          count: orders?.length || 0,
+          average: orders?.length ? totalRevenue / orders.length : 0,
+        },
+        orders: {
+          count: orders?.length || 0,
+        },
+        topItems: top10,
+        timeRange: params.timeRange,
+        message: `Analytics for ${params.timeRange}: £${totalRevenue.toFixed(2)} revenue from ${orders?.length || 0} orders`,
+      };
     }
   } catch (_error) {
     const errorDetails =

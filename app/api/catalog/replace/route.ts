@@ -112,14 +112,14 @@ export async function POST(req: NextRequest) {
     const existingCategories = Array.from(
       new Set(
         extractionResult.items
-          .map((item: any) => item.category)
-          .filter((c: string) => c && c !== "Menu Items")
+          .map((item) => item.category)
+          .filter((c): c is string => Boolean(c) && c !== "Menu Items")
       )
     );
 
     logger.info(`[MENU IMPORT ${requestId}] Post-processing categories`, {
       existingCategories,
-      menuItemsCount: extractionResult.items.filter((item: any) => item.category === "Menu Items")
+      menuItemsCount: extractionResult.items.filter((item) => item.category === "Menu Items")
         .length,
     });
 
@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
         `[MENU IMPORT ${requestId}] Recategorized ${recategorizedCount} items from "Menu Items"`,
         {
           finalCategories: Array.from(
-            new Set(extractionResult.items.map((item: any) => item.category))
+            new Set(extractionResult.items.map((item) => item.category))
           ),
         }
       );
@@ -223,6 +223,7 @@ export async function POST(req: NextRequest) {
       }
 
     } else {
+      // Append mode - keep existing items
     }
 
     // Step 4: Prepare items for database

@@ -22,12 +22,17 @@ interface ImportCSVDialogProps {
   onSuccess: () => void;
 }
 
+interface CSVError {
+  row: number;
+  error: string;
+}
+
 interface ImportResult {
   success: boolean;
   error_count: number;
   imported_count?: number;
   error?: string;
-  errors?: unknown[];
+  errors?: CSVError[];
 }
 
 export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: ImportCSVDialogProps) {
@@ -121,13 +126,13 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
             {result &&
             typeof result === "object" &&
             "errors" in result &&
-            Array.isArray((result as any).errors) &&
-            (result as any).errors.length > 0 ? (
+            Array.isArray(result.errors) &&
+            result.errors.length > 0 ? (
               <div className="max-h-32 overflow-y-auto text-sm">
                 <p className="font-medium mb-1">Errors:</p>
-                {(result as any).errors.map((err: unknown, i: number) => (
+                {result.errors.map((err, i) => (
                   <p key={i} className="text-red-600">
-                    {(err as any).row}: {(err as any).error}
+                    {err.row}: {err.error}
                   </p>
                 ))}
               </div>

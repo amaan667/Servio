@@ -13,6 +13,27 @@ import { extractMenuFromWebsite } from "./webMenuExtractor";
 import { logger } from "./logger";
 import { trackPerformance } from "./performance";
 
+interface MenuItem {
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  image_url?: string;
+  allergens?: string[];
+  dietary?: string[];
+  spiceLevel?: string | null;
+  page_index?: number;
+  source?: string;
+  has_web_enhancement?: boolean;
+  has_image?: boolean;
+  merge_source?: string;
+  name_normalized?: string;
+  _matchReason?: string;
+  _matchConfidence?: number;
+  _matchScore?: number;
+  _unmatched?: boolean;
+}
+
 interface HybridExtractionOptions {
   pdfImages?: string[]; // Array of image data URLs from PDF pages
   websiteUrl?: string; // Website URL to scrape
@@ -20,7 +41,7 @@ interface HybridExtractionOptions {
 }
 
 interface HybridMenuResult {
-  items: any[];
+  items: MenuItem[];
   itemCount: number;
   hasWebData: boolean;
   hasPdfData: boolean;
@@ -83,8 +104,8 @@ export async function extractMenuHybrid(
   if (mode === "hybrid" && pdfImages && websiteUrl) {
 
     // Extract from both sources in parallel for speed
-    let pdfData: { items: any[] };
-    let webItems: any[] = [];
+    let pdfData: { items: MenuItem[] };
+    let webItems: MenuItem[] = [];
 
     try {
       [pdfData, webItems] = await Promise.all([
@@ -118,10 +139,10 @@ export async function extractMenuHybrid(
 
     // PDF Analysis
     const pdfCategories = Array.from(
-      new Set(pdfData.items.map((i: any) => i.category).filter(Boolean))
+      new Set(pdfData.items.map((i) => i.category).filter(Boolean))
     );
-    const pdfWithImages = pdfData.items.filter((i: any) => i.image_url).length;
-    const pdfWithDescriptions = pdfData.items.filter((i: any) => i.description).length;
+    const pdfWithImages = pdfData.items.filter((i) => i.image_url).length;
+    const pdfWithDescriptions = pdfData.items.filter((i) => i.description).length;
 
     logger.info("[HYBRID] 📄 PDF EXTRACTION RESULTS:", {
       totalItems: pdfData.items.length,
@@ -132,11 +153,11 @@ export async function extractMenuHybrid(
     });
 
     // URL Analysis
-    const urlCategories = Array.from(new Set(webItems.map((i: any) => i.category).filter(Boolean)));
-    const urlWithImages = webItems.filter((i: any) => i.image_url).length;
-    const urlWithDescriptions = webItems.filter((i: any) => i.description).length;
+    const urlCategories = Array.from(new Set(webItems.map((i) => i.category).filter(Boolean)));
+    const urlWithImages = webItems.filter((i) => i.image_url).length;
+    const urlWithDescriptions = webItems.filter((i) => i.description).length;
     const urlUncategorized = webItems.filter(
-      (i: any) => !i.category || i.category === "Menu Items" || i.category === "Uncategorized"
+      (i) => !i.category || i.category === "Menu Items" || i.category === "Uncategorized"
     ).length;
 
     logger.info("[HYBRID] 🌐 URL EXTRACTION RESULTS:", {
@@ -150,13 +171,13 @@ export async function extractMenuHybrid(
 
     // Category breakdown comparison
     const pdfCategoryBreakdown: Record<string, number> = {};
-    pdfData.items.forEach((item: any) => {
+    pdfData.items.forEach((item) => {
       const cat = item.category || "Uncategorized";
       pdfCategoryBreakdown[cat] = (pdfCategoryBreakdown[cat] || 0) + 1;
     });
 
     const urlCategoryBreakdown: Record<string, number> = {};
-    webItems.forEach((item: any) => {
+    webItems.forEach((item) => {
       const cat = item.category || "Uncategorized";
       urlCategoryBreakdown[cat] = (urlCategoryBreakdown[cat] || 0) + 1;
     });
@@ -168,11 +189,11 @@ export async function extractMenuHybrid(
 
     // Merge Analysis
     const mergedCategories = Array.from(
-      new Set(mergedItems.map((i: any) => i.category).filter(Boolean))
+      new Set(mergedItems.map((i) => i.category).filter(Boolean))
     );
-    const mergedWithImages = mergedItems.filter((i: any) => i.image_url).length;
-    const mergedEnhanced = mergedItems.filter((i: any) => i.has_web_enhancement).length;
-    const mergedWebOnly = mergedItems.filter((i: any) => i.source === "web_only").length;
+    const mergedWithImages = mergedItems.filter((i) => i.image_url).length;
+    const mergedEnhanced = mergedItems.filter((i) => i.has_web_enhancement).length;
+    const mergedWebOnly = mergedItems.filter((i) => i.source === "web_only").length;
 
     logger.info("[HYBRID] Final Stats:", {
       totalItems: mergedItems.length,
@@ -247,8 +268,8 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 /**
  * Extract menu items from PDF images
  */
-async function extractFromPDF(pdfImages: string[]) {
-  const items: any[] = [];
+async function extractFromPDF(pdfImages: string[]): Promise<{ items: MenuItem[] }> {
+  const items: MenuItem[] = [];
 
 
   for (let i = 0; i < pdfImages.length; i++) {
@@ -260,7 +281,7 @@ async function extractFromPDF(pdfImages: string[]) {
       const pageItems = await extractMenuFromImage(imageUrl);
 
       // Add page index to each item
-      pageItems.forEach((item: any) => {
+      pageItems.forEach((item) => {
         items.push({
           ...item,
           page_index: i,
@@ -504,14 +525,14 @@ function calculateFlexibleMatch(name1: string, name2: string): number {
  * NOW WITH CONFIDENCE SCORES FOR ALL MATCHES
  */
 function findBestMatch(
-  pdfItem: any,
-  webItems: any[]
-): { item: any; score: number; reason: string; confidence: number } | null {
+  pdfItem: MenuItem,
+  webItems: MenuItem[]
+): { item: MenuItem; score: number; reason: string; confidence: number } | null {
   const pdfName = pdfItem.name;
   const pdfPrice = pdfItem.price;
   const pdfNormalized = normalizeName(pdfName);
 
-  let bestMatch: any = null;
+  let bestMatch: MenuItem | null = null;
   let bestScore = 0;
   let bestReason = "";
 
@@ -602,8 +623,8 @@ function findBestMatch(
     }
   }
 
-  if (bestScore >= 0.5) {
-    const confidence = calculateConfidence(bestScore, bestReason, pdfPrice, bestMatch?.price);
+  if (bestScore >= 0.5 && bestMatch) {
+    const confidence = calculateConfidence(bestScore, bestReason, pdfPrice, bestMatch.price);
     return { item: bestMatch, score: bestScore, reason: bestReason, confidence };
   }
 
@@ -671,7 +692,7 @@ function normalizeName(name: string): string {
  * - Enrich with web data (images, better descriptions)
  * - Add web-only items that PDF missed
  */
-async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any[]> {
+async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): Promise<MenuItem[]> {
   logger.info("[HYBRID/MERGE] Starting intelligent merge", {
     pdfCount: pdfItems.length,
     webCount: webItems.length,
@@ -683,7 +704,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   let pricesUpdatedCount = 0;
 
   // Import AI matcher for fallback
-  let batchMatchItemsWithAI: any;
+  let batchMatchItemsWithAI: (pdfItem: MenuItem, webItems: MenuItem[]) => Promise<{ item: MenuItem; confidence: number } | null>;
   try {
     const aiMatcherModule = await import("./aiMatcher");
     batchMatchItemsWithAI = aiMatcherModule.batchMatchItemsWithAI;
@@ -695,7 +716,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   }
 
   // Track unmatched items for AI fallback
-  const unmatchedPdfItems: any[] = [];
+  const unmatchedPdfItems: MenuItem[] = [];
   const matchedWebItems = new Set<string>();
 
   logger.info("[HYBRID/MERGE] 🔄 Starting PDF item matching loop", {
@@ -703,13 +724,15 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   });
 
   // Start with PDF items (we have hotspot positions for these)
-  const merged = pdfItems.map((pdfItem) => {
+  const merged: MenuItem[] = pdfItems.map((pdfItem) => {
     // Find best matching web item using advanced algorithm
     const matchResult = findBestMatch(pdfItem, webItems);
     const webMatch = matchResult?.item;
 
     if (webMatch) {
-      matchedWebItems.add(webMatch.name_normalized);
+      if (webMatch.name_normalized) {
+        matchedWebItems.add(webMatch.name_normalized);
+      }
       matchedCount++;
       const addedImage = !pdfItem.image_url && webMatch.image_url;
       const enhancedDesc = !pdfItem.description && webMatch.description;
@@ -795,6 +818,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   }
 
   if (Object.keys(matchReasons).length > 0) {
+    // Match reasons logged successfully
   }
 
   // AI FALLBACK MATCHING: For unmatched PDF items, try AI matching
@@ -814,7 +838,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
     let aiMatchedCount = 0;
 
     // Get unmatched URL items
-    const unmatchedWebItems = webItems.filter((w) => !matchedWebItems.has(w.name_normalized));
+    const unmatchedWebItems = webItems.filter((w) => !w.name_normalized || !matchedWebItems.has(w.name_normalized));
 
     logger.info("[HYBRID/MERGE] AI fallback setup", {
       unmatchedPdfItems: unmatchedPdfItems.length,
@@ -852,7 +876,9 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
 
               if (mergedIndex !== -1) {
                 aiMatchedCount++;
-                matchedWebItems.add(aiMatch.item.name_normalized);
+                if (aiMatch.item.name_normalized) {
+                  matchedWebItems.add(aiMatch.item.name_normalized);
+                }
 
                 // Enhance the item with URL data
                 merged[mergedIndex] = {
@@ -898,6 +924,9 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
 
         matchedCount += aiMatchedCount;
       } else {
+
+        // Block handled
+
       }
     } catch (aiFallbackError) {
       logger.error("[HYBRID/MERGE] AI fallback matching failed", {
@@ -906,10 +935,13 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       // Continue without AI matching - not critical
     }
   } else {
+
+    // Block handled
+
   }
 
   // Extract PDF categories for intelligent categorization of new URL items
-  const pdfCategories = Array.from(new Set(pdfItems.map((item) => item.category).filter(Boolean)));
+  const pdfCategories = Array.from(new Set(pdfItems.map((item) => item.category).filter((cat): cat is string => Boolean(cat))));
 
 
   // Add web-only items that PDF didn't find with AI-POWERED CATEGORIZATION
@@ -918,20 +950,20 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
   let newCategoriesCreated = new Set<string>();
 
   // Track unmatched URL items for logging
-  const unmatchedUrlItems: any[] = [];
+  const unmatchedUrlItems: MenuItem[] = [];
 
   // Import AI categorizer
   const { categorizeItemWithAI } = await import("./aiCategorizer");
 
   // Collect items that need categorization for parallel processing
   const itemsNeedingCategorization: Array<{
-    webItem: any;
+    webItem: MenuItem;
     index: number;
   }> = [];
 
   for (const webItem of webItems) {
     // Check if this item was already matched (don't add duplicates)
-    const alreadyMatched = matchedWebItems.has(webItem.name_normalized);
+    const alreadyMatched = webItem.name_normalized && matchedWebItems.has(webItem.name_normalized);
 
     if (alreadyMatched) {
       continue; // Skip items that were already matched to PDF items
@@ -973,7 +1005,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
           has_web_enhancement: true,
           has_image: !!webItem.image_url,
           merge_source: "url_only_new_item",
-        });
+        } as unknown as MenuItem);
       }
     }
   }
@@ -1022,7 +1054,7 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
           has_web_enhancement: true,
           has_image: !!webItem.image_url,
           merge_source: "url_only_new_item",
-        });
+        } as unknown as MenuItem);
       });
 
     }
@@ -1108,6 +1140,9 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
       afterCount: dedupeResult.deduplicated.length,
     });
   } else {
+
+    // Block handled
+
   }
 
   return dedupeResult.deduplicated;
@@ -1117,8 +1152,8 @@ async function mergeWebAndPdfData(pdfItems: any[], webItems: any[]): Promise<any
  * DEDUPLICATION: Remove duplicate items from merged results
  * Keeps the first occurrence (prefer PDF items over URL items)
  */
-function deduplicateMergedItems(items: any[]): {
-  deduplicated: any[];
+function deduplicateMergedItems(items: MenuItem[]): {
+  deduplicated: MenuItem[];
   duplicatesRemoved: number;
   duplicatePairs: Array<{ kept: string; removed: string; reason: string }>;
 } {
@@ -1126,7 +1161,7 @@ function deduplicateMergedItems(items: any[]): {
     totalItems: items.length,
   });
 
-  const kept: any[] = [];
+  const kept: MenuItem[] = [];
   const duplicatePairs: Array<{ kept: string; removed: string; reason: string }> = [];
   let duplicatesRemoved = 0;
 
@@ -1188,7 +1223,7 @@ function deduplicateMergedItems(items: any[]): {
 /**
  * Simplified matching for deduplication (faster, stricter)
  */
-function findBestMatchForDedupe(item1: any, item2: any): { isDuplicate: boolean; reason: string } {
+function findBestMatchForDedupe(item1: MenuItem, item2: MenuItem): { isDuplicate: boolean; reason: string } {
   const name1 = normalizeName(item1.name);
   const name2 = normalizeName(item2.name);
 

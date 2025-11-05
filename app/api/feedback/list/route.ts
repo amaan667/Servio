@@ -74,13 +74,21 @@ export async function POST(req: Request) {
     }
 
     // Transform the data to match the expected format
+    interface FeedbackRow {
+      id: string;
+      created_at: string;
+      rating: number;
+      comment: string | null;
+      order_id: string;
+      orders: { venue_id: string };
+    }
     const transformedFeedback =
-      feedback?.map((f) => ({
-        id: (f as any).id,
-        created_at: (f as any).created_at,
-        rating: (f as any).rating,
-        comment: (f as any).comment,
-        order_id: (f as any).order_id,
+      (feedback as unknown as FeedbackRow[])?.map((f) => ({
+        id: f.id,
+        created_at: f.created_at,
+        rating: f.rating,
+        comment: f.comment,
+        order_id: f.order_id,
       })) || [];
 
     return NextResponse.json({

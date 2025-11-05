@@ -11,17 +11,24 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     const supabase = await createClient();
 
     // Update table session
-    const updateData: unknown = {
+    interface SessionUpdate {
+      status: string;
+      updated_at: string;
+      order_id?: string | null;
+      closed_at?: string | null;
+    }
+
+    const updateData: SessionUpdate = {
       status,
       updated_at: new Date().toISOString(),
     };
 
     if (order_id !== undefined) {
-      (updateData as any).order_id = order_id;
+      updateData.order_id = order_id;
     }
 
     if (closed_at !== undefined) {
-      (updateData as any).closed_at = closed_at;
+      updateData.closed_at = closed_at;
     }
 
     const { data: session, error } = await supabase

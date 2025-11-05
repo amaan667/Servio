@@ -19,9 +19,10 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
       const context = canvas.getContext("2d");
 
       await page.render({
-        canvasContext: context as any,
+        canvasContext: context as unknown as CanvasRenderingContext2D,
         viewport: viewport,
-      } as any).promise;
+        canvas: canvas as unknown as HTMLCanvasElement,
+      }).promise;
 
       const imageDataUrl = canvas.toDataURL("image/png");
       imageUrls.push(imageDataUrl);

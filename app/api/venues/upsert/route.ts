@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         .single();
 
       // Invalidate venue cache
-      await (cache as any).invalidate(`venue:${venueId}`);
+      await cache.invalidate(`venue:${venueId}`);
 
       if (error) throw error;
       return NextResponse.json({ ok: true, venue: data });

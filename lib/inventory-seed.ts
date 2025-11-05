@@ -279,6 +279,9 @@ export async function seedInventoryData(venueId: string) {
             errorToContext(error)
           );
         } else {
+
+          // Block handled
+
         }
       }
     } catch (_error) {

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { MenuStyle, getMenuStyleClasses } from "@/lib/menu-style-extractor";
 
-interface MenuItem {
+export interface MenuItem {
   id: string;
   name: string;
   description?: string | null;

@@ -61,6 +61,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       if (!cleanupResult.success) {
         logger.error('[DASHBOARD ORDER] Table cleanup failed:', { error: cleanupResult.error });
       } else {
+        // Cleanup successful
       }
     }
   }

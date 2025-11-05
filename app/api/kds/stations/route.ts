@@ -54,7 +54,6 @@ export async function GET(req: Request) {
 
     // If no stations exist, create default ones
     if (!stations || stations.length === 0) {
-      // @ts-expect-error - Supabase RPC type inference issue
       const { error: setupError } = await supabase.rpc("setup_default_kds_stations", {
         p_venue_id: venueId,
       });
@@ -123,7 +122,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: station, error } = await (supabase as any)
+    const { data: station, error } = await supabase
       .from("kds_stations")
       .insert({
         venue_id: venueId,

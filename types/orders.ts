@@ -13,9 +13,14 @@ export interface OrderForCard extends OrderForEntityKind {
     mode: 'online' | 'pay_at_till' | 'pay_later';
     status: 'paid' | 'unpaid' | 'failed' | 'refunded';
   };
+  table_number?: number | null;
   table_label?: string | null;     // "Table 10"
   counter_label?: string | null;   // "Counter A"  
   customer?: { name?: string; phone?: string } | null;
+  customer_name?: string;
+  customer_phone?: string;
+  payment_status?: string;
+  payment_mode?: string;
   items_preview?: string;          // precomputed "2x Burger, 1x Fries"
   items?: Array<{
     menu_item_id: string;

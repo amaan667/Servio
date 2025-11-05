@@ -587,10 +587,10 @@ export async function handleMergeTable(
   }
 }
 
-export async function handleUnmergeTable(supabase: unknown, table_id: string) {
+export async function handleUnmergeTable(supabase: SupabaseClient, table_id: string) {
   try {
     // Get the current table info to understand its state
-    const { data: currentTable, error: currentTableError } = await (supabase as any)
+    const { data: currentTable, error: currentTableError } = await supabase
       .from("tables")
       .select("id, label, seat_count, merged_with_table_id, venue_id")
       .eq("id", table_id)
@@ -603,7 +603,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
 
     // Check if this table has a merged_with_table_id (it's a secondary table)
     if (currentTable.merged_with_table_id) {
-      const { data, error } = await (supabase as any).rpc("api_unmerge_table", {
+      const { data, error } = await supabase.rpc("api_unmerge_table", {
         p_secondary_table_id: table_id,
       });
 
@@ -624,7 +624,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
     }
 
     // If this is a primary table, look for the secondary table
-    const { data: secondaryTable, error: findError } = await (supabase as any)
+    const { data: secondaryTable, error: findError } = await supabase
       .from("tables")
       .select("id, label, seat_count, merged_with_table_id, venue_id")
       .eq("merged_with_table_id", table_id)
@@ -636,7 +636,7 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
     }
 
     if (secondaryTable) {
-      const { data, error } = await (supabase as any).rpc("api_unmerge_table", {
+      const { data, error } = await supabase.rpc("api_unmerge_table", {
         p_secondary_table_id: secondaryTable.id,
       });
 
@@ -666,13 +666,13 @@ export async function handleUnmergeTable(supabase: unknown, table_id: string) {
 }
 
 export async function handleCancelReservation(
-  supabase: unknown,
+  supabase: SupabaseClient,
   table_id: string,
   reservation_id: string
 ) {
   try {
     // First, cancel the reservation in the reservations table (if it exists)
-    const { error: reservationError } = await (supabase as any)
+    const { error: reservationError } = await supabase
       .from("reservations")
       .update({
         status: "CANCELLED",
@@ -685,7 +685,7 @@ export async function handleCancelReservation(
     }
 
     // Get the current table session
-    const { data: currentSession, error: sessionError } = await (supabase as any)
+    const { data: currentSession, error: sessionError } = await supabase
       .from("table_sessions")
       .select("*")
       .eq("table_id", table_id)
@@ -703,7 +703,7 @@ export async function handleCancelReservation(
     }
 
     // Close the current session
-    const { error: closeError } = await (supabase as any)
+    const { error: closeError } = await supabase
       .from("table_sessions")
       .update({
         closed_at: new Date().toISOString(),
@@ -717,7 +717,7 @@ export async function handleCancelReservation(
     }
 
     // Create a new FREE session for the table
-    const { data: newSessionData, error: newSessionError } = await (supabase as any)
+    const { data: newSessionData, error: newSessionError } = await supabase
       .from("table_sessions")
       .insert({
         table_id: table_id,

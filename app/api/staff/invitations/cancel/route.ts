@@ -14,7 +14,9 @@ export async function POST(_request: NextRequest) {
 
     // Optional: Log user context if provided
     if (user_id) {
+      // User context available
     } else {
+      // No user context
     }
 
     const supabase = createAdminClient();
@@ -78,6 +80,7 @@ export async function POST(_request: NextRequest) {
         });
       }
     } else {
+      // No venue ID or user ID for audit
     }
 
     // Check if invitation can be cancelled

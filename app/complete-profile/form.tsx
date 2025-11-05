@@ -153,7 +153,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
 
       router.replace(`/dashboard/${returnedVenueId}`);
     } catch (_error) {
-      setError((error as any).message || "Failed to complete profile setup");
+      setError((_error as Error).message || "Failed to complete profile setup");
     } finally {
       setLoading(false);
     }

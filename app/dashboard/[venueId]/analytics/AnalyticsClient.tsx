@@ -15,11 +15,37 @@ import {
 import { supabaseBrowser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
+interface TopSellingItem {
+  name: string;
+  quantity: number;
+  revenue: number;
+  category?: string;
+  ordersCount?: number;
+  price?: number;
+}
+
 interface AnalyticsClientProps {
   venueId: string;
-  ordersData: any;
-  menuData: any;
-  revenueData: any;
+  ordersData: {
+    totalOrders: number;
+    pendingOrders: number;
+    completedOrders: number;
+    avgOrderValue: number;
+    ordersByStatus: Record<string, number>;
+  };
+  menuData: {
+    totalItems: number;
+    activeItems: number;
+    topSellingItems: TopSellingItem[];
+    itemsWithImages: number;
+    itemsByCategory: Record<string, number>;
+  };
+  revenueData: {
+    totalRevenue: number;
+    averageOrderValue: number;
+    revenueByHour: unknown[];
+    revenueByDay: Record<string, number>;
+  };
 }
 
 export default function AnalyticsClient({
@@ -42,7 +68,6 @@ export default function AnalyticsClient({
         } = await supabase.auth.getUser();
 
         if (!user) {
-          console.log("[Analytics Client] No user, redirecting to sign-in");
           router.push("/sign-in");
           return;
         }
@@ -76,7 +101,6 @@ export default function AnalyticsClient({
         }
 
         // No access
-        console.log("[Analytics Client] No access, redirecting to dashboard");
         router.push("/dashboard");
       } catch (error) {
         console.error("[Analytics Client] Auth error:", error);
@@ -199,8 +223,8 @@ export default function AnalyticsClient({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {menuData.topSellingItems.map((item: any, index: number) => (
-                  <div key={item.id} className="flex items-center gap-4">
+                {menuData.topSellingItems.map((item, index: number) => (
+                  <div key={index} className="flex items-center gap-4">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-600">
                       {index + 1}
                     </div>
@@ -210,7 +234,7 @@ export default function AnalyticsClient({
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{item.ordersCount} orders</p>
-                      <p className="text-sm text-muted-foreground">£{item.price.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">£{item.price?.toFixed(2) || '0.00'}</p>
                     </div>
                   </div>
                 ))}

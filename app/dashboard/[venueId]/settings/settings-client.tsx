@@ -38,17 +38,9 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   useEffect(() => {
     // If we have initial data, cache it (overwriting any stale cache)
     if (initialData && typeof window !== "undefined") {
-      console.log("[SETTINGS CLIENT] 🎯 Using initialData from server:", {
-        hasOrganization: !!initialData.organization,
-        organizationId: initialData.organization?.id,
-        subscriptionTier: initialData.organization?.subscription_tier,
-        fullOrganization: initialData.organization,
-      });
       sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(initialData));
       return;
     }
-
-    console.log("[SETTINGS CLIENT] ⚠️ No initialData - will fetch from client");
 
     // Otherwise, fetch data on client (and skip cache since we fixed the query)
     const fetchData = async () => {
@@ -79,44 +71,18 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           .eq("owner_user_id", user.id)
           .limit(1);
 
-        console.log("[SETTINGS CLIENT] 🔍 Venues query for organization:", {
-          hasData: !!venuesForOrg,
-          dataLength: venuesForOrg?.length,
-          firstVenue: venuesForOrg?.[0],
-          error: venuesError,
-        });
-
         // Fetch organization
         let organization = null;
         if (venuesForOrg && venuesForOrg.length > 0 && venuesForOrg[0]?.organization_id) {
-          console.log(
-            "[SETTINGS CLIENT] 🔍 Fetching organization:",
-            venuesForOrg[0].organization_id
-          );
           const { data: orgData, error: orgError } = await supabase
             .from("organizations")
             .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
             .eq("id", venuesForOrg[0].organization_id)
             .single();
 
-          console.log("[SETTINGS CLIENT] 📥 Organization query result:", {
-            hasData: !!orgData,
-            data: orgData,
-            error: orgError,
-          });
-
           if (orgData) {
-            console.log("[SETTINGS CLIENT] 🎯 ACTUAL SUBSCRIPTION TIER FROM DB:", {
-              subscriptionTier: orgData.subscription_tier,
-              id: orgData.id,
-              stripeCustomerId: orgData.stripe_customer_id,
-              status: orgData.subscription_status,
-            });
+            organization = orgData;
           }
-
-          organization = orgData;
-        } else {
-          console.log("[SETTINGS CLIENT] ⚠️ No organization_id found in venues!");
         }
 
         // Fetch all required data
@@ -166,13 +132,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           isManager,
           userRole: userRole?.role || (isOwner ? "owner" : "staff"),
         };
-
-        console.log("[SETTINGS CLIENT] 📥 Fetched data from client-side:", {
-          hasOrganization: !!organization,
-          organizationId: (organization as Organization)?.id,
-          subscriptionTier: (organization as Organization)?.subscription_tier,
-          fullOrganization: organization,
-        });
 
         setData(fetchedData);
         sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
@@ -249,17 +208,11 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         {canAccessSettings ? (
           <>
-            {console.log("[SETTINGS CLIENT] 🚀 Passing data to VenueSettingsClient:", {
-              hasOrganization: !!data.organization,
-              organizationId: (data.organization as Organization)?.id,
-              subscriptionTier: (data.organization as Organization)?.subscription_tier,
-              organizationObject: data.organization,
-            })}
             <VenueSettingsClient
               user={data.user as User}
-              venue={data.venue as Record<string, unknown>}
-              venues={data.venues as Record<string, unknown>[]}
-              organization={data.organization as Organization | null}
+              venue={data.venue as unknown as import('./hooks/useVenueSettings').Venue}
+              venues={data.venues as unknown as import('./hooks/useVenueSettings').Venue[]}
+              organization={data.organization as Organization | undefined}
               isOwner={data.isOwner}
             />
           </>

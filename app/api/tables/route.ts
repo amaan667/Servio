@@ -6,6 +6,14 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
+interface TableRow {
+  id: string;
+  table_id?: string;
+  table_number?: number;
+  label?: string;
+  [key: string]: unknown;
+}
+
 // GET /api/tables?venueId=xxx - Get table runtime state for a venue
 export async function GET(req: Request) {
   try {
@@ -59,7 +67,7 @@ export async function GET(req: Request) {
       .from("table_sessions")
       .select("*")
       .eq("venue_id", venueId)
-      .in("table_id", tables?.map((t) => (t as any).id) || [])
+      .in("table_id", (tables as unknown as TableRow[])?.map((t) => t.id) || [])
       .is("closed_at", null); // Only get active sessions
 
     if (sessionsError) {
@@ -119,7 +127,7 @@ export async function GET(req: Request) {
       for (const table of tablesWithoutSessions) {
         const tableWithId = table as { table_id?: string; id?: string };
         const tableId = tableWithId.table_id || tableWithId.id;
-        const { error: sessionError } = await (adminSupabase as any).from("table_sessions").insert({
+        const { error: sessionError } = await adminSupabase.from("table_sessions").insert({
           venue_id: venueId,
           table_id: tableId,
           status: "FREE",
@@ -140,7 +148,7 @@ export async function GET(req: Request) {
         .from("table_sessions")
         .select("*")
         .eq("venue_id", venueId)
-        .in("table_id", tables?.map((t) => (t as any).id) || [])
+        .in("table_id", (tables as unknown as TableRow[])?.map((t) => t.id) || [])
         .is("closed_at", null);
 
       // Update the tables with the new sessions

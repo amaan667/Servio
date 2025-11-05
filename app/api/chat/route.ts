@@ -493,8 +493,10 @@ export async function POST(req: Request) {
           toolCall.function.name === "add_menu_item" &&
           (result as Record<string, unknown>).shouldNavigate
         ) {
+          const navigateTo = (result as Record<string, unknown>).navigateTo;
+          const navigateToStr = typeof navigateTo === 'string' ? navigateTo : 'menu';
           navigationInfo = {
-            route: getNavigationRoute((result as Record<string, unknown>).navigateTo, venueId),
+            route: getNavigationRoute(navigateToStr, venueId),
           };
         }
       }
@@ -975,9 +977,15 @@ function buildIntelligentSystemMessage(
       "saturday",
       "sunday",
     ];
+    interface DayHours {
+      open?: string;
+      close?: string;
+      closed?: boolean;
+    }
     const hoursArray = daysOfWeek
       .map((day) => {
-        const h = (venue.operatingHours as Record<string, any>)[day];
+        const hours = venue.operatingHours as Record<string, DayHours> | undefined;
+        const h = hours?.[day];
         if (!h) return null;
         const dayName = day.charAt(0).toUpperCase() + day.slice(1);
         if (h.closed === true) return `${dayName}: Closed`;
@@ -997,9 +1005,14 @@ function buildIntelligentSystemMessage(
   // Build menu info with actual items
   let menuInfo = "";
   if (venue.menuItems && venue.menuItems.length > 0) {
-    const itemsList = venue.menuItems
+    interface MenuItem {
+      name: string;
+      price: number;
+      category: string;
+    }
+    const itemsList = (venue.menuItems as MenuItem[])
       .slice(0, 30) // First 30 items
-      .map((item: any) => `${item.name} - ${currencySymbol}${item.price} (${item.category})`)
+      .map((item) => `${item.name} - ${currencySymbol}${item.price} (${item.category})`)
       .join("\n");
     menuInfo = `\n\nMENU ITEMS (${venue.menuItems.length} total):\n${itemsList}${venue.menuItems.length > 30 ? "\n... and more" : ""}`;
   }

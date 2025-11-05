@@ -203,8 +203,8 @@ async function mergeFreeTables(
  */
 async function expandOccupiedTable(
   supabase: SupabaseClient,
-  sourceTable: { id: string; seat_count: number; venue_id: string },
-  targetTable: { id: string; seat_count: number; venue_id: string },
+  sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
+  targetTable: { id: string; seat_count: number; venue_id: string; label: string },
   sourceIsFree: boolean
 ) {
   try {
@@ -224,7 +224,7 @@ async function expandOccupiedTable(
     }
 
     // Update occupied table label to include the free table
-    const newLabel = `${(occupiedTable as any).label} + ${(freeTable as any).label}`;
+    const newLabel = `${occupiedTable.label} + ${freeTable.label}`;
     const { error: labelError } = await supabase
       .from("tables")
       .update({
@@ -273,8 +273,8 @@ async function expandOccupiedTable(
  */
 async function expandReservedTable(
   supabase: SupabaseClient,
-  sourceTable: { id: string; seat_count: number; venue_id: string },
-  targetTable: { id: string; seat_count: number; venue_id: string },
+  sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
+  targetTable: { id: string; seat_count: number; venue_id: string; label: string },
   sourceIsFree: boolean
 ) {
   try {
@@ -282,7 +282,7 @@ async function expandReservedTable(
     const reservedTable = sourceIsFree ? targetTable : sourceTable;
 
     // Update reserved table label to include the free table
-    const newLabel = `${(reservedTable as any).label} + ${(freeTable as any).label}`;
+    const newLabel = `${reservedTable.label} + ${freeTable.label}`;
     const { error: labelError } = await supabase
       .from("tables")
       .update({
@@ -330,8 +330,8 @@ async function expandReservedTable(
  */
 async function mergeOccupiedTables(
   supabase: SupabaseClient,
-  sourceTable: { id: string; seat_count: number; venue_id: string },
-  targetTable: { id: string; seat_count: number; venue_id: string }
+  sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
+  targetTable: { id: string; seat_count: number; venue_id: string; label: string }
 ) {
   try {
     // Get both sessions
@@ -345,8 +345,15 @@ async function mergeOccupiedTables(
       return { error: "Could not find both active sessions" };
     }
 
-    const sourceSession = sessions.find((s: unknown) => (s as any).table_id === sourceTable.id);
-    const targetSession = sessions.find((s: unknown) => (s as any).table_id === targetTable.id);
+    interface SessionRow {
+      table_id: string;
+      id: string;
+      total_amount?: number;
+      order_id?: string;
+      [key: string]: unknown;
+    }
+    const sourceSession = (sessions as unknown as SessionRow[]).find((s) => s.table_id === sourceTable.id);
+    const targetSession = (sessions as unknown as SessionRow[]).find((s) => s.table_id === targetTable.id);
 
     if (!sourceSession || !targetSession) {
       return { error: "Could not find both active sessions" };
@@ -386,7 +393,7 @@ async function mergeOccupiedTables(
     }
 
     // Update table labels
-    const combinedLabel = `${(sourceTable as any).label} + ${(targetTable as any).label}`;
+    const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
 
     const { error: sourceLabelError } = await supabase
       .from("tables")
@@ -436,12 +443,12 @@ async function mergeOccupiedTables(
  */
 async function mergeReservedTables(
   supabase: SupabaseClient,
-  sourceTable: { id: string; seat_count: number; venue_id: string },
-  targetTable: { id: string; seat_count: number; venue_id: string }
+  sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
+  targetTable: { id: string; seat_count: number; venue_id: string; label: string }
 ) {
   try {
     // Update table labels
-    const combinedLabel = `${(sourceTable as any).label} + ${(targetTable as any).label}`;
+    const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
 
     const { error: sourceLabelError } = await supabase
       .from("tables")

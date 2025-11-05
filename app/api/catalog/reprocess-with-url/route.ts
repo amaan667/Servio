@@ -18,9 +18,12 @@ interface ScrapedMenuItem {
 interface PDFMenuItem {
   name: string;
   description?: string;
-  price: number;
-  category: string;
+  price?: number;
+  category?: string;
   page: number;
+  allergens?: string[];
+  dietary?: string[];
+  spiceLevel?: string | null;
 }
 
 /**

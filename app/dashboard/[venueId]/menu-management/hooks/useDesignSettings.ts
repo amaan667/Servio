@@ -79,7 +79,7 @@ export function useDesignSettings(venueId: string) {
       const supabase = createClient();
 
       // Prepare data for upsert - exclude legacy fields if using numeric
-      const saveData: any = {
+      const saveData: Record<string, unknown> = {
         venue_id: venueId,
         venue_name: designSettings.venue_name,
         logo_url: designSettings.logo_url,

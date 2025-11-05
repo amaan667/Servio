@@ -45,10 +45,8 @@ export function useDashboardRealtime({
 
     debounceTimeoutRef.current = setTimeout(async () => {
       if (!isMountedRef.current) return;
-      console.log("[Dashboard Realtime] 🔄 DEBOUNCED REFRESH triggered");
       try {
         await refreshCountsRef.current();
-        console.log("[Dashboard Realtime] ✅ DEBOUNCED REFRESH completed");
       } catch (_error) {
         console.error("[Dashboard Realtime] ❌ Error refreshing counts:", _error);
       }
@@ -58,10 +56,8 @@ export function useDashboardRealtime({
   // Immediate refresh (no debounce) for critical updates
   const immediateRefresh = useCallback(async () => {
     if (!isMountedRef.current) return;
-    console.log("[Dashboard Realtime] 🔄 IMMEDIATE REFRESH triggered");
     try {
       await refreshCountsRef.current();
-      console.log("[Dashboard Realtime] ✅ IMMEDIATE REFRESH completed successfully");
     } catch (_error) {
       console.error("[Dashboard Realtime] ❌ Error in immediate refresh:", _error);
     }
@@ -145,22 +141,11 @@ export function useDashboardRealtime({
           async (payload: RealtimePayload) => {
             if (!isMountedRef.current) return;
 
-            console.log("[Dashboard Realtime] Order change detected:", {
-              eventType: payload.eventType,
-              orderId: payload.new?.id || payload.old?.id,
-              orderStatus: payload.new?.order_status || payload.old?.order_status,
-              venueId,
-            });
-
             // For INSERT (new orders), refresh immediately to show new data
             // For UPDATE/DELETE, use debounced refresh
             if (payload.eventType === "INSERT") {
-              console.log("[Dashboard Realtime] New order inserted, triggering immediate refresh");
               immediateRefresh();
             } else {
-              console.log(
-                "[Dashboard Realtime] Order updated/deleted, triggering debounced refresh"
-              );
               debouncedRefresh();
             }
             debouncedLoadStats();
@@ -168,10 +153,6 @@ export function useDashboardRealtime({
             if (payload.eventType === "INSERT" && payload.new) {
               const order = payload.new as { order_status: string; total_amount?: number };
               const orderCreatedAt = payload.new?.created_at as string | undefined;
-              console.log("[Dashboard Realtime] Checking if order is within today's window:", {
-                orderCreatedAt,
-                todayWindow,
-              });
               // Only incrementally update if order is from today's window
               if (
                 orderCreatedAt &&
@@ -179,14 +160,7 @@ export function useDashboardRealtime({
                 orderCreatedAt >= todayWindow.startUtcISO &&
                 orderCreatedAt < todayWindow.endUtcISO
               ) {
-                console.log(
-                  "[Dashboard Realtime] Order within today's window, updating revenue incrementally"
-                );
                 updateRevenueIncrementallyRef.current(order);
-              } else {
-                console.log(
-                  "[Dashboard Realtime] Order outside today's window, skipping incremental update"
-                );
               }
             }
           }
@@ -241,9 +215,7 @@ export function useDashboardRealtime({
           }
         )
         .subscribe((status: string) => {
-          console.log("[Dashboard Realtime] Subscription status:", status, "for venue:", venueId);
           if (status === "SUBSCRIBED") {
-            console.log("[Dashboard Realtime] Successfully subscribed to realtime updates");
             channelRef.current = channel;
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
             console.error("[Dashboard Realtime] Channel error or timeout:", status);
@@ -282,7 +254,6 @@ export function useDashboardRealtime({
 
     const handleOrderCreated = (event: CustomEvent) => {
       if (event.detail.venueId === venueId) {
-        console.log("[Dashboard Realtime] Custom orderCreated event received", event.detail);
         refreshCountsRef.current();
         if (event.detail.order) {
           updateRevenueIncrementallyRef.current(event.detail.order);

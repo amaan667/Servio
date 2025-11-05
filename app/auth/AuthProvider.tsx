@@ -78,7 +78,7 @@ export default function AuthProvider({
       }
 
       // Set up auth state change listener
-      let subscription: unknown;
+      let subscription: { unsubscribe: () => void } | undefined;
       try {
         const { data } = supabase.auth.onAuthStateChange(
           async (event: unknown, newSession: unknown) => {
@@ -126,7 +126,7 @@ export default function AuthProvider({
 
       return () => {
         if (subscription) {
-          (subscription as any).unsubscribe();
+          subscription.unsubscribe();
         }
       };
     }
@@ -163,7 +163,7 @@ export default function AuthProvider({
       getInitialSession();
 
       // Handle auth state changes for client-fetched sessions
-      let subscription: unknown;
+      let subscription: { unsubscribe: () => void } | undefined;
       try {
         const { data } = supabase.auth.onAuthStateChange(
           async (event: unknown, newSession: unknown) => {
@@ -214,7 +214,7 @@ export default function AuthProvider({
 
       return () => {
         if (subscription) {
-          (subscription as any).unsubscribe();
+          subscription.unsubscribe();
         }
       };
     }

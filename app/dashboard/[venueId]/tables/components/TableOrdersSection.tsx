@@ -1,4 +1,5 @@
 import { TableOrderGroupCard } from "@/components/table-management/TableOrderGroupCard";
+import type { TableOrder } from "@/hooks/useTableOrders";
 
 interface TableOrdersSectionProps {
   groupedTableOrders: { [key: string]: unknown[] };
@@ -28,7 +29,7 @@ export function TableOrdersSection({ groupedTableOrders, venueId }: TableOrdersS
               <div key={tableKey} className="flex-shrink-0 w-96">
                 <TableOrderGroupCard
                   tableLabel={tableKey}
-                  orders={orders as any}
+                  orders={orders as unknown as TableOrder[]}
                   venueId={venueId}
                 />
               </div>

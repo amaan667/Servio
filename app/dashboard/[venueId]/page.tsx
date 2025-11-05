@@ -2,6 +2,7 @@ import React from "react";
 import DashboardClient from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
+import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
 // Force dynamic rendering to prevent stale cached menu counts
 export const dynamic = "force-dynamic";
@@ -12,9 +13,9 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
   // Fetch initial dashboard data on server WITHOUT auth (use admin client)
 
-  let initialCounts: any = null;
+  let initialCounts: DashboardCounts | undefined = undefined;
 
-  let initialStats: any = null;
+  let initialStats: DashboardStats | undefined = undefined;
 
   try {
     const supabase = createAdminClient(); // Use admin client - no auth required!
@@ -33,7 +34,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     if (countsError) {
       /* Empty */
     } else {
-      initialCounts = countsData;
+      initialCounts = countsData as DashboardCounts;
     }
 
     // Fetch REAL table counts directly from tables table (no RPC, no caching)

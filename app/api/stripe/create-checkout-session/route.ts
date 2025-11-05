@@ -173,6 +173,7 @@ export async function POST(_request: NextRequest) {
           organizationId,
         });
       } else if (idError) {
+        // Error getting organization ID
       }
     }
 
@@ -216,6 +217,9 @@ export async function POST(_request: NextRequest) {
           value: venueUpdateError,
         });
       } else {
+
+        // Block handled
+
       }
     }
 
@@ -265,6 +269,9 @@ export async function POST(_request: NextRequest) {
         data: { customerId, orgId: actualOrgId },
       });
     } else {
+
+      // Block handled
+
     }
 
     // Create checkout session

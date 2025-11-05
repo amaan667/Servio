@@ -8,13 +8,22 @@
 import { getOpenAI } from "./openai";
 import { logger } from "./logger";
 
+export interface MatchableMenuItem {
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  image_url?: string;
+  name_normalized?: string;
+}
+
 /**
  * Use AI to determine if two items are the same menu item
  * Returns confidence score (0-1) and reasoning
  */
 export async function matchItemsWithAI(
-  pdfItem: { name: string; description?: string; price?: number; category?: string },
-  urlItem: { name: string; description?: string; price?: number; category?: string }
+  pdfItem: MatchableMenuItem,
+  urlItem: MatchableMenuItem
 ): Promise<{ isSame: boolean; confidence: number; reasoning: string }> {
   const openai = getOpenAI();
 
@@ -100,9 +109,9 @@ Example responses:
  * Batch match multiple items (more efficient)
  */
 export async function batchMatchItemsWithAI(
-  pdfItem: any,
-  urlItems: any[]
-): Promise<{ item: any; confidence: number } | null> {
+  pdfItem: MatchableMenuItem,
+  urlItems: MatchableMenuItem[]
+): Promise<{ item: MatchableMenuItem; confidence: number } | null> {
   // If only a few items, check them all
   if (urlItems.length <= 5) {
     for (const urlItem of urlItems) {

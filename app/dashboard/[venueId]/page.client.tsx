@@ -89,15 +89,6 @@ const DashboardClient = React.memo(function DashboardClient({
   const venueTz = "Europe/London"; // Default timezone
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
 
-  // Log when counts change to track updates
-  useEffect(() => {
-    console.log("[Dashboard Client] 📊 Counts updated:", {
-      live_count: dashboardData.counts.live_count,
-      today_orders_count: dashboardData.counts.today_orders_count,
-      earlier_today_count: dashboardData.counts.earlier_today_count,
-    });
-  }, [dashboardData.counts]);
-
   useDashboardRealtime({
     venueId,
     todayWindow: dashboardData.todayWindow,

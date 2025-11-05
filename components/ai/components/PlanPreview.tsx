@@ -38,14 +38,16 @@ export function PlanPreview({ plan, previews, executing, onExecute }: PlanPrevie
           <div>
             <h4 className="font-semibold mb-2">Preview Changes:</h4>
             <div className="space-y-2">
-              {previews.map((preview: unknown, idx: number) => (
-                <div key={idx} className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <Badge>{(preview as any).type || "Change"}</Badge>
-                  <p className="text-xs mt-1">
-                    {(preview as any).description || (preview as any).summary || "No description"}
-                  </p>
-                </div>
-              ))}
+              {previews.map((preview, idx: number) => {
+                const impactDesc = preview.impact?.description || "No description";
+                const toolName = preview.toolName || "Change";
+                return (
+                  <div key={idx} className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    <Badge>{toolName}</Badge>
+                    <p className="text-xs mt-1">{impactDesc}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

@@ -56,11 +56,11 @@ interface Table extends Record<string, unknown> {
   reserved_later_id?: string | null;
   reserved_later_start?: string | null;
   reserved_later_name?: string | null;
-  state?: TableState;
+  state: TableState;
   stateInfo?: TableStateInfo;
   mergeScenario?: MergeScenario;
-  selectable?: boolean;
-  requiresConfirmation?: boolean;
+  selectable: boolean;
+  requiresConfirmation: boolean;
 }
 
 interface EnhancedTableMergeDialogProps {
@@ -98,7 +98,7 @@ export function EnhancedTableMergeDialog({
         sourceTable as Record<string, unknown>,
         availableTables as Record<string, unknown>[],
         showAllTables
-      );
+      ) as Table[];
       setMergeableTables(tables as Table[]);
       setSelectedTableId(""); // Reset selection
     }
@@ -119,7 +119,7 @@ export function EnhancedTableMergeDialog({
       await onMergeConfirm(
         sourceTable.id,
         selectedTableId,
-        (selectedTable as any).requiresConfirmation
+        selectedTable.requiresConfirmation
       );
       onActionComplete?.();
       onClose();
@@ -269,13 +269,13 @@ export function EnhancedTableMergeDialog({
                   <div
                     key={table.id}
                     className={`p-3 border rounded-lg transition-colors ${
-                      !(table as any).selectable
+                      !table.selectable
                         ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
                         : selectedTableId === table.id
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 hover:border-gray-300 cursor-pointer"
                     }`}
-                    onClick={() => (table as any).selectable && setSelectedTableId(table.id)}
+                    onClick={() => table.selectable && setSelectedTableId(table.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -284,23 +284,23 @@ export function EnhancedTableMergeDialog({
                           <Users className="h-3 w-3 mr-1" />
                           {table.seat_count} seats
                         </Badge>
-                        <Badge className={`text-xs ${getStateColorClass((table as any).state)}`}>
-                          {getStateIconComponent((table as any).state)}
-                          <span className="ml-1">{getStateDisplayLabel((table as any).state)}</span>
+                        <Badge className={`text-xs ${getStateColorClass(table.state)}`}>
+                          {getStateIconComponent(table.state)}
+                          <span className="ml-1">{getStateDisplayLabel(table.state)}</span>
                         </Badge>
-                        {(table as any).requiresConfirmation && (
+                        {table.requiresConfirmation && (
                           <Badge variant="destructive" className="text-xs">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             Confirmation Required
                           </Badge>
                         )}
                       </div>
-                      {(table as any).selectable && selectedTableId === table.id && (
+                      {table.selectable && selectedTableId === table.id && (
                         <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         </div>
                       )}
-                      {!(table as any).selectable && (
+                      {!table.selectable && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger>
@@ -308,7 +308,7 @@ export function EnhancedTableMergeDialog({
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>
-                                {(table as any).mergeScenario?.description ||
+                                {table.mergeScenario?.description ||
                                   "Cannot merge with this table"}
                               </p>
                             </TooltipContent>
@@ -351,9 +351,9 @@ export function EnhancedTableMergeDialog({
                     </div>
 
                     {/* Merge Scenario Description */}
-                    {(table as any).mergeScenario && (
+                    {table.mergeScenario && (
                       <div className="mt-2 text-xs text-gray-900 italic">
-                        {(table as any).mergeScenario.description}
+                        {table.mergeScenario.description}
                       </div>
                     )}
                   </div>

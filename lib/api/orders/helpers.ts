@@ -55,11 +55,11 @@ export async function createKDSTickets(supabase: SupabaseClient, order: Order): 
           {
             venue_id: order.venue_id,
             station_name: station.name,
-            station_type: station.type,
+            station_type: station.type as Database['public']['Tables']['kds_stations']['Insert']['station_type'],
             display_order: station.order,
             color_code: station.color,
             is_active: true,
-          } as unknown as any,
+          },
           {
             onConflict: "venue_id,station_name",
           }
@@ -160,8 +160,8 @@ export async function ensureTableExists(
       label: `Table ${tableNumber}`,
       capacity: 4,
       is_active: true,
-      status: "available",
-    } as unknown as any)
+      status: "available" as Database['public']['Tables']['tables']['Insert']['status'],
+    })
     .select("id")
     .single();
 

@@ -197,6 +197,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         });
       }
     } else {
+
+      // Block handled
+
     }
   } catch (err) {
     logger.error("[ROOT LAYOUT] ❌ Error in root layout", {

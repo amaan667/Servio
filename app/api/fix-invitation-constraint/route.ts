@@ -35,6 +35,7 @@ export async function POST() {
         error: deleteError.message,
       });
     } else {
+      // Deletion successful
     }
 
     // Step 3: Try to work around the constraint by using a different approach

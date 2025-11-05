@@ -59,9 +59,25 @@ export async function updateOrderStatus(
   }
 }
 
+interface OrderDataWithTable {
+  table_id?: string;
+  table_number?: number;
+  source?: string;
+  created_at?: string;
+  id?: string;
+}
+
 async function clearTableSession(orderData: unknown, venueId: string, orderId: string) {
   try {
     const supabase = createClient();
+    const orderInfo = orderData as OrderDataWithTable;
+
+    interface ActiveOrder {
+      id: string;
+      order_status: string;
+      table_id?: string;
+      table_number?: number;
+    }
 
     const { data: activeOrders } = await supabase
       .from("orders")
@@ -70,14 +86,14 @@ async function clearTableSession(orderData: unknown, venueId: string, orderId: s
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"])
       .neq("id", orderId);
 
-    let filteredActiveOrders = activeOrders || [];
-    if ((orderData as any).table_id) {
-      filteredActiveOrders = (activeOrders || []).filter(
-        (o: Record<string, unknown>) => (o as any).table_id === (orderData as any).table_id
+    let filteredActiveOrders = (activeOrders as ActiveOrder[] | null) || [];
+    if (orderInfo.table_id) {
+      filteredActiveOrders = filteredActiveOrders.filter(
+        (o) => o.table_id === orderInfo.table_id
       );
-    } else if ((orderData as any).table_number) {
-      filteredActiveOrders = (activeOrders || []).filter(
-        (o: Record<string, unknown>) => (o as any).table_number === (orderData as any).table_number
+    } else if (orderInfo.table_number) {
+      filteredActiveOrders = filteredActiveOrders.filter(
+        (o) => o.table_number === orderInfo.table_number
       );
     }
 
@@ -95,10 +111,10 @@ async function clearTableSession(orderData: unknown, venueId: string, orderId: s
         .eq("venue_id", venueId)
         .is("closed_at", null);
 
-      if ((orderData as any).table_id) {
-        sessionQuery = sessionQuery.eq("table_id", (orderData as any).table_id);
-      } else if ((orderData as any).table_number) {
-        sessionQuery = sessionQuery.eq("table_number", (orderData as any).table_number);
+      if (orderInfo.table_id) {
+        sessionQuery = sessionQuery.eq("table_id", orderInfo.table_id);
+      } else if (orderInfo.table_number) {
+        sessionQuery = sessionQuery.eq("table_number", orderInfo.table_number);
       }
 
       await sessionQuery;

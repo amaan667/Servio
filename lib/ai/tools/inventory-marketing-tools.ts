@@ -471,8 +471,14 @@ export async function bulkUpdateMenu(
   let itemsUpdated = 0;
   let itemsFailed = 0;
 
+  interface MenuItemUpdate {
+    price?: number;
+    is_available?: boolean;
+    category?: string;
+  }
+
   for (const item of items) {
-    let updateData: any = {};
+    let updateData: MenuItemUpdate = {};
 
     if (operation === "price_increase") {
       const increase = params.percentage

@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
     // In production, you could send to analytics service
     // For now, just log to console in development
     if (process.env.NODE_ENV === "development") {
+      // Development logging would go here
     }
 
     // Return success immediately - don't block

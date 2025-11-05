@@ -46,8 +46,8 @@ export function OrderCard({
     if (isTableVariant) {
       // For table orders, prioritize table_label, then generate from table_number
       let label = order.table_label;
-      if (!label && (order as any).table_number) {
-        label = `Table ${(order as any).table_number}`;
+      if (!label && order.table_number) {
+        label = `Table ${order.table_number}`;
       }
       if (!label) {
         label = "Table Order";
@@ -163,13 +163,13 @@ export function OrderCard({
     if (!showActions || !venueId) return null;
 
     // Check payment status - handle both nested payment object and flat payment_status
-    const paymentStatus = order.payment?.status || (order as any).payment_status || "unpaid";
+    const paymentStatus = order.payment?.status || order.payment_status || "unpaid";
     const isPaid = paymentStatus.toLowerCase() === "paid";
     const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
     // Normalize order status - handle both uppercase and lowercase, and "served" vs "serving"
     const rawStatus = (order.order_status || "").toString();
     const orderStatus = rawStatus.toUpperCase();
-    const paymentMode = order.payment?.mode || (order as any).payment_mode; // "online", "pay_at_till", "pay_later"
+    const paymentMode = order.payment?.mode || order.payment_mode; // "online", "pay_at_till", "pay_later"
 
     // If already completed, no actions needed
     if (isCompleted) {
@@ -404,7 +404,7 @@ export function OrderCard({
           onOpenChange={setShowPaymentDialog}
           orderId={order.id}
           orderNumber={order.short_id}
-          customerName={(order as any).customer_name || "Customer"}
+          customerName={order.customer_name || "Customer"}
           totalAmount={order.total_amount}
           venueId={venueId}
           items={

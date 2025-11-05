@@ -28,6 +28,7 @@ interface KDSTicket {
   quantity: number;
   special_instructions?: string;
   status: "new" | "in_progress" | "ready" | "bumped";
+  ticket_status?: "bumped" | string;
   created_at: string;
   started_at?: string;
   ready_at?: string;
@@ -228,8 +229,8 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   // Set up realtime subscription with token refresh handling
   useEffect(() => {
     const supabase = createClient();
-    let channel: any = null;
-    let authSubscription: any = null;
+    let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
+    let authSubscription: { unsubscribe: () => void } | null = null;
     let isMounted = true;
 
     const setupChannel = () => {
@@ -334,8 +335,8 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   // Sort tickets: non-bumped first (by created_at), then bumped at bottom
   const sortedTickets = [...tickets].sort((a, b) => {
     // Bumped tickets always go to bottom
-    if ((a as any).ticket_status === "bumped" && (b as any).ticket_status !== "bumped") return 1;
-    if ((a as any).ticket_status !== "bumped" && (b as any).ticket_status === "bumped") return -1;
+    if (a.ticket_status === "bumped" && b.ticket_status !== "bumped") return 1;
+    if (a.ticket_status !== "bumped" && b.ticket_status === "bumped") return -1;
 
     // For non-bumped tickets, sort by created_at (oldest first for priority)
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();

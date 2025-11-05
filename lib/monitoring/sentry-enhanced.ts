@@ -95,7 +95,20 @@ export class EnhancedErrorTracker {
    * Start a transaction for performance monitoring
    */
   static startTransaction(name: string, operation: string, data?: Record<string, unknown>) {
-    return (Sentry as any).startTransaction({
+    // Note: Using type assertion for Sentry v7 API compatibility
+    interface SentryTransaction {
+      setStatus(status: string): void;
+      finish(): void;
+      startChild(context: { op: string; description: string }): SentrySpan | undefined;
+    }
+    interface SentrySpan {
+      setStatus(status: string): void;
+      finish(): void;
+    }
+    interface SentryWithTransaction {
+      startTransaction(context: { name: string; op: string; data?: Record<string, unknown> }): SentryTransaction;
+    }
+    return (Sentry as unknown as SentryWithTransaction).startTransaction({
       name,
       op: operation,
       data,
@@ -139,8 +152,18 @@ export class EnhancedErrorTracker {
     table: string,
     handler: () => Promise<T>
   ): Promise<T> {
-    const scope = Sentry.getCurrentHub().getScope();
-    const transaction = (scope as any)?.getTransaction?.();
+    interface SentrySpan {
+      setStatus(status: string): void;
+      finish(): void;
+    }
+    interface SentryTransaction {
+      startChild(context: { op: string; description: string }): SentrySpan | undefined;
+    }
+    interface ScopeWithTransaction {
+      getTransaction?(): SentryTransaction | undefined;
+    }
+    const scope = Sentry.getCurrentHub().getScope() as unknown as ScopeWithTransaction;
+    const transaction = scope?.getTransaction?.();
     const span = transaction?.startChild({
       op: "db.query",
       description: `${operation} ${table}`,

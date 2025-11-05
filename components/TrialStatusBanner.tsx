@@ -33,10 +33,10 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   // Helper function to process trial status (defined before hooks that use it)
   const processTrialStatus = useCallback(
-    (org: unknown) => {
-      const subscriptionStatus = (org as any).subscription_status || "basic";
-      const tier = (org as any).subscription_tier || "basic";
-      const trialEndsAt = (org as any).trial_ends_at;
+    (org: { subscription_status?: string; subscription_tier?: string; trial_ends_at?: string }) => {
+      const subscriptionStatus = org.subscription_status || "basic";
+      const tier = org.subscription_tier || "basic";
+      const trialEndsAt = org.trial_ends_at;
 
       // Processing trial status
 
@@ -64,11 +64,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       }
 
       // Final trial status calculated
-      const _status = {
+      const _status: TrialStatus = {
         isTrialing,
         subscriptionStatus,
         tier,
-        trialEndsAt,
+        trialEndsAt: trialEndsAt || null,
         daysRemaining,
       };
       setTrialStatus(_status);
@@ -160,8 +160,15 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       }
     } catch (_error) {
       // Show default trial status as fallback
-      const userCreatedAt = new Date(user.created_at);
+      const userCreatedAt = user.created_at ? new Date(user.created_at) : new Date();
       const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+      
+      // Validate date
+      if (isNaN(trialEndsAt.getTime())) {
+        // Invalid date, use 14 days from now
+        trialEndsAt.setTime(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      }
+      
       const daysRemaining = Math.max(
         0,
         Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))

@@ -21,15 +21,6 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
   const [currentTier, setCurrentTier] = useState(organization?.subscription_tier);
   const { toast } = useToast();
 
-  console.log("[PLAN CARD] 🔍 Rendering with props:", {
-    organizationReceived: !!organization,
-    organizationId: organization?.id,
-    subscriptionTierFromProps: organization?.subscription_tier,
-    currentTierState: currentTier,
-    hasStripeCustomer: !!organization?.stripe_customer_id,
-    venueId,
-  });
-
   const hasStripeCustomer = !!organization?.stripe_customer_id;
 
   // Get tier info from shared configuration - NO DEFAULTS
@@ -37,13 +28,6 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
   const tierInfo = tierKey ? PRICING_TIERS[tierKey] : null;
   const planName = tierInfo?.name;
   const features = tierInfo?.features;
-
-  console.log("[PLAN CARD] 📊 Tier info computed:", {
-    tierKey,
-    hasTierInfo: !!tierInfo,
-    planName,
-    featureCount: features?.length,
-  });
 
   // Sync plan from Stripe on mount
   useEffect(() => {
@@ -54,15 +38,8 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
 
   const syncPlanFromStripe = async () => {
     if (!organization?.id) {
-      console.log("[PLAN CARD] ⚠️ Cannot sync - no organization ID");
       return;
     }
-
-    console.log("[PLAN CARD] 🔄 Starting Stripe sync for organization:", organization.id);
-    console.log(
-      "[PLAN CARD] 🔍 Current tier from props BEFORE sync:",
-      organization.subscription_tier
-    );
 
     setSyncing(true);
     try {
@@ -73,21 +50,10 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
       });
 
       const data = await response.json();
-      console.log("[PLAN CARD] 📥 Stripe sync response:", data);
-      console.log("[PLAN CARD] 🎯 Stripe sync details:", {
-        synced: data.synced,
-        updated: data.updated,
-        oldTier: data.oldTier,
-        newTier: data.newTier,
-        tier: data.tier,
-        message: data.message,
-      });
 
       if (data.synced && data.newTier) {
-        console.log("[PLAN CARD] ✅ Synced new tier:", data.newTier);
         setCurrentTier(data.newTier);
       } else if (data.tier) {
-        console.log("[PLAN CARD] ℹ️ Using existing tier:", data.tier);
         setCurrentTier(data.tier);
       }
     } catch (error) {
@@ -143,7 +109,6 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
 
   // Show error state if no organization data
   if (!organization) {
-    console.log("[PLAN CARD] ⚠️ No organization data - showing error state");
     return (
       <Card className="shadow-lg rounded-xl border-gray-200">
         <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl">
@@ -167,7 +132,6 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
 
   // Show loading state while syncing
   if (syncing) {
-    console.log("[PLAN CARD] ⏳ Syncing from Stripe...");
     return (
       <Card className="shadow-lg rounded-xl border-gray-200">
         <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl">
@@ -186,7 +150,6 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
 
   // Show error if tier info not found
   if (!tierInfo || !planName || !features) {
-    console.log("[PLAN CARD] ⚠️ No tier info found for tier:", currentTier);
     return (
       <Card className="shadow-lg rounded-xl border-gray-200">
         <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl">
@@ -207,8 +170,6 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
       </Card>
     );
   }
-
-  console.log("[PLAN CARD] ✅ Rendering plan card for:", planName);
 
   return (
     <Card className="shadow-lg rounded-xl border-gray-200">

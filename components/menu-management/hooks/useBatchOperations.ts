@@ -62,7 +62,7 @@ export function useBatchOperations(menuItems: MenuItem[], onRefresh: () => void)
 
     try {
       if (batchAction === "category") {
-        if (!batchEditValue || !(batchEditValue as any).trim()) {
+        if (!batchEditValue || (typeof batchEditValue === 'string' && !batchEditValue.trim())) {
           alert("Please enter a category.");
           return;
         }

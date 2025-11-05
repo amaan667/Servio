@@ -165,7 +165,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     // Log categories from Vision AI
     const visionCategories = Array.from(
-      new Set(visionItems.map((item: any) => item.category).filter(Boolean))
+      new Set(visionItems.map((item) => item.category).filter(Boolean))
     );
     logger.info("[WEB URL EXTRACT] Categories from Vision AI", {
       count: visionCategories.length,
@@ -174,14 +174,19 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     // Category breakdown
     const categoryBreakdown: Record<string, number> = {};
-    visionItems.forEach((item: any) => {
+    visionItems.forEach((item) => {
       const cat = item.category || "Uncategorized";
       categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
     });
 
     // Sample items by category
-    const samplesByCategory: Record<string, any[]> = {};
-    visionItems.forEach((item: any) => {
+    interface CategorySample {
+      name: string;
+      price?: number;
+      hasDescription: boolean;
+    }
+    const samplesByCategory: Record<string, CategorySample[]> = {};
+    visionItems.forEach((item) => {
       const cat = item.category || "Uncategorized";
       if (!samplesByCategory[cat]) {
         samplesByCategory[cat] = [];
@@ -196,7 +201,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     });
 
     // Warnings for issues
-    const menuItemsCount = visionItems.filter((item: any) => item.category === "Menu Items").length;
+    const menuItemsCount = visionItems.filter((item) => item.category === "Menu Items").length;
     if (menuItemsCount > 0) {
       logger.warn("[WEB URL EXTRACT] ⚠️ CATEGORIZATION ISSUE DETECTED", {
         menuItemsCount,
@@ -209,8 +214,8 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     logger.info("[WEB URL EXTRACT] ===== VISION AI SUMMARY =====", {
       totalItems: visionItems.length,
       totalCategories: visionCategories.length,
-      withDescription: visionItems.filter((i: any) => i.description).length,
-      withPrice: visionItems.filter((i: any) => i.price).length,
+      withDescription: visionItems.filter((i) => i.description).length,
+      withPrice: visionItems.filter((i) => i.price).length,
     });
 
     // Strategy 3: Intelligent merge
@@ -287,9 +292,19 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
  * Extract menu items from DOM structure
  * Enhanced to handle multiple website patterns and extract images properly
  */
-async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
+async function extractFromDOM(page: import('puppeteer-core').Page): Promise<WebMenuItem[]> {
   return await page.evaluate(() => {
-    const items: any[] = [];
+    interface DOMMenuItem {
+      name: string;
+      name_normalized: string;
+      description?: string;
+      price?: number;
+      image_url?: string;
+      category?: string;
+      source: string;
+      index: number;
+    }
+    const items: DOMMenuItem[] = [];
 
     // Try multiple selector strategies to find menu items
     const possibleSelectors = [
@@ -498,18 +513,18 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
     console.log(`[DOM] Successfully extracted ${items.length} items`);
 
     // Log categories for debugging
-    const categories = Array.from(new Set(items.map((item: any) => item.category).filter(Boolean)));
+    const categories = Array.from(new Set(items.map((item) => item.category).filter(Boolean)));
     console.log(`[DOM URL] Categories extracted:`, {
       count: categories.length,
       categories: categories,
-      sampleItems: items.slice(0, 3).map((item: any) => ({
+      sampleItems: items.slice(0, 3).map((item) => ({
         name: item.name,
         category: item.category,
         price: item.price,
       })),
     });
 
-    return items;
+    return items as unknown as WebMenuItem[];
   });
 }
 
@@ -517,7 +532,7 @@ async function extractFromDOM(page: any): Promise<WebMenuItem[]> {
  * Merge DOM and Vision AI extracted data
  * Strategy: Vision AI is more accurate for text, DOM is better for images/URLs
  */
-function mergeExtractedData(domItems: any[], visionItems: any[]): WebMenuItem[] {
+function mergeExtractedData(domItems: WebMenuItem[], visionItems: import('./gptVisionMenuParser').ExtractedMenuItem[]): WebMenuItem[] {
   logger.info("[MERGE] Starting merge", {
     domCount: domItems.length,
     visionCount: visionItems.length,

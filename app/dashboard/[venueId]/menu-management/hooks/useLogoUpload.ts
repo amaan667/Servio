@@ -45,7 +45,7 @@ export function useLogoUpload(
           fileSizeLimit: 2097152,
         });
       } catch (bucketError: unknown) {
-        if (!(bucketError as any).message?.includes("already exists")) {
+        if (!(bucketError as Error).message?.includes("already exists")) {
           /* Empty */
         }
       }

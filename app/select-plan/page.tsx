@@ -51,7 +51,6 @@ export default function SelectPlanPage() {
 
             if (organization?.subscription_tier) {
               setCurrentTier(organization.subscription_tier.toLowerCase());
-              console.log("[SELECT-PLAN] Current tier:", organization.subscription_tier);
             }
           }
         }
@@ -69,15 +68,11 @@ export default function SelectPlanPage() {
 
   // Get CTA button text based on current tier
   const getPlanCTA = (planTier: string) => {
-    console.log("[SELECT-PLAN DEBUG] getPlanCTA called", { planTier, currentTier });
-
     if (!currentTier) {
-      console.log("[SELECT-PLAN DEBUG] No current tier, showing Start Free Trial");
       return "Start Free Trial";
     }
 
     if (currentTier === planTier) {
-      console.log("[SELECT-PLAN DEBUG] Is current plan");
       return "Current Plan";
     }
 
@@ -85,13 +80,9 @@ export default function SelectPlanPage() {
     const currentLevel = tierOrder[currentTier as keyof typeof tierOrder] || 0;
     const planLevel = tierOrder[planTier as keyof typeof tierOrder] || 0;
 
-    console.log("[SELECT-PLAN DEBUG] Tier comparison", { currentLevel, planLevel });
-
     if (planLevel > currentLevel) {
-      console.log("[SELECT-PLAN DEBUG] Showing Upgrade");
       return "Upgrade";
     } else if (planLevel < currentLevel) {
-      console.log("[SELECT-PLAN DEBUG] Showing Downgrade to", PRICING_TIERS[planTier]?.name);
       return `Downgrade to ${PRICING_TIERS[planTier]?.name}`;
     }
 
@@ -208,7 +199,6 @@ export default function SelectPlanPage() {
                 </ul>
                 <Button
                   onClick={() => {
-                    console.log("[SELECT-PLAN DEBUG] Button clicked for", plan.tier);
                     handleSelectPlan(plan.tier);
                   }}
                   disabled={(loading && selectedTier !== plan.tier) || currentTier === plan.tier}
@@ -226,11 +216,7 @@ export default function SelectPlanPage() {
                       Processing...
                     </>
                   ) : (
-                    (() => {
-                      const ctaText = getPlanCTA(plan.tier);
-                      console.log("[SELECT-PLAN DEBUG] Button text for", plan.tier, ":", ctaText);
-                      return ctaText;
-                    })()
+                    getPlanCTA(plan.tier)
                   )}
                 </Button>
               </CardContent>

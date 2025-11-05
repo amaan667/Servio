@@ -94,3 +94,5 @@ export function isTierHigher(tierA: string, tierB: string): boolean {
 export function isTierLower(tierA: string, tierB: string): boolean {
   return getTierLevel(tierA) < getTierLevel(tierB);
 }
+
+

@@ -59,6 +59,9 @@ export async function POST(req: Request) {
         if (!cleanupResult.success) {
           logger.error("[SET STATUS] Table cleanup failed:", cleanupResult.error);
         } else {
+
+          // Block handled
+
         }
       }
     }

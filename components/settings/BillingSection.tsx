@@ -45,24 +45,6 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 
-  // Comprehensive logging
-  useEffect(() => {
-    console.log("[BILLING SECTION] 🔍 Component initialized with:", {
-      organizationReceived: !!organization,
-      organizationId: organization?.id,
-      subscriptionTier: organization?.subscription_tier,
-      tierVariable: tier,
-      hasStripeCustomer,
-      isGrandfathered,
-      venueId,
-    });
-    console.log("[BILLING SECTION] 📊 Button visibility logic:", {
-      shouldShowUpgrade: !isGrandfathered && tier !== "premium",
-      shouldShowDowngrade: !isGrandfathered && tier === "standard",
-      windowWidth: typeof window !== "undefined" ? window.innerWidth : "SSR",
-    });
-  }, [tier, isGrandfathered, organization, venueId]);
-
   const handleManageBilling = async () => {
     setLoadingPortal(true);
     try {
@@ -109,16 +91,12 @@ export default function BillingSection({ organization, venueId }: BillingSection
   // Downgrade through Stripe portal (same as manage billing)
   // This allows Stripe to handle the downgrade with proper confirmation
   const handleDowngrade = async () => {
-    console.log("[BILLING DEBUG] Downgrade button clicked - redirecting to Stripe portal");
-
     // Use the same portal redirect as manage billing
     // Stripe portal will allow the user to change their plan
     await handleManageBilling();
   };
 
   const getTierInfo = () => {
-    console.log("[BILLING SECTION] 🎨 Getting tier info for tier:", tier);
-
     if (isGrandfathered) {
       return {
         name: "Grandfathered",
@@ -159,18 +137,15 @@ export default function BillingSection({ organization, venueId }: BillingSection
           description: "Enterprise plan with all features",
         };
       default:
-        console.log("[BILLING SECTION] ⚠️ Unknown tier - returning null:", tier);
         // NO HARDCODED DEFAULT - return null for unknown/missing tiers
         return null;
     }
   };
 
   const tierInfo = getTierInfo();
-  console.log("[BILLING SECTION] 🏷️ Tier info result:", tierInfo);
 
   // Show error if no tier info (unknown or missing tier)
   if (!tierInfo) {
-    console.log("[BILLING SECTION] ❌ No tier info - showing error state");
     return (
       <div className="space-y-6">
         <Card className="border-2 border-red-200 bg-red-50">
@@ -219,7 +194,6 @@ export default function BillingSection({ organization, venueId }: BillingSection
               {!isGrandfathered && tier !== "premium" && (
                 <Button
                   onClick={() => {
-                    console.log("[BILLING DEBUG] Upgrade button clicked");
                     setShowUpgradeModal(true);
                   }}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
