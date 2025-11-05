@@ -1,5 +1,3 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
-
 // Servio AI Assistant - LLM Service
 // Handles intent understanding, planning, and structured output generation
 
@@ -7,6 +5,7 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { aiLogger as logger } from "@/lib/logger";
+import { errorToContext } from "@/lib/utils/error-to-context";
 import {
   AIAssistantContext,
   AIPlanResponse,
@@ -811,6 +810,32 @@ export function calculateCost(
   }
 
   return (inputTokens / 1000) * inputCostPer1k + (outputTokens / 1000) * outputCostPer1k;
+}
+
+// ============================================================================
+// Conversation Title Generation
+// ============================================================================
+
+export async function generateConversationTitle(firstUserMessage: string): Promise<string> {
+  try {
+    const response = await getOpenAI().chat.completions.create({
+      model: MODEL_MINI, // Use cheaper model for simple title generation
+      messages: [
+        {
+          role: "user",
+          content: `Make a 5-word title for this chat: "${firstUserMessage}". Return only the title.`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 20,
+    });
+
+    const title = response.choices[0].message.content?.trim() || "New Chat";
+    return title.substring(0, 60); // Limit length
+  } catch (error) {
+    logger.error("[AI] Title generation error:", errorToContext(error));
+    return firstUserMessage.substring(0, 60);
+  }
 }
 
 // Export model constants for use in other modules

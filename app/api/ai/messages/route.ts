@@ -4,7 +4,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { z } from "zod";
-import { handleUserMessage, generateConversationTitle } from "@/lib/ai/openai-service";
+import { planAssistantAction, generateConversationTitle } from "@/lib/ai/assistant-llm";
+import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
+import { executeTool } from "@/lib/ai/tool-executors";
 import { logger } from "@/lib/logger";
 
 export const maxDuration = 60; // Increased for analytics computation
@@ -204,15 +206,65 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Failed to save message" }, { status: 500 });
     }
 
-    // Call AI service with tool calling
+    // Call AI service with advanced planning system
     try {
-      const aiResult = await handleUserMessage({
-        venueId,
-        conversationId: currentConversationId!,
-        userText: text,
-        userId: user.id,
-        currentPage,
+      // Get context and data summaries
+      const context = await getAssistantContext(venueId, user.id);
+      const summaries = await getAllSummaries(venueId, context.features);
+
+      // Plan the action
+      const plan = await planAssistantAction(text, context, summaries);
+
+      let assistantResponse = "";
+      const toolResults: unknown[] = [];
+
+      // Handle direct answer (no tools needed)
+      if (plan.directAnswer) {
+        assistantResponse = plan.directAnswer;
+      }
+      // Execute tools if present
+      else if (plan.tools && plan.tools.length > 0) {
+        for (const tool of plan.tools) {
+          const result = await executeTool(
+            tool.name,
+            tool.params,
+            venueId,
+            user.id,
+            false // execute, not preview
+          );
+
+          toolResults.push({
+            tool: tool.name,
+            result,
+          });
+
+          // Handle navigation
+          if (tool.name === "navigation.go_to_page" && result.success) {
+            assistantResponse = result.message || `Navigating to ${tool.params.page}`;
+          }
+        }
+
+        // Generate final response if not navigation
+        if (!assistantResponse) {
+          assistantResponse = plan.reasoning || "Actions completed successfully";
+        }
+      }
+      // Fallback for unclear requests
+      else {
+        assistantResponse =
+          plan.reasoning || "I'm not sure how to help with that. Could you clarify?";
+      }
+
+      // Save assistant response
+      await supabase.from("ai_messages").insert({
+        conversation_id: currentConversationId!,
+        venue_id: venueId,
+        author_role: "assistant",
+        text: assistantResponse,
+        content: { text: assistantResponse, toolResults },
       });
+
+      const aiResult = { response: assistantResponse, toolResults };
 
       // Get the latest messages including the AI response
       const { data: allMessages } = await supabase
