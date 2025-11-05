@@ -3,20 +3,54 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
-// import AnalyticsClient from "./AnalyticsClient";
+import AnalyticsClient from "./AnalyticsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import { UserRole } from "@/lib/permissions";
+import type { UserRole } from "@/lib/permissions";
+import { isValidUserRole } from "@/lib/utils/userRole";
 
-export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
-  const { user } = useAuth();
+interface TopSellingItem {
+  name: string;
+  quantity: number;
+  revenue: number;
+  category?: string;
+  ordersCount?: number;
+  price?: number;
+}
 
-  // Cache user role to prevent flicker
-  const getCachedRole = () => {
-    if (typeof window === "undefined" || !user?.id) return null;
-    return sessionStorage.getItem(`user_role_${user.id}_${venueId}`);
+interface AnalyticsClientPageProps {
+  venueId: string;
+  ordersData: {
+    totalOrders: number;
+    pendingOrders: number;
+    completedOrders: number;
+    avgOrderValue: number;
+    ordersByStatus: Record<string, number>;
+    ordersByDay: Record<string, number>;
+    recentOrders: unknown[];
   };
+  menuData: {
+    totalItems: number;
+    activeItems: number;
+    topSellingItems: TopSellingItem[];
+    itemsWithImages: number;
+    itemsByCategory: Record<string, number>;
+  };
+  revenueData: {
+    totalRevenue: number;
+    averageOrderValue: number;
+    revenueByHour: unknown[];
+    revenueByDay: Record<string, number>;
+  };
+}
 
-  const [userRole, setUserRole] = useState<string | null>(getCachedRole());
+export default function AnalyticsClientPage({
+  venueId,
+  ordersData,
+  menuData,
+  revenueData,
+}: AnalyticsClientPageProps) {
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -26,7 +60,7 @@ export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
 
       // Check cached role first
       const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole) {
+      if (cachedRole && isValidUserRole(cachedRole)) {
         setUserRole(cachedRole);
         return;
       }
@@ -41,7 +75,7 @@ export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
 
       if (ownerVenue) {
         setUserRole("owner");
-        sessionStorage.setItem(`user_role_${user.id}_${venueId}`, "owner");
+        sessionStorage.setItem(`user_role_${user.id}`, "owner");
       } else {
         // Check staff role
         const { data: staffRole } = await supabase
@@ -51,9 +85,9 @@ export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
           .eq("venue_id", venueId)
           .single();
 
-        if (staffRole) {
+        if (staffRole && isValidUserRole(staffRole.role)) {
           setUserRole(staffRole.role);
-          sessionStorage.setItem(`user_role_${user.id}_${venueId}`, staffRole.role);
+          sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
         }
       }
     };
@@ -68,24 +102,24 @@ export default function AnalyticsClientPage({ venueId }: { venueId: string }) {
         {user && userRole && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole as UserRole}
+            userRole={userRole}
             userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
           />
         )}
 
         <div className="mb-8 mt-4">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics Dashboard</h1>
           <p className="text-lg text-foreground mt-2">
-            View detailed insights and performance metrics for your venue
+            Track your business performance and insights
           </p>
         </div>
 
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Analytics dashboard coming soon</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Use the server-side analytics page at /dashboard/{venueId}/analytics
-          </p>
-        </div>
+        <AnalyticsClient
+          venueId={venueId}
+          ordersData={ordersData}
+          menuData={menuData}
+          revenueData={revenueData}
+        />
       </div>
     </div>
   );

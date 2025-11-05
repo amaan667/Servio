@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -12,8 +12,6 @@ import {
   BarChart3,
   PieChart,
 } from "lucide-react";
-import { supabaseBrowser } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 
 interface TopSellingItem {
   name: string;
@@ -25,7 +23,6 @@ interface TopSellingItem {
 }
 
 interface AnalyticsClientProps {
-  venueId: string;
   ordersData: {
     totalOrders: number;
     pendingOrders: number;
@@ -49,87 +46,12 @@ interface AnalyticsClientProps {
 }
 
 export default function AnalyticsClient({
-  venueId,
   ordersData,
   menuData,
   revenueData,
 }: AnalyticsClientProps) {
-  const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Auth check on client side where cookies work properly
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const supabase = supabaseBrowser();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          router.push("/sign-in");
-          return;
-        }
-
-        // Check if user is owner
-        const { data: venue } = await supabase
-          .from("venues")
-          .select("venue_id")
-          .eq("venue_id", venueId)
-          .eq("owner_user_id", user.id)
-          .maybeSingle();
-
-        if (venue) {
-          setIsAuthorized(true);
-          setIsLoading(false);
-          return;
-        }
-
-        // Check if user is staff
-        const { data: staff } = await supabase
-          .from("user_venue_roles")
-          .select("role")
-          .eq("venue_id", venueId)
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (staff) {
-          setIsAuthorized(true);
-          setIsLoading(false);
-          return;
-        }
-
-        // No access
-        router.push("/dashboard");
-      } catch (error) {
-        console.error("[Analytics Client] Auth error:", error);
-        router.push("/dashboard");
-      }
-    }
-
-    checkAuth();
-  }, [venueId, router]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthorized) {
-    return null; // Will redirect
-  }
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-        <p className="text-muted-foreground">Track your business performance and insights</p>
-      </div>
-
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <MetricCard

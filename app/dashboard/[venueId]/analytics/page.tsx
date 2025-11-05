@@ -12,7 +12,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase";
-import AnalyticsClient from "./AnalyticsClient";
+import AnalyticsClientPage from "./page.client";
 
 export const metadata = {
   title: "Analytics | Servio",
@@ -23,7 +23,7 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
   const { venueId } = await params;
 
   // Fetch analytics data on server WITHOUT auth (use admin client like dashboard does)
-  // The AnalyticsClient component will handle auth checking in the browser
+  // The AnalyticsClientPage component will handle auth checking in the browser
   const [ordersData, menuData, revenueData] = await Promise.all([
     fetchOrderAnalytics(venueId),
     fetchMenuAnalytics(venueId),
@@ -31,7 +31,7 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
   ]);
 
   return (
-    <AnalyticsClient
+    <AnalyticsClientPage
       venueId={venueId}
       ordersData={ordersData}
       menuData={menuData}
@@ -97,37 +97,78 @@ async function fetchOrderAnalytics(venueId: string) {
 async function fetchMenuAnalytics(venueId: string) {
   const supabase = createAdminClient();
 
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   const { data: menuItems } = await supabase
     .from("menu_items")
     .select("id, name, category, price, image_url, is_available")
     .eq("venue_id", venueId);
 
-  // Get order items to find popular items
-  const { data: orderItems } = await supabase
-    .from("order_items")
-    .select("menu_item_id, quantity")
-    .in("menu_item_id", menuItems?.map((i) => i.id) || []);
+  if (!menuItems || menuItems.length === 0) {
+    return {
+      totalItems: 0,
+      activeItems: 0,
+      itemsByCategory: {},
+      itemsWithImages: 0,
+      unavailableItems: 0,
+      topSellingItems: [],
+    };
+  }
 
-  // Calculate popularity
-  const popularityMap = new Map<string, number>();
-  orderItems?.forEach((item) => {
-    const current = popularityMap.get(item.menu_item_id) || 0;
-    popularityMap.set(item.menu_item_id, current + item.quantity);
+  // Get orders with items JSONB array (items are stored in orders.items, not a separate table)
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("items")
+    .eq("venue_id", venueId)
+    .gte("created_at", thirtyDaysAgo.toISOString())
+    .neq("order_status", "CANCELLED")
+    .neq("order_status", "REFUNDED");
+
+  // Calculate popularity by parsing items JSONB array
+  const itemStatsMap = new Map<
+    string,
+    { quantity: number; revenue: number; name: string; category: string; price: number }
+  >();
+
+  interface OrderWithItems {
+    items: Array<{
+      menu_item_id: string;
+      item_name: string;
+      quantity: number;
+      price: number;
+    }>;
+  }
+
+  (orders as unknown as OrderWithItems[] | null)?.forEach((order) => {
+    if (!order.items || !Array.isArray(order.items)) return;
+
+    order.items.forEach((item) => {
+      const menuItem = menuItems.find((m) => m.id === item.menu_item_id);
+      if (!menuItem) return;
+
+      const current = itemStatsMap.get(item.menu_item_id) || {
+        quantity: 0,
+        revenue: 0,
+        name: menuItem.name,
+        category: menuItem.category,
+        price: menuItem.price,
+      };
+      current.quantity += item.quantity;
+      current.revenue += item.quantity * (item.price || 0);
+      itemStatsMap.set(item.menu_item_id, current);
+    });
   });
 
-  const topItems = (menuItems || [])
-    .map((item) => {
-      const quantity = popularityMap.get(item.id) || 0;
-      const revenue = quantity * (item.price || 0);
-      return {
-        name: item.name,
-        quantity,
-        revenue,
-        category: item.category,
-        ordersCount: quantity,
-        price: item.price,
-      };
-    })
+  const topItems = Array.from(itemStatsMap.values())
+    .map((stats) => ({
+      name: stats.name,
+      quantity: stats.quantity,
+      revenue: stats.revenue,
+      category: stats.category,
+      ordersCount: stats.quantity,
+      price: stats.price,
+    }))
     .sort((a, b) => b.ordersCount - a.ordersCount)
     .slice(0, 10);
 
