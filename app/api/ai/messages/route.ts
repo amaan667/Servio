@@ -7,6 +7,8 @@ import { z } from "zod";
 import { handleUserMessage, generateConversationTitle } from "@/lib/ai/openai-service";
 import { logger } from "@/lib/logger";
 
+export const maxDuration = 60; // Increased for analytics computation
+
 const CreateMessageSchema = z.object({
   venueId: z.string().min(1),
   conversationId: z.string().uuid().optional(),

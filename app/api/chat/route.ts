@@ -11,7 +11,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const maxDuration = 30;
+export const maxDuration = 60; // Increased for analytics computation
 
 export async function POST(req: Request) {
   try {
@@ -494,7 +494,7 @@ export async function POST(req: Request) {
           (result as Record<string, unknown>).shouldNavigate
         ) {
           const navigateTo = (result as Record<string, unknown>).navigateTo;
-          const navigateToStr = typeof navigateTo === 'string' ? navigateTo : 'menu';
+          const navigateToStr = typeof navigateTo === "string" ? navigateTo : "menu";
           navigationInfo = {
             route: getNavigationRoute(navigateToStr, venueId),
           };
