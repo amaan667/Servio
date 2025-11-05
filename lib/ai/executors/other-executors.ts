@@ -122,7 +122,7 @@ export async function executeNavigationGoToPage(
   _userId: string,
   _preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const { page } = params;
+  const { page, itemId, itemName, action } = params;
 
   const routeMap: Record<string, string> = {
     dashboard: `/dashboard/${venueId}`,
@@ -140,13 +140,31 @@ export async function executeNavigationGoToPage(
     feedback: `/dashboard/${venueId}/feedback`,
   };
 
-  const targetRoute = routeMap[page];
+  let targetRoute = routeMap[page];
 
   if (!targetRoute) {
     throw new AIAssistantError(`Unknown page: ${page}`, "INVALID_PARAMS");
   }
 
+  // Handle item-specific navigation
+  if (itemId && page === "menu") {
+    // Add query params for item-specific actions
+    const queryParams = new URLSearchParams();
+    queryParams.set("itemId", itemId);
+    if (action) {
+      queryParams.set("action", action);
+    }
+    if (itemName) {
+      queryParams.set("itemName", encodeURIComponent(itemName));
+    }
+    targetRoute = `${targetRoute}?${queryParams.toString()}`;
+  }
+
   if (_preview) {
+    const description = itemId
+      ? `Will navigate to ${action || "edit"} ${itemName || "item"} on the ${page} page`
+      : `Will navigate to the ${page} page`;
+
     return {
       toolName: "navigation.go_to_page",
       before: [],
@@ -154,10 +172,14 @@ export async function executeNavigationGoToPage(
       impact: {
         itemsAffected: 1,
         estimatedRevenue: 0,
-        description: `Will navigate to the ${page} page`,
+        description,
       },
     };
   }
+
+  const message = itemId
+    ? `Taking you to ${action || "edit"} "${itemName || "the item"}"`
+    : `Navigating to ${page} page`;
 
   return {
     success: true,
@@ -166,7 +188,10 @@ export async function executeNavigationGoToPage(
       action: "navigate",
       route: targetRoute,
       page: page,
-      message: `Navigating to ${page} page`,
+      itemId,
+      itemName,
+      actionType: action,
+      message,
     },
     auditId: "",
   };

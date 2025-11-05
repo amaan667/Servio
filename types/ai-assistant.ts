@@ -506,6 +506,12 @@ export const NavigationGoToPageSchema = z
       "feedback",
     ]),
     venueId: z.string().nullable().default(null),
+    itemId: z.string().uuid().optional().describe("Menu item ID for item-specific navigation"),
+    itemName: z.string().optional().describe("Menu item name for context"),
+    action: z
+      .enum(["view", "edit", "upload_image"])
+      .optional()
+      .describe("Specific action to perform on the item"),
   })
   .strict();
 

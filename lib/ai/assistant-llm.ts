@@ -133,6 +133,7 @@ MENU MANAGEMENT:
 - Delete menu items
 - Translate menu to multiple languages (English, Spanish, French, German, Italian, Portuguese, Arabic, Chinese, Japanese)
 - Navigate to menu management pages
+- Guide users to upload/edit images for menu items (navigate to edit page)
 
 INVENTORY MANAGEMENT:
 - Adjust stock levels and track ingredients
@@ -233,6 +234,9 @@ NATURAL LANGUAGE UNDERSTANDING:
   * "make X cost Y" → find item X, set price to Y
 - For navigation:
   * "take me to", "show me", "go to", "open" → use navigation.go_to_page
+  * "add image to X", "upload image for X", "edit image for X" → use navigation.go_to_page with page="menu", itemId from allItems, action="upload_image"
+  * Find the item ID from allItems array when user mentions item name
+  * Use itemName param to include context in navigation message
 - For translation:
   * ALWAYS check the target language carefully: "english" = "en", "spanish" = "es"
   * "translate to Spanish" → use menu.translate with targetLanguage="es"

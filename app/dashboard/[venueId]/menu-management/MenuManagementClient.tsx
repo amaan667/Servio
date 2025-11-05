@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import {
   Plus,
@@ -55,6 +56,7 @@ import { ThemeSettings } from "./components/ThemeSettings";
 import { LayoutSettings } from "./components/LayoutSettings";
 import { BrandingSettings } from "./components/BrandingSettings";
 import { PreviewControls } from "./components/PreviewControls";
+import { EditItemModal } from "@/components/menu-management/EditItemModal";
 
 // Utils
 import { loadFontForFamily } from "./utils/fontLoader";
@@ -69,8 +71,10 @@ export default function MenuManagementClient({
   venueId: string;
   canEdit?: boolean;
 }) {
+  const searchParams = useSearchParams();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: "",
@@ -126,6 +130,21 @@ export default function MenuManagementClient({
   useEffect(() => {
     loadFontForFamily(designSettings.font_family);
   }, [designSettings.font_family]);
+
+  // Handle AI assistant navigation
+  useEffect(() => {
+    const itemId = searchParams?.get("itemId");
+
+    if (itemId && menuItems.length > 0) {
+      const item = menuItems.find((i) => i.id === itemId);
+      if (item) {
+        setEditingItem(item);
+        setIsEditModalOpen(true);
+        // Clear URL params after opening modal
+        router.replace(`/dashboard/${venueId}/menu-management`, { scroll: false });
+      }
+    }
+  }, [searchParams, menuItems, venueId, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,14 +246,7 @@ export default function MenuManagementClient({
 
   const handleEdit = (item: MenuItem) => {
     setEditingItem(item);
-    setFormData({
-      name: item.name,
-      description: item.description || "",
-      price: item.price.toString(),
-      category: item.category,
-      available: item.is_available,
-    });
-    setIsAddModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const toggleCategory = (category: string) => {
@@ -497,24 +509,45 @@ export default function MenuManagementClient({
                                                         <GripVertical className="h-5 w-5" />
                                                       </div>
 
-                                                      {/* IMAGE PREVIEW */}
-                                                      <div className="w-16 h-16 flex-shrink-0">
-                                                        {item.image_url ? (
-                                                          <img
-                                                            src={item.image_url}
-                                                            alt={item.name}
-                                                            className="w-full h-full object-cover rounded border border-gray-200"
-                                                            onError={(e) => {
-                                                              (e.target as HTMLImageElement).src =
-                                                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect fill='%23f3f4f6' width='64' height='64'/%3E%3C/svg%3E";
-                                                            }}
-                                                          />
-                                                        ) : (
-                                                          <div className="w-full h-full bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
-                                                            <ImageIcon className="w-6 h-6 text-gray-300" />
+                                                      {/* IMAGE PREVIEW WITH HOVER */}
+                                                      <HoverCard>
+                                                        <HoverCardTrigger asChild>
+                                                          <div className="w-16 h-16 flex-shrink-0 cursor-pointer">
+                                                            {item.image_url ? (
+                                                              <img
+                                                                src={item.image_url}
+                                                                alt={item.name}
+                                                                className="w-full h-full object-cover rounded border border-gray-200 hover:ring-2 hover:ring-purple-500 transition-all"
+                                                                onError={(e) => {
+                                                                  (
+                                                                    e.target as HTMLImageElement
+                                                                  ).src =
+                                                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect fill='%23f3f4f6' width='64' height='64'/%3E%3C/svg%3E";
+                                                                }}
+                                                              />
+                                                            ) : (
+                                                              <div className="w-full h-full bg-gray-100 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                                                                <ImageIcon className="w-6 h-6 text-gray-300" />
+                                                              </div>
+                                                            )}
                                                           </div>
+                                                        </HoverCardTrigger>
+                                                        {item.image_url && (
+                                                          <HoverCardContent
+                                                            className="w-80 p-2"
+                                                            side="right"
+                                                          >
+                                                            <img
+                                                              src={item.image_url}
+                                                              alt={item.name}
+                                                              className="w-full h-auto rounded-lg"
+                                                            />
+                                                            <p className="text-sm text-muted-foreground mt-2 text-center">
+                                                              {item.name}
+                                                            </p>
+                                                          </HoverCardContent>
                                                         )}
-                                                      </div>
+                                                      </HoverCard>
 
                                                       <div className="flex-1">
                                                         <div className="flex items-center space-x-2">
@@ -650,7 +683,7 @@ export default function MenuManagementClient({
             <MenuPreview
               key={`styled-${designRefreshKey}`}
               venueId={venueId}
-              menuItems={menuItems as unknown as import('@/components/MenuPreview').MenuItem[]}
+              menuItems={menuItems as unknown as import("@/components/MenuPreview").MenuItem[]}
               categoryOrder={categoryOrder}
             />
           ) : (
@@ -779,6 +812,20 @@ export default function MenuManagementClient({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Item Modal */}
+      <EditItemModal
+        item={editingItem}
+        venueId={venueId}
+        open={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSuccess={() => {
+          loadMenuItems();
+        }}
+      />
     </div>
   );
 }
