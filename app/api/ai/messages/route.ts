@@ -239,8 +239,10 @@ export async function POST(_request: NextRequest) {
           });
 
           // Handle navigation
-          if (tool.name === "navigation.go_to_page" && result.success) {
-            assistantResponse = result.message || `Navigating to ${tool.params.page}`;
+          if (tool.name === "navigation.go_to_page" && "success" in result && result.success) {
+            const message = "message" in result ? result.message : undefined;
+            assistantResponse =
+              (message as string | undefined) || `Navigating to ${tool.params.page}`;
           }
         }
 
