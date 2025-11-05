@@ -114,12 +114,7 @@ export default function AnalyticsClientPage({
           </p>
         </div>
 
-        <AnalyticsClient
-          venueId={venueId}
-          ordersData={ordersData}
-          menuData={menuData}
-          revenueData={revenueData}
-        />
+        <AnalyticsClient ordersData={ordersData} menuData={menuData} revenueData={revenueData} />
       </div>
     </div>
   );
