@@ -6,6 +6,7 @@ export interface BaseMenuItem {
   price: number;
   category: string;
   is_available: boolean;
+  image_url?: string | null;
   position?: number | null;
   created_at?: string;
   updated_at?: string;
@@ -39,4 +40,3 @@ export interface NewItem {
 }
 
 export type BatchAction = "edit" | "unavailable" | "category" | "price" | "delete" | null;
-
