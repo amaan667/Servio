@@ -42,6 +42,7 @@ export function TableGridSection({
             table={table}
             venueId={venueId}
             onActionComplete={onTableActionComplete}
+            availableTables={tables.filter((t) => t.id !== table.id && t.session_status === "FREE")}
           />
         ))}
       </div>
