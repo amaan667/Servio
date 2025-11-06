@@ -308,35 +308,31 @@ export function EnhancedPDFMenuDisplay({
         <div className="mb-6 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="overflow-x-auto py-3 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-purple-600 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-purple-700">
             <div className="flex space-x-2 px-4">
-              <Button
-                variant={selectedCategory === null ? "default" : "outline"}
-                size="sm"
+              <button
                 onClick={() => {
                   setSelectedCategory(null);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className={`whitespace-nowrap ${
+                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   selectedCategory === null
-                    ? "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 shadow-lg"
-                    : "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 opacity-90 hover:opacity-100"
+                    ? "bg-purple-600 text-white border-2 border-purple-600 shadow-lg"
+                    : "bg-purple-600 text-white border-2 border-purple-600 hover:bg-white hover:text-purple-600"
                 }`}
               >
                 All
-              </Button>
+              </button>
               {categories.map((category) => (
-                <Button
+                <button
                   key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  size="sm"
                   onClick={() => scrollToCategory(category)}
-                  className={`shrink-0 min-w-fit ${
+                  className={`shrink-0 min-w-fit px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     selectedCategory === category
-                      ? "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 shadow-lg"
-                      : "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 opacity-90 hover:opacity-100"
+                      ? "bg-purple-600 text-white border-2 border-purple-600 shadow-lg"
+                      : "bg-purple-600 text-white border-2 border-purple-600 hover:bg-white hover:text-purple-600"
                   }`}
                 >
                   <span className="truncate max-w-[120px] px-1">{category}</span>
-                </Button>
+                </button>
               ))}
             </div>
           </div>
