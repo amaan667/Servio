@@ -15,7 +15,6 @@ import {
   Heart,
   AlertTriangle,
   BarChart3,
-  RefreshCw,
   MessageSquare,
   Plus,
 } from "lucide-react";
@@ -279,7 +278,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <RefreshCw className="h-8 w-8 animate-spin text-gray-700" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         <span className="ml-2 text-gray-900">Loading feedback...</span>
       </div>
     );
@@ -289,13 +288,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     <div className="space-y-8">
       <Card className="shadow-sm">
         <CardHeader className="pb-6">
-          <CardTitle className="flex items-center justify-between">
-            <span>Customer Feedback System</span>
-            <Button variant="outline" size="sm" onClick={fetchFeedback}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </CardTitle>
+          <CardTitle>Customer Feedback System</CardTitle>
           <CardDescription className="text-gray-700">
             Monitor customer satisfaction and respond to feedback
           </CardDescription>

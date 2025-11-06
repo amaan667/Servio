@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient, getAuthenticatedUser, createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
-export const runtime = "nodejs";
-
 function getServiceClient() {
   return createAdminClient();
 }
