@@ -1,7 +1,7 @@
 // Servio AI Assistant - Extended Menu Management Tools
 // Image upload, translation, and advanced menu queries
 
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { aiLogger } from "@/lib/logger";
 
 interface MenuItemsWithoutImagesResult {
@@ -37,7 +37,7 @@ interface ImageUploadResult {
 export async function getMenuItemsWithoutImages(
   venueId: string
 ): Promise<MenuItemsWithoutImagesResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI MENU] Querying items without images for venue: ${venueId}`);
 
@@ -95,7 +95,7 @@ export async function updateMenuItemImage(
   itemName: string,
   imageUrl: string
 ): Promise<ImageUploadResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI MENU] Updating image for item: ${itemName}`);
 
@@ -148,7 +148,7 @@ export async function translateMenuItems(
   targetLanguage: string,
   categories?: string[]
 ): Promise<MenuTranslationResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI MENU] Starting menu translation to ${targetLanguage}`);
 
@@ -264,7 +264,7 @@ export async function bulkUpdateAvailability(
   updatedCount: number;
   message: string;
 }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI MENU] Bulk updating availability for ${itemIds.length} items to ${available}`);
 

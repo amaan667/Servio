@@ -1,7 +1,7 @@
 // Servio AI Assistant - QR Code Management Tools
 // Generate, manage, and export QR codes for tables and counters
 
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { aiLogger } from "@/lib/logger";
 
 interface QRCodeGenerationResult {
@@ -38,7 +38,7 @@ export async function generateTableQRCode(
   venueId: string,
   tableLabel: string
 ): Promise<QRCodeGenerationResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI QR] Generating QR code for table: ${tableLabel}`);
 
@@ -57,14 +57,15 @@ export async function generateTableQRCode(
   }
 
   // Get venue slug for URL
-  const { data: venue } = await supabase
+  const { data: venue, error: venueError } = await supabase
     .from("venues")
     .select("slug, venue_name")
     .eq("venue_id", venueId)
     .single();
 
-  if (!venue) {
-    throw new Error("Venue not found");
+  if (venueError || !venue) {
+    aiLogger.error("[AI QR] Error fetching venue:", venueError);
+    throw new Error(`Venue not found: ${venueError?.message || "Unknown error"}`);
   }
 
   let tableId = existingTable?.id;
@@ -118,7 +119,7 @@ export async function generateBulkTableQRCodes(
   startNumber: number,
   endNumber: number
 ): Promise<QRCodeGenerationResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI QR] Generating bulk QR codes for tables ${startNumber}-${endNumber}`);
 
@@ -217,7 +218,7 @@ export async function generateCounterQRCode(
   venueId: string,
   counterLabel: string
 ): Promise<QRCodeGenerationResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI QR] Generating QR code for counter: ${counterLabel}`);
 
@@ -285,7 +286,7 @@ export async function generateCounterQRCode(
  * List all QR codes for a venue
  */
 export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI QR] Listing all QR codes for venue: ${venueId}`);
 
@@ -355,7 +356,7 @@ export async function prepareQRCodePDFData(venueId: string): Promise<{
   message: string;
 }> {
   const qrData = await listAllQRCodes(venueId);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: venue } = await supabase
     .from("venues")

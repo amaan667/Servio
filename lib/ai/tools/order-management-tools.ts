@@ -1,7 +1,7 @@
 // Servio AI Assistant - Order Management Tools
 // Order status updates, kitchen queries, overdue tracking
 
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { aiLogger } from "@/lib/logger";
 
 interface OrderStatusUpdateResult {
@@ -61,7 +61,7 @@ export async function updateOrderStatus(
   orderId: string,
   newStatus: string
 ): Promise<OrderStatusUpdateResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI ORDER] Updating order ${orderId} to status: ${newStatus}`);
 
@@ -134,7 +134,7 @@ export async function updateOrderStatus(
  * Get orders currently in kitchen (IN_PREP status)
  */
 export async function getKitchenOrders(venueId: string): Promise<KitchenOrdersResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI ORDER] Fetching kitchen orders for venue: ${venueId}`);
 
@@ -185,7 +185,7 @@ export async function getOverdueOrders(
   venueId: string,
   thresholdMinutes: number = 20
 ): Promise<OverdueOrdersResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI ORDER] Fetching overdue orders (>${thresholdMinutes} min)`);
 
@@ -236,7 +236,7 @@ export async function getOverdueOrders(
  * Get all pending/active orders
  */
 export async function getPendingOrders(venueId: string): Promise<PendingOrdersResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI ORDER] Fetching pending orders for venue: ${venueId}`);
 
@@ -287,7 +287,7 @@ export async function getTodayOrderStats(venueId: string): Promise<{
   avgOrderValue: number;
   message: string;
 }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

@@ -1,7 +1,7 @@
 // Servio AI Assistant - Table Management Tools
 // Table availability, creation, merging, and queries
 
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { aiLogger } from "@/lib/logger";
 
 interface TableAvailabilityResult {
@@ -55,7 +55,7 @@ interface TablesWithOrdersResult {
  * Get available and occupied tables
  */
 export async function getTableAvailability(venueId: string): Promise<TableAvailabilityResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI TABLE] Fetching table availability for venue: ${venueId}`);
 
@@ -135,7 +135,7 @@ export async function createTable(
   tableLabel: string,
   seats: number = 4
 ): Promise<TableCreationResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI TABLE] Creating table: ${tableLabel} with ${seats} seats`);
 
@@ -190,7 +190,7 @@ export async function mergeTables(
   tableIds: string[],
   mergedLabel?: string
 ): Promise<TableMergeResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI TABLE] Merging tables: ${tableIds.join(", ")}`);
 
@@ -276,7 +276,7 @@ async function performTableMerge(
  * Get tables with active orders
  */
 export async function getTablesWithActiveOrders(venueId: string): Promise<TablesWithOrdersResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI TABLE] Fetching tables with active orders for venue: ${venueId}`);
 
@@ -351,7 +351,7 @@ export async function getRevenueByTable(venueId: string): Promise<{
   }>;
   summary: string;
 }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

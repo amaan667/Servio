@@ -1,7 +1,7 @@
 // Servio AI Assistant - Extended KDS Tools
 // Station filtering, bulk updates, and advanced KDS queries
 
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { aiLogger } from "@/lib/logger";
 
 interface StationTicketsResult {
@@ -46,7 +46,7 @@ export async function getStationTickets(
   venueId: string,
   stationName: string
 ): Promise<StationTicketsResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI KDS] Fetching tickets for station: ${stationName}`);
 
@@ -126,7 +126,7 @@ export async function bulkUpdateTickets(
   toStatus: string,
   stationName?: string
 ): Promise<BulkTicketUpdateResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI KDS] Bulk updating tickets from ${fromStatus} to ${toStatus}`);
 
@@ -183,7 +183,7 @@ export async function getOverdueKDSTickets(
   venueId: string,
   thresholdMinutes: number = 15
 ): Promise<OverdueTicketsResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   aiLogger.info(`[AI KDS] Fetching overdue tickets (>${thresholdMinutes} min)`);
 
@@ -251,7 +251,7 @@ export async function getStationPrepTimes(venueId: string): Promise<{
   }>;
   summary: string;
 }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
