@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
           tool.params,
           venueId,
           user.id,
-          false // execute, not preview
+          tool.preview // use the preview flag from the plan
         );
 
         toolResults.push({
@@ -148,22 +148,41 @@ export async function POST(request: NextRequest) {
           result,
         });
 
-        // Handle navigation
-        if (tool.name === "navigation.go_to_page" && "success" in result && result.success) {
-          const resultMessage = "message" in result ? result.message : undefined;
-          response = (resultMessage as string | undefined) || plan.reasoning || "Navigating...";
+        // Build response from tool results
+        if ("success" in result && result.success && "result" in result) {
+          const resultData = result.result as Record<string, unknown>;
 
-          if ("result" in result && result.result && typeof result.result === "object") {
-            const resultObj = result.result as Record<string, unknown>;
+          // Handle navigation
+          if (tool.name === "navigation.go_to_page") {
+            response = (resultData.message as string) || plan.reasoning || "Navigating...";
             navigationInfo = {
-              route: resultObj.route as string,
-              page: resultObj.page as string,
+              route: resultData.route as string,
+              page: resultData.page as string,
             };
+          }
+          // Handle QR code generation
+          else if (tool.name.startsWith("qr.")) {
+            if (resultData.message) {
+              response = resultData.message as string;
+            } else if (resultData.qrCode) {
+              const qr = resultData.qrCode as Record<string, unknown>;
+              response =
+                (resultData.message as string) ||
+                `QR code generated for ${qr.label}. URL: ${qr.url}`;
+            } else if (resultData.summary) {
+              response = resultData.summary as string;
+            }
+          }
+          // Handle other tools with message or summary
+          else if (resultData.message) {
+            response = resultData.message as string;
+          } else if (resultData.summary) {
+            response = resultData.summary as string;
           }
         }
       }
 
-      // Generate final response if not navigation
+      // Generate final response if not set
       if (!response) {
         response = plan.reasoning || "Actions completed successfully";
         if (plan.warnings && plan.warnings.length > 0) {
