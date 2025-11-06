@@ -56,18 +56,6 @@ export async function generateTableQRCode(
     throw new Error(`Failed to fetch table: ${fetchError.message}`);
   }
 
-  // Get venue slug for URL
-  const { data: venue, error: venueError } = await supabase
-    .from("venues")
-    .select("slug, venue_name")
-    .eq("venue_id", venueId)
-    .single();
-
-  if (venueError || !venue) {
-    aiLogger.error("[AI QR] Error fetching venue:", venueError);
-    throw new Error(`Venue not found: ${venueError?.message || "Unknown error"}`);
-  }
-
   let tableId = existingTable?.id;
 
   // If table doesn't exist, create it
@@ -93,9 +81,9 @@ export async function generateTableQRCode(
     aiLogger.info(`[AI QR] Created new table: ${tableLabel}`);
   }
 
-  // Generate QR URL
+  // Generate QR URL (uses venueId directly)
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
-  const qrUrl = `${baseUrl}/order?venue=${venue.slug}&table=${tableLabel}`;
+  const qrUrl = `${baseUrl}/order?venue=${venueId}&table=${tableLabel}`;
 
   return {
     success: true,
@@ -125,17 +113,6 @@ export async function generateBulkTableQRCodes(
 
   if (startNumber < 1 || endNumber < startNumber || endNumber - startNumber > 100) {
     throw new Error("Invalid range. Please specify 1-100 tables.");
-  }
-
-  // Get venue slug
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("slug, venue_name")
-    .eq("venue_id", venueId)
-    .single();
-
-  if (!venue) {
-    throw new Error("Venue not found");
   }
 
   const qrCodes: QRCodeGenerationResult["qrCodes"] = [];
@@ -182,7 +159,7 @@ export async function generateBulkTableQRCodes(
         id: table.id,
         label: table.label,
         type: "table",
-        url: `${baseUrl}/order?venue=${venue.slug}&table=${encodeURIComponent(table.label)}`,
+        url: `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(table.label)}`,
       });
     });
   }
@@ -195,7 +172,7 @@ export async function generateBulkTableQRCodes(
         id: table.id,
         label: table.label,
         type: "table",
-        url: `${baseUrl}/order?venue=${venue.slug}&table=${encodeURIComponent(table.label)}`,
+        url: `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(table.label)}`,
       });
     }
   });
@@ -221,17 +198,6 @@ export async function generateCounterQRCode(
   const supabase = createAdminClient();
 
   aiLogger.info(`[AI QR] Generating QR code for counter: ${counterLabel}`);
-
-  // Get venue slug
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("slug, venue_name")
-    .eq("venue_id", venueId)
-    .single();
-
-  if (!venue) {
-    throw new Error("Venue not found");
-  }
 
   // Check if counter exists
   const { data: existingCounter } = await supabase
@@ -264,9 +230,9 @@ export async function generateCounterQRCode(
     aiLogger.info(`[AI QR] Created new counter: ${counterLabel}`);
   }
 
-  // Generate QR URL
+  // Generate QR URL (uses venueId directly)
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
-  const qrUrl = `${baseUrl}/order?venue=${venue.slug}&counter=${encodeURIComponent(counterLabel)}`;
+  const qrUrl = `${baseUrl}/order?venue=${venueId}&counter=${encodeURIComponent(counterLabel)}`;
 
   return {
     success: true,
@@ -290,17 +256,6 @@ export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult>
 
   aiLogger.info(`[AI QR] Listing all QR codes for venue: ${venueId}`);
 
-  // Get venue slug
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("slug, venue_name")
-    .eq("venue_id", venueId)
-    .single();
-
-  if (!venue) {
-    throw new Error("Venue not found");
-  }
-
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
 
   // Get all tables
@@ -323,7 +278,7 @@ export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult>
     tables?.map((table) => ({
       id: table.id,
       label: table.label,
-      qrUrl: `${baseUrl}/order?venue=${venue.slug}&table=${encodeURIComponent(table.label)}`,
+      qrUrl: `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(table.label)}`,
       status: table.status || "available",
     })) || [];
 
@@ -331,14 +286,14 @@ export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult>
     counters?.map((counter) => ({
       id: counter.id,
       label: counter.name,
-      qrUrl: `${baseUrl}/order?venue=${venue.slug}&counter=${encodeURIComponent(counter.name)}`,
+      qrUrl: `${baseUrl}/order?venue=${venueId}&counter=${encodeURIComponent(counter.name)}`,
       status: "active",
     })) || [];
 
   return {
     tables: tableQRs,
     counters: counterQRs,
-    summary: `Found ${tableQRs.length} table QR codes and ${counterQRs.length} counter QR codes for ${venue.venue_name}.`,
+    summary: `Found ${tableQRs.length} table QR codes and ${counterQRs.length} counter QR codes.`,
   };
 }
 
