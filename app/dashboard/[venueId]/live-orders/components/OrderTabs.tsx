@@ -2,6 +2,7 @@
 
 import { Clock, Timer, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface OrderTabsProps {
   activeTab: string;
@@ -14,54 +15,46 @@ interface OrderTabsProps {
 }
 
 export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
-  const tabs = [
-    {
-      key: "live",
-      label: "Live Orders",
-      icon: <Clock className="h-4 w-4" />,
-      count: counts.live,
-    },
-    {
-      key: "all",
-      label: "Earlier Today",
-      icon: <Timer className="h-4 w-4" />,
-      count: counts.earlier,
-    },
-    {
-      key: "history",
-      label: "History",
-      icon: <History className="h-4 w-4" />,
-      count: counts.history,
-    },
-  ];
-
   return (
-    <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2">
-      {tabs.map((tab) => (
-        <button
-          key={tab.key}
-          onClick={() => onTabChange(tab.key)}
-          className={`
-            flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all
-            ${
-              activeTab === tab.key
-                ? "bg-purple-600 !text-white border-2 border-purple-700 shadow-lg [&>*]:!text-white"
-                : "bg-purple-600 !text-white border-2 border-purple-600 hover:bg-purple-700 opacity-90 hover:opacity-100 [&>*]:!text-white"
-            }
-          `}
-        >
-          {tab.icon}
-          <span className="whitespace-nowrap">{tab.label}</span>
-          {tab.count > 0 && (
+    <Tabs value={activeTab} onValueChange={onTabChange}>
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="live" className="flex items-center gap-2">
+          <Clock className="h-4 w-4" />
+          Live Orders
+          {counts.live > 0 && (
             <Badge
               variant="secondary"
-              className="ml-1 min-w-[1.5rem] h-5 px-1.5 text-xs font-semibold bg-white !text-purple-600"
+              className="ml-1 min-w-[1.5rem] h-5 px-1.5 text-xs font-semibold"
             >
-              {tab.count}
+              {counts.live}
             </Badge>
           )}
-        </button>
-      ))}
-    </div>
+        </TabsTrigger>
+        <TabsTrigger value="all" className="flex items-center gap-2">
+          <Timer className="h-4 w-4" />
+          Earlier Today
+          {counts.earlier > 0 && (
+            <Badge
+              variant="secondary"
+              className="ml-1 min-w-[1.5rem] h-5 px-1.5 text-xs font-semibold"
+            >
+              {counts.earlier}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="history" className="flex items-center gap-2">
+          <History className="h-4 w-4" />
+          History
+          {counts.history > 0 && (
+            <Badge
+              variant="secondary"
+              className="ml-1 min-w-[1.5rem] h-5 px-1.5 text-xs font-semibold"
+            >
+              {counts.history}
+            </Badge>
+          )}
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   );
 }
