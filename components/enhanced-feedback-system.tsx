@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import QuestionsClient from "@/app/dashboard/[venueId]/feedback/QuestionsClient";
-import { useAuth } from "@/app/auth/AuthProvider";
 
 interface Feedback {
   id: string;
@@ -61,7 +60,6 @@ interface FeedbackSystemProps {
 }
 
 export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
-  const { user, loading: authLoading } = useAuth();
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
@@ -77,10 +75,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchQuestions = useCallback(async () => {
-    if (!user) {
-      return;
-    }
-
     try {
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`, {
         credentials: "include",
@@ -92,7 +86,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     } catch (_error) {
       // Error silently handled
     }
-  }, [venueId, user]);
+  }, [venueId]);
 
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
@@ -264,11 +258,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   };
 
   useEffect(() => {
-    if (user && !authLoading) {
-      fetchFeedback();
-      fetchQuestions();
-    }
-  }, [fetchFeedback, fetchQuestions, user, authLoading]);
+    fetchFeedback();
+    fetchQuestions();
+  }, [fetchFeedback, fetchQuestions]);
 
   // Add listener for when questions are updated from the Create tab
   useEffect(() => {

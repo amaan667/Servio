@@ -29,7 +29,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackType } from "@/types/feedback";
-import { useAuth } from "@/app/auth/AuthProvider";
 
 interface QuestionsClientProps {
   venueId: string;
@@ -42,7 +41,6 @@ export default function QuestionsClient({
   venueName: _venueName,
   mode = "full",
 }: QuestionsClientProps) {
-  const { user, loading: authLoading } = useAuth();
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -87,7 +85,7 @@ export default function QuestionsClient({
   };
 
   const fetchQuestions = useCallback(async () => {
-    if (!venueId || !user) {
+    if (!venueId) {
       return;
     }
 
@@ -132,14 +130,14 @@ export default function QuestionsClient({
     } finally {
       setLoading(false);
     }
-  }, [venueId, user, toast]);
+  }, [venueId, toast]);
 
-  // Load questions on mount - only when venueId and user are available
+  // Load questions on mount
   useEffect(() => {
-    if (venueId && user && !authLoading) {
+    if (venueId) {
       fetchQuestions();
     }
-  }, [venueId, user, authLoading, fetchQuestions]);
+  }, [venueId, fetchQuestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -490,39 +488,6 @@ export default function QuestionsClient({
 
   const activeQuestions = questions.filter((q) => q.is_active);
   const inactiveQuestions = questions.filter((q) => !q.is_active);
-
-  // Show loading state while checking authentication
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show authentication required message if user is not authenticated
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Authentication Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              You need to be logged in to manage feedback questions.
-            </p>
-            <Button onClick={() => (window.location.href = "/auth/signin")} className="w-full">
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   // When in embedded mode, just show the question management interface without tabs
   if (mode === "embedded") {
