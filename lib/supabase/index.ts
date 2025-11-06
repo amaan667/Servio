@@ -283,9 +283,20 @@ export async function getAuthenticatedUser() {
     const cookieStore = await cookies();
 
     const supabase = supabaseServer({
-      get: (name) => cookieStore.get(name)?.value,
+      get: (name) => {
+        // Guard against undefined cookie names
+        if (!name || typeof name !== "string") {
+          return undefined;
+        }
+        try {
+          const cookie = cookieStore.get(name);
+          return cookie?.value;
+        } catch {
+          return undefined;
+        }
+      },
       set: () => {
-        /* Empty */
+        /* Empty - read-only mode */
       },
     });
 
@@ -325,7 +336,8 @@ export async function getAuthenticatedUser() {
     const errorMessage = _err instanceof Error ? _err.message : String(_err);
     if (
       errorMessage?.includes("refresh_token_not_found") ||
-      errorMessage?.includes("Invalid Refresh Token")
+      errorMessage?.includes("Invalid Refresh Token") ||
+      errorMessage?.includes("Cannot read properties of undefined")
     ) {
       return { user: null, error: null };
     }
