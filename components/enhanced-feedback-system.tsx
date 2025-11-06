@@ -75,13 +75,17 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
   const fetchQuestions = useCallback(async () => {
     try {
-      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`, {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setQuestions(data.questions || []);
-      }
+      // Fetch directly from Supabase like other pages do
+      const supabase = createClient();
+      const { data: questions } = await supabase
+        .from("feedback_questions")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("is_active", true)
+        .order("sort_index", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      setQuestions(questions || []);
     } catch (_error) {
       // Error silently handled
     }

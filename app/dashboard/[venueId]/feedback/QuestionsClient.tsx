@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackType } from "@/types/feedback";
+import { supabaseBrowser } from "@/lib/supabase";
 
 interface QuestionsClientProps {
   venueId: string;
@@ -91,36 +92,35 @@ export default function QuestionsClient({
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `/api/feedback/questions?venueId=${encodeURIComponent(venueId)}`,
-        {
-          credentials: "include",
-        }
-      );
 
-      if (response.ok) {
-        const data = await response.json();
+      // Fetch directly from Supabase like other pages do (menu, etc)
+      const supabase = supabaseBrowser();
+      const { data: questions, error } = await supabase
+        .from("feedback_questions")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("sort_index", { ascending: true })
+        .order("created_at", { ascending: true });
 
-        // Sort questions by sort_index and created_at to ensure proper order
-        const sortedQuestions = (data.questions || []).sort(
-          (a: FeedbackQuestion, b: FeedbackQuestion) => {
-            if (a.sort_index !== b.sort_index) {
-              return (a.sort_index || 0) - (b.sort_index || 0);
-            }
-            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-          }
-        );
-
-        setQuestions(sortedQuestions);
-        setTotalCount(data.totalCount || 0);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      if (error) {
         toast({
           title: "Error",
-          description: errorData.error || "Couldn't load questions",
+          description: error.message || "Couldn't load questions",
           variant: "destructive",
         });
+        return;
       }
+
+      // Sort questions by sort_index and created_at to ensure proper order
+      const sortedQuestions = (questions || []).sort((a: FeedbackQuestion, b: FeedbackQuestion) => {
+        if (a.sort_index !== b.sort_index) {
+          return (a.sort_index || 0) - (b.sort_index || 0);
+        }
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+      setQuestions(sortedQuestions);
+      setTotalCount(sortedQuestions.length);
     } catch (_error) {
       toast({
         title: "Error",
