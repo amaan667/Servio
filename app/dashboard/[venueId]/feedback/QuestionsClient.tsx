@@ -5,14 +5,12 @@ import {
   Plus,
   Edit,
   Trash2,
-  GripVertical,
   Eye,
   EyeOff,
-  X,
-  Check,
   MessageSquare,
   Star,
   BarChart3,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,20 +29,18 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackType } from "@/types/feedback";
-import { dbLogger } from "@/lib/logger";
 import { useAuth } from "@/app/auth/AuthProvider";
-// import MobileNav from '@/components/MobileNav';
 
 interface QuestionsClientProps {
   venueId: string;
   venueName?: string;
-  mode?: "form-only" | "list-only" | "full";
+  mode?: "form-only" | "list-only" | "full" | "embedded";
 }
 
 export default function QuestionsClient({
   venueId,
   venueName: _venueName,
-  mode: _mode = "full",
+  mode = "full",
 }: QuestionsClientProps) {
   const { user, loading: authLoading } = useAuth();
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
@@ -528,6 +524,205 @@ export default function QuestionsClient({
     );
   }
 
+  // When in embedded mode, just show the question management interface without tabs
+  if (mode === "embedded") {
+    return (
+      <div className="space-y-6">
+        {/* Question List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Manage Questions</span>
+              <Button onClick={() => setShowAddForm(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Question
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : questions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No questions yet</p>
+                <p className="text-sm mt-2">Create your first feedback question</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {questions.map((question) => (
+                  <Card key={question.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground">{question.prompt}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {getTypeBadge(question.type)}
+                            {getStatusBadge(question.is_active)}
+                          </div>
+                          {question.type === "multiple_choice" && question.choices && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {question.choices.map((choice, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {choice}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleActive(question.id, !question.is_active)}
+                            title={question.is_active ? "Deactivate" : "Activate"}
+                          >
+                            {question.is_active ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEdit(question)}
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(question.id)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add/Edit Form */}
+        {(showAddForm || editingId) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{editingId ? "Edit Question" : "Create New Question"}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label>Question Prompt *</Label>
+                  <Textarea
+                    value={formData.prompt}
+                    onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                    placeholder="How would you rate your experience?"
+                    rows={2}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label>Question Type *</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: FeedbackType) =>
+                      setFormData({ ...formData, type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="stars">Star Rating (1-5)</SelectItem>
+                      <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                      <SelectItem value="paragraph">Paragraph</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.type === "multiple_choice" && (
+                  <div>
+                    <Label>Choices (2-6) *</Label>
+                    {formData.choices.map((choice, index) => (
+                      <div key={index} className="flex gap-2 mb-2">
+                        <Input
+                          value={choice}
+                          onChange={(e) => {
+                            const newChoices = [...formData.choices];
+                            newChoices[index] = e.target.value;
+                            setFormData({ ...formData, choices: newChoices });
+                          }}
+                          placeholder={`Choice ${index + 1}`}
+                          maxLength={40}
+                        />
+                        {formData.choices.length > 2 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newChoices = formData.choices.filter((_, i) => i !== index);
+                              setFormData({ ...formData, choices: newChoices });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {formData.choices.length < 6 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setFormData({ ...formData, choices: [...formData.choices, ""] })
+                        }
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Choice
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Label>Status</Label>
+                  <ToggleSwitch
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {formData.is_active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button type="submit" disabled={loading} className="flex-1">
+                    {loading ? "Saving..." : editingId ? "Update Question" : "Add Question"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  // Full mode with tabs and stats
   return (
     <div className="space-y-6">
       {/* Summary Stats */}

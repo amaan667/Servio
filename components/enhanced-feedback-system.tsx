@@ -10,22 +10,16 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Star,
-  TrendingUp,
-  TrendingDown,
-  Filter,
-  Search,
   ThumbsUp,
   ThumbsDown,
   Heart,
   AlertTriangle,
-  Clock,
   BarChart3,
   RefreshCw,
-  Plus,
   MessageSquare,
+  Plus,
 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import QuestionsClient from "@/app/dashboard/[venueId]/feedback/QuestionsClient";
 import { useAuth } from "@/app/auth/AuthProvider";
 
@@ -267,12 +261,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       default:
         return <Heart className="h-3 w-3" />;
     }
-  };
-
-  const getRatingColor = (rating: number) => {
-    if (rating >= 4) return "text-green-600";
-    if (rating >= 3) return "text-yellow-600";
-    return "text-red-600";
   };
 
   useEffect(() => {
@@ -597,7 +585,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
             </TabsContent>
 
             <TabsContent value="create" className="space-y-6 mt-6">
-              <QuestionsClient venueId={venueId} mode="full" />
+              <QuestionsClient venueId={venueId} mode="embedded" />
             </TabsContent>
           </Tabs>
         </CardContent>
