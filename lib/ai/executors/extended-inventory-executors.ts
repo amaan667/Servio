@@ -115,7 +115,6 @@ export async function executeInventoryGetLevels(
       total: result.total,
       lowStock: result.lowStock,
       outOfStock: result.outOfStock,
-      categories: result.categories,
       summary: result.summary,
     },
     auditId: "",

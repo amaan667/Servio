@@ -277,7 +277,7 @@ export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult>
       id: table.id,
       label: table.label,
       qrUrl: `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(table.label)}`,
-      status: table.status || "available",
+      status: "active",
     })) || [];
 
   const counterQRs =
