@@ -45,8 +45,8 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
             flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all
             ${
               activeTab === tab.key
-                ? "bg-purple-600 !text-white border-2 border-purple-600 shadow-sm [&>*]:!text-white"
-                : "bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                ? "bg-purple-600 !text-white border-2 border-purple-700 shadow-lg [&>*]:!text-white"
+                : "bg-purple-600 !text-white border-2 border-purple-600 hover:bg-purple-700 opacity-90 hover:opacity-100 [&>*]:!text-white"
             }
           `}
         >
@@ -55,14 +55,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
           {tab.count > 0 && (
             <Badge
               variant="secondary"
-              className={`
-                ml-1 min-w-[1.5rem] h-5 px-1.5 text-xs font-semibold
-                ${
-                  activeTab === tab.key
-                    ? "bg-white text-purple-600"
-                    : "bg-purple-100 text-purple-700"
-                }
-              `}
+              className="ml-1 min-w-[1.5rem] h-5 px-1.5 text-xs font-semibold bg-white !text-purple-600"
             >
               {tab.count}
             </Badge>
