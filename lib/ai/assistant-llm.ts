@@ -45,9 +45,12 @@ const MODEL_FULL = "gpt-4o-2024-08-06"; // Cost: ~$0.003/request (most accurate)
 const COMPLEX_TOOLS = new Set<ToolName>([
   "menu.update_prices", // Requires accurate math and multi-item logic
   "menu.translate", // Needs high-quality translations
+  "menu.translate_extended", // Complex translation with chunking
   "discounts.create", // Financial impact, needs precision
   "inventory.set_par_levels", // Complex calculations
   "analytics.create_report", // Complex aggregations
+  "tables.merge", // Complex table operations
+  "qr.generate_bulk", // Bulk operations need accuracy
 ]);
 
 // Define which tools are simple and work perfectly with mini
@@ -58,7 +61,34 @@ const SIMPLE_TOOLS = new Set<ToolName>([
   "menu.toggle_availability", // Simple boolean toggle
   "orders.mark_served", // Simple status update
   "orders.complete", // Simple status update
+  "orders.update_status", // Simple status update
   "kds.get_overdue", // Simple query
+  "kds.get_overdue_extended", // Simple query
+  "kds.get_station_tickets", // Simple query
+  "kds.get_prep_times", // Simple query
+  "qr.generate_table", // Simple generation
+  "qr.generate_counter", // Simple generation
+  "qr.list_all", // Simple query
+  "qr.export_pdf", // Simple export
+  "menu.query_no_images", // Simple query
+  "orders.get_pending", // Simple query
+  "orders.get_kitchen", // Simple query
+  "orders.get_overdue", // Simple query
+  "orders.get_today_stats", // Simple query
+  "tables.get_availability", // Simple query
+  "tables.get_active_orders", // Simple query
+  "tables.get_revenue", // Simple query
+  "tables.create", // Simple creation
+  "staff.list", // Simple query
+  "staff.get_roles", // Simple query
+  "staff.get_schedule", // Simple query
+  "staff.get_performance", // Simple query
+  "staff.invite", // Simple operation
+  "inventory.get_low_stock", // Simple query
+  "inventory.get_levels", // Simple query
+  "inventory.generate_po", // Simple generation
+  "inventory.adjust_stock_extended", // Simple adjustment
+  "kds.bulk_update", // Simple bulk update
 ]);
 
 /**
@@ -131,19 +161,47 @@ MENU MANAGEMENT:
 - Create new menu items and categories
 - Delete menu items
 - Translate menu to multiple languages (English, Spanish, French, German, Italian, Portuguese, Arabic, Chinese, Japanese)
+- Query items without images
+- Add/update images for menu items
 - Navigate to menu management pages
-- Guide users to upload/edit images for menu items (navigate to edit page)
 
 INVENTORY MANAGEMENT:
-- Adjust stock levels and track ingredients
+- Adjust stock levels and track ingredients (add/remove units)
 - Set par levels and generate purchase orders
+- Get low stock items and inventory levels
+- Generate purchase orders automatically
 - Navigate to inventory pages
 
 ORDERS & KDS:
 - Mark orders as served or complete
-- Get overdue orders from kitchen display
-- Suggest kitchen optimizations
+- Update order status (PLACED, ACCEPTED, IN_PREP, READY, COMPLETED)
+- Get pending orders, kitchen orders, and overdue orders
+- Get today's order statistics and totals
+- Query tickets by station (Grill, Fryer, Barista, etc.)
+- Bulk update ticket statuses
+- Get station prep times and performance
 - Navigate to orders and KDS pages
+
+QR CODE MANAGEMENT:
+- Generate QR codes for specific tables (e.g., "Table 5")
+- Generate bulk QR codes for table ranges (e.g., tables 1-10)
+- Generate QR codes for counters
+- List all existing QR codes
+- Prepare QR code data for PDF export
+
+TABLE MANAGEMENT:
+- Show available and occupied tables
+- Create new tables with custom seating
+- Merge multiple tables together
+- Get tables with active orders
+- Show revenue by table
+
+STAFF MANAGEMENT:
+- List all staff members with roles
+- Invite new staff members (managers or servers)
+- Show staff roles and permissions
+- Get today's staff schedule
+- View staff performance metrics
 
 ANALYTICS & REPORTING:
 - Get detailed statistics (revenue, orders, top items, peak hours)
@@ -152,7 +210,7 @@ ANALYTICS & REPORTING:
 - Navigate to analytics pages
 
 NAVIGATION:
-- Take users to unknown page in the system
+- Take users to any page in the system
 - Find specific features and sections
 
 CONTEXT:
@@ -168,9 +226,72 @@ ${dataSummaries.orders ? `\nORDERS:\n${JSON.stringify(dataSummaries.orders, null
 ${dataSummaries.analytics ? `\nANALYTICS:\n${JSON.stringify(dataSummaries.analytics, null, 2)}` : ""}
 
 AVAILABLE TOOLS:
-${Object.entries(TOOL_SCHEMAS)
-  .map(([name, schema]) => `- ${name}: ${schema.description || ""}`)
-  .join("\n")}
+
+QR CODE TOOLS:
+- qr.generate_table: Generate QR code for a specific table (e.g., "Table 5")
+- qr.generate_bulk: Generate QR codes for a range of tables (e.g., tables 1-10)
+- qr.generate_counter: Generate QR code for counter orders
+- qr.list_all: List all existing QR codes (tables and counters)
+- qr.export_pdf: Prepare QR codes for PDF download
+
+MENU TOOLS:
+- menu.update_prices: Update prices for menu items
+- menu.toggle_availability: Show/hide menu items
+- menu.create_item: Create new menu item
+- menu.delete_item: Delete menu item
+- menu.translate: Translate menu to another language
+- menu.translate_extended: Translate menu with category filtering (for large menus)
+- menu.query_no_images: Find all items without images
+- menu.upload_image: Add/update image for menu item
+
+ORDER TOOLS:
+- orders.update_status: Update order status (PLACED, ACCEPTED, IN_PREP, READY, COMPLETED)
+- orders.get_pending: Get all pending/active orders
+- orders.get_kitchen: Get orders currently in kitchen (IN_PREP status)
+- orders.get_overdue: Get overdue orders (taking too long)
+- orders.get_today_stats: Get today's order count and revenue
+- orders.mark_served: Mark order as served
+- orders.complete: Mark order as completed
+
+TABLE TOOLS:
+- tables.get_availability: Show available and occupied tables
+- tables.create: Create a new table
+- tables.merge: Merge multiple tables together
+- tables.get_active_orders: Get tables with active orders
+- tables.get_revenue: Show revenue by table
+
+STAFF TOOLS:
+- staff.list: List all staff members with roles
+- staff.invite: Invite new staff member (manager or server)
+- staff.get_roles: Show staff roles and permissions
+- staff.get_schedule: Get today's staff schedule
+- staff.get_performance: View staff performance metrics
+
+KDS TOOLS:
+- kds.get_overdue: Get overdue KDS tickets
+- kds.get_overdue_extended: Get overdue tickets with threshold
+- kds.get_station_tickets: Get tickets for specific station (Grill, Fryer, etc.)
+- kds.bulk_update: Bulk update ticket statuses
+- kds.get_prep_times: Get average prep times per station
+- kds.suggest_optimization: Get kitchen optimization suggestions
+
+INVENTORY TOOLS:
+- inventory.adjust_stock: Adjust inventory stock levels
+- inventory.adjust_stock_extended: Add/remove units from inventory items
+- inventory.get_low_stock: Get items below par level
+- inventory.get_levels: Get inventory levels overview
+- inventory.generate_po: Generate purchase order
+- inventory.set_par_levels: Set par levels for inventory
+- inventory.generate_purchase_order: Generate detailed purchase order
+
+ANALYTICS TOOLS:
+- analytics.get_insights: Get business insights
+- analytics.get_stats: Get detailed statistics
+- analytics.export: Export analytics data
+- analytics.create_report: Create custom report
+
+NAVIGATION TOOLS:
+- navigation.go_to_page: Navigate to any page in the system
 
 GUARDRAILS & SAFETY:
 ${Object.entries(DEFAULT_GUARDRAILS)

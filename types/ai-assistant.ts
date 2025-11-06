@@ -522,6 +522,168 @@ export const NavigationGoToPageSchema = z
   .strict();
 
 // ============================================================================
+// QR Code Tools
+// ============================================================================
+
+export const QRGenerateTableSchema = z
+  .object({
+    tableLabel: z.string().min(1),
+  })
+  .strict();
+
+export const QRGenerateBulkSchema = z
+  .object({
+    startNumber: z.number().int().min(1),
+    endNumber: z.number().int().min(1),
+  })
+  .strict();
+
+export const QRGenerateCounterSchema = z
+  .object({
+    counterLabel: z.string().min(1),
+  })
+  .strict();
+
+export const QRListAllSchema = z.object({}).strict();
+
+export const QRExportPDFSchema = z.object({}).strict();
+
+// ============================================================================
+// Extended Menu Tools
+// ============================================================================
+
+export const MenuQueryNoImagesSchema = z.object({}).strict();
+
+export const MenuUploadImageSchema = z
+  .object({
+    itemName: z.string().min(1),
+    imageUrl: z.string().min(1),
+  })
+  .strict();
+
+export const MenuTranslateExtendedSchema = z
+  .object({
+    targetLanguage: z.string().min(2),
+    categories: z.array(z.string()).nullable().default(null),
+  })
+  .strict();
+
+// ============================================================================
+// Extended Order Tools
+// ============================================================================
+
+export const OrderUpdateStatusSchema = z
+  .object({
+    orderId: z.string().uuid(),
+    newStatus: z.string().min(1),
+  })
+  .strict();
+
+export const OrdersGetKitchenSchema = z.object({}).strict();
+
+export const OrdersGetOverdueSchema = z
+  .object({
+    thresholdMinutes: z.number().int().positive().default(20),
+  })
+  .strict();
+
+export const OrdersGetPendingSchema = z.object({}).strict();
+
+export const OrdersGetTodayStatsSchema = z.object({}).strict();
+
+// ============================================================================
+// Table Management Tools
+// ============================================================================
+
+export const TableGetAvailabilitySchema = z.object({}).strict();
+
+export const TableCreateSchema = z
+  .object({
+    tableLabel: z.string().min(1),
+    seats: z.number().int().positive().default(4),
+  })
+  .strict();
+
+export const TableMergeSchema = z
+  .object({
+    tableIds: z.array(z.string().uuid()).min(2),
+    mergedLabel: z.string().nullable().default(null),
+  })
+  .strict();
+
+export const TableGetActiveOrdersSchema = z.object({}).strict();
+
+export const TableGetRevenueSchema = z.object({}).strict();
+
+// ============================================================================
+// Staff Management Tools
+// ============================================================================
+
+export const StaffListSchema = z.object({}).strict();
+
+export const StaffInviteSchema = z
+  .object({
+    email: z.string().email(),
+    role: z.enum(["manager", "server"]),
+    name: z.string().nullable().default(null),
+  })
+  .strict();
+
+export const StaffGetRolesSchema = z.object({}).strict();
+
+export const StaffGetScheduleSchema = z.object({}).strict();
+
+export const StaffGetPerformanceSchema = z
+  .object({
+    timeRange: z.enum(["week", "month"]).default("week"),
+  })
+  .strict();
+
+// ============================================================================
+// Extended KDS Tools
+// ============================================================================
+
+export const KDSGetStationTicketsSchema = z
+  .object({
+    stationName: z.string().min(1),
+  })
+  .strict();
+
+export const KDSBulkUpdateSchema = z
+  .object({
+    fromStatus: z.string().min(1),
+    toStatus: z.string().min(1),
+    stationName: z.string().nullable().default(null),
+  })
+  .strict();
+
+export const KDSGetOverdueExtendedSchema = z
+  .object({
+    thresholdMinutes: z.number().int().positive().default(15),
+  })
+  .strict();
+
+export const KDSGetPrepTimesSchema = z.object({}).strict();
+
+// ============================================================================
+// Extended Inventory Tools
+// ============================================================================
+
+export const InventoryAdjustStockExtendedSchema = z
+  .object({
+    itemName: z.string().min(1),
+    adjustment: z.number().int(),
+    reason: z.string().nullable().default(null),
+  })
+  .strict();
+
+export const InventoryGetLowStockSchema = z.object({}).strict();
+
+export const InventoryGeneratePOSchema = z.object({}).strict();
+
+export const InventoryGetLevelsSchema = z.object({}).strict();
+
+// ============================================================================
 // Tool Registry
 // ============================================================================
 
@@ -599,6 +761,51 @@ export const TOOL_SCHEMAS = {
 
   // Navigation Tools
   "navigation.go_to_page": NavigationGoToPageSchema,
+
+  // QR Code Tools
+  "qr.generate_table": QRGenerateTableSchema,
+  "qr.generate_bulk": QRGenerateBulkSchema,
+  "qr.generate_counter": QRGenerateCounterSchema,
+  "qr.list_all": QRListAllSchema,
+  "qr.export_pdf": QRExportPDFSchema,
+
+  // Extended Menu Tools
+  "menu.query_no_images": MenuQueryNoImagesSchema,
+  "menu.upload_image": MenuUploadImageSchema,
+  "menu.translate_extended": MenuTranslateExtendedSchema,
+
+  // Extended Order Tools
+  "orders.update_status": OrderUpdateStatusSchema,
+  "orders.get_kitchen": OrdersGetKitchenSchema,
+  "orders.get_overdue": OrdersGetOverdueSchema,
+  "orders.get_pending": OrdersGetPendingSchema,
+  "orders.get_today_stats": OrdersGetTodayStatsSchema,
+
+  // Table Management Tools
+  "tables.get_availability": TableGetAvailabilitySchema,
+  "tables.create": TableCreateSchema,
+  "tables.merge": TableMergeSchema,
+  "tables.get_active_orders": TableGetActiveOrdersSchema,
+  "tables.get_revenue": TableGetRevenueSchema,
+
+  // Staff Management Tools
+  "staff.list": StaffListSchema,
+  "staff.invite": StaffInviteSchema,
+  "staff.get_roles": StaffGetRolesSchema,
+  "staff.get_schedule": StaffGetScheduleSchema,
+  "staff.get_performance": StaffGetPerformanceSchema,
+
+  // Extended KDS Tools
+  "kds.get_station_tickets": KDSGetStationTicketsSchema,
+  "kds.bulk_update": KDSBulkUpdateSchema,
+  "kds.get_overdue_extended": KDSGetOverdueExtendedSchema,
+  "kds.get_prep_times": KDSGetPrepTimesSchema,
+
+  // Extended Inventory Tools
+  "inventory.adjust_stock_extended": InventoryAdjustStockExtendedSchema,
+  "inventory.get_low_stock": InventoryGetLowStockSchema,
+  "inventory.generate_po": InventoryGeneratePOSchema,
+  "inventory.get_levels": InventoryGetLevelsSchema,
 } as const;
 
 export type ToolName = keyof typeof TOOL_SCHEMAS;
@@ -731,6 +938,230 @@ export const ToolCallSchema = z.discriminatedUnion("name", [
     .object({
       name: z.literal("navigation.go_to_page"),
       params: NavigationGoToPageSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  // QR Code Tools
+  z
+    .object({
+      name: z.literal("qr.generate_table"),
+      params: QRGenerateTableSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("qr.generate_bulk"),
+      params: QRGenerateBulkSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("qr.generate_counter"),
+      params: QRGenerateCounterSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("qr.list_all"),
+      params: QRListAllSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("qr.export_pdf"),
+      params: QRExportPDFSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  // Extended Menu Tools
+  z
+    .object({
+      name: z.literal("menu.query_no_images"),
+      params: MenuQueryNoImagesSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("menu.upload_image"),
+      params: MenuUploadImageSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("menu.translate_extended"),
+      params: MenuTranslateExtendedSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  // Extended Order Tools
+  z
+    .object({
+      name: z.literal("orders.update_status"),
+      params: OrderUpdateStatusSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("orders.get_kitchen"),
+      params: OrdersGetKitchenSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("orders.get_overdue"),
+      params: OrdersGetOverdueSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("orders.get_pending"),
+      params: OrdersGetPendingSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("orders.get_today_stats"),
+      params: OrdersGetTodayStatsSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  // Table Management Tools
+  z
+    .object({
+      name: z.literal("tables.get_availability"),
+      params: TableGetAvailabilitySchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("tables.create"),
+      params: TableCreateSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("tables.merge"),
+      params: TableMergeSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("tables.get_active_orders"),
+      params: TableGetActiveOrdersSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("tables.get_revenue"),
+      params: TableGetRevenueSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  // Staff Management Tools
+  z
+    .object({
+      name: z.literal("staff.list"),
+      params: StaffListSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("staff.invite"),
+      params: StaffInviteSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("staff.get_roles"),
+      params: StaffGetRolesSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("staff.get_schedule"),
+      params: StaffGetScheduleSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("staff.get_performance"),
+      params: StaffGetPerformanceSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  // Extended KDS Tools
+  z
+    .object({
+      name: z.literal("kds.get_station_tickets"),
+      params: KDSGetStationTicketsSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("kds.bulk_update"),
+      params: KDSBulkUpdateSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("kds.get_overdue_extended"),
+      params: KDSGetOverdueExtendedSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("kds.get_prep_times"),
+      params: KDSGetPrepTimesSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  // Extended Inventory Tools
+  z
+    .object({
+      name: z.literal("inventory.adjust_stock_extended"),
+      params: InventoryAdjustStockExtendedSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("inventory.get_low_stock"),
+      params: InventoryGetLowStockSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("inventory.generate_po"),
+      params: InventoryGeneratePOSchema,
+      preview: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.literal("inventory.get_levels"),
+      params: InventoryGetLevelsSchema,
       preview: z.boolean(),
     })
     .strict(),
@@ -1166,6 +1597,106 @@ export const DEFAULT_GUARDRAILS: Record<ToolName, ToolGuardrails> = {
   "auto.dynamic_pricing": {
     maxPriceChangePercent: 15,
     requiresManagerApproval: true,
+  },
+  // QR CODE GUARDRAILS
+  "qr.generate_table": {
+    /* Empty */
+  },
+  "qr.generate_bulk": {
+    maxBulkOperationSize: 100,
+  },
+  "qr.generate_counter": {
+    /* Empty */
+  },
+  "qr.list_all": {
+    /* Empty */
+  },
+  "qr.export_pdf": {
+    /* Empty */
+  },
+  // EXTENDED MENU GUARDRAILS
+  "menu.query_no_images": {
+    /* Empty */
+  },
+  "menu.upload_image": {
+    /* Empty */
+  },
+  "menu.translate_extended": {
+    /* Empty */
+  },
+  // EXTENDED ORDER GUARDRAILS
+  "orders.update_status": {
+    /* Empty */
+  },
+  "orders.get_kitchen": {
+    /* Empty */
+  },
+  "orders.get_overdue": {
+    /* Empty */
+  },
+  "orders.get_pending": {
+    /* Empty */
+  },
+  "orders.get_today_stats": {
+    /* Empty */
+  },
+  // TABLE MANAGEMENT GUARDRAILS
+  "tables.get_availability": {
+    /* Empty */
+  },
+  "tables.create": {
+    requiresManagerApproval: true,
+  },
+  "tables.merge": {
+    requiresManagerApproval: true,
+  },
+  "tables.get_active_orders": {
+    /* Empty */
+  },
+  "tables.get_revenue": {
+    /* Empty */
+  },
+  // STAFF MANAGEMENT GUARDRAILS
+  "staff.list": {
+    /* Empty */
+  },
+  "staff.invite": {
+    requiresManagerApproval: true,
+  },
+  "staff.get_roles": {
+    /* Empty */
+  },
+  "staff.get_schedule": {
+    /* Empty */
+  },
+  "staff.get_performance": {
+    /* Empty */
+  },
+  // EXTENDED KDS GUARDRAILS
+  "kds.get_station_tickets": {
+    /* Empty */
+  },
+  "kds.bulk_update": {
+    maxBulkOperationSize: 50,
+  },
+  "kds.get_overdue_extended": {
+    /* Empty */
+  },
+  "kds.get_prep_times": {
+    /* Empty */
+  },
+  // EXTENDED INVENTORY GUARDRAILS
+  "inventory.adjust_stock_extended": {
+    maxBulkOperationSize: 50,
+  },
+  "inventory.get_low_stock": {
+    /* Empty */
+  },
+  "inventory.generate_po": {
+    /* Empty */
+  },
+  "inventory.get_levels": {
+    /* Empty */
   },
 };
 

@@ -86,6 +86,7 @@ export function SimpleChatInterface({
           message: userMessage,
           venueId,
           currentPage,
+          conversationHistory: messages, // Send previous messages for context
         }),
       });
 

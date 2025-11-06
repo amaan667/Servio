@@ -1,4 +1,4 @@
-// Simple AI Chat API - No conversation history, direct Q&A
+// Simple AI Chat API - With in-session conversation context
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { planAssistantAction } from "@/lib/ai/assistant-llm";
@@ -6,10 +6,16 @@ import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders"
 import { executeTool } from "@/lib/ai/tool-executors";
 import { logger } from "@/lib/logger";
 
+// Set max duration to 60 seconds to handle complex operations like translation
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
-  let requestBody: { message?: string; venueId?: string; currentPage?: string } = {};
+  let requestBody: {
+    message?: string;
+    venueId?: string;
+    currentPage?: string;
+    conversationHistory?: Array<{ role: string; content: string }>;
+  } = {};
 
   try {
     logger.info("[AI SIMPLE CHAT] 1. Request received");
@@ -76,12 +82,13 @@ export async function POST(request: NextRequest) {
     }
 
     requestBody = await request.json();
-    const { message, venueId, currentPage } = requestBody;
+    const { message, venueId, currentPage, conversationHistory } = requestBody;
 
     logger.info("[AI SIMPLE CHAT] 6. Request parsed:", {
       hasMessage: !!message,
       venueId,
       currentPage,
+      historyLength: conversationHistory?.length || 0,
     });
 
     if (!message || !venueId) {
@@ -97,9 +104,20 @@ export async function POST(request: NextRequest) {
     const summaries = await getAllSummaries(venueId, context.features);
     logger.info("[AI SIMPLE CHAT] 9. Summaries retrieved");
 
-    // Plan the action
-    logger.info("[AI SIMPLE CHAT] 10. Planning action for:", message);
-    const plan = await planAssistantAction(message, context, summaries);
+    // Build conversation context from history
+    let conversationContext = "";
+    if (conversationHistory && conversationHistory.length > 0) {
+      const recentMessages = conversationHistory.slice(-5); // Last 5 messages
+      conversationContext =
+        "\n\nRECENT CONVERSATION:\n" +
+        recentMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n");
+    }
+
+    // Plan the action with conversation context
+    const enhancedMessage = conversationContext ? `${message}${conversationContext}` : message;
+
+    logger.info("[AI SIMPLE CHAT] 10. Planning action with conversation context");
+    const plan = await planAssistantAction(enhancedMessage, context, summaries);
     logger.info("[AI SIMPLE CHAT] 11. Plan created:", {
       hasDirectAnswer: !!plan.directAnswer,
       toolCount: plan.tools?.length || 0,
