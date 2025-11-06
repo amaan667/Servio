@@ -41,9 +41,16 @@ export default function QRCodeClient({
 
   const qrManagement = useQRCodeManagement(venueId);
 
-  // Handle URL parameter for pre-selected table
+  // Handle URL parameter for pre-selected table and AI generation
   useEffect(() => {
     const tableParam = searchParams.get("table");
+    const aiGenerated = searchParams.get("ai_generated");
+
+    // If AI just generated QR codes, reload the tables list
+    if (aiGenerated === "true") {
+      qrManagement.refetch();
+    }
+
     if (tableParam) {
       const tableName = decodeURIComponent(tableParam);
       setSingleName(tableName);
