@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
     logger.info("[AI SIMPLE CHAT] 11. Plan created:", {
       hasDirectAnswer: !!plan.directAnswer,
       toolCount: plan.tools?.length || 0,
+      tools: plan.tools?.map((t) => ({ name: t.name, preview: t.preview })) || [],
+      reasoning: plan.reasoning,
     });
 
     let response = "";
@@ -136,6 +138,12 @@ export async function POST(request: NextRequest) {
       const messages: string[] = [];
 
       for (const tool of plan.tools) {
+        logger.info("[AI SIMPLE CHAT] Executing tool:", {
+          toolName: tool.name,
+          params: tool.params,
+          preview: tool.preview,
+        });
+
         const result = await executeTool(
           tool.name,
           tool.params,
@@ -143,6 +151,12 @@ export async function POST(request: NextRequest) {
           user.id,
           tool.preview // use the preview flag from the plan
         );
+
+        logger.info("[AI SIMPLE CHAT] Tool result:", {
+          toolName: tool.name,
+          success: "success" in result ? result.success : "N/A",
+          hasResult: "result" in result,
+        });
 
         toolResults.push({
           tool: tool.name,
