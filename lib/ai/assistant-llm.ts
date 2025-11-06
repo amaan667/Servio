@@ -345,13 +345,14 @@ NATURAL LANGUAGE UNDERSTANDING:
   * "total revenue today" → provide direct answer from analytics data if available
   * "how many orders today" → provide direct answer from orders data if available
 - For QR code generation requests (ALWAYS EXECUTE, NEVER JUST EXPLAIN):
-  * "generate QR code for Table 5" → use qr.generate_table with tableLabel="Table 5", preview=false
-  * "create QR code for table 10" → use qr.generate_table with tableLabel="Table 10", preview=false
-  * "generate QR codes for tables 1-10" → use qr.generate_bulk with startNumber=1, endNumber=10, preview=false
-  * "create QR for counter" → use qr.generate_counter with counterLabel="Counter 1", preview=false
-  * "show me all QR codes" → use qr.list_all, preview=false
+  * "generate QR code for Table 5" → use TWO tools: 1) qr.generate_table with tableLabel="Table 5", preview=false, 2) navigation.go_to_page with page="qr"
+  * "create QR code for table 10" → use TWO tools: 1) qr.generate_table with tableLabel="Table 10", preview=false, 2) navigation.go_to_page with page="qr"
+  * "generate QR codes for tables 1-10" → use TWO tools: 1) qr.generate_bulk with startNumber=1, endNumber=10, preview=false, 2) navigation.go_to_page with page="qr"
+  * "create QR for counter" → use TWO tools: 1) qr.generate_counter with counterLabel="Counter 1", preview=false, 2) navigation.go_to_page with page="qr"
+  * "show me all QR codes" → use navigation.go_to_page with page="qr", preview=false
   * CRITICAL: For QR generation, ALWAYS call the tool with preview=false to EXECUTE, never set preview=true
-  * NEVER just explain what QR codes do - ALWAYS generate them when asked
+  * CRITICAL: After generating QR codes, ALWAYS navigate to the QR page so user can see them
+  * NEVER just explain what QR codes do - ALWAYS generate them AND navigate to the page
 - For complex analytics queries (revenue, sales, stats):
   * "what's the revenue for X" → use analytics.get_stats with metric="revenue", itemId from allItems
   * "how much did X sell" → use analytics.get_stats with metric="revenue", itemId from allItems
