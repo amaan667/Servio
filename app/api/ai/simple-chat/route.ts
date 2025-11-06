@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
     // Execute tools if present
     else if (plan.tools && plan.tools.length > 0) {
       const toolResults = [];
+      const messages: string[] = [];
 
       for (const tool of plan.tools) {
         const result = await executeTool(
@@ -152,42 +153,46 @@ export async function POST(request: NextRequest) {
         if ("success" in result && result.success && "result" in result) {
           const resultData = result.result as Record<string, unknown>;
 
-          // Handle navigation
+          // Handle navigation (set navigationInfo but don't overwrite messages)
           if (tool.name === "navigation.go_to_page") {
-            response = (resultData.message as string) || plan.reasoning || "Navigating...";
             navigationInfo = {
               route: resultData.route as string,
               page: resultData.page as string,
             };
+            // Add navigation message if there are no other messages
+            if (messages.length === 0) {
+              messages.push((resultData.message as string) || plan.reasoning || "Navigating...");
+            }
           }
           // Handle QR code generation
           else if (tool.name.startsWith("qr.")) {
             if (resultData.message) {
-              response = resultData.message as string;
+              messages.push(resultData.message as string);
             } else if (resultData.qrCode) {
               const qr = resultData.qrCode as Record<string, unknown>;
-              response =
-                (resultData.message as string) ||
-                `QR code generated for ${qr.label}. URL: ${qr.url}`;
+              messages.push(`QR code generated for ${qr.label}`);
             } else if (resultData.summary) {
-              response = resultData.summary as string;
+              messages.push(resultData.summary as string);
             }
           }
           // Handle other tools with message or summary
           else if (resultData.message) {
-            response = resultData.message as string;
+            messages.push(resultData.message as string);
           } else if (resultData.summary) {
-            response = resultData.summary as string;
+            messages.push(resultData.summary as string);
           }
         }
       }
 
-      // Generate final response if not set
-      if (!response) {
+      // Combine all messages
+      if (messages.length > 0) {
+        response = messages.join(". ");
+      } else {
         response = plan.reasoning || "Actions completed successfully";
-        if (plan.warnings && plan.warnings.length > 0) {
-          response += `\n\nNote: ${plan.warnings.join(", ")}`;
-        }
+      }
+
+      if (plan.warnings && plan.warnings.length > 0) {
+        response += `\n\nNote: ${plan.warnings.join(", ")}`;
       }
     }
     // Fallback
