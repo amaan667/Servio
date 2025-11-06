@@ -62,10 +62,10 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
   // Get all tables
   const { data: tables, error: tablesError } = await supabase
     .from("tables")
-    .select("id, label, table_number, seats, status")
+    .select("id, label, seats, status")
     .eq("venue_id", venueId)
     .eq("is_active", true)
-    .order("table_number", { ascending: true });
+    .order("label", { ascending: true });
 
   if (tablesError) {
     aiLogger.error("[AI TABLE] Error fetching tables:", tablesError);
@@ -81,17 +81,17 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
 
   const sessionMap = new Map(sessions?.map((s) => [s.table_id, s]) || []);
 
-  // Get active orders per table
+  // Get active orders per table (by label)
   const { data: activeOrders } = await supabase
     .from("orders")
-    .select("table_number")
+    .select("table_label")
     .eq("venue_id", venueId)
     .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
-  const orderCounts = new Map<number, number>();
+  const orderCounts = new Map<string, number>();
   activeOrders?.forEach((order) => {
-    if (order.table_number) {
-      orderCounts.set(order.table_number, (orderCounts.get(order.table_number) || 0) + 1);
+    if (order.table_label) {
+      orderCounts.set(order.table_label, (orderCounts.get(order.table_label) || 0) + 1);
     }
   });
 
@@ -100,7 +100,7 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
 
   tables?.forEach((table) => {
     const session = sessionMap.get(table.id);
-    const orderCount = orderCounts.get(table.table_number) || 0;
+    const orderCount = orderCounts.get(table.label) || 0;
 
     if (session || orderCount > 0 || table.status === "occupied") {
       occupied.push({
@@ -139,10 +139,6 @@ export async function createTable(
 
   aiLogger.info(`[AI TABLE] Creating table: ${tableLabel} with ${seats} seats`);
 
-  // Extract table number from label
-  const numberMatch = tableLabel.match(/\d+/);
-  const tableNumber = numberMatch ? parseInt(numberMatch[0]) : Math.floor(Math.random() * 1000);
-
   // Check if table already exists
   const { data: existingTable } = await supabase
     .from("tables")
@@ -162,12 +158,11 @@ export async function createTable(
     .insert({
       venue_id: venueId,
       label: tableLabel,
-      table_number: tableNumber,
       seats,
       status: "available",
       is_active: true,
     })
-    .select("id, label, table_number, seats")
+    .select("id, label, seats")
     .single();
 
   if (createError) {
@@ -180,7 +175,7 @@ export async function createTable(
     table: {
       id: newTable.id,
       label: newTable.label,
-      tableNumber: newTable.table_number,
+      tableNumber: parseInt(tableLabel.match(/\d+/)?.[0] || "0"),
       seats: newTable.seats || 0,
     },
     message: `Created ${tableLabel} with ${seats} seats. Table is now ready for QR code generation.`,
@@ -206,7 +201,7 @@ export async function mergeTables(
   // Get table details
   const { data: tables, error: fetchError } = await supabase
     .from("tables")
-    .select("id, label, table_number, seats, status")
+    .select("id, label, seats, status")
     .eq("venue_id", venueId)
     .in("id", tableIds);
 
@@ -255,7 +250,6 @@ async function performTableMerge(
     .insert({
       venue_id: venueId,
       label: mergedLabel,
-      table_number: Math.floor(Math.random() * 10000), // Generate unique number
       seats: totalSeats,
       status: "occupied",
       is_merged: true,
@@ -288,10 +282,10 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
 
   const { data: orders, error } = await supabase
     .from("orders")
-    .select("id, table_number, table_label, total_amount, created_at, order_status")
+    .select("id, table_label, total_amount, created_at, order_status")
     .eq("venue_id", venueId)
     .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"])
-    .not("table_number", "is", null)
+    .not("table_label", "is", null)
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -301,9 +295,8 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
 
   // Group by table
   const tableMap = new Map<
-    number,
+    string,
     {
-      label: string;
       orders: number;
       totalAmount: number;
       oldestOrder: Date;
@@ -311,10 +304,9 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
   >();
 
   orders?.forEach((order) => {
-    if (!order.table_number) return;
+    if (!order.table_label) return;
 
-    const existing = tableMap.get(order.table_number) || {
-      label: order.table_label || `Table ${order.table_number}`,
+    const existing = tableMap.get(order.table_label) || {
       orders: 0,
       totalAmount: 0,
       oldestOrder: new Date(order.created_at),
@@ -326,12 +318,12 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
       existing.oldestOrder = new Date(order.created_at);
     }
 
-    tableMap.set(order.table_number, existing);
+    tableMap.set(order.table_label, existing);
   });
 
-  const tablesWithOrders = Array.from(tableMap.entries()).map(([tableNumber, data]) => ({
-    tableLabel: data.label,
-    tableNumber,
+  const tablesWithOrders = Array.from(tableMap.entries()).map(([tableLabel, data]) => ({
+    tableLabel,
+    tableNumber: parseInt(tableLabel.match(/\d+/)?.[0] || "0"),
     activeOrders: data.orders,
     totalAmount: data.totalAmount,
     oldestOrder: data.oldestOrder.toISOString(),
@@ -366,36 +358,35 @@ export async function getRevenueByTable(venueId: string): Promise<{
 
   const { data: orders, error } = await supabase
     .from("orders")
-    .select("table_number, table_label, total_amount")
+    .select("table_label, total_amount")
     .eq("venue_id", venueId)
     .gte("created_at", startOfDay.toISOString())
     .not("order_status", "in", '("CANCELLED","REFUNDED")')
-    .not("table_number", "is", null);
+    .not("table_label", "is", null);
 
   if (error) {
     throw new Error(`Failed to fetch orders: ${error.message}`);
   }
 
-  const tableMap = new Map<number, { label: string; count: number; revenue: number }>();
+  const tableMap = new Map<string, { count: number; revenue: number }>();
 
   orders?.forEach((order) => {
-    if (!order.table_number) return;
+    if (!order.table_label) return;
 
-    const existing = tableMap.get(order.table_number) || {
-      label: order.table_label || `Table ${order.table_number}`,
+    const existing = tableMap.get(order.table_label) || {
       count: 0,
       revenue: 0,
     };
 
     existing.count++;
     existing.revenue += order.total_amount || 0;
-    tableMap.set(order.table_number, existing);
+    tableMap.set(order.table_label, existing);
   });
 
   const tables = Array.from(tableMap.entries())
-    .map(([tableNumber, data]) => ({
-      tableLabel: data.label,
-      tableNumber,
+    .map(([tableLabel, data]) => ({
+      tableLabel,
+      tableNumber: parseInt(tableLabel.match(/\d+/)?.[0] || "0"),
       orderCount: data.count,
       totalRevenue: data.revenue,
     }))

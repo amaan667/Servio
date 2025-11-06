@@ -45,7 +45,7 @@ export async function generateTableQRCode(
   // Check if table exists
   const { data: existingTable, error: fetchError } = await supabase
     .from("tables")
-    .select("id, label, table_number, venue_id")
+    .select("id, label, venue_id")
     .eq("venue_id", venueId)
     .eq("label", tableLabel)
     .eq("is_active", true)
@@ -68,20 +68,14 @@ export async function generateTableQRCode(
   }
 
   let tableId = existingTable?.id;
-  let tableNumber = existingTable?.table_number;
 
   // If table doesn't exist, create it
   if (!existingTable) {
-    // Extract table number from label (e.g., "Table 5" -> 5)
-    const numberMatch = tableLabel.match(/\d+/);
-    tableNumber = numberMatch ? parseInt(numberMatch[0]) : Math.floor(Math.random() * 1000);
-
     const { data: newTable, error: createError } = await supabase
       .from("tables")
       .insert({
         venue_id: venueId,
         label: tableLabel,
-        table_number: tableNumber,
         seats: 4, // Default
         status: "available",
         is_active: true,
@@ -149,20 +143,20 @@ export async function generateBulkTableQRCodes(
   // Get existing tables to avoid duplicates
   const { data: existingTables } = await supabase
     .from("tables")
-    .select("table_number, label, id")
+    .select("label, id")
     .eq("venue_id", venueId)
     .eq("is_active", true);
 
-  const existingNumbers = new Set(existingTables?.map((t) => t.table_number) || []);
+  const existingLabels = new Set(existingTables?.map((t) => t.label) || []);
 
   // Create tables in batch
   const tablesToCreate = [];
   for (let i = startNumber; i <= endNumber; i++) {
-    if (!existingNumbers.has(i)) {
+    const label = `Table ${i}`;
+    if (!existingLabels.has(label)) {
       tablesToCreate.push({
         venue_id: venueId,
-        label: `Table ${i}`,
-        table_number: i,
+        label,
         seats: 4,
         status: "available",
         is_active: true,
@@ -174,7 +168,7 @@ export async function generateBulkTableQRCodes(
     const { data: newTables, error: createError } = await supabase
       .from("tables")
       .insert(tablesToCreate)
-      .select("id, label, table_number");
+      .select("id, label");
 
     if (createError) {
       aiLogger.error("[AI QR] Error creating tables:", createError);
@@ -194,7 +188,8 @@ export async function generateBulkTableQRCodes(
 
   // Add existing tables to results
   existingTables?.forEach((table) => {
-    if (table.table_number >= startNumber && table.table_number <= endNumber) {
+    const tableNum = parseInt(table.label.match(/\d+/)?.[0] || "0");
+    if (tableNum >= startNumber && tableNum <= endNumber) {
       qrCodes.push({
         id: table.id,
         label: table.label,
