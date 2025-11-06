@@ -132,7 +132,7 @@ export async function executeNavigationGoToPage(
     "live-orders": `/dashboard/${venueId}/live-orders`,
     kds: `/dashboard/${venueId}/kds`,
     "kitchen-display": `/dashboard/${venueId}/kds`,
-    "qr-codes": `/dashboard/${venueId}/qr-codes`,
+    "qr-codes": `/dashboard/${venueId}/qr-codes?ai_generated=true`,
     analytics: `/dashboard/${venueId}/analytics`,
     settings: `/dashboard/${venueId}/settings`,
     staff: `/dashboard/${venueId}/staff`,
