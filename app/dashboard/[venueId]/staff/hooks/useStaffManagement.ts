@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabaseBrowser } from "@/lib/supabase";
 
 export type StaffRow = {
   id: string;
@@ -41,21 +42,22 @@ export function useStaffManagement(
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
 
-  // Load staff data on component mount
+  // Load staff data on component mount - Direct Supabase query
   useEffect(() => {
     const loadStaff = async () => {
       if (staffLoaded) return;
 
       try {
-        const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
-        const j = await res.json().catch(() => ({
-          /* Empty */
-        }));
-        if (res.ok && !j?.error) {
-          setStaff(j.staff || []);
+        const supabase = supabaseBrowser();
+        const { data: staffData, error } = await supabase
+          .from("staff")
+          .select("*")
+          .eq("venue_id", venueId)
+          .order("created_at", { ascending: false });
+
+        if (!error && staffData) {
+          setStaff(staffData);
           setStaffLoaded(true);
-        } else {
-          // Intentionally empty
         }
       } catch (_e) {
         // Error silently handled
@@ -67,17 +69,41 @@ export function useStaffManagement(
     }
   }, [venueId, staffLoaded]);
 
-  // Load shifts on component mount
+  // Load shifts on component mount - Direct Supabase query
   useEffect(() => {
     const loadShifts = async () => {
-      const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
-      const j = await res.json().catch(() => ({
-        /* Empty */
-      }));
-      if (res.ok && !j?.error) {
-        const shifts = j.shifts || [];
-        setAllShifts(shifts);
-        setShiftsLoaded(true);
+      try {
+        const supabase = supabaseBrowser();
+        const { data: shiftsData, error } = await supabase
+          .from("shifts")
+          .select(
+            `
+            *,
+            staff:staff_id (
+              name,
+              role
+            )
+          `
+          )
+          .eq("venue_id", venueId)
+          .order("start_time", { ascending: false });
+
+        if (!error && shiftsData) {
+          // Transform to match LegacyShift format
+          const shifts = shiftsData.map((shift: any) => ({
+            id: shift.id,
+            staff_id: shift.staff_id,
+            start_time: shift.start_time,
+            end_time: shift.end_time,
+            area: shift.area,
+            staff_name: shift.staff?.name || "",
+            staff_role: shift.staff?.role || "",
+          }));
+          setAllShifts(shifts);
+          setShiftsLoaded(true);
+        }
+      } catch (_e) {
+        // Error silently handled
       }
     };
 
@@ -96,19 +122,23 @@ export function useStaffManagement(
     setError(null);
 
     try {
-      const res = await fetch("/api/staff/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ venue_id: venueId, name, role }),
-      });
+      const supabase = supabaseBrowser();
+      const { data: newStaff, error } = await supabase
+        .from("staff")
+        .insert({
+          venue_id: venueId,
+          name: name.trim(),
+          role,
+          active: true,
+        })
+        .select()
+        .single();
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to add staff member");
+      if (error) {
+        throw new Error(error.message || "Failed to add staff member");
       }
 
-      setStaff((prev) => [...prev, data.staff]);
+      setStaff((prev) => [...prev, newStaff]);
       setName("");
       setRole("Server");
     } catch (_err) {
@@ -121,18 +151,15 @@ export function useStaffManagement(
   const toggleStaffActive = async (staffId: string, currentActive: boolean) => {
     try {
       const newActiveState = !currentActive;
+      const supabase = supabaseBrowser();
 
-      const res = await fetch("/api/staff/toggle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: staffId, active: newActiveState }),
-      });
+      const { error } = await supabase
+        .from("staff")
+        .update({ active: newActiveState })
+        .eq("id", staffId);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({
-          /* Empty */
-        }));
-        throw new Error(data.error || "Failed to toggle staff status");
+      if (error) {
+        throw new Error(error.message || "Failed to toggle staff status");
       }
 
       // Update local state immediately
