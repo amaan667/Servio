@@ -317,8 +317,8 @@ export function EnhancedPDFMenuDisplay({
                 }}
                 className={`whitespace-nowrap ${
                   selectedCategory === null
-                    ? "bg-purple-600 text-white hover:bg-purple-700 hover:text-white"
-                    : "bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-purple-600"
+                    ? "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 shadow-lg"
+                    : "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 opacity-90 hover:opacity-100"
                 }`}
               >
                 All
@@ -331,8 +331,8 @@ export function EnhancedPDFMenuDisplay({
                   onClick={() => scrollToCategory(category)}
                   className={`shrink-0 min-w-fit ${
                     selectedCategory === category
-                      ? "bg-purple-600 text-white hover:bg-purple-700 hover:text-white"
-                      : "bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-purple-600"
+                      ? "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 shadow-lg"
+                      : "bg-purple-600 !text-white hover:bg-purple-700 hover:!text-white border-purple-600 opacity-90 hover:opacity-100"
                   }`}
                 >
                   <span className="truncate max-w-[120px] px-1">{category}</span>
