@@ -135,6 +135,114 @@ export function SimpleChatInterface({
     }
   };
 
+  // Get context-aware suggestions based on current page
+  const getPageSuggestions = () => {
+    const pageName = currentPage?.toLowerCase() || "";
+
+    // QR Codes page
+    if (pageName.includes("qr")) {
+      return [
+        '📱 "Generate a QR code for Table 5"',
+        '🔢 "Create QR codes for tables 1-10"',
+        '🧾 "Generate a counter QR code"',
+        '🖨️ "Download all QR codes as PDF"',
+        '📋 "Show me all my QR codes"',
+      ];
+    }
+
+    // Menu Management page
+    if (pageName.includes("menu")) {
+      return [
+        '🍽️ "Add image to Avocado Toast"',
+        '📝 "Create a new menu item"',
+        '💰 "Update prices for desserts by 10%"',
+        '🖼️ "Which items don\'t have images?"',
+        '🌐 "Translate menu to Spanish"',
+        '👁️ "Hide all items in Starters category"',
+      ];
+    }
+
+    // Analytics page
+    if (pageName.includes("analytics")) {
+      return [
+        '💰 "What\'s my revenue today?"',
+        '🔥 "Show me top selling items"',
+        '📊 "What\'s my busiest day?"',
+        '📈 "How is business compared to last week?"',
+        '⏰ "What are my peak hours?"',
+        '📉 "Which items are selling poorly?"',
+      ];
+    }
+
+    // Orders/Live Orders page
+    if (pageName.includes("order")) {
+      return [
+        '📦 "Show me pending orders"',
+        '✅ "Mark order #123 as completed"',
+        '🍕 "What orders are in the kitchen?"',
+        '⏱️ "Show me overdue orders"',
+        '💵 "Today\'s order total"',
+        '📊 "How many orders have we had today?"',
+      ];
+    }
+
+    // KDS page
+    if (pageName.includes("kds")) {
+      return [
+        '🍳 "Show overdue tickets"',
+        '⏰ "What\'s the average prep time?"',
+        '🔥 "Which station is busiest?"',
+        '📋 "Show tickets for Grill station"',
+        '✅ "Mark all ready tickets as complete"',
+      ];
+    }
+
+    // Inventory page
+    if (pageName.includes("inventory")) {
+      return [
+        '📦 "What items are low in stock?"',
+        '➕ "Add 50 units to Tomatoes"',
+        '📊 "Show me inventory levels"',
+        '🛒 "Generate a purchase order"',
+        '⚠️ "Which items need restocking?"',
+      ];
+    }
+
+    // Tables page
+    if (pageName.includes("table")) {
+      return [
+        '🪑 "Show me available tables"',
+        '📋 "What tables have active orders?"',
+        '🔢 "Create a new table"',
+        '🔀 "Merge tables 5 and 6"',
+        '💰 "Show revenue by table today"',
+      ];
+    }
+
+    // Staff page
+    if (pageName.includes("staff")) {
+      return [
+        '👥 "Show me all staff members"',
+        '➕ "Invite a new server"',
+        '📊 "Staff performance this week"',
+        '🔐 "What are the staff roles?"',
+        '⏰ "Who\'s working today?"',
+      ];
+    }
+
+    // Default suggestions for dashboard or general pages
+    return [
+      '💰 "What\'s my revenue today?"',
+      '🔥 "Show me top selling items"',
+      '📊 "What\'s my busiest day?"',
+      '🖼️ "Which items don\'t have images?"',
+      '📈 "How is business compared to last week?"',
+      '🍽️ "Add image to Avocado Toast"',
+    ];
+  };
+
+  const suggestions = getPageSuggestions();
+
   if (!isOpen) return null;
 
   return (
@@ -163,12 +271,15 @@ export function SimpleChatInterface({
               <div className="bg-muted/50 rounded-lg p-4 text-left space-y-2">
                 <p className="text-xs font-medium text-foreground">Try asking:</p>
                 <ul className="text-xs space-y-1">
-                  <li>💰 "What's my revenue today?"</li>
-                  <li>🔥 "Show me top selling items"</li>
-                  <li>📊 "What's my busiest day?"</li>
-                  <li>🖼️ "Which items don't have images?"</li>
-                  <li>📈 "How is business compared to last week?"</li>
-                  <li>🍽️ "Add image to Avocado Toast"</li>
+                  {suggestions.map((suggestion, idx) => (
+                    <li
+                      key={idx}
+                      className="cursor-pointer hover:text-purple-600 transition-colors"
+                      onClick={() => setInput(suggestion.replace(/^.*?"/, "").replace(/"$/, ""))}
+                    >
+                      {suggestion}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
