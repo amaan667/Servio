@@ -168,6 +168,20 @@ export async function inviteStaffMember(
     }
   }
 
+  // Get venue info for invitation
+  const { data: venue } = await supabase
+    .from("venues")
+    .select("owner_user_id")
+    .eq("venue_id", venueId)
+    .single();
+
+  if (!venue) {
+    throw new Error("Venue not found");
+  }
+
+  // Generate unique token
+  const token = `inv_${venueId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
   // Create staff invitation
   const { data: invitation, error: inviteError } = await supabase
     .from("staff_invitations")
@@ -175,11 +189,12 @@ export async function inviteStaffMember(
       venue_id: venueId,
       email,
       role,
-      invited_name: name,
+      invited_by: venue.owner_user_id,
+      token,
       status: "pending",
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
     })
-    .select("id")
+    .select("id, token")
     .single();
 
   if (inviteError) {

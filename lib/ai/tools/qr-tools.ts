@@ -259,10 +259,10 @@ export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult>
   // Get all tables
   const { data: tables } = await supabase
     .from("tables")
-    .select("id, label, status, is_active")
+    .select("id, label, is_active")
     .eq("venue_id", venueId)
     .eq("is_active", true)
-    .order("table_number", { ascending: true });
+    .order("label", { ascending: true });
 
   // Get all counters
   const { data: counters } = await supabase

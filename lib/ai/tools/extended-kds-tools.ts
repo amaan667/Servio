@@ -78,10 +78,10 @@ export async function getStationTickets(
   // Get tickets for this station
   const { data: tickets, error: ticketsError } = await supabase
     .from("kds_tickets")
-    .select("id, order_number, items, ticket_status, priority, created_at, station_id")
+    .select("id, order_id, item_name, quantity, status, priority, created_at, station_id")
     .eq("venue_id", venueId)
     .eq("station_id", station!.id)
-    .in("ticket_status", ["new", "in_progress", "ready"])
+    .in("status", ["new", "in_progress", "ready"])
     .order("created_at", { ascending: true });
 
   if (ticketsError) {
@@ -91,15 +91,13 @@ export async function getStationTickets(
 
   const ticketList =
     tickets?.map((ticket) => {
-      const items = (ticket.items || []) as Array<{ item_name: string; quantity: number }>;
-      const itemNames = items.map((item) => `${item.quantity}x ${item.item_name}`);
       const timeInQueue = Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 60000);
 
       return {
         id: ticket.id,
-        orderNumber: ticket.order_number || ticket.id.slice(0, 8),
-        items: itemNames,
-        status: ticket.ticket_status,
+        orderNumber: ticket.order_id.slice(0, 8),
+        items: [`${ticket.quantity}x ${ticket.item_name}`],
+        status: ticket.status,
         priority: ticket.priority || "normal",
         createdAt: ticket.created_at,
         timeInQueue,
@@ -139,13 +137,13 @@ export async function bulkUpdateTickets(
   let query = supabase
     .from("kds_tickets")
     .update({
-      ticket_status: toStatus,
+      status: toStatus,
       updated_at: new Date().toISOString(),
       ...(toStatus === "bumped" && { bumped_at: new Date().toISOString() }),
-      ...(toStatus === "ready" && { completed_at: new Date().toISOString() }),
+      ...(toStatus === "ready" && { ready_at: new Date().toISOString() }),
     })
     .eq("venue_id", venueId)
-    .eq("ticket_status", fromStatus);
+    .eq("status", fromStatus);
 
   // Filter by station if provided
   if (stationName) {
@@ -191,9 +189,9 @@ export async function getOverdueKDSTickets(
 
   const { data: tickets, error } = await supabase
     .from("kds_tickets")
-    .select("id, station_id, order_number, items, ticket_status, created_at")
+    .select("id, station_id, order_id, item_name, quantity, status, created_at")
     .eq("venue_id", venueId)
-    .in("ticket_status", ["new", "in_progress"])
+    .in("status", ["new", "in_progress"])
     .lt("created_at", thresholdTime)
     .order("created_at", { ascending: true });
 
@@ -213,8 +211,6 @@ export async function getOverdueKDSTickets(
 
   const overdueTickets =
     tickets?.map((ticket) => {
-      const items = (ticket.items || []) as Array<{ item_name: string; quantity: number }>;
-      const itemNames = items.map((item) => `${item.quantity}x ${item.item_name}`);
       const minutesOverdue = Math.floor(
         (Date.now() - new Date(ticket.created_at).getTime()) / 60000
       );
@@ -222,10 +218,10 @@ export async function getOverdueKDSTickets(
       return {
         id: ticket.id,
         station: stationMap.get(ticket.station_id) || "Unknown",
-        orderNumber: ticket.order_number || ticket.id.slice(0, 8),
-        items: itemNames,
+        orderNumber: ticket.order_id.slice(0, 8),
+        items: [`${ticket.quantity}x ${ticket.item_name}`],
         minutesOverdue,
-        status: ticket.ticket_status,
+        status: ticket.status,
       };
     }) || [];
 
@@ -258,11 +254,11 @@ export async function getStationPrepTimes(venueId: string): Promise<{
 
   const { data: tickets } = await supabase
     .from("kds_tickets")
-    .select("station_id, created_at, completed_at, started_at")
+    .select("station_id, created_at, ready_at, started_at")
     .eq("venue_id", venueId)
-    .eq("ticket_status", "bumped")
+    .eq("status", "bumped")
     .gte("created_at", sevenDaysAgo.toISOString())
-    .not("completed_at", "is", null);
+    .not("ready_at", "is", null);
 
   const { data: stations } = await supabase
     .from("kds_stations")
@@ -273,10 +269,10 @@ export async function getStationPrepTimes(venueId: string): Promise<{
   const prepTimes = new Map<string, number[]>();
 
   tickets?.forEach((ticket) => {
-    if (!ticket.started_at || !ticket.completed_at) return;
+    if (!ticket.started_at || !ticket.ready_at) return;
 
     const prepTime =
-      (new Date(ticket.completed_at).getTime() - new Date(ticket.started_at).getTime()) / 60000;
+      (new Date(ticket.ready_at).getTime() - new Date(ticket.started_at).getTime()) / 60000;
     const stationName = stationMap.get(ticket.station_id) || "Unknown";
 
     if (!prepTimes.has(stationName)) {

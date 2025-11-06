@@ -18,7 +18,7 @@ interface LowStockResult {
   items: Array<{
     id: string;
     name: string;
-    category: string;
+    unit: string;
     currentStock: number;
     parLevel: number;
     needToOrder: number;
@@ -42,63 +42,57 @@ export async function adjustInventoryStock(
     `[AI INVENTORY] Adjusting stock for ${itemName}: ${adjustment > 0 ? "+" : ""}${adjustment}`
   );
 
-  // Find inventory item
-  const { data: item, error: fetchError } = await supabase
-    .from("inventory")
-    .select("id, name, quantity, unit")
+  // Find ingredient by name
+  const { data: ingredient, error: fetchError } = await supabase
+    .from("ingredients")
+    .select("id, name, unit")
     .eq("venue_id", venueId)
     .ilike("name", `%${itemName}%`)
     .maybeSingle();
 
   if (fetchError) {
-    aiLogger.error("[AI INVENTORY] Error fetching item:", fetchError);
-    throw new Error(`Failed to fetch inventory item: ${fetchError.message}`);
+    aiLogger.error("[AI INVENTORY] Error fetching ingredient:", fetchError);
+    throw new Error(`Failed to fetch ingredient: ${fetchError.message}`);
   }
 
-  if (!item) {
-    throw new Error(`Inventory item "${itemName}" not found. Please check the name and try again.`);
+  if (!ingredient) {
+    throw new Error(`Ingredient "${itemName}" not found. Please check the name and try again.`);
   }
 
-  const oldQuantity = item.quantity || 0;
+  // Get current stock level
+  const { data: stockLevel } = await supabase
+    .from("v_stock_levels")
+    .select("on_hand")
+    .eq("ingredient_id", ingredient.id)
+    .eq("venue_id", venueId)
+    .maybeSingle();
+
+  const oldQuantity = stockLevel?.on_hand || 0;
   const newQuantity = Math.max(0, oldQuantity + adjustment);
 
-  // Update stock
-  const { error: updateError } = await supabase
-    .from("inventory")
-    .update({
-      quantity: newQuantity,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", item.id);
+  // Create stock ledger entry (this updates the stock)
+  const { error: ledgerError } = await supabase.from("stock_ledgers").insert({
+    ingredient_id: ingredient.id,
+    venue_id: venueId,
+    delta: adjustment,
+    reason: adjustment > 0 ? "receive" : "adjust",
+    ref_type: "manual",
+    note: reason || "AI Assistant adjustment",
+  });
 
-  if (updateError) {
-    aiLogger.error("[AI INVENTORY] Error updating stock:", updateError);
-    throw new Error(`Failed to update stock: ${updateError.message}`);
-  }
-
-  // Log adjustment in history if table exists
-  try {
-    await supabase.from("inventory_adjustments").insert({
-      inventory_id: item.id,
-      venue_id: venueId,
-      adjustment,
-      reason: reason || "AI Assistant adjustment",
-      old_quantity: oldQuantity,
-      new_quantity: newQuantity,
-      created_at: new Date().toISOString(),
-    });
-  } catch {
-    // Ignore if table doesn't exist
+  if (ledgerError) {
+    aiLogger.error("[AI INVENTORY] Error creating stock ledger:", ledgerError);
+    throw new Error(`Failed to adjust stock: ${ledgerError.message}`);
   }
 
   return {
     success: true,
-    itemId: item.id,
-    itemName: item.name,
+    itemId: ingredient.id,
+    itemName: ingredient.name,
     oldQuantity,
     newQuantity,
     adjustment,
-    message: `Updated ${item.name}: ${oldQuantity} → ${newQuantity} ${item.unit || "units"} (${adjustment > 0 ? "+" : ""}${adjustment}).${reason ? ` Reason: ${reason}` : ""}`,
+    message: `Updated ${ingredient.name}: ${oldQuantity} → ${newQuantity} ${ingredient.unit || "units"} (${adjustment > 0 ? "+" : ""}${adjustment}).${reason ? ` Reason: ${reason}` : ""}`,
   };
 }
 
@@ -111,10 +105,10 @@ export async function getLowStockItems(venueId: string): Promise<LowStockResult>
   aiLogger.info(`[AI INVENTORY] Fetching low stock items for venue: ${venueId}`);
 
   const { data: items, error } = await supabase
-    .from("inventory")
-    .select("id, name, category, quantity, par_level, unit")
+    .from("v_stock_levels")
+    .select("ingredient_id, name, unit, on_hand, par_level")
     .eq("venue_id", venueId)
-    .order("quantity", { ascending: true });
+    .order("on_hand", { ascending: true });
 
   if (error) {
     aiLogger.error("[AI INVENTORY] Error fetching inventory:", error);
@@ -124,17 +118,17 @@ export async function getLowStockItems(venueId: string): Promise<LowStockResult>
   const lowStockItems =
     items
       ?.filter((item) => {
-        const quantity = item.quantity || 0;
-        const parLevel = item.par_level || quantity * 2;
-        return quantity < parLevel;
+        const onHand = item.on_hand || 0;
+        const parLevel = item.par_level || 0;
+        return onHand < parLevel;
       })
       .map((item) => ({
-        id: item.id,
+        id: item.ingredient_id,
         name: item.name,
-        category: item.category || "Uncategorized",
-        currentStock: item.quantity || 0,
+        unit: item.unit || "units",
+        currentStock: item.on_hand || 0,
         parLevel: item.par_level || 0,
-        needToOrder: Math.max(0, (item.par_level || 0) - (item.quantity || 0)),
+        needToOrder: Math.max(0, (item.par_level || 0) - (item.on_hand || 0)),
       })) || [];
 
   // Sort by urgency (lowest stock first)
@@ -149,7 +143,7 @@ export async function getLowStockItems(venueId: string): Promise<LowStockResult>
     count: lowStockItems.length,
     summary:
       lowStockItems.length > 0
-        ? `⚠️ ${lowStockItems.length} items below par level. Most urgent: ${lowStockItems[0]?.name} (${lowStockItems[0]?.currentStock}/${lowStockItems[0]?.parLevel} units).`
+        ? `⚠️ ${lowStockItems.length} items below par level. Most urgent: ${lowStockItems[0]?.name} (${lowStockItems[0]?.currentStock}/${lowStockItems[0]?.parLevel} ${lowStockItems[0]?.unit}).`
         : "✅ All inventory items at or above par levels!",
   };
 }
@@ -175,7 +169,7 @@ export async function generatePurchaseOrder(venueId: string): Promise<{
     currentStock: item.currentStock,
     parLevel: item.parLevel,
     orderQuantity: Math.ceil(item.needToOrder * 1.2), // Add 20% buffer
-    unit: "units",
+    unit: item.unit,
   }));
 
   return {
@@ -195,14 +189,13 @@ export async function getInventoryLevels(venueId: string): Promise<{
   total: number;
   lowStock: number;
   outOfStock: number;
-  categories: Array<{ category: string; itemCount: number }>;
   summary: string;
 }> {
   const supabase = createAdminClient();
 
   const { data: items, error } = await supabase
-    .from("inventory")
-    .select("id, name, category, quantity, par_level")
+    .from("v_stock_levels")
+    .select("ingredient_id, name, on_hand, par_level")
     .eq("venue_id", venueId);
 
   if (error) {
@@ -210,26 +203,13 @@ export async function getInventoryLevels(venueId: string): Promise<{
   }
 
   const total = items?.length || 0;
-  const lowStock = items?.filter((i) => (i.quantity || 0) < (i.par_level || 0)).length || 0;
-  const outOfStock = items?.filter((i) => (i.quantity || 0) === 0).length || 0;
-
-  // Group by category
-  const categoryMap = new Map<string, number>();
-  items?.forEach((item) => {
-    const category = item.category || "Uncategorized";
-    categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
-  });
-
-  const categories = Array.from(categoryMap.entries()).map(([category, itemCount]) => ({
-    category,
-    itemCount,
-  }));
+  const lowStock = items?.filter((i) => (i.on_hand || 0) < (i.par_level || 0)).length || 0;
+  const outOfStock = items?.filter((i) => (i.on_hand || 0) === 0).length || 0;
 
   return {
     total,
     lowStock,
     outOfStock,
-    categories,
-    summary: `${total} inventory items tracked. ${lowStock} items low, ${outOfStock} out of stock. Categories: ${categories.length}.`,
+    summary: `${total} inventory items tracked. ${lowStock} items low, ${outOfStock} out of stock.`,
   };
 }
