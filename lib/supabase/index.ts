@@ -201,7 +201,6 @@ export async function createServerSupabase() {
               secure: process.env.NODE_ENV === "production",
               path: "/",
             });
-
           });
 
           logger.info("[createServerSupabase] ✅ All cookies set successfully", {
@@ -280,20 +279,16 @@ async function hasValidAuthCookies(): Promise<boolean> {
 // Get authenticated user (server-side)
 export async function getAuthenticatedUser() {
   try {
-    // First check if we have valid auth cookies to avoid unnecessary errors
-    const hasAuth = await hasValidAuthCookies();
-    if (!hasAuth) {
-      return { user: null, error: null };
-    }
-
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
+
     const supabase = supabaseServer({
       get: (name) => cookieStore.get(name)?.value,
       set: () => {
         /* Empty */
       },
     });
+
     const {
       data: { session },
       error,
@@ -309,7 +304,19 @@ export async function getAuthenticatedUser() {
         // This is expected when tokens expire, just return no user
         return { user: null, error: null };
       }
+      console.log("[AUTH DEBUG] Auth error:", error.message);
       return { user: null, error: error.message };
+    }
+
+    if (!user) {
+      // Check if we have any auth cookies to provide better error message
+      const hasAuth = await hasValidAuthCookies();
+      if (!hasAuth) {
+        console.log("[AUTH DEBUG] No valid auth cookies found");
+        return { user: null, error: "No authentication cookies found. Please sign in again." };
+      }
+      console.log("[AUTH DEBUG] Auth cookies exist but no session");
+      return { user: null, error: "Session expired. Please sign in again." };
     }
 
     return { user, error: null };
@@ -322,6 +329,7 @@ export async function getAuthenticatedUser() {
     ) {
       return { user: null, error: null };
     }
+    console.log("[AUTH DEBUG] Auth exception:", errorMessage);
     return { user: null, error: "Failed to get authenticated user" };
   }
 }
@@ -329,12 +337,6 @@ export async function getAuthenticatedUser() {
 // Get session (server-side)
 export async function getSession() {
   try {
-    // First check if we have valid auth cookies to avoid unnecessary errors
-    const hasAuth = await hasValidAuthCookies();
-    if (!hasAuth) {
-      return { session: null, error: null };
-    }
-
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
     const supabase = supabaseServer({

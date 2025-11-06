@@ -64,8 +64,8 @@ export function QRCodeGenerator({
         <div>
           <Label>QR Code Type</Label>
           <Select value={qrCodeType} onValueChange={onTypeChange}>
-            <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-purple-600 hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
-              <SelectValue className="text-white !text-white" />
+            <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
+              <SelectValue className="!text-white [&>*]:!text-white" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tables">Tables</SelectItem>
@@ -89,37 +89,37 @@ export function QRCodeGenerator({
           <div>
             <Label>Select {qrCodeType === "tables" ? "Table" : "Counter"}</Label>
             <Select value={inputName} onValueChange={onInputNameChange}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 text-white border-purple-600 hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
+              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
                 <SelectValue
-                  className="text-white !text-white"
+                  className="!text-white [&>*]:!text-white"
                   placeholder={`Select a ${qrCodeType === "tables" ? "table" : "counter"}`}
                 />
               </SelectTrigger>
               <SelectContent>
                 {items.map((item: TableItem | CounterItem) => {
-                  const isCounter = 'counter_id' in item || 'counter_name' in item;
+                  const isCounter = "counter_id" in item || "counter_name" in item;
                   const key = String(
-                    item.id || 
-                    (isCounter && 'counter_id' in item ? item.counter_id : undefined) || 
-                    (isCounter && 'table_id' in item ? item.table_id : undefined) || 
-                    Math.random()
+                    item.id ||
+                      (isCounter && "counter_id" in item ? item.counter_id : undefined) ||
+                      (isCounter && "table_id" in item ? item.table_id : undefined) ||
+                      Math.random()
                   );
 
                   // Get display value - handle both table and counter naming variations
                   let displayValue = "";
                   if (qrCodeType === "tables") {
                     displayValue = String(
-                      item.label || 
-                      ('table_number' in item ? item.table_number : undefined) || 
-                      ('name' in item ? item.name : undefined) || 
-                      ""
+                      item.label ||
+                        ("table_number" in item ? item.table_number : undefined) ||
+                        ("name" in item ? item.name : undefined) ||
+                        ""
                     );
                   } else {
                     displayValue = String(
-                      (isCounter && 'counter_name' in item ? item.counter_name : undefined) || 
-                      item.label || 
-                      ('name' in item ? item.name : undefined) || 
-                      ""
+                      (isCounter && "counter_name" in item ? item.counter_name : undefined) ||
+                        item.label ||
+                        ("name" in item ? item.name : undefined) ||
+                        ""
                     );
                   }
 

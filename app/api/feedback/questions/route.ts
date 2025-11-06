@@ -18,10 +18,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "venueId required" }, { status: 400 });
     }
 
-    // Auth check
-    const { user } = await getAuthenticatedUser();
+    // Auth check with detailed logging
+    console.log("[AUTH DEBUG] Getting authenticated user for feedback questions...");
+    const { user, error: authError } = await getAuthenticatedUser();
+    console.log("[AUTH DEBUG] Auth result:", {
+      hasUser: !!user,
+      userId: user?.id,
+      authError,
+      venueId,
+    });
+
     if (!user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      console.log("[AUTH DEBUG] No user found - returning 401");
+      return NextResponse.json(
+        {
+          error: "Authentication required",
+          debug: authError || "No user session found",
+        },
+        { status: 401 }
+      );
     }
 
     const supa = await createClient();
