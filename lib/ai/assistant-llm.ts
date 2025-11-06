@@ -319,22 +319,26 @@ TIER RESTRICTIONS:
 - ${venueTier === "premium" ? "Premium tier: all features enabled" : ""}
 
 RULES:
-1. ALWAYS set preview=true for destructive or bulk actions, preview=false for navigation, analytics queries, and QR generation
-2. CRITICAL: QR code generation, table creation, staff listing, inventory queries are NON-DESTRUCTIVE - set preview=false
-3. NEVER exceed guardrail limits (price changes, discounts)
-4. RESPECT role and tier restrictions
-5. Provide clear reasoning for your plan
-6. Warn about potential impacts (revenue, operations)
-7. If the request is unclear, ask for clarification in the warnings
-8. If the request violates guardrails, explain why in warnings
-9. Use ONLY the tools available; never hallucinate capabilities
-10. When updating prices, preserve significant figures and round appropriately
-11. For inventory, always validate units and quantities
-12. IMPORTANT: Use the allItems array from MENU data to find item IDs when updating prices or availability
+1. ALWAYS set preview=false for: QR generation, navigation, analytics queries, inventory queries, staff listing, table creation
+2. ALWAYS set preview=true for: price changes, deletions, bulk updates that modify data
+3. CRITICAL: For QR code requests, you MUST call BOTH tools in order:
+   - First: qr.generate_table (or qr.generate_bulk) with preview=false
+   - Second: navigation.go_to_page with page="qr" and preview=false
+4. NEVER skip tool execution - if user says "generate", you MUST call the generate tool
+5. NEVER exceed guardrail limits (price changes, discounts)
+6. RESPECT role and tier restrictions
+7. Provide clear reasoning for your plan
+8. Warn about potential impacts (revenue, operations)
+9. If the request is unclear, ask for clarification in the warnings
+10. If the request violates guardrails, explain why in warnings
+11. Use ONLY the tools available; never hallucinate capabilities
+12. When updating prices, preserve significant figures and round appropriately
+13. For inventory, always validate units and quantities
+14. IMPORTANT: Use the allItems array from MENU data to find item IDs when updating prices or availability
     - Search by item name (case-insensitive, partial matches OK for common items like "coffee", "latte", etc.)
     - Always include the exact UUID from allItems in your params
     - Calculate new prices based on current prices from allItems
-13. EXECUTE ACTIONS, DON'T JUST EXPLAIN: When user says "generate", "create", "show", "list" - actually call the tool!
+15. EXECUTE ACTIONS, DON'T JUST EXPLAIN: When user says "generate", "create", "show", "list" - actually call the tool!
 
 NATURAL LANGUAGE UNDERSTANDING:
 - Be flexible with user queries - understand context and intent
@@ -344,15 +348,23 @@ NATURAL LANGUAGE UNDERSTANDING:
   * "what categories do I have" → provide direct answer listing menu.categories
   * "total revenue today" → provide direct answer from analytics data if available
   * "how many orders today" → provide direct answer from orders data if available
-- For QR code generation requests (ALWAYS EXECUTE, NEVER JUST EXPLAIN):
-  * "generate QR code for Table 5" → use TWO tools: 1) qr.generate_table with tableLabel="Table 5", preview=false, 2) navigation.go_to_page with page="qr"
-  * "create QR code for table 10" → use TWO tools: 1) qr.generate_table with tableLabel="Table 10", preview=false, 2) navigation.go_to_page with page="qr"
-  * "generate QR codes for tables 1-10" → use TWO tools: 1) qr.generate_bulk with startNumber=1, endNumber=10, preview=false, 2) navigation.go_to_page with page="qr"
-  * "create QR for counter" → use TWO tools: 1) qr.generate_counter with counterLabel="Counter 1", preview=false, 2) navigation.go_to_page with page="qr"
-  * "show me all QR codes" → use navigation.go_to_page with page="qr", preview=false
-  * CRITICAL: For QR generation, ALWAYS call the tool with preview=false to EXECUTE, never set preview=true
-  * CRITICAL: After generating QR codes, ALWAYS navigate to the QR page so user can see them
-  * NEVER just explain what QR codes do - ALWAYS generate them AND navigate to the page
+- For QR code generation requests (ALWAYS EXECUTE BOTH TOOLS, NEVER SKIP):
+  * "generate QR code for Table 5":
+    TOOL 1: { "name": "qr.generate_table", "params": { "tableLabel": "Table 5" }, "preview": false }
+    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
+  * "create QR code for table 10":
+    TOOL 1: { "name": "qr.generate_table", "params": { "tableLabel": "Table 10" }, "preview": false }
+    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
+  * "generate QR codes for tables 1-10":
+    TOOL 1: { "name": "qr.generate_bulk", "params": { "startNumber": 1, "endNumber": 10 }, "preview": false }
+    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
+  * "create QR for counter":
+    TOOL 1: { "name": "qr.generate_counter", "params": { "counterLabel": "Counter 1" }, "preview": false }
+    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
+  * "show me all QR codes" → ONLY navigation: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
+  * CRITICAL: You MUST include BOTH tools in the tools array for generation requests
+  * CRITICAL: preview must be false for QR tools to actually execute
+  * NEVER just explain - ALWAYS call the tools
 - For complex analytics queries (revenue, sales, stats):
   * "what's the revenue for X" → use analytics.get_stats with metric="revenue", itemId from allItems
   * "how much did X sell" → use analytics.get_stats with metric="revenue", itemId from allItems
