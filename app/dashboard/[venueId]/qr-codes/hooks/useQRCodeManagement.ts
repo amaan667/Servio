@@ -188,6 +188,7 @@ export function useQRCodeManagement(venueId: string) {
     inputName,
     setInputName,
     loadTablesAndCounters,
+    refetch: loadTablesAndCounters,
     generateQRForName,
     generateQRForAll,
     removeQR,
