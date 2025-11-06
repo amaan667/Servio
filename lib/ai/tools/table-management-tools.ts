@@ -62,7 +62,7 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
   // Get all tables
   const { data: tables, error: tablesError } = await supabase
     .from("tables")
-    .select("id, label, seats, status")
+    .select("id, label, seat_count, status")
     .eq("venue_id", venueId)
     .eq("is_active", true)
     .order("label", { ascending: true });
@@ -106,7 +106,7 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
       occupied.push({
         id: table.id,
         label: table.label,
-        seats: table.seats || 0,
+        seats: table.seat_count || 0,
         customerName: session?.customer_name,
         orderCount,
       });
@@ -114,7 +114,7 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
       available.push({
         id: table.id,
         label: table.label,
-        seats: table.seats || 0,
+        seats: table.seat_count || 0,
         status: table.status || "available",
       });
     }
@@ -158,11 +158,10 @@ export async function createTable(
     .insert({
       venue_id: venueId,
       label: tableLabel,
-      seats,
-      status: "available",
+      seat_count: seats,
       is_active: true,
     })
-    .select("id, label, seats")
+    .select("id, label, seat_count")
     .single();
 
   if (createError) {
@@ -176,7 +175,7 @@ export async function createTable(
       id: newTable.id,
       label: newTable.label,
       tableNumber: parseInt(tableLabel.match(/\d+/)?.[0] || "0"),
-      seats: newTable.seats || 0,
+      seats: newTable.seat_count || 0,
     },
     message: `Created ${tableLabel} with ${seats} seats. Table is now ready for QR code generation.`,
   };
@@ -201,7 +200,7 @@ export async function mergeTables(
   // Get table details
   const { data: tables, error: fetchError } = await supabase
     .from("tables")
-    .select("id, label, seats, status")
+    .select("id, label, seat_count, status")
     .eq("venue_id", venueId)
     .in("id", tableIds);
 
@@ -217,7 +216,7 @@ export async function mergeTables(
   }
 
   const tableLabels = tables.map((t) => t.label);
-  const totalSeats = tables.reduce((sum, t) => sum + (t.seats || 0), 0);
+  const totalSeats = tables.reduce((sum, t) => sum + (t.seat_count || 0), 0);
 
   // Generate merged label if not provided
   const finalLabel = mergedLabel || `${tableLabels[0]} + ${tableLabels.slice(1).join(" + ")}`;
@@ -250,8 +249,7 @@ async function performTableMerge(
     .insert({
       venue_id: venueId,
       label: mergedLabel,
-      seats: totalSeats,
-      status: "occupied",
+      seat_count: totalSeats,
       is_merged: true,
       merged_from: tableIds,
       is_active: true,

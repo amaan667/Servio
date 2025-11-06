@@ -65,8 +65,7 @@ export async function generateTableQRCode(
       .insert({
         venue_id: venueId,
         label: tableLabel,
-        seats: 4, // Default
-        status: "available",
+        seat_count: 4, // Default
         is_active: true,
       })
       .select("id")
@@ -135,8 +134,7 @@ export async function generateBulkTableQRCodes(
       tablesToCreate.push({
         venue_id: venueId,
         label,
-        seats: 4,
-        status: "available",
+        seat_count: 4,
         is_active: true,
       });
     }
