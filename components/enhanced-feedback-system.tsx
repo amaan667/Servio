@@ -27,6 +27,7 @@ import {
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import QuestionsClient from "@/app/dashboard/[venueId]/feedback/QuestionsClient";
+import { useAuth } from "@/app/auth/AuthProvider";
 
 interface Feedback {
   id: string;
@@ -66,6 +67,7 @@ interface FeedbackSystemProps {
 }
 
 export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
+  const { user, loading: authLoading } = useAuth();
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
@@ -81,8 +83,14 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchQuestions = useCallback(async () => {
+    if (!user) {
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
+      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`, {
+        credentials: "include",
+      });
       if (response.ok) {
         const data = await response.json();
         setQuestions(data.questions || []);
@@ -90,7 +98,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     } catch (_error) {
       // Error silently handled
     }
-  }, [venueId]);
+  }, [venueId, user]);
 
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
@@ -268,9 +276,11 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   };
 
   useEffect(() => {
-    fetchFeedback();
-    fetchQuestions();
-  }, [fetchFeedback, fetchQuestions]);
+    if (user && !authLoading) {
+      fetchFeedback();
+      fetchQuestions();
+    }
+  }, [fetchFeedback, fetchQuestions, user, authLoading]);
 
   // Add listener for when questions are updated from the Create tab
   useEffect(() => {
@@ -466,14 +476,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                                 #{index + 1}
                               </span>
                               <span className="font-medium">{question.prompt}</span>
-                              <Badge
-                                variant={question.is_active ? "default" : "secondary"}
-                              >
+                              <Badge variant={question.is_active ? "default" : "secondary"}>
                                 {question.type}
                               </Badge>
-                              {!question.is_active && (
-                                <Badge variant="outline">Inactive</Badge>
-                              )}
+                              {!question.is_active && <Badge variant="outline">Inactive</Badge>}
                             </div>
                           </div>
                         </div>

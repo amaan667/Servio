@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
-import FeedbackClient from "./QuestionsClient";
+import { EnhancedFeedbackSystem } from "@/components/enhanced-feedback-system";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { UserRole } from "@/lib/permissions";
 
@@ -69,11 +69,11 @@ export default function FeedbackClientPage({ venueId }: { venueId: string }) {
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Customer Feedback</h1>
           <p className="text-lg text-foreground mt-2">
-            Collect and analyze customer feedback to improve your service
+            View analytics, manage feedback responses, and create custom questions
           </p>
         </div>
 
-        <FeedbackClient venueId={venueId} />
+        <EnhancedFeedbackSystem venueId={venueId} />
       </div>
     </div>
   );
