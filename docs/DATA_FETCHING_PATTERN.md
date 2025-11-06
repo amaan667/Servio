@@ -146,17 +146,27 @@ When converting an API route to direct Supabase:
 
 ## Current Status
 
-**Converted to Direct Supabase:**
-- ✅ Menu Management
-- ✅ Feedback Questions
-- ✅ Staff Management
+**✅ Converted to Direct Supabase (Consistent Pattern):**
+- ✅ Menu Management (items, categories, design settings)
+- ✅ Feedback Questions (create, read, update, delete, reorder)
+- ✅ Staff Management (add, toggle active, list)
+- ✅ Shift Management (add, delete, list with joins)
 
-**Keeping API Routes (Valid):**
-- ✅ Payment processing (`/api/pay/*`)
-- ✅ Webhooks (`/api/stripe/webhook`)
-- ✅ Bulk operations (`/api/orders/bulk-complete`)
-- ✅ Menu upload/parsing (`/api/menu/upload`)
-- ✅ External integrations
+**✅ API Routes (Valid Use Cases):**
+- ✅ Payment processing (`/api/pay/*`) - Requires Stripe secret keys
+- ✅ Webhooks (`/api/stripe/webhook`) - External callbacks
+- ✅ Bulk operations (`/api/orders/bulk-complete`) - Complex multi-order logic
+- ✅ Menu upload/parsing (`/api/menu/upload`) - AI/ML processing
+- ✅ External integrations (`/api/scrape-menu`) - Third-party APIs
+- ✅ Analytics aggregations - Complex queries
+- ✅ Order operations requiring business logic validation
+
+**📊 Impact:**
+- Eliminated 401 authentication errors on dashboard pages
+- Improved performance (no API hop)
+- Simplified codebase (less code to maintain)
+- Better developer experience (TypeScript autocomplete)
+- Consistent pattern across all pages
 
 ---
 
