@@ -475,8 +475,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
             <TabsContent value="feedback" className="space-y-6 mt-6">
               {/* Filters and Search */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
+              <div className="space-y-4">
+                {/* Search Bar */}
+                <div className="w-full">
                   <Input
                     placeholder="Search feedback..."
                     value={searchQuery}
@@ -484,13 +485,15 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                     className="w-full h-11"
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2">
+
+                {/* Filter Buttons - Stack on mobile, row on desktop */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <select
                     value={filters.rating}
                     onChange={(e) =>
                       setFilters((prev) => ({ ...prev, rating: parseInt(e.target.value) }))
                     }
-                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px] bg-purple-600 text-white border-purple-600"
+                    className="border rounded px-3 py-2 text-sm h-11 w-full bg-purple-600 text-white border-purple-600"
                   >
                     <option value={0}>All Ratings</option>
                     <option value={5}>5 Stars</option>
@@ -502,7 +505,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   <select
                     value={filters.sentiment}
                     onChange={(e) => setFilters((prev) => ({ ...prev, sentiment: e.target.value }))}
-                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px] bg-purple-600 text-white border-purple-600"
+                    className="border rounded px-3 py-2 text-sm h-11 w-full bg-purple-600 text-white border-purple-600"
                   >
                     <option value="all">All Sentiments</option>
                     <option value="positive">Positive</option>
@@ -512,7 +515,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   <select
                     value={filters.dateRange}
                     onChange={(e) => setFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
-                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px] bg-purple-600 text-white border-purple-600"
+                    className="border rounded px-3 py-2 text-sm h-11 w-full bg-purple-600 text-white border-purple-600"
                   >
                     <option value="7d">Last 7 days</option>
                     <option value="30d">Last 30 days</option>
