@@ -44,22 +44,44 @@ export default function QRCodeClient({
   // Handle URL parameter for pre-selected table and AI generation
   useEffect(() => {
     const tableParam = searchParams.get("table");
-    const aiGenerated = searchParams.get("ai_generated");
+    const counterParam = searchParams.get("counter");
 
-    // If AI just generated QR codes, reload the tables list
-    if (aiGenerated === "true") {
-      qrManagement.refetch();
-    }
-
+    // Auto-generate QR code for a specific table
     if (tableParam) {
       const tableName = decodeURIComponent(tableParam);
       setSingleName(tableName);
       setQrType("table");
-      // Auto-generate QR code for the pre-selected table
-      setTimeout(() => {
-        qrManagement.generateQRForName(tableName, "table");
-      }, 100);
+      // Refresh data first to ensure table exists, then generate QR
+      qrManagement
+        .refetch()
+        .then(() => {
+          setTimeout(() => {
+            qrManagement.generateQRForName(tableName, "table");
+          }, 200);
+        })
+        .catch((err) => {
+          console.error("[QR Client] Failed to refetch tables:", err);
+        });
     }
+
+    // Auto-generate QR code for a specific counter
+    if (counterParam) {
+      const counterName = decodeURIComponent(counterParam);
+      setSingleName(counterName);
+      setQrType("counter");
+      // Refresh data first to ensure counter exists, then generate QR
+      qrManagement
+        .refetch()
+        .then(() => {
+          setTimeout(() => {
+            qrManagement.generateQRForName(counterName, "counter");
+          }, 200);
+        })
+        .catch((err) => {
+          console.error("[QR Client] Failed to refetch counters:", err);
+        });
+    }
+     
   }, [searchParams]);
 
   // Generate single QR code

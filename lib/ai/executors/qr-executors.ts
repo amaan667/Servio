@@ -38,6 +38,8 @@ export async function executeQRGenerateTable(
     result: {
       qrCode: result.qrCodes[0],
       message: result.message,
+      tableLabel: params.tableLabel, // Pass table label for navigation
+      navigateTo: `/dashboard/${venueId}/qr-codes?table=${encodeURIComponent(params.tableLabel)}`,
     },
     auditId: "",
   };
@@ -110,6 +112,8 @@ export async function executeQRGenerateCounter(
     result: {
       qrCode: result.qrCodes[0],
       message: result.message,
+      counterLabel: params.counterLabel, // Pass counter label for navigation
+      navigateTo: `/dashboard/${venueId}/qr-codes?counter=${encodeURIComponent(params.counterLabel)}`,
     },
     auditId: "",
   };

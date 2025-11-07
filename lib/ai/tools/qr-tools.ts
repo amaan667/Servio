@@ -57,6 +57,7 @@ export async function generateTableQRCode(
   }
 
   let tableId = existingTable?.id;
+  let tableCreated = false;
 
   // If table doesn't exist, create it
   if (!existingTable) {
@@ -77,12 +78,23 @@ export async function generateTableQRCode(
     }
 
     tableId = newTable.id;
+    tableCreated = true;
     aiLogger.info(`[AI QR] Created new table: ${tableLabel}`);
+
+    // Revalidate dashboard cache
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath(`/dashboard/${venueId}`);
+      revalidatePath(`/dashboard/${venueId}/tables`);
+      aiLogger.info("[AI QR] Dashboard cache revalidated");
+    } catch (err) {
+      aiLogger.warn("[AI QR] Could not revalidate cache:", err);
+    }
   }
 
   // Generate QR URL (uses venueId directly)
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
-  const qrUrl = `${baseUrl}/order?venue=${venueId}&table=${tableLabel}`;
+  const qrUrl = `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(tableLabel)}`;
 
   return {
     success: true,
@@ -94,7 +106,9 @@ export async function generateTableQRCode(
         url: qrUrl,
       },
     ],
-    message: `QR code generated for ${tableLabel}. URL: ${qrUrl}`,
+    message: tableCreated
+      ? `QR code generated for ${tableLabel}. Table created and ready to use! Navigate to QR Codes page to view and download.`
+      : `QR code generated for existing ${tableLabel}.`,
   };
 }
 
@@ -175,6 +189,17 @@ export async function generateBulkTableQRCodes(
     }
   });
 
+  // Revalidate dashboard cache if tables were created
+  if (tablesToCreate.length > 0) {
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath(`/dashboard/${venueId}`);
+      aiLogger.info("[AI QR] Dashboard cache revalidated after bulk creation");
+    } catch (err) {
+      aiLogger.warn("[AI QR] Could not revalidate cache:", err);
+    }
+  }
+
   return {
     success: true,
     qrCodes: qrCodes.sort((a, b) => {
@@ -182,7 +207,7 @@ export async function generateBulkTableQRCodes(
       const numB = parseInt(b.label.match(/\d+/)?.[0] || "0");
       return numA - numB;
     }),
-    message: `Generated ${qrCodes.length} QR codes for tables ${startNumber}-${endNumber}. ${tablesToCreate.length} new tables created.`,
+    message: `Generated ${qrCodes.length} QR codes for tables ${startNumber}-${endNumber}. ${tablesToCreate.length} new tables created. Navigate to QR Codes page to view and download.`,
   };
 }
 

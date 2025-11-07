@@ -188,6 +188,14 @@ export async function POST(request: NextRequest) {
             } else if (resultData.summary) {
               messages.push(resultData.summary as string);
             }
+
+            // Check if there's a navigateTo field for automatic navigation
+            if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
+              navigationInfo = {
+                route: resultData.navigateTo,
+                page: "qr-codes",
+              };
+            }
           }
           // Handle other tools with message or summary
           else if (resultData.message) {
