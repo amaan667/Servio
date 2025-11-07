@@ -197,11 +197,37 @@ export async function POST(request: NextRequest) {
               };
             }
           }
+          // Handle menu operations
+          else if (tool.name.startsWith("menu.")) {
+            if (resultData.message) {
+              messages.push(resultData.message as string);
+            }
+
+            // Check if there's a navigateTo field for automatic navigation
+            if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
+              navigationInfo = {
+                route: resultData.navigateTo,
+                page: "menu",
+              };
+            }
+          }
           // Handle other tools with message or summary
           else if (resultData.message) {
             messages.push(resultData.message as string);
           } else if (resultData.summary) {
             messages.push(resultData.summary as string);
+          }
+
+          // Check for navigateTo on any tool (fallback)
+          if (
+            !navigationInfo &&
+            resultData.navigateTo &&
+            typeof resultData.navigateTo === "string"
+          ) {
+            navigationInfo = {
+              route: resultData.navigateTo,
+              page: "unknown",
+            };
           }
         }
       }

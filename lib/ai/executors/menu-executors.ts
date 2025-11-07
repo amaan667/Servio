@@ -20,7 +20,6 @@ export async function executeMenuUpdatePrices(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const supabase = await createClient();
 
-
   if (!params.items || params.items.length === 0) {
     throw new AIAssistantError("No items specified for price update", "INVALID_PARAMS");
   }
@@ -147,7 +146,6 @@ export async function executeMenuUpdatePrices(
     );
   }
 
-
   return {
     success: true,
     toolName: "menu.update_prices",
@@ -259,7 +257,11 @@ export async function executeMenuCreateItem(
   return {
     success: true,
     toolName: "menu.create_item",
-    result: newItem,
+    result: {
+      ...newItem,
+      message: `Created menu item: ${newItem.name}`,
+      navigateTo: `/dashboard/${venueId}/menu-management?itemId=${newItem.id}&itemName=${encodeURIComponent(newItem.name)}&action=created`,
+    },
     auditId: "",
   };
 }
@@ -274,7 +276,7 @@ export async function executeMenuDeleteItem(
 
   const { data: currentItem } = await supabase
     .from("menu_items")
-    .select("id, name, price")
+    .select("id, name, price, category_id, menu_categories(name)")
     .eq("id", params.itemId)
     .eq("venue_id", venueId)
     .single();
@@ -282,6 +284,10 @@ export async function executeMenuDeleteItem(
   if (!currentItem) {
     throw new AIAssistantError("Menu item not found", "INVALID_PARAMS");
   }
+
+  const categoryId = currentItem.category_id;
+  const categoryData = currentItem.menu_categories as { name?: string } | null;
+  const categoryName = categoryData?.name;
 
   if (preview) {
     return {
@@ -309,7 +315,17 @@ export async function executeMenuDeleteItem(
   return {
     success: true,
     toolName: "menu.delete_item",
-    result: { deletedItem: currentItem, reason: params.reason },
+    result: {
+      deletedItem: currentItem,
+      reason: params.reason,
+      categoryId,
+      categoryName,
+      message: `Deleted ${currentItem.name} from menu`,
+      navigateTo:
+        categoryId && categoryName
+          ? `/dashboard/${venueId}/menu-management?categoryId=${categoryId}&categoryName=${encodeURIComponent(categoryName)}&action=deleted`
+          : `/dashboard/${venueId}/menu-management?action=deleted`,
+    },
     auditId: "",
   };
 }
