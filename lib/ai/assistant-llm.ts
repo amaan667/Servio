@@ -731,17 +731,18 @@ export async function planAssistantAction(
     analytics?: AnalyticsSummary;
   }
 ): Promise<AIPlanResponse & { modelUsed?: string }> {
-  // Check if we can answer directly from data summaries
-  const directAnswer = canAnswerDirectly(userPrompt, dataSummaries);
-  if (directAnswer.canAnswer) {
-    return {
-      intent: userPrompt,
-      tools: [],
-      reasoning: "This question can be answered directly from the available data summaries.",
-      warnings: null,
-      directAnswer: directAnswer.answer,
-    };
-  }
+  // TEMPORARILY DISABLED: Check if we can answer directly from data summaries
+  // This was causing all queries to return the same analytics response
+  // const directAnswer = canAnswerDirectly(userPrompt, dataSummaries);
+  // if (directAnswer.canAnswer) {
+  //   return {
+  //     intent: userPrompt,
+  //     tools: [],
+  //     reasoning: "This question can be answered directly from the available data summaries.",
+  //     warnings: null,
+  //     directAnswer: directAnswer.answer,
+  //   };
+  // }
 
   const systemPrompt = buildSystemPrompt(context, dataSummaries);
 
