@@ -1,6 +1,7 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 NEXT_BUILD_ID=$(date +%s) pnpm run build"
+buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build"
+watchPatterns = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
 
 [deploy]
 startCommand = "pnpm start"

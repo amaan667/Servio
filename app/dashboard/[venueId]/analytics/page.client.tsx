@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import AnalyticsClient from "./AnalyticsClient";
+import { PredictiveInsights } from "./components/PredictiveInsights";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 import { isValidUserRole } from "@/lib/utils/userRole";
@@ -112,6 +113,15 @@ export default function AnalyticsClientPage({
           <p className="text-lg text-foreground mt-2">
             Track your business performance and insights
           </p>
+        </div>
+
+        {/* Predictive AI Insights */}
+        <div className="mb-6">
+          <PredictiveInsights
+            ordersData={ordersData}
+            menuData={menuData}
+            revenueData={revenueData}
+          />
         </div>
 
         <AnalyticsClient ordersData={ordersData} menuData={menuData} revenueData={revenueData} />
