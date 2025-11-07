@@ -1,5 +1,6 @@
 // Servio AI Assistant - LLM Service
 // Handles intent understanding, planning, and structured output generation
+// Updated: 2025-01-07
 
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
