@@ -10,7 +10,6 @@ import {
   AIAssistantContext,
   AIPlanResponse,
   ToolName,
-  TOOL_SCHEMAS,
   MenuSummary,
   InventorySummary,
   OrdersSummary,
@@ -381,21 +380,8 @@ NATURAL LANGUAGE UNDERSTANDING:
   * Find the item ID from allItems array when user mentions item name
   * Use itemName param to include context in navigation message
 - For translation:
-  * ALWAYS check the target language carefully: "english" = "en", "spanish" = "es"
-  * "translate to Spanish" → use menu.translate with targetLanguage="es"
-  * "translate to English" or "translate back to English" or "translate back into english" → use menu.translate with targetLanguage="en"
-  * "translate the full menu into english" → use menu.translate with targetLanguage="en"
-  * "translate full menu into english" → use menu.translate with targetLanguage="en"
-  * "translate to French" → use menu.translate with targetLanguage="fr"
-  * "translate menu to [language]" → use menu.translate with appropriate language code
-  * IMPORTANT: When user says "into English", "to English", "back to English", or "back into English", they want targetLanguage="en", NOT "es"
-  * CRITICAL: If user mentions "english" in their request, use targetLanguage="en" (English), NOT "es" (Spanish)
-  * DOUBLE-CHECK: Before calling menu.translate, verify that if the user wants "english", you use "en", not "es"
-  * STEP-BY-STEP: 1) Read user request, 2) Identify target language, 3) Map to code: "english"→"en", "spanish"→"es", 4) Use correct code in tool call
-  * Examples: 
-    - "translate the full menu into english" → targetLanguage="en"
-    - "translate full menu back into english" → targetLanguage="en"
-    - "translate to english" → targetLanguage="en"
+  * Supported languages: English (en), Spanish (es), Arabic (ar), French (fr), German (de), Italian (it), Portuguese (pt), Chinese (zh), Japanese (ja)
+  * "translate to [language]" → use menu.translate with appropriate language code
 - Be intelligent about partial matches and synonyms
 
 OUTPUT FORMAT:
@@ -410,8 +396,142 @@ Return a structured plan with:
 // Planning Function with Smart Model Selection & Fallback
 // ============================================================================
 
-// Check if query can be answered directly from data summaries
-function canAnswerDirectly(
+// Intelligent Fast-Path Classification (replaces hardcoded patterns)
+interface FastPathResult {
+  canAnswer: boolean;
+  answer?: string;
+  confidence: number;
+}
+
+// Smart data formatter for natural language responses
+function formatDataAsAnswer(data: unknown, question: string): string {
+  const lowerQuestion = question.toLowerCase();
+
+  // Number formatting
+  if (typeof data === "number") {
+    if (
+      lowerQuestion.includes("revenue") ||
+      lowerQuestion.includes("price") ||
+      lowerQuestion.includes("cost") ||
+      lowerQuestion.includes("£")
+    ) {
+      return `£${data.toFixed(2)}`;
+    }
+    if (lowerQuestion.includes("percent") || lowerQuestion.includes("%")) {
+      return `${data.toFixed(1)}%`;
+    }
+    if (lowerQuestion.includes("time") && data > 1000) {
+      return `${Math.round(data)} minutes`;
+    }
+    return data.toString();
+  }
+
+  // Array formatting
+  if (Array.isArray(data)) {
+    if (data.length === 0) return "None found";
+
+    const formatItem = (item: unknown, index: number): string => {
+      if (typeof item === "string") return `${index + 1}. ${item}`;
+      if (typeof item === "object" && item !== null) {
+        const obj = item as Record<string, unknown>;
+        if (obj.name && obj.count && obj.revenue) {
+          return `${index + 1}. ${obj.name} - ${obj.count} sold, £${(obj.revenue as number).toFixed(2)} revenue`;
+        }
+        if (obj.name && obj.revenue) {
+          return `${index + 1}. ${obj.name} - £${(obj.revenue as number).toFixed(2)}`;
+        }
+        if (obj.name && obj.count) {
+          return `${index + 1}. ${obj.name} (${obj.count})`;
+        }
+        if (obj.name && obj.itemCount) {
+          return `${index + 1}. ${obj.name} (${obj.itemCount} items)`;
+        }
+        if (obj.name) return `${index + 1}. ${obj.name}`;
+        if (obj.day && obj.orders && obj.revenue) {
+          return `${obj.day}: ${obj.orders} orders, £${(obj.revenue as number).toFixed(2)}`;
+        }
+        if (obj.hour && obj.orderCount) {
+          return `${obj.hour}:00 (${obj.orderCount} orders)`;
+        }
+        if (obj.tableNumber && obj.revenue) {
+          return `Table ${obj.tableNumber}: £${(obj.revenue as number).toFixed(2)}${obj.sessions ? ` from ${obj.sessions} sessions` : ""}`;
+        }
+      }
+      return String(item);
+    };
+
+    if (data.length <= 10) {
+      return data.map(formatItem).join("\n");
+    }
+    return `${data.length} items total. Top 10:\n` + data.slice(0, 10).map(formatItem).join("\n");
+  }
+
+  // Object formatting
+  if (typeof data === "object" && data !== null) {
+    const obj = data as Record<string, unknown>;
+
+    // Revenue/orders object
+    if (obj.revenue !== undefined && obj.orders !== undefined) {
+      const revenue = obj.revenue as number;
+      const orders = obj.orders as number;
+      const avg = obj.avgOrderValue as number | undefined;
+      return avg
+        ? `£${revenue.toFixed(2)} from ${orders} orders (avg £${avg.toFixed(2)} per order)`
+        : `£${revenue.toFixed(2)} from ${orders} orders`;
+    }
+
+    // Growth object
+    if (obj.revenueGrowth !== undefined && obj.ordersGrowth !== undefined) {
+      const revGrowth = obj.revenueGrowth as number;
+      const ordGrowth = obj.ordersGrowth as number;
+      const revDir = revGrowth > 0 ? "up" : "down";
+      const ordDir = ordGrowth > 0 ? "up" : "down";
+      return `Revenue is ${revDir} ${Math.abs(revGrowth).toFixed(1)}% and orders are ${ordDir} ${Math.abs(ordGrowth).toFixed(1)}% compared to the previous period.`;
+    }
+
+    // Category performance
+    const entries = Object.entries(obj);
+    if (entries.length > 0 && typeof entries[0][1] === "object") {
+      const formatted = entries
+        .sort((a, b) => {
+          const aRev = (a[1] as { revenue?: number })?.revenue || 0;
+          const bRev = (b[1] as { revenue?: number })?.revenue || 0;
+          return bRev - aRev;
+        })
+        .map(([key, val]) => {
+          const v = val as Record<string, unknown>;
+          if (v.revenue && v.count) {
+            return `- ${key}: ${v.count} orders, £${(v.revenue as number).toFixed(2)}`;
+          }
+          if (v.revenue && v.orders) {
+            return `- ${key}: £${(v.revenue as number).toFixed(2)} from ${v.orders} orders${v.itemCount ? ` (${v.itemCount} items)` : ""}`;
+          }
+          return `- ${key}: ${JSON.stringify(v)}`;
+        })
+        .join("\n");
+      return formatted;
+    }
+  }
+
+  // Fallback
+  return String(data);
+}
+
+// Navigate nested data paths
+function getNestedData(obj: unknown, path: string): unknown {
+  const parts = path.split(".");
+  let current = obj;
+
+  for (const part of parts) {
+    if (current === null || current === undefined) return undefined;
+    if (typeof current !== "object") return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+
+  return current;
+}
+
+async function tryFastPath(
   userPrompt: string,
   dataSummaries: {
     menu?: MenuSummary;
@@ -419,306 +539,128 @@ function canAnswerDirectly(
     orders?: OrdersSummary;
     analytics?: AnalyticsSummary;
   }
-): { canAnswer: boolean; answer?: string } {
+): Promise<FastPathResult> {
   const prompt = userPrompt.toLowerCase().trim();
-  const analytics = dataSummaries.analytics;
-  const menu = dataSummaries.menu;
 
-  // ========== MENU QUESTIONS ==========
-  if (prompt.includes("how many categories") || prompt.includes("number of categories")) {
-    if (menu?.categories) {
-      const count = menu.categories.length;
-      return {
-        canAnswer: true,
-        answer: `You have ${count} menu categories: ${menu.categories.map((c) => c.name).join(", ")}`,
-      };
-    }
+  // Step 1: Quick action word detection (0ms, 100% accurate)
+  const actionWords = [
+    "increase",
+    "decrease",
+    "reduce",
+    "raise",
+    "lower",
+    "change",
+    "update",
+    "modify",
+    "edit",
+    "set",
+    "create",
+    "add",
+    "remove",
+    "delete",
+    "generate",
+    "make",
+    "translate",
+    "hide",
+    "show",
+    "toggle",
+    "send",
+    "invite",
+    "mark",
+    "bump",
+    "complete",
+    "navigate",
+    "go to",
+    "take me",
+    "open",
+    "upload",
+  ];
+
+  const hasAction = actionWords.some((word) => prompt.includes(word));
+  if (hasAction) {
+    return { canAnswer: false, confidence: 1.0 };
   }
 
-  if (prompt.includes("how many menu items") || prompt.includes("total menu items")) {
-    if (menu?.totalItems !== undefined) {
-      return {
-        canAnswer: true,
-        answer: `You have ${menu.totalItems} menu items total`,
-      };
-    }
+  // Step 2: Build data structure summary
+  const dataStructure: Record<string, string[]> = {};
+
+  if (dataSummaries.menu) {
+    dataStructure.menu = Object.keys(dataSummaries.menu);
+  }
+  if (dataSummaries.inventory) {
+    dataStructure.inventory = Object.keys(dataSummaries.inventory);
+  }
+  if (dataSummaries.orders) {
+    dataStructure.orders = Object.keys(dataSummaries.orders);
+  }
+  if (dataSummaries.analytics) {
+    dataStructure.analytics = Object.keys(dataSummaries.analytics);
   }
 
-  if (prompt.includes("what categories") || prompt.includes("list categories")) {
-    if (menu?.categories && menu.categories.length > 0) {
-      const categoriesList = menu.categories
-        .map((c) => `- ${c.name} (${c.itemCount} items)`)
-        .join("\n");
-      return {
-        canAnswer: true,
-        answer: `Your menu categories:\n${categoriesList}`,
-      };
-    }
+  // If no data available, can't answer
+  if (Object.keys(dataStructure).length === 0) {
+    return { canAnswer: false, confidence: 1.0 };
   }
 
-  if (prompt.includes("items with images") || prompt.includes("image coverage")) {
-    if (menu?.itemsWithImages !== undefined) {
-      const total = menu.totalItems;
-      const withImages = menu.itemsWithImages;
-      const percentage = total > 0 ? ((withImages / total) * 100).toFixed(1) : 0;
-      return {
-        canAnswer: true,
-        answer: `${withImages} out of ${total} items have images (${percentage}% coverage). ${menu.itemsWithoutImages} items are missing images.`,
-      };
-    }
-  }
+  // Step 3: Use LLM classifier to determine if data can answer query
+  try {
+    const classificationPrompt = `User question: "${userPrompt}"
 
-  if (prompt.includes("never ordered") || prompt.includes("items never sold")) {
-    if (analytics?.itemPerformance?.neverOrdered) {
-      const items = analytics.itemPerformance.neverOrdered;
-      if (items.length === 0) {
+Available data structure:
+${JSON.stringify(dataStructure, null, 2)}
+
+Can this question be answered directly from the available data fields?
+
+If yes, provide the exact data path (e.g., "analytics.today.revenue" or "menu.categories").
+If the question requires an action, calculation, or tool execution, answer NO.
+
+Respond with JSON only:
+{
+  "canAnswer": true/false,
+  "dataPath": "section.field.subfield" or null,
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation"
+}`;
+
+    const response = await getOpenAI().chat.completions.create({
+      model: MODEL_MINI,
+      messages: [{ role: "user", content: classificationPrompt }],
+      response_format: { type: "json_object" },
+      temperature: 0,
+      max_tokens: 150,
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+
+    logger.info("[AI FAST-PATH] Classification result:", {
+      prompt: userPrompt,
+      canAnswer: result.canAnswer,
+      dataPath: result.dataPath,
+      confidence: result.confidence,
+    });
+
+    // High confidence threshold for direct answers
+    if (result.canAnswer && result.confidence >= 0.85 && result.dataPath) {
+      // Extract data from the identified path
+      const data = getNestedData(dataSummaries, result.dataPath);
+
+      if (data !== undefined && data !== null) {
+        const answer = formatDataAsAnswer(data, userPrompt);
+
         return {
           canAnswer: true,
-          answer: "Great news! All your menu items have been ordered at least once.",
+          answer,
+          confidence: result.confidence,
         };
       }
-      return {
-        canAnswer: true,
-        answer: `${items.length} items haven't been ordered in the last 7 days:\n${items
-          .slice(0, 10)
-          .map((item) => `- ${item}`)
-          .join("\n")}${items.length > 10 ? `\n...and ${items.length - 10} more` : ""}`,
-      };
     }
-  }
 
-  // ========== REVENUE & PERFORMANCE QUESTIONS ==========
-  if (
-    (prompt.includes("revenue today") ||
-      prompt.includes("today's revenue") ||
-      prompt.includes("what's my revenue today")) &&
-    !prompt.includes("week") &&
-    !prompt.includes("month") &&
-    !prompt.includes("increase") &&
-    !prompt.includes("decrease") &&
-    !prompt.includes("change")
-  ) {
-    if (analytics?.today) {
-      return {
-        canAnswer: true,
-        answer: `Today's revenue is £${analytics.today.revenue.toFixed(2)} from ${analytics.today.orders} orders (avg £${analytics.today.avgOrderValue.toFixed(2)} per order)`,
-      };
-    }
+    return { canAnswer: false, confidence: result.confidence };
+  } catch (error) {
+    logger.error("[AI FAST-PATH] Classification failed:", errorToContext(error));
+    // Graceful degradation - proceed to full planner
+    return { canAnswer: false, confidence: 0 };
   }
-
-  if (
-    prompt.includes("revenue this week") ||
-    (prompt.includes("week") && prompt.includes("revenue"))
-  ) {
-    if (analytics?.thisWeek) {
-      return {
-        canAnswer: true,
-        answer: `This week's revenue is £${analytics.thisWeek.revenue.toFixed(2)} from ${analytics.thisWeek.orders} orders (avg £${analytics.thisWeek.avgOrderValue.toFixed(2)} per order)`,
-      };
-    }
-  }
-
-  if (
-    prompt.includes("revenue this month") ||
-    (prompt.includes("month") && prompt.includes("revenue"))
-  ) {
-    if (analytics?.thisMonth) {
-      return {
-        canAnswer: true,
-        answer: `This month's revenue is £${analytics.thisMonth.revenue.toFixed(2)} from ${analytics.thisMonth.orders} orders (avg £${analytics.thisMonth.avgOrderValue.toFixed(2)} per order)`,
-      };
-    }
-  }
-
-  if (prompt.includes("last 7 days") || prompt.includes("last week")) {
-    if (analytics?.last7Days) {
-      return {
-        canAnswer: true,
-        answer: `Last 7 days: £${analytics.last7Days.revenue.toFixed(2)} revenue from ${analytics.last7Days.orders} orders (avg £${analytics.last7Days.avgOrderValue.toFixed(2)} per order)`,
-      };
-    }
-  }
-
-  if (prompt.includes("last 30 days") || prompt.includes("last month")) {
-    if (analytics?.last30Days) {
-      return {
-        canAnswer: true,
-        answer: `Last 30 days: £${analytics.last30Days.revenue.toFixed(2)} revenue from ${analytics.last30Days.orders} orders (avg £${analytics.last30Days.avgOrderValue.toFixed(2)} per order)`,
-      };
-    }
-  }
-
-  // ========== GROWTH & COMPARISON QUESTIONS ==========
-  if (prompt.includes("growth") || prompt.includes("compared to last week")) {
-    if (analytics?.growth) {
-      const revenueDir = analytics.growth.revenueGrowth > 0 ? "up" : "down";
-      const ordersDir = analytics.growth.ordersGrowth > 0 ? "up" : "down";
-      return {
-        canAnswer: true,
-        answer: `Revenue is ${revenueDir} ${Math.abs(analytics.growth.revenueGrowth).toFixed(1)}% and orders are ${ordersDir} ${Math.abs(analytics.growth.ordersGrowth).toFixed(1)}% compared to the previous week.`,
-      };
-    }
-  }
-
-  // ========== TOP SELLING ITEMS ==========
-  if (
-    prompt.includes("top selling") ||
-    prompt.includes("best selling") ||
-    prompt.includes("most popular") ||
-    prompt.includes("top items")
-  ) {
-    if (analytics?.trending?.topItems && analytics.trending.topItems.length > 0) {
-      const items = analytics.trending.topItems
-        .map(
-          (item, i) =>
-            `${i + 1}. ${item.name} - ${item.count} sold, £${item.revenue.toFixed(2)} revenue`
-        )
-        .join("\n");
-      return {
-        canAnswer: true,
-        answer: `Top selling items (last 7 days):\n${items}`,
-      };
-    }
-  }
-
-  if (prompt.includes("top by revenue") || prompt.includes("highest revenue items")) {
-    if (
-      analytics?.itemPerformance?.topByRevenue &&
-      analytics.itemPerformance.topByRevenue.length > 0
-    ) {
-      const items = analytics.itemPerformance.topByRevenue
-        .slice(0, 5)
-        .map(
-          (item, i) => `${i + 1}. ${item.name} - £${item.revenue.toFixed(2)} (${item.count} sold)`
-        )
-        .join("\n");
-      return {
-        canAnswer: true,
-        answer: `Top items by revenue:\n${items}`,
-      };
-    }
-  }
-
-  // ========== TIME-BASED ANALYTICS ==========
-  if (prompt.includes("busiest day") || prompt.includes("best day")) {
-    if (analytics?.timeAnalysis?.busiestDay) {
-      const day = analytics.timeAnalysis.byDayOfWeek.find(
-        (d) => d.day === analytics.timeAnalysis.busiestDay
-      );
-      return {
-        canAnswer: true,
-        answer: `${analytics.timeAnalysis.busiestDay} is your busiest day with ${day?.orders || 0} orders and £${day?.revenue.toFixed(2) || 0} revenue on average.`,
-      };
-    }
-  }
-
-  if (prompt.includes("peak hours") || prompt.includes("busiest hours")) {
-    if (analytics?.timeAnalysis?.peakHours && analytics.timeAnalysis.peakHours.length > 0) {
-      const hours = analytics.timeAnalysis.peakHours
-        .map((h) => `${h.hour}:00 (${h.orderCount} orders)`)
-        .join(", ");
-      return {
-        canAnswer: true,
-        answer: `Peak hours: ${hours}`,
-      };
-    }
-  }
-
-  if (prompt.includes("day of week") || prompt.includes("by day")) {
-    if (analytics?.timeAnalysis?.byDayOfWeek) {
-      const days = analytics.timeAnalysis.byDayOfWeek
-        .map((d) => `${d.day}: ${d.orders} orders, £${d.revenue.toFixed(2)}`)
-        .join("\n");
-      return {
-        canAnswer: true,
-        answer: `Performance by day:\n${days}`,
-      };
-    }
-  }
-
-  // ========== CATEGORY PERFORMANCE ==========
-  if (prompt.includes("category performance") || prompt.includes("categories revenue")) {
-    if (analytics?.trending?.categoryPerformance) {
-      const categories = Object.entries(analytics.trending.categoryPerformance)
-        .sort((a, b) => b[1].revenue - a[1].revenue)
-        .map(
-          ([name, stats]) =>
-            `- ${name}: £${stats.revenue.toFixed(2)} from ${stats.orders} orders (${stats.itemCount} items)`
-        )
-        .join("\n");
-      return {
-        canAnswer: true,
-        answer: `Category performance (last 7 days):\n${categories}`,
-      };
-    }
-  }
-
-  // ========== PAYMENT METHODS ==========
-  if (prompt.includes("payment methods") || prompt.includes("payment breakdown")) {
-    if (analytics?.paymentMethods) {
-      const methods = Object.entries(analytics.paymentMethods)
-        .sort((a, b) => b[1].revenue - a[1].revenue)
-        .map(
-          ([method, stats]) => `- ${method}: ${stats.count} orders, £${stats.revenue.toFixed(2)}`
-        )
-        .join("\n");
-      return {
-        canAnswer: true,
-        answer: `Payment methods:\n${methods}`,
-      };
-    }
-  }
-
-  // ========== ORDER PATTERNS ==========
-  if (prompt.includes("average items per order") || prompt.includes("items per order")) {
-    if (analytics?.orderPatterns?.avgItemsPerOrder) {
-      return {
-        canAnswer: true,
-        answer: `Average items per order: ${analytics.orderPatterns.avgItemsPerOrder.toFixed(1)} items`,
-      };
-    }
-  }
-
-  if (prompt.includes("takeaway") || prompt.includes("dine in") || prompt.includes("delivery")) {
-    if (analytics?.orderPatterns?.takeawayVsDineIn) {
-      const { takeaway, dineIn } = analytics.orderPatterns.takeawayVsDineIn;
-      const total = takeaway + dineIn;
-      const takeawayPct = total > 0 ? ((takeaway / total) * 100).toFixed(1) : 0;
-      const dineInPct = total > 0 ? ((dineIn / total) * 100).toFixed(1) : 0;
-      return {
-        canAnswer: true,
-        answer: `Order types: ${takeaway} takeaway (${takeawayPct}%), ${dineIn} dine-in (${dineInPct}%)`,
-      };
-    }
-  }
-
-  // ========== TABLE METRICS ==========
-  if (prompt.includes("table turnover") || prompt.includes("average table time")) {
-    if (analytics?.tableMetrics?.avgTurnoverTime) {
-      return {
-        canAnswer: true,
-        answer: `Average table turnover time: ${analytics.tableMetrics.avgTurnoverTime.toFixed(0)} minutes`,
-      };
-    }
-  }
-
-  if (prompt.includes("top tables") || prompt.includes("best tables")) {
-    if (
-      analytics?.tableMetrics?.revenueByTable &&
-      analytics.tableMetrics.revenueByTable.length > 0
-    ) {
-      const tables = analytics.tableMetrics.revenueByTable
-        .slice(0, 5)
-        .map((t) => `Table ${t.tableNumber}: £${t.revenue.toFixed(2)} from ${t.sessions} sessions`)
-        .join("\n");
-      return {
-        canAnswer: true,
-        answer: `Top performing tables:\n${tables}`,
-      };
-    }
-  }
-
-  return { canAnswer: false };
 }
 
 export async function planAssistantAction(
@@ -731,18 +673,25 @@ export async function planAssistantAction(
     analytics?: AnalyticsSummary;
   }
 ): Promise<AIPlanResponse & { modelUsed?: string }> {
-  // TEMPORARILY DISABLED: Check if we can answer directly from data summaries
-  // This was causing all queries to return the same analytics response
-  // const directAnswer = canAnswerDirectly(userPrompt, dataSummaries);
-  // if (directAnswer.canAnswer) {
-  //   return {
-  //     intent: userPrompt,
-  //     tools: [],
-  //     reasoning: "This question can be answered directly from the available data summaries.",
-  //     warnings: null,
-  //     directAnswer: directAnswer.answer,
-  //   };
-  // }
+  // Try intelligent fast-path (LLM-based classification for read-only queries)
+  const fastPath = await tryFastPath(userPrompt, dataSummaries);
+  if (fastPath.canAnswer && fastPath.confidence >= 0.85) {
+    logger.info("[AI PLANNER] Using fast-path answer", {
+      prompt: userPrompt,
+      confidence: fastPath.confidence,
+      answer: fastPath.answer?.substring(0, 100),
+    });
+    return {
+      intent: userPrompt,
+      tools: [],
+      reasoning: `Answered directly from data summaries (confidence: ${(fastPath.confidence * 100).toFixed(0)}%)`,
+      warnings: null,
+      directAnswer: fastPath.answer,
+    };
+  }
+
+  // Otherwise, use LLM planner for complex queries
+  logger.info("[AI PLANNER] Using LLM planner", { prompt: userPrompt });
 
   const systemPrompt = buildSystemPrompt(context, dataSummaries);
 

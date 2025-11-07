@@ -50,7 +50,7 @@ export const MenuDeleteItemSchema = z
 
 export const MenuTranslateSchema = z
   .object({
-    targetLanguage: z.enum(["es", "ar", "fr", "de", "it", "pt", "zh", "ja"]),
+    targetLanguage: z.enum(["en", "es", "ar", "fr", "de", "it", "pt", "zh", "ja"]),
     includeDescriptions: z.boolean().default(true),
   })
   .strict();
