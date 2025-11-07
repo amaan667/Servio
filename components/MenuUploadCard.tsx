@@ -152,6 +152,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         const response = await fetch("/api/catalog/replace", {
           method: "POST",
           body: formData,
+          credentials: "include", // Ensure cookies are sent
         });
 
         if (!response.ok) {

@@ -130,6 +130,12 @@ export function supabaseServer(cookies: {
       storage: undefined,
       storageKey: undefined,
     },
+    global: {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    },
   });
 }
 
