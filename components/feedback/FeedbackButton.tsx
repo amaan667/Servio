@@ -39,6 +39,7 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
       placeholder: "Describe the bug you encountered...",
       buttonText: "Report Bug",
       color: "destructive" as const,
+      bgColor: "bg-red-50 hover:bg-red-100 text-red-700 border-red-200",
     },
     feature: {
       icon: Lightbulb,
@@ -47,6 +48,7 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
       placeholder: "Describe the feature you'd like to see...",
       buttonText: "Request Feature",
       color: "default" as const,
+      bgColor: "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200",
     },
     general: {
       icon: MessageSquare,
@@ -55,10 +57,11 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
       placeholder: "Your feedback...",
       buttonText: "Send Feedback",
       color: "default" as const,
+      bgColor: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200",
     },
   };
 
-  const { icon: Icon, ...typeConfig } = config[type];
+  const { icon: Icon, bgColor, ...typeConfig } = config[type];
 
   const handleSubmit = async () => {
     if (!description.trim()) {
@@ -113,7 +116,7 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={typeConfig.color} size="sm" className={className}>
+        <Button variant="outline" size="sm" className={`${bgColor} ${className}`}>
           <Icon className="h-4 w-4 mr-2" />
           {typeConfig.buttonText}
         </Button>
