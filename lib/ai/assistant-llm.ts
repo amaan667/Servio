@@ -488,7 +488,16 @@ function canAnswerDirectly(
   }
 
   // ========== REVENUE & PERFORMANCE QUESTIONS ==========
-  if (prompt.includes("revenue today") || prompt.includes("today's revenue")) {
+  if (
+    (prompt.includes("revenue today") ||
+      prompt.includes("today's revenue") ||
+      prompt.includes("what's my revenue today")) &&
+    !prompt.includes("week") &&
+    !prompt.includes("month") &&
+    !prompt.includes("increase") &&
+    !prompt.includes("decrease") &&
+    !prompt.includes("change")
+  ) {
     if (analytics?.today) {
       return {
         canAnswer: true,
