@@ -68,6 +68,12 @@ export function supabaseBrowser() {
         // DON'T set custom storage or storageKey - let Supabase use defaults
         // This ensures the PKCE verifier is stored and retrieved from the same location
       },
+      global: {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      },
     });
 
     // Handle session management for multiple devices
@@ -217,6 +223,12 @@ export async function createServerSupabase() {
             error: error instanceof Error ? error.message : String(error),
           });
         }
+      },
+    },
+    global: {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
     },
   });
