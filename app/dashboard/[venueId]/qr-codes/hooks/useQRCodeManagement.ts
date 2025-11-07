@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -85,30 +85,38 @@ export function useQRCodeManagement(venueId: string) {
     }
   };
 
-  const generateQRForName = (name: string, type: "table" | "counter" = "table") => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${baseUrl}/order?venue=${venueId}&${type}=${encodeURIComponent(name)}`;
+  const generateQRForName = useCallback(
+    (name: string, type: "table" | "counter" = "table") => {
+      console.log("[useQRCodeManagement] generateQRForName called:", { name, type, venueId });
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const url = `${baseUrl}/order?venue=${venueId}&${type}=${encodeURIComponent(name)}`;
 
-    const newQR: GeneratedQR = {
-      name,
-      url,
-      type,
-    };
+      console.log("[useQRCodeManagement] Generated URL:", url);
 
-    setGeneratedQRs((prev) => {
-      const exists = prev.find((qr) => qr.name === name && qr.type === type);
-      if (exists) {
-        // Silently ignore duplicates
-        return prev;
-      }
-      return [...prev, newQR];
-    });
+      const newQR: GeneratedQR = {
+        name,
+        url,
+        type,
+      };
 
-    toast({
-      title: "QR Code Generated",
-      description: `Created QR code for ${name}`,
-    });
-  };
+      setGeneratedQRs((prev) => {
+        const exists = prev.find((qr) => qr.name === name && qr.type === type);
+        if (exists) {
+          console.log("[useQRCodeManagement] QR already exists, skipping");
+          // Silently ignore duplicates
+          return prev;
+        }
+        console.log("[useQRCodeManagement] Adding new QR:", newQR);
+        return [...prev, newQR];
+      });
+
+      toast({
+        title: "QR Code Generated",
+        description: `Created QR code for ${name}`,
+      });
+    },
+    [venueId, toast]
+  );
 
   const generateQRForAll = () => {
     const items = qrCodeType === "tables" ? tables : counters;

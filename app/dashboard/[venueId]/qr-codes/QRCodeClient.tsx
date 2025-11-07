@@ -46,28 +46,28 @@ export default function QRCodeClient({
     const tableParam = searchParams.get("table");
     const counterParam = searchParams.get("counter");
 
+    console.log("[QR Client] URL params:", { tableParam, counterParam });
+
     // Auto-generate QR code for a specific table
     if (tableParam) {
       const tableName = decodeURIComponent(tableParam);
+      console.log("[QR Client] Auto-generating QR for table:", tableName);
       setSingleName(tableName);
       setQrType("table");
       // Generate QR code immediately - no database table needed
-      setTimeout(() => {
-        qrManagement.generateQRForName(tableName, "table");
-      }, 100);
+      qrManagement.generateQRForName(tableName, "table");
     }
 
     // Auto-generate QR code for a specific counter
     if (counterParam) {
       const counterName = decodeURIComponent(counterParam);
+      console.log("[QR Client] Auto-generating QR for counter:", counterName);
       setSingleName(counterName);
       setQrType("counter");
       // Generate QR code immediately - no database counter needed
-      setTimeout(() => {
-        qrManagement.generateQRForName(counterName, "counter");
-      }, 100);
+      qrManagement.generateQRForName(counterName, "counter");
     }
-  }, [searchParams, qrManagement]);
+  }, [searchParams, qrManagement.generateQRForName]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
