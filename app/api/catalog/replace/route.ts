@@ -22,18 +22,14 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
-    // Authenticate user with detailed logging
-    logger.info(`[MENU IMPORT ${requestId}] Authenticating user...`);
-    const { user, error: authError } = await getAuthUserForAPI();
+    // Get user from middleware (auth already validated)
+    const { getUserFromMiddleware } = await import("@/lib/auth/middleware-auth");
+    logger.info(`[MENU IMPORT ${requestId}] Getting user from middleware...`);
+    const { user, error: authError } = await getUserFromMiddleware();
 
-    if (authError) {
-      logger.error(`[MENU IMPORT ${requestId}] Auth error:`, authError);
-      return NextResponse.json({ ok: false, error: "Authentication failed" }, { status: 401 });
-    }
-
-    if (!user) {
-      logger.warn(`[MENU IMPORT ${requestId}] No user session found`);
-      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+    if (authError || !user) {
+      logger.error(`[MENU IMPORT ${requestId}] No user in request:`, authError);
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
     logger.info(`[MENU IMPORT ${requestId}] User authenticated:`, { userId: user.id });

@@ -1,55 +1,113 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_ROUTES = [
-  "/",
-  "/sign-in",
-  "/sign-up",
-  "/sign-out",
-  "/auth",
-  "/order",
-  "/order-tracking",
-  "/order-summary",
-  "/checkout",
-  "/payment",
-  "/demo",
-  "/cookies",
-  "/privacy",
-  "/terms",
-  "/refund-policy",
-  "/clear-session",
+function getSupabaseUrl() {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL!;
+}
+
+function getSupabaseAnonKey() {
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+}
+
+// Paths that require authentication
+const protectedPaths = [
+  "/dashboard",
+  "/api/catalog",
+  "/api/menu",
+  "/api/orders",
+  "/api/tables",
+  "/api/inventory",
+  "/api/staff",
+  "/api/analytics",
+  "/api/qr",
 ];
 
-export async function middleware(req: NextRequest) {
-  const url = new URL(req.url);
-  const path = url.pathname;
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  // Skip ALL static assets and let Next.js + headers() handle them
-  if (
-    path.startsWith("/_next/") ||
-    path.startsWith("/favicon") ||
-    path.startsWith("/robots") ||
-    path.startsWith("/manifest") ||
-    path.startsWith("/sw.js") ||
-    path.startsWith("/images/") ||
-    path.startsWith("/assets/") ||
-    path.startsWith("/public/")
-  ) {
+  // Skip auth for public paths
+  if (!protectedPaths.some((path) => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
-  // Allow public routes
-  const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) => path === route || path.startsWith(route + "/")
-  );
-  if (isPublicRoute) {
-    return NextResponse.next();
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    cookies: {
+      get(name: string) {
+        return request.cookies.get(name)?.value;
+      },
+      set(name: string, value: string, options: any) {
+        request.cookies.set({ name, value, ...options });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({ name, value, ...options });
+      },
+      remove(name: string, options: any) {
+        request.cookies.set({ name, value: "", ...options });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({ name, value: "", ...options });
+      },
+    },
+  });
+
+  // Get session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // For API routes, return 401 if no session
+  if (pathname.startsWith("/api/")) {
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Inject user into headers for API routes to access
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-user-id", session.user.id);
+    requestHeaders.set("x-user-email", session.user.email || "");
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
-  // For all other routes, just let them through
-  // Individual pages will check auth and redirect if needed
-  return NextResponse.next();
+  // For dashboard pages, redirect if no session
+  if (pathname.startsWith("/dashboard")) {
+    if (!session) {
+      const redirectUrl = new URL("/sign-in", request.url);
+      redirectUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/((?!_next|favicon.ico|robots.txt|manifest.json|sw.js).*)"],
+  matcher: [
+    "/dashboard/:path*",
+    "/api/catalog/:path*",
+    "/api/menu/:path*",
+    "/api/orders/:path*",
+    "/api/tables/:path*",
+    "/api/inventory/:path*",
+    "/api/staff/:path*",
+    "/api/analytics/:path*",
+    "/api/qr/:path*",
+  ],
 };
