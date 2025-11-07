@@ -182,7 +182,8 @@ ORDERS & KDS:
 - Navigate to orders and KDS pages
 
 QR CODE MANAGEMENT:
-- Generate QR codes for specific tables (e.g., "Table 5")
+- Generate QR codes for any table name (e.g., "Table 5", "VIP 3")
+- QR codes work immediately - NO table setup required
 - Generate bulk QR codes for table ranges (e.g., tables 1-10)
 - Generate QR codes for counters
 - List all existing QR codes
@@ -190,10 +191,11 @@ QR CODE MANAGEMENT:
 
 TABLE MANAGEMENT:
 - Show available and occupied tables
-- Create new tables with custom seating
+- Create new physical tables in the system (requires name and seat count)
 - Merge multiple tables together
 - Get tables with active orders
 - Show revenue by table
+- NOTE: QR codes work WITHOUT creating tables - only create tables if user explicitly wants table management
 
 STAFF MANAGEMENT:
 - List all staff members with roles
@@ -227,11 +229,12 @@ ${dataSummaries.analytics ? `\nANALYTICS:\n${JSON.stringify(dataSummaries.analyt
 AVAILABLE TOOLS:
 
 QR CODE TOOLS:
-- qr.generate_table: Generate QR code for a specific table (e.g., "Table 5")
-- qr.generate_bulk: Generate QR codes for a range of tables (e.g., tables 1-10)
+- qr.generate_table: Generate QR code for any table name (does NOT create table in database)
+- qr.generate_bulk: Generate QR codes for a range (does NOT create tables)
 - qr.generate_counter: Generate QR code for counter orders
 - qr.list_all: List all existing QR codes (tables and counters)
 - qr.export_pdf: Prepare QR codes for PDF download
+NOTE: QR codes work immediately without table setup. Only use tables.create if user explicitly wants to manage tables in the system.
 
 MENU TOOLS:
 - menu.update_prices: Update prices for menu items
