@@ -51,17 +51,10 @@ export default function QRCodeClient({
       const tableName = decodeURIComponent(tableParam);
       setSingleName(tableName);
       setQrType("table");
-      // Refresh data first to ensure table exists, then generate QR
-      qrManagement
-        .refetch()
-        .then(() => {
-          setTimeout(() => {
-            qrManagement.generateQRForName(tableName, "table");
-          }, 200);
-        })
-        .catch((err) => {
-          console.error("[QR Client] Failed to refetch tables:", err);
-        });
+      // Generate QR code immediately - no database table needed
+      setTimeout(() => {
+        qrManagement.generateQRForName(tableName, "table");
+      }, 100);
     }
 
     // Auto-generate QR code for a specific counter
@@ -69,20 +62,12 @@ export default function QRCodeClient({
       const counterName = decodeURIComponent(counterParam);
       setSingleName(counterName);
       setQrType("counter");
-      // Refresh data first to ensure counter exists, then generate QR
-      qrManagement
-        .refetch()
-        .then(() => {
-          setTimeout(() => {
-            qrManagement.generateQRForName(counterName, "counter");
-          }, 200);
-        })
-        .catch((err) => {
-          console.error("[QR Client] Failed to refetch counters:", err);
-        });
+      // Generate QR code immediately - no database counter needed
+      setTimeout(() => {
+        qrManagement.generateQRForName(counterName, "counter");
+      }, 100);
     }
-     
-  }, [searchParams]);
+  }, [searchParams, qrManagement]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
