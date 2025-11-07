@@ -22,12 +22,21 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
-    // Authenticate user
+    // Authenticate user with detailed logging
+    logger.info(`[MENU IMPORT ${requestId}] Authenticating user...`);
     const { user, error: authError } = await getAuthUserForAPI();
 
-    if (authError || !user) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    if (authError) {
+      logger.error(`[MENU IMPORT ${requestId}] Auth error:`, authError);
+      return NextResponse.json({ ok: false, error: "Authentication failed" }, { status: 401 });
     }
+
+    if (!user) {
+      logger.warn(`[MENU IMPORT ${requestId}] No user session found`);
+      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+    }
+
+    logger.info(`[MENU IMPORT ${requestId}] User authenticated:`, { userId: user.id });
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -53,23 +62,44 @@ export async function POST(req: NextRequest) {
     // Create authenticated Supabase client
     const supabase = await createServerSupabase();
 
-    // Verify venue access
-    const { data: venueAccess } = await supabase
+    // Verify venue access with detailed logging
+    logger.info(`[MENU IMPORT ${requestId}] Checking venue access...`, {
+      venueId,
+      userId: user.id,
+    });
+
+    const { data: venueAccess, error: venueError } = await supabase
       .from("venues")
       .select("venue_id")
       .eq("venue_id", venueId)
       .eq("owner_user_id", user.id)
       .maybeSingle();
 
-    const { data: staffAccess } = await supabase
+    if (venueError) {
+      logger.error(`[MENU IMPORT ${requestId}] Venue query error:`, venueError);
+    }
+
+    const { data: staffAccess, error: staffError } = await supabase
       .from("user_venue_roles")
       .select("role")
       .eq("venue_id", venueId)
       .eq("user_id", user.id)
       .maybeSingle();
 
+    if (staffError) {
+      logger.error(`[MENU IMPORT ${requestId}] Staff query error:`, staffError);
+    }
+
+    logger.info(`[MENU IMPORT ${requestId}] Access check result:`, {
+      hasVenueAccess: !!venueAccess,
+      hasStaffAccess: !!staffAccess,
+    });
+
     if (!venueAccess && !staffAccess) {
-      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        { ok: false, error: "Forbidden - No access to this venue" },
+        { status: 403 }
+      );
     }
 
     logger.info(`[MENU IMPORT ${requestId}] Starting menu import`, {

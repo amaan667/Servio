@@ -164,7 +164,7 @@ export async function createServerSupabase() {
   const cookieStore = await cookies();
   const { logger } = await import("@/lib/logger");
 
-  return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+  const client = createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
         const allCookies = cookieStore.getAll();
@@ -214,6 +214,8 @@ export async function createServerSupabase() {
       },
     },
   });
+
+  return client;
 }
 
 // Read-only server client for layouts/pages where cookie modification is not allowed
