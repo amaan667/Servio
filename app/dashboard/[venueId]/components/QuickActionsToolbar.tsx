@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface QuickAction {
   label: string;
@@ -29,9 +30,10 @@ export function QuickActionsToolbar({
   userRole,
   onVenueChange,
 }: QuickActionsToolbarProps) {
+  const isMobile = useIsMobile();
+
   // Track role changes
-  useEffect(() => {
-  }, [userRole]);
+  useEffect(() => {}, [userRole]);
 
   const actions: QuickAction[] = [
     {
@@ -66,9 +68,7 @@ export function QuickActionsToolbar({
       color: "bg-indigo-600 hover:bg-indigo-700",
     });
   } else {
-
     // Block handled
-
   }
 
   if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
@@ -80,15 +80,12 @@ export function QuickActionsToolbar({
       color: "bg-red-600 hover:bg-red-700",
     });
   } else {
-
     // Block handled
-
   }
-
 
   return (
     <TooltipProvider>
-      <div className="sticky top-0 z-40 bg-gray-50/50 block">
+      <div className={cn("sticky top-0 z-40 bg-gray-50/50", isMobile ? "hidden" : "block")}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-2 py-5">
             {/* Left: Quick Actions */}

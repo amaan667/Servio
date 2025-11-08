@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Bug, Lightbulb, X, Send } from "lucide-react";
+import { MessageSquare, Bug, Lightbulb, X } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,9 +13,6 @@ export function FeedbackMenu() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
 
-  // Hide on mobile when on dashboard pages (bottom nav is present)
-  const shouldHideOnMobile = isMobile && pathname?.includes("/dashboard/");
-
   // Auto-close when navigating on mobile
   useEffect(() => {
     if (isMobile) {
@@ -23,13 +20,14 @@ export function FeedbackMenu() {
     }
   }, [pathname, isMobile]);
 
-  // Don't render on mobile dashboard pages where bottom nav exists
-  if (shouldHideOnMobile) {
-    return null;
-  }
-
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex flex-col-reverse gap-2">
+    <div
+      className={cn(
+        "flex flex-col-reverse gap-2",
+        // Mobile: inline at bottom of page
+        isMobile ? "relative w-full mt-8 mb-24" : "fixed bottom-4 left-4 z-50"
+      )}
+    >
       {/* Expanded Menu Items */}
       <div
         className={cn(
@@ -48,28 +46,34 @@ export function FeedbackMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "shadow-lg hover:shadow-xl transition-all duration-200",
-          "bg-purple-600 hover:bg-purple-700 text-white",
+          "bg-purple-600 hover:bg-purple-700",
           "h-12 px-4 rounded-full md:rounded-lg",
-          isOpen && "bg-purple-700"
+          isOpen && "bg-purple-700",
+          // Mobile: full width button, Desktop: icon + text with white text
+          isMobile ? "w-full" : "text-white"
         )}
         aria-label={isOpen ? "Close feedback menu" : "Open feedback menu"}
       >
         {isOpen ? (
           <>
-            <X className="h-5 w-5 md:mr-2" />
-            <span className="hidden md:inline">Close</span>
+            <X className={cn("h-5 w-5", isMobile ? "mr-2" : "md:mr-2")} />
+            <span className={cn(isMobile ? "inline" : "hidden md:inline", "text-white")}>
+              Close
+            </span>
           </>
         ) : (
           <>
-            <MessageSquare className="h-5 w-5 md:mr-2" />
-            <span className="hidden md:inline">Feedback</span>
+            <MessageSquare className={cn("h-5 w-5", isMobile ? "mr-2" : "md:mr-2")} />
+            <span className={cn(isMobile ? "inline" : "hidden md:inline", "text-white")}>
+              Feedback
+            </span>
           </>
         )}
       </Button>
 
-      {/* Mobile: Show badge when closed */}
-      {!isOpen && (
-        <div className="absolute -top-1 -right-1 md:hidden">
+      {/* Desktop only: Show badge when closed */}
+      {!isOpen && !isMobile && (
+        <div className="absolute -top-1 -right-1">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
             !
           </span>
