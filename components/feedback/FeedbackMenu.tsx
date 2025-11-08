@@ -1,16 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Bug, Lightbulb, X, Send } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function FeedbackMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const isMobile = useIsMobile();
+
+  // Hide on mobile when on dashboard pages (bottom nav is present)
+  const shouldHideOnMobile = isMobile && pathname?.includes("/dashboard/");
+
+  // Auto-close when navigating on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setIsOpen(false);
+    }
+  }, [pathname, isMobile]);
+
+  // Don't render on mobile dashboard pages where bottom nav exists
+  if (shouldHideOnMobile) {
+    return null;
+  }
 
   return (
-    <div className="fixed bottom-4 left-4 z-40 flex flex-col-reverse gap-2">
+    <div className="fixed bottom-4 left-4 z-50 flex flex-col-reverse gap-2">
       {/* Expanded Menu Items */}
       <div
         className={cn(

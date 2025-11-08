@@ -60,30 +60,73 @@ export async function POST(request: NextRequest) {
     });
 
     // Check if user has a venue - get FIRST (oldest)
-    const { data: venues } = await supabase
-      .from("venues")
-      .select("venue_id, created_at")
-      .eq("owner_user_id", data.session.user.id)
-      .order("created_at", { ascending: true })
-      .limit(5); // Get first 5 to debug
+    // Add timeout protection for mobile networks
+    let venues = null;
+    let venueError = null;
+    try {
+      const venueQuery = await Promise.race([
+        supabase
+          .from("venues")
+          .select("venue_id, created_at")
+          .eq("owner_user_id", data.session.user.id)
+          .order("created_at", { ascending: true })
+          .limit(5),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Venue query timeout")), 5000)
+        ),
+      ]);
+      venues = (venueQuery as { data: unknown; error: unknown }).data;
+      venueError = (venueQuery as { data: unknown; error: unknown }).error;
+    } catch (timeoutError) {
+      logger.error("[AUTH SIGN-IN] Venue query timeout or error:", { error: timeoutError });
+      // On timeout, try to get from organization instead
+      const { data: orgs } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("owner_user_id", data.session.user.id)
+        .limit(1);
+
+      if (orgs && orgs.length > 0) {
+        // User has an organization, so they likely have a venue
+        // Return a generic dashboard redirect and let client-side handle it
+        const response = NextResponse.json({
+          success: true,
+          user: {
+            id: data.session.user.id,
+            email: data.session.user.email,
+          },
+          redirectTo: "/dashboard",
+          session: {
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            expires_at: data.session.expires_at,
+            expires_in: data.session.expires_in,
+          },
+        });
+        return response;
+      }
+    }
 
     logger.info("[AUTH SIGN-IN] 📊 EMAIL/PASSWORD - User venues:", {
-      venueCount: venues?.length,
-      venues: venues?.map((v) => ({ id: v.venue_id, created: v.created_at })),
-      firstVenue: venues?.[0]?.venue_id,
-      allVenueIds: venues?.map((v) => v.venue_id),
+      venueCount: Array.isArray(venues) ? venues.length : 0,
+      venues: Array.isArray(venues)
+        ? venues.map((v) => ({ id: v.venue_id, created: v.created_at }))
+        : [],
+      firstVenue: Array.isArray(venues) && venues[0] ? venues[0].venue_id : null,
+      allVenueIds: Array.isArray(venues) ? venues.map((v) => v.venue_id) : [],
+      hadError: !!venueError,
     });
 
     // Create response with cookies set manually
     const redirectTo =
-      venues && venues.length > 0 && venues[0]
+      Array.isArray(venues) && venues.length > 0 && venues[0]
         ? `/dashboard/${venues[0].venue_id}`
         : "/select-plan";
 
     logger.info("[AUTH SIGN-IN] ✅ EMAIL/PASSWORD - Redirecting to:", {
       redirectTo,
-      selectedVenue: venues?.[0]?.venue_id,
-      createdAt: venues?.[0]?.created_at,
+      selectedVenue: Array.isArray(venues) && venues[0] ? venues[0].venue_id : null,
+      createdAt: Array.isArray(venues) && venues[0] ? venues[0].created_at : null,
     });
 
     const response = NextResponse.json({
