@@ -12,6 +12,11 @@ export function FeedbackMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Auto-close when navigating on mobile
   useEffect(() => {
@@ -19,6 +24,11 @@ export function FeedbackMenu() {
       setIsOpen(false);
     }
   }, [pathname, isMobile]);
+
+  // Prevent flicker on initial paint (wait until mounted to know viewport)
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div
