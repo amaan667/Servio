@@ -10,15 +10,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-
     // Create server-side Supabase client that can set cookies
-    const supabase = await createServerSupabase();
+    let supabase;
+    try {
+      supabase = await createServerSupabase();
+    } catch (dbError) {
+      logger.error("[AUTH SIGN-IN] Failed to create Supabase client:", { error: dbError });
+      return NextResponse.json(
+        { error: "Database connection error. Please try again in a moment." },
+        { status: 503 }
+      );
+    }
 
     // Sign in with password - THIS SETS THE COOKIES!
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    let data, signInError;
+    try {
+      const result = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      data = result.data;
+      signInError = result.error;
+    } catch (fetchError) {
+      logger.error("[AUTH SIGN-IN] Network error during sign-in:", { error: fetchError });
+      const errorMsg =
+        fetchError instanceof Error ? fetchError.message : "Network connection failed";
+      if (errorMsg.includes("timeout") || errorMsg.includes("ETIMEDOUT")) {
+        return NextResponse.json(
+          { error: "Connection timeout. Please check your internet and try again." },
+          { status: 503 }
+        );
+      }
+      return NextResponse.json({ error: "Network error. Please try again." }, { status: 503 });
+    }
 
     if (signInError) {
       logger.error("[AUTH SIGN-IN] Sign-in error:", { error: signInError.message });
