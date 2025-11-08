@@ -14,8 +14,8 @@ function getSupabaseAnonKey() {
 const protectedPaths = [
   "/dashboard",
   "/api/catalog",
-  "/api/menu",
-  "/api/orders",
+  // "/api/menu" - PUBLIC: needed for customer ordering without auth
+  // "/api/orders" - PUBLIC: needed for customer order submission without auth
   "/api/tables",
   "/api/inventory",
   "/api/staff",
@@ -102,8 +102,8 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/api/catalog/:path*",
-    "/api/menu/:path*",
-    "/api/orders/:path*",
+    // "/api/menu/:path*" - PUBLIC: needed for customer ordering without auth
+    // "/api/orders/:path*" - PUBLIC: needed for customer order submission without auth
     "/api/tables/:path*",
     "/api/inventory/:path*",
     "/api/staff/:path*",
