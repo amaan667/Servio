@@ -13,6 +13,29 @@ function SignInPageContent() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load Eruda console for mobile Safari debugging
+  useEffect(() => {
+    const isMobileSafari =
+      /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+
+    if (isMobileSafari) {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/eruda";
+      document.body.appendChild(script);
+      script.onload = () => {
+        // @ts-expect-error - Eruda is loaded dynamically
+        if (window.eruda) {
+          // @ts-expect-error - Eruda global
+          window.eruda.init();
+          // @ts-expect-error - Eruda global
+          window.eruda.show();
+          // eslint-disable-next-line no-console
+          console.log("🔍 Mobile Safari Debug Console Loaded - Check Console tab");
+        }
+      };
+    }
+  }, []);
+
   useEffect(() => {
     // Check for broken session (has refresh token but no access token)
     const checkForBrokenSession = async () => {
