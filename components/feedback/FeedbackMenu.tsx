@@ -25,16 +25,12 @@ export function FeedbackMenu() {
     }
   }, [pathname, isMobile]);
 
-  // Prevent flicker: wait until mounted AND isMobile is determined
-  // useIsMobile returns undefined initially, then true/false
-  if (!mounted || isMobile === undefined) {
-    return null;
-  }
-
   return (
     <div
       className={cn(
         "flex flex-col-reverse gap-2",
+        // Hide completely until mounted and isMobile is determined (prevents flicker)
+        !mounted || isMobile === undefined ? "invisible opacity-0 pointer-events-none" : "",
         // Mobile: inline at bottom of page
         isMobile ? "relative w-full mt-8 mb-24" : "fixed bottom-4 left-4 z-50"
       )}
