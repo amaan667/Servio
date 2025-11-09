@@ -3,9 +3,8 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -32,8 +31,13 @@ export function QuickActionsToolbar({
 }: QuickActionsToolbarProps) {
   const isMobile = useIsMobile();
 
-  // Track role changes
+  // Track role changes (must be before return)
   useEffect(() => {}, [userRole]);
+
+  // Don't render until we know if mobile or desktop (prevents flicker)
+  if (isMobile === undefined) {
+    return null;
+  }
 
   const actions: QuickAction[] = [
     {

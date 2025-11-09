@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Bug, Lightbulb, X } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,8 +25,9 @@ export function FeedbackMenu() {
     }
   }, [pathname, isMobile]);
 
-  // Prevent flicker on initial paint (wait until mounted to know viewport)
-  if (!mounted) {
+  // Prevent flicker: wait until mounted AND isMobile is determined
+  // useIsMobile returns undefined initially, then true/false
+  if (!mounted || isMobile === undefined) {
     return null;
   }
 
