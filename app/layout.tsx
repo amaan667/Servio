@@ -17,7 +17,6 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Analytics } from "@/components/Analytics";
 import { WebVitals } from "./web-vitals";
-import { ErudaLoader } from "@/components/ErudaLoader";
 
 // Optimized font loading with display swap and preload
 const inter = Inter({
@@ -235,7 +234,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ScrollToTop />
               <Analytics />
               <WebVitals />
-              <ErudaLoader />
             </Providers>
           </AuthProvider>
         </ErrorBoundary>

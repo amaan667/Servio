@@ -13,18 +13,9 @@ export function FeedbackMenu() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Enable debug mode for mobile Safari
-    const isMobileSafari =
-      /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
-    if (isMobileSafari) {
-      setShowDebug(true);
-      // Auto-hide debug after 3 seconds
-      setTimeout(() => setShowDebug(false), 3000);
-    }
   }, []);
 
   // Auto-close when navigating on mobile
@@ -34,98 +25,67 @@ export function FeedbackMenu() {
     }
   }, [pathname, isMobile]);
 
-  // Log state changes for debugging
-  useEffect(() => {
-    if (showDebug) {
-      console.log("[FEEDBACK DEBUG]", {
-        mounted,
-        isMobile,
-        isMobileType: typeof isMobile,
-        shouldHide: !mounted || isMobile === undefined,
-        pathname,
-      });
-    }
-  }, [mounted, isMobile, pathname, showDebug]);
-
   return (
-    <>
-      {/* Debug overlay - only shows for 3 seconds on mobile Safari */}
-      {showDebug && (
-        <div className="fixed top-20 left-4 right-4 z-[9999] bg-black/90 text-white p-4 rounded-lg text-xs font-mono">
-          <div className="font-bold mb-2">🔍 Feedback Button Debug:</div>
-          <div>mounted: {mounted.toString()}</div>
-          <div>isMobile: {String(isMobile)}</div>
-          <div>isMobile type: {typeof isMobile}</div>
-          <div>shouldHide: {(!mounted || isMobile === undefined).toString()}</div>
-          <div>position: {isMobile ? "bottom (relative)" : "left corner (fixed)"}</div>
-          <div className="mt-2 text-yellow-300">
-            {!mounted || isMobile === undefined
-              ? "⏳ Hidden - waiting for values"
-              : "✅ Visible - rendering now"}
-          </div>
-        </div>
+    <div
+      className={cn(
+        "flex flex-col-reverse gap-2",
+        // Hide completely until mounted and isMobile is determined (prevents flicker)
+        !mounted || isMobile === undefined ? "invisible opacity-0 pointer-events-none" : "",
+        // Mobile: inline at bottom of page
+        isMobile ? "relative w-full mt-8 mb-24" : "fixed bottom-4 left-4 z-50"
       )}
+    >
+      {/* Expanded Menu Items */}
       <div
         className={cn(
-          "flex flex-col-reverse gap-2",
-          // Hide completely until mounted and isMobile is determined (prevents flicker)
-          !mounted || isMobile === undefined ? "invisible opacity-0 pointer-events-none" : "",
-          // Mobile: inline at bottom of page
-          isMobile ? "relative w-full mt-8 mb-24" : "fixed bottom-4 left-4 z-50"
+          "flex flex-col gap-2 transition-all duration-300 ease-in-out",
+          isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}
       >
-        {/* Expanded Menu Items */}
-        <div
-          className={cn(
-            "flex flex-col gap-2 transition-all duration-300 ease-in-out",
-            isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-          )}
-        >
-          <FeedbackButton type="bug" className="w-full justify-start" />
-          <FeedbackButton type="feature" className="w-full justify-start" />
-          <FeedbackButton type="general" className="w-full justify-start" />
-        </div>
-
-        {/* Main Toggle Button */}
-        <Button
-          size="lg"
-          onClick={() => setIsOpen(!isOpen)}
-          className={cn(
-            "shadow-lg hover:shadow-xl transition-all duration-200",
-            "bg-purple-600 hover:bg-purple-700",
-            "h-12 px-4 rounded-full md:rounded-lg",
-            isOpen && "bg-purple-700",
-            // Mobile: full width button, Desktop: icon + text with white text
-            isMobile ? "w-full" : "text-white"
-          )}
-          aria-label={isOpen ? "Close feedback menu" : "Open feedback menu"}
-        >
-          {isOpen ? (
-            <>
-              <X className={cn("h-5 w-5", isMobile ? "mr-2" : "md:mr-2")} />
-              <span className={cn(isMobile ? "inline" : "hidden md:inline", "text-white")}>
-                Close
-              </span>
-            </>
-          ) : (
-            <>
-              <MessageSquare className={cn("h-5 w-5", isMobile ? "mr-2" : "md:mr-2")} />
-              <span className={cn(isMobile ? "inline" : "hidden md:inline", "text-white")}>
-                Feedback
-              </span>
-            </>
-          )}
-        </Button>
-
-        {/* Desktop only: Show badge when closed */}
-        {!isOpen && !isMobile && (
-          <div className="absolute -top-1 -right-1">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-              !
-            </span>
-          </div>
-        )}
+        <FeedbackButton type="bug" className="w-full justify-start" />
+        <FeedbackButton type="feature" className="w-full justify-start" />
+        <FeedbackButton type="general" className="w-full justify-start" />
       </div>
-    </>
+
+      {/* Main Toggle Button */}
+      <Button
+        size="lg"
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "shadow-lg hover:shadow-xl transition-all duration-200",
+          "bg-purple-600 hover:bg-purple-700",
+          "h-12 px-4 rounded-full md:rounded-lg",
+          isOpen && "bg-purple-700",
+          // Mobile: full width button, Desktop: icon + text with white text
+          isMobile ? "w-full" : "text-white"
+        )}
+        aria-label={isOpen ? "Close feedback menu" : "Open feedback menu"}
+      >
+        {isOpen ? (
+          <>
+            <X className={cn("h-5 w-5", isMobile ? "mr-2" : "md:mr-2")} />
+            <span className={cn(isMobile ? "inline" : "hidden md:inline", "text-white")}>
+              Close
+            </span>
+          </>
+        ) : (
+          <>
+            <MessageSquare className={cn("h-5 w-5", isMobile ? "mr-2" : "md:mr-2")} />
+            <span className={cn(isMobile ? "inline" : "hidden md:inline", "text-white")}>
+              Feedback
+            </span>
+          </>
+        )}
+      </Button>
+
+      {/* Desktop only: Show badge when closed */}
+      {!isOpen && !isMobile && (
+        <div className="absolute -top-1 -right-1">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            !
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

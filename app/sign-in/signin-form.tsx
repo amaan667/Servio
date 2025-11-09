@@ -57,7 +57,6 @@ export default function SignInForm({
       }
 
       // Use server-side API route to properly set cookies
-      console.log("[AUTH MOBILE] 1️⃣ Starting sign-in request");
       const response = await fetch("/api/auth/sign-in-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,13 +64,7 @@ export default function SignInForm({
         credentials: "include", // Ensure cookies are sent/received
       });
 
-      console.log("[AUTH MOBILE] 2️⃣ Response received:", response.status, response.ok);
       const data = await response.json();
-      console.log("[AUTH MOBILE] 3️⃣ Response data:", {
-        success: data.success,
-        hasSession: !!data.session,
-        redirectTo: data.redirectTo,
-      });
 
       if (!response.ok) {
         const msg = data.error || "Sign-in failed. Please try again.";
@@ -96,7 +89,6 @@ export default function SignInForm({
         // Set session in browser storage BEFORE redirecting
         // This ensures the browser Supabase client can read it immediately
         if (data.session) {
-          console.log("[AUTH MOBILE] 4️⃣ Setting session in browser");
           const { createClient } = await import("@/lib/supabase");
           const supabase = await createClient();
 
@@ -105,13 +97,7 @@ export default function SignInForm({
             refresh_token: data.session.refresh_token,
           });
 
-          console.log("[AUTH MOBILE] 5️⃣ setSession result:", {
-            error: setSessionError,
-            success: !setSessionError,
-          });
-
           if (setSessionError) {
-            console.error("❌ Failed to set session:", setSessionError);
             setError("Failed to establish session. Please try again.");
             setLoading(false);
             return;
@@ -119,45 +105,25 @@ export default function SignInForm({
 
           // CRITICAL: Wait for Safari to persist cookies
           // Mobile Safari needs MORE time than desktop Safari to persist cookies
-          // iOS Safari has stricter cookie policies and storage partitioning
           const isMobileSafari =
             /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
-          const cookieDelay = isMobileSafari ? 1500 : 500; // 1.5s for mobile Safari, 500ms for others
+          const cookieDelay = isMobileSafari ? 1500 : 500;
 
-          console.log(
-            `[AUTH MOBILE] 6️⃣ Waiting ${cookieDelay}ms for cookie persistence (mobile: ${isMobileSafari})`
-          );
           await new Promise((resolve) => setTimeout(resolve, cookieDelay));
 
           // Double-check session is set
-          console.log("[AUTH MOBILE] 7️⃣ Verifying session...");
           const {
             data: { session: verifySession },
           } = await supabase.auth.getSession();
 
-          console.log("[AUTH MOBILE] 8️⃣ Session verification result:", {
-            hasSession: !!verifySession,
-            userId: verifySession?.user?.id,
-            expiresAt: verifySession?.expires_at,
-          });
-
           if (!verifySession) {
-            console.error("[AUTH MOBILE] ❌ Session verification FAILED after setting");
-            console.error("[AUTH MOBILE] Checking cookies:", document.cookie.substring(0, 200));
-            console.error(
-              "[AUTH MOBILE] Checking localStorage keys:",
-              Object.keys(localStorage).filter((k) => k.includes("sb"))
-            );
             setError("Failed to establish session. Please try again.");
             setLoading(false);
             return;
           }
 
-          console.log("[AUTH MOBILE] ✅ Session verified successfully!");
-
           // Handle generic /dashboard redirect (from timeout/Safari)
           if (data.redirectTo === "/dashboard" && data.hasVenues) {
-            // Fetch first venue and redirect there
             const { data: venues } = await supabase
               .from("venues")
               .select("venue_id, created_at")
@@ -166,44 +132,12 @@ export default function SignInForm({
               .limit(1);
 
             if (venues && venues.length > 0) {
-              // For mobile Safari: store session info before redirect
-              try {
-                localStorage.setItem(
-                  "sb-mobile-safari-session",
-                  JSON.stringify({
-                    userId: verifySession.user.id,
-                    timestamp: Date.now(),
-                  })
-                );
-              } catch {
-                // localStorage might be unavailable, cookies will handle it
-              }
-
               window.location.href = `/dashboard/${venues[0].venue_id}`;
               return;
             }
           }
-
-          // For mobile Safari: store session info before redirect
-          try {
-            localStorage.setItem(
-              "sb-mobile-safari-session",
-              JSON.stringify({
-                userId: verifySession.user.id,
-                timestamp: Date.now(),
-              })
-            );
-          } catch {
-            // localStorage might be unavailable, cookies will handle it
-          }
         }
 
-        console.log("[AUTH MOBILE] 9️⃣ Redirecting to:", data.redirectTo);
-        console.log("[AUTH MOBILE] Final cookies:", document.cookie.substring(0, 200));
-        console.log(
-          "[AUTH MOBILE] Final localStorage:",
-          Object.keys(localStorage).filter((k) => k.includes("sb"))
-        );
         window.location.href = data.redirectTo;
       }
     } catch (_err) {
