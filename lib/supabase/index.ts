@@ -5,6 +5,7 @@
  * This is the ONLY place to create Supabase clients. Import from here everywhere.
  * - Browser clients: Use `supabaseBrowser()` for client-side code
  * - Server clients: Use `createClient()` for server components and API routes
+ * - Mobile Safari optimizations included for cookie/storage handling
  */
 
 import { createServerClient as createSSRServerClient, type CookieOptions } from "@supabase/ssr";
