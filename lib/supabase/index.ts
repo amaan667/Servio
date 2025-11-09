@@ -74,8 +74,10 @@ export function supabaseBrowser() {
         const testKey = "__supabase_storage_test__";
         localStorage.setItem(testKey, "test");
         localStorage.removeItem(testKey);
+        console.log("[MOBILE SAFARI] ✅ localStorage is available");
         return true;
-      } catch {
+      } catch (error) {
+        console.error("[MOBILE SAFARI] ❌ localStorage is BLOCKED:", error);
         return false;
       }
     };
@@ -84,17 +86,27 @@ export function supabaseBrowser() {
     const createMobileSafariStorage = () => {
       const storageAvailable = isStorageAvailable();
 
+      console.log("[MOBILE SAFARI] Creating custom storage, available:", storageAvailable);
+
       return {
         getItem: (key: string) => {
           try {
             if (storageAvailable) {
-              return localStorage.getItem(key);
+              const value = localStorage.getItem(key);
+              console.log(`[MOBILE SAFARI] getItem(${key}):`, value ? "found" : "not found");
+              return value;
             }
             // Fallback to cookies if localStorage unavailable
             const cookies = document.cookie.split(";");
             const cookie = cookies.find((c) => c.trim().startsWith(`${key}=`));
-            return cookie ? decodeURIComponent(cookie.split("=")[1]) : null;
-          } catch {
+            const value = cookie ? decodeURIComponent(cookie.split("=")[1]) : null;
+            console.log(
+              `[MOBILE SAFARI] getItem from cookie(${key}):`,
+              value ? "found" : "not found"
+            );
+            return value;
+          } catch (error) {
+            console.error(`[MOBILE SAFARI] getItem(${key}) error:`, error);
             return null;
           }
         },
@@ -102,13 +114,21 @@ export function supabaseBrowser() {
           try {
             if (storageAvailable) {
               localStorage.setItem(key, value);
+              console.log(
+                `[MOBILE SAFARI] ✅ setItem to localStorage(${key}):`,
+                value.substring(0, 50) + "..."
+              );
             } else {
               // Fallback to cookies with extended expiry
               const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
               document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires}; path=/; secure; samesite=lax`;
+              console.log(
+                `[MOBILE SAFARI] ✅ setItem to cookie(${key}):`,
+                value.substring(0, 50) + "..."
+              );
             }
           } catch (e) {
-            console.error("[Supabase] Storage error:", e);
+            console.error(`[MOBILE SAFARI] ❌ setItem(${key}) error:`, e);
           }
         },
         removeItem: (key: string) => {
@@ -118,12 +138,20 @@ export function supabaseBrowser() {
             }
             // Also remove from cookies
             document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-          } catch {
-            // Silent error
+            console.log(`[MOBILE SAFARI] removeItem(${key})`);
+          } catch (error) {
+            console.error(`[MOBILE SAFARI] removeItem(${key}) error:`, error);
           }
         },
       };
     };
+
+    console.log("[MOBILE SAFARI] Browser client config:", {
+      isMobileSafari,
+      projectRef,
+      userAgent: navigator.userAgent,
+      hasCustomStorage: isMobileSafari,
+    });
 
     browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
       auth: {
@@ -143,6 +171,8 @@ export function supabaseBrowser() {
         },
       },
     });
+
+    console.log("[MOBILE SAFARI] ✅ Browser client created successfully");
 
     // Handle session management for multiple devices
     // Each device should maintain its own session independently

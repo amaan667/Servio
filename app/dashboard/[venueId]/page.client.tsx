@@ -182,6 +182,18 @@ const DashboardClient = React.memo(function DashboardClient({
       }
 
       try {
+        const isMobileSafari =
+          /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+
+        console.log("[DASHBOARD AUTH] Starting auth check", {
+          isMobileSafari,
+          venueId,
+          hasCachedUser: !!user,
+          hasCachedRole: !!userRole,
+          cookies: document.cookie.substring(0, 150),
+          localStorageKeys: Object.keys(localStorage).filter((k) => k.includes("sb")),
+        });
+
         const supabase = supabaseBrowser();
 
         // Try BOTH getSession() and getUser() to ensure we have valid auth
@@ -191,10 +203,18 @@ const DashboardClient = React.memo(function DashboardClient({
         const maxRetries = 3;
 
         while (retries < maxRetries) {
+          console.log(`[DASHBOARD AUTH] Attempt ${retries + 1}/${maxRetries} to get session`);
+
           // Try getSession first
           const sessionResult = await supabase.auth.getSession();
           sessionError = sessionResult.error;
           session = sessionResult.data.session;
+
+          console.log(`[DASHBOARD AUTH] getSession result:`, {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            error: sessionError?.message,
+          });
 
           // If getSession fails, try getUser() which makes a server request
           if (!session?.user) {
@@ -224,10 +244,22 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         if (!session?.user) {
-          console.error("❌ NO SESSION after", maxRetries, "attempts");
-          console.error("💡 This means cookies are not accessible to browser client");
+          console.error("[DASHBOARD AUTH] ❌ NO SESSION after", maxRetries, "attempts");
+          console.error("[DASHBOARD AUTH] 💡 This means cookies/storage are not accessible");
+          console.error("[DASHBOARD AUTH] Cookies:", document.cookie);
+          console.error(
+            "[DASHBOARD AUTH] LocalStorage:",
+            Object.keys(localStorage).filter((k) => k.includes("sb"))
+          );
+          console.error("[DASHBOARD AUTH] Redirecting to sign-in...");
+          router.push(`/sign-in?redirect=/dashboard/${venueId}`);
           return;
         }
+
+        console.log("[DASHBOARD AUTH] ✅ Session found:", {
+          userId: session.user.id,
+          email: session.user.email,
+        });
 
         setUser(session.user);
         if (typeof window !== "undefined") {
