@@ -139,12 +139,39 @@ export default function SignInForm({
               .limit(1);
 
             if (venues && venues.length > 0) {
+              // For mobile Safari: store session info before redirect
+              try {
+                localStorage.setItem(
+                  "sb-mobile-safari-session",
+                  JSON.stringify({
+                    userId: verifySession.user.id,
+                    timestamp: Date.now(),
+                  })
+                );
+              } catch {
+                // localStorage might be unavailable, cookies will handle it
+              }
+
               window.location.href = `/dashboard/${venues[0].venue_id}`;
               return;
             }
           }
+
+          // For mobile Safari: store session info before redirect
+          try {
+            localStorage.setItem(
+              "sb-mobile-safari-session",
+              JSON.stringify({
+                userId: verifySession.user.id,
+                timestamp: Date.now(),
+              })
+            );
+          } catch {
+            // localStorage might be unavailable, cookies will handle it
+          }
         }
 
+        console.log("[AUTH] Redirecting to:", data.redirectTo);
         window.location.href = data.redirectTo;
       }
     } catch (_err) {

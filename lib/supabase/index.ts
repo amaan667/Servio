@@ -68,15 +68,72 @@ export function supabaseBrowser() {
       /Safari/.test(navigator.userAgent) &&
       !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
 
+    // Test if storage is actually available (private browsing can block it)
+    const isStorageAvailable = () => {
+      try {
+        const testKey = "__supabase_storage_test__";
+        localStorage.setItem(testKey, "test");
+        localStorage.removeItem(testKey);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    // Custom storage implementation for mobile Safari that handles restrictions
+    const createMobileSafariStorage = () => {
+      const storageAvailable = isStorageAvailable();
+
+      return {
+        getItem: (key: string) => {
+          try {
+            if (storageAvailable) {
+              return localStorage.getItem(key);
+            }
+            // Fallback to cookies if localStorage unavailable
+            const cookies = document.cookie.split(";");
+            const cookie = cookies.find((c) => c.trim().startsWith(`${key}=`));
+            return cookie ? decodeURIComponent(cookie.split("=")[1]) : null;
+          } catch {
+            return null;
+          }
+        },
+        setItem: (key: string, value: string) => {
+          try {
+            if (storageAvailable) {
+              localStorage.setItem(key, value);
+            } else {
+              // Fallback to cookies with extended expiry
+              const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+              document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires}; path=/; secure; samesite=lax`;
+            }
+          } catch (e) {
+            console.error("[Supabase] Storage error:", e);
+          }
+        },
+        removeItem: (key: string) => {
+          try {
+            if (storageAvailable) {
+              localStorage.removeItem(key);
+            }
+            // Also remove from cookies
+            document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          } catch {
+            // Silent error
+          }
+        },
+      };
+    };
+
     browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
         autoRefreshToken: true,
         flowType: "pkce", // PKCE is required for Supabase OAuth
-        // Mobile Safari: Use localStorage as primary storage due to strict cookie policies
-        // Desktop: Let Supabase use default cookie+localStorage combo
-        storage: isMobileSafari ? window.localStorage : undefined,
+        // Mobile Safari: Use custom storage that handles private browsing/restrictions
+        // Desktop: Let Supabase use default storage
+        storage: isMobileSafari ? createMobileSafariStorage() : undefined,
         storageKey: isMobileSafari ? `sb-${projectRef}-auth-token` : undefined,
       },
       global: {
