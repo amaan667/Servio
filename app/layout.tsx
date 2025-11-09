@@ -17,6 +17,7 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Analytics } from "@/components/Analytics";
 import { WebVitals } from "./web-vitals";
+import { ErudaLoader } from "@/components/ErudaLoader";
 
 // Optimized font loading with display swap and preload
 const inter = Inter({
@@ -145,14 +146,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       (cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")
     );
 
-
     if (hasAuthCookies) {
       // Use read-only client in layout to prevent cookie modification errors
       const supabase = await createServerSupabaseReadOnly();
 
       // Use getSession() to get the full session with tokens
       try {
-
         // Log all cookies for debugging
         logger.info("[ROOT LAYOUT] 🍪 Auth cookies details", {
           authCookies: allCookies
@@ -197,9 +196,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         });
       }
     } else {
-
       // Block handled
-
     }
   } catch (err) {
     logger.error("[ROOT LAYOUT] ❌ Error in root layout", {
@@ -238,6 +235,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ScrollToTop />
               <Analytics />
               <WebVitals />
+              <ErudaLoader />
             </Providers>
           </AuthProvider>
         </ErrorBoundary>

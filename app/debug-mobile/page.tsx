@@ -9,6 +9,9 @@ export default function DebugMobilePage() {
   const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
+    // Enable debug mode globally so Eruda loads on all pages
+    localStorage.setItem("servio-debug-mode", "true");
+
     // Inject Eruda for mobile debugging
     const script = document.createElement("script");
     script.src = "https://cdn.jsdelivr.net/npm/eruda";
@@ -82,19 +85,33 @@ export default function DebugMobilePage() {
               </ol>
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={startCapture} variant={isCapturing ? "secondary" : "default"}>
-                {isCapturing ? "✅ Capturing" : "Start Capturing"}
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => (window.location.href = "/sign-in")}
+                variant="default"
+                size="lg"
+                className="w-full"
+              >
+                Open Sign In (Console will stay open)
               </Button>
-              <Button onClick={() => (window.location.href = "/sign-in")} variant="outline">
-                Go to Sign In
+              <Button
+                onClick={() => {
+                  localStorage.removeItem("servio-debug-mode");
+                  alert("Debug mode disabled. Reload any page to remove Eruda.");
+                }}
+                variant="destructive"
+                size="sm"
+              >
+                Disable Debug Mode
               </Button>
-              <Button onClick={clearLogs} variant="outline">
-                Clear Logs
-              </Button>
-              <Button onClick={copyLogs} variant="outline" disabled={logs.length === 0}>
-                Copy Logs
-              </Button>
+            </div>
+
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+              <p className="font-semibold text-green-800 mb-1">✅ Debug Mode Active</p>
+              <p className="text-green-700">
+                The console (gear icon at bottom-right) will stay visible as you navigate between
+                pages. Try signing in and watch the Console tab for [AUTH MOBILE] logs.
+              </p>
             </div>
 
             <div className="mt-4">
