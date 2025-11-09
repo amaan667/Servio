@@ -51,6 +51,15 @@ const DashboardClient = React.memo(function DashboardClient({
   initialCounts?: DashboardCounts;
   initialStats?: DashboardStats;
 }) {
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🚀 [DASHBOARD LOAD] Starting dashboard initialization");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("[DASHBOARD LOAD] 1️⃣ VenueId:", venueId);
+  console.log("[DASHBOARD LOAD] 2️⃣ Initial data:", {
+    hasCounts: !!initialCounts,
+    hasStats: !!initialStats,
+  });
+
   const router = useRouter();
 
   // Get cached user/venue data to prevent flicker
@@ -72,23 +81,48 @@ const DashboardClient = React.memo(function DashboardClient({
     return sessionStorage.getItem(`user_role_${venueId}`);
   };
 
-  const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
-  const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
-  const [userRole, setUserRole] = useState<string | null>(getCachedRole()); // Initialize with cached role
+  const cachedUser = getCachedUser();
+  const cachedVenue = getCachedVenue();
+  const cachedRole = getCachedRole();
+
+  console.log("[DASHBOARD LOAD] 3️⃣ Cached data:", {
+    hasCachedUser: !!cachedUser,
+    hasCachedVenue: !!cachedVenue,
+    cachedRole,
+  });
+
+  const [user, setUser] = useState<{ id: string } | null>(cachedUser);
+  const [venue, setVenue] = useState<Record<string, unknown> | null>(cachedVenue);
+  const [userRole, setUserRole] = useState<string | null>(cachedRole); // Initialize with cached role
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
-  // CRITICAL LOG: Dashboard initialization
+  console.log("[DASHBOARD LOAD] 4️⃣ State initialized:", {
+    user: user?.id,
+    venue: (venue as { venue_id?: string })?.venue_id,
+    userRole,
+    authCheckComplete,
+  });
 
   // Monitor connection status (must be at top before any returns)
   useConnectionMonitor();
 
   // Enable intelligent prefetching for dashboard routes
+  console.log("[DASHBOARD LOAD] 5️⃣ Enabling prefetch for venueId:", venueId);
   useDashboardPrefetch(venueId);
 
   // Custom hooks for dashboard data and realtime (call before any returns)
   const venueTz = "Europe/London"; // Default timezone
+  console.log("[DASHBOARD LOAD] 6️⃣ Loading dashboard data...");
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
 
+  console.log("[DASHBOARD LOAD] 7️⃣ Dashboard data loaded:", {
+    hasCounts: !!dashboardData.counts,
+    hasStats: !!dashboardData.stats,
+    loading: dashboardData.loading,
+    venue: (dashboardData.venue as { venue_id?: string })?.venue_id,
+  });
+
+  console.log("[DASHBOARD LOAD] 8️⃣ Setting up realtime...");
   useDashboardRealtime({
     venueId,
     todayWindow: dashboardData.todayWindow,
@@ -99,7 +133,12 @@ const DashboardClient = React.memo(function DashboardClient({
   });
 
   // Fetch live analytics data for charts
+  console.log("[DASHBOARD LOAD] 9️⃣ Loading analytics data...");
   const analyticsData = useAnalyticsData(venueId);
+  console.log("[DASHBOARD LOAD] 🔟 Analytics data:", {
+    loading: analyticsData.loading,
+    hasData: !!analyticsData.data,
+  });
 
   // Handle venue change
   const handleVenueChange = useCallback(
@@ -354,6 +393,15 @@ const DashboardClient = React.memo(function DashboardClient({
   // Dashboard will handle gracefully
 
   // Render immediately with data (no loading states)
+  console.log("[DASHBOARD LOAD] ✅ Rendering dashboard JSX now");
+  console.log("[DASHBOARD LOAD] Final state before render:", {
+    user: user?.id,
+    venue: (venue as { venue_id?: string })?.venue_id,
+    userRole,
+    authCheckComplete,
+    countsLoading: dashboardData.loading,
+    analyticsLoading: analyticsData.loading,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50/50">
