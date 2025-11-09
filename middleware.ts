@@ -32,6 +32,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Log mobile Safari requests for debugging
+  const userAgent = request.headers.get("user-agent") || "";
+  const isMobileSafari =
+    /iPhone|iPad|iPod/.test(userAgent) &&
+    /Safari/.test(userAgent) &&
+    !/Chrome|CriOS/.test(userAgent);
+
+  if (isMobileSafari) {
+    console.log("[MIDDLEWARE MOBILE] Request to:", pathname);
+    console.log(
+      "[MIDDLEWARE MOBILE] Cookies in request:",
+      request.cookies
+        .getAll()
+        .map((c) => c.name)
+        .join(", ")
+    );
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -41,9 +59,16 @@ export async function middleware(request: NextRequest) {
   const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       get(name: string) {
-        return request.cookies.get(name)?.value;
+        const value = request.cookies.get(name)?.value;
+        if (isMobileSafari && name.includes("auth-token")) {
+          console.log(`[MIDDLEWARE MOBILE] Cookie get(${name}):`, value ? "found" : "NOT FOUND");
+        }
+        return value;
       },
       set(name: string, value: string, options: any) {
+        if (isMobileSafari && name.includes("auth-token")) {
+          console.log(`[MIDDLEWARE MOBILE] Cookie set(${name}):`, value.substring(0, 30) + "...");
+        }
         request.cookies.set({ name, value, ...options });
         response = NextResponse.next({
           request: {
@@ -53,6 +78,9 @@ export async function middleware(request: NextRequest) {
         response.cookies.set({ name, value, ...options });
       },
       remove(name: string, options: any) {
+        if (isMobileSafari) {
+          console.log(`[MIDDLEWARE MOBILE] Cookie remove(${name})`);
+        }
         request.cookies.set({ name, value: "", ...options });
         response = NextResponse.next({
           request: {
@@ -68,6 +96,14 @@ export async function middleware(request: NextRequest) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+
+  if (isMobileSafari) {
+    console.log("[MIDDLEWARE MOBILE] Session check result:", {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+    });
+  }
 
   // For API routes, return 401 if no session
   if (pathname.startsWith("/api/")) {
@@ -90,9 +126,15 @@ export async function middleware(request: NextRequest) {
   // For dashboard pages, redirect if no session
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
+      if (isMobileSafari) {
+        console.log("[MIDDLEWARE MOBILE] ❌ No session found - redirecting to sign-in");
+      }
       const redirectUrl = new URL("/sign-in", request.url);
       redirectUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(redirectUrl);
+    }
+    if (isMobileSafari) {
+      console.log("[MIDDLEWARE MOBILE] ✅ Session validated - allowing access");
     }
   }
 
