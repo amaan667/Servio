@@ -105,9 +105,16 @@ export default function SignInForm({
           }
 
           // CRITICAL: Wait for Safari to persist cookies
-          // Safari needs time to write cookies before redirect
-          // Verify session is actually set before redirecting
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          // Mobile Safari needs MORE time than desktop Safari to persist cookies
+          // iOS Safari has stricter cookie policies and storage partitioning
+          const isMobileSafari =
+            /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+          const cookieDelay = isMobileSafari ? 1000 : 500; // 1s for mobile Safari, 500ms for others
+
+          console.log(
+            `[AUTH] Waiting ${cookieDelay}ms for cookie persistence (mobile: ${isMobileSafari})`
+          );
+          await new Promise((resolve) => setTimeout(resolve, cookieDelay));
 
           // Double-check session is set
           const {

@@ -59,14 +59,24 @@ export function supabaseBrowser() {
   // Client-side: use singleton
   if (!browserClient) {
     const projectRef = getSupabaseUrl().match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "default";
+
+    // Detect mobile Safari - it has stricter cookie/storage policies
+    const isMobileSafari =
+      typeof navigator !== "undefined" &&
+      /iPhone|iPad|iPod/.test(navigator.userAgent) &&
+      /Safari/.test(navigator.userAgent) &&
+      !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
+
     browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
         autoRefreshToken: true,
         flowType: "pkce", // PKCE is required for Supabase OAuth
-        // DON'T set custom storage or storageKey - let Supabase use defaults
-        // This ensures the PKCE verifier is stored and retrieved from the same location
+        // Mobile Safari: Use localStorage as primary storage due to strict cookie policies
+        // Desktop: Let Supabase use default cookie+localStorage combo
+        storage: isMobileSafari ? window.localStorage : undefined,
+        storageKey: isMobileSafari ? `sb-${projectRef}-auth-token` : undefined,
       },
       global: {
         headers: {
@@ -210,7 +220,7 @@ export async function createServerSupabase() {
               ...options,
               httpOnly: false, // Must be false for Supabase to read from client
               sameSite: "lax",
-              secure: process.env.NODE_ENV === "production",
+              secure: true, // Always use secure in production - critical for mobile Safari
               path: "/",
             });
           });
@@ -378,7 +388,7 @@ export async function getSession() {
           cookieStore.set(name, value, {
             ...options,
             sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
+            secure: true, // Always use secure - critical for mobile Safari
             httpOnly: false,
             path: "/",
           });
