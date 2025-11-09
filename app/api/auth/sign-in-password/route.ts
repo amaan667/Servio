@@ -60,9 +60,31 @@ export async function POST(request: NextRequest) {
     });
 
     // Check if user has a venue - get FIRST (oldest)
-    // Add timeout protection for mobile networks
+    // Add timeout protection for mobile networks (especially Safari)
     let venues = null;
     let venueError = null;
+    let hasOrganization = false;
+
+    // First check organization to see if user has premium plan
+    try {
+      const { data: orgs } = await supabase
+        .from("organizations")
+        .select("id, subscription_tier")
+        .eq("owner_user_id", data.session.user.id)
+        .limit(1);
+
+      hasOrganization = !!(orgs && orgs.length > 0);
+      if (hasOrganization) {
+        logger.info("[AUTH SIGN-IN] User has organization:", {
+          orgCount: orgs?.length,
+          tier: orgs?.[0]?.subscription_tier,
+        });
+      }
+    } catch (orgError) {
+      logger.error("[AUTH SIGN-IN] Error checking organization:", { error: orgError });
+    }
+
+    // Now try to get venues with timeout protection
     try {
       const venueQuery = await Promise.race([
         supabase
@@ -72,23 +94,17 @@ export async function POST(request: NextRequest) {
           .order("created_at", { ascending: true })
           .limit(5),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Venue query timeout")), 5000)
+          setTimeout(() => reject(new Error("Venue query timeout")), 3000)
         ),
       ]);
       venues = (venueQuery as { data: unknown; error: unknown }).data;
       venueError = (venueQuery as { data: unknown; error: unknown }).error;
     } catch (timeoutError) {
       logger.error("[AUTH SIGN-IN] Venue query timeout or error:", { error: timeoutError });
-      // On timeout, try to get from organization instead
-      const { data: orgs } = await supabase
-        .from("organizations")
-        .select("id")
-        .eq("owner_user_id", data.session.user.id)
-        .limit(1);
 
-      if (orgs && orgs.length > 0) {
-        // User has an organization, so they likely have a venue
-        // Return a generic dashboard redirect and let client-side handle it
+      // If user has organization, they must have venues - use generic dashboard
+      if (hasOrganization) {
+        logger.info("[AUTH SIGN-IN] Timeout but org exists - using generic dashboard redirect");
         const response = NextResponse.json({
           success: true,
           user: {
@@ -96,6 +112,7 @@ export async function POST(request: NextRequest) {
             email: data.session.user.email,
           },
           redirectTo: "/dashboard",
+          hasVenues: true, // Signal to client that venues exist
           session: {
             access_token: data.session.access_token,
             refresh_token: data.session.refresh_token,

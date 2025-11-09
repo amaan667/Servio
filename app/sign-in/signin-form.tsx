@@ -86,7 +86,6 @@ export default function SignInForm({
       }
 
       if (data.success && data.redirectTo) {
-
         // Set session in browser storage BEFORE redirecting
         // This ensures the browser Supabase client can read it immediately
         if (data.session) {
@@ -100,10 +99,42 @@ export default function SignInForm({
 
           if (setSessionError) {
             console.error("❌ Failed to set session:", setSessionError);
-          } else {
+            setError("Failed to establish session. Please try again.");
+            setLoading(false);
+            return;
+          }
 
-            // Block handled
+          // CRITICAL: Wait for Safari to persist cookies
+          // Safari needs time to write cookies before redirect
+          // Verify session is actually set before redirecting
+          await new Promise((resolve) => setTimeout(resolve, 500));
 
+          // Double-check session is set
+          const {
+            data: { session: verifySession },
+          } = await supabase.auth.getSession();
+
+          if (!verifySession) {
+            console.error("❌ Session verification failed after setting");
+            setError("Failed to establish session. Please try again.");
+            setLoading(false);
+            return;
+          }
+
+          // Handle generic /dashboard redirect (from timeout/Safari)
+          if (data.redirectTo === "/dashboard" && data.hasVenues) {
+            // Fetch first venue and redirect there
+            const { data: venues } = await supabase
+              .from("venues")
+              .select("venue_id, created_at")
+              .eq("owner_user_id", verifySession.user.id)
+              .order("created_at", { ascending: true })
+              .limit(1);
+
+            if (venues && venues.length > 0) {
+              window.location.href = `/dashboard/${venues[0].venue_id}`;
+              return;
+            }
           }
         }
 
