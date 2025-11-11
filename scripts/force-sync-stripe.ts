@@ -77,9 +77,9 @@ async function forceSyncStripe() {
 
   // Map price ID to tier
   const PRICE_TO_TIER: Record<string, string> = {
-    [process.env.STRIPE_BASIC_PRICE_ID || ""]: "basic",
-    [process.env.STRIPE_STANDARD_PRICE_ID || ""]: "standard",
-    [process.env.STRIPE_PREMIUM_PRICE_ID || ""]: "premium",
+    [process.env.STRIPE_BASIC_PRICE_ID || ""]: "starter",
+    [process.env.STRIPE_STANDARD_PRICE_ID || ""]: "pro",
+    [process.env.STRIPE_PREMIUM_PRICE_ID || ""]: "enterprise",
   };
 
   console.log("🔑 Environment variable check:", {
@@ -95,7 +95,7 @@ async function forceSyncStripe() {
     matchesPremium: priceId === process.env.STRIPE_PREMIUM_PRICE_ID,
   });
 
-  const tierFromStripe = PRICE_TO_TIER[priceId] || "basic";
+  const tierFromStripe = PRICE_TO_TIER[priceId] || "starter";
 
   console.log("📊 Tier mapping result:", {
     tierFromStripe,

@@ -319,7 +319,7 @@ ROLE-BASED RESTRICTIONS:
 TIER RESTRICTIONS:
 - ${venueTier === "starter" ? "Starter tier: no inventory or advanced analytics" : ""}
 - ${venueTier === "professional" ? "Professional tier: inventory enabled" : ""}
-- ${venueTier === "premium" ? "Premium tier: all features enabled" : ""}
+- ${venueTier === "enterprise" ? "Premium tier: all features enabled" : ""}
 
 RULES:
 1. ALWAYS set preview=false for: QR generation, navigation, analytics queries, inventory queries, staff listing, table creation

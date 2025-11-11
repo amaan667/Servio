@@ -34,8 +34,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   // Helper function to process trial status (defined before hooks that use it)
   const processTrialStatus = useCallback(
     (org: { subscription_status?: string; subscription_tier?: string; trial_ends_at?: string }) => {
-      const subscriptionStatus = org.subscription_status || "basic";
-      const tier = org.subscription_tier || "basic";
+      const subscriptionStatus = org.subscription_status || "starter";
+      const tier = org.subscription_tier || "starter";
       const trialEndsAt = org.trial_ends_at;
 
       // Processing trial status
@@ -111,7 +111,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         const defaultStatus = {
           isTrialing: true,
           subscriptionStatus: "trialing",
-          tier: "basic",
+          tier: "starter",
           trialEndsAt: trialEndsAt.toISOString(),
           daysRemaining,
         };
@@ -149,7 +149,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         const status = {
           isTrialing: true,
           subscriptionStatus: "trialing",
-          tier: "basic",
+          tier: "starter",
           trialEndsAt: trialEndsAt.toISOString(),
           daysRemaining,
         };
@@ -162,13 +162,13 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       // Show default trial status as fallback
       const userCreatedAt = user.created_at ? new Date(user.created_at) : new Date();
       const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
-      
+
       // Validate date
       if (isNaN(trialEndsAt.getTime())) {
         // Invalid date, use 14 days from now
         trialEndsAt.setTime(Date.now() + 14 * 24 * 60 * 60 * 1000);
       }
-      
+
       const daysRemaining = Math.max(
         0,
         Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -177,7 +177,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       const status = {
         isTrialing: true,
         subscriptionStatus: "trialing",
-        tier: "basic",
+        tier: "starter",
         trialEndsAt: trialEndsAt.toISOString(),
         daysRemaining,
       };
@@ -319,11 +319,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
-      case "basic":
+      case "starter":
         return "Basic";
-      case "standard":
+      case "pro":
         return "Standard";
-      case "premium":
+      case "enterprise":
         return "Premium";
       default:
         return tier.charAt(0).toUpperCase() + tier.slice(1);

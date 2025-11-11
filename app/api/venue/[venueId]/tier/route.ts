@@ -37,7 +37,7 @@ export async function GET(
       logger.error("[VENUE TIER API] Venue not found:", { venueId, error: venueError });
       return NextResponse.json(
         {
-          tier: "basic",
+          tier: "starter",
           status: "active",
         },
         { status: 200 }
@@ -58,7 +58,7 @@ export async function GET(
     });
     return NextResponse.json(
       {
-        tier: "basic",
+        tier: "starter",
         status: "active",
       },
       { status: 200 }

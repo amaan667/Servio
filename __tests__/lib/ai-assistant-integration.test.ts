@@ -14,7 +14,7 @@ const mockContext: AIAssistantContext = {
   venueId: "test-venue-123",
   userId: "test-user-456",
   userRole: "owner",
-  venueTier: "premium",
+  venueTier: "enterprise",
   timezone: "Europe/London",
   venueName: "Test Restaurant",
   address: null,

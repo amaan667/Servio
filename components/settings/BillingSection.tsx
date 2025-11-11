@@ -109,7 +109,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
     }
 
     switch (tier) {
-      case "basic":
+      case "starter":
         return {
           name: "Basic",
           icon: CreditCard,
@@ -118,7 +118,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
           borderColor: "border-gray-200",
           description: "Essential features for small businesses",
         };
-      case "standard":
+      case "pro":
         return {
           name: "Standard",
           icon: Sparkles,
@@ -127,7 +127,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
           borderColor: "border-blue-200",
           description: "Most popular plan with advanced features",
         };
-      case "premium":
+      case "enterprise":
         return {
           name: "Premium",
           icon: Crown,
@@ -191,7 +191,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              {!isGrandfathered && tier !== "premium" && (
+              {!isGrandfathered && tier !== "enterprise" && (
                 <Button
                   onClick={() => {
                     setShowUpgradeModal(true);
@@ -202,7 +202,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
                   Upgrade Plan
                 </Button>
               )}
-              {!isGrandfathered && tier === "standard" && (
+              {!isGrandfathered && tier === "pro" && (
                 <Button
                   variant="outline"
                   onClick={handleDowngrade}
@@ -326,28 +326,28 @@ export default function BillingSection({ organization, venueId }: BillingSection
             <FeatureItem name="QR Ordering" enabled={true} tier="all" />
             <FeatureItem
               name="Kitchen Display System"
-              enabled={tier === "standard" || tier === "premium" || isGrandfathered}
-              tier="standard"
+              enabled={tier === "pro" || tier === "enterprise" || isGrandfathered}
+              tier="pro"
             />
             <FeatureItem
               name="Inventory Management"
-              enabled={tier === "standard" || tier === "premium" || isGrandfathered}
-              tier="standard"
+              enabled={tier === "pro" || tier === "enterprise" || isGrandfathered}
+              tier="pro"
             />
             <FeatureItem
               name="AI Assistant"
-              enabled={tier === "premium" || isGrandfathered}
-              tier="premium"
+              enabled={tier === "enterprise" || isGrandfathered}
+              tier="enterprise"
             />
             <FeatureItem
               name="Multi-Venue Management"
-              enabled={tier === "premium" || isGrandfathered}
-              tier="premium"
+              enabled={tier === "enterprise" || isGrandfathered}
+              tier="enterprise"
             />
             <FeatureItem
               name="Advanced Analytics"
-              enabled={tier === "standard" || tier === "premium" || isGrandfathered}
-              tier="standard"
+              enabled={tier === "pro" || tier === "enterprise" || isGrandfathered}
+              tier="pro"
             />
           </div>
         </CardContent>
@@ -375,7 +375,7 @@ function FeatureItem({ name, enabled, tier }: { name: string; enabled: boolean; 
         </Badge>
       ) : (
         <Badge variant="outline">
-          {tier === "premium" ? "Premium" : tier === "standard" ? "Standard" : "Basic"}
+          {tier === "enterprise" ? "Premium" : tier === "pro" ? "Standard" : "Basic"}
         </Badge>
       )}
     </div>

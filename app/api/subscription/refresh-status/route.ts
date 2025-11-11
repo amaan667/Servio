@@ -46,8 +46,8 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({
         success: true,
         subscription: {
-          tier: org.subscription_tier || "basic",
-          status: org.subscription_status || "basic",
+          tier: org.subscription_tier || "starter",
+          status: org.subscription_status || "starter",
         },
       });
     }
@@ -73,7 +73,7 @@ export async function POST(_request: NextRequest) {
       const currentTier = org.subscription_tier;
 
       // Use Stripe tier if available, otherwise keep current tier
-      const finalTier = stripeTier || currentTier || "basic";
+      const finalTier = stripeTier || currentTier || "starter";
 
       logger.debug("[SUBSCRIPTION REFRESH] Tier detection:", {
         stripeTier,
@@ -102,7 +102,6 @@ export async function POST(_request: NextRequest) {
         );
       }
 
-
       return NextResponse.json({
         success: true,
         subscription: {
@@ -117,8 +116,8 @@ export async function POST(_request: NextRequest) {
       const { error: resetError } = await supabase
         .from("organizations")
         .update({
-          subscription_tier: "basic",
-          subscription_status: "basic",
+          subscription_tier: "starter",
+          subscription_status: "starter",
           stripe_subscription_id: null,
           trial_ends_at: null,
           updated_at: new Date().toISOString(),
@@ -133,8 +132,8 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({
         success: true,
         subscription: {
-          tier: "basic",
-          status: "basic",
+          tier: "starter",
+          status: "starter",
         },
         reset: true,
       });

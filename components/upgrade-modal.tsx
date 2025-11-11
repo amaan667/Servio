@@ -27,7 +27,7 @@ interface UpgradeModalProps {
 export function UpgradeModal({
   open,
   onOpenChange,
-  currentTier = "basic",
+  currentTier = "starter",
   organizationId,
 }: UpgradeModalProps) {
   const [loading, setLoading] = useState<string | null>(null);

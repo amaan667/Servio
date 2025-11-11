@@ -268,7 +268,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     .from("organizations")
     .update({
       stripe_subscription_id: subscription.id,
-      subscription_tier: tier || "basic",
+      subscription_tier: tier || "starter",
       subscription_status: subscription.status,
       updated_at: new Date().toISOString(),
     })
@@ -351,7 +351,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   const updateData = {
-    subscription_tier: tier || org.subscription_tier || "basic",
+    subscription_tier: tier || org.subscription_tier || "starter",
     subscription_status: subscription.status,
     updated_at: new Date().toISOString(),
   };
@@ -405,7 +405,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   await supabase
     .from("organizations")
     .update({
-      subscription_tier: "basic",
+      subscription_tier: "starter",
       subscription_status: "canceled",
       stripe_subscription_id: null,
       updated_at: new Date().toISOString(),
@@ -416,7 +416,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     organization_id: organizationId,
     event_type: "subscription_canceled",
     old_tier: org?.subscription_tier,
-    new_tier: "basic",
+    new_tier: "starter",
     stripe_event_id: subscription.id,
     metadata: { subscription_id: subscription.id },
   });

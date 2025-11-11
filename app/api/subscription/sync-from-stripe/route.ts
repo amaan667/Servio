@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         synced: false,
         message: "No Stripe customer - using default tier",
-        tier: org.subscription_tier || "basic",
+        tier: org.subscription_tier || "starter",
       });
     }
 
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         synced: false,
         message: "No active subscription in Stripe",
-        tier: org.subscription_tier || "basic",
+        tier: org.subscription_tier || "starter",
       });
     }
 

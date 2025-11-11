@@ -7,9 +7,9 @@ import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 
 const PRICE_IDS = {
-  basic: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
-  standard: process.env.STRIPE_STANDARD_PRICE_ID || "price_standard",
-  premium: process.env.STRIPE_PREMIUM_PRICE_ID || "price_premium",
+  starter: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
+  pro: process.env.STRIPE_STANDARD_PRICE_ID || "price_standard",
+  enterprise: process.env.STRIPE_PREMIUM_PRICE_ID || "price_premium",
 };
 
 export async function POST(_request: NextRequest) {
@@ -31,7 +31,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!["basic", "standard", "premium"].includes(tier)) {
+    if (!["starter", "pro", "enterprise"].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 

@@ -20,32 +20,31 @@ export default function CheckoutSuccessPage() {
   useEffect(() => {
     const redirectToDashboard = async () => {
       if (!user) {
-        router.push('/');
+        router.push("/");
         return;
       }
-      
+
       const supabase = supabaseBrowser();
       const { data: venues, error } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_user_id', user.id)
-        .order('created_at', { ascending: true })
+        .from("venues")
+        .select("venue_id")
+        .eq("owner_user_id", user.id)
+        .order("created_at", { ascending: true })
         .limit(1);
-      
+
       if (!error && venues && venues.length > 0) {
         const primaryVenue = venues[0];
         if (primaryVenue) {
           router.push(`/dashboard/${primaryVenue.venue_id}`);
         } else {
-          router.push('/');
+          router.push("/");
         }
       } else {
-        router.push('/');
+        router.push("/");
       }
     };
-    
-    if (!searchParams) {
 
+    if (!searchParams) {
       redirectToDashboard();
       return;
     }
@@ -55,24 +54,23 @@ export default function CheckoutSuccessPage() {
 
     if (sessionId && tierParam) {
       setTier(tierParam);
-      
+
       // Calculate trial end date (14 days from now)
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 14);
       setTrialEndsAt(trialEndDate.toLocaleDateString());
-      
+
       // Update organization tier immediately as a backup in case webhook hasn't fired yet
       if (user) {
-
         // Retry logic for organization update
         const updateOrganization = async (retryCount = 0) => {
           try {
-            const response = await fetch('/api/test/update-plan', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tier: tierParam })
+            const response = await fetch("/api/test/update-plan", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tier: tierParam }),
             });
-            
+
             await response.json();
 
             if (!response.ok && retryCount < 3) {
@@ -84,10 +82,10 @@ export default function CheckoutSuccessPage() {
             }
           }
         };
-        
+
         updateOrganization();
       }
-      
+
       setLoading(false);
     } else {
       // Redirect if missing required params
@@ -98,19 +96,27 @@ export default function CheckoutSuccessPage() {
 
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
-      case "basic": return "Basic Plan";
-      case "standard": return "Standard Plan";
-      case "premium": return "Premium Plan";
-      default: return "Your Plan";
+      case "starter":
+        return "Basic Plan";
+      case "pro":
+        return "Standard Plan";
+      case "enterprise":
+        return "Premium Plan";
+      default:
+        return "Your Plan";
     }
   };
 
   const getTierPrice = (tier: string) => {
     switch (tier) {
-      case "basic": return "£99";
-      case "standard": return "£249";
-      case "premium": return "£449";
-      default: return "£0";
+      case "starter":
+        return "£99";
+      case "pro":
+        return "£249";
+      case "enterprise":
+        return "£449";
+      default:
+        return "£0";
     }
   };
 
@@ -139,7 +145,7 @@ export default function CheckoutSuccessPage() {
             Your subscription has been activated successfully
           </p>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Trial Information */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
@@ -205,31 +211,31 @@ export default function CheckoutSuccessPage() {
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
-            <Button 
+            <Button
               onClick={async () => {
                 // Add a small delay to ensure the organization update has time to propagate
                 setTimeout(async () => {
                   if (user) {
                     const supabase = supabaseBrowser();
                     const { data: venues, error } = await supabase
-                      .from('venues')
-                      .select('venue_id')
-                      .eq('owner_user_id', user.id)
-                      .order('created_at', { ascending: true })
+                      .from("venues")
+                      .select("venue_id")
+                      .eq("owner_user_id", user.id)
+                      .order("created_at", { ascending: true })
                       .limit(1);
-                    
+
                     if (!error && venues && venues.length > 0) {
                       const primaryVenue = venues[0];
                       if (primaryVenue) {
                         router.push(`/dashboard/${primaryVenue.venue_id}?upgrade=success`);
                       } else {
-                        router.push('/');
+                        router.push("/");
                       }
                     } else {
-                      router.push('/');
+                      router.push("/");
                     }
                   } else {
-                    router.push('/');
+                    router.push("/");
                   }
                 }, 1000);
               }}
@@ -237,7 +243,7 @@ export default function CheckoutSuccessPage() {
             >
               Go to Dashboard
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
                 // Add a small delay to ensure the organization update has time to propagate

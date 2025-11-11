@@ -229,14 +229,14 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   const tiers = [
     {
       name: "Basic",
-      id: "basic",
+      id: "starter",
       price: "£99",
       description: "Perfect for small cafes",
       features: ["10 tables", "50 menu items", "QR ordering", "Basic analytics"],
     },
     {
       name: "Standard",
-      id: "standard",
+      id: "pro",
       price: "£249",
       description: "Most popular for growing businesses",
       popular: true,
@@ -244,7 +244,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     },
     {
       name: "Premium",
-      id: "premium",
+      id: "enterprise",
       price: "£449+",
       description: "Unlimited for enterprises",
       contact: true,

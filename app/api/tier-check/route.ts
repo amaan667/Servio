@@ -87,7 +87,7 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({
       allowed: true,
       limits,
-      tier: org?.subscription_tier || "basic",
+      tier: org?.subscription_tier || "starter",
     });
   } catch (_error) {
     logger.error("[TIER CHECK] Error:", {

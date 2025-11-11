@@ -6,19 +6,19 @@ export async function POST() {
   try {
     const products = [
       {
-        tier: "basic",
+        tier: "starter",
         name: "Basic Plan",
         description: "Perfect for small cafes and restaurants",
         amount: 9900, // £99.00 in pence
       },
       {
-        tier: "standard",
+        tier: "pro",
         name: "Standard Plan",
         description: "Most popular for growing businesses",
         amount: 24900, // £249.00 in pence
       },
       {
-        tier: "premium",
+        tier: "enterprise",
         name: "Premium Plan",
         description: "Unlimited power for enterprises",
         amount: 44900, // £449.00 in pence

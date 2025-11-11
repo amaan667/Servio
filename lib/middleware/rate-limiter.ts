@@ -8,20 +8,20 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/api/rate-limit";
 
 // Create rate limiters for different API tiers (using checkRateLimit function)
 // Note: RateLimiter class was removed, using checkRateLimit function instead
-const getRateLimitConfig = (tier: "strict" | "standard" | "premium") => {
+const getRateLimitConfig = (tier: "strict" | "pro" | "enterprise") => {
   switch (tier) {
     case "strict":
       return RATE_LIMITS.public;
-    case "standard":
+    case "pro":
       return RATE_LIMITS.authenticated;
-    case "premium":
+    case "enterprise":
       return RATE_LIMITS.admin;
     default:
       return RATE_LIMITS.authenticated;
   }
 };
 
-export type RateLimitTier = "strict" | "standard" | "premium";
+export type RateLimitTier = "strict" | "pro" | "enterprise";
 
 /**
  * Get client identifier from request (IP + User ID if authenticated)
@@ -40,7 +40,7 @@ function getClientId(req: NextRequest): string {
 /**
  * Rate limit middleware wrapper
  */
-export function withRateLimit(tier: RateLimitTier = "standard") {
+export function withRateLimit(tier: RateLimitTier = "pro") {
   return async (
     handler: (req: NextRequest, ...args: unknown[]) => Promise<NextResponse>,
     req: NextRequest,
@@ -81,7 +81,7 @@ export function withRateLimit(tier: RateLimitTier = "standard") {
 /**
  * Apply rate limiting to a route handler
  */
-export function rateLimit(tier: RateLimitTier = "standard") {
+export function rateLimit(tier: RateLimitTier = "pro") {
   return function <T extends (...args: unknown[]) => Promise<NextResponse>>(target: T): T {
     return (async (...args: Parameters<T>) => {
       const req = args[0] as NextRequest;

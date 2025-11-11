@@ -59,7 +59,7 @@ export async function POST(_request: NextRequest) {
     const { error } = await supabase
       .from("organizations")
       .update({
-        subscription_tier: "premium",
+        subscription_tier: "enterprise",
         subscription_status: "active",
         updated_at: new Date().toISOString(),
       })
@@ -83,7 +83,7 @@ export async function POST(_request: NextRequest) {
         status: org.subscription_status,
       },
       after: {
-        tier: "premium",
+        tier: "enterprise",
         status: "active",
       },
       clearCache: true, // Signal to client to clear cache

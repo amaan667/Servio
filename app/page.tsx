@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 export default async function HomePage() {
   // Get auth state and user plan on server where cookies work
   let isSignedIn = false;
-  let userPlan: "basic" | "standard" | "premium" | null = null;
+  let userPlan: "starter" | "pro" | "enterprise" | null = null;
   let user = null;
 
   try {
@@ -44,7 +44,7 @@ export default async function HomePage() {
           });
 
           if (org?.subscription_tier) {
-            userPlan = org.subscription_tier.toLowerCase() as "basic" | "standard" | "premium";
+            userPlan = org.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise";
             logger.info("[HOME PAGE] Set user plan", { userPlan });
           } else {
             logger.warn("[HOME PAGE] No subscription tier found for organization", {

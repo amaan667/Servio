@@ -46,7 +46,6 @@ export async function POST() {
       );
     }
 
-
     // Use admin client to bypass RLS for organization operations
     let adminClient;
     try {
@@ -116,7 +115,6 @@ export async function POST() {
       return response;
     }
 
-
     // Create organization for the user using admin client to bypass RLS
     // Use the user's actual creation date as trial start date for accurate trial calculation
     const userCreatedAt = new Date(user.created_at);
@@ -129,7 +127,7 @@ export async function POST() {
         slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
         created_by: user.id, // Required column
         owner_user_id: user.id, // Also set for compatibility
-        subscription_tier: "basic",
+        subscription_tier: "starter",
         subscription_status: "trialing",
         trial_ends_at: trialEndsAt.toISOString(),
         created_at: new Date().toISOString(),

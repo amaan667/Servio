@@ -19,7 +19,7 @@ export interface TierLimits {
 
 // Tier limits based on homepage pricing
 export const TIER_LIMITS: Record<string, TierLimits> = {
-  basic: {
+  starter: {
     maxTables: 10,
     maxMenuItems: 50,
     maxStaff: 3,
@@ -34,7 +34,7 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       prioritySupport: false,
     },
   },
-  standard: {
+  pro: {
     maxTables: 20,
     maxMenuItems: 200,
     maxStaff: 10,
@@ -49,7 +49,7 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       prioritySupport: true,
     },
   },
-  premium: {
+  enterprise: {
     maxTables: -1, // Unlimited
     maxMenuItems: -1, // Unlimited
     maxStaff: -1, // Unlimited
@@ -76,12 +76,12 @@ export async function getUserTier(userId: string): Promise<string> {
     .eq("owner_user_id", userId)
     .single();
 
-  // If subscription is not active, downgrade to basic (but require payment for new users)
+  // If subscription is not active, downgrade to starter (but require payment for new users)
   if (!org || org.subscription_status !== "active") {
-    return "basic";
+    return "starter";
   }
 
-  return org.subscription_tier || "basic";
+  return org.subscription_tier || "starter";
 }
 
 export async function checkFeatureAccess(
@@ -96,9 +96,9 @@ export async function checkFeatureAccess(
   }
 
   // Find the minimum tier that has this feature
-  let requiredTier = "premium";
-  if (TIER_LIMITS.standard.features[feature]) {
-    requiredTier = "standard";
+  let requiredTier = "enterprise";
+  if (TIER_LIMITS.pro.features[feature]) {
+    requiredTier = "pro";
   }
 
   return { allowed: false, currentTier: tier, requiredTier };
@@ -143,5 +143,5 @@ export async function requireFeature(
 export async function getTierLimits(userId: string): Promise<TierLimits> {
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
-  return limits || TIER_LIMITS.basic;
+  return limits || TIER_LIMITS.starter;
 }

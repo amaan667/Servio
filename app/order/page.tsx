@@ -40,7 +40,7 @@ export default function CustomerOrderPage() {
   useEffect(() => {
     const fetchTier = async () => {
       if (isDemo) {
-        setSubscriptionTier("premium");
+        setSubscriptionTier("enterprise");
         setLoadingTier(false);
         return;
       }
@@ -49,11 +49,11 @@ export default function CustomerOrderPage() {
         const response = await fetch(`/api/venue/${venueSlug}/tier`);
         if (response.ok) {
           const data = await response.json();
-          setSubscriptionTier(data.tier || "basic");
+          setSubscriptionTier(data.tier || "starter");
         }
       } catch (_error) {
         logger.error("Failed to fetch venue tier", { error: _error });
-        setSubscriptionTier("basic");
+        setSubscriptionTier("starter");
       } finally {
         setLoadingTier(false);
       }
@@ -139,8 +139,8 @@ export default function CustomerOrderPage() {
   } = useGroupSession(venueSlug, tableNumber, isCounterOrder, skipGroupSize);
 
   const [showMobileCart, setShowMobileCart] = useState(false);
-  const [subscriptionTier, setSubscriptionTier] = useState<"basic" | "standard" | "premium">(
-    "basic"
+  const [subscriptionTier, setSubscriptionTier] = useState<"starter" | "pro" | "enterprise">(
+    "starter"
   );
   const [loadingTier, setLoadingTier] = useState(true);
 

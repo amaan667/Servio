@@ -7,7 +7,7 @@
 import Stripe from "stripe";
 import { logger } from "@/lib/logger";
 
-export type SubscriptionTier = "basic" | "standard" | "premium";
+export type SubscriptionTier = "starter" | "pro" | "enterprise";
 
 /**
  * Extract tier from Stripe subscription
@@ -28,7 +28,7 @@ export async function getTierFromStripeSubscription(
       logger.warn("[STRIPE TIER] No price ID found in subscription", {
         subscriptionId: subscription.id,
       });
-      return "basic";
+      return "starter";
     }
 
     // Fetch full price details with product
@@ -80,13 +80,13 @@ export async function getTierFromStripeSubscription(
       priceId: price.id,
       productName: product && "name" in product ? product.name : "unknown",
     });
-    return "basic";
+    return "starter";
   } catch (error) {
     logger.error("[STRIPE TIER] Error extracting tier", {
       error: error instanceof Error ? error.message : String(error),
       subscriptionId: subscription.id,
     });
-    return "basic";
+    return "starter";
   }
 }
 
@@ -97,14 +97,14 @@ function normalizeTier(tierString: string): SubscriptionTier {
   const normalized = tierString.toLowerCase().trim();
 
   if (normalized === "premium" || normalized === "pro" || normalized === "enterprise") {
-    return "premium";
+    return "enterprise";
   }
 
   if (normalized === "standard" || normalized === "professional" || normalized === "plus") {
-    return "standard";
+    return "pro";
   }
 
-  return "basic";
+  return "starter";
 }
 
 /**
@@ -121,7 +121,7 @@ function parseTierFromName(name: string): SubscriptionTier {
     nameLower.includes("pro plan") ||
     nameLower.includes("unlimited")
   ) {
-    return "premium";
+    return "enterprise";
   }
 
   // Check for standard indicators
@@ -131,7 +131,7 @@ function parseTierFromName(name: string): SubscriptionTier {
     nameLower.includes("plus") ||
     nameLower.includes("growth")
   ) {
-    return "standard";
+    return "pro";
   }
 
   // Check for basic indicators (or default)
@@ -141,11 +141,11 @@ function parseTierFromName(name: string): SubscriptionTier {
     nameLower.includes("free") ||
     nameLower.includes("trial")
   ) {
-    return "basic";
+    return "starter";
   }
 
   // Default to basic if unclear
-  return "basic";
+  return "starter";
 }
 
 /**

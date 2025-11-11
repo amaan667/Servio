@@ -7,29 +7,29 @@ import { apiLogger as logger } from "@/lib/logger";
 
 // Pricing tiers from homepage
 const PRICE_IDS = {
-  basic: process.env.STRIPE_BASIC_PRICE_ID,
-  standard: process.env.STRIPE_STANDARD_PRICE_ID,
-  premium: process.env.STRIPE_PREMIUM_PRICE_ID,
+  starter: process.env.STRIPE_BASIC_PRICE_ID, // Keep env var name for backwards compatibility
+  pro: process.env.STRIPE_STANDARD_PRICE_ID,
+  enterprise: process.env.STRIPE_PREMIUM_PRICE_ID,
 };
 
 // Create Stripe products and prices if they don't exist
 const ensureStripeProducts = async () => {
   const products = [
     {
-      tier: "basic",
-      name: "Basic Plan",
+      tier: "starter",
+      name: "Starter Plan",
       description: "Perfect for small cafes and restaurants",
       amount: 9900, // £99.00 in pence
     },
     {
-      tier: "standard",
-      name: "Standard Plan",
+      tier: "pro",
+      name: "Pro Plan",
       description: "Most popular for growing businesses",
       amount: 24900, // £249.00 in pence
     },
     {
-      tier: "premium",
-      name: "Premium Plan",
+      tier: "enterprise",
+      name: "Enterprise Plan",
       description: "Unlimited power for enterprises",
       amount: 44900, // £449.00 in pence
     },
@@ -217,9 +217,7 @@ export async function POST(_request: NextRequest) {
           value: venueUpdateError,
         });
       } else {
-
         // Block handled
-
       }
     }
 
@@ -269,9 +267,7 @@ export async function POST(_request: NextRequest) {
         data: { customerId, orgId: actualOrgId },
       });
     } else {
-
       // Block handled
-
     }
 
     // Create checkout session
@@ -301,7 +297,6 @@ export async function POST(_request: NextRequest) {
         // Trial period managed by our organization logic, not Stripe
       },
     };
-
 
     const session = await stripe.checkout.sessions.create(sessionData);
 

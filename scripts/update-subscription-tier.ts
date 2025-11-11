@@ -11,7 +11,6 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 async function updateSubscriptionTier(email: string, tier: string) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-
   // Find user by email
   const { data: users } = await supabase.auth.admin.listUsers();
   const user = users.users.find((u) => u.email === email);
@@ -20,7 +19,6 @@ async function updateSubscriptionTier(email: string, tier: string) {
     console.error(`❌ User not found: ${email}`);
     return;
   }
-
 
   // Find organization for this user
   const { data: venues } = await supabase
@@ -77,11 +75,10 @@ async function updateSubscriptionTier(email: string, tier: string) {
     .select("subscription_tier, subscription_status")
     .eq("id", organizationId)
     .single();
-
 }
 
 const email = process.argv[2] || "amaantanveer667@gmail.com";
-const tier = process.argv[3] || "premium";
+const tier = process.argv[3] || "enterprise";
 
 updateSubscriptionTier(email, tier)
   .then(() => {

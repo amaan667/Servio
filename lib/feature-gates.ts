@@ -6,15 +6,15 @@ import { errorToContext } from "@/lib/utils/error-to-context";
  * Controls access to premium features based on venue subscription tier.
  *
  * Subscription Tiers:
- * - basic: Up to 10 tables, QR ordering
- * - standard: Up to 20 tables, Full analytics
- * - premium: Unlimited tables/venues, KDS, Inventory, Staff management
+ * - starter: Up to 10 tables, QR ordering
+ * - pro: Up to 20 tables, Full analytics
+ * - enterprise: Unlimited tables/venues, KDS, Inventory, Staff management
  */
 
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
-export type SubscriptionTier = "basic" | "standard" | "premium";
+export type SubscriptionTier = "starter" | "pro" | "enterprise";
 
 export interface FeatureAccess {
   hasAccess: boolean;
@@ -25,11 +25,11 @@ export interface FeatureAccess {
 
 // Premium features that require subscription
 export const PREMIUM_FEATURES = {
-  INVENTORY: "premium" as SubscriptionTier,
-  KDS: "premium" as SubscriptionTier,
-  STAFF_MANAGEMENT: "premium" as SubscriptionTier,
-  ADVANCED_ANALYTICS: "standard" as SubscriptionTier,
-  MULTIPLE_VENUES: "premium" as SubscriptionTier,
+  INVENTORY: "enterprise" as SubscriptionTier,
+  KDS: "enterprise" as SubscriptionTier,
+  STAFF_MANAGEMENT: "enterprise" as SubscriptionTier,
+  ADVANCED_ANALYTICS: "pro" as SubscriptionTier,
+  MULTIPLE_VENUES: "enterprise" as SubscriptionTier,
 } as const;
 
 /**
@@ -53,22 +53,22 @@ export async function checkFeatureAccess(
 
     if (error) {
       logger.error("[FEATURE GATE] Error fetching venue:", errorToContext(error));
-      // Default to premium tier if error (allow all features)
+      // Default to enterprise tier if error (allow all features)
       return {
         hasAccess: true,
-        tier: "premium",
+        tier: "enterprise",
         requiredTier,
         message: undefined,
       };
     }
 
     // Temporarily allow all features for development
-    const currentTier = "premium";
+    const currentTier = "enterprise";
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
-      basic: 1,
-      standard: 2,
-      premium: 3,
+      starter: 1,
+      pro: 2,
+      enterprise: 3,
     };
 
     const hasAccess = tierHierarchy[currentTier] >= tierHierarchy[requiredTier];
@@ -85,7 +85,7 @@ export async function checkFeatureAccess(
     logger.error("[FEATURE GATE] Unexpected error:", errorToContext(_error));
     return {
       hasAccess: true,
-      tier: "premium",
+      tier: "enterprise",
       requiredTier,
       message: undefined,
     };
@@ -137,7 +137,7 @@ export async function clientCheckFeatureAccess(
     logger.error("[FEATURE GATE CLIENT] Error:", errorToContext(_error));
     return {
       hasAccess: true,
-      tier: "premium",
+      tier: "enterprise",
       message: undefined,
     };
   }

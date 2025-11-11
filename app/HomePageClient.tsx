@@ -55,7 +55,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 
 interface HomePageClientProps {
   initialAuthState: boolean;
-  initialUserPlan?: "basic" | "standard" | "premium" | null;
+  initialUserPlan?: "starter" | "pro" | "enterprise" | null;
 }
 
 export function HomePageClient({ initialAuthState, initialUserPlan = null }: HomePageClientProps) {
@@ -64,7 +64,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
   // Use server-provided auth state and plan - prevents flicker
   const [isSignedIn, setIsSignedIn] = useState(initialAuthState);
-  const [userPlan, setUserPlan] = useState<"basic" | "standard" | "premium" | null>(
+  const [userPlan, setUserPlan] = useState<"starter" | "pro" | "enterprise" | null>(
     initialUserPlan
   );
   const [loadingPlan, setLoadingPlan] = useState(false);
@@ -112,7 +112,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
               .maybeSingle();
 
             if (org?.subscription_tier) {
-              const plan = org.subscription_tier.toLowerCase() as "basic" | "standard" | "premium";
+              const plan = org.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise";
               setUserPlan(plan);
             }
           }
@@ -236,7 +236,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         }
         // Handle upgrades
         else if (ctaText.includes("Upgrade")) {
-          const targetTier = ctaText.includes("Premium") ? "premium" : "standard";
+          const targetTier = ctaText.includes("Premium") ? "enterprise" : "pro";
 
           const response = await apiClient.post("/api/stripe/create-checkout-session", {
             tier: targetTier,
@@ -302,24 +302,24 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     const planLower = planName.toLowerCase();
 
     // User is on Premium
-    if (userPlan === "premium") {
-      if (planLower === "premium") return "Current Plan";
-      if (planLower === "standard") return "Downgrade to Standard";
-      if (planLower === "basic") return "Downgrade to Basic";
+    if (userPlan === "enterprise") {
+      if (planLower === "enterprise") return "Current Plan";
+      if (planLower === "pro") return "Downgrade to Standard";
+      if (planLower === "starter") return "Downgrade to Basic";
     }
 
     // User is on Standard
-    if (userPlan === "standard") {
-      if (planLower === "standard") return "Current Plan";
-      if (planLower === "premium") return "Upgrade to Premium";
-      if (planLower === "basic") return "Downgrade to Basic";
+    if (userPlan === "pro") {
+      if (planLower === "pro") return "Current Plan";
+      if (planLower === "enterprise") return "Upgrade to Premium";
+      if (planLower === "starter") return "Downgrade to Basic";
     }
 
     // User is on Basic
-    if (userPlan === "basic") {
-      if (planLower === "basic") return "Current Plan";
-      if (planLower === "standard") return "Upgrade to Standard";
-      if (planLower === "premium") return "Upgrade to Premium";
+    if (userPlan === "starter") {
+      if (planLower === "starter") return "Current Plan";
+      if (planLower === "pro") return "Upgrade to Standard";
+      if (planLower === "enterprise") return "Upgrade to Premium";
     }
 
     // Fallback (shouldn't reach here but ensures we always return a string)
