@@ -73,6 +73,7 @@ export default function NavigationBreadcrumb({
   const isSignUpPage = pathname.includes("/sign-up");
   const isCreateAccountPage = pathname.includes("/auth/create-account");
   const isGenerateQRPage = pathname.includes("/qr-codes");
+  const isSelectPlanPage = pathname.includes("/select-plan");
 
   // Demo mode: Home ← Demo (current)
   if (isDemo) {
@@ -103,8 +104,11 @@ export default function NavigationBreadcrumb({
     );
   }
 
-  // For sign-in/sign-up/create-account pages: Home ← Sign In/Sign Up (current)
-  if ((isSignInPage || isSignUpPage || isCreateAccountPage) && !showBackButton) {
+  // For sign-in/sign-up/create-account/select-plan pages: Home ← Page Name (current)
+  if (
+    (isSignInPage || isSignUpPage || isCreateAccountPage || isSelectPlanPage) &&
+    !showBackButton
+  ) {
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
@@ -125,7 +129,7 @@ export default function NavigationBreadcrumb({
           </li>
           <li className="text-foreground/60">←</li>
           <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
-            {isCreateAccountPage ? "Sign Up" : pageTitle}
+            {isCreateAccountPage ? "Sign Up" : isSelectPlanPage ? "Choose Your Plan" : pageTitle}
           </li>
         </ol>
       </nav>

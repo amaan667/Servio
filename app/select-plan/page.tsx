@@ -34,24 +34,81 @@ export default function SelectPlanPage() {
         const supabase = supabaseBrowser();
 
         // Check for venues
-        const { data: venues } = await supabase
+        const { data: venues, error: venueError } = await supabase
           .from("venues")
           .select("venue_id, organization_id")
           .eq("owner_user_id", session.user.id)
-          .limit(1);
+          .limit(1)
+          .maybeSingle();
 
-        if (venues && venues.length > 0) {
-          // User has venues - get their current plan
-          if (venues[0].organization_id) {
-            const { data: organization } = await supabase
-              .from("organizations")
-              .select("subscription_tier")
-              .eq("id", venues[0].organization_id)
-              .single();
+        console.log("[SELECT-PLAN] Checking existing venues", {
+          hasVenues: !!venues,
+          venueId: venues?.venue_id,
+          organizationId: venues?.organization_id,
+          error: venueError?.message,
+        });
 
-            if (organization?.subscription_tier) {
-              setCurrentTier(organization.subscription_tier.toLowerCase());
-            }
+        if (venues && venues.venue_id) {
+          // User has venues - redirect to dashboard (they already have an account)
+          console.log("[SELECT-PLAN] User has venues, redirecting to dashboard", {
+            venueId: venues.venue_id,
+          });
+          router.push(`/dashboard/${venues.venue_id}`);
+          return;
+        }
+
+        // User is signed in but has no venues - get their current plan if they have an organization
+        if (venues?.organization_id) {
+          const { data: organization, error: orgError } = await supabase
+            .from("organizations")
+            .select("subscription_tier")
+            .eq("id", venues.organization_id)
+            .maybeSingle();
+
+          console.log("[SELECT-PLAN] Organization query", {
+            hasOrg: !!organization,
+            tier: organization?.subscription_tier,
+            error: orgError?.message,
+          });
+
+          if (organization?.subscription_tier) {
+            // Normalize tier name
+            const tier = organization.subscription_tier.toLowerCase();
+            const normalizedTier =
+              tier === "premium"
+                ? "enterprise"
+                : tier === "standard" || tier === "professional"
+                  ? "pro"
+                  : tier === "basic"
+                    ? "starter"
+                    : tier;
+            setCurrentTier(normalizedTier);
+          }
+        } else {
+          // Try to get organization directly
+          const { data: org, error: orgError } = await supabase
+            .from("organizations")
+            .select("subscription_tier")
+            .eq("owner_user_id", session.user.id)
+            .maybeSingle();
+
+          console.log("[SELECT-PLAN] Direct organization query", {
+            hasOrg: !!org,
+            tier: org?.subscription_tier,
+            error: orgError?.message,
+          });
+
+          if (org?.subscription_tier) {
+            const tier = org.subscription_tier.toLowerCase();
+            const normalizedTier =
+              tier === "premium"
+                ? "enterprise"
+                : tier === "standard" || tier === "professional"
+                  ? "pro"
+                  : tier === "basic"
+                    ? "starter"
+                    : tier;
+            setCurrentTier(normalizedTier);
           }
         }
 
