@@ -119,7 +119,7 @@ export const demoMenuItems = [
     price: 3.0,
     category: "Pastries",
     image:
-      "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&h=200&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=800&h=800&fit=crop&q=90&auto=format",
   },
   {
     id: "14",
@@ -195,7 +195,7 @@ export const demoMenuItems = [
     price: 4.75,
     category: "Desserts",
     image:
-      "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&h=200&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&h=800&fit=crop&q=90&auto=format",
   },
   {
     id: "22",
