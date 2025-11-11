@@ -61,15 +61,27 @@ export async function POST(_request: NextRequest) {
 
       if (staffRoles && !ownerVenues) {
         // User has staff roles but no owner venues - prevent creating owner account
+        // Get venue name for better error message
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_name")
+          .eq("venue_id", staffRoles.venue_id)
+          .maybeSingle();
+
+        const venueName = venue?.venue_name || "a venue";
+        const roleName = staffRoles.role.charAt(0).toUpperCase() + staffRoles.role.slice(1);
+
         logger.warn("[SIGNUP] Attempted owner account creation for staff-only email", {
           email,
           userId: existingUser.id,
           staffVenueId: staffRoles.venue_id,
+          role: staffRoles.role,
+          venueName: venue?.venue_name,
         });
+
         return NextResponse.json(
           {
-            error:
-              "This email is already registered as a staff member. Please sign in to your existing account. If you need to create an owner account, please use a different email address.",
+            error: `You are already a ${roleName} at ${venueName}. Please sign in to your existing account. If you need to create an owner account, please use a different email address.`,
           },
           { status: 409 }
         );

@@ -307,7 +307,7 @@ export default function GlobalNav() {
                   </>
                 ) : (
                   // On home page: Dashboard, Settings (no border), Sign Out (purple border) - NO dark mode
-                  // Only show Dashboard button if user has a venue (owner or staff)
+                  // Show Dashboard button if user has a venue (owner or staff)
                   <>
                     {(venueId || primaryVenueId) && (
                       <Link
