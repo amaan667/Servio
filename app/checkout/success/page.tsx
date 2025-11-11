@@ -97,11 +97,11 @@ export default function CheckoutSuccessPage() {
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
       case "starter":
-        return "Basic Plan";
+        return "Starter Plan";
       case "pro":
-        return "Standard Plan";
+        return "Pro Plan";
       case "enterprise":
-        return "Premium Plan";
+        return "Enterprise Plan";
       default:
         return "Your Plan";
     }

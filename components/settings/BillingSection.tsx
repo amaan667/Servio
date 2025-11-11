@@ -111,7 +111,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
     switch (tier) {
       case "starter":
         return {
-          name: "Basic",
+          name: "Starter",
           icon: CreditCard,
           color: "text-gray-600",
           bgColor: "bg-gray-50",
@@ -120,7 +120,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
         };
       case "pro":
         return {
-          name: "Standard",
+          name: "Pro",
           icon: Sparkles,
           color: "text-blue-600",
           bgColor: "bg-blue-50",
@@ -129,7 +129,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
         };
       case "enterprise":
         return {
-          name: "Premium",
+          name: "Enterprise",
           icon: Crown,
           color: "text-purple-600",
           bgColor: "bg-purple-50",
@@ -375,7 +375,7 @@ function FeatureItem({ name, enabled, tier }: { name: string; enabled: boolean; 
         </Badge>
       ) : (
         <Badge variant="outline">
-          {tier === "enterprise" ? "Premium" : tier === "pro" ? "Standard" : "Basic"}
+          {tier === "enterprise" ? "Enterprise" : tier === "pro" ? "Pro" : "Starter"}
         </Badge>
       )}
     </div>

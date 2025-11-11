@@ -320,11 +320,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
       case "starter":
-        return "Basic";
+        return "Starter";
       case "pro":
-        return "Standard";
+        return "Pro";
       case "enterprise":
-        return "Premium";
+        return "Enterprise";
       default:
         return tier.charAt(0).toUpperCase() + tier.slice(1);
     }

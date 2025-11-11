@@ -13,8 +13,8 @@ export interface PricingTier {
 }
 
 export const PRICING_TIERS: Record<string, PricingTier> = {
-  basic: {
-    name: "Basic",
+  starter: {
+    name: "Starter",
     price: "£99",
     priceNumeric: 99,
     description: "Perfect for small cafes and restaurants",
@@ -28,13 +28,13 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
     ],
     popular: false,
   },
-  standard: {
-    name: "Standard",
+  pro: {
+    name: "Pro",
     price: "£249",
     priceNumeric: 249,
     description: "Ideal for growing businesses",
     features: [
-      "Everything in Basic",
+      "Everything in Starter",
       "Up to 10 staff accounts",
       "Advanced analytics & AI insights",
       "Table management (up to 50 tables)",
@@ -44,13 +44,13 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
     ],
     popular: true,
   },
-  premium: {
-    name: "Premium",
+  enterprise: {
+    name: "Enterprise",
     price: "£449",
     priceNumeric: 449,
     description: "For established restaurants & chains",
     features: [
-      "Everything in Standard",
+      "Everything in Pro",
       "Unlimited staff accounts",
       "Multi-location support",
       "Custom branding",
@@ -74,10 +74,10 @@ export function getTierDisplayName(tier: string): string {
 }
 
 /**
- * Get tier order for comparison (basic = 1, standard = 2, premium = 3)
+ * Get tier order for comparison (starter = 1, pro = 2, enterprise = 3)
  */
 export function getTierLevel(tier: string): number {
-  const tierOrder: Record<string, number> = { basic: 1, standard: 2, premium: 3 };
+  const tierOrder: Record<string, number> = { starter: 1, pro: 2, enterprise: 3 };
   return tierOrder[tier.toLowerCase()] || 0;
 }
 

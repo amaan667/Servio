@@ -84,7 +84,7 @@ export async function POST(_request: NextRequest) {
     const body = await _request.json();
     const { tier, organizationId, isSignup, email, fullName, venueName } = body;
 
-    if (!tier || !["basic", "standard", "premium"].includes(tier)) {
+    if (!tier || !["starter", "pro", "enterprise"].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 

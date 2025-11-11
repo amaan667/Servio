@@ -76,7 +76,7 @@ export default function SelectPlanPage() {
       return "Current Plan";
     }
 
-    const tierOrder = { basic: 1, standard: 2, premium: 3 };
+    const tierOrder = { starter: 1, pro: 2, enterprise: 3 };
     const currentLevel = tierOrder[currentTier as keyof typeof tierOrder] || 0;
     const planLevel = tierOrder[planTier as keyof typeof tierOrder] || 0;
 

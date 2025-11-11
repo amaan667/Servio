@@ -167,7 +167,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
     // If Contact Sales, open mailto
     if (ctaText === "Contact Sales") {
-      window.location.href = "mailto:support@servio.app?subject=Premium Plan Inquiry";
+      window.location.href = "mailto:support@servio.app?subject=Enterprise Plan Inquiry";
       return;
     }
 
@@ -236,7 +236,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         }
         // Handle upgrades
         else if (ctaText.includes("Upgrade")) {
-          const targetTier = ctaText.includes("Premium") ? "enterprise" : "pro";
+          const targetTier = ctaText.includes("Enterprise") ? "enterprise" : "pro";
 
           const response = await apiClient.post("/api/stripe/create-checkout-session", {
             tier: targetTier,
@@ -289,47 +289,47 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
     // If not signed in, show default CTAs
     if (!isSignedIn) {
-      return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
+      return planName === "Enterprise" ? "Contact Sales" : "Start Free Trial";
     }
 
     // User is signed in - check their plan
     if (!userPlan) {
       // Signed in but no plan yet (shouldn't happen, but handle gracefully)
       // Return default CTA for signed-in users without a plan
-      return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
+      return planName === "Enterprise" ? "Contact Sales" : "Start Free Trial";
     }
 
     const planLower = planName.toLowerCase();
 
-    // User is on Premium
+    // User is on Enterprise
     if (userPlan === "enterprise") {
       if (planLower === "enterprise") return "Current Plan";
-      if (planLower === "pro") return "Downgrade to Standard";
-      if (planLower === "starter") return "Downgrade to Basic";
+      if (planLower === "pro") return "Downgrade to Pro";
+      if (planLower === "starter") return "Downgrade to Starter";
     }
 
-    // User is on Standard
+    // User is on Pro
     if (userPlan === "pro") {
       if (planLower === "pro") return "Current Plan";
-      if (planLower === "enterprise") return "Upgrade to Premium";
-      if (planLower === "starter") return "Downgrade to Basic";
+      if (planLower === "enterprise") return "Upgrade to Enterprise";
+      if (planLower === "starter") return "Downgrade to Starter";
     }
 
-    // User is on Basic
+    // User is on Starter
     if (userPlan === "starter") {
       if (planLower === "starter") return "Current Plan";
-      if (planLower === "pro") return "Upgrade to Standard";
-      if (planLower === "enterprise") return "Upgrade to Premium";
+      if (planLower === "pro") return "Upgrade to Pro";
+      if (planLower === "enterprise") return "Upgrade to Enterprise";
     }
 
     // Fallback (shouldn't reach here but ensures we always return a string)
     console.warn("[HOMEPAGE] getPlanCTA fallback reached", { planName, userPlan, isSignedIn });
-    return planName === "Premium" ? "Contact Sales" : "Start Free Trial";
+    return planName === "Enterprise" ? "Contact Sales" : "Start Free Trial";
   };
 
   const pricingPlans = [
     {
-      name: "Basic",
+      name: "Starter",
       price: "£99",
       period: "per month",
       description: "Perfect for small cafes and food trucks",
@@ -345,7 +345,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       popular: false,
     },
     {
-      name: "Standard",
+      name: "Pro",
       price: "£249",
       period: "per month",
       description: "For growing restaurants and cafes",
@@ -363,12 +363,12 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       popular: true,
     },
     {
-      name: "Premium",
+      name: "Enterprise",
       price: "£449+",
       period: "per month",
       description: "For established restaurants and chains",
       features: [
-        "Everything in Standard",
+        "Everything in Pro",
         "Custom branding",
         "White-label options",
         "Multi-location support",
@@ -401,12 +401,12 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     {
       question: "Can I customize the menu appearance?",
       answer:
-        "Yes! With the Professional plan, you can customize colors, fonts, and branding to match your venue's style.",
+        "Yes! With the Pro plan, you can customize colors, fonts, and branding to match your venue's style.",
     },
     {
       question: "What if I need help setting up?",
       answer:
-        "We offer email support for all plans, and priority support for Professional plan users. We also have detailed documentation to guide you through setup.",
+        "We offer email support for all plans, and priority support for Pro plan users. We also have detailed documentation to guide you through setup.",
     },
     {
       question: "Can I try Servio before committing?",
