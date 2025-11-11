@@ -218,11 +218,25 @@ const DashboardClient = React.memo(function DashboardClient({
 
         if (sessionError) {
           console.error("❌ SESSION ERROR:", sessionError);
+          // Don't redirect immediately - might be a temporary error
+          // Only redirect if it's a clear auth error (not a network/timeout error)
+          const errorMsg = sessionError.message || String(sessionError);
+          if (
+            errorMsg.includes("refresh_token_not_found") ||
+            errorMsg.includes("Invalid Refresh Token") ||
+            errorMsg.includes("JWT")
+          ) {
+            // Clear auth - session is invalid
+            router.push(`/sign-in?redirect=/dashboard/${venueId}`);
+          }
           return;
         }
 
         if (!session?.user) {
-          router.push(`/sign-in?redirect=/dashboard/${venueId}`);
+          // Only redirect if we've exhausted retries and still no session
+          if (retries >= maxRetries - 1) {
+            router.push(`/sign-in?redirect=/dashboard/${venueId}`);
+          }
           return;
         }
 
@@ -240,6 +254,13 @@ const DashboardClient = React.memo(function DashboardClient({
           .eq("owner_user_id", userId)
           .maybeSingle();
 
+        // If venue query fails with 406 or other errors, log but don't block
+        if (venueError) {
+          console.error("❌ VENUE QUERY ERROR:", venueError);
+          // Don't redirect - might be a temporary Supabase issue
+          // The user might still have access via staff role
+        }
+
         const isOwner = !!venueData;
 
         // Check if user has a staff role for this venue
@@ -250,12 +271,24 @@ const DashboardClient = React.memo(function DashboardClient({
           .eq("venue_id", venueId)
           .maybeSingle();
 
+        // If role query fails, log but don't block
+        if (roleError) {
+          console.error("❌ ROLE QUERY ERROR:", roleError);
+        }
+
         const isStaff = !!roleData;
 
-        // Auth check completed
-        if (!isOwner && !isStaff) {
+        // Auth check completed - only block if we're certain user has no access
+        // If queries failed, allow access (fail open) to prevent redirect loops
+        if (!isOwner && !isStaff && !venueError && !roleError) {
           console.error("❌ NO ACCESS to venue");
+          router.push(`/sign-in?redirect=/dashboard/${venueId}`);
           return;
+        }
+
+        // If queries failed but we have a cached venue, allow access
+        if ((venueError || roleError) && venue) {
+          console.warn("⚠️ Venue/role queries failed, using cached data");
         }
 
         // Set venue data and track the role that was set

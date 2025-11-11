@@ -78,12 +78,18 @@ export default function VenueSwitcherPopup({
   useEffect(() => {
     const loadCurrentVenueName = async () => {
       try {
-        const supabase = createClient();
-        const { data } = await supabase
+        const supabase = await createClient();
+        const { data, error } = await supabase
           .from("venues")
           .select("venue_name")
           .eq("venue_id", currentVenueId)
-          .single();
+          .maybeSingle();
+
+        if (error) {
+          // Log error but don't show to user - will show "Select Venue"
+          console.error("[VENUE SWITCHER] Error loading venue name:", error);
+          return;
+        }
 
         if (data) {
           setCurrentVenueName(data.venue_name);
@@ -92,8 +98,9 @@ export default function VenueSwitcherPopup({
             sessionStorage.setItem(`venue_name_${currentVenueId}`, data.venue_name);
           }
         }
-      } catch {
+      } catch (error) {
         // Silently handle - will show "Select Venue"
+        console.error("[VENUE SWITCHER] Exception loading venue name:", error);
       }
     };
 

@@ -82,20 +82,37 @@ function SignInPageContent() {
     // If user is already signed in, redirect to their first venue or next URL
     if (session && !loading) {
       const fetchVenueAndRedirect = async () => {
-        const supabase = supabaseBrowser();
-        const { data: venues } = await supabase
-          .from("venues")
-          .select("venue_id, created_at")
-          .eq("owner_user_id", session.user.id)
-          .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
-          .limit(5); // Get first 5 to debug
+        try {
+          const supabase = supabaseBrowser();
+          const { data: venues, error } = await supabase
+            .from("venues")
+            .select("venue_id, created_at")
+            .eq("owner_user_id", session.user.id)
+            .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
+            .limit(5); // Get first 5 to debug
 
-        if (nextParam) {
-          router.push(nextParam);
-        } else if (venues && venues.length > 0) {
-          router.push(`/dashboard/${venues[0]?.venue_id}`);
-        } else {
-          router.push("/select-plan");
+          // If query fails, don't redirect to select-plan - might be temporary error
+          if (error) {
+            console.error("[SIGN-IN] Error fetching venues:", error);
+            // If there's a nextParam, still redirect there
+            if (nextParam) {
+              router.push(nextParam);
+            }
+            // Otherwise, stay on sign-in page (don't redirect to select-plan on error)
+            return;
+          }
+
+          if (nextParam) {
+            router.push(nextParam);
+          } else if (venues && venues.length > 0) {
+            router.push(`/dashboard/${venues[0]?.venue_id}`);
+          } else {
+            // Only redirect to select-plan if we successfully queried and found no venues
+            router.push("/select-plan");
+          }
+        } catch (error) {
+          console.error("[SIGN-IN] Exception fetching venues:", error);
+          // On exception, don't redirect - stay on sign-in page
         }
       };
 
