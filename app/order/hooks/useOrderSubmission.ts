@@ -32,15 +32,17 @@ export function useOrderSubmission() {
     } = params;
 
     // Validate order data
+    // Skip customer info validation for demo orders
+    if (!isDemo && !isDemoFallback) {
+      if (!customerInfo.name.trim()) {
+        alert("Please enter your name before placing the order.");
+        return;
+      }
 
-    if (!customerInfo.name.trim()) {
-      alert("Please enter your name before placing the order.");
-      return;
-    }
-
-    if (!customerInfo.phone.trim()) {
-      alert("Please enter your phone number before placing the order.");
-      return;
+      if (!customerInfo.phone.trim()) {
+        alert("Please enter your phone number before placing the order.");
+        return;
+      }
     }
 
     if (cart.length === 0) {
@@ -59,7 +61,7 @@ export function useOrderSubmission() {
       const safeTable = isCounterOrder ? parseInt(counterNumber) || 1 : parseInt(tableNumber) || 1;
       const paymentMode = isCounterOrder ? "pay_at_till" : "online";
 
-      // For demo orders
+      // For demo orders - skip customer info and go straight to order summary
       if (isDemo || isDemoFallback) {
         const orderData = {
           venueId: venueSlug,
@@ -68,8 +70,8 @@ export function useOrderSubmission() {
           counterNumber: counterNumber,
           orderType: orderType,
           orderLocation: orderLocation,
-          customerName: customerInfo.name.trim(),
-          customerPhone: customerInfo.phone.trim(),
+          customerName: "Demo Customer", // Default name for demo
+          customerPhone: "00000000000", // Default phone for demo
           cart: cart.map((item) => ({
             id: item.id && item.id.startsWith("demo-") ? null : item.id,
             name: item.name,

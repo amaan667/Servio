@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ShoppingCart, CreditCard, Plus, Minus, X } from "lucide-react";
-import { CartItem } from '../types';
+import { CartItem } from "../types";
 
 interface DesktopCartProps {
   cart: CartItem[];
@@ -12,6 +12,8 @@ interface DesktopCartProps {
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onUpdateSpecialInstructions: (itemId: string, instructions: string) => void;
   onShowCheckout: () => void;
+  isDemo?: boolean;
+  onDirectSubmit?: () => void;
 }
 
 export function DesktopCart({
@@ -22,6 +24,8 @@ export function DesktopCart({
   onUpdateQuantity,
   onUpdateSpecialInstructions,
   onShowCheckout,
+  isDemo = false,
+  onDirectSubmit,
 }: DesktopCartProps) {
   return (
     <div className="hidden lg:block">
@@ -43,7 +47,10 @@ export function DesktopCart({
           ) : (
             <div className="space-y-4">
               {cart.map((item) => (
-                <div key={item.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
+                <div
+                  key={item.id}
+                  className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700"
+                >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900 dark:text-white text-sm">
@@ -62,7 +69,7 @@ export function DesktopCart({
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <Button
@@ -73,7 +80,9 @@ export function DesktopCart({
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="w-8 text-center text-sm font-medium text-gray-900 dark:text-white">{item.quantity}</span>
+                      <span className="w-8 text-center text-sm font-medium text-gray-900 dark:text-white">
+                        {item.quantity}
+                      </span>
                       <Button
                         onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                         size="sm"
@@ -87,13 +96,13 @@ export function DesktopCart({
                       £{(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
-                  
+
                   {item.specialInstructions && (
                     <p className="text-xs text-gray-900 dark:text-gray-700 mb-2">
                       Note: {item.specialInstructions}
                     </p>
                   )}
-                  
+
                   <Textarea
                     placeholder="Special instructions (optional)"
                     value={item.specialInstructions || ""}
@@ -113,12 +122,18 @@ export function DesktopCart({
                 </div>
 
                 <Button
-                  onClick={onShowCheckout}
+                  onClick={() => {
+                    if (isDemo && onDirectSubmit) {
+                      onDirectSubmit();
+                    } else {
+                      onShowCheckout();
+                    }
+                  }}
                   className="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white py-3 text-lg font-medium"
                   disabled={cart.length === 0}
                 >
                   <CreditCard className="h-5 w-5 mr-2" />
-                  Proceed to Checkout
+                  {isDemo ? "Place Order" : "Proceed to Checkout"}
                 </Button>
               </div>
             </div>
@@ -128,4 +143,3 @@ export function DesktopCart({
     </div>
   );
 }
-

@@ -227,6 +227,8 @@ export default function CustomerOrderPage() {
             onUpdateQuantity={updateQuantity}
             onUpdateSpecialInstructions={updateSpecialInstructions}
             onShowCheckout={() => setShowCheckout(true)}
+            isDemo={isDemo}
+            onDirectSubmit={handleSubmitOrder}
           />
         </div>
 
@@ -247,6 +249,8 @@ export default function CustomerOrderPage() {
             setShowMobileCart(false);
             setShowCheckout(true);
           }}
+          isDemo={isDemo}
+          onDirectSubmit={handleSubmitOrder}
         />
       </div>
 

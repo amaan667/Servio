@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ShoppingCart, CreditCard, Plus, Minus, X } from "lucide-react";
-import { CartItem } from '../types';
+import { CartItem } from "../types";
 
 interface MobileCartProps {
   cart: CartItem[];
@@ -13,6 +13,8 @@ interface MobileCartProps {
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onUpdateSpecialInstructions: (itemId: string, instructions: string) => void;
   onShowCheckout: () => void;
+  isDemo?: boolean;
+  onDirectSubmit?: () => void;
 }
 
 export function MobileCart({
@@ -25,6 +27,8 @@ export function MobileCart({
   onUpdateQuantity,
   onUpdateSpecialInstructions,
   onShowCheckout,
+  isDemo = false,
+  onDirectSubmit,
 }: MobileCartProps) {
   if (!showMobileCart) return null;
 
@@ -34,7 +38,9 @@ export function MobileCart({
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
           <div className="flex justify-between items-center">
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg font-semibold truncate text-gray-900 dark:text-white">Your Order</h3>
+              <h3 className="text-lg font-semibold truncate text-gray-900 dark:text-white">
+                Your Order
+              </h3>
               <p className="text-sm text-gray-900 dark:text-gray-600">
                 {totalItems} items • £{totalPrice.toFixed(2)}
               </p>
@@ -49,7 +55,7 @@ export function MobileCart({
             </Button>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-4">
           {cart.length === 0 ? (
             <p className="text-gray-900 text-center py-8">
@@ -61,12 +67,8 @@ export function MobileCart({
                 <div key={item.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-base">
-                        {item.name}
-                      </h4>
-                      <p className="text-sm text-gray-900">
-                        £{item.price.toFixed(2)} each
-                      </p>
+                      <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
+                      <p className="text-sm text-gray-900">£{item.price.toFixed(2)} each</p>
                     </div>
                     <Button
                       onClick={() => onRemoveFromCart(item.id)}
@@ -77,7 +79,7 @@ export function MobileCart({
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <Button
@@ -88,7 +90,9 @@ export function MobileCart({
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <span className="text-lg font-medium min-w-[2rem] text-center">{item.quantity}</span>
+                      <span className="text-lg font-medium min-w-[2rem] text-center">
+                        {item.quantity}
+                      </span>
                       <Button
                         onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                         size="sm"
@@ -102,13 +106,11 @@ export function MobileCart({
                       £{(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
-                  
+
                   {item.specialInstructions && (
-                    <p className="text-xs text-gray-900 mb-2">
-                      Note: {item.specialInstructions}
-                    </p>
+                    <p className="text-xs text-gray-900 mb-2">Note: {item.specialInstructions}</p>
                   )}
-                  
+
                   <Textarea
                     placeholder="Special instructions (optional)"
                     value={item.specialInstructions || ""}
@@ -121,7 +123,7 @@ export function MobileCart({
             </div>
           )}
         </div>
-        
+
         {cart.length > 0 && (
           <div className="border-t p-4 flex-shrink-0 bg-white">
             <div className="flex justify-between items-center mb-4">
@@ -134,13 +136,17 @@ export function MobileCart({
             <Button
               onClick={() => {
                 onClose();
-                onShowCheckout();
+                if (isDemo && onDirectSubmit) {
+                  onDirectSubmit();
+                } else {
+                  onShowCheckout();
+                }
               }}
               className="w-full min-h-[48px] text-base font-medium bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white"
               disabled={cart.length === 0}
             >
               <CreditCard className="h-5 w-5 mr-2" />
-              Proceed to Checkout
+              {isDemo ? "Place Order" : "Proceed to Checkout"}
             </Button>
           </div>
         )}
@@ -148,4 +154,3 @@ export function MobileCart({
     </div>
   );
 }
-
