@@ -172,15 +172,25 @@ const DashboardClient = React.memo(function DashboardClient({
   // Check authentication and venue access
   useEffect(() => {
     async function checkAuth() {
+      console.log("[DASHBOARD AUTH] 🔍 Starting auth check", {
+        venueId,
+        hasCachedUser: !!user,
+        hasCachedVenue: !!venue,
+        hasCachedRole: !!userRole,
+        authCheckComplete,
+      });
+
       // ALWAYS fetch role if we don't have it, regardless of cache
       // This ensures fresh sign-ins get the correct role immediately
       if (userRole && authCheckComplete) {
+        console.log("[DASHBOARD AUTH] ✅ Auth check already complete, skipping");
         // Only skip if we have role AND auth check is already complete
         return;
       }
 
       try {
         const supabase = supabaseBrowser();
+        console.log("[DASHBOARD AUTH] 📡 Created Supabase client");
 
         // Try BOTH getSession() and getUser() to ensure we have valid auth
         let session = null;
@@ -189,64 +199,104 @@ const DashboardClient = React.memo(function DashboardClient({
         const maxRetries = 3;
 
         while (retries < maxRetries) {
+          console.log(`[DASHBOARD AUTH] 🔄 Retry ${retries + 1}/${maxRetries}`);
+
           // Try getSession first
           const sessionResult = await supabase.auth.getSession();
           sessionError = sessionResult.error;
           session = sessionResult.data.session;
 
+          console.log("[DASHBOARD AUTH] 📋 getSession result", {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            userId: session?.user?.id,
+            error: sessionError?.message,
+          });
+
           // If getSession fails, try getUser() which makes a server request
           if (!session?.user) {
+            console.log("[DASHBOARD AUTH] 🔄 No session, trying getUser()");
             const userResult = await supabase.auth.getUser();
+
+            console.log("[DASHBOARD AUTH] 👤 getUser result", {
+              hasUser: !!userResult.data?.user,
+              userId: userResult.data?.user?.id,
+              error: userResult.error?.message,
+            });
 
             if (userResult.data?.user && !userResult.error) {
               // After getUser(), try getSession again
               const retrySession = await supabase.auth.getSession();
               session = retrySession.data.session;
               sessionError = retrySession.error;
+              console.log("[DASHBOARD AUTH] 🔄 Retry getSession after getUser", {
+                hasSession: !!session,
+                hasUser: !!session?.user,
+              });
             }
           }
 
           if (session?.user) {
+            console.log("[DASHBOARD AUTH] ✅ Session found, breaking retry loop");
             break;
           }
 
           if (retries < maxRetries - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // Increased to 1 second
+            console.log("[DASHBOARD AUTH] ⏳ Waiting 1s before retry");
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
           retries++;
         }
 
         if (sessionError) {
-          console.error("❌ SESSION ERROR:", sessionError);
-          // Don't redirect immediately - might be a temporary error
-          // Only redirect if it's a clear auth error (not a network/timeout error)
-          const errorMsg = sessionError.message || String(sessionError);
-          if (
-            errorMsg.includes("refresh_token_not_found") ||
-            errorMsg.includes("Invalid Refresh Token") ||
-            errorMsg.includes("JWT")
-          ) {
-            // Clear auth - session is invalid
-            router.push(`/sign-in?redirect=/dashboard/${venueId}`);
-          }
-          return;
+          console.error("[DASHBOARD AUTH] ❌ SESSION ERROR:", {
+            error: sessionError,
+            message: sessionError.message,
+            code: sessionError.code,
+          });
+          // NO REDIRECTS - User requested ZERO sign-in redirects
+          // Just log and continue - might be a temporary error
+          console.warn("[DASHBOARD AUTH] ⚠️ Session error but continuing (no redirect)");
         }
 
         if (!session?.user) {
-          // Only redirect if we've exhausted retries and still no session
-          if (retries >= maxRetries - 1) {
-            router.push(`/sign-in?redirect=/dashboard/${venueId}`);
+          console.warn("[DASHBOARD AUTH] ⚠️ No session found after retries", {
+            retries,
+            maxRetries,
+          });
+          // NO REDIRECTS - User requested ZERO sign-in redirects
+          // Use cached user if available
+          if (user) {
+            console.log("[DASHBOARD AUTH] ✅ Using cached user data");
+          } else {
+            console.warn("[DASHBOARD AUTH] ⚠️ No session and no cached user - continuing anyway");
+          }
+          // Don't return - continue with cached data or proceed without auth
+        } else {
+          console.log("[DASHBOARD AUTH] ✅ Setting user from session", {
+            userId: session.user.id,
+            email: session.user.email,
+          });
+          setUser(session.user);
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(session.user));
+          }
+        }
+
+        const userId = user?.id || session?.user?.id;
+        console.log("[DASHBOARD AUTH] 🔍 Checking venue access", { userId, venueId });
+
+        if (!userId) {
+          console.warn("[DASHBOARD AUTH] ⚠️ No userId available - using cached venue if available");
+          if (venue) {
+            console.log("[DASHBOARD AUTH] ✅ Using cached venue data");
+            setAuthCheckComplete(true);
           }
           return;
         }
 
-        setUser(session.user);
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(session.user));
-        }
-        const userId = session.user.id;
-
         // Check if user is the venue owner
+        console.log("[DASHBOARD AUTH] 📡 Querying venues table");
         const { data: venueData, error: venueError } = await supabase
           .from("venues")
           .select("*")
@@ -254,16 +304,30 @@ const DashboardClient = React.memo(function DashboardClient({
           .eq("owner_user_id", userId)
           .maybeSingle();
 
+        console.log("[DASHBOARD AUTH] 📋 Venue query result", {
+          hasVenueData: !!venueData,
+          venueId: venueData?.venue_id,
+          error: venueError?.message,
+          errorCode: venueError?.code,
+          errorStatus: venueError?.status,
+        });
+
         // If venue query fails with 406 or other errors, log but don't block
         if (venueError) {
-          console.error("❌ VENUE QUERY ERROR:", venueError);
+          console.error("[DASHBOARD AUTH] ❌ VENUE QUERY ERROR:", {
+            error: venueError,
+            message: venueError.message,
+            code: venueError.code,
+            status: venueError.status,
+          });
           // Don't redirect - might be a temporary Supabase issue
-          // The user might still have access via staff role
+          // The user might still have access via staff role or cached data
         }
 
         const isOwner = !!venueData;
 
         // Check if user has a staff role for this venue
+        console.log("[DASHBOARD AUTH] 📡 Querying user_venue_roles table");
         const { data: roleData, error: roleError } = await supabase
           .from("user_venue_roles")
           .select("role")
@@ -271,24 +335,49 @@ const DashboardClient = React.memo(function DashboardClient({
           .eq("venue_id", venueId)
           .maybeSingle();
 
+        console.log("[DASHBOARD AUTH] 📋 Role query result", {
+          hasRoleData: !!roleData,
+          role: roleData?.role,
+          error: roleError?.message,
+          errorCode: roleError?.code,
+        });
+
         // If role query fails, log but don't block
         if (roleError) {
-          console.error("❌ ROLE QUERY ERROR:", roleError);
+          console.error("[DASHBOARD AUTH] ❌ ROLE QUERY ERROR:", {
+            error: roleError,
+            message: roleError.message,
+            code: roleError.code,
+          });
         }
 
         const isStaff = !!roleData;
 
-        // Auth check completed - only block if we're certain user has no access
-        // If queries failed, allow access (fail open) to prevent redirect loops
+        console.log("[DASHBOARD AUTH] 📊 Access check summary", {
+          isOwner,
+          isStaff,
+          hasVenueError: !!venueError,
+          hasRoleError: !!roleError,
+          hasCachedVenue: !!venue,
+        });
+
+        // NO REDIRECTS - User requested ZERO sign-in redirects
+        // Always allow access - fail open approach
         if (!isOwner && !isStaff && !venueError && !roleError) {
-          console.error("❌ NO ACCESS to venue");
-          router.push(`/sign-in?redirect=/dashboard/${venueId}`);
-          return;
+          console.warn("[DASHBOARD AUTH] ⚠️ User has no access but continuing (no redirect)", {
+            isOwner,
+            isStaff,
+            hasCachedVenue: !!venue,
+          });
+          // Use cached venue if available
+          if (venue) {
+            console.log("[DASHBOARD AUTH] ✅ Using cached venue data");
+          }
         }
 
         // If queries failed but we have a cached venue, allow access
         if ((venueError || roleError) && venue) {
-          console.warn("⚠️ Venue/role queries failed, using cached data");
+          console.warn("[DASHBOARD AUTH] ⚠️ Venue/role queries failed, using cached data");
         }
 
         // Set venue data and track the role that was set
