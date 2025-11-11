@@ -140,6 +140,7 @@ export function supabaseBrowser() {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
+          Prefer: "return=representation",
         },
       },
     });
@@ -217,7 +218,16 @@ export function supabaseServer(cookies: {
 export function supabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
   if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
-  return createBrowserClient(getSupabaseUrl(), key, { auth: { persistSession: false } });
+  return createBrowserClient(getSupabaseUrl(), key, {
+    auth: { persistSession: false },
+    global: {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+    },
+  });
 }
 
 // Backward compatibility export
@@ -317,6 +327,13 @@ export async function createServerSupabaseReadOnly() {
       setAll() {
         // NO-OP: Don't try to set cookies in read-only mode
         // This prevents "Cookies can only be modified in a Server Action or Route Handler" errors
+      },
+    },
+    global: {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
       },
     },
   });
