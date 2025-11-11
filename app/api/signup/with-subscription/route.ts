@@ -37,6 +37,56 @@ export async function POST(_request: NextRequest) {
 
     const supabase = createAdminClient();
 
+    // Check if email already exists as a user
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (existingUser) {
+      // Check if this user has staff roles but no owner venues
+      const { data: staffRoles } = await supabase
+        .from("user_venue_roles")
+        .select("venue_id, role")
+        .eq("user_id", existingUser.id)
+        .limit(1)
+        .maybeSingle();
+
+      const { data: ownerVenues } = await supabase
+        .from("venues")
+        .select("venue_id")
+        .eq("owner_user_id", existingUser.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (staffRoles && !ownerVenues) {
+        // User has staff roles but no owner venues - prevent creating owner account
+        logger.warn("[SIGNUP] Attempted owner account creation for staff-only email", {
+          email,
+          userId: existingUser.id,
+          staffVenueId: staffRoles.venue_id,
+        });
+        return NextResponse.json(
+          {
+            error:
+              "This email is already registered as a staff member. Please sign in to your existing account. If you need to create an owner account, please use a different email address.",
+          },
+          { status: 409 }
+        );
+      }
+
+      // User exists and has owner venues - they should sign in instead
+      if (ownerVenues) {
+        return NextResponse.json(
+          {
+            error:
+              "An account with this email already exists. Please sign in to your existing account.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     // Create user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,

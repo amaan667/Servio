@@ -307,16 +307,17 @@ export default function GlobalNav() {
                   </>
                 ) : (
                   // On home page: Dashboard, Settings (no border), Sign Out (purple border) - NO dark mode
+                  // Only show Dashboard button if user has a venue (owner or staff)
                   <>
-                    <Link
-                      href={
-                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
-                      }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
-                    >
-                      <LayoutDashboard className="mr-3 h-5 w-5" />
-                      Dashboard
-                    </Link>
+                    {(venueId || primaryVenueId) && (
+                      <Link
+                        href={`/dashboard/${venueId || primaryVenueId}`}
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      >
+                        <LayoutDashboard className="mr-3 h-5 w-5" />
+                        Dashboard
+                      </Link>
+                    )}
                     {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
                         href={

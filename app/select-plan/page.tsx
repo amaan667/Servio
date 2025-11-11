@@ -33,32 +33,58 @@ export default function SelectPlanPage() {
       try {
         const supabase = supabaseBrowser();
 
-        // Check for venues
-        const { data: venues, error: venueError } = await supabase
+        // Check for owner venues first
+        const { data: ownerVenues, error: venueError } = await supabase
           .from("venues")
           .select("venue_id, organization_id")
           .eq("owner_user_id", session.user.id)
           .limit(1)
           .maybeSingle();
 
-        console.log("[SELECT-PLAN] Checking existing venues", {
-          hasVenues: !!venues,
-          venueId: venues?.venue_id,
-          organizationId: venues?.organization_id,
+        console.log("[SELECT-PLAN] Checking owner venues", {
+          hasOwnerVenues: !!ownerVenues,
+          venueId: ownerVenues?.venue_id,
+          organizationId: ownerVenues?.organization_id,
           error: venueError?.message,
         });
 
-        if (venues && venues.venue_id) {
-          // User has venues - redirect to dashboard (they already have an account)
-          console.log("[SELECT-PLAN] User has venues, redirecting to dashboard", {
-            venueId: venues.venue_id,
+        if (ownerVenues && ownerVenues.venue_id) {
+          // User has owner venues - redirect to dashboard (they already have an owner account)
+          console.log("[SELECT-PLAN] User has owner venues, redirecting to dashboard", {
+            venueId: ownerVenues.venue_id,
           });
-          router.push(`/dashboard/${venues.venue_id}`);
+          router.push(`/dashboard/${ownerVenues.venue_id}`);
           return;
         }
 
-        // User is signed in but has no venues - get their current plan if they have an organization
-        if (venues?.organization_id) {
+        // Check if user has staff roles but no owner venues
+        const { data: staffRoles, error: staffError } = await supabase
+          .from("user_venue_roles")
+          .select("venue_id, role")
+          .eq("user_id", session.user.id)
+          .limit(1)
+          .maybeSingle();
+
+        console.log("[SELECT-PLAN] Checking staff roles", {
+          hasStaffRoles: !!staffRoles,
+          venueId: staffRoles?.venue_id,
+          role: staffRoles?.role,
+          error: staffError?.message,
+        });
+
+        if (staffRoles && staffRoles.venue_id && !ownerVenues) {
+          // User has staff roles but no owner venues - they're a staff member only
+          // Redirect them to their staff dashboard instead of allowing owner account creation
+          console.log("[SELECT-PLAN] User is staff-only, redirecting to staff dashboard", {
+            venueId: staffRoles.venue_id,
+            role: staffRoles.role,
+          });
+          router.push(`/dashboard/${staffRoles.venue_id}`);
+          return;
+        }
+
+        // User is signed in but has no owner venues - get their current plan if they have an organization
+        if (ownerVenues?.organization_id) {
           const { data: organization, error: orgError } = await supabase
             .from("organizations")
             .select("subscription_tier")
