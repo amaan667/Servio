@@ -88,7 +88,7 @@ export default function SelectPlanPage() {
           const { data: organization, error: orgError } = await supabase
             .from("organizations")
             .select("subscription_tier")
-            .eq("id", venues.organization_id)
+            .eq("id", ownerVenues.organization_id)
             .maybeSingle();
 
           console.log("[SELECT-PLAN] Organization query", {
