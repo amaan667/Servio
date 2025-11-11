@@ -79,7 +79,7 @@ export default function OnboardingMenuPage() {
       }
 
       // Store progress
-      localStorage.setItem("onboarding_step", "1");
+      localStorage.setItem("onboarding_step", "2");
       localStorage.setItem("onboarding_menu_complete", "true");
 
       toast({
