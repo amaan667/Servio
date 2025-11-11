@@ -87,13 +87,15 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // For dashboard pages, redirect if no session
+  // For dashboard pages, NO REDIRECTS - User requested ZERO sign-in redirects
+  // Allow dashboard to load even without session - client-side will handle auth
   if (pathname.startsWith("/dashboard")) {
-    if (!session) {
-      const redirectUrl = new URL("/sign-in", request.url);
-      redirectUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(redirectUrl);
-    }
+    console.log("[MIDDLEWARE] Dashboard page access", {
+      pathname,
+      hasSession: !!session,
+      userId: session?.user?.id,
+    });
+    // Don't redirect - let dashboard component handle auth client-side
   }
 
   return response;
