@@ -54,12 +54,14 @@ export default function CreateAccountPage() {
         }
 
         setSessionData(data);
-        // Smart autofill: Use Stripe email if available, otherwise check for pending OAuth email
-        const stripeEmail = data.customer_email;
-        const pendingEmail =
-          typeof window !== "undefined" ? sessionStorage.getItem("pending_signup_email") : null;
-        const emailToUse = stripeEmail || pendingEmail || "";
-        setFormData((prev) => ({ ...prev, email: emailToUse }));
+        // Only use Stripe checkout email - don't use sessionStorage or other sources
+        const stripeEmail = data.customer_email || "";
+        setFormData((prev) => ({
+          ...prev,
+          email: stripeEmail,
+          password: "", // Ensure password is empty
+          venueName: "", // Ensure venue name is empty
+        }));
         setStatus("form");
       } catch (_err) {
         setError(_err instanceof Error ? _err.message : "Failed to fetch session details.");
@@ -75,19 +77,46 @@ export default function CreateAccountPage() {
     setLoading(true);
     setError(null);
 
+    // Validate all required fields before submitting
+    if (!formData.email?.trim()) {
+      setError("Email is required");
+      setLoading(false);
+      return;
+    }
+    if (!formData.password?.trim()) {
+      setError("Password is required");
+      setLoading(false);
+      return;
+    }
+    if (!formData.venueName?.trim()) {
+      setError("Business name is required");
+      setLoading(false);
+      return;
+    }
+    if (!sessionData?.metadata?.full_name) {
+      setError("Full name is missing. Please try again.");
+      setLoading(false);
+      return;
+    }
+    if (!sessionData?.metadata?.tier) {
+      setError("Subscription tier is missing. Please try again.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/signup/with-subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.email, // Use form data email (editable by user)
+          email: formData.email.trim(),
           password: formData.password,
-          fullName: sessionData?.metadata.full_name,
-          venueName: formData.venueName,
+          fullName: sessionData.metadata.full_name,
+          venueName: formData.venueName.trim(),
           venueType: formData.businessType,
           serviceType: formData.serviceType,
-          tier: sessionData?.metadata.tier,
-          stripeSessionId: sessionData?.id,
+          tier: sessionData.metadata.tier,
+          stripeSessionId: sessionData.id,
         }),
       });
 
@@ -160,7 +189,7 @@ export default function CreateAccountPage() {
                 />
                 <p className="text-xs text-gray-500">
                   {sessionData?.customer_email &&
-                    "Pre-filled from your account • You can change this if needed"}
+                    "Pre-filled from Stripe checkout • You can change this if needed"}
                 </p>
               </div>
 
@@ -268,7 +297,7 @@ export default function CreateAccountPage() {
           <CardContent className="text-center">
             <div className="text-6xl mb-4">✅</div>
             <p className="text-gray-600 mb-4">Account created successfully!</p>
-            <p className="text-sm text-gray-500">Redirecting to your dashboard...</p>
+            <p className="text-sm text-gray-500">Redirecting to onboarding...</p>
           </CardContent>
         </Card>
       </div>
