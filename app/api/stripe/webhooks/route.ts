@@ -401,7 +401,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .eq("id", organizationId)
     .single();
 
-  // Downgrade to basic (free tier)
+  // Downgrade to starter (free tier)
   await supabase
     .from("organizations")
     .update({

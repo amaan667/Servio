@@ -15,7 +15,7 @@ export type SubscriptionTier = "starter" | "pro" | "enterprise";
  * 1. Price metadata.tier
  * 2. Product metadata.tier
  * 3. Product name parsing
- * 4. Default to basic
+ * 4. Default to starter
  */
 export async function getTierFromStripeSubscription(
   subscription: Stripe.Subscription,
@@ -76,7 +76,7 @@ export async function getTierFromStripeSubscription(
     }
 
     // 4. Default
-    logger.warn("[STRIPE TIER] Could not determine tier, defaulting to basic", {
+    logger.warn("[STRIPE TIER] Could not determine tier, defaulting to starter", {
       priceId: price.id,
       productName: product && "name" in product ? product.name : "unknown",
     });
@@ -144,7 +144,7 @@ function parseTierFromName(name: string): SubscriptionTier {
     return "starter";
   }
 
-  // Default to basic if unclear
+  // Default to starter if unclear
   return "starter";
 }
 

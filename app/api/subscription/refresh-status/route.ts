@@ -112,7 +112,7 @@ export async function POST(_request: NextRequest) {
     } catch (stripeError: unknown) {
       logger.error("[SUBSCRIPTION REFRESH] Stripe error:", { value: stripeError });
 
-      // If subscription doesn't exist in Stripe, reset to basic
+      // If subscription doesn't exist in Stripe, reset to starter
       const { error: resetError } = await supabase
         .from("organizations")
         .update({

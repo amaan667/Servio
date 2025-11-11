@@ -107,13 +107,13 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         {
           error: "Tier not found in Stripe subscription metadata.",
-          hint: "Your Stripe subscription needs a 'tier' field in metadata (basic/standard/premium).",
+          hint: "Your Stripe subscription needs a 'tier' field in metadata (starter/pro/enterprise).",
           stripeData: {
             subscriptionId: activeSubscription.id,
             status: activeSubscription.status,
             metadata: activeSubscription.metadata,
           },
-          suggestion: "Use /api/admin/set-premium to manually set tier to premium",
+          suggestion: "Use /api/admin/set-premium to manually set tier to enterprise",
         },
         { status: 400 }
       );
@@ -133,7 +133,6 @@ export async function POST(_request: NextRequest) {
       trial_ends_at: trialEndsAt,
       updated_at: new Date().toISOString(),
     };
-
 
     const { error } = await supabase
       .from("organizations")

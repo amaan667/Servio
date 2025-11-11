@@ -49,7 +49,7 @@ export async function GET(
       : venue.organizations;
 
     return NextResponse.json({
-      tier: organization?.subscription_tier || "basic",
+      tier: organization?.subscription_tier || "starter",
       status: organization?.subscription_status || "active",
     });
   } catch (_error) {

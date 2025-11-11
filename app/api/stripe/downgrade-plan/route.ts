@@ -28,7 +28,7 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    if (!["basic", "standard", "premium"].includes(newTier)) {
+    if (!["starter", "pro", "enterprise"].includes(newTier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
@@ -87,9 +87,9 @@ export async function POST(_request: NextRequest) {
 
           // Get the price ID for the new tier
           const priceIds = {
-            basic: process.env.STRIPE_BASIC_PRICE_ID,
-            standard: process.env.STRIPE_STANDARD_PRICE_ID,
-            premium: process.env.STRIPE_PREMIUM_PRICE_ID,
+            starter: process.env.STRIPE_BASIC_PRICE_ID,
+            pro: process.env.STRIPE_STANDARD_PRICE_ID,
+            enterprise: process.env.STRIPE_PREMIUM_PRICE_ID,
           };
 
           const newPriceId = priceIds[newTier as keyof typeof priceIds];

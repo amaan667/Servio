@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 /**
- * Simple endpoint to set current user to premium
+ * Simple endpoint to set current user to enterprise tier
  * POST /api/admin/set-premium
  */
 export async function POST(_request: NextRequest) {
@@ -19,7 +19,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    logger.info("[SET PREMIUM] Setting user to premium tier", {
+    logger.info("[SET PREMIUM] Setting user to enterprise tier", {
       userId: user.id,
       email: user.email,
     });
@@ -55,7 +55,7 @@ export async function POST(_request: NextRequest) {
       hasStripeCustomer: !!org.stripe_customer_id,
     });
 
-    // Update to premium
+    // Update to enterprise
     const { error } = await supabase
       .from("organizations")
       .update({
@@ -70,14 +70,14 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Failed to update tier" }, { status: 500 });
     }
 
-    logger.info("[SET PREMIUM] ✅ Successfully set to premium", {
+    logger.info("[SET PREMIUM] ✅ Successfully set to enterprise", {
       orgId: organizationId,
     });
 
     // Also return cache clearing instruction
     const response = NextResponse.json({
       success: true,
-      message: "Subscription updated to premium",
+      message: "Subscription updated to enterprise",
       before: {
         tier: org.subscription_tier,
         status: org.subscription_status,
