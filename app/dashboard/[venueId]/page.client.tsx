@@ -309,7 +309,6 @@ const DashboardClient = React.memo(function DashboardClient({
           venueId: venueData?.venue_id,
           error: venueError?.message,
           errorCode: venueError?.code,
-          errorStatus: venueError?.status,
         });
 
         // If venue query fails with 406 or other errors, log but don't block
@@ -318,7 +317,6 @@ const DashboardClient = React.memo(function DashboardClient({
             error: venueError,
             message: venueError.message,
             code: venueError.code,
-            status: venueError.status,
           });
           // Don't redirect - might be a temporary Supabase issue
           // The user might still have access via staff role or cached data
