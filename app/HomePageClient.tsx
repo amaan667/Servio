@@ -201,20 +201,39 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
   const handleGetStarted = async () => {
     if (isSignedIn && user) {
-      // Get user's first venue
+      // Get user's first venue (owner or staff)
       const supabase = supabaseBrowser();
-      const { data: venues } = await supabase
+
+      // First check for owner venues
+      const { data: ownerVenues } = await supabase
         .from("venues")
         .select("venue_id")
         .eq("owner_user_id", user.id)
         .order("created_at", { ascending: true }) // ✅ Get FIRST venue (oldest)
-        .limit(1);
+        .limit(1)
+        .maybeSingle();
 
-      if (venues && venues.length > 0 && venues[0]) {
-        router.push(`/dashboard/${venues[0].venue_id}`);
-      } else {
-        router.push("/select-plan");
+      if (ownerVenues && ownerVenues.venue_id) {
+        router.push(`/dashboard/${ownerVenues.venue_id}`);
+        return;
       }
+
+      // Check for staff roles
+      const { data: staffRoles } = await supabase
+        .from("user_venue_roles")
+        .select("venue_id, role")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (staffRoles && staffRoles.venue_id) {
+        // User has staff roles → redirect to staff dashboard
+        router.push(`/dashboard/${staffRoles.venue_id}`);
+        return;
+      }
+
+      // User signed in but no venues → redirect to plan page
+      router.push("/select-plan");
     } else {
       router.push("/select-plan");
     }
