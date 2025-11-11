@@ -98,17 +98,64 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       if (isSignedIn && user && !userPlan && initialUserPlan === null) {
         try {
           const supabase = supabaseBrowser();
-          const { data: venues } = await supabase
+
+          // Try to get organization_id from venues first
+          const { data: venues, error: venueError } = await supabase
             .from("venues")
             .select("organization_id")
             .eq("owner_user_id", user.id)
-            .limit(1);
+            .limit(1)
+            .maybeSingle();
 
-          if (venues && venues.length > 0 && venues[0].organization_id) {
+          console.log("[HOMEPAGE] Fetching user plan - venue query", {
+            hasVenue: !!venues,
+            organizationId: venues?.organization_id,
+            error: venueError?.message,
+          });
+
+          let organizationId = venues?.organization_id;
+
+          // If venue query fails or no organization_id, query organizations table directly
+          if (!organizationId || venueError) {
+            console.log("[HOMEPAGE] Querying organizations table directly");
+            const { data: org, error: orgError } = await supabase
+              .from("organizations")
+              .select("id, subscription_tier")
+              .eq("owner_user_id", user.id)
+              .maybeSingle();
+
+            console.log("[HOMEPAGE] Organization query result", {
+              hasOrg: !!org,
+              organizationId: org?.id,
+              tier: org?.subscription_tier,
+              error: orgError?.message,
+            });
+
+            if (org?.subscription_tier) {
+              organizationId = org.id;
+              // Normalize old tier names to new ones
+              const tier = org.subscription_tier.toLowerCase();
+              const normalizedTier =
+                tier === "premium"
+                  ? "enterprise"
+                  : tier === "standard" || tier === "professional"
+                    ? "pro"
+                    : tier === "basic"
+                      ? "starter"
+                      : tier;
+              const plan = normalizedTier as "starter" | "pro" | "enterprise";
+              console.log("[HOMEPAGE] Setting user plan", {
+                originalTier: tier,
+                normalizedTier: plan,
+              });
+              setUserPlan(plan);
+            }
+          } else if (organizationId) {
+            // Got organization_id from venue, fetch tier
             const { data: org } = await supabase
               .from("organizations")
               .select("subscription_tier")
-              .eq("id", venues[0].organization_id)
+              .eq("id", organizationId)
               .maybeSingle();
 
             if (org?.subscription_tier) {
@@ -123,6 +170,10 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                       ? "starter"
                       : tier;
               const plan = normalizedTier as "starter" | "pro" | "enterprise";
+              console.log("[HOMEPAGE] Setting user plan from venue org", {
+                originalTier: tier,
+                normalizedTier: plan,
+              });
               setUserPlan(plan);
             }
           }
@@ -186,15 +237,53 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
       setLoadingPlan(true);
       try {
         const supabase = supabaseBrowser();
-        const { data: venues } = await supabase
+
+        // First try to get venue with organization_id
+        const { data: venues, error: venueError } = await supabase
           .from("venues")
           .select("venue_id, organization_id")
           .eq("owner_user_id", user.id)
           .limit(1)
-          .single();
+          .maybeSingle();
 
-        if (!venues?.organization_id) {
-          alert("No organization found");
+        console.log("[PRICING] Venue query result", {
+          hasVenue: !!venues,
+          venueId: venues?.venue_id,
+          organizationId: venues?.organization_id,
+          error: venueError?.message,
+        });
+
+        let organizationId = venues?.organization_id;
+
+        // If no organization_id from venue, try to get it directly from organizations table
+        if (!organizationId) {
+          console.log("[PRICING] No organization_id in venue, querying organizations table");
+          const { data: org, error: orgError } = await supabase
+            .from("organizations")
+            .select("id")
+            .eq("owner_user_id", user.id)
+            .maybeSingle();
+
+          console.log("[PRICING] Organization query result", {
+            hasOrg: !!org,
+            organizationId: org?.id,
+            error: orgError?.message,
+          });
+
+          if (org?.id) {
+            organizationId = org.id;
+          } else if (orgError) {
+            console.error("[PRICING] Error fetching organization:", orgError);
+            alert(`Error fetching organization: ${orgError.message}`);
+            setLoadingPlan(false);
+            return;
+          }
+        }
+
+        if (!organizationId) {
+          console.warn("[PRICING] No organization found - redirecting to select-plan");
+          // No organization found - user needs to sign up first
+          router.push("/select-plan");
           setLoadingPlan(false);
           return;
         }
@@ -216,8 +305,8 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         if (ctaText.includes("Downgrade")) {
           // Open Stripe portal where users can manage/downgrade their plan
           const response = await apiClient.post("/api/stripe/create-portal-session", {
-            organizationId: venues.organization_id,
-            venueId: venues.venue_id,
+            organizationId: organizationId,
+            venueId: venues?.venue_id || null,
           });
 
           if (!response.ok) {
@@ -250,7 +339,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
           const response = await apiClient.post("/api/stripe/create-checkout-session", {
             tier: targetTier,
-            organizationId: venues.organization_id,
+            organizationId: organizationId,
           });
 
           const data = await response.json();
