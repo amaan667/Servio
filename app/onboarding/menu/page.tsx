@@ -182,7 +182,7 @@ export default function OnboardingMenuPage() {
 
   return (
     <div>
-      <OnboardingProgress currentStep={1} />
+      <OnboardingProgress currentStep={2} />
 
       <Card className="border-2 border-purple-200">
         <CardHeader>

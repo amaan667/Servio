@@ -133,7 +133,7 @@ export default function OnboardingTablesPage() {
       }
 
       // Store progress
-      localStorage.setItem("onboarding_step", "2");
+      localStorage.setItem("onboarding_step", "3");
       localStorage.setItem("onboarding_tables_complete", "true");
 
       // Move to next step
@@ -159,7 +159,7 @@ export default function OnboardingTablesPage() {
   };
 
   const handleSkip = () => {
-    localStorage.setItem("onboarding_step", "2");
+    localStorage.setItem("onboarding_step", "3");
     router.push("/onboarding/test-order");
   };
 
@@ -173,7 +173,7 @@ export default function OnboardingTablesPage() {
 
   return (
     <div>
-      <OnboardingProgress currentStep={2} />
+      <OnboardingProgress currentStep={3} />
 
       <Card className="border-2 border-purple-200">
         <CardHeader>

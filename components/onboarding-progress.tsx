@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Check } from 'lucide-react';
+import React from "react";
+import { Check } from "lucide-react";
 
 interface OnboardingProgressProps {
-  currentStep: 1 | 2 | 3;
+  currentStep: 1 | 2 | 3 | 4;
 }
 
 export default function OnboardingProgress({ currentStep }: OnboardingProgressProps) {
   const steps = [
-    { number: 1, label: 'Menu', description: 'Upload or create your menu' },
-    { number: 2, label: 'Tables', description: 'Set up tables & QR codes' },
-    { number: 3, label: 'Test Order', description: 'Try the customer experience' },
+    { number: 1, label: "Venue Setup", description: "Name, logo & payment" },
+    { number: 2, label: "Menu", description: "Upload or create your menu" },
+    { number: 3, label: "Tables", description: "Set up tables & QR codes" },
+    { number: 4, label: "Test Order", description: "Try the customer experience" },
   ];
 
   return (
@@ -26,24 +27,18 @@ export default function OnboardingProgress({ currentStep }: OnboardingProgressPr
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg transition-all ${
                     step.number < currentStep
-                      ? 'bg-green-500 text-white'
+                      ? "bg-green-500 text-white"
                       : step.number === currentStep
-                      ? 'bg-purple-600 text-white ring-4 ring-purple-200'
-                      : 'bg-gray-200 text-gray-500'
+                        ? "bg-purple-600 text-white ring-4 ring-purple-200"
+                        : "bg-gray-200 text-gray-500"
                   }`}
                 >
-                  {step.number < currentStep ? (
-                    <Check className="w-6 h-6" />
-                  ) : (
-                    step.number
-                  )}
+                  {step.number < currentStep ? <Check className="w-6 h-6" /> : step.number}
                 </div>
                 <div className="text-center mt-2">
                   <div
                     className={`font-semibold text-sm ${
-                      step.number <= currentStep
-                        ? 'text-gray-900'
-                        : 'text-gray-500'
+                      step.number <= currentStep ? "text-gray-900" : "text-gray-500"
                     }`}
                   >
                     {step.label}
@@ -58,11 +53,9 @@ export default function OnboardingProgress({ currentStep }: OnboardingProgressPr
               {index < steps.length - 1 && (
                 <div
                   className={`flex-1 h-1 mx-4 mt-[-40px] transition-all ${
-                    step.number < currentStep
-                      ? 'bg-green-500'
-                      : 'bg-gray-200'
+                    step.number < currentStep ? "bg-green-500" : "bg-gray-200"
                   }`}
-                  style={{ maxWidth: '120px' }}
+                  style={{ maxWidth: "120px" }}
                 />
               )}
             </React.Fragment>
@@ -73,10 +66,16 @@ export default function OnboardingProgress({ currentStep }: OnboardingProgressPr
       {/* Step Counter */}
       <div className="text-center mt-6">
         <p className="text-sm text-gray-600">
-          Step {currentStep} of 3 • Estimated time: {currentStep === 1 ? '1-2 min' : currentStep === 2 ? '1 min' : '1 min'}
+          Step {currentStep} of 4 • Estimated time:{" "}
+          {currentStep === 1
+            ? "2 min"
+            : currentStep === 2
+              ? "1-2 min"
+              : currentStep === 3
+                ? "1 min"
+                : "1 min"}
         </p>
       </div>
     </div>
   );
 }
-

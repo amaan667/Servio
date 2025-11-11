@@ -113,7 +113,7 @@ export default function OnboardingTestOrderPage() {
         />
       )}
 
-      <OnboardingProgress currentStep={3} />
+      <OnboardingProgress currentStep={4} />
 
       {!orderCompleted ? (
         <Card className="border-2 border-purple-200">

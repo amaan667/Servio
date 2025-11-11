@@ -101,7 +101,7 @@ export default function CreateAccountPage() {
 
       setStatus("success");
       setTimeout(() => {
-        router.push(`/dashboard/${data.venueId}?welcome=true`);
+        router.push(`/onboarding/venue-setup`);
       }, 2000);
     } catch (_err) {
       setError(
