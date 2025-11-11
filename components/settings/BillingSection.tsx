@@ -41,7 +41,19 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const { toast } = useToast();
 
   // NO HARDCODED DEFAULTS - let it be undefined if not provided
-  const tier = organization?.subscription_tier;
+  // Normalize tier from old names to new names for backwards compatibility
+  const normalizeTier = (tierString?: string): string | undefined => {
+    if (!tierString) return undefined;
+    const normalized = tierString.toLowerCase().trim();
+    // Map old tier names to new ones
+    if (normalized === "premium") return "enterprise";
+    if (normalized === "standard" || normalized === "professional") return "pro";
+    if (normalized === "basic") return "starter";
+    // Return as-is if already in new format
+    return normalized;
+  };
+
+  const tier = normalizeTier(organization?.subscription_tier);
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 

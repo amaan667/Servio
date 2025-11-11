@@ -112,7 +112,17 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
               .maybeSingle();
 
             if (org?.subscription_tier) {
-              const plan = org.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise";
+              // Normalize old tier names to new ones
+              const tier = org.subscription_tier.toLowerCase();
+              const normalizedTier =
+                tier === "premium"
+                  ? "enterprise"
+                  : tier === "standard" || tier === "professional"
+                    ? "pro"
+                    : tier === "basic"
+                      ? "starter"
+                      : tier;
+              const plan = normalizedTier as "starter" | "pro" | "enterprise";
               setUserPlan(plan);
             }
           }

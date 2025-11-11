@@ -44,8 +44,21 @@ export default async function HomePage() {
           });
 
           if (org?.subscription_tier) {
-            userPlan = org.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise";
-            logger.info("[HOME PAGE] Set user plan", { userPlan });
+            // Normalize old tier names to new ones
+            const tier = org.subscription_tier.toLowerCase();
+            const normalizedTier =
+              tier === "premium"
+                ? "enterprise"
+                : tier === "standard" || tier === "professional"
+                  ? "pro"
+                  : tier === "basic"
+                    ? "starter"
+                    : tier;
+            userPlan = normalizedTier as "starter" | "pro" | "enterprise";
+            logger.info("[HOME PAGE] Set user plan", {
+              originalTier: tier,
+              normalizedTier: userPlan,
+            });
           } else {
             logger.warn("[HOME PAGE] No subscription tier found for organization", {
               organizationId: firstVenue.organization_id,

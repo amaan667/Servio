@@ -82,21 +82,49 @@ export async function POST(req: NextRequest) {
     });
 
     // Extract tier from Stripe using metadata or product name - NO env vars needed
-    const tierFromStripe = await getTierFromStripeSubscription(subscription, stripe);
+    let tierFromStripe: string;
+    try {
+      tierFromStripe = await getTierFromStripeSubscription(subscription, stripe);
+    } catch (tierError) {
+      logger.error("[SUBSCRIPTION SYNC] Failed to extract tier from Stripe", {
+        organizationId,
+        error: tierError instanceof Error ? tierError.message : String(tierError),
+      });
+      return NextResponse.json(
+        { error: "Failed to extract tier from Stripe subscription" },
+        { status: 500 }
+      );
+    }
+
+    // Normalize tier from old names to new ones for backwards compatibility
+    const normalizeTier = (tier: string): string => {
+      const normalized = tier.toLowerCase().trim();
+      if (normalized === "premium") return "enterprise";
+      if (normalized === "standard" || normalized === "professional") return "pro";
+      if (normalized === "basic") return "starter";
+      return normalized;
+    };
+
+    const normalizedTierFromStripe = normalizeTier(tierFromStripe);
+    const normalizedCurrentTier = org.subscription_tier
+      ? normalizeTier(org.subscription_tier)
+      : null;
 
     logger.info("[SUBSCRIPTION SYNC] Tier extracted from Stripe", {
       organizationId,
       tierFromStripe,
+      normalizedTierFromStripe,
       currentTierInDB: org.subscription_tier,
-      needsUpdate: tierFromStripe !== org.subscription_tier,
+      normalizedCurrentTier,
+      needsUpdate: normalizedTierFromStripe !== normalizedCurrentTier,
     });
 
-    // Update organization if tier changed
-    if (tierFromStripe !== org.subscription_tier) {
+    // Update organization if tier changed (compare normalized values)
+    if (normalizedTierFromStripe !== normalizedCurrentTier) {
       const { error: updateError } = await supabase
         .from("organizations")
         .update({
-          subscription_tier: tierFromStripe,
+          subscription_tier: normalizedTierFromStripe,
           subscription_status: subscription.status,
         })
         .eq("id", organizationId);
@@ -112,26 +140,26 @@ export async function POST(req: NextRequest) {
       logger.info("[SUBSCRIPTION SYNC] ✅ Tier updated", {
         organizationId,
         oldTier: org.subscription_tier,
-        newTier: tierFromStripe,
+        newTier: normalizedTierFromStripe,
       });
 
       return NextResponse.json({
         synced: true,
         updated: true,
         oldTier: org.subscription_tier,
-        newTier: tierFromStripe,
+        newTier: normalizedTierFromStripe,
       });
     }
 
     logger.info("[SUBSCRIPTION SYNC] ✅ Tier already in sync", {
       organizationId,
-      tier: tierFromStripe,
+      tier: normalizedTierFromStripe,
     });
 
     return NextResponse.json({
       synced: true,
       updated: false,
-      tier: tierFromStripe,
+      tier: normalizedTierFromStripe,
     });
   } catch (error) {
     logger.error("[SUBSCRIPTION SYNC] Unexpected error", {
