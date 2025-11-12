@@ -28,6 +28,7 @@ export default function CreateAccountPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    fullName: "",
     venueName: "",
     businessType: "Restaurant",
     serviceType: "table_service",
@@ -54,14 +55,24 @@ export default function CreateAccountPage() {
         }
 
         setSessionData(data);
-        // Only use Stripe checkout email - don't use sessionStorage or other sources
+        // Only use Stripe checkout email - clear any cached data first
         const stripeEmail = data.customer_email || "";
-        setFormData((prev) => ({
-          ...prev,
+        const stripeFullName = data.metadata?.full_name || "";
+
+        // Clear any cached form data
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("servio-signup-email");
+          sessionStorage.removeItem("servio-signup-email");
+        }
+
+        setFormData({
           email: stripeEmail,
-          password: "", // Ensure password is empty
-          venueName: "", // Ensure venue name is empty
-        }));
+          password: "",
+          fullName: stripeFullName,
+          venueName: "",
+          businessType: "Restaurant",
+          serviceType: "table_service",
+        });
         setStatus("form");
       } catch (_err) {
         setError(_err instanceof Error ? _err.message : "Failed to fetch session details.");
@@ -88,13 +99,13 @@ export default function CreateAccountPage() {
       setLoading(false);
       return;
     }
-    if (!formData.venueName?.trim()) {
-      setError("Business name is required");
+    if (!formData.fullName?.trim()) {
+      setError("Full name is required");
       setLoading(false);
       return;
     }
-    if (!sessionData?.metadata?.full_name) {
-      setError("Full name is missing. Please try again.");
+    if (!formData.venueName?.trim()) {
+      setError("Business name is required");
       setLoading(false);
       return;
     }
@@ -111,7 +122,7 @@ export default function CreateAccountPage() {
         body: JSON.stringify({
           email: formData.email.trim(),
           password: formData.password,
-          fullName: sessionData.metadata.full_name,
+          fullName: formData.fullName.trim(),
           venueName: formData.venueName.trim(),
           venueType: formData.businessType,
           serviceType: formData.serviceType,
@@ -189,6 +200,23 @@ export default function CreateAccountPage() {
                 />
                 <p className="text-xs text-gray-500">
                   {sessionData?.customer_email &&
+                    "Pre-filled from Stripe checkout • You can change this if needed"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  placeholder="Enter your full name"
+                  disabled={loading}
+                  required
+                />
+                <p className="text-xs text-gray-500">
+                  {sessionData?.metadata?.full_name &&
                     "Pre-filled from Stripe checkout • You can change this if needed"}
                 </p>
               </div>
