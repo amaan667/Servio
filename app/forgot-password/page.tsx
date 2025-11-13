@@ -24,6 +24,15 @@ export default function ForgotPasswordPage() {
     setError(null);
     setSuccess(false);
 
+    console.log("[FORGOT PASSWORD PAGE] ════════════════════════════════════════");
+    console.log("[FORGOT PASSWORD PAGE] Form submitted:", {
+      email: email.trim(),
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent.substring(0, 100),
+      currentUrl: window.location.href,
+    });
+    console.log("[FORGOT PASSWORD PAGE] ════════════════════════════════════════");
+
     if (!email.trim()) {
       setError("Email address is required");
       setLoading(false);
@@ -39,6 +48,9 @@ export default function ForgotPasswordPage() {
     }
 
     try {
+      console.log("[FORGOT PASSWORD PAGE] Calling API to send reset email...");
+      const startTime = Date.now();
+
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -46,6 +58,15 @@ export default function ForgotPasswordPage() {
       });
 
       const data = await response.json();
+      const duration = Date.now() - startTime;
+
+      console.log("[FORGOT PASSWORD PAGE] API response:", {
+        status: response.status,
+        ok: response.ok,
+        data,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString(),
+      });
 
       if (!response.ok) {
         setError(data.error || "Failed to send reset email. Please try again.");
@@ -53,9 +74,11 @@ export default function ForgotPasswordPage() {
         return;
       }
 
+      console.log("[FORGOT PASSWORD PAGE] ✅ Reset email sent successfully");
       setSuccess(true);
       setLoading(false);
-    } catch (_err) {
+    } catch (err) {
+      console.error("[FORGOT PASSWORD PAGE] Exception:", err);
       setError("An error occurred. Please try again.");
       setLoading(false);
     }
