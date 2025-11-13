@@ -41,26 +41,47 @@ export default function ResetPasswordPage() {
         }
       });
 
+      // Check if we're on the verify endpoint (shouldn't happen, but handle it)
+      const isVerifyEndpoint = window.location.href.includes("/auth/v1/verify");
+      if (isVerifyEndpoint) {
+        console.log("[RESET PASSWORD] ⚠️ Still on verify endpoint, waiting for redirect...");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+
       // Check multiple times - Supabase verify endpoint redirect might happen after page load
       // The verify endpoint redirects with hash fragments, but they might appear with a delay
       let attempts = 0;
-      const maxAttempts = 10; // 10 attempts * 500ms = 5 seconds total
+      const maxAttempts = 15; // 15 attempts * 500ms = 7.5 seconds total (longer for slow redirects)
       let accessToken: string | null = null;
       let refreshToken: string | null = null;
       let type: string | null = null;
 
+      console.log("[RESET PASSWORD] Starting session check:", {
+        initialUrl: window.location.href,
+        initialHash: window.location.hash,
+        initialSearch: window.location.search,
+        referrer: document.referrer,
+      });
+
       while (attempts < maxAttempts && !sessionEstablished) {
-        // Check for hash fragments in URL (they appear after Supabase verify endpoint redirects)
+        // Check for hash fragments AND query parameters in URL
+        // Supabase might use either depending on configuration
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const currentAccessToken = hashParams.get("access_token");
-        const currentRefreshToken = hashParams.get("refresh_token");
-        const currentType = hashParams.get("type");
+        const queryParams = new URLSearchParams(window.location.search);
+
+        const currentAccessToken =
+          hashParams.get("access_token") || queryParams.get("access_token");
+        const currentRefreshToken =
+          hashParams.get("refresh_token") || queryParams.get("refresh_token");
+        const currentType = hashParams.get("type") || queryParams.get("type");
 
         console.log(`[RESET PASSWORD] Attempt ${attempts + 1}/${maxAttempts}:`, {
           hash: window.location.hash.substring(0, 150),
+          search: window.location.search.substring(0, 150),
           hasAccessToken: !!currentAccessToken,
           type: currentType,
-          fullUrl: window.location.href.substring(0, 200),
+          fullUrl: window.location.href.substring(0, 250),
+          pathname: window.location.pathname,
         });
 
         // Update tokens if found
@@ -68,20 +89,26 @@ export default function ResetPasswordPage() {
           accessToken = currentAccessToken;
           refreshToken = currentRefreshToken;
           type = currentType;
-          console.log("[RESET PASSWORD] ✅ Hash fragments detected!");
+          console.log("[RESET PASSWORD] ✅ Tokens detected!");
         }
 
         // If we have tokens, set the session
         if (accessToken && type === "recovery") {
           try {
-            console.log("[RESET PASSWORD] Setting session from hash fragments...");
+            console.log("[RESET PASSWORD] Setting session from tokens...");
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || "",
             });
 
+            console.log("[RESET PASSWORD] Set session result:", {
+              hasSession: !!sessionData.session,
+              hasError: !!sessionError,
+              errorMessage: sessionError?.message,
+            });
+
             if (sessionData.session && !sessionError) {
-              console.log("[RESET PASSWORD] ✅ Session established from hash fragments");
+              console.log("[RESET PASSWORD] ✅ Session established from tokens");
               sessionEstablished = true;
               setHasValidSession(true);
               window.history.replaceState(null, "", window.location.pathname);
@@ -89,7 +116,19 @@ export default function ResetPasswordPage() {
               return;
             } else {
               console.error("[RESET PASSWORD] Failed to set session:", sessionError);
-              // Don't return - continue checking in case it's a timing issue
+              // If token is invalid/expired, show error immediately
+              if (
+                sessionError?.message?.includes("expired") ||
+                sessionError?.message?.includes("invalid")
+              ) {
+                setHasValidSession(false);
+                setError(
+                  sessionError.message || "Invalid or expired reset link. Please request a new one."
+                );
+                authListener?.subscription.unsubscribe();
+                return;
+              }
+              // Otherwise continue checking in case it's a timing issue
             }
           } catch (err) {
             console.error("[RESET PASSWORD] Exception:", err);
