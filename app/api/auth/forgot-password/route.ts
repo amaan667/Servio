@@ -29,13 +29,24 @@ export async function POST(request: NextRequest) {
       "https://servio-production.up.railway.app";
     const redirectUrl = `${appUrl.replace(/\/$/, "")}/reset-password`;
 
-    logger.debug("[FORGOT PASSWORD] Sending reset email:", {
+    logger.info("[FORGOT PASSWORD] Sending reset email:", {
       email: email.trim(),
       redirectUrl,
+      appUrl,
+      envVars: {
+        NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+        NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+      },
     });
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: redirectUrl,
+    });
+
+    logger.info("[FORGOT PASSWORD] Reset password response:", {
+      hasData: !!data,
+      hasError: !!error,
+      errorMessage: error?.message,
     });
 
     if (error) {

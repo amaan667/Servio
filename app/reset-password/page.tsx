@@ -49,14 +49,17 @@ export default function ResetPasswordPage() {
       let type = hashParams.get("type") || queryParams.get("type");
 
       console.log("[RESET PASSWORD] URL analysis:", {
-        fullUrl: window.location.href.substring(0, 200),
-        hash: window.location.hash.substring(0, 100),
-        search: window.location.search.substring(0, 100),
+        fullUrl: window.location.href,
+        hash: window.location.hash,
+        search: window.location.search,
+        pathname: window.location.pathname,
+        origin: window.location.origin,
         hasAccessToken: !!accessToken,
         hasRefreshToken: !!refreshToken,
         type,
         hashLength: window.location.hash.length,
         searchLength: window.location.search.length,
+        accessTokenPreview: accessToken ? accessToken.substring(0, 20) + "..." : null,
       });
 
       // If we have tokens, set the session explicitly
@@ -123,16 +126,30 @@ export default function ResetPasswordPage() {
         }
       } else {
         setHasValidSession(false);
-        // Provide detailed error message
+        // Provide detailed error message with debugging info
+        const errorDetails: string[] = [];
+
         if (!accessToken && !window.location.hash && !window.location.search) {
-          setError("No reset token found in URL. Please click the link from your email.");
+          errorDetails.push("No reset token found in URL.");
+          errorDetails.push("Please ensure you clicked the link directly from your email.");
+          errorDetails.push(`Current URL: ${window.location.href}`);
+        } else if (accessToken && !session) {
+          errorDetails.push("Token found but session creation failed.");
+          if (sessionError) {
+            errorDetails.push(`Error: ${sessionError.message}`);
+          }
         } else if (sessionError) {
-          setError(
-            `Reset link error: ${sessionError.message || "Invalid or expired token. Please request a new password reset link."}`
-          );
+          errorDetails.push(`Reset link error: ${sessionError.message}`);
         } else {
-          setError("Invalid or expired reset link. Please request a new password reset link.");
+          errorDetails.push("Invalid or expired reset link.");
         }
+
+        errorDetails.push("\nPlease check:");
+        errorDetails.push("1. The reset link URL is whitelisted in Supabase Dashboard");
+        errorDetails.push("2. You clicked the link within 1 hour of requesting it");
+        errorDetails.push("3. Check browser console for detailed logs");
+
+        setError(errorDetails.join("\n"));
       }
 
       // Clean up listener
