@@ -62,13 +62,13 @@ export default function ResetPasswordPage() {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
-      // Check multiple times - Supabase verify endpoint redirect might happen after page load
-      // The verify endpoint redirects with hash fragments, but they might appear with a delay
-      let attempts = 0;
-      const maxAttempts = 15; // 15 attempts * 500ms = 7.5 seconds total (longer for slow redirects)
-      let accessToken: string | null = null;
-      let refreshToken: string | null = null;
-      let type: string | null = null;
+      // Check for PKCE code parameter first (newer Supabase flow)
+      const queryParams = new URLSearchParams(window.location.search);
+      const code = queryParams.get("code");
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashAccessToken = hashParams.get("access_token");
+      const hashRefreshToken = hashParams.get("refresh_token");
+      const hashType = hashParams.get("type");
 
       console.error("[RESET PASSWORD] ════════════════════════════════════════");
       console.error("[RESET PASSWORD] Starting session check:", {
@@ -78,108 +78,118 @@ export default function ResetPasswordPage() {
         referrer: document.referrer,
         hashLength: window.location.hash.length,
         searchLength: window.location.search.length,
+        hasCode: !!code,
+        hasHashTokens: !!hashAccessToken,
+        hashType,
         isVerifyEndpoint: window.location.href.includes("/auth/v1/verify"),
         timestamp: new Date().toISOString(),
       });
       console.error("[RESET PASSWORD] ════════════════════════════════════════");
 
-      while (attempts < maxAttempts && !sessionEstablished) {
-        // Check for hash fragments AND query parameters in URL
-        // Supabase might use either depending on configuration
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const queryParams = new URLSearchParams(window.location.search);
+      // Handle PKCE code exchange (newer flow)
+      if (code) {
+        console.error("[RESET PASSWORD] 🔄 PKCE code detected, exchanging for session...");
+        try {
+          const { data: exchangeData, error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(code);
 
-        const currentAccessToken =
-          hashParams.get("access_token") || queryParams.get("access_token");
-        const currentRefreshToken =
-          hashParams.get("refresh_token") || queryParams.get("refresh_token");
-        const currentType = hashParams.get("type") || queryParams.get("type");
+          console.error("[RESET PASSWORD] Code exchange result:", {
+            hasSession: !!exchangeData.session,
+            hasError: !!exchangeError,
+            errorMessage: exchangeError?.message,
+            errorCode: exchangeError?.code,
+          });
 
-        console.error(`[RESET PASSWORD] Attempt ${attempts + 1}/${maxAttempts}:`, {
-          hash: window.location.hash.substring(0, 150),
-          search: window.location.search.substring(0, 150),
-          hasAccessToken: !!currentAccessToken,
-          type: currentType,
-          fullUrl: window.location.href.substring(0, 250),
-          pathname: window.location.pathname,
-        });
-
-        // Update tokens if found
-        if (currentAccessToken && !accessToken) {
-          accessToken = currentAccessToken;
-          refreshToken = currentRefreshToken;
-          type = currentType;
-          console.error("[RESET PASSWORD] ✅ Tokens detected!");
-        }
-
-        // If we have tokens, set the session
-        if (accessToken && type === "recovery") {
-          try {
-            console.error("[RESET PASSWORD] Setting session from tokens...");
-            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || "",
-            });
-
-            console.error("[RESET PASSWORD] Set session result:", {
-              hasSession: !!sessionData.session,
-              hasError: !!sessionError,
-              errorMessage: sessionError?.message,
-            });
-
-            if (sessionData.session && !sessionError) {
-              console.error("[RESET PASSWORD] ✅ Session established from tokens");
-              sessionEstablished = true;
-              setHasValidSession(true);
-              window.history.replaceState(null, "", window.location.pathname);
-              authListener?.subscription.unsubscribe();
-              return;
-            } else {
-              console.error("[RESET PASSWORD] Failed to set session:", sessionError);
-              // If token is invalid/expired, show error immediately
-              if (
-                sessionError?.message?.includes("expired") ||
-                sessionError?.message?.includes("invalid")
-              ) {
-                setHasValidSession(false);
-                setError(
-                  sessionError.message || "Invalid or expired reset link. Please request a new one."
-                );
-                authListener?.subscription.unsubscribe();
-                return;
-              }
-              // Otherwise continue checking in case it's a timing issue
-            }
-          } catch (err) {
-            console.error("[RESET PASSWORD] Exception:", err);
-            // Continue checking
-          }
-        }
-
-        // Check if session was established via auto-detection
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (session && !sessionError) {
-          console.error("[RESET PASSWORD] ✅ Session found via getSession");
-          sessionEstablished = true;
-          setHasValidSession(true);
-          if (window.location.hash) {
+          if (exchangeData.session && !exchangeError) {
+            console.error("[RESET PASSWORD] ✅ Session established from PKCE code");
+            sessionEstablished = true;
+            setHasValidSession(true);
+            // Clean up URL
             window.history.replaceState(null, "", window.location.pathname);
+            authListener?.subscription.unsubscribe();
+            return;
+          } else {
+            console.error("[RESET PASSWORD] ❌ Code exchange failed:", exchangeError);
+            setHasValidSession(false);
+            setError(
+              exchangeError?.message || "Invalid or expired reset link. Please request a new one."
+            );
+            authListener?.subscription.unsubscribe();
+            return;
           }
+        } catch (err) {
+          console.error("[RESET PASSWORD] Exception during code exchange:", err);
+          setHasValidSession(false);
+          setError("Failed to process reset link. Please request a new one.");
           authListener?.subscription.unsubscribe();
           return;
         }
-
-        // Wait before next check
-        if (!sessionEstablished) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-
-        attempts++;
       }
+
+      // Handle hash fragment tokens (older flow)
+      if (hashAccessToken && hashType === "recovery") {
+        console.error("[RESET PASSWORD] 🔄 Hash tokens detected, setting session...");
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: hashAccessToken,
+            refresh_token: hashRefreshToken || "",
+          });
+
+          console.error("[RESET PASSWORD] Set session result:", {
+            hasSession: !!sessionData.session,
+            hasError: !!sessionError,
+            errorMessage: sessionError?.message,
+          });
+
+          if (sessionData.session && !sessionError) {
+            console.error("[RESET PASSWORD] ✅ Session established from hash tokens");
+            sessionEstablished = true;
+            setHasValidSession(true);
+            window.history.replaceState(null, "", window.location.pathname);
+            authListener?.subscription.unsubscribe();
+            return;
+          } else {
+            console.error("[RESET PASSWORD] Failed to set session:", sessionError);
+            setHasValidSession(false);
+            setError(
+              sessionError?.message || "Invalid or expired reset link. Please request a new one."
+            );
+            authListener?.subscription.unsubscribe();
+            return;
+          }
+        } catch (err) {
+          console.error("[RESET PASSWORD] Exception:", err);
+          setHasValidSession(false);
+          setError("Failed to process reset link. Please request a new one.");
+          authListener?.subscription.unsubscribe();
+          return;
+        }
+      }
+
+      // Check if session already exists (might have been auto-established)
+      const {
+        data: { session: existingSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (existingSession && !sessionError) {
+        console.error("[RESET PASSWORD] ✅ Session already exists");
+        sessionEstablished = true;
+        setHasValidSession(true);
+        if (window.location.hash || window.location.search) {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+        authListener?.subscription.unsubscribe();
+        return;
+      }
+
+      // No code or tokens found
+      console.error("[RESET PASSWORD] ❌ No code or tokens found in URL");
+      setHasValidSession(false);
+      setError(
+        "No reset token found. Please ensure you clicked the link directly from your email. The link may have expired or been used already."
+      );
+      authListener?.subscription.unsubscribe();
 
       // Final check
       if (!sessionEstablished) {
