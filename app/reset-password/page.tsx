@@ -191,36 +191,13 @@ export default function ResetPasswordPage() {
       );
       authListener?.subscription.unsubscribe();
 
-      // Final check
+      // This code should never be reached due to early returns above
+      // But keeping as fallback
       if (!sessionEstablished) {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (session && !sessionError) {
-          console.error("[RESET PASSWORD] ✅ Session found in final check");
-          setHasValidSession(true);
-          if (window.location.hash) {
-            window.history.replaceState(null, "", window.location.pathname);
-          }
-        } else {
-          console.error("[RESET PASSWORD] ❌ No session found after all attempts");
-          setHasValidSession(false);
-
-          if (!accessToken && !window.location.hash) {
-            setError(
-              "No reset token found. Please ensure you clicked the link directly from your email. The link may have expired or been used already."
-            );
-          } else if (sessionError) {
-            setError(`Reset link error: ${sessionError.message}`);
-          } else {
-            setError("Invalid or expired reset link. Please request a new password reset link.");
-          }
-        }
+        console.error("[RESET PASSWORD] ❌ Fallback: No session established");
+        setHasValidSession(false);
+        setError("Invalid or expired reset link. Please request a new password reset link.");
       }
-
-      authListener?.subscription.unsubscribe();
     };
 
     checkSession();
