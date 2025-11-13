@@ -59,15 +59,15 @@ export function ItemDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-w-[95vw]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{item.name}</DialogTitle>
+          <DialogTitle className="text-xl md:text-2xl">{item.name}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Item Image (if available) */}
+          {/* Item Image (if available) - Smaller on mobile */}
           {item.image_url && (
-            <div className="relative w-full aspect-square bg-white rounded-lg overflow-hidden">
+            <div className="relative w-full h-48 md:h-64 lg:aspect-square bg-white rounded-lg overflow-hidden">
               <img
                 src={item.image_url}
                 alt={item.name}
@@ -80,19 +80,21 @@ export function ItemDetailsModal({
 
           {/* Category */}
           <div className="flex items-center">
-            <span className="text-sm font-medium text-muted-foreground bg-primary/10 px-2 py-1 rounded">
+            <span className="text-xs md:text-sm font-medium text-muted-foreground bg-primary/10 px-2 py-1 rounded">
               {item.category}
             </span>
           </div>
 
           {/* Description */}
           {item.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+            <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+              {item.description}
+            </p>
           )}
 
           {/* Price */}
           <div className="flex items-center justify-between pt-2">
-            <span className="text-lg font-bold text-primary">
+            <span className="text-lg md:text-xl font-bold text-primary">
               {formatPriceWithCurrency(item.price, "£")}
             </span>
           </div>
@@ -109,49 +111,53 @@ export function ItemDetailsModal({
             <>
               {/* Quantity Controls - Always Visible */}
               <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center space-x-4 w-full">
+                <div className="flex items-center space-x-3 md:space-x-4 w-full">
                   <div className="flex flex-col space-y-1">
-                    <label className="text-sm font-medium text-muted-foreground">Quantity</label>
-                    <div className="flex items-center space-x-2 bg-muted rounded-lg p-2">
+                    <label className="text-sm md:text-base font-medium text-muted-foreground">
+                      Quantity
+                    </label>
+                    <div className="flex items-center space-x-2 md:space-x-3 bg-muted rounded-lg p-2 md:p-2.5">
                       <Button
                         onClick={handleDecrement}
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0"
+                        className="h-10 w-10 md:h-8 md:w-8 p-0"
                         disabled={quantity === 0}
                       >
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-5 w-5 md:h-4 md:w-4" />
                       </Button>
-                      <span className="text-lg font-bold min-w-[2rem] text-center">{quantity}</span>
+                      <span className="text-xl md:text-lg font-bold min-w-[2.5rem] md:min-w-[2rem] text-center">
+                        {quantity}
+                      </span>
                       <Button
                         onClick={handleIncrement}
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0"
+                        className="h-10 w-10 md:h-8 md:w-8 p-0"
                         disabled={!item.is_available}
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-5 w-5 md:h-4 md:w-4" />
                       </Button>
                     </div>
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-sm text-muted-foreground">Total</p>
-                    <p className="text-lg font-bold text-primary">
+                    <p className="text-sm md:text-base text-muted-foreground">Total</p>
+                    <p className="text-xl md:text-lg font-bold text-primary">
                       {formatPriceWithCurrency(item.price * quantity, "£")}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Add to Cart Button - Only show when quantity > 0 */}
+              {/* Add to Cart Button - Only show when quantity > 0 - Larger on mobile */}
               {quantity > 0 && (
                 <Button
                   onClick={handleAddToCart}
                   disabled={!item.is_available}
-                  className="w-full flex items-center justify-center space-x-2"
-                  size="lg"
+                  className="w-full flex items-center justify-center space-x-2 h-12 md:h-11 text-base md:text-sm"
+                  size="mobile"
                 >
-                  <ShoppingCart className="h-5 w-5" />
+                  <ShoppingCart className="h-6 w-6 md:h-5 md:w-5" />
                   <span>Add to Cart</span>
                 </Button>
               )}

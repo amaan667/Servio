@@ -188,17 +188,17 @@ export function StyledMenuDisplay({
 
                     return (
                       <div key={item.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                        {/* Item Name and Price */}
+                        {/* Item Name and Price - Larger text on mobile */}
                         <div className="flex justify-between items-start mb-1">
                           <h3
-                            className={`${styleClasses.item} font-semibold uppercase`}
+                            className={`${styleClasses.item} font-semibold uppercase text-base md:text-lg`}
                             style={{ color: menuStyle.text_color }}
                           >
                             {item.name}
                           </h3>
                           {menuStyle.show_prices && (
                             <span
-                              className={`${styleClasses.price} ml-4 whitespace-nowrap`}
+                              className={`${styleClasses.price} ml-4 whitespace-nowrap text-base md:text-lg`}
                               style={{ color: menuStyle.accent_color }}
                             >
                               £{item.price.toFixed(2)}
@@ -206,51 +206,56 @@ export function StyledMenuDisplay({
                           )}
                         </div>
 
-                        {/* Item Description */}
+                        {/* Item Description - Larger text on mobile */}
                         {menuStyle.show_descriptions && item.description && (
-                          <p className={`${styleClasses.description} text-gray-600 italic mb-3`}>
+                          <p
+                            className={`${styleClasses.description} text-gray-600 italic mb-3 text-sm md:text-base`}
+                          >
                             {item.description}
                           </p>
                         )}
 
-                        {/* Add to Cart Controls */}
+                        {/* Add to Cart Controls - Larger on mobile */}
                         <div className="flex items-center justify-end mt-2">
                           {quantity === 0 ? (
                             <Button
                               onClick={() => onAddToCart(item)}
-                              size="sm"
+                              size="mobile"
+                              className="md:size-sm text-base md:text-sm"
                               style={{
                                 backgroundColor: menuStyle.primary_color,
                                 color: "#ffffff",
                               }}
                             >
-                              <Plus className="h-4 w-4 mr-2" />
+                              <Plus className="h-5 w-5 md:h-4 md:w-4 mr-2" />
                               Add
                             </Button>
                           ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 md:gap-2">
                               <Button
                                 onClick={() => onUpdateQuantity(item.id, quantity - 1)}
                                 variant="outline"
-                                size="sm"
+                                size="mobile"
+                                className="md:size-sm h-10 w-10 md:h-9 md:w-9"
                               >
-                                <Minus className="h-4 w-4" />
+                                <Minus className="h-5 w-5 md:h-4 md:w-4" />
                               </Button>
                               <span
-                                className="text-base font-semibold min-w-[30px] text-center"
+                                className="text-lg md:text-base font-semibold min-w-[2.5rem] md:min-w-[30px] text-center"
                                 style={{ color: menuStyle.primary_color }}
                               >
                                 {quantity}
                               </span>
                               <Button
                                 onClick={() => onUpdateQuantity(item.id, quantity + 1)}
-                                size="sm"
+                                size="mobile"
+                                className="md:size-sm h-10 w-10 md:h-9 md:w-9"
                                 style={{
                                   backgroundColor: menuStyle.primary_color,
                                   color: "#ffffff",
                                 }}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-5 w-5 md:h-4 md:w-4" />
                               </Button>
                             </div>
                           )}
@@ -311,47 +316,52 @@ function DefaultMenuDisplay({
                     return (
                       <div
                         key={item.id}
-                        className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                        className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
                       >
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
-                          <span className="text-xl font-semibold text-purple-600 ml-4">
+                          <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                            {item.name}
+                          </h3>
+                          <span className="text-lg md:text-xl font-semibold text-purple-600 ml-4">
                             ${item.price.toFixed(2)}
                           </span>
                         </div>
 
                         {item.description && (
-                          <p className="text-base text-gray-600 mb-4">{item.description}</p>
+                          <p className="text-sm md:text-base text-gray-600 mb-4">
+                            {item.description}
+                          </p>
                         )}
 
                         <div className="flex items-center justify-between mt-4">
                           {quantity === 0 ? (
                             <Button
                               onClick={() => onAddToCart(item)}
-                              className="w-full bg-purple-600 hover:bg-purple-700"
+                              className="w-full bg-purple-600 hover:bg-purple-700 h-12 md:h-10 text-base md:text-sm"
+                              size="mobile"
                             >
-                              <Plus className="h-4 w-4 mr-2" />
+                              <Plus className="h-5 w-5 md:h-4 md:w-4 mr-2" />
                               Add to Cart
                             </Button>
                           ) : (
-                            <div className="flex items-center gap-3 w-full">
+                            <div className="flex items-center gap-2 md:gap-3 w-full">
                               <Button
                                 onClick={() => onUpdateQuantity(item.id, quantity - 1)}
                                 variant="outline"
-                                size="sm"
-                                className="flex-1"
+                                size="mobile"
+                                className="flex-1 h-10 md:h-9"
                               >
-                                <Minus className="h-4 w-4" />
+                                <Minus className="h-5 w-5 md:h-4 md:w-4" />
                               </Button>
-                              <span className="text-lg font-semibold min-w-[40px] text-center text-purple-600">
+                              <span className="text-xl md:text-lg font-semibold min-w-[2.5rem] md:min-w-[40px] text-center text-purple-600">
                                 {quantity}
                               </span>
                               <Button
                                 onClick={() => onUpdateQuantity(item.id, quantity + 1)}
-                                size="sm"
-                                className="flex-1 bg-purple-600 hover:bg-purple-700"
+                                size="mobile"
+                                className="flex-1 bg-purple-600 hover:bg-purple-700 h-10 md:h-9"
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-5 w-5 md:h-4 md:w-4" />
                               </Button>
                             </div>
                           )}

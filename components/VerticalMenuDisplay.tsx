@@ -212,33 +212,33 @@ export function VerticalMenuDisplay({
                           key={item.id}
                           className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100"
                         >
-                          <div className="flex gap-4 p-6">
+                          <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6">
                             {/* Item Details */}
                             <div className="flex-1">
                               <div className="flex justify-between items-start mb-2">
-                                <h3 className="text-lg font-semibold text-gray-900 leading-tight">
+                                <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-tight">
                                   {item.name}
                                 </h3>
-                                <span className="text-xl font-bold text-purple-600 ml-4">
+                                <span className="text-lg md:text-xl font-bold text-purple-600 ml-4">
                                   £{item.price.toFixed(2)}
                                 </span>
                               </div>
 
                               {item.description && (
-                                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                                <p className="text-sm md:text-base text-gray-600 mb-4 line-clamp-2">
                                   {item.description}
                                 </p>
                               )}
 
-                              {/* Add to Cart Controls */}
+                              {/* Add to Cart Controls - Larger on mobile */}
                               <div className="flex items-center gap-2 mt-4">
                                 {quantity === 0 ? (
                                   <Button
                                     onClick={() => onAddToCart(item)}
-                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium"
-                                    size="sm"
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium h-12 md:h-9 text-base md:text-sm"
+                                    size="mobile"
                                   >
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Plus className="h-5 w-5 md:h-4 md:w-4 mr-2" />
                                     Add to Cart
                                   </Button>
                                 ) : (
@@ -246,32 +246,29 @@ export function VerticalMenuDisplay({
                                     <Button
                                       onClick={() => onUpdateQuantity(item.id, quantity - 1)}
                                       variant="outline"
-                                      size="sm"
-                                      className="flex-1"
+                                      size="mobile"
+                                      className="flex-1 h-10 md:h-9"
                                     >
-                                      <Minus className="h-4 w-4" />
+                                      <Minus className="h-5 w-5 md:h-4 md:w-4" />
                                     </Button>
-                                    <span className="text-lg font-bold min-w-[40px] text-center text-purple-600">
+                                    <span className="text-xl md:text-lg font-bold min-w-[2.5rem] md:min-w-[40px] text-center text-purple-600">
                                       {quantity}
                                     </span>
                                     <Button
                                       onClick={() => onUpdateQuantity(item.id, quantity + 1)}
-                                      size="sm"
-                                      className="flex-1 bg-purple-600 hover:bg-purple-700"
+                                      size="mobile"
+                                      className="flex-1 bg-purple-600 hover:bg-purple-700 h-10 md:h-9"
                                     >
-                                      <Plus className="h-4 w-4" />
+                                      <Plus className="h-5 w-5 md:h-4 md:w-4" />
                                     </Button>
                                   </div>
                                 )}
                               </div>
                             </div>
 
-                            {/* Item Image (if available) */}
+                            {/* Item Image (if available) - Smaller on mobile */}
                             {item.image_url && (
-                              <div
-                                className="flex-shrink-0 bg-white rounded-lg overflow-hidden border border-gray-200"
-                                style={{ width: "110px", height: "110px" }}
-                              >
+                              <div className="flex-shrink-0 bg-white rounded-lg overflow-hidden border border-gray-200 w-full md:w-28 h-32 md:h-28">
                                 <img
                                   src={item.image_url}
                                   alt={item.name}

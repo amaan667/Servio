@@ -498,9 +498,9 @@ export function EnhancedPDFMenuDisplay({
                             setIsModalOpen(true);
                           }}
                         >
-                          {/* IMAGE - Show if available from hybrid merge */}
+                          {/* IMAGE - Show if available from hybrid merge - Smaller on mobile */}
                           {item.image_url && (
-                            <div className="relative w-full aspect-square bg-white overflow-hidden flex items-center justify-center">
+                            <div className="relative w-full h-32 md:h-48 lg:aspect-square bg-white overflow-hidden flex items-center justify-center">
                               <img
                                 src={item.image_url}
                                 alt={item.name}
@@ -516,19 +516,19 @@ export function EnhancedPDFMenuDisplay({
                             </div>
                           )}
 
-                          <div className="p-4">
-                            <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
+                          <div className="p-3 md:p-4">
+                            <h3 className="font-semibold text-base md:text-lg mb-2">{item.name}</h3>
                             {item.description && (
-                              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                              <p className="text-sm md:text-base text-muted-foreground mb-3 line-clamp-2">
                                 {item.description}
                               </p>
                             )}
                             <div className="flex items-center justify-between">
-                              <span className="text-lg font-bold text-primary">
+                              <span className="text-base md:text-lg font-bold text-primary">
                                 {formatPriceWithCurrency(item.price, "£")}
                               </span>
                               {isOrdering && quantity > 0 && (
-                                <span className="text-sm text-muted-foreground">
+                                <span className="text-xs md:text-sm text-muted-foreground">
                                   {quantity} in cart
                                 </span>
                               )}
