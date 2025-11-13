@@ -22,6 +22,20 @@ export default function ResetPasswordPage() {
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Log page load
+    console.log("[RESET PASSWORD PAGE] ════════════════════════════════════════");
+    console.log("[RESET PASSWORD PAGE] Page loaded:", {
+      timestamp: new Date().toISOString(),
+      fullUrl: window.location.href,
+      hash: window.location.hash,
+      search: window.location.search,
+      pathname: window.location.pathname,
+      origin: window.location.origin,
+      referrer: document.referrer,
+      userAgent: navigator.userAgent.substring(0, 100),
+    });
+    console.log("[RESET PASSWORD PAGE] ════════════════════════════════════════");
+
     // Check if we have a valid recovery session from Supabase
     const checkSession = async () => {
       const supabase = supabaseBrowser();
@@ -56,12 +70,18 @@ export default function ResetPasswordPage() {
       let refreshToken: string | null = null;
       let type: string | null = null;
 
+      console.log("[RESET PASSWORD] ════════════════════════════════════════");
       console.log("[RESET PASSWORD] Starting session check:", {
         initialUrl: window.location.href,
         initialHash: window.location.hash,
         initialSearch: window.location.search,
         referrer: document.referrer,
+        hashLength: window.location.hash.length,
+        searchLength: window.location.search.length,
+        isVerifyEndpoint: window.location.href.includes("/auth/v1/verify"),
+        timestamp: new Date().toISOString(),
       });
+      console.log("[RESET PASSWORD] ════════════════════════════════════════");
 
       while (attempts < maxAttempts && !sessionEstablished) {
         // Check for hash fragments AND query parameters in URL
