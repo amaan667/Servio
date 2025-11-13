@@ -27,9 +27,17 @@ export default function ResetPasswordPage() {
       const supabase = supabaseBrowser();
 
       // Set up auth state change listener to catch recovery session
+      // This is critical - Supabase will fire PASSWORD_RECOVERY event when hash fragments are processed
       const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log("[RESET PASSWORD] Auth state change:", { event, hasSession: !!session });
+        console.log("[RESET PASSWORD] Auth state change:", {
+          event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+        });
+
+        // PASSWORD_RECOVERY event is fired when Supabase processes recovery hash fragments
         if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
+          console.log("[RESET PASSWORD] ✅ Recovery session detected via auth state change");
           setHasValidSession(true);
           // Clear hash from URL for security
           if (window.location.hash) {
@@ -98,10 +106,69 @@ export default function ResetPasswordPage() {
         }
       }
 
-      // Wait for Supabase to automatically process hash fragments/query params
-      // Supabase client has detectSessionInUrl: true, so it should handle this
+      // The Supabase verify endpoint redirects here with hash fragments
+      // Supabase client has detectSessionInUrl: true, so it should automatically process them
+      // However, we need to wait for:
+      // 1. The redirect from verify endpoint to complete (if coming from verify endpoint)
+      // 2. Supabase to process the hash fragments
+      // 3. The PASSWORD_RECOVERY event to fire
+
       console.log("[RESET PASSWORD] Waiting for Supabase auto-detection...");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log(
+        "[RESET PASSWORD] If you came from verify endpoint, hash fragments should appear after redirect"
+      );
+
+      // Check multiple times - the redirect might happen after initial page load
+      let attempts = 0;
+      const maxAttempts = 6; // 6 attempts * 500ms = 3 seconds total
+
+      while (attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Re-check hash fragments in case redirect happened
+        const currentHashParams = new URLSearchParams(window.location.hash.substring(1));
+        const currentAccessToken = currentHashParams.get("access_token");
+
+        if (currentAccessToken && !accessToken) {
+          console.log("[RESET PASSWORD] Hash fragments appeared after redirect, processing...");
+          accessToken = currentAccessToken;
+          refreshToken = currentHashParams.get("refresh_token") || "";
+          type = currentHashParams.get("type") || "";
+
+          // Try to set session with newly found tokens
+          try {
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            });
+
+            if (sessionData.session && !sessionError) {
+              setHasValidSession(true);
+              window.history.replaceState(null, "", window.location.pathname);
+              authListener?.subscription.unsubscribe();
+              return;
+            }
+          } catch (_err) {
+            // Continue to wait
+          }
+        }
+
+        // Check if session was established via auth state change listener
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+        if (currentSession) {
+          console.log("[RESET PASSWORD] ✅ Session found via getSession");
+          setHasValidSession(true);
+          if (window.location.hash || window.location.search) {
+            window.history.replaceState(null, "", window.location.pathname);
+          }
+          authListener?.subscription.unsubscribe();
+          return;
+        }
+
+        attempts++;
+      }
 
       // Check if we have a session now
       const {
