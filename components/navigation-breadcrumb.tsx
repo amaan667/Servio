@@ -61,6 +61,8 @@ export default function NavigationBreadcrumb({
     }
     if (pathname.includes("/sign-in")) return "Sign In";
     if (pathname.includes("/sign-up")) return "Sign Up";
+    if (pathname.includes("/forgot-password")) return "Reset Your Password";
+    if (pathname.includes("/reset-password")) return "Set New Password";
     if (pathname.includes("/complete-profile")) return "Complete Profile";
     if (pathname.includes("/qr-codes")) return "QR Codes";
     if (pathname.includes("/order")) return "Order";
@@ -71,6 +73,8 @@ export default function NavigationBreadcrumb({
   const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
   const isSignInPage = pathname.includes("/sign-in");
   const isSignUpPage = pathname.includes("/sign-up");
+  const isForgotPasswordPage = pathname.includes("/forgot-password");
+  const isResetPasswordPage = pathname.includes("/reset-password");
   const isCreateAccountPage = pathname.includes("/auth/create-account");
   const isGenerateQRPage = pathname.includes("/qr-codes");
   const isSelectPlanPage = pathname.includes("/select-plan");
@@ -104,9 +108,14 @@ export default function NavigationBreadcrumb({
     );
   }
 
-  // For sign-in/sign-up/create-account/select-plan pages: Home ← Page Name (current)
+  // For sign-in/sign-up/forgot-password/reset-password/create-account/select-plan pages: Home ← Page Name (current)
   if (
-    (isSignInPage || isSignUpPage || isCreateAccountPage || isSelectPlanPage) &&
+    (isSignInPage ||
+      isSignUpPage ||
+      isForgotPasswordPage ||
+      isResetPasswordPage ||
+      isCreateAccountPage ||
+      isSelectPlanPage) &&
     !showBackButton
   ) {
     return (
@@ -129,7 +138,15 @@ export default function NavigationBreadcrumb({
           </li>
           <li className="text-foreground/60">←</li>
           <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
-            {isCreateAccountPage ? "Sign Up" : isSelectPlanPage ? "Choose Your Plan" : pageTitle}
+            {isCreateAccountPage
+              ? "Sign Up"
+              : isSelectPlanPage
+                ? "Choose Your Plan"
+                : isForgotPasswordPage
+                  ? "Reset Your Password"
+                  : isResetPasswordPage
+                    ? "Set New Password"
+                    : pageTitle}
           </li>
         </ol>
       </nav>
