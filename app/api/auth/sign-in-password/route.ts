@@ -134,11 +134,28 @@ export async function POST(request: NextRequest) {
       hadError: !!venueError,
     });
 
+    // Check if user has pending signup data (incomplete signup flow)
+    const pendingSignup = data.session.user.user_metadata?.pending_signup;
+    const hasPendingSignup = !!pendingSignup;
+
+    logger.info("[AUTH SIGN-IN] 📊 User signup status:", {
+      hasVenues: Array.isArray(venues) && venues.length > 0,
+      hasPendingSignup,
+      pendingSignupTier: pendingSignup?.tier,
+    });
+
     // Create response with cookies set manually
-    const redirectTo =
-      Array.isArray(venues) && venues.length > 0 && venues[0]
-        ? `/dashboard/${venues[0].venue_id}`
-        : "/select-plan";
+    let redirectTo: string;
+    if (Array.isArray(venues) && venues.length > 0 && venues[0]) {
+      // User has venues - go to dashboard
+      redirectTo = `/dashboard/${venues[0].venue_id}`;
+    } else if (hasPendingSignup) {
+      // User has pending signup data but no venues - redirect to onboarding
+      redirectTo = "/onboarding/venue-setup";
+    } else {
+      // No venues and no pending signup - redirect to plan selection
+      redirectTo = "/select-plan";
+    }
 
     logger.info("[AUTH SIGN-IN] ✅ EMAIL/PASSWORD - Redirecting to:", {
       redirectTo,

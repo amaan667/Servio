@@ -110,13 +110,21 @@ export async function POST(_request: NextRequest) {
       }
     }
 
-    // Create user
+    // Create user ONLY - organization and venue will be created after onboarding
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Auto-confirm for better UX
       user_metadata: {
         full_name: fullName,
+        // Store signup data temporarily - will be used to create org/venue after onboarding
+        pending_signup: {
+          venueName,
+          venueType,
+          serviceType,
+          tier,
+          stripeSessionId,
+        },
       },
     });
 
@@ -128,9 +136,8 @@ export async function POST(_request: NextRequest) {
     }
 
     const userId = authData.user.id;
-    const venueId = `venue-${userId.slice(0, 8)}`;
 
-    // Create or retrieve Stripe customer
+    // Create or retrieve Stripe customer (needed for subscription)
     let customer;
     if (stripeSessionId) {
       // Get customer from existing session
@@ -145,6 +152,7 @@ export async function POST(_request: NextRequest) {
           metadata: {
             user_id: userId,
             venue_name: venueName,
+            pending_setup: "true", // Mark as pending until onboarding completes
           },
         });
       }
@@ -156,149 +164,32 @@ export async function POST(_request: NextRequest) {
         metadata: {
           user_id: userId,
           venue_name: venueName,
+          pending_setup: "true",
         },
       });
     }
 
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .insert({
-        owner_user_id: userId,
-        subscription_tier: tier,
-        subscription_status: "trialing",
-        stripe_customer_id: customer.id,
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      })
-      .select()
-      .single();
-
-    if (orgError || !org) {
-      logger.error("[SIGNUP WITH SUBSCRIPTION] Failed to create organization:", {
-        error: orgError,
-        userId,
-        email,
-        tier,
-        stripeCustomerId: customer.id,
-      });
-
-      // Try to clean up created user if organization creation fails
-      try {
-        await supabase.auth.admin.deleteUser(userId);
-      } catch (cleanupError) {
-        logger.error(
-          "[SIGNUP WITH SUBSCRIPTION] Failed to cleanup user after org creation failure:",
-          cleanupError
-        );
-      }
-
-      return NextResponse.json(
-        {
-          error: "Failed to create organization",
-          details: orgError?.message || "Unknown error",
+    // Store Stripe customer ID in user metadata for later use
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: {
+        full_name: fullName,
+        pending_signup: {
+          venueName,
+          venueType,
+          serviceType,
+          tier,
+          stripeSessionId,
+          stripeCustomerId: customer.id,
         },
-        { status: 500 }
-      );
-    }
-
-    // Create venue
-    const { error: venueError } = await supabase
-      .from("venues")
-      .insert({
-        venue_id: venueId,
-        name: venueName,
-        business_type: venueType,
-        service_type: serviceType,
-        owner_user_id: userId,
-        organization_id: org.id,
-      })
-      .select()
-      .single();
-
-    if (venueError) {
-      logger.error("[SIGNUP WITH SUBSCRIPTION] Failed to create venue:", {
-        error: venueError,
-        userId,
-        venueId,
-        venueName,
-        organizationId: org.id,
-      });
-
-      // Try to clean up created resources if venue creation fails
-      try {
-        await supabase.from("organizations").delete().eq("id", org.id);
-        await supabase.auth.admin.deleteUser(userId);
-      } catch (cleanupError) {
-        logger.error(
-          "[SIGNUP WITH SUBSCRIPTION] Failed to cleanup after venue creation failure:",
-          cleanupError
-        );
-      }
-
-      return NextResponse.json(
-        {
-          error: "Failed to create venue",
-          details: venueError.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    // Create user-venue role
-    await supabase.from("user_venue_roles").insert({
-      user_id: userId,
-      venue_id: venueId,
-      organization_id: org.id,
-      role: "owner",
+      },
     });
 
-    // If we have a stripeSessionId, the payment is already complete
-    // Otherwise, create a checkout session
-    if (stripeSessionId) {
-      // Payment already completed, just return success
-      return NextResponse.json({
-        success: true,
-        userId,
-        venueId,
-        organizationId: org.id,
-        message: "Account created successfully! Your 14-day free trial is active.",
-      });
-    } else {
-      // Create Stripe checkout session for payment (14-day trial)
-      const session = await stripe.checkout.sessions.create({
-        customer: customer.id,
-        mode: "subscription",
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            price: PRICE_IDS[tier as keyof typeof PRICE_IDS],
-            quantity: 1,
-          },
-        ],
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${venueId}?welcome=true`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/sign-up?cancelled=true`,
-        metadata: {
-          organization_id: org.id,
-          venue_id: venueId,
-          tier,
-        },
-        subscription_data: {
-          metadata: {
-            organization_id: org.id,
-            tier,
-          },
-          trial_period_days: 14, // 14-day free trial
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        userId,
-        venueId,
-        organizationId: org.id,
-        checkoutUrl: session.url,
-        message: "Account created! Complete payment setup to activate your 14-day free trial.",
-      });
-    }
+    // Return success - organization and venue will be created after onboarding
+    return NextResponse.json({
+      success: true,
+      userId,
+      message: "Account created successfully! Please complete onboarding to finish setup.",
+    });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
     const errorStack = _error instanceof Error ? _error.stack : undefined;

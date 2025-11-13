@@ -39,49 +39,59 @@ export default function OnboardingVenueSetupPage() {
         return;
       }
 
-      // Get venue
+      // Check if user has pending signup data (new flow)
+      const pendingSignup = user.user_metadata?.pending_signup;
+
+      // Get venue (if already created)
       const { data: venues } = await supabase
         .from("venues")
         .select("venue_id, venue_name, organization_id")
         .eq("owner_user_id", user.id)
         .limit(1);
 
-      if (!venues || venues.length === 0) {
-        router.push("/select-plan");
-        return;
-      }
+      if (venues && venues.length > 0) {
+        // Venue already exists - use it
+        const venue = venues[0];
+        setVenueId(venue.venue_id);
+        setVenueName(venue.venue_name || "");
 
-      const venue = venues[0];
-      setVenueId(venue.venue_id);
-      setVenueName(venue.venue_name || "");
+        // Get organization subscription info
+        if (venue.organization_id) {
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("subscription_tier, subscription_status, stripe_customer_id")
+            .eq("id", venue.organization_id)
+            .single();
 
-      // Get organization subscription info
-      if (venue.organization_id) {
-        const { data: org } = await supabase
-          .from("organizations")
-          .select("subscription_tier, subscription_status, stripe_customer_id")
-          .eq("id", venue.organization_id)
+          if (org) {
+            setSubscriptionTier(org.subscription_tier || "starter");
+            setPaymentConfirmed(
+              !!org.stripe_customer_id ||
+                org.subscription_status === "trialing" ||
+                org.subscription_status === "active"
+            );
+          }
+        }
+
+        // Check if logo exists
+        const { data: designSettings } = await supabase
+          .from("menu_design_settings")
+          .select("logo_url")
+          .eq("venue_id", venue.venue_id)
           .single();
 
-        if (org) {
-          setSubscriptionTier(org.subscription_tier || "starter");
-          setPaymentConfirmed(
-            !!org.stripe_customer_id ||
-              org.subscription_status === "trialing" ||
-              org.subscription_status === "active"
-          );
+        if (designSettings?.logo_url) {
+          setLogoUrl(designSettings.logo_url);
         }
-      }
-
-      // Check if logo exists
-      const { data: designSettings } = await supabase
-        .from("menu_design_settings")
-        .select("logo_url")
-        .eq("venue_id", venue.venue_id)
-        .single();
-
-      if (designSettings?.logo_url) {
-        setLogoUrl(designSettings.logo_url);
+      } else if (pendingSignup) {
+        // No venue yet, but have pending signup data - use it
+        setVenueName(pendingSignup.venueName || "");
+        setSubscriptionTier(pendingSignup.tier || "starter");
+        setPaymentConfirmed(!!pendingSignup.stripeCustomerId || !!pendingSignup.stripeSessionId);
+      } else {
+        // No venue and no pending signup - redirect to plan selection
+        router.push("/select-plan");
+        return;
       }
 
       setLoading(false);
@@ -91,13 +101,44 @@ export default function OnboardingVenueSetupPage() {
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || !venueId) return;
+    if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
     setUploadingLogo(true);
 
     try {
       const supabase = await createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user) {
+        toast({
+          title: "Error",
+          description: "Please sign in to upload logo",
+          variant: "destructive",
+        });
+        setUploadingLogo(false);
+        return;
+      }
+
+      // Ensure venue exists before uploading logo
+      let currentVenueId = venueId;
+      if (!currentVenueId) {
+        // Create organization/venue first
+        const response = await fetch("/api/signup/complete-onboarding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.venueId) {
+          throw new Error(data.error || "Failed to create venue");
+        }
+
+        currentVenueId = data.venueId;
+        setVenueId(currentVenueId);
+      }
 
       // Ensure bucket exists
       try {
@@ -113,7 +154,7 @@ export default function OnboardingVenueSetupPage() {
       }
 
       const fileExt = file.name.split(".").pop();
-      const fileName = `${venueId}/logo-${Date.now()}.${fileExt}`;
+      const fileName = `${currentVenueId}/logo-${Date.now()}.${fileExt}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("venue-assets")
@@ -128,7 +169,7 @@ export default function OnboardingVenueSetupPage() {
 
       // Save to menu_design_settings
       await supabase.from("menu_design_settings").upsert({
-        venue_id: venueId,
+        venue_id: currentVenueId,
         logo_url: urlData.publicUrl,
         updated_at: new Date().toISOString(),
       });
@@ -150,19 +191,49 @@ export default function OnboardingVenueSetupPage() {
   };
 
   const handleContinue = async () => {
-    if (!venueId) return;
-
     setSaving(true);
 
     try {
       const supabase = await createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      // Update venue name if changed
-      if (venueName.trim()) {
-        await supabase
-          .from("venues")
-          .update({ venue_name: venueName.trim() })
-          .eq("venue_id", venueId);
+      if (!session?.user) {
+        router.push("/sign-in");
+        return;
+      }
+
+      // If venue doesn't exist yet, create organization and venue first
+      if (!venueId) {
+        const response = await fetch("/api/signup/complete-onboarding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed to complete setup");
+        }
+
+        // Update venue name if changed
+        if (venueName.trim() && data.venueId) {
+          await supabase
+            .from("venues")
+            .update({ venue_name: venueName.trim() })
+            .eq("venue_id", data.venueId);
+        }
+
+        setVenueId(data.venueId);
+      } else {
+        // Venue exists, just update name if changed
+        if (venueName.trim()) {
+          await supabase
+            .from("venues")
+            .update({ venue_name: venueName.trim() })
+            .eq("venue_id", venueId);
+        }
       }
 
       // Store progress

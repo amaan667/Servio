@@ -112,8 +112,15 @@ function SignInPageContent() {
           } else if (venues && venues.length > 0) {
             router.push(`/dashboard/${venues[0]?.venue_id}`);
           } else {
-            // Only redirect to select-plan if we successfully queried and found no venues
-            router.push("/select-plan");
+            // Check if user has pending signup data (incomplete signup flow)
+            const pendingSignup = session.user.user_metadata?.pending_signup;
+            if (pendingSignup) {
+              // User has pending signup but no venues - redirect to onboarding
+              router.push("/onboarding/venue-setup");
+            } else {
+              // No venues and no pending signup - redirect to plan selection
+              router.push("/select-plan");
+            }
           }
         } catch (error) {
           console.error("[SIGN-IN] Exception fetching venues:", error);

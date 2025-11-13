@@ -76,8 +76,27 @@ export default function OnboardingTestOrderPage() {
     }, 3000);
   };
 
-  const handleCompleteLater = () => {
+  const handleCompleteLater = async () => {
     localStorage.setItem("onboarding_step", "3");
+
+    // Ensure organization/venue are created before going to dashboard
+    if (!venueId) {
+      try {
+        const response = await fetch("/api/signup/complete-onboarding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success && data.venueId) {
+          router.push(`/dashboard/${data.venueId}`);
+          return;
+        }
+      } catch (_error) {
+        // If API fails, still try to redirect
+      }
+    }
+
     if (venueId) {
       router.push(`/dashboard/${venueId}`);
     } else {
@@ -85,8 +104,27 @@ export default function OnboardingTestOrderPage() {
     }
   };
 
-  const handleGoToDashboard = () => {
+  const handleGoToDashboard = async () => {
     localStorage.setItem("onboarding_complete", "true");
+
+    // Ensure organization/venue are created before going to dashboard
+    if (!venueId) {
+      try {
+        const response = await fetch("/api/signup/complete-onboarding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success && data.venueId) {
+          router.push(`/dashboard/${data.venueId}`);
+          return;
+        }
+      } catch (_error) {
+        // If API fails, still try to redirect
+      }
+    }
+
     if (venueId) {
       router.push(`/dashboard/${venueId}`);
     } else {

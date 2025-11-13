@@ -49,6 +49,25 @@ export default function OnboardingTablesPage() {
         .limit(1);
 
       if (!venues || venues.length === 0) {
+        // Check if user has pending signup data - ensure venue is created
+        const pendingSignup = user.user_metadata?.pending_signup;
+        if (pendingSignup) {
+          // Ensure venue is created
+          const response = await fetch("/api/signup/complete-onboarding", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          const data = await response.json();
+          if (response.ok && data.success && data.venueId) {
+            setVenueId(data.venueId);
+            generatePreview(selectedCount, data.venueId);
+            setLoading(false);
+            return;
+          }
+        }
+        // No venue and no pending signup - redirect to venue setup
+        router.push("/onboarding/venue-setup");
         setLoading(false);
         return;
       }

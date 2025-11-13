@@ -26,10 +26,59 @@ export default function ResetPasswordPage() {
     const checkSession = async () => {
       const supabase = supabaseBrowser();
 
-      // Wait a bit for Supabase to process hash fragments if present
+      // Check for hash fragments in URL (Supabase password reset uses hash fragments)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+      const type = hashParams.get("type");
+
+      console.log("[RESET PASSWORD] Hash fragments:", {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        type,
+        hash: window.location.hash.substring(0, 50) + "...",
+      });
+
+      // If we have hash fragments, set the session explicitly
+      if (accessToken && type === "recovery") {
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || "",
+          });
+
+          console.log("[RESET PASSWORD] Set session result:", {
+            hasSession: !!sessionData.session,
+            hasError: !!sessionError,
+            errorMessage: sessionError?.message,
+          });
+
+          if (sessionData.session && !sessionError) {
+            setHasValidSession(true);
+            // Clear hash from URL for security
+            window.history.replaceState(null, "", window.location.pathname);
+            return;
+          } else {
+            console.error("[RESET PASSWORD] Failed to set session from hash:", sessionError);
+            setHasValidSession(false);
+            setError(
+              sessionError?.message ||
+                "Invalid or expired reset link. Please request a new password reset link."
+            );
+            return;
+          }
+        } catch (hashError) {
+          console.error("[RESET PASSWORD] Error processing hash fragments:", hashError);
+          setHasValidSession(false);
+          setError("Failed to process reset link. Please request a new password reset link.");
+          return;
+        }
+      }
+
+      // No hash fragments - check if we already have a session
+      // Wait a bit for Supabase to process hash fragments if they exist
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Check if we have a session (Supabase automatically processes hash fragments)
       const {
         data: { session },
         error: sessionError,
@@ -43,7 +92,10 @@ export default function ResetPasswordPage() {
         }
       } else {
         setHasValidSession(false);
-        setError("Invalid or expired reset link. Please request a new password reset link.");
+        if (!accessToken) {
+          // No hash fragments and no session - invalid link
+          setError("Invalid reset link. Please request a new password reset link.");
+        }
       }
     };
 

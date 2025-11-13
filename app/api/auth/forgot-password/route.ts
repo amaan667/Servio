@@ -22,8 +22,20 @@ export async function POST(request: NextRequest) {
     // Use Supabase's built-in password reset functionality
     // This will send an email automatically with a reset link
     // Supabase will redirect with hash fragments (#access_token=...&type=recovery)
+    // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard > Authentication > URL Configuration
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      "https://servio-production.up.railway.app";
+    const redirectUrl = `${appUrl.replace(/\/$/, "")}/reset-password`;
+
+    logger.debug("[FORGOT PASSWORD] Sending reset email:", {
+      email: email.trim(),
+      redirectUrl,
+    });
+
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password`,
+      redirectTo: redirectUrl,
     });
 
     if (error) {
