@@ -21,13 +21,14 @@ export async function POST(request: NextRequest) {
 
     // Use Supabase's built-in password reset functionality
     // This will send an email automatically with a reset link
-    // Supabase will redirect with hash fragments (#access_token=...&type=recovery)
+    // Supabase verify endpoint redirects to callback page with hash fragments
     // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard > Authentication > URL Configuration
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
       "https://servio-production.up.railway.app";
-    const redirectUrl = `${appUrl.replace(/\/$/, "")}/reset-password`;
+    // Use callback page to handle the verify endpoint redirect properly
+    const redirectUrl = `${appUrl.replace(/\/$/, "")}/reset-password/callback`;
 
     logger.info("[FORGOT PASSWORD] Sending reset email:", {
       email: email.trim(),
