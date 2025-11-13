@@ -61,8 +61,13 @@ function SignInPageContent() {
     const errorParam = urlParams.get("error");
     const messageParam = urlParams.get("message");
     const nextParam = urlParams.get("next");
+    const passwordResetParam = urlParams.get("passwordReset");
 
-    if (messageParam) {
+    if (passwordResetParam === "true") {
+      // Show success message for password reset
+      setError(null); // Clear any errors
+      // We'll handle this in the SignInForm component
+    } else if (messageParam) {
       setError(messageParam);
     } else if (errorParam) {
       switch (errorParam) {

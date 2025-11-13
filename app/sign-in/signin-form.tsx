@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { CheckCircle2 } from "lucide-react";
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -28,7 +29,18 @@ export default function SignInForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Check for password reset success
+  useEffect(() => {
+    if (searchParams.get("passwordReset") === "true") {
+      setPasswordResetSuccess(true);
+      // Clear the URL parameter
+      router.replace("/sign-in", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Use prop error if provided, otherwise use local error
   const displayError = propError || error;
@@ -161,6 +173,15 @@ export default function SignInForm({
         <p className="text-sm sm:text-base text-gray-700">Sign in to manage your venue</p>
       </div>
 
+      {passwordResetSuccess && (
+        <Alert className="mb-4 sm:mb-6 bg-green-50 border-green-200">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            <strong>Password reset successful!</strong> You can now sign in with your new password.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {displayError && (
         <Alert variant="destructive" className="mb-4 sm:mb-6">
           <AlertDescription>
@@ -231,9 +252,17 @@ export default function SignInForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm sm:text-base">
-            Password
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-sm sm:text-base">
+              Password
+            </Label>
+            <Link
+              href="/forgot-password"
+              className="text-xs sm:text-sm text-servio-purple hover:opacity-80 font-medium"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
