@@ -13,6 +13,7 @@ import { TestimonialsSection } from "./components/TestimonialsSection";
 import { CTASection } from "./components/CTASection";
 import { Footer } from "./components/Footer";
 import { supabaseBrowser } from "@/lib/supabase";
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
 
 // FAQ Item Component
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -445,60 +446,16 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     return planName === "Enterprise" ? "Contact Sales" : "Start Free Trial";
   };
 
-  const pricingPlans = [
-    {
-      name: "Starter",
-      price: "£99",
-      period: "per month",
-      description: "Perfect for small cafes and food trucks",
-      features: [
-        "Up to 50 menu items",
-        "QR code ordering",
-        "Order management",
-        "Payment processing",
-        "Basic analytics",
-        "Email support",
-      ],
-      notIncluded: ["Custom branding", "Advanced analytics", "Priority support"],
-      popular: false,
-    },
-    {
-      name: "Pro",
-      price: "£249",
-      period: "per month",
-      description: "For growing restaurants and cafes",
-      features: [
-        "Unlimited menu items",
-        "QR code ordering",
-        "Order management",
-        "Payment processing",
-        "Advanced analytics",
-        "Inventory management",
-        "Staff management",
-        "Priority support",
-      ],
-      notIncluded: ["Custom branding", "White-label options"],
-      popular: true,
-    },
-    {
-      name: "Enterprise",
-      price: "£449+",
-      period: "per month",
-      description: "For established restaurants and chains",
-      features: [
-        "Everything in Pro",
-        "Custom branding",
-        "White-label options",
-        "Multi-location support",
-        "Advanced reporting",
-        "Dedicated account manager",
-        "Custom integrations",
-        "24/7 phone support",
-      ],
-      notIncluded: [],
-      popular: false,
-    },
-  ];
+  // Use shared PRICING_TIERS configuration
+  const pricingPlans = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
+    name: tierData.name,
+    price: tierData.price,
+    period: "per month",
+    description: tierData.description,
+    features: tierData.features,
+    notIncluded: [] as string[], // Can be customized per tier if needed
+    popular: tierData.popular || false,
+  }));
 
   const faqs = [
     {

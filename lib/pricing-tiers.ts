@@ -46,7 +46,7 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
   },
   enterprise: {
     name: "Enterprise",
-    price: "£449",
+    price: "£449+",
     priceNumeric: 449,
     description: "For established restaurants & chains",
     features: [

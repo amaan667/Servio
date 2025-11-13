@@ -59,11 +59,21 @@ export default function CreateAccountPage() {
         const stripeEmail = data.customer_email || "";
         const stripeFullName = data.metadata?.full_name || "";
 
-        // Clear any cached form data
+        // Clear any cached form data and browser storage
         if (typeof window !== "undefined") {
           localStorage.removeItem("servio-signup-email");
+          localStorage.removeItem("signup_data");
           sessionStorage.removeItem("servio-signup-email");
+          sessionStorage.removeItem("pending_signup_email");
+          sessionStorage.removeItem("signup_data");
         }
+
+        // Log for debugging
+        console.log("[CREATE-ACCOUNT] Stripe session data:", {
+          customer_email: data.customer_email,
+          metadata: data.metadata,
+          sessionId: sessionId,
+        });
 
         setFormData({
           email: stripeEmail,
@@ -134,8 +144,19 @@ export default function CreateAccountPage() {
       const data = await response.json();
 
       if (data.error || !data.success) {
-        setError(data.error || "Failed to create account. Please try again.");
+        // Show detailed error message
+        const errorMessage = data.details
+          ? `${data.error}: ${data.details}`
+          : data.error || "Failed to create account. Please try again.";
+        setError(errorMessage);
         setLoading(false);
+
+        // Log error for debugging
+        console.error("[CREATE-ACCOUNT] Signup error:", {
+          error: data.error,
+          details: data.details,
+          response: data,
+        });
         return;
       }
 
@@ -197,10 +218,14 @@ export default function CreateAccountPage() {
                   placeholder="Enter your email"
                   disabled={loading}
                   required
+                  autoComplete="email"
+                  autoFocus={!formData.email}
+                  data-form-type="other"
                 />
                 <p className="text-xs text-gray-500">
-                  {sessionData?.customer_email &&
-                    "Pre-filled from Stripe checkout • You can change this if needed"}
+                  {sessionData?.customer_email
+                    ? `Pre-filled from Stripe checkout: ${sessionData.customer_email} • You can change this if needed`
+                    : "Enter the email address you used in Stripe checkout"}
                 </p>
               </div>
 

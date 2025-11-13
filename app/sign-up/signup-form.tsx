@@ -12,6 +12,7 @@ import { supabaseBrowser } from "@/lib/supabase";
 import Link from "next/link";
 import { Check, Loader2, Mail } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -225,32 +226,16 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     }
   };
 
-  // Tier selection data
-  const tiers = [
-    {
-      name: "Basic",
-      id: "starter",
-      price: "£99",
-      description: "Perfect for small cafes",
-      features: ["10 tables", "50 menu items", "QR ordering", "Basic analytics"],
-    },
-    {
-      name: "Standard",
-      id: "pro",
-      price: "£249",
-      description: "Most popular for growing businesses",
-      popular: true,
-      features: ["20 tables", "200 menu items", "KDS", "Inventory", "Advanced analytics"],
-    },
-    {
-      name: "Premium",
-      id: "enterprise",
-      price: "£449+",
-      description: "Unlimited for enterprises",
-      contact: true,
-      features: ["Unlimited tables", "Unlimited items", "AI Assistant", "Multi-venue"],
-    },
-  ];
+  // Tier selection data - using shared PRICING_TIERS configuration
+  const tiers = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
+    name: tierData.name,
+    id: tierKey,
+    price: tierData.price,
+    description: tierData.description,
+    popular: tierData.popular || false,
+    features: tierData.features,
+    contact: tierKey === "enterprise", // Enterprise requires contact sales
+  }));
 
   // Render tier selection step
   if (step === "tier") {
@@ -274,7 +259,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                   } ${tier.popular ? "border-2 border-purple-400" : ""}`}
                   onClick={() => {
                     if (tier.contact) {
-                      window.location.href = "mailto:sales@servio.app?subject=Premium Plan Inquiry";
+                      window.location.href = `mailto:sales@servio.app?subject=${tier.name} Plan Inquiry`;
                     } else {
                       setSelectedTier(tier.id);
                     }

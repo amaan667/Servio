@@ -1,29 +1,17 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
 
 export async function POST() {
   try {
-    const products = [
-      {
-        tier: "starter",
-        name: "Basic Plan",
-        description: "Perfect for small cafes and restaurants",
-        amount: 9900, // £99.00 in pence
-      },
-      {
-        tier: "pro",
-        name: "Standard Plan",
-        description: "Most popular for growing businesses",
-        amount: 24900, // £249.00 in pence
-      },
-      {
-        tier: "enterprise",
-        name: "Premium Plan",
-        description: "Unlimited power for enterprises",
-        amount: 44900, // £449.00 in pence
-      },
-    ];
+    // Use shared PRICING_TIERS configuration
+    const products = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
+      tier: tierKey,
+      name: `${tierData.name} Plan`,
+      description: tierData.description,
+      amount: tierData.priceNumeric * 100, // Convert to pence
+    }));
 
     const results = [];
 

@@ -162,7 +162,31 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (orgError || !org) {
-      return NextResponse.json({ error: "Failed to create organization" }, { status: 500 });
+      logger.error("[SIGNUP WITH SUBSCRIPTION] Failed to create organization:", {
+        error: orgError,
+        userId,
+        email,
+        tier,
+        stripeCustomerId: customer.id,
+      });
+
+      // Try to clean up created user if organization creation fails
+      try {
+        await supabase.auth.admin.deleteUser(userId);
+      } catch (cleanupError) {
+        logger.error(
+          "[SIGNUP WITH SUBSCRIPTION] Failed to cleanup user after org creation failure:",
+          cleanupError
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error: "Failed to create organization",
+          details: orgError?.message || "Unknown error",
+        },
+        { status: 500 }
+      );
     }
 
     // Create venue
@@ -180,7 +204,32 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (venueError) {
-      return NextResponse.json({ error: "Failed to create venue" }, { status: 500 });
+      logger.error("[SIGNUP WITH SUBSCRIPTION] Failed to create venue:", {
+        error: venueError,
+        userId,
+        venueId,
+        venueName,
+        organizationId: org.id,
+      });
+
+      // Try to clean up created resources if venue creation fails
+      try {
+        await supabase.from("organizations").delete().eq("id", org.id);
+        await supabase.auth.admin.deleteUser(userId);
+      } catch (cleanupError) {
+        logger.error(
+          "[SIGNUP WITH SUBSCRIPTION] Failed to cleanup after venue creation failure:",
+          cleanupError
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error: "Failed to create venue",
+          details: venueError.message,
+        },
+        { status: 500 }
+      );
     }
 
     // Create user-venue role
@@ -240,11 +289,21 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (_error) {
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    const errorStack = _error instanceof Error ? _error.stack : undefined;
+
     logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+      error: errorMessage,
+      stack: errorStack,
+      email: body?.email,
+      tier: body?.tier,
     });
+
     return NextResponse.json(
-      { error: _error instanceof Error ? _error.message : "Signup failed" },
+      {
+        error: "Signup failed",
+        details: errorMessage,
+      },
       { status: 500 }
     );
   }

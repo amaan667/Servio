@@ -12,17 +12,36 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
     }
 
-    // Fetch session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    // Fetch session from Stripe with expanded customer data
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["customer"],
+    });
 
     if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
+    // Get email from session or customer object
+    let customerEmail = session.customer_email;
+    if (!customerEmail && session.customer) {
+      const customer =
+        typeof session.customer === "string"
+          ? await stripe.customers.retrieve(session.customer)
+          : session.customer;
+      customerEmail = customer.email || undefined;
+    }
+
+    logger.debug("[STRIPE SESSION] Retrieved session:", {
+      sessionId,
+      customerEmail,
+      hasMetadata: !!session.metadata,
+      metadata: session.metadata,
+    });
+
     // Return session details
     return NextResponse.json({
       id: session.id,
-      customer_email: session.customer_email,
+      customer_email: customerEmail,
       metadata: session.metadata,
       subscription: session.subscription,
       payment_status: session.payment_status,
