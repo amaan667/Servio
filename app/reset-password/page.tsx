@@ -26,6 +26,18 @@ export default function ResetPasswordPage() {
     const checkSession = async () => {
       const supabase = supabaseBrowser();
 
+      // Set up auth state change listener to catch recovery session
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log("[RESET PASSWORD] Auth state change:", { event, hasSession: !!session });
+        if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
+          setHasValidSession(true);
+          // Clear hash from URL for security
+          if (window.location.hash) {
+            window.history.replaceState(null, "", window.location.pathname);
+          }
+        }
+      });
+
       // Check for hash fragments in URL (Supabase password reset uses hash fragments)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get("access_token");
@@ -36,7 +48,8 @@ export default function ResetPasswordPage() {
         hasAccessToken: !!accessToken,
         hasRefreshToken: !!refreshToken,
         type,
-        hash: window.location.hash.substring(0, 50) + "...",
+        hashLength: window.location.hash.length,
+        hashPreview: window.location.hash.substring(0, 100),
       });
 
       // If we have hash fragments, set the session explicitly
@@ -51,12 +64,15 @@ export default function ResetPasswordPage() {
             hasSession: !!sessionData.session,
             hasError: !!sessionError,
             errorMessage: sessionError?.message,
+            errorCode: sessionError?.code,
+            errorStatus: sessionError?.status,
           });
 
           if (sessionData.session && !sessionError) {
             setHasValidSession(true);
             // Clear hash from URL for security
             window.history.replaceState(null, "", window.location.pathname);
+            authListener?.subscription.unsubscribe();
             return;
           } else {
             console.error("[RESET PASSWORD] Failed to set session from hash:", sessionError);
@@ -65,24 +81,34 @@ export default function ResetPasswordPage() {
               sessionError?.message ||
                 "Invalid or expired reset link. Please request a new password reset link."
             );
+            authListener?.subscription.unsubscribe();
             return;
           }
         } catch (hashError) {
           console.error("[RESET PASSWORD] Error processing hash fragments:", hashError);
           setHasValidSession(false);
           setError("Failed to process reset link. Please request a new password reset link.");
+          authListener?.subscription.unsubscribe();
           return;
         }
       }
 
-      // No hash fragments - check if we already have a session
-      // Wait a bit for Supabase to process hash fragments if they exist
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Wait for Supabase to automatically process hash fragments (it has detectSessionInUrl: true)
+      // Give it more time to process
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      // Check if we have a session now
       const {
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession();
+
+      console.log("[RESET PASSWORD] Session check after wait:", {
+        hasSession: !!session,
+        hasError: !!sessionError,
+        errorMessage: sessionError?.message,
+        sessionType: session?.user?.app_metadata?.provider,
+      });
 
       if (session && !sessionError) {
         setHasValidSession(true);
@@ -95,8 +121,17 @@ export default function ResetPasswordPage() {
         if (!accessToken) {
           // No hash fragments and no session - invalid link
           setError("Invalid reset link. Please request a new password reset link.");
+        } else {
+          // Had hash fragments but couldn't create session
+          setError(
+            sessionError?.message ||
+              "Invalid or expired reset link. Please request a new password reset link."
+          );
         }
       }
+
+      // Clean up listener
+      authListener?.subscription.unsubscribe();
     };
 
     checkSession();
