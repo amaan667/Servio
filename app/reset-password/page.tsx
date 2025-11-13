@@ -22,9 +22,9 @@ export default function ResetPasswordPage() {
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Log page load
-    console.log("[RESET PASSWORD PAGE] ════════════════════════════════════════");
-    console.log("[RESET PASSWORD PAGE] Page loaded:", {
+    // Log page load - using console.error so it shows in production (console.log is removed)
+    console.error("[RESET PASSWORD PAGE] ════════════════════════════════════════");
+    console.error("[RESET PASSWORD PAGE] Page loaded:", {
       timestamp: new Date().toISOString(),
       fullUrl: window.location.href,
       hash: window.location.hash,
@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
       referrer: document.referrer,
       userAgent: navigator.userAgent.substring(0, 100),
     });
-    console.log("[RESET PASSWORD PAGE] ════════════════════════════════════════");
+    console.error("[RESET PASSWORD PAGE] ════════════════════════════════════════");
 
     // Check if we have a valid recovery session from Supabase
     const checkSession = async () => {
@@ -43,10 +43,10 @@ export default function ResetPasswordPage() {
 
       // Set up auth state change listener - Supabase fires PASSWORD_RECOVERY when processing hash fragments
       const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log("[RESET PASSWORD] Auth state change:", { event, hasSession: !!session });
+        console.error("[RESET PASSWORD] Auth state change:", { event, hasSession: !!session });
 
         if (event === "PASSWORD_RECOVERY" && session) {
-          console.log("[RESET PASSWORD] ✅ PASSWORD_RECOVERY event fired");
+          console.error("[RESET PASSWORD] ✅ PASSWORD_RECOVERY event fired");
           sessionEstablished = true;
           setHasValidSession(true);
           if (window.location.hash) {
@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
       // Check if we're on the verify endpoint (shouldn't happen, but handle it)
       const isVerifyEndpoint = window.location.href.includes("/auth/v1/verify");
       if (isVerifyEndpoint) {
-        console.log("[RESET PASSWORD] ⚠️ Still on verify endpoint, waiting for redirect...");
+        console.error("[RESET PASSWORD] ⚠️ Still on verify endpoint, waiting for redirect...");
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
@@ -70,8 +70,8 @@ export default function ResetPasswordPage() {
       let refreshToken: string | null = null;
       let type: string | null = null;
 
-      console.log("[RESET PASSWORD] ════════════════════════════════════════");
-      console.log("[RESET PASSWORD] Starting session check:", {
+      console.error("[RESET PASSWORD] ════════════════════════════════════════");
+      console.error("[RESET PASSWORD] Starting session check:", {
         initialUrl: window.location.href,
         initialHash: window.location.hash,
         initialSearch: window.location.search,
@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
         isVerifyEndpoint: window.location.href.includes("/auth/v1/verify"),
         timestamp: new Date().toISOString(),
       });
-      console.log("[RESET PASSWORD] ════════════════════════════════════════");
+      console.error("[RESET PASSWORD] ════════════════════════════════════════");
 
       while (attempts < maxAttempts && !sessionEstablished) {
         // Check for hash fragments AND query parameters in URL
@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
           hashParams.get("refresh_token") || queryParams.get("refresh_token");
         const currentType = hashParams.get("type") || queryParams.get("type");
 
-        console.log(`[RESET PASSWORD] Attempt ${attempts + 1}/${maxAttempts}:`, {
+        console.error(`[RESET PASSWORD] Attempt ${attempts + 1}/${maxAttempts}:`, {
           hash: window.location.hash.substring(0, 150),
           search: window.location.search.substring(0, 150),
           hasAccessToken: !!currentAccessToken,
@@ -109,26 +109,26 @@ export default function ResetPasswordPage() {
           accessToken = currentAccessToken;
           refreshToken = currentRefreshToken;
           type = currentType;
-          console.log("[RESET PASSWORD] ✅ Tokens detected!");
+          console.error("[RESET PASSWORD] ✅ Tokens detected!");
         }
 
         // If we have tokens, set the session
         if (accessToken && type === "recovery") {
           try {
-            console.log("[RESET PASSWORD] Setting session from tokens...");
+            console.error("[RESET PASSWORD] Setting session from tokens...");
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || "",
             });
 
-            console.log("[RESET PASSWORD] Set session result:", {
+            console.error("[RESET PASSWORD] Set session result:", {
               hasSession: !!sessionData.session,
               hasError: !!sessionError,
               errorMessage: sessionError?.message,
             });
 
             if (sessionData.session && !sessionError) {
-              console.log("[RESET PASSWORD] ✅ Session established from tokens");
+              console.error("[RESET PASSWORD] ✅ Session established from tokens");
               sessionEstablished = true;
               setHasValidSession(true);
               window.history.replaceState(null, "", window.location.pathname);
@@ -163,7 +163,7 @@ export default function ResetPasswordPage() {
         } = await supabase.auth.getSession();
 
         if (session && !sessionError) {
-          console.log("[RESET PASSWORD] ✅ Session found via getSession");
+          console.error("[RESET PASSWORD] ✅ Session found via getSession");
           sessionEstablished = true;
           setHasValidSession(true);
           if (window.location.hash) {
@@ -189,13 +189,13 @@ export default function ResetPasswordPage() {
         } = await supabase.auth.getSession();
 
         if (session && !sessionError) {
-          console.log("[RESET PASSWORD] ✅ Session found in final check");
+          console.error("[RESET PASSWORD] ✅ Session found in final check");
           setHasValidSession(true);
           if (window.location.hash) {
             window.history.replaceState(null, "", window.location.pathname);
           }
         } else {
-          console.log("[RESET PASSWORD] ❌ No session found after all attempts");
+          console.error("[RESET PASSWORD] ❌ No session found after all attempts");
           setHasValidSession(false);
 
           if (!accessToken && !window.location.hash) {
