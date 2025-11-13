@@ -13,8 +13,19 @@ const PRICE_IDS = {
 };
 
 export async function POST(_request: NextRequest) {
+  let body: {
+    email?: string;
+    password?: string;
+    fullName?: string;
+    venueName?: string;
+    venueType?: string;
+    serviceType?: string;
+    tier?: string;
+    stripeSessionId?: string;
+  } = {};
+
   try {
-    const body = await _request.json();
+    body = await _request.json();
     const {
       email,
       password,

@@ -447,7 +447,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
   };
 
   // Use shared PRICING_TIERS configuration
-  const pricingPlans = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
+  const pricingPlans = Object.entries(PRICING_TIERS).map(([, tierData]) => ({
     name: tierData.name,
     price: tierData.price,
     period: "per month",

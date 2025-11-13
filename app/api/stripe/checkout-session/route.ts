@@ -22,13 +22,17 @@ export async function GET(_request: NextRequest) {
     }
 
     // Get email from session or customer object
-    let customerEmail = session.customer_email;
+    let customerEmail: string | null | undefined = session.customer_email;
     if (!customerEmail && session.customer) {
       const customer =
         typeof session.customer === "string"
           ? await stripe.customers.retrieve(session.customer)
           : session.customer;
-      customerEmail = customer.email || undefined;
+      // Check if customer is deleted or has email property
+      if (customer && !customer.deleted && "email" in customer) {
+        const email = (customer as { email?: string | null }).email;
+        customerEmail = email ?? undefined;
+      }
     }
 
     logger.debug("[STRIPE SESSION] Retrieved session:", {
