@@ -1,6 +1,6 @@
 import { AssistantCommandPalette } from "@/components/ai/assistant-command-palette";
 import { OfflineDetector } from "@/components/error-handling/OfflineDetector";
-import { FeedbackMenu } from "@/components/feedback/FeedbackMenu";
+// import { FeedbackMenu } from "@/components/feedback/FeedbackMenu"; // Temporarily hidden for screenshots
 
 export default async function VenueDashboardLayout({
   children,
@@ -21,7 +21,7 @@ export default async function VenueDashboardLayout({
       <OfflineDetector />
 
       {/* Pilot Feedback Menu - Bottom-left expandable */}
-      <FeedbackMenu />
+      {/* <FeedbackMenu /> Temporarily hidden for screenshots */}
     </>
   );
 }
