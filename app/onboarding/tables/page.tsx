@@ -425,7 +425,7 @@ export default function OnboardingTablesPage() {
                   );
 
                   // Create download links
-                  qrCodes.forEach(({ name, qr }, index) => {
+                  qrCodes.forEach(({ name, qr }) => {
                     const link = document.createElement("a");
                     link.href = qr;
                     link.download = `${name.replace(/\s+/g, "-")}-qr-code.png`;

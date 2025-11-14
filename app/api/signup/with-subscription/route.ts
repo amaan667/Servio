@@ -110,7 +110,7 @@ export async function POST(_request: NextRequest) {
       }
     }
 
-    // Create user ONLY - organization and venue will be created after onboarding
+    // Create user FIRST (we'll add customer ID to metadata after)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -124,7 +124,6 @@ export async function POST(_request: NextRequest) {
           serviceType,
           tier,
           stripeSessionId,
-          stripeCustomerId: customer.id,
         },
       },
     });
