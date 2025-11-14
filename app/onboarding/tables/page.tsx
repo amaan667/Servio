@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ArrowRight, QrCode, Download } from "lucide-react";
 import OnboardingProgress from "@/components/onboarding-progress";
 import { createClient } from "@/lib/supabase";
@@ -23,6 +25,11 @@ export default function OnboardingTablesPage() {
   const [venueId, setVenueId] = useState<string | null>(null);
   const [selectedCount, setSelectedCount] = useState(5);
   const [previewTables, setPreviewTables] = useState<PreviewTable[]>([]);
+  const [tables, setTables] = useState<Array<{ name: string; section: string; capacity: number }>>(
+    []
+  );
+  const [qrColor, setQrColor] = useState("#7c3aed"); // Default purple
+  const [qrLogo, setQrLogo] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -81,21 +88,22 @@ export default function OnboardingTablesPage() {
   };
 
   const generatePreview = async (count: number, vId: string) => {
-    const tables = [];
+    const previews = [];
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
 
     for (let i = 1; i <= Math.min(count, 3); i++) {
+      const tableName = tables[i - 1]?.name || `Table ${i}`;
       const tableUrl = `${baseUrl}/order?venue=${vId}&table=${i}`;
       try {
         const qrDataUrl = await QRCode.toDataURL(tableUrl, {
           width: 200,
           margin: 2,
           color: {
-            dark: "#7c3aed",
+            dark: qrColor,
             light: "#ffffff",
           },
         });
-        tables.push({
+        previews.push({
           number: i,
           qrCode: qrDataUrl,
           url: tableUrl,
@@ -105,13 +113,41 @@ export default function OnboardingTablesPage() {
       }
     }
 
-    setPreviewTables(tables);
+    setPreviewTables(previews);
   };
+
+  useEffect(() => {
+    // Initialize tables array when count changes
+    if (selectedCount > 0 && tables.length === 0) {
+      setTables(
+        Array.from({ length: selectedCount }, (_, i) => ({
+          name: `Table ${i + 1}`,
+          section: "Main",
+          capacity: 4,
+        }))
+      );
+    } else if (selectedCount !== tables.length) {
+      const newTables = Array.from(
+        { length: selectedCount },
+        (_, i) => tables[i] || { name: `Table ${i + 1}`, section: "Main", capacity: 4 }
+      );
+      setTables(newTables);
+    }
+  }, [selectedCount]);
 
   const handleCountChange = (count: number) => {
     setSelectedCount(count);
     if (venueId) {
       generatePreview(count, venueId);
+    }
+  };
+
+  const updateTable = (index: number, field: string, value: string | number) => {
+    const updated = [...tables];
+    updated[index] = { ...updated[index], [field]: value };
+    setTables(updated);
+    if (venueId) {
+      generatePreview(selectedCount, venueId);
     }
   };
 
@@ -123,12 +159,14 @@ export default function OnboardingTablesPage() {
     try {
       const supabase = await createClient();
 
-      // Create tables
-      const tablesToInsert = Array.from({ length: selectedCount }, (_, i) => ({
+      // Create tables with custom names, sections, and capacity
+      const tablesToInsert = tables.slice(0, selectedCount).map((table, i) => ({
         venue_id: venueId,
         table_number: i + 1,
+        label: table.name,
+        section: table.section,
+        seat_count: table.capacity,
         status: "available",
-        capacity: 4,
       }));
 
       const { error } = await supabase.from("tables").insert(tablesToInsert);
@@ -151,9 +189,12 @@ export default function OnboardingTablesPage() {
         });
       }
 
-      // Store progress
+      // Store progress (both local and server-side)
       localStorage.setItem("onboarding_step", "3");
       localStorage.setItem("onboarding_tables_complete", "true");
+      await import("@/lib/onboarding-progress").then(({ saveOnboardingProgress }) =>
+        saveOnboardingProgress(3, [1, 2, 3], { tables_complete: true })
+      );
 
       // Move to next step
       router.push("/onboarding/test-order");
@@ -227,6 +268,96 @@ export default function OnboardingTablesPage() {
             </p>
           </div>
 
+          {/* Table Configuration */}
+          {tables.length > 0 && (
+            <div className="space-y-4 border-t pt-6">
+              <h3 className="font-semibold text-lg mb-3">Configure Your Tables</h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {tables.slice(0, selectedCount).map((table, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <Label>Table Name</Label>
+                      <Input
+                        value={table.name}
+                        onChange={(e) => updateTable(index, "name", e.target.value)}
+                        placeholder={`Table ${index + 1}`}
+                        disabled={creating}
+                      />
+                    </div>
+                    <div>
+                      <Label>Section</Label>
+                      <Input
+                        value={table.section}
+                        onChange={(e) => updateTable(index, "section", e.target.value)}
+                        placeholder="Main"
+                        disabled={creating}
+                      />
+                    </div>
+                    <div>
+                      <Label>Capacity</Label>
+                      <Input
+                        type="number"
+                        value={table.capacity}
+                        onChange={(e) =>
+                          updateTable(index, "capacity", parseInt(e.target.value) || 4)
+                        }
+                        min="1"
+                        max="20"
+                        disabled={creating}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <div className="text-sm text-gray-600">
+                        {table.section} • {table.capacity} seats
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* QR Code Customization */}
+          <div className="space-y-4 border-t pt-6">
+            <h3 className="font-semibold text-lg mb-3">QR Code Customization</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="qrColor">QR Code Color</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  <input
+                    type="color"
+                    id="qrColor"
+                    value={qrColor}
+                    onChange={(e) => {
+                      setQrColor(e.target.value);
+                      if (venueId) {
+                        generatePreview(selectedCount, venueId);
+                      }
+                    }}
+                    className="w-16 h-10 rounded border"
+                    disabled={creating}
+                  />
+                  <Input
+                    type="text"
+                    value={qrColor}
+                    onChange={(e) => {
+                      setQrColor(e.target.value);
+                      if (venueId) {
+                        generatePreview(selectedCount, venueId);
+                      }
+                    }}
+                    placeholder="#7c3aed"
+                    className="flex-1"
+                    disabled={creating}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Preview */}
           <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
             <h3 className="font-semibold text-lg mb-4">Preview (First 3 tables)</h3>
@@ -275,7 +406,44 @@ export default function OnboardingTablesPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={handleDownloadQR}
+              onClick={async () => {
+                if (!venueId) return;
+                try {
+                  // Generate QR codes for all tables
+                  const baseUrl =
+                    process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+                  const qrCodes = await Promise.all(
+                    tables.slice(0, selectedCount).map(async (table, i) => {
+                      const tableUrl = `${baseUrl}/order?venue=${venueId}&table=${i + 1}`;
+                      const qrDataUrl = await QRCode.toDataURL(tableUrl, {
+                        width: 400,
+                        margin: 2,
+                        color: { dark: qrColor, light: "#ffffff" },
+                      });
+                      return { name: table.name, qr: qrDataUrl };
+                    })
+                  );
+
+                  // Create download links
+                  qrCodes.forEach(({ name, qr }, index) => {
+                    const link = document.createElement("a");
+                    link.href = qr;
+                    link.download = `${name.replace(/\s+/g, "-")}-qr-code.png`;
+                    link.click();
+                  });
+
+                  toast({
+                    title: "QR codes downloaded!",
+                    description: `Downloaded ${qrCodes.length} QR code images.`,
+                  });
+                } catch (_error) {
+                  toast({
+                    title: "Download failed",
+                    description: "Failed to generate QR codes. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
               disabled={creating}
               className="sm:w-auto"
             >

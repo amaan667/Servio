@@ -43,7 +43,7 @@ export const demoMenuItems = [
     price: 4.25,
     category: "Coffee",
     image:
-      "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=800&h=800&fit=crop&q=90&auto=format",
+      "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800&h=800&fit=crop&q=90&auto=format",
   },
 
   // Cold Beverages
@@ -166,7 +166,7 @@ export const demoMenuItems = [
     price: 6.75,
     category: "Food",
     image:
-      "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=800&h=800&fit=crop&q=90&auto=format",
+      "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=800&h=800&fit=crop&q=90&auto=format",
   },
   {
     id: "19",

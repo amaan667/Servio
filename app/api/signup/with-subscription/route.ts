@@ -114,7 +114,7 @@ export async function POST(_request: NextRequest) {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm for better UX
+      email_confirm: false, // Require email verification
       user_metadata: {
         full_name: fullName,
         // Store signup data temporarily - will be used to create org/venue after onboarding
@@ -124,6 +124,7 @@ export async function POST(_request: NextRequest) {
           serviceType,
           tier,
           stripeSessionId,
+          stripeCustomerId: customer.id,
         },
       },
     });

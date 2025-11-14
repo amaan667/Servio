@@ -160,6 +160,14 @@ export default function CreateAccountPage() {
         return;
       }
 
+      // Send verification email
+      try {
+        await fetch("/api/auth/send-verification", { method: "POST" });
+      } catch (_verificationError) {
+        // Don't block onboarding if verification email fails
+        console.error("Failed to send verification email:", _verificationError);
+      }
+
       setStatus("success");
       setTimeout(() => {
         router.push(`/onboarding/venue-setup`);
@@ -347,9 +355,16 @@ export default function CreateAccountPage() {
             <CardTitle className="text-2xl font-bold">Account Created!</CardTitle>
             <CardDescription>Your account is ready...</CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
+          <CardContent className="text-center space-y-4">
             <div className="text-6xl mb-4">✅</div>
             <p className="text-gray-600 mb-4">Account created successfully!</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+              <p className="text-sm font-semibold text-blue-900 mb-2">📧 Verify your email</p>
+              <p className="text-xs text-blue-700">
+                We've sent a verification email to <strong>{formData.email}</strong>. Please check
+                your inbox and click the verification link to activate your account.
+              </p>
+            </div>
             <p className="text-sm text-gray-500">Redirecting to onboarding...</p>
           </CardContent>
         </Card>

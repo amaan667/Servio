@@ -54,6 +54,47 @@ export default function OnboardingTestOrderPage() {
     }
   };
 
+  const [checkingOrder, setCheckingOrder] = useState(false);
+
+  useEffect(() => {
+    // Poll for orders if customer view is open
+    if (venueId && !orderCompleted) {
+      const interval = setInterval(async () => {
+        try {
+          const supabase = await createClient();
+          const { data: orders } = await supabase
+            .from("orders")
+            .select("id, order_status, payment_status, created_at")
+            .eq("venue_id", venueId)
+            .eq("order_status", "PLACED")
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          if (orders && orders.length > 0) {
+            const recentOrder = orders[0];
+            const orderAge = Date.now() - new Date(recentOrder.created_at).getTime();
+            // If order was created in last 5 minutes, consider it a test order
+            if (orderAge < 5 * 60 * 1000) {
+              setOrderCompleted(true);
+              setShowConfetti(true);
+              localStorage.setItem("onboarding_complete", "true");
+              localStorage.setItem("onboarding_step", "4");
+              import("@/lib/onboarding-progress").then(({ saveOnboardingProgress }) =>
+                saveOnboardingProgress(4, [1, 2, 3, 4], { test_order_complete: true })
+              );
+              clearInterval(interval);
+              setTimeout(() => setShowConfetti(false), 5000);
+            }
+          }
+        } catch (_error) {
+          // Silently handle errors
+        }
+      }, 2000); // Check every 2 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [venueId, orderCompleted]);
+
   const handleOpenCustomerView = () => {
     if (!venueId) return;
 
@@ -62,18 +103,7 @@ export default function OnboardingTestOrderPage() {
 
     // Open in new tab
     window.open(orderUrl, "_blank");
-
-    // Simulate order completion (in real scenario, this would be tracked via orders table)
-    setTimeout(() => {
-      setOrderCompleted(true);
-      setShowConfetti(true);
-      // Store completion
-      localStorage.setItem("onboarding_complete", "true");
-      localStorage.setItem("onboarding_step", "3");
-
-      // Stop confetti after 5 seconds
-      setTimeout(() => setShowConfetti(false), 5000);
-    }, 3000);
+    setCheckingOrder(true);
   };
 
   const handleCompleteLater = async () => {
@@ -191,11 +221,21 @@ export default function OnboardingTestOrderPage() {
             {/* Action Button */}
             <Button
               onClick={handleOpenCustomerView}
+              disabled={checkingOrder}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white h-14 text-lg"
             >
               <ExternalLink className="w-5 h-5 mr-2" />
-              Open Customer View
+              {checkingOrder ? "Waiting for order..." : "Open Customer View"}
             </Button>
+
+            {checkingOrder && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Waiting for order...</strong> Place a test order in the customer view
+                  window. We'll detect it automatically.
+                </p>
+              </div>
+            )}
 
             {/* Test Card Details */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">

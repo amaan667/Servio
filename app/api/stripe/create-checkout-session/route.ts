@@ -90,6 +90,10 @@ export async function POST(_request: NextRequest) {
 
     // If this is a signup flow, handle it differently (no auth required)
     if (isSignup) {
+      // Note: Email is NOT required at plan selection stage
+      // Stripe checkout will collect the email during checkout
+      // Email/fullName/venueName are optional here - only included if provided (e.g., from OAuth pre-fill)
+
       // Create checkout session for new signup
       const sessionData: Stripe.Checkout.SessionCreateParams = {
         mode: "subscription",
@@ -102,7 +106,6 @@ export async function POST(_request: NextRequest) {
         ],
         success_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/create-account?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/?cancelled=true`,
-        customer_email: email,
         metadata: {
           tier,
           is_signup: "true",
@@ -125,7 +128,21 @@ export async function POST(_request: NextRequest) {
         },
       };
 
+      // Only include customer_email if provided (optional - Stripe will collect it during checkout)
+      // This is mainly for OAuth flows where email might be pre-filled
+      if (email && typeof email === "string" && email.trim() !== "") {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(email.trim())) {
+          sessionData.customer_email = email.trim();
+        }
+      }
+
       const session = await stripe.checkout.sessions.create(sessionData);
+      logger.info("[STRIPE CHECKOUT] Created signup checkout session", {
+        sessionId: session.id,
+        tier,
+        hasEmail: !!sessionData.customer_email,
+      });
       return NextResponse.json({ sessionId: session.id, url: session.url });
     }
 

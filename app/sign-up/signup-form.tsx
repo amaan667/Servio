@@ -156,11 +156,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       setLoading(false);
       return;
     }
-    if (!formData.venueName.trim()) {
-      setError("Business name is required.");
-      setLoading(false);
-      return;
-    }
     if (!selectedTier) {
       setError("Please select a pricing tier.");
       setLoading(false);
@@ -175,7 +170,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
-          venueName: formData.venueName,
           venueType: formData.businessType,
           serviceType: formData.serviceType,
           tier: selectedTier,
@@ -190,7 +184,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           tier: selectedTier,
           email: formData.email,
           fullName: formData.fullName,
-          venueName: formData.venueName,
           isSignup: true,
         }),
       });
@@ -504,22 +497,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                 required
               />
             </div>
-
-            {/* Hide venue name for invitation signups */}
-            {!invitationToken && (
-              <div className="space-y-2">
-                <Label htmlFor="venueName">Business Name</Label>
-                <Input
-                  id="venueName"
-                  type="text"
-                  value={formData.venueName}
-                  onChange={(e) => setFormData({ ...formData, venueName: e.target.value })}
-                  placeholder="Enter your business name"
-                  disabled={loading}
-                  required
-                />
-              </div>
-            )}
 
             {/* Hide business details for invitation signups */}
             {!invitationToken && (

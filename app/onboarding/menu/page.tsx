@@ -96,9 +96,12 @@ export default function OnboardingMenuPage() {
         throw new Error(result.error || "Upload failed");
       }
 
-      // Store progress
+      // Store progress (both local and server-side)
       localStorage.setItem("onboarding_step", "2");
       localStorage.setItem("onboarding_menu_complete", "true");
+      await import("@/lib/onboarding-progress").then(({ saveOnboardingProgress }) =>
+        saveOnboardingProgress(2, [1, 2], { menu_complete: true })
+      );
 
       toast({
         title: "Menu uploaded!",
