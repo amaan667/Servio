@@ -41,6 +41,18 @@ export default function ResetPasswordPage() {
       const supabase = supabaseBrowser();
       let sessionEstablished = false;
 
+      // Check for error in URL first
+      const queryParams = new URLSearchParams(window.location.search);
+      const errorParam = queryParams.get("error");
+      const errorDescription = queryParams.get("error_description");
+      
+      if (errorParam) {
+        console.error("[RESET PASSWORD] ❌ Error in URL:", { errorParam, errorDescription });
+        setHasValidSession(false);
+        setError(errorDescription || errorParam || "Invalid or expired reset link. Please request a new one.");
+        return;
+      }
+
       // Set up auth state change listener - Supabase fires PASSWORD_RECOVERY when processing hash fragments
       const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
         console.error("[RESET PASSWORD] Auth state change:", { event, hasSession: !!session });
@@ -63,7 +75,7 @@ export default function ResetPasswordPage() {
       }
 
       // Check for PKCE code parameter first (newer Supabase flow)
-      const queryParams = new URLSearchParams(window.location.search);
+      // Note: queryParams already defined above for error checking
       const code = queryParams.get("code");
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const hashAccessToken = hashParams.get("access_token");
@@ -149,11 +161,21 @@ export default function ResetPasswordPage() {
             authListener?.subscription.unsubscribe();
             return;
           } else {
-            console.error("[RESET PASSWORD] Failed to set session:", sessionError);
-            setHasValidSession(false);
-            setError(
-              sessionError?.message || "Invalid or expired reset link. Please request a new one."
-            );
+            console.error("[RESET PASSWORD] ❌ Failed to set session:", sessionError);
+            
+            // Check if it's a token expired error
+            if (sessionError?.message?.toLowerCase().includes("expired") || 
+                sessionError?.message?.toLowerCase().includes("invalid")) {
+              setHasValidSession(false);
+              setError(
+                "This reset link has expired. Password reset links are valid for 1 hour. Please request a new one."
+              );
+            } else {
+              setHasValidSession(false);
+              setError(
+                sessionError?.message || "Invalid or expired reset link. Please request a new one."
+              );
+            }
             authListener?.subscription.unsubscribe();
             return;
           }
@@ -183,21 +205,38 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // No code or tokens found
-      console.error("[RESET PASSWORD] ❌ No code or tokens found in URL");
+      // No code or tokens found in URL - wait a bit for PASSWORD_RECOVERY event
+      console.error("[RESET PASSWORD] ⏳ No code or tokens found in URL, waiting for auth event...");
+      
+      // Give the auth state change listener time to fire (PASSWORD_RECOVERY event)
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      // Check if session was established by the auth listener
+      if (sessionEstablished) {
+        console.error("[RESET PASSWORD] ✅ Session was established by auth listener");
+        authListener?.subscription.unsubscribe();
+        return;
+      }
+      
+      // Check one more time if session exists
+      const {
+        data: { session: finalCheck },
+      } = await supabase.auth.getSession();
+      
+      if (finalCheck) {
+        console.error("[RESET PASSWORD] ✅ Session found on final check");
+        setHasValidSession(true);
+        authListener?.subscription.unsubscribe();
+        return;
+      }
+      
+      // Still no session - show error
+      console.error("[RESET PASSWORD] ❌ No code or tokens found in URL after waiting");
       setHasValidSession(false);
       setError(
-        "No reset token found. Please ensure you clicked the link directly from your email. The link may have expired or been used already."
+        "No reset token found. Please ensure you clicked the link directly from your email. The link may have expired or already been used. Each reset link can only be used once."
       );
       authListener?.subscription.unsubscribe();
-
-      // This code should never be reached due to early returns above
-      // But keeping as fallback
-      if (!sessionEstablished) {
-        console.error("[RESET PASSWORD] ❌ Fallback: No session established");
-        setHasValidSession(false);
-        setError("Invalid or expired reset link. Please request a new password reset link.");
-      }
     };
 
     checkSession();
@@ -305,7 +344,23 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p>{error}</p>
+                      {error.toLowerCase().includes("expired") || error.toLowerCase().includes("invalid") ? (
+                        <p className="text-sm mt-2">
+                          <strong>Troubleshooting:</strong>
+                          <br />
+                          • Reset links expire after 1 hour
+                          <br />
+                          • Each link can only be used once
+                          <br />
+                          • Make sure you're opening the link in the same browser
+                          <br />• Try requesting a new reset link below
+                        </p>
+                      ) : null}
+                    </div>
+                  </AlertDescription>
                 </Alert>
               )}
 

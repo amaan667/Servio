@@ -44,6 +44,15 @@ export async function POST(request: NextRequest) {
     // This will send an email automatically with a reset link
     // Supabase verify endpoint redirects to reset-password with hash fragments (#access_token=...&type=recovery)
     // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard > Authentication > URL Configuration
+    // 
+    // Configuration needed in Supabase Dashboard:
+    // 1. Go to: Authentication > URL Configuration
+    // 2. Add to "Redirect URLs": 
+    //    - https://servio-production.up.railway.app/reset-password
+    //    - http://localhost:3000/reset-password (for development)
+    // 3. Ensure "Email" provider is enabled in: Authentication > Providers > Email
+    // 4. Customize email template in: Authentication > Email Templates > Reset Password
+    
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
@@ -59,6 +68,7 @@ export async function POST(request: NextRequest) {
         NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
       },
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + "...",
+      note: "If reset links show 'invalid', verify redirectUrl is whitelisted in Supabase Dashboard",
     });
 
     const resetStartTime = Date.now();
