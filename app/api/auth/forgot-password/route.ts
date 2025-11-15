@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // Use Supabase's built-in password reset functionality
-    // This will send an email automatically with a reset link
-    // Supabase verify endpoint redirects to reset-password with hash fragments (#access_token=...&type=recovery)
-    // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard > Authentication > URL Configuration
+    // This sends an email with a reset link that redirects to /reset-password
+    // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard:
+    // Authentication > URL Configuration > Redirect URLs
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
@@ -53,12 +53,6 @@ export async function POST(request: NextRequest) {
     logger.info(`[FORGOT PASSWORD API] ${requestId} - Preparing to send reset email`, {
       email: email.trim(),
       redirectUrl,
-      appUrl,
-      envVars: {
-        NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-        NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-      },
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + "...",
     });
 
     const resetStartTime = Date.now();

@@ -17,190 +17,83 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Log page load - using console.error so it shows in production (console.log is removed)
-    console.error("[RESET PASSWORD PAGE] ════════════════════════════════════════");
-    console.error("[RESET PASSWORD PAGE] Page loaded:", {
-      timestamp: new Date().toISOString(),
-      fullUrl: window.location.href,
-      hash: window.location.hash,
-      search: window.location.search,
-      pathname: window.location.pathname,
-      origin: window.location.origin,
-      referrer: document.referrer,
-      userAgent: navigator.userAgent.substring(0, 100),
-    });
-    console.error("[RESET PASSWORD PAGE] ════════════════════════════════════════");
+    const supabase = supabaseBrowser();
+    let mounted = true;
 
-    // Check if we have a valid recovery session from Supabase
-    const checkSession = async () => {
-      const supabase = supabaseBrowser();
-      let sessionEstablished = false;
+    const initPasswordReset = async () => {
+      try {
+        // Check for error in URL from Supabase
+        const params = new URLSearchParams(window.location.search);
+        const errorParam = params.get("error");
+        const errorDescription = params.get("error_description");
 
-      // Set up auth state change listener - Supabase fires PASSWORD_RECOVERY when processing hash fragments
-      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        console.error("[RESET PASSWORD] Auth state change:", { event, hasSession: !!session });
-
-        if (event === "PASSWORD_RECOVERY" && session) {
-          console.error("[RESET PASSWORD] ✅ PASSWORD_RECOVERY event fired");
-          sessionEstablished = true;
-          setHasValidSession(true);
-          if (window.location.hash) {
-            window.history.replaceState(null, "", window.location.pathname);
-          }
+        if (errorParam && mounted) {
+          setCheckingSession(false);
+          setHasValidSession(false);
+          setError(errorDescription || "Reset link is invalid or expired. Please request a new one.");
+          return;
         }
-      });
 
-      // Check if we're on the verify endpoint (shouldn't happen, but handle it)
-      const isVerifyEndpoint = window.location.href.includes("/auth/v1/verify");
-      if (isVerifyEndpoint) {
-        console.error("[RESET PASSWORD] ⚠️ Still on verify endpoint, waiting for redirect...");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
+        // Listen for PASSWORD_RECOVERY event from Supabase
+        // This fires automatically when Supabase processes the reset token
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (!mounted) return;
 
-      // Check for PKCE code parameter first (newer Supabase flow)
-      const queryParams = new URLSearchParams(window.location.search);
-      const code = queryParams.get("code");
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const hashAccessToken = hashParams.get("access_token");
-      const hashRefreshToken = hashParams.get("refresh_token");
-      const hashType = hashParams.get("type");
-
-      console.error("[RESET PASSWORD] ════════════════════════════════════════");
-      console.error("[RESET PASSWORD] Starting session check:", {
-        initialUrl: window.location.href,
-        initialHash: window.location.hash,
-        initialSearch: window.location.search,
-        referrer: document.referrer,
-        hashLength: window.location.hash.length,
-        searchLength: window.location.search.length,
-        hasCode: !!code,
-        hasHashTokens: !!hashAccessToken,
-        hashType,
-        isVerifyEndpoint: window.location.href.includes("/auth/v1/verify"),
-        timestamp: new Date().toISOString(),
-      });
-      console.error("[RESET PASSWORD] ════════════════════════════════════════");
-
-      // Handle PKCE code exchange (newer flow)
-      if (code) {
-        console.error("[RESET PASSWORD] 🔄 PKCE code detected, exchanging for session...");
-        try {
-          const { data: exchangeData, error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(code);
-
-          console.error("[RESET PASSWORD] Code exchange result:", {
-            hasSession: !!exchangeData.session,
-            hasError: !!exchangeError,
-            errorMessage: exchangeError?.message,
-            errorCode: exchangeError?.code,
-          });
-
-          if (exchangeData.session && !exchangeError) {
-            console.error("[RESET PASSWORD] ✅ Session established from PKCE code");
-            sessionEstablished = true;
+          if (event === "PASSWORD_RECOVERY") {
+            console.error("[RESET PASSWORD] ✅ Recovery session established");
             setHasValidSession(true);
+            setCheckingSession(false);
+            setError(null);
             // Clean up URL
             window.history.replaceState(null, "", window.location.pathname);
-            authListener?.subscription.unsubscribe();
-            return;
-          } else {
-            console.error("[RESET PASSWORD] ❌ Code exchange failed:", exchangeError);
-            setHasValidSession(false);
-            setError(
-              exchangeError?.message || "Invalid or expired reset link. Please request a new one."
-            );
-            authListener?.subscription.unsubscribe();
-            return;
           }
-        } catch (err) {
-          console.error("[RESET PASSWORD] Exception during code exchange:", err);
+        });
+
+        // Give Supabase time to process the URL and fire PASSWORD_RECOVERY event
+        // Supabase's detectSessionInUrl: true handles token extraction automatically
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        if (!mounted) return;
+
+        // Check if session was established
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          console.error("[RESET PASSWORD] ✅ Recovery session found");
+          setHasValidSession(true);
+          setCheckingSession(false);
+        } else {
+          console.error("[RESET PASSWORD] ❌ No recovery session found");
           setHasValidSession(false);
-          setError("Failed to process reset link. Please request a new one.");
-          authListener?.subscription.unsubscribe();
-          return;
+          setCheckingSession(false);
+          setError("Invalid or expired reset link. Please request a new one.");
         }
-      }
 
-      // Handle hash fragment tokens (older flow)
-      if (hashAccessToken && hashType === "recovery") {
-        console.error("[RESET PASSWORD] 🔄 Hash tokens detected, setting session...");
-        try {
-          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-            access_token: hashAccessToken,
-            refresh_token: hashRefreshToken || "",
-          });
-
-          console.error("[RESET PASSWORD] Set session result:", {
-            hasSession: !!sessionData.session,
-            hasError: !!sessionError,
-            errorMessage: sessionError?.message,
-          });
-
-          if (sessionData.session && !sessionError) {
-            console.error("[RESET PASSWORD] ✅ Session established from hash tokens");
-            sessionEstablished = true;
-            setHasValidSession(true);
-            window.history.replaceState(null, "", window.location.pathname);
-            authListener?.subscription.unsubscribe();
-            return;
-          } else {
-            console.error("[RESET PASSWORD] Failed to set session:", sessionError);
-            setHasValidSession(false);
-            setError(
-              sessionError?.message || "Invalid or expired reset link. Please request a new one."
-            );
-            authListener?.subscription.unsubscribe();
-            return;
-          }
-        } catch (err) {
-          console.error("[RESET PASSWORD] Exception:", err);
+        // Cleanup
+        return () => {
+          subscription?.unsubscribe();
+        };
+      } catch (err) {
+        console.error("[RESET PASSWORD] Error:", err);
+        if (mounted) {
           setHasValidSession(false);
-          setError("Failed to process reset link. Please request a new one.");
-          authListener?.subscription.unsubscribe();
-          return;
+          setCheckingSession(false);
+          setError("Failed to process reset link. Please try again.");
         }
-      }
-
-      // Check if session already exists (might have been auto-established)
-      const {
-        data: { session: existingSession },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (existingSession && !sessionError) {
-        console.error("[RESET PASSWORD] ✅ Session already exists");
-        sessionEstablished = true;
-        setHasValidSession(true);
-        if (window.location.hash || window.location.search) {
-          window.history.replaceState(null, "", window.location.pathname);
-        }
-        authListener?.subscription.unsubscribe();
-        return;
-      }
-
-      // No code or tokens found
-      console.error("[RESET PASSWORD] ❌ No code or tokens found in URL");
-      setHasValidSession(false);
-      setError(
-        "No reset token found. Please ensure you clicked the link directly from your email. The link may have expired or been used already."
-      );
-      authListener?.subscription.unsubscribe();
-
-      // This code should never be reached due to early returns above
-      // But keeping as fallback
-      if (!sessionEstablished) {
-        console.error("[RESET PASSWORD] ❌ Fallback: No session established");
-        setHasValidSession(false);
-        setError("Invalid or expired reset link. Please request a new password reset link.");
       }
     };
 
-    checkSession();
+    initPasswordReset();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -263,14 +156,14 @@ export default function ResetPasswordPage() {
     }
   };
 
-  if (hasValidSession === null) {
+  if (checkingSession) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
-              <p className="text-gray-600">Loading...</p>
+              <p className="text-gray-600">Verifying reset link...</p>
             </div>
           </CardContent>
         </Card>
