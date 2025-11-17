@@ -8,7 +8,7 @@
   .btn-outline,
   .btn-secondary,
   .btn-ghost {
-    @apply bg-white text-servio-purple border-2 border-servio-purple rounded-lg py-2 px-4 font-semibold shadow-md hover:bg-gray-50 hover:text-servio-purple-dark hover:shadow-lg transition;
+    @apply bg-white dark:bg-card text-servio-purple dark:text-servio-purple-light border-2 border-servio-purple dark:border-servio-purple rounded-lg py-2 px-4 font-semibold shadow-md hover:bg-gray-50 dark:hover:bg-accent hover:text-servio-purple-dark dark:hover:text-servio-purple hover:shadow-lg transition;
   }
 
   /* Unified button styles for all devices */
@@ -21,7 +21,7 @@
   .btn-unified-servio,
   .btn-unified-secondary,
   .btn-unified-ghost {
-    @apply bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg;
+    @apply bg-white dark:bg-card text-servio-purple dark:text-servio-purple-light border-2 border-servio-purple dark:border-servio-purple hover:bg-gray-50 dark:hover:bg-accent hover:text-servio-purple-dark dark:hover:text-servio-purple shadow-md hover:shadow-lg;
   }
 }
 
@@ -186,16 +186,17 @@
     outline: none;
   }
 
-  /* Button visibility in dark mode */
-  .dark button:not([class*="destructive"]) {
-    background-color: hsl(262 83% 58%);
-    color: white;
-    border-color: hsl(262 83% 58%);
+  /* Button visibility in dark mode - use theme variables */
+  .dark button:not([class*="destructive"]):not([class*="bg-"]) {
+    background-color: hsl(var(--card));
+    color: hsl(var(--servio-purple-light));
+    border-color: hsl(var(--servio-purple));
   }
 
-  .dark button:not([class*="destructive"]):hover {
-    background-color: hsl(262 83% 48%);
-    border-color: hsl(262 83% 48%);
+  .dark button:not([class*="destructive"]):not([class*="bg-"]):hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--servio-purple));
+    border-color: hsl(var(--servio-purple));
   }
 
   /* Override problematic gray classes in dark mode */
@@ -216,16 +217,16 @@
 
   /* Background overrides for dark mode */
   .dark .bg-white {
-    background-color: hsl(262 40% 12%);
-    color: hsl(262 10% 98%);
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
   }
 
   .dark .bg-gray-50 {
-    background-color: hsl(262 30% 14%);
+    background-color: hsl(var(--muted));
   }
 
   .dark .bg-gray-100 {
-    background-color: hsl(262 25% 18%);
+    background-color: hsl(var(--secondary));
   }
 
   /* Border overrides for dark mode */
@@ -242,18 +243,21 @@
     color: hsl(262 10% 75%);
   }
 
-  /* Purple brand colors remain consistent */
-  .dark .text-purple-600,
-  .dark .text-servio-purple {
-    color: hsl(262 83% 68%);
-  }
+    /* Purple brand colors remain consistent */
+    .dark .text-purple-600,
+    .dark .text-servio-purple {
+      color: hsl(262 83% 68%);
+    }
 
-  .dark .bg-purple-600,
-  .dark .bg-servio-purple {
-    background-color: hsl(262 83% 58%);
-    color: white;
+    .dark .bg-purple-600,
+    .dark .bg-servio-purple {
+      background-color: hsl(262 83% 58%);
+      color: white;
+    }
+
+    /* Servio brand colors for dark mode */
+    --servio-purple-light: 262 83% 68%;
   }
-}
 
 /* Custom height classes for enlarged logo */
 .h-80 {
@@ -1893,16 +1897,28 @@ div {
 }
 
 /* Consistent button theme - respects dark mode */
-button:not([class*="destructive"]) {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  border: 2px solid hsl(var(--primary));
+button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]) {
+  background-color: hsl(var(--card));
+  color: hsl(var(--servio-purple));
+  border: 2px solid hsl(var(--servio-purple));
   border-radius: 12px;
   font-weight: 600;
 }
 
-button:not([class*="destructive"]):hover {
-  opacity: 0.9;
+.dark button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]) {
+  background-color: hsl(var(--card));
+  color: hsl(var(--servio-purple-light));
+  border-color: hsl(var(--servio-purple));
+}
+
+button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]):hover {
+  background-color: hsl(var(--accent));
+  opacity: 1;
+}
+
+.dark button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]):hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--servio-purple));
 }
 
 /* Destructive buttons */

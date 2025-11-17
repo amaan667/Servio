@@ -53,16 +53,12 @@ export default function GlobalNav() {
   // This prevents flicker because the session is available immediately
   const shouldHidePublicActions = isAuthenticatedRoute || isAuthenticated;
 
-  // Use theme-aware colors for authenticated routes, light mode colors for public pages
-  const navClasses = isAuthenticatedRoute
-    ? "bg-background border-b border-border shadow-sm sticky top-0 z-50"
-    : "bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50";
+  // Use theme-aware colors for all routes
+  const navClasses = "bg-background dark:bg-background border-b border-border dark:border-border shadow-sm sticky top-0 z-50";
 
-  const textClasses = isAuthenticatedRoute
-    ? "text-foreground hover:text-primary hover:bg-accent"
-    : "text-foreground/80 hover:text-foreground hover:bg-accent";
+  const textClasses = "text-foreground hover:text-primary dark:hover:text-primary hover:bg-accent dark:hover:bg-accent";
 
-  const borderClasses = isAuthenticatedRoute ? "border-border" : "border-gray-200";
+  const borderClasses = "border-border dark:border-border";
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith("/dashboard");
@@ -181,7 +177,7 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
@@ -193,7 +189,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
@@ -230,7 +226,7 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -242,7 +238,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
@@ -279,14 +275,14 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
@@ -312,7 +308,7 @@ export default function GlobalNav() {
                     {(venueId || primaryVenueId) && (
                       <Link
                         href={`/dashboard/${venueId || primaryVenueId}`}
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <LayoutDashboard className="mr-3 h-5 w-5" />
                         Dashboard
@@ -325,7 +321,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
@@ -638,7 +634,7 @@ export default function GlobalNav() {
                 >
                   Pricing
                 </Link>
-                <div className="w-full h-px bg-gray-100 my-4"></div>
+                <div className="w-full h-px bg-border dark:bg-border my-4"></div>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);

@@ -28,23 +28,23 @@ export default function Breadcrumbs() {
   ];
 
   return (
-    <nav aria-label="Breadcrumb" className="text-sm text-gray-700 mb-4">
+    <nav aria-label="Breadcrumb" className="text-sm text-foreground/80 dark:text-foreground mb-4">
       <ol className="flex items-center gap-2">
         {crumbs.map((c, i) => (
           <li key={i} className="flex items-center gap-2">
             {"current" in c && c.current ? (
-              <span className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+              <span className="inline-flex items-center px-3 py-1 rounded-md font-medium text-foreground dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
                 {c.label}
               </span>
             ) : (
               <Link
                 href={(c as { href: string }).href}
-                className="hover:underline text-gray-600 hover:text-purple-600 transition-colors"
+                className="hover:underline text-foreground/70 dark:text-foreground/80 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
               >
                 {c.label}
               </Link>
             )}
-            {i < crumbs.length - 1 && <span className="text-gray-400">→</span>}
+            {i < crumbs.length - 1 && <span className="text-foreground/50 dark:text-foreground/60">→</span>}
           </li>
         ))}
       </ol>

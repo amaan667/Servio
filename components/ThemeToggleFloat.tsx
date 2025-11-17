@@ -79,13 +79,13 @@ export default function ThemeToggleFloat() {
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      className={`${getPositionClasses()} rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-gray-50 dark:hover:bg-gray-700`}
+      className={`${getPositionClasses()} rounded-full border-2 border-border dark:border-border bg-card dark:bg-card p-3 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-card/95 dark:bg-card/95 hover:bg-accent dark:hover:bg-accent`}
     >
       <div className="flex items-center justify-center">
         {currentTheme === "dark" ? (
           <Sun className="h-5 w-5 text-yellow-500" />
         ) : (
-          <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          <Moon className="h-5 w-5 text-foreground dark:text-foreground" />
         )}
       </div>
     </button>
