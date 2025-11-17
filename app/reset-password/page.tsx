@@ -21,6 +21,7 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const supabase = supabaseBrowser();
@@ -42,16 +43,37 @@ export default function ResetPasswordPage() {
         const params = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const errorParam = params.get("error") || hashParams.get("error");
+        const errorCode = params.get("error_code") || hashParams.get("error_code");
         const errorDescription =
           params.get("error_description") || hashParams.get("error_description");
 
         if (errorParam && mounted) {
-          console.error("[RESET PASSWORD] ❌ Error in URL:", errorParam);
+          console.error("[RESET PASSWORD] ❌ Error in URL:", {
+            error: errorParam,
+            code: errorCode,
+            description: errorDescription,
+          });
+
+          // Clean up URL immediately
+          window.history.replaceState(null, "", window.location.pathname);
+
           setCheckingSession(false);
           setHasValidSession(false);
-          setError(
-            errorDescription || "Reset link is invalid or expired. Please request a new one."
-          );
+
+          // Check if link is expired
+          const isExpiredLink =
+            errorCode === "otp_expired" ||
+            errorDescription?.toLowerCase().includes("expired") ||
+            errorDescription?.toLowerCase().includes("invalid");
+
+          if (isExpiredLink) {
+            setIsExpired(true);
+            setError(
+              "This password reset link has expired. Reset links are valid for 1 hour. Please request a new one."
+            );
+          } else {
+            setError(errorDescription || "Reset link is invalid. Please request a new one.");
+          }
           return;
         }
 
@@ -276,6 +298,28 @@ export default function ResetPasswordPage() {
               <Button onClick={() => router.push("/sign-in")} className="w-full">
                 Go to Sign In
               </Button>
+            </div>
+          ) : isExpired ? (
+            <div className="space-y-4">
+              <Alert variant="destructive">
+                <AlertDescription>
+                  <strong>Link Expired</strong>
+                  <br />
+                  {error}
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-col gap-2">
+                <Button onClick={() => router.push("/forgot-password")} className="w-full">
+                  Request New Reset Link
+                </Button>
+                <Button
+                  onClick={() => router.push("/sign-in")}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Back to Sign In
+                </Button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
