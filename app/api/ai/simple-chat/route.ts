@@ -1,6 +1,5 @@
 // Simple AI Chat API - With in-session conversation context
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/supabase";
 import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
 import { executeTool } from "@/lib/ai/tool-executors";

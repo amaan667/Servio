@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
  * Simple endpoint to set current user to enterprise tier
  * POST /api/admin/set-premium
  */
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient();
 

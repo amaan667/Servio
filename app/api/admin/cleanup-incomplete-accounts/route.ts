@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
@@ -16,7 +16,7 @@ import { logger } from "@/lib/logger";
  * These are typically accounts created before the plan selection flow was introduced
  */
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createAdminClient();
 
@@ -118,7 +118,7 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function DELETE(_request: NextRequest) {
+export async function DELETE() {
   try {
     const supabase = createAdminClient();
 

@@ -11,7 +11,9 @@ export default function ApiDocsPage() {
     fetch("/api/docs")
       .then((res) => res.json())
       .then((data) => setSpec(data))
-      .catch((err) => console.error("Failed to load API docs", err));
+      .catch(() => {
+        // Failed to load API docs - component will show loading state
+      });
   }, []);
 
   if (!spec) {
