@@ -77,39 +77,16 @@ export default function ResetPasswordPage() {
           return;
         }
 
-        // Check for PKCE code in query params (newer Supabase password reset flow)
+        // Check for code in query params (Supabase password reset uses codes)
+        // Note: We don't manually exchange the code - Supabase's detectSessionInUrl: true
+        // handles it automatically. We just need to wait for the session to be established.
         const code = params.get("code");
         if (code) {
-          console.error("[RESET PASSWORD] 🔄 PKCE code detected in URL, exchanging...");
-          try {
-            // For password reset, Supabase handles the code exchange automatically
-            // We just need to call exchangeCodeForSession - it doesn't require a verifier
-            // because password reset codes are single-use and don't use PKCE verifiers
-            const { data: exchangeData, error: exchangeError } =
-              await supabase.auth.exchangeCodeForSession(code);
-
-            if (exchangeData.session && !exchangeError) {
-              console.error("[RESET PASSWORD] ✅ Session established from PKCE code");
-              setHasValidSession(true);
-              setCheckingSession(false);
-              window.history.replaceState(null, "", window.location.pathname);
-              return;
-            } else {
-              console.error("[RESET PASSWORD] ❌ Code exchange failed:", exchangeError);
-              setHasValidSession(false);
-              setCheckingSession(false);
-              setError(
-                exchangeError?.message || "Invalid or expired reset link. Please request a new one."
-              );
-              return;
-            }
-          } catch (err) {
-            console.error("[RESET PASSWORD] Exception during code exchange:", err);
-            setHasValidSession(false);
-            setCheckingSession(false);
-            setError("Failed to process reset link. Please try again.");
-            return;
-          }
+          console.error(
+            "[RESET PASSWORD] 🔄 Code detected in URL, waiting for Supabase auto-detection..."
+          );
+          // Supabase will automatically process the code via detectSessionInUrl
+          // We'll detect it through the auth state change listener or session check below
         }
 
         // Check for hash fragment tokens (older password reset flow)
@@ -169,11 +146,11 @@ export default function ResetPasswordPage() {
         subscription = authData.subscription;
 
         // Give Supabase time to process the URL and fire PASSWORD_RECOVERY event
-        // Supabase's detectSessionInUrl: true handles token extraction automatically
-        // For password reset, Supabase processes hash fragments automatically
-        // Wait up to 3 seconds, checking every 500ms
+        // Supabase's detectSessionInUrl: true handles code/token extraction automatically
+        // For password reset with codes, Supabase processes them automatically
+        // Wait up to 5 seconds, checking every 500ms (longer for code exchange)
         let attempts = 0;
-        const maxAttempts = 6;
+        const maxAttempts = code ? 10 : 6; // More attempts if we have a code
 
         while (attempts < maxAttempts && mounted) {
           await new Promise((resolve) => setTimeout(resolve, 500));
