@@ -90,9 +90,9 @@ async function findIncompleteAccounts() {
         created_at: user.created_at,
         email_confirmed_at: user.email_confirmed_at || null,
         full_name: (user.user_metadata?.full_name as string) || null,
-        has_venue: hasVenue,
-        has_staff_role: hasStaffRole,
-        has_organization: hasOrganization,
+        has_venue: !!hasVenue,
+        has_staff_role: !!hasStaffRole,
+        has_organization: !!hasOrganization,
         onboarding_step: onboarding?.current_step || null,
       });
     }
