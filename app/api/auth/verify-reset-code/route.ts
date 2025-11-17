@@ -12,51 +12,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Code is required" }, { status: 400 });
     }
 
-    // Try to verify through Supabase's verify endpoint directly
-    // Password reset codes need to go through /auth/v1/verify
-    const supabaseUrl = getSupabaseUrl();
-    const verifyUrl = `${supabaseUrl}/auth/v1/verify`;
+    const supabase = await createClient();
 
-    logger.info("[VERIFY RESET CODE] Attempting verification", {
+    // Password reset codes from Supabase are PKCE codes that need to be exchanged
+    // But they don't require a code verifier - Supabase handles it server-side
+    // Try to exchange the code for a session
+    logger.info("[VERIFY RESET CODE] Attempting code exchange", {
       code: code.substring(0, 10) + "...",
     });
 
-    const verifyResponse = await fetch(verifyUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: getSupabaseAnonKey(),
-      },
-      body: JSON.stringify({
-        token_hash: code,
-        type: "recovery",
-      }),
-    });
+    try {
+      // Try exchangeCodeForSession - password reset codes might work without verifier
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    const verifyData = await verifyResponse.json();
+      if (error) {
+        logger.error("[VERIFY RESET CODE] Code exchange failed", error);
 
-    if (!verifyResponse.ok) {
-      logger.error("[VERIFY RESET CODE] Verification failed", verifyData);
-      return NextResponse.json(
-        {
-          error:
-            verifyData.error_description || verifyData.message || "Invalid or expired reset code",
+        // If code exchange fails, try verifyOtp as fallback
+        logger.info("[VERIFY RESET CODE] Trying verifyOtp as fallback");
+        const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: code,
+          type: "recovery",
+        });
+
+        if (otpError || !otpData?.session) {
+          return NextResponse.json(
+            {
+              error: error?.message || otpError?.message || "Invalid or expired reset code",
+            },
+            { status: 400 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          session: {
+            access_token: otpData.session.access_token,
+            refresh_token: otpData.session.refresh_token,
+          },
+        });
+      }
+
+      if (!data?.session) {
+        return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        session: {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
         },
-        { status: verifyResponse.status }
-      );
+      });
+    } catch (err) {
+      logger.error("[VERIFY RESET CODE] Exception during verification", err);
+      return NextResponse.json({ error: "Failed to verify reset code" }, { status: 500 });
     }
-
-    if (!verifyData.access_token) {
-      return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      session: {
-        access_token: verifyData.access_token,
-        refresh_token: verifyData.refresh_token,
-      },
-    });
   } catch (error) {
     logger.error("[VERIFY RESET CODE] Unexpected error:", error);
     return NextResponse.json({ error: "Failed to verify reset code" }, { status: 500 });
