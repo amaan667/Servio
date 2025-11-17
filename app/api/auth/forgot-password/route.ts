@@ -44,7 +44,15 @@ export async function POST(request: NextRequest) {
     // This sends an email with a reset link that redirects to /reset-password
     // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard:
     // Authentication > URL Configuration > Redirect URLs
+    //
+    // Try to get the actual origin from the request first, then fall back to env vars
+    const origin =
+      request.headers.get("origin") || request.headers.get("x-forwarded-host")
+        ? `https://${request.headers.get("x-forwarded-host")}`
+        : null;
+
     const appUrl =
+      origin ||
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
       "https://servio-production.up.railway.app";
@@ -53,6 +61,16 @@ export async function POST(request: NextRequest) {
     logger.info(`[FORGOT PASSWORD API] ${requestId} - Preparing to send reset email`, {
       email: email.trim(),
       redirectUrl,
+      origin,
+      envUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL,
+      headers: {
+        origin: request.headers.get("origin"),
+        host: request.headers.get("host"),
+        forwardedHost: request.headers.get("x-forwarded-host"),
+        forwardedProto: request.headers.get("x-forwarded-proto"),
+      },
+      warning:
+        "Ensure this redirectUrl is whitelisted in Supabase Dashboard > Authentication > URL Configuration > Redirect URLs",
     });
 
     const resetStartTime = Date.now();
