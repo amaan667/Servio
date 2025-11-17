@@ -212,7 +212,7 @@ export default function GlobalNav() {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-background text-purple-600 dark:text-purple-400 border-2 border-purple-600 dark:border-purple-400 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
@@ -261,7 +261,7 @@ export default function GlobalNav() {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-background text-purple-600 dark:text-purple-400 border-2 border-purple-600 dark:border-purple-400 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
@@ -294,7 +294,7 @@ export default function GlobalNav() {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-background text-purple-600 dark:text-purple-400 border-2 border-purple-600 dark:border-purple-400 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
@@ -334,7 +334,7 @@ export default function GlobalNav() {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-background text-purple-600 dark:text-purple-400 border-2 border-purple-600 dark:border-purple-400 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
@@ -425,17 +425,21 @@ export default function GlobalNav() {
                           const currentTheme = theme || "light";
                           setTheme(currentTheme === "dark" ? "light" : "dark");
                         }}
-                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
                       >
                         {theme === "dark" ? (
                           <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                            <span className="text-white">Light Mode</span>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                            <span className="text-white group-hover:text-servio-purple">
+                              Light Mode
+                            </span>
                           </>
                         ) : (
                           <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                            <span className="text-white">Dark Mode</span>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                            <span className="text-white group-hover:text-servio-purple">
+                              Dark Mode
+                            </span>
                           </>
                         )}
                       </button>
@@ -447,7 +451,7 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
                       <span className="text-white">Sign Out</span>
@@ -485,17 +489,21 @@ export default function GlobalNav() {
                           const currentTheme = theme || "light";
                           setTheme(currentTheme === "dark" ? "light" : "dark");
                         }}
-                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
                       >
                         {theme === "dark" ? (
                           <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                            <span className="text-white">Light Mode</span>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                            <span className="text-white group-hover:text-servio-purple">
+                              Light Mode
+                            </span>
                           </>
                         ) : (
                           <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                            <span className="text-white">Dark Mode</span>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                            <span className="text-white group-hover:text-servio-purple">
+                              Dark Mode
+                            </span>
                           </>
                         )}
                       </button>
@@ -507,7 +515,7 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
                       <span className="text-white">Sign Out</span>
@@ -539,17 +547,21 @@ export default function GlobalNav() {
                           const currentTheme = theme || "light";
                           setTheme(currentTheme === "dark" ? "light" : "dark");
                         }}
-                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
                       >
                         {theme === "dark" ? (
                           <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                            <span className="text-white">Light Mode</span>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                            <span className="text-white group-hover:text-servio-purple">
+                              Light Mode
+                            </span>
                           </>
                         ) : (
                           <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                            <span className="text-white">Dark Mode</span>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                            <span className="text-white group-hover:text-servio-purple">
+                              Dark Mode
+                            </span>
                           </>
                         )}
                       </button>
@@ -561,7 +573,7 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
                       <span className="text-white">Sign Out</span>
@@ -601,7 +613,7 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
                       <span className="text-white">Sign Out</span>
@@ -639,7 +651,7 @@ export default function GlobalNav() {
                     setMobileMenuOpen(false);
                     router.push("/sign-in");
                   }}
-                  className="w-full px-4 py-3 text-base font-semibold text-white bg-servio-purple hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center"
+                  className="w-full px-4 py-3 text-base font-semibold text-white bg-servio-purple hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center border-2 border-servio-purple"
                 >
                   Sign In
                 </button>

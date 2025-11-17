@@ -1978,28 +1978,29 @@ div {
   }
 }
 
-/* Consistent button theme - respects dark mode */
+/* Consistent button theme - purple background with white text by default, white background with purple text on hover */
 button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]) {
-  background-color: hsl(var(--card));
-  color: hsl(var(--servio-purple));
+  background-color: hsl(var(--servio-purple));
+  color: #ffffff;
   border: 2px solid hsl(var(--servio-purple));
   border-radius: 12px;
   font-weight: 600;
 }
 
 .dark button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]) {
-  background-color: hsl(var(--card));
-  color: hsl(var(--servio-purple-light));
+  background-color: hsl(var(--servio-purple));
+  color: #ffffff;
   border-color: hsl(var(--servio-purple));
 }
 
 button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]):hover {
-  background-color: hsl(var(--accent));
+  background-color: #ffffff;
+  color: hsl(var(--servio-purple));
   opacity: 1;
 }
 
 .dark button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]):hover {
-  background-color: hsl(var(--accent));
+  background-color: #ffffff;
   color: hsl(var(--servio-purple));
 }
 

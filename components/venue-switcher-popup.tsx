@@ -320,9 +320,9 @@ export default function VenueSwitcherPopup({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="group flex items-center gap-2 h-10 px-4 text-sm font-medium bg-purple-600 hover:bg-white hover:border-purple-600 border-2 border-transparent transition-all duration-200 rounded-md">
-          <Building2 className="h-4 w-4 text-white group-hover:text-purple-600 transition-colors" />
-          <span className="text-white group-hover:text-purple-600 transition-colors">
+        <button className="group flex items-center gap-2 h-10 px-4 text-sm font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple transition-all duration-200 rounded-md">
+          <Building2 className="h-4 w-4 text-white group-hover:text-servio-purple transition-colors" />
+          <span className="text-white group-hover:text-servio-purple transition-colors">
             {currentVenueName || currentVenue?.venue_name || "Select Venue"}
           </span>
         </button>
@@ -348,7 +348,9 @@ export default function VenueSwitcherPopup({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">{currentVenue.venue_name}</h3>
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                      {currentVenue.venue_name}
+                    </h3>
                     {currentVenue.is_primary && (
                       <Badge variant="default" className="text-xs">
                         Primary
@@ -415,7 +417,9 @@ export default function VenueSwitcherPopup({
                           Current
                         </Badge>
                       ) : (
-                        <span className="text-xs text-gray-500 dark:text-muted-foreground italic">Click to switch</span>
+                        <span className="text-xs text-gray-500 dark:text-muted-foreground italic">
+                          Click to switch
+                        </span>
                       )}
                     </div>
                     {venue.address && (
@@ -431,7 +435,9 @@ export default function VenueSwitcherPopup({
                       </p>
                     )}
                     {venue.description && (
-                      <p className="text-sm text-gray-500 dark:text-muted-foreground">{venue.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-muted-foreground">
+                        {venue.description}
+                      </p>
                     )}
                   </div>
                   <div className="flex gap-1">
