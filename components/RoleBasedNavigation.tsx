@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   LayoutDashboard,
   Settings,
@@ -11,8 +10,6 @@ import {
   Table,
   CreditCard,
   Package,
-  Home,
-  ChevronRight,
 } from "lucide-react";
 import { canAccess, getRoleDisplayName, getRoleColor, UserRole } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
@@ -128,30 +125,6 @@ export default function RoleBasedNavigation({
 
   return (
     <div className="bg-white border-b">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
-        <Link href="/" className="hover:text-purple-600 transition-colors flex items-center gap-1">
-          <Home className="h-4 w-4" />
-          Home
-        </Link>
-        <ChevronRight className="h-4 w-4 rotate-180" />
-        <Link
-          href={`/dashboard/${venueId}`}
-          className="hover:text-purple-600 transition-colors flex items-center gap-1"
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          Dashboard
-        </Link>
-        {!isDashboard && (
-          <>
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            <span className="text-gray-900 font-medium bg-purple-50 px-3 py-1 rounded-md border border-purple-200 shadow-sm">
-              {currentPage}
-            </span>
-          </>
-        )}
-      </div>
-
       {/* Role Badge and User Name - Only show on dashboard */}
       {isDashboard && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">

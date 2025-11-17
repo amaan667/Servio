@@ -213,7 +213,7 @@ export default function NavigationBreadcrumb({
               <Link href={dashboardLink}>
                 <>
                   <LayoutDashboard className="h-4 w-4" />
-                  <span className="hidden sm:inline">Dashboard</span>
+                  <span className="hidden md:inline">Dashboard</span>
                 </>
               </Link>
             </Button>
@@ -257,7 +257,7 @@ export default function NavigationBreadcrumb({
             <Link href={dashboardLink}>
               <>
                 <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
+                <span className="hidden md:inline">Dashboard</span>
               </>
             </Link>
           </Button>
