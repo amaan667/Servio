@@ -55,39 +55,7 @@ export default function ResetPasswordPage() {
           return;
         }
 
-        // Check for PKCE code in query params (newer Supabase flow)
-        const code = params.get("code");
-        if (code) {
-          console.error("[RESET PASSWORD] 🔄 PKCE code detected, exchanging...");
-          try {
-            const { data: exchangeData, error: exchangeError } =
-              await supabase.auth.exchangeCodeForSession(code);
-
-            if (exchangeData.session && !exchangeError) {
-              console.error("[RESET PASSWORD] ✅ Session established from PKCE code");
-              setHasValidSession(true);
-              setCheckingSession(false);
-              window.history.replaceState(null, "", window.location.pathname);
-              return;
-            } else {
-              console.error("[RESET PASSWORD] ❌ Code exchange failed:", exchangeError);
-              setHasValidSession(false);
-              setCheckingSession(false);
-              setError(
-                exchangeError?.message || "Invalid or expired reset link. Please request a new one."
-              );
-              return;
-            }
-          } catch (err) {
-            console.error("[RESET PASSWORD] Exception during code exchange:", err);
-            setHasValidSession(false);
-            setCheckingSession(false);
-            setError("Failed to process reset link. Please try again.");
-            return;
-          }
-        }
-
-        // Check for hash fragment tokens (older flow)
+        // Check for hash fragment tokens (password reset uses hash fragments, not PKCE)
         const hashAccessToken = hashParams.get("access_token");
         const hashRefreshToken = hashParams.get("refresh_token");
         const hashType = hashParams.get("type");
@@ -125,7 +93,7 @@ export default function ResetPasswordPage() {
         }
 
         // Listen for PASSWORD_RECOVERY event from Supabase
-        // This fires automatically when Supabase processes the reset token
+        // This fires automatically when Supabase processes the reset token via detectSessionInUrl
         const { data: authData } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (!mounted) return;
 
@@ -138,12 +106,14 @@ export default function ResetPasswordPage() {
             setError(null);
             // Clean up URL
             window.history.replaceState(null, "", window.location.pathname);
+            subscription?.unsubscribe();
           }
         });
         subscription = authData.subscription;
 
         // Give Supabase time to process the URL and fire PASSWORD_RECOVERY event
         // Supabase's detectSessionInUrl: true handles token extraction automatically
+        // For password reset, Supabase processes hash fragments automatically
         // Wait up to 3 seconds, checking every 500ms
         let attempts = 0;
         const maxAttempts = 6;
@@ -160,6 +130,7 @@ export default function ResetPasswordPage() {
             setHasValidSession(true);
             setCheckingSession(false);
             window.history.replaceState(null, "", window.location.pathname);
+            subscription?.unsubscribe();
             return;
           }
 
@@ -168,7 +139,7 @@ export default function ResetPasswordPage() {
 
         if (!mounted) return;
 
-        // Final check
+        // Final check - Supabase should have processed the URL by now
         const {
           data: { session: finalSession },
         } = await supabase.auth.getSession();
@@ -177,11 +148,18 @@ export default function ResetPasswordPage() {
           console.error("[RESET PASSWORD] ✅ Recovery session found (final check)");
           setHasValidSession(true);
           setCheckingSession(false);
+          subscription?.unsubscribe();
         } else {
           console.error("[RESET PASSWORD] ❌ No recovery session found after all attempts");
+          console.error("[RESET PASSWORD] URL details:", {
+            hash: window.location.hash,
+            search: window.location.search,
+            fullUrl: window.location.href,
+          });
           setHasValidSession(false);
           setCheckingSession(false);
           setError("Invalid or expired reset link. Please request a new one.");
+          subscription?.unsubscribe();
         }
       } catch (err) {
         console.error("[RESET PASSWORD] Error:", err);
