@@ -77,7 +77,42 @@ export default function ResetPasswordPage() {
           return;
         }
 
-        // Check for hash fragment tokens (password reset uses hash fragments, not PKCE)
+        // Check for PKCE code in query params (newer Supabase password reset flow)
+        const code = params.get("code");
+        if (code) {
+          console.error("[RESET PASSWORD] 🔄 PKCE code detected in URL, exchanging...");
+          try {
+            // For password reset, Supabase handles the code exchange automatically
+            // We just need to call exchangeCodeForSession - it doesn't require a verifier
+            // because password reset codes are single-use and don't use PKCE verifiers
+            const { data: exchangeData, error: exchangeError } =
+              await supabase.auth.exchangeCodeForSession(code);
+
+            if (exchangeData.session && !exchangeError) {
+              console.error("[RESET PASSWORD] ✅ Session established from PKCE code");
+              setHasValidSession(true);
+              setCheckingSession(false);
+              window.history.replaceState(null, "", window.location.pathname);
+              return;
+            } else {
+              console.error("[RESET PASSWORD] ❌ Code exchange failed:", exchangeError);
+              setHasValidSession(false);
+              setCheckingSession(false);
+              setError(
+                exchangeError?.message || "Invalid or expired reset link. Please request a new one."
+              );
+              return;
+            }
+          } catch (err) {
+            console.error("[RESET PASSWORD] Exception during code exchange:", err);
+            setHasValidSession(false);
+            setCheckingSession(false);
+            setError("Failed to process reset link. Please try again.");
+            return;
+          }
+        }
+
+        // Check for hash fragment tokens (older password reset flow)
         const hashAccessToken = hashParams.get("access_token");
         const hashRefreshToken = hashParams.get("refresh_token");
         const hashType = hashParams.get("type");
