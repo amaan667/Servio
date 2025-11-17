@@ -26,17 +26,9 @@ export default function ResetPasswordPage() {
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
-    // For password reset, create a client WITHOUT PKCE flow
-    // Password reset codes are OTP codes, not PKCE codes
-    // Using PKCE flow causes "code verifier" errors
-    const supabase = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-      auth: {
-        persistSession: true,
-        detectSessionInUrl: true,
-        autoRefreshToken: true,
-        flowType: "implicit", // Use implicit flow for password reset (no PKCE verifier needed)
-      },
-    });
+    // For password reset, use the standard browser client but handle codes manually
+    // Password reset codes need to be verified using verifyOtp with type "recovery"
+    const supabase = supabaseBrowser();
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
 
