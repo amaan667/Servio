@@ -46,17 +46,16 @@ export default function GlobalNav() {
     pathname?.startsWith("/sign-in") ||
     pathname?.startsWith("/sign-up");
 
-  // Check if on home page
-  const isOnHomePage = pathname === "/" || pathname === "/home";
-
   // Use session from auth context - already initialized from server
   // This prevents flicker because the session is available immediately
   const shouldHidePublicActions = isAuthenticatedRoute || isAuthenticated;
 
   // Use theme-aware colors for all routes
-  const navClasses = "bg-background dark:bg-background border-b border-border dark:border-border shadow-sm sticky top-0 z-50";
+  const navClasses =
+    "bg-background dark:bg-background border-b border-border dark:border-border shadow-sm sticky top-0 z-50";
 
-  const textClasses = "text-foreground hover:text-primary dark:hover:text-primary hover:bg-accent dark:hover:bg-accent";
+  const textClasses =
+    "text-foreground hover:text-primary dark:hover:text-primary hover:bg-accent dark:hover:bg-accent";
 
   const borderClasses = "border-border dark:border-border";
 
@@ -123,7 +122,7 @@ export default function GlobalNav() {
             sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
-        } catch (_error) {
+        } catch {
           // Error handled silently
         }
       } else if (!isAuthenticated) {
@@ -201,9 +200,9 @@ export default function GlobalNav() {
                       aria-label="Toggle theme"
                     >
                       {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
+                        <Sun className="h-5 w-5 text-foreground" />
                       ) : (
-                        <Moon className="h-5 w-5" />
+                        <Moon className="h-5 w-5 text-foreground" />
                       )}
                     </button>
                     <div className="w-px h-8 bg-border mx-2"></div>
@@ -250,9 +249,9 @@ export default function GlobalNav() {
                       aria-label="Toggle theme"
                     >
                       {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
+                        <Sun className="h-5 w-5 text-foreground" />
                       ) : (
-                        <Moon className="h-5 w-5" />
+                        <Moon className="h-5 w-5 text-foreground" />
                       )}
                     </button>
                     <div className="w-px h-8 bg-border mx-2"></div>

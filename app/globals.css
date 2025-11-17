@@ -243,21 +243,18 @@
     color: hsl(262 10% 75%);
   }
 
-    /* Purple brand colors remain consistent */
-    .dark .text-purple-600,
-    .dark .text-servio-purple {
-      color: hsl(262 83% 68%);
-    }
-
-    .dark .bg-purple-600,
-    .dark .bg-servio-purple {
-      background-color: hsl(262 83% 58%);
-      color: white;
-    }
-
-    /* Servio brand colors for dark mode */
-    --servio-purple-light: 262 83% 68%;
+  /* Purple brand colors remain consistent */
+  .dark .text-purple-600,
+  .dark .text-servio-purple {
+    color: hsl(262 83% 68%);
   }
+
+  .dark .bg-purple-600,
+  .dark .bg-servio-purple {
+    background-color: hsl(262 83% 58%);
+    color: white;
+  }
+}
 
 /* Custom height classes for enlarged logo */
 .h-80 {
@@ -489,6 +486,43 @@ button[class*="bg-purple"],
   color: #ffffff !important;
 }
 
+/* Purple buttons hover state: white background, purple text */
+button.bg-purple-600:hover,
+button.bg-purple-700:hover,
+button.bg-purple-800:hover,
+button.bg-servio-purple:hover,
+button[class*="bg-purple"]:hover,
+button.group:hover.bg-purple-600,
+button.group:hover.bg-purple-700,
+button.group:hover.bg-purple-800,
+button.group:hover.bg-servio-purple,
+button.group:hover[class*="bg-purple"],
+[role="button"].bg-purple-600:hover,
+[role="button"].bg-purple-700:hover,
+[role="button"].bg-purple-800:hover,
+[role="button"].bg-servio-purple:hover,
+[role="button"][class*="bg-purple"]:hover,
+.bg-purple-600 > button:hover,
+.bg-purple-700 > button:hover,
+.bg-purple-800 > button:hover,
+.bg-servio-purple > button:hover,
+[class*="bg-purple"] > button:hover {
+  background-color: #ffffff !important;
+  color: hsl(var(--servio-purple)) !important;
+  border-color: hsl(var(--servio-purple)) !important;
+}
+
+/* Handle group-hover for purple buttons */
+.group:hover button.bg-purple-600,
+.group:hover button.bg-purple-700,
+.group:hover button.bg-purple-800,
+.group:hover button.bg-servio-purple,
+.group:hover button[class*="bg-purple"] {
+  background-color: #ffffff !important;
+  color: hsl(var(--servio-purple)) !important;
+  border-color: hsl(var(--servio-purple)) !important;
+}
+
 /* Ensure icons and text inside purple buttons are white */
 button.bg-purple-600 svg,
 button.bg-purple-700 svg,
@@ -511,6 +545,54 @@ button[class*="bg-purple"] span,
 [role="button"].bg-servio-purple span,
 [role="button"][class*="bg-purple"] span {
   color: #ffffff !important;
+}
+
+/* Icons and text inside purple buttons on hover: purple color */
+button.bg-purple-600:hover svg,
+button.bg-purple-700:hover svg,
+button.bg-purple-800:hover svg,
+button.bg-servio-purple:hover svg,
+button[class*="bg-purple"]:hover svg,
+button.bg-purple-600:hover span,
+button.bg-purple-700:hover span,
+button.bg-purple-800:hover span,
+button.bg-servio-purple:hover span,
+button[class*="bg-purple"]:hover span,
+button.group:hover.bg-purple-600 svg,
+button.group:hover.bg-purple-700 svg,
+button.group:hover.bg-purple-800 svg,
+button.group:hover.bg-servio-purple svg,
+button.group:hover[class*="bg-purple"] svg,
+button.group:hover.bg-purple-600 span,
+button.group:hover.bg-purple-700 span,
+button.group:hover.bg-purple-800 span,
+button.group:hover.bg-servio-purple span,
+button.group:hover[class*="bg-purple"] span,
+[role="button"].bg-purple-600:hover svg,
+[role="button"].bg-purple-700:hover svg,
+[role="button"].bg-purple-800:hover svg,
+[role="button"].bg-servio-purple:hover svg,
+[role="button"][class*="bg-purple"]:hover svg,
+[role="button"].bg-purple-600:hover span,
+[role="button"].bg-purple-700:hover span,
+[role="button"].bg-purple-800:hover span,
+[role="button"].bg-servio-purple:hover span,
+[role="button"][class*="bg-purple"]:hover span {
+  color: hsl(var(--servio-purple)) !important;
+}
+
+/* Handle group-hover for icons and text inside purple buttons */
+.group:hover button.bg-purple-600 svg,
+.group:hover button.bg-purple-700 svg,
+.group:hover button.bg-purple-800 svg,
+.group:hover button.bg-servio-purple svg,
+.group:hover button[class*="bg-purple"] svg,
+.group:hover button.bg-purple-600 span,
+.group:hover button.bg-purple-700 span,
+.group:hover button.bg-purple-800 span,
+.group:hover button.bg-servio-purple span,
+.group:hover button[class*="bg-purple"] span {
+  color: hsl(var(--servio-purple)) !important;
 }
 
 /* Ensure icons inside dark buttons are also white */
