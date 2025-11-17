@@ -100,7 +100,7 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
             Demo
           </li>
         </ol>
@@ -137,7 +137,7 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
             {isCreateAccountPage
               ? "Sign Up"
               : isSelectPlanPage
@@ -174,7 +174,7 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
             Dashboard
           </li>
         </ol>
@@ -219,7 +219,7 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-foreground/60">←</li>
-          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-700 transition-colors duration-200">
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
             {pageTitle}
           </li>
         </ol>
@@ -263,7 +263,7 @@ export default function NavigationBreadcrumb({
           </Button>
         </li>
         <li className="text-foreground/40">←</li>
-        <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 shadow-[0_0_20px_rgba(147,51,234,0.7)] transition-all duration-200">
+        <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
           {pageTitle}
         </li>
       </ol>
