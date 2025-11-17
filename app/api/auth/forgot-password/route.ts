@@ -73,9 +73,22 @@ export async function POST(request: NextRequest) {
         "Ensure this redirectUrl is whitelisted in Supabase Dashboard > Authentication > URL Configuration > Redirect URLs",
     });
 
+    // Ensure redirect URL is absolute and properly formatted
+    // Supabase requires exact match with whitelisted URLs
+    const finalRedirectUrl = redirectUrl.startsWith("http")
+      ? redirectUrl
+      : `https://${redirectUrl}`;
+
+    logger.info(`[FORGOT PASSWORD API] ${requestId} - Final redirect URL`, {
+      finalRedirectUrl,
+      originalRedirectUrl: redirectUrl,
+    });
+
     const resetStartTime = Date.now();
     const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: redirectUrl,
+      redirectTo: finalRedirectUrl,
+      // Note: Supabase password reset links expire after 1 hour by default
+      // This cannot be changed via the API - it's configured in Supabase Dashboard
     });
     const resetDuration = Date.now() - resetStartTime;
 
