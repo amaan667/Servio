@@ -466,6 +466,49 @@ button.bg-slate-800,
   color: #ffffff !important;
 }
 
+/* Ensure white text on purple backgrounds - always enforced */
+button.bg-purple-600,
+button.bg-purple-700,
+button.bg-purple-800,
+button.bg-servio-purple,
+button[class*="bg-purple"],
+[role="button"].bg-purple-600,
+[role="button"].bg-purple-700,
+[role="button"].bg-purple-800,
+[role="button"].bg-servio-purple,
+[role="button"][class*="bg-purple"],
+.bg-purple-600 > button,
+.bg-purple-700 > button,
+.bg-purple-800 > button,
+.bg-servio-purple > button,
+[class*="bg-purple"] > button {
+  color: #ffffff !important;
+}
+
+/* Ensure icons and text inside purple buttons are white */
+button.bg-purple-600 svg,
+button.bg-purple-700 svg,
+button.bg-purple-800 svg,
+button.bg-servio-purple svg,
+button[class*="bg-purple"] svg,
+button.bg-purple-600 span,
+button.bg-purple-700 span,
+button.bg-purple-800 span,
+button.bg-servio-purple span,
+button[class*="bg-purple"] span,
+[role="button"].bg-purple-600 svg,
+[role="button"].bg-purple-700 svg,
+[role="button"].bg-purple-800 svg,
+[role="button"].bg-servio-purple svg,
+[role="button"][class*="bg-purple"] svg,
+[role="button"].bg-purple-600 span,
+[role="button"].bg-purple-700 span,
+[role="button"].bg-purple-800 span,
+[role="button"].bg-servio-purple span,
+[role="button"][class*="bg-purple"] span {
+  color: #ffffff !important;
+}
+
 /* Ensure icons inside dark buttons are also white */
 button.bg-black svg,
 button.bg-gray-900 svg,

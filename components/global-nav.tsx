@@ -430,17 +430,17 @@ export default function GlobalNav() {
                           const currentTheme = theme || "light";
                           setTheme(currentTheme === "dark" ? "light" : "dark");
                         }}
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] w-full"
                       >
                         {theme === "dark" ? (
                           <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                            <span>Light Mode</span>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                            <span className="text-white">Light Mode</span>
                           </>
                         ) : (
                           <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                            <span>Dark Mode</span>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                            <span className="text-white">Dark Mode</span>
                           </>
                         )}
                       </button>
@@ -452,10 +452,10 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <span className="text-white">Sign Out</span>
                     </button>
                   </>
                 ) : isOnFeaturePage || isOnQRPage ? (
@@ -490,17 +490,17 @@ export default function GlobalNav() {
                           const currentTheme = theme || "light";
                           setTheme(currentTheme === "dark" ? "light" : "dark");
                         }}
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] w-full"
                       >
                         {theme === "dark" ? (
                           <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                            <span>Light Mode</span>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                            <span className="text-white">Light Mode</span>
                           </>
                         ) : (
                           <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                            <span>Dark Mode</span>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                            <span className="text-white">Dark Mode</span>
                           </>
                         )}
                       </button>
@@ -512,10 +512,10 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <span className="text-white">Sign Out</span>
                     </button>
                   </>
                 ) : isOnSettings ? (
@@ -544,17 +544,17 @@ export default function GlobalNav() {
                           const currentTheme = theme || "light";
                           setTheme(currentTheme === "dark" ? "light" : "dark");
                         }}
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
+                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] w-full"
                       >
                         {theme === "dark" ? (
                           <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                            <span>Light Mode</span>
+                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                            <span className="text-white">Light Mode</span>
                           </>
                         ) : (
                           <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                            <span>Dark Mode</span>
+                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                            <span className="text-white">Dark Mode</span>
                           </>
                         )}
                       </button>
@@ -566,10 +566,10 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <span className="text-white">Sign Out</span>
                     </button>
                   </>
                 ) : (
@@ -606,10 +606,10 @@ export default function GlobalNav() {
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple hover:bg-servio-purple-dark text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <span className="text-white">Sign Out</span>
                     </button>
                   </>
                 )}
