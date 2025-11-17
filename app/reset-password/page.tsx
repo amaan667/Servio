@@ -11,6 +11,8 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { supabaseBrowser } from "@/lib/supabase";
+import { createClient as createBrowserClient } from "@supabase/supabase-js";
+import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/supabase";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -24,9 +26,17 @@ export default function ResetPasswordPage() {
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
-    // For password reset, we need a client that can handle recovery codes
-    // The default browser client uses PKCE which doesn't work for password reset
-    const supabase = supabaseBrowser();
+    // For password reset, create a client WITHOUT PKCE flow
+    // Password reset codes are OTP codes, not PKCE codes
+    // Using PKCE flow causes "code verifier" errors
+    const supabase = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+      auth: {
+        persistSession: true,
+        detectSessionInUrl: true,
+        autoRefreshToken: true,
+        flowType: "implicit", // Use implicit flow for password reset (no PKCE verifier needed)
+      },
+    });
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
 
