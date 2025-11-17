@@ -82,23 +82,36 @@ export default function ResetPasswordPage() {
         }
 
         // Check for code in query params (Supabase password reset uses codes)
-        // Password reset codes are NOT PKCE codes - they're OTP codes
-        // Supabase's detectSessionInUrl should handle them, but if flowType is "pkce",
-        // it might try to process them as PKCE codes which will fail
+        // Password reset codes are OTP codes that need to be verified
         const code = params.get("code");
-        const type = params.get("type") || hashParams.get("type");
 
-        if (code && type === "recovery") {
+        if (code) {
           console.error(
-            "[RESET PASSWORD] 🔄 Recovery code detected, Supabase should auto-process..."
+            "[RESET PASSWORD] 🔄 Code detected, attempting to verify as recovery OTP..."
           );
-          // Supabase's detectSessionInUrl should handle recovery codes automatically
-          // We'll wait for the PASSWORD_RECOVERY event or session establishment
-        } else if (code) {
-          console.error(
-            "[RESET PASSWORD] 🔄 Code detected in URL (no type), waiting for Supabase auto-detection..."
-          );
-          // Code without type - might be PKCE or recovery, let Supabase handle it
+          try {
+            // Try to verify the code as a recovery OTP
+            // The code from password reset emails is a token_hash, not a PKCE code
+            const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+              token_hash: code,
+              type: "recovery",
+            });
+
+            if (verifyData.session && !verifyError) {
+              console.error("[RESET PASSWORD] ✅ Session established from OTP verification");
+              setHasValidSession(true);
+              setCheckingSession(false);
+              window.history.replaceState(null, "", window.location.pathname);
+              return;
+            } else {
+              console.error("[RESET PASSWORD] ⚠️ OTP verification failed, error:", verifyError);
+              // If verifyOtp fails, it might be a PKCE code - let Supabase auto-detect handle it
+              console.error("[RESET PASSWORD] Falling back to auto-detection...");
+            }
+          } catch (err) {
+            console.error("[RESET PASSWORD] Exception during OTP verification:", err);
+            // Fall through to let Supabase auto-detection try
+          }
         }
 
         // Check for hash fragment tokens (older password reset flow)
