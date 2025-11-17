@@ -11,8 +11,6 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { supabaseBrowser } from "@/lib/supabase";
-import { createClient as createBrowserClient } from "@supabase/supabase-js";
-import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/supabase";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -26,24 +24,13 @@ export default function ResetPasswordPage() {
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
-    // For password reset, use the standard browser client but handle codes manually
-    // Password reset codes need to be verified using verifyOtp with type "recovery"
     const supabase = supabaseBrowser();
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
 
     const initPasswordReset = async () => {
       try {
-        console.error("[RESET PASSWORD] ════════════════════════════════════════");
-        console.error("[RESET PASSWORD] Page loaded:", {
-          fullUrl: window.location.href,
-          hash: window.location.hash,
-          search: window.location.search,
-          pathname: window.location.pathname,
-        });
-        console.error("[RESET PASSWORD] ════════════════════════════════════════");
-
-        // Check for error in URL from Supabase
+        // Check for error in URL
         const params = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const errorParam = params.get("error") || hashParams.get("error");
@@ -52,19 +39,10 @@ export default function ResetPasswordPage() {
           params.get("error_description") || hashParams.get("error_description");
 
         if (errorParam && mounted) {
-          console.error("[RESET PASSWORD] ❌ Error in URL:", {
-            error: errorParam,
-            code: errorCode,
-            description: errorDescription,
-          });
-
-          // Clean up URL immediately
           window.history.replaceState(null, "", window.location.pathname);
-
           setCheckingSession(false);
           setHasValidSession(false);
 
-          // Check if link is expired
           const isExpiredLink =
             errorCode === "otp_expired" ||
             errorDescription?.toLowerCase().includes("expired") ||
@@ -81,101 +59,24 @@ export default function ResetPasswordPage() {
           return;
         }
 
-        // Check for code in query params (Supabase password reset uses codes)
-        // Password reset codes are OTP codes that need to be verified
-        const code = params.get("code");
-
-        if (code) {
-          console.error(
-            "[RESET PASSWORD] 🔄 Code detected, attempting to verify as recovery OTP..."
-          );
-          try {
-            // Try to verify the code as a recovery OTP
-            // The code from password reset emails is a token_hash, not a PKCE code
-            const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-              token_hash: code,
-              type: "recovery",
-            });
-
-            if (verifyData.session && !verifyError) {
-              console.error("[RESET PASSWORD] ✅ Session established from OTP verification");
-              setHasValidSession(true);
-              setCheckingSession(false);
-              window.history.replaceState(null, "", window.location.pathname);
-              return;
-            } else {
-              console.error("[RESET PASSWORD] ⚠️ OTP verification failed, error:", verifyError);
-              // If verifyOtp fails, it might be a PKCE code - let Supabase auto-detect handle it
-              console.error("[RESET PASSWORD] Falling back to auto-detection...");
-            }
-          } catch (err) {
-            console.error("[RESET PASSWORD] Exception during OTP verification:", err);
-            // Fall through to let Supabase auto-detection try
-          }
-        }
-
-        // Check for hash fragment tokens (older password reset flow)
-        const hashAccessToken = hashParams.get("access_token");
-        const hashRefreshToken = hashParams.get("refresh_token");
-        const hashType = hashParams.get("type");
-
-        if (hashAccessToken && hashType === "recovery") {
-          console.error("[RESET PASSWORD] 🔄 Hash tokens detected, setting session...");
-          try {
-            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-              access_token: hashAccessToken,
-              refresh_token: hashRefreshToken || "",
-            });
-
-            if (sessionData.session && !sessionError) {
-              console.error("[RESET PASSWORD] ✅ Session established from hash tokens");
-              setHasValidSession(true);
-              setCheckingSession(false);
-              window.history.replaceState(null, "", window.location.pathname);
-              return;
-            } else {
-              console.error("[RESET PASSWORD] ❌ Failed to set session:", sessionError);
-              setHasValidSession(false);
-              setCheckingSession(false);
-              setError(
-                sessionError?.message || "Invalid or expired reset link. Please request a new one."
-              );
-              return;
-            }
-          } catch (err) {
-            console.error("[RESET PASSWORD] Exception:", err);
-            setHasValidSession(false);
-            setCheckingSession(false);
-            setError("Failed to process reset link. Please try again.");
-            return;
-          }
-        }
-
-        // Listen for PASSWORD_RECOVERY event from Supabase
-        // This fires automatically when Supabase processes the reset token via detectSessionInUrl
+        // Listen for PASSWORD_RECOVERY event - Supabase handles codes automatically
         const { data: authData } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (!mounted) return;
 
-          console.error("[RESET PASSWORD] Auth state change:", { event, hasSession: !!session });
-
           if (event === "PASSWORD_RECOVERY" && session) {
-            console.error("[RESET PASSWORD] ✅ PASSWORD_RECOVERY event fired");
             setHasValidSession(true);
             setCheckingSession(false);
             setError(null);
-            // Clean up URL
             window.history.replaceState(null, "", window.location.pathname);
             subscription?.unsubscribe();
           }
         });
         subscription = authData.subscription;
 
-        // Give Supabase time to process the URL and fire PASSWORD_RECOVERY event
-        // Supabase's detectSessionInUrl: true handles code/token extraction automatically
-        // For password reset with codes, Supabase processes them automatically
-        // Wait up to 5 seconds, checking every 500ms (longer for code exchange)
+        // Give Supabase time to process the URL automatically (detectSessionInUrl: true)
+        // Poll for session establishment
         let attempts = 0;
-        const maxAttempts = code ? 10 : 6; // More attempts if we have a code
+        const maxAttempts = 10; // 5 seconds total
 
         while (attempts < maxAttempts && mounted) {
           await new Promise((resolve) => setTimeout(resolve, 500));
@@ -185,7 +86,6 @@ export default function ResetPasswordPage() {
           } = await supabase.auth.getSession();
 
           if (session) {
-            console.error("[RESET PASSWORD] ✅ Recovery session found after", attempts * 500, "ms");
             setHasValidSession(true);
             setCheckingSession(false);
             window.history.replaceState(null, "", window.location.pathname);
@@ -198,30 +98,22 @@ export default function ResetPasswordPage() {
 
         if (!mounted) return;
 
-        // Final check - Supabase should have processed the URL by now
+        // Final check
         const {
           data: { session: finalSession },
         } = await supabase.auth.getSession();
 
         if (finalSession) {
-          console.error("[RESET PASSWORD] ✅ Recovery session found (final check)");
           setHasValidSession(true);
           setCheckingSession(false);
           subscription?.unsubscribe();
         } else {
-          console.error("[RESET PASSWORD] ❌ No recovery session found after all attempts");
-          console.error("[RESET PASSWORD] URL details:", {
-            hash: window.location.hash,
-            search: window.location.search,
-            fullUrl: window.location.href,
-          });
           setHasValidSession(false);
           setCheckingSession(false);
           setError("Invalid or expired reset link. Please request a new one.");
           subscription?.unsubscribe();
         }
       } catch (err) {
-        console.error("[RESET PASSWORD] Error:", err);
         if (mounted) {
           setHasValidSession(false);
           setCheckingSession(false);
@@ -269,9 +161,6 @@ export default function ResetPasswordPage() {
 
     try {
       const supabase = supabaseBrowser();
-
-      // Update password using Supabase auth
-      // The user is already authenticated via the recovery session
       const { error: updateError } = await supabase.auth.updateUser({
         password: password.trim(),
       });
@@ -285,10 +174,8 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       setLoading(false);
 
-      // Sign out the recovery session
       await supabase.auth.signOut();
 
-      // Redirect to sign-in after 3 seconds
       setTimeout(() => {
         router.push("/sign-in?passwordReset=true");
       }, 3000);
