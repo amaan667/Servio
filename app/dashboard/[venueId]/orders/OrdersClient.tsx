@@ -328,7 +328,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                 <span
                   className={`
                   mt-0.5 text-xs transition-all duration-200
-                  ${activeTab === tab.key ? "text-white opacity-90" : "text-purple-600 group-hover:text-white group-hover:opacity-90"}
+                  ${activeTab === tab.key ? "text-white opacity-90" : "text-white group-hover:text-servio-purple group-hover:opacity-90"}
                 `}
                 >
                   {tab.hint}
