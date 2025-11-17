@@ -59,6 +59,38 @@ export default function ResetPasswordPage() {
           return;
         }
 
+        // Check if we have a code - try to verify it server-side first
+        const code = params.get("code");
+        if (code) {
+          try {
+            const response = await fetch("/api/auth/verify-reset-code", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.session) {
+              // Set the session using the tokens from server
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+              });
+
+              if (!sessionError) {
+                setHasValidSession(true);
+                setCheckingSession(false);
+                window.history.replaceState(null, "", window.location.pathname);
+                subscription?.unsubscribe();
+                return;
+              }
+            }
+          } catch (err) {
+            // Fall through to auto-detection
+          }
+        }
+
         // Listen for PASSWORD_RECOVERY event - Supabase handles codes automatically
         const { data: authData } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (!mounted) return;
