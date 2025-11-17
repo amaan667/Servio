@@ -24,6 +24,8 @@ export default function ResetPasswordPage() {
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
+    // For password reset, we need a client that can handle recovery codes
+    // The default browser client uses PKCE which doesn't work for password reset
     const supabase = supabaseBrowser();
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
@@ -78,15 +80,23 @@ export default function ResetPasswordPage() {
         }
 
         // Check for code in query params (Supabase password reset uses codes)
-        // Note: We don't manually exchange the code - Supabase's detectSessionInUrl: true
-        // handles it automatically. We just need to wait for the session to be established.
+        // Password reset codes are NOT PKCE codes - they're OTP codes
+        // Supabase's detectSessionInUrl should handle them, but if flowType is "pkce",
+        // it might try to process them as PKCE codes which will fail
         const code = params.get("code");
-        if (code) {
+        const type = params.get("type") || hashParams.get("type");
+
+        if (code && type === "recovery") {
           console.error(
-            "[RESET PASSWORD] 🔄 Code detected in URL, waiting for Supabase auto-detection..."
+            "[RESET PASSWORD] 🔄 Recovery code detected, Supabase should auto-process..."
           );
-          // Supabase will automatically process the code via detectSessionInUrl
-          // We'll detect it through the auth state change listener or session check below
+          // Supabase's detectSessionInUrl should handle recovery codes automatically
+          // We'll wait for the PASSWORD_RECOVERY event or session establishment
+        } else if (code) {
+          console.error(
+            "[RESET PASSWORD] 🔄 Code detected in URL (no type), waiting for Supabase auto-detection..."
+          );
+          // Code without type - might be PKCE or recovery, let Supabase handle it
         }
 
         // Check for hash fragment tokens (older password reset flow)
