@@ -503,11 +503,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
                       variant="servio"
-                      className="w-full disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                      className="w-full group text-white hover:text-servio-purple disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
-                      <span className="font-bold text-base">{ctaText || "Start Free Trial"}</span>
+                      <span className="font-bold text-base text-white group-hover:text-servio-purple transition-colors duration-200">{ctaText || "Start Free Trial"}</span>
                     </Button>
                   </CardContent>
                 </Card>
