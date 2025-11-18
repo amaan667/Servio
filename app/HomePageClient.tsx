@@ -20,10 +20,11 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="rounded-xl bg-servio-purple text-white shadow-lg hover:bg-white hover:text-servio-purple hover:shadow-xl transition-all duration-200 border-2 border-servio-purple group">
+    <div className="rounded-xl bg-servio-purple shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-servio-purple group">
+      {/* Question Button - follows hover logic */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-5 py-4 text-left flex justify-between items-center gap-4 focus:outline-none"
+        className="w-full px-5 py-4 text-left flex justify-between items-center gap-4 focus:outline-none bg-servio-purple hover:bg-white transition-all duration-200 rounded-t-xl"
       >
         <h3 className="font-semibold text-base md:text-lg text-white group-hover:text-servio-purple transition-colors duration-200">
           {question}
@@ -36,11 +37,10 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
           )}
         </div>
       </button>
+      {/* Answer - always white on purple, no hover */}
       {isOpen && (
-        <div className="px-5 pt-3 pb-4 border-t border-purple-500/30 group-hover:border-servio-purple/30">
-          <p className="text-white group-hover:text-servio-purple leading-relaxed transition-colors duration-200">
-            {answer}
-          </p>
+        <div className="px-5 pt-3 pb-4 border-t border-purple-500/30 bg-servio-purple rounded-b-xl">
+          <p className="text-white leading-relaxed">{answer}</p>
         </div>
       )}
     </div>
