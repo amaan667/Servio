@@ -10,6 +10,7 @@ export function ScrollToTop() {
   useEffect(() => {
     const toggleVisibility = () => {
       // Show button when page is scrolled down more than 300px
+      // Updated: Uses opacity transitions for better mobile visibility
       if (window.scrollY > 300) {
         setIsVisible(true);
       } else {
