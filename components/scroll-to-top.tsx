@@ -35,12 +35,12 @@ export function ScrollToTop() {
   return (
     <Button
       onClick={scrollToTop}
-      className={`fixed bottom-24 right-6 z-50 h-12 w-12 rounded-full bg-servio-purple text-white hover:bg-white hover:text-servio-purple shadow-lg hover:shadow-xl border-2 border-servio-purple transition-all duration-300 p-0 flex items-center justify-center group ${
+      className={`fixed bottom-24 right-6 z-50 h-12 w-12 rounded-full bg-white text-servio-purple hover:bg-gray-50 shadow-lg hover:shadow-xl border-2 border-servio-purple transition-all duration-300 p-0 flex items-center justify-center group ${
         isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
       aria-label="Scroll to top"
     >
-      <ArrowUp className="h-5 w-5 text-white group-hover:text-servio-purple transition-colors duration-300" />
+      <ArrowUp className="h-5 w-5 text-servio-purple" />
     </Button>
   );
 }
