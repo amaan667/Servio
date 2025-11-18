@@ -129,7 +129,8 @@ export function DesktopCart({
                       onShowCheckout();
                     }
                   }}
-                  className="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white py-3 text-lg font-medium"
+                  variant="servio"
+                  className="w-full py-3 text-lg font-medium"
                   disabled={cart.length === 0}
                 >
                   <CreditCard className="h-5 w-5 mr-2" />

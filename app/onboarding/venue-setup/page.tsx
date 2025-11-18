@@ -559,11 +559,7 @@ export default function OnboardingVenueSetupPage() {
 
           {/* Continue Button */}
           <div className="flex justify-end pt-4">
-            <Button
-              onClick={handleContinue}
-              disabled={saving}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
+            <Button onClick={handleContinue} disabled={saving} variant="servio">
               {saving ? (
                 "Saving..."
               ) : (

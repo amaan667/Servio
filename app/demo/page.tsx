@@ -148,10 +148,7 @@ export default function DemoPage() {
                                 <p className="text-base font-bold text-purple-600">
                                   £{item.price.toFixed(2)}
                                 </p>
-                                <Button
-                                  size="sm"
-                                  className="bg-purple-600 hover:bg-purple-700 text-white h-7 px-3"
-                                >
+                                <Button size="sm" variant="servio" className="h-7 px-3">
                                   <Plus className="w-3 h-3" />
                                 </Button>
                               </div>
@@ -162,7 +159,7 @@ export default function DemoPage() {
 
                       {/* Cart Footer */}
                       <div className="border-t p-4 bg-white sticky bottom-0">
-                        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                        <Button variant="servio" className="w-full">
                           <ShoppingCart className="w-4 h-4 mr-2" />
                           View Cart (3 items)
                         </Button>
@@ -192,7 +189,7 @@ export default function DemoPage() {
                   href="/order?venue=demo-cafe&table=1&demo=1&skipGroupSize=true"
                   target="_blank"
                 >
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white h-14 text-lg">
+                  <Button variant="servio" className="w-full h-14 text-lg">
                     <ExternalLink className="w-5 h-5 mr-2" />
                     Try Live Customer Demo
                   </Button>
@@ -229,11 +226,7 @@ export default function DemoPage() {
                       <Sparkles className="w-5 h-5" />
                       <span className="font-semibold">14-day free trial • 12 days remaining</span>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="bg-white text-purple-600 hover:bg-gray-100"
-                    >
+                    <Button size="sm" variant="servio">
                       Upgrade
                     </Button>
                   </div>
@@ -547,11 +540,7 @@ export default function DemoPage() {
                 Start your 14-day free trial. No credit card required.
               </p>
               <Link href="/sign-up">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="bg-white text-purple-600 hover:bg-gray-100 h-12 px-8"
-                >
+                <Button size="lg" variant="servio" className="h-12 px-8">
                   <Users className="w-5 h-5 mr-2" />
                   Start Free Trial
                 </Button>

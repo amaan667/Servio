@@ -92,7 +92,7 @@ export function OrderHeader({
                 {!isCounterOrder && groupSessionId && groupSize && (
                   <button
                     onClick={onShowGroupSizePopup}
-                    className="px-3 py-1 bg-purple-600 dark:bg-purple-700 text-white rounded-full text-xs font-medium hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors self-start sm:self-auto"
+                    className="px-3 py-1 bg-servio-purple text-white rounded-full text-xs font-medium hover:bg-white hover:text-servio-purple transition-colors self-start sm:self-auto border-2 border-servio-purple"
                   >
                     {groupSize} {groupSize === 1 ? "person" : "people"}
                   </button>

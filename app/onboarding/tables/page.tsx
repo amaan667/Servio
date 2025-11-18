@@ -253,11 +253,9 @@ export default function OnboardingTablesPage() {
               {[5, 10, 15, 20].map((count) => (
                 <Button
                   key={count}
-                  variant={selectedCount === count ? "default" : "outline"}
+                  variant="servio"
                   onClick={() => handleCountChange(count)}
-                  className={
-                    selectedCount === count ? "bg-purple-600 hover:bg-purple-700 text-white" : ""
-                  }
+                  className={selectedCount === count ? "" : ""}
                 >
                   {count}
                 </Button>
@@ -399,7 +397,8 @@ export default function OnboardingTablesPage() {
             <Button
               onClick={handleCreateTables}
               disabled={creating}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white h-12 text-lg"
+              variant="servio"
+              className="flex-1 h-12 text-lg"
             >
               {creating ? "Creating Tables..." : `Create ${selectedCount} Tables`}
               <ArrowRight className="ml-2 w-5 h-5" />

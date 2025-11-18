@@ -182,7 +182,7 @@ export default function UnifiedFeedbackForm({
             case "multiple_choice":
               return typeof answer.answer_choice === "string" && answer.answer_choice.trim() !== "";
             case "paragraph":
-              return typeof answer.answer_text === 'string' && answer.answer_text.trim() !== "";
+              return typeof answer.answer_text === "string" && answer.answer_text.trim() !== "";
             default:
               return false;
           }
@@ -369,11 +369,7 @@ export default function UnifiedFeedbackForm({
             </div>
           ))}
 
-          <Button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-purple-600 hover:bg-purple-700"
-          >
+          <Button type="submit" disabled={submitting} variant="servio" className="w-full">
             {submitting ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

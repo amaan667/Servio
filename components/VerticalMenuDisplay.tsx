@@ -235,7 +235,8 @@ export function VerticalMenuDisplay({
                                 {quantity === 0 ? (
                                   <Button
                                     onClick={() => onAddToCart(item)}
-                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium h-12 md:h-9 text-base md:text-sm"
+                                    variant="servio"
+                                    className="w-full font-medium h-12 md:h-9 text-base md:text-sm"
                                     size="mobile"
                                   >
                                     <Plus className="h-5 w-5 md:h-4 md:w-4 mr-2" />
@@ -257,7 +258,8 @@ export function VerticalMenuDisplay({
                                     <Button
                                       onClick={() => onUpdateQuantity(item.id, quantity + 1)}
                                       size="mobile"
-                                      className="flex-1 bg-purple-600 hover:bg-purple-700 h-10 md:h-9"
+                                      variant="servio"
+                                      className="flex-1 h-10 md:h-9"
                                     >
                                       <Plus className="h-5 w-5 md:h-4 md:w-4" />
                                     </Button>

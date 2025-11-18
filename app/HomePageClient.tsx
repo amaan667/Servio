@@ -509,14 +509,12 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     </ul>
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
-                      variant={null}
-                      className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 border-0"
+                      variant="servio"
+                      className="w-full disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
-                      <span className="text-white font-bold text-base" style={{ color: "white" }}>
-                        {ctaText || "Start Free Trial"}
-                      </span>
+                      <span className="font-bold text-base">{ctaText || "Start Free Trial"}</span>
                     </Button>
                   </CardContent>
                 </Card>

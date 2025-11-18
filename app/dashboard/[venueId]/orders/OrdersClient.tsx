@@ -305,7 +305,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                   group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition-all duration-200 border-2
                   ${
                     activeTab === tab.key
-                      ? "bg-servio-purple text-white border-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] hover:bg-servio-purple-dark"
+                      ? "bg-servio-purple text-white border-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] hover:bg-white hover:text-servio-purple"
                       : "bg-servio-purple text-white border-servio-purple hover:bg-white hover:text-servio-purple hover:border-servio-purple"
                   }
                 `}

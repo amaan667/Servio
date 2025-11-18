@@ -186,7 +186,7 @@ export function PaymentCollectionDialog({
           <Button
             onClick={handleCollectPayment}
             disabled={processing || !selectedMethod}
-            className="bg-purple-600 text-white hover:bg-purple-700"
+            variant="servio"
           >
             {processing ? (
               <>

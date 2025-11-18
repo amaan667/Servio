@@ -253,7 +253,8 @@ export function OrderCard({
                 size="sm"
                 onClick={() => setShowPaymentDialog(true)}
                 disabled={isProcessing}
-                className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
+                variant="servio"
+                className="w-full sm:w-auto"
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Collect Payment at Till

@@ -222,7 +222,8 @@ export default function OnboardingTestOrderPage() {
             <Button
               onClick={handleOpenCustomerView}
               disabled={checkingOrder}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white h-14 text-lg"
+              variant="servio"
+              className="w-full h-14 text-lg"
             >
               <ExternalLink className="w-5 h-5 mr-2" />
               {checkingOrder ? "Waiting for order..." : "Open Customer View"}
@@ -333,7 +334,8 @@ export default function OnboardingTestOrderPage() {
             <div className="flex flex-col gap-3">
               <Button
                 onClick={handleGoToDashboard}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white h-12 text-lg"
+                variant="servio"
+                className="w-full h-12 text-lg"
               >
                 Go to Dashboard
               </Button>
