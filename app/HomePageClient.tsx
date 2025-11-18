@@ -20,12 +20,12 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="rounded-xl bg-servio-purple text-white shadow-lg hover:bg-white hover:text-servio-purple hover:shadow-xl transition-all duration-200 border-2 border-servio-purple">
+    <div className="rounded-xl bg-servio-purple text-white shadow-lg hover:bg-white hover:text-servio-purple hover:shadow-xl transition-all duration-200 border-2 border-servio-purple group">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-5 py-4 text-left flex justify-between items-center gap-4 focus:outline-none group"
+        className="w-full px-5 py-4 text-left flex justify-between items-center gap-4 focus:outline-none"
       >
-        <h3 className="font-semibold text-base md:text-lg group-hover:text-servio-purple transition-colors duration-200">
+        <h3 className="font-semibold text-base md:text-lg text-white group-hover:text-servio-purple transition-colors duration-200">
           {question}
         </h3>
         <div className="ml-4 flex-shrink-0">
