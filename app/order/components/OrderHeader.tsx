@@ -92,9 +92,12 @@ export function OrderHeader({
                 {!isCounterOrder && groupSessionId && groupSize && (
                   <button
                     onClick={onShowGroupSizePopup}
-                    className="px-3 py-1 bg-servio-purple text-white rounded-full text-xs font-medium hover:bg-white hover:text-servio-purple transition-colors self-start sm:self-auto border-2 border-servio-purple"
+                    className="px-3 py-1.5 bg-servio-purple text-white rounded-full text-xs sm:text-sm font-semibold hover:bg-white hover:text-servio-purple transition-all duration-200 self-start sm:self-auto border-2 border-servio-purple"
+                    style={{ color: "#ffffff" }}
                   >
-                    {groupSize} {groupSize === 1 ? "person" : "people"}
+                    <span style={{ color: "#ffffff" }} className="group-hover:text-servio-purple">
+                      {groupSize} {groupSize === 1 ? "person" : "people"}
+                    </span>
                   </button>
                 )}
               </div>
@@ -104,12 +107,14 @@ export function OrderHeader({
           {/* Mobile Cart Button */}
           <Button
             onClick={onShowMobileCart}
-            className="md:hidden ml-2 flex-shrink-0"
+            className="md:hidden ml-2 flex-shrink-0 bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
             variant="servio"
             size="default"
           >
-            <ShoppingCart className="h-4 w-4" />
-            <span className="ml-1 text-sm font-medium">{totalItems}</span>
+            <ShoppingCart className="h-4 w-4 text-white group-hover:text-servio-purple" />
+            <span className="ml-1 text-sm font-semibold text-white group-hover:text-servio-purple">
+              {totalItems}
+            </span>
           </Button>
         </div>
       </div>

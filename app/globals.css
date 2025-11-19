@@ -1636,6 +1636,25 @@ div {
     transition: transform 0.1s ease;
   }
 
+  /* Ensure all text in ordering UI buttons is visible */
+  button.bg-servio-purple,
+  button[class*="servio"]:not([class*="hover"]),
+  .bg-servio-purple button {
+    color: #ffffff !important;
+  }
+
+  button.bg-servio-purple span,
+  button[class*="servio"] span:not(.group-hover),
+  .bg-servio-purple button span {
+    color: #ffffff !important;
+  }
+
+  button.bg-servio-purple svg,
+  button[class*="servio"] svg:not(.group-hover),
+  .bg-servio-purple button svg {
+    color: #ffffff !important;
+  }
+
   /* Ensure interactive elements meet touch target requirements */
   [role="button"],
   input[type="button"],

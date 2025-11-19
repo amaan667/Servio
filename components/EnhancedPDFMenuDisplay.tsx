@@ -340,10 +340,10 @@ export function EnhancedPDFMenuDisplay({
       )}
 
       {/* View Mode Toggle - Always show both buttons */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 px-3 sm:px-4">
         <div className="flex items-center space-x-2">
           <Button
-            variant={viewMode === "pdf" ? "default" : "outline"}
+            variant="servio"
             size="sm"
             onClick={() => {
               if (pdfImages.length > 0 || hasPdfImages) {
@@ -353,17 +353,47 @@ export function EnhancedPDFMenuDisplay({
               }
             }}
             disabled={!hasPdfImages && pdfImages.length === 0}
+            className={
+              viewMode === "pdf"
+                ? "bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                : "bg-white text-servio-purple hover:bg-servio-purple hover:text-white border-2 border-servio-purple"
+            }
           >
-            <Grid className="h-4 w-4 mr-2" />
-            Visual Menu
+            <Grid
+              className={`h-4 w-4 mr-2 ${viewMode === "pdf" ? "text-white group-hover:text-servio-purple" : "text-servio-purple group-hover:text-white"}`}
+            />
+            <span
+              className={
+                viewMode === "pdf"
+                  ? "text-white group-hover:text-servio-purple"
+                  : "text-servio-purple group-hover:text-white font-semibold"
+              }
+            >
+              Visual Menu
+            </span>
           </Button>
           <Button
-            variant={viewMode === "list" ? "default" : "outline"}
+            variant="servio"
             size="sm"
             onClick={() => setViewMode("list")}
+            className={
+              viewMode === "list"
+                ? "bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                : "bg-white text-servio-purple hover:bg-servio-purple hover:text-white border-2 border-servio-purple"
+            }
           >
-            <List className="h-4 w-4 mr-2" />
-            List View
+            <List
+              className={`h-4 w-4 mr-2 ${viewMode === "list" ? "text-white group-hover:text-servio-purple" : "text-servio-purple group-hover:text-white"}`}
+            />
+            <span
+              className={
+                viewMode === "list"
+                  ? "text-white group-hover:text-servio-purple"
+                  : "text-servio-purple group-hover:text-white font-semibold"
+              }
+            >
+              List View
+            </span>
           </Button>
         </div>
 
@@ -492,11 +522,7 @@ export function EnhancedPDFMenuDisplay({
                       return (
                         <div
                           key={item.id}
-                          className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer bg-white"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setIsModalOpen(true);
-                          }}
+                          className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white"
                         >
                           {/* IMAGE - Show if available from hybrid merge - Optimized for mobile/tablet */}
                           {item.image_url && (
@@ -517,24 +543,69 @@ export function EnhancedPDFMenuDisplay({
                           )}
 
                           <div className="p-4 sm:p-5 md:p-6">
-                            <h3 className="font-semibold text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 leading-tight">
+                            <h3 className="font-semibold text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 leading-tight text-gray-900">
                               {item.name}
                             </h3>
                             {item.description && (
-                              <p className="text-sm sm:text-base md:text-lg text-muted-foreground mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3 leading-relaxed">
+                              <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                                 {item.description}
                               </p>
                             )}
-                            <div className="flex items-center justify-between mt-4">
-                              <span className="text-lg sm:text-xl md:text-2xl font-bold text-primary">
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="text-lg sm:text-xl md:text-2xl font-bold text-purple-600">
                                 {formatPriceWithCurrency(item.price, "£")}
                               </span>
-                              {isOrdering && quantity > 0 && (
-                                <span className="text-sm sm:text-base md:text-lg text-muted-foreground font-medium">
-                                  {quantity} in cart
-                                </span>
-                              )}
                             </div>
+
+                            {/* Add to Cart Controls - Direct on item */}
+                            {isOrdering && (
+                              <div className="mt-4">
+                                {quantity === 0 ? (
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onAddToCart(item);
+                                    }}
+                                    variant="servio"
+                                    className="w-full h-12 sm:h-11 md:h-10 text-base sm:text-sm font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                                    size="mobile"
+                                  >
+                                    <Plus className="h-5 w-5 mr-2 text-white group-hover:text-servio-purple" />
+                                    <span className="text-white group-hover:text-servio-purple">
+                                      Add to Cart
+                                    </span>
+                                  </Button>
+                                ) : (
+                                  <div className="flex items-center gap-2 sm:gap-3 w-full">
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onUpdateQuantity(item.id, quantity - 1);
+                                      }}
+                                      variant="outline"
+                                      size="mobile"
+                                      className="flex-1 h-12 sm:h-11 md:h-10 min-h-[48px] sm:min-h-[44px] border-2 border-servio-purple text-servio-purple hover:bg-servio-purple hover:text-white"
+                                    >
+                                      <Minus className="h-5 w-5" />
+                                    </Button>
+                                    <span className="text-2xl sm:text-xl md:text-lg font-bold min-w-[3rem] sm:min-w-[2.5rem] md:min-w-[40px] text-center text-purple-600">
+                                      {quantity}
+                                    </span>
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onUpdateQuantity(item.id, quantity + 1);
+                                      }}
+                                      size="mobile"
+                                      variant="servio"
+                                      className="flex-1 h-12 sm:h-11 md:h-10 min-h-[48px] sm:min-h-[44px] bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                                    >
+                                      <Plus className="h-5 w-5 text-white group-hover:text-servio-purple" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
