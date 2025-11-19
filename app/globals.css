@@ -1601,6 +1601,22 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important;
   }
 
+  /* CRITICAL: Ensure mobile menu button (hamburger/X) is visible in top right */
+  .mobile-menu-button,
+  .mobile-menu-button svg {
+    color: #111827 !important; /* gray-900 - dark text */
+  }
+
+  .dark .mobile-menu-button,
+  .dark .mobile-menu-button svg {
+    color: #f3f4f6 !important; /* gray-100 - light text */
+  }
+
+  .mobile-menu-button:hover,
+  .mobile-menu-button:hover svg {
+    color: #7c3aed !important; /* servio-purple on hover */
+  }
+
   /* CRITICAL: Ensure mobile dropdown menu text is visible on home page */
   .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]),
   .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) {

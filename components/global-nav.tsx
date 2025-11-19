@@ -386,12 +386,12 @@ export default function GlobalNav() {
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 sm:p-3 text-foreground hover:text-primary hover:bg-accent rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 sm:p-3 !text-gray-900 dark:!text-gray-100 hover:!text-servio-purple hover:bg-accent rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center mobile-menu-button"
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6 !text-gray-900 dark:!text-gray-100" />
               ) : (
-                <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6 !text-gray-900 dark:!text-gray-100" />
               )}
             </Button>
           </div>
