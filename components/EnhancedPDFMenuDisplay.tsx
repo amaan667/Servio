@@ -598,7 +598,7 @@ export function EnhancedPDFMenuDisplay({
                                       }}
                                       size="mobile"
                                       variant="servio"
-                                      className="flex-1 h-12 sm:h-11 md:h-10 min-h-[48px] sm:min-h-[44px] bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                                      className="flex-1 h-12 sm:h-11 md:h-10 min-h-[48px] sm:min-h-[44px] bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple group"
                                     >
                                       <Plus className="h-5 w-5 text-white group-hover:text-servio-purple" />
                                     </Button>
