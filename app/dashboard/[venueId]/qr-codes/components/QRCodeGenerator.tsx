@@ -64,8 +64,8 @@ export function QRCodeGenerator({
         <div>
           <Label>QR Code Type</Label>
           <Select value={qrCodeType} onValueChange={onTypeChange}>
-            <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
-              <SelectValue className="!text-white [&>*]:!text-white" />
+            <SelectTrigger className="rounded-lg mt-1 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
+              <SelectValue className="text-servio-purple" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tables">Tables</SelectItem>
@@ -89,9 +89,9 @@ export function QRCodeGenerator({
           <div>
             <Label>Select {qrCodeType === "tables" ? "Table" : "Counter"}</Label>
             <Select value={inputName} onValueChange={onInputNameChange}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
+              <SelectTrigger className="rounded-lg mt-1 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
                 <SelectValue
-                  className="!text-white [&>*]:!text-white"
+                  className="text-servio-purple"
                   placeholder={`Select a ${qrCodeType === "tables" ? "table" : "counter"}`}
                 />
               </SelectTrigger>

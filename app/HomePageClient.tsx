@@ -509,7 +509,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
                       variant="servio"
-                      className="w-full disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                      className={pricingButtonClass}
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >

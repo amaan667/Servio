@@ -267,8 +267,8 @@ export default function QRCodeClient({
           <div>
             <Label>QR Code Type</Label>
             <Select value={qrType} onValueChange={(v) => setQrType(v as "table" | "counter")}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
-                <SelectValue className="!text-white [&>*]:!text-white" />
+              <SelectTrigger className="rounded-lg mt-1 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
+                <SelectValue className="text-servio-purple" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="table">Tables</SelectItem>

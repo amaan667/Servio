@@ -44,8 +44,8 @@ export function TimePeriodSelector({
               onCustomDateRangeChange(null);
             }}
           >
-            <SelectTrigger className="w-40 bg-purple-600 text-white border-purple-600 hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white [&_svg]:text-white">
-              <SelectValue className="text-white !text-white" />
+            <SelectTrigger className="w-40 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
+              <SelectValue className="text-servio-purple" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="7d">Last 7 days</SelectItem>
