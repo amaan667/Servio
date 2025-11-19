@@ -68,12 +68,12 @@
     --background: 262 50% 8%;
     --foreground: 262 10% 98%;
 
-    /* Cards with visible contrast */
-    --card: 262 40% 12%;
+    /* Cards with visible contrast - lighter for better readability */
+    --card: 262 35% 15%;
     --card-foreground: 262 10% 98%;
 
     /* Popovers with good contrast */
-    --popover: 262 40% 12%;
+    --popover: 262 35% 15%;
     --popover-foreground: 262 10% 98%;
 
     /* Primary uses brand purple */
@@ -84,12 +84,12 @@
     --secondary: 262 30% 20%;
     --secondary-foreground: 262 10% 98%;
 
-    /* Muted with proper visibility */
-    --muted: 262 25% 22%;
-    --muted-foreground: 262 10% 75%;
+    /* Muted with proper visibility - lighter for better readability */
+    --muted: 262 30% 25%;
+    --muted-foreground: 262 10% 85%;
 
-    /* Accent with purple */
-    --accent: 262 30% 24%;
+    /* Accent with purple - lighter for better visibility */
+    --accent: 262 35% 28%;
     --accent-foreground: 262 83% 68%;
 
     /* Destructive stays red but more visible */
@@ -97,8 +97,8 @@
     --destructive-foreground: 0 0% 98%;
 
     /* Borders with better visibility */
-    --border: 262 25% 28%;
-    --input: 262 25% 28%;
+    --border: 262 30% 32%;
+    --input: 262 30% 32%;
 
     /* Ring uses brand purple */
     --ring: 262 83% 58%;
@@ -133,20 +133,21 @@
   .dark h5,
   .dark h6 {
     color: hsl(262 10% 98%);
+    font-weight: 600;
   }
 
-  /* Ensure all text is visible in dark mode */
+  /* Ensure all text is visible in dark mode - improved contrast */
   .dark p,
   .dark span,
-  .dark div,
+  .dark div:not([class*="bg-"]):not([class*="text-"]),
   .dark label {
-    color: hsl(262 10% 90%);
+    color: hsl(262 10% 92%);
   }
 
-  /* Card text visibility */
+  /* Card text visibility - improved contrast */
   .dark [class*="card"] {
-    background-color: hsl(262 40% 12%);
-    border-color: hsl(262 25% 28%);
+    background-color: hsl(262 35% 15%);
+    border-color: hsl(262 30% 32%);
   }
 
   .dark [class*="card"] h1,
@@ -156,26 +157,27 @@
   .dark [class*="card"] h5,
   .dark [class*="card"] h6 {
     color: hsl(262 10% 98%);
+    font-weight: 600;
   }
 
   .dark [class*="card"] p,
   .dark [class*="card"] span,
-  .dark [class*="card"] div:not([class*="bg-"]) {
-    color: hsl(262 10% 88%);
+  .dark [class*="card"] div:not([class*="bg-"]):not([class*="text-"]) {
+    color: hsl(262 10% 90%);
   }
 
-  /* Form inputs in dark mode */
+  /* Form inputs in dark mode - improved contrast */
   .dark input,
   .dark textarea,
   .dark select {
-    background-color: hsl(262 30% 16%);
-    border-color: hsl(262 25% 28%);
+    background-color: hsl(262 35% 18%);
+    border-color: hsl(262 30% 32%);
     color: hsl(262 10% 98%);
   }
 
   .dark input::placeholder,
   .dark textarea::placeholder {
-    color: hsl(262 10% 60%);
+    color: hsl(262 10% 70%);
   }
 
   .dark input:focus,
@@ -199,23 +201,23 @@
     border-color: hsl(var(--servio-purple));
   }
 
-  /* Override problematic gray classes in dark mode */
+  /* Override problematic gray classes in dark mode - improved contrast */
   .dark .text-gray-900,
   .dark .text-gray-800,
   .dark .text-gray-700 {
-    color: hsl(262 10% 95%);
+    color: hsl(262 10% 96%);
   }
 
   .dark .text-gray-600,
   .dark .text-gray-500 {
-    color: hsl(262 10% 80%);
+    color: hsl(262 10% 85%);
   }
 
   .dark .text-gray-400 {
-    color: hsl(262 10% 70%);
+    color: hsl(262 10% 75%);
   }
 
-  /* Background overrides for dark mode */
+  /* Background overrides for dark mode - improved contrast */
   .dark .bg-white {
     background-color: hsl(var(--card));
     color: hsl(var(--card-foreground));
@@ -229,18 +231,25 @@
     background-color: hsl(var(--secondary));
   }
 
-  /* Border overrides for dark mode */
-  .dark .border-gray-200 {
-    border-color: hsl(262 25% 28%);
+  /* Additional dark mode text improvements */
+  .dark .text-slate-600,
+  .dark .text-slate-700,
+  .dark .text-slate-800,
+  .dark .text-slate-900 {
+    color: hsl(262 10% 92%);
   }
 
-  .dark .border-gray-300 {
-    border-color: hsl(262 25% 32%);
+  .dark .text-slate-500 {
+    color: hsl(262 10% 85%);
   }
 
-  /* Muted text with proper contrast */
-  .dark .text-muted-foreground {
+  .dark .text-slate-400 {
     color: hsl(262 10% 75%);
+  }
+
+  /* Muted text with proper contrast - improved readability */
+  .dark .text-muted-foreground {
+    color: hsl(262 10% 85%);
   }
 
   /* Purple brand colors remain consistent */
