@@ -227,10 +227,10 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg active:scale-95 h-full ${
+              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg active:scale-95 h-full bg-white ${
                 item.isActive
-                  ? "text-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] bg-purple-50"
-                  : "text-servio-purple hover:bg-purple-50"
+                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200"
+                  : "hover:bg-purple-50"
               }`}
             >
               <div className="relative mb-0.5 flex flex-col items-center justify-center">
@@ -240,6 +240,7 @@ export default function GlobalBottomNav({
                 className={`font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden text-servio-purple ${
                   item.isActive ? "font-bold" : ""
                 }`}
+                style={{ color: "#7c3aed" }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>

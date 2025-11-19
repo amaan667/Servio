@@ -179,10 +179,10 @@ export default function MobileNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative rounded-lg transition-all duration-200 ${
+              className={`flex flex-col items-center justify-center p-2 relative rounded-lg transition-all duration-200 bg-white ${
                 item.isActive
-                  ? "text-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] bg-purple-50"
-                  : "text-servio-purple hover:bg-purple-50"
+                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200"
+                  : "hover:bg-purple-50"
               }`}
             >
               <div className="relative mb-1">
@@ -198,7 +198,7 @@ export default function MobileNav({
               </div>
               <span
                 className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate text-servio-purple"
-                style={{ lineHeight: "1.2", fontSize: "10px" }}
+                style={{ lineHeight: "1.2", fontSize: "10px", color: "#7c3aed" }}
               >
                 {item.label}
               </span>
