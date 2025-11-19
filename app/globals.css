@@ -684,8 +684,18 @@ h6 {
 }
 
 p,
-span,
 div {
+  @apply text-foreground;
+}
+
+/* Exclude button spans from global text-foreground rule - CRITICAL FIX */
+button span,
+button * span,
+[class*="button"] span {
+  color: inherit !important;
+}
+
+span:not(button span):not(button * span):not([class*="button"] span) {
   @apply text-foreground;
 }
 
@@ -1636,26 +1646,43 @@ div {
     transition: transform 0.1s ease;
   }
 
-  /* CRITICAL: Ensure all button text is visible by default on mobile */
+  /* CRITICAL MOBILE FIX: Force white text on ALL purple buttons - HIGHEST SPECIFICITY */
   button.bg-servio-purple,
   button.bg-servio-purple *,
+  button.bg-servio-purple span,
+  button.bg-servio-purple svg,
   button[class*="bg-servio-purple"],
   button[class*="bg-servio-purple"] *,
-  .bg-servio-purple,
-  .bg-servio-purple * {
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-servio-purple"] svg,
+  button[class*="bg-purple"],
+  button[class*="bg-purple"] *,
+  button[class*="bg-purple"] span,
+  button[class*="bg-purple"] svg,
+  button[class*="servio"],
+  button[class*="servio"] *,
+  button[class*="servio"] span,
+  button[class*="servio"] svg,
+  button[class*="servio"] > *,
+  .bg-servio-purple button,
+  .bg-servio-purple button *,
+  .bg-servio-purple button span,
+  .bg-servio-purple button svg {
     color: #ffffff !important;
   }
 
-  /* Force white text on purple buttons */
-  button[class*="servio"],
+  /* Override text-foreground for button children */
+  button span,
   button[class*="servio"] span,
-  button[class*="servio"] svg {
-    color: #ffffff !important;
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"] span {
+    color: inherit !important;
   }
 
   /* Only change color on actual hover, not by default */
   button.bg-servio-purple:hover,
   button.bg-servio-purple:hover *,
+  button.bg-servio-purple:hover span,
   button[class*="servio"]:hover,
   button[class*="servio"]:hover span,
   button[class*="servio"]:hover svg {
