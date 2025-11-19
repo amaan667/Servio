@@ -14,6 +14,7 @@ import { CTASection } from "./components/CTASection";
 import { Footer } from "./components/Footer";
 import { supabaseBrowser } from "@/lib/supabase";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { cn } from "@/lib/utils";
 
 // FAQ Item Component
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -460,6 +461,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
             {pricingPlans.map((plan, index) => {
               const ctaText = getPlanCTA(plan.name);
               const isCurrentPlan = ctaText === "Current Plan";
+              const isDowngradeCTA = ctaText.toLowerCase().includes("downgrade");
+              const pricingButtonClass = cn(
+                "w-full group transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 hover:text-servio-purple disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white border-2 border-servio-purple bg-servio-purple text-white",
+                isDowngradeCTA && "bg-servio-purple text-white"
+              );
 
               return (
                 <Card
@@ -472,9 +478,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     </div>
                   )}
                   <CardHeader className="text-center pb-8">
-                    <CardTitle className="text-2xl mb-2 text-gray-900 font-bold">
-                      {plan.name}
-                    </CardTitle>
+                    <CardTitle className="text-2xl mb-2 text-gray-900 font-bold">{plan.name}</CardTitle>
                     <div className="flex items-baseline justify-center">
                       <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
                       {plan.period && (
@@ -503,11 +507,13 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
                       variant="servio"
-                      className="w-full group hover:text-servio-purple disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 [&>*]:text-white [&>*]:group-hover:text-servio-purple"
+                      className={pricingButtonClass}
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
-                      <span className="font-bold text-base transition-colors duration-200">{ctaText || "Start Free Trial"}</span>
+                      <span className="font-bold text-base transition-colors duration-200 text-white group-hover:text-servio-purple">
+                        {ctaText || "Start Free Trial"}
+                      </span>
                     </Button>
                   </CardContent>
                 </Card>

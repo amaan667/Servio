@@ -10,6 +10,7 @@ import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { cn } from "@/lib/utils";
 
 export default function SelectPlanPage() {
   const router = useRouter();
@@ -236,76 +237,85 @@ export default function SelectPlanPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <NavigationBreadcrumb showBackButton={false} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <NavigationBreadcrumb showBackButton={false} />
 
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
-          <p className="text-xl text-gray-700">
-            Start your 14-day free trial. No credit card required until trial ends.
-          </p>
-        </div>
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+            <p className="text-xl text-gray-700">
+              Start your 14-day free trial. No credit card required until trial ends.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {pricingPlans.map((plan) => (
-            <Card
-              key={plan.tier}
-              className={`border-2 shadow-lg relative ${plan.popular ? "border-purple-500" : ""}`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-purple-600 text-white px-4 py-1">Most Popular</Badge>
-                </div>
-              )}
-              <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
-                <div className="flex items-baseline justify-center">
-                  <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
-                  {plan.period && <span className="text-gray-700 ml-2">/{plan.period}</span>}
-                </div>
-                <CardDescription className="mt-4">{plan.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <ul className="space-y-3">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                  {plan.notIncluded.map((feature, idx) => (
-                    <li key={idx} className="flex items-start opacity-50">
-                      <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  onClick={() => {
-                    handleSelectPlan(plan.tier);
-                  }}
-                  disabled={(loading && selectedTier !== plan.tier) || currentTier === plan.tier}
-                  className={`w-full font-semibold ${
-                    plan.popular
-                      ? "bg-purple-600 hover:bg-purple-700 text-white"
-                      : "border-2 border-purple-600 text-purple-600 hover:bg-purple-50 bg-white"
-                  }`}
-                  variant={plan.popular ? "default" : "outline"}
-                  size="lg"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {pricingPlans.map((plan) => {
+              const ctaText = getPlanCTA(plan.tier);
+              const isDowngradeCTA = ctaText.toLowerCase().includes("downgrade");
+              const isProcessing = loading && selectedTier === plan.tier;
+              const isCurrentPlanOption = currentTier === plan.tier;
+              const buttonVariant = plan.popular || isDowngradeCTA ? "servio" : "outline";
+              const buttonClasses = cn(
+                "w-full font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-servio-purple",
+                plan.popular || isDowngradeCTA
+                  ? "bg-purple-600 text-white border-2 border-purple-600 hover:bg-purple-700 hover:text-white"
+                  : "border-2 border-purple-600 text-purple-600 hover:bg-purple-50 bg-white",
+                "disabled:cursor-not-allowed disabled:bg-gray-300 disabled:border-gray-300 disabled:text-white"
+              );
+
+              return (
+                <Card
+                  key={plan.tier}
+                  className={`border-2 shadow-lg relative ${plan.popular ? "border-purple-500" : ""}`}
                 >
-                  {loading && selectedTier === plan.tier ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    getPlanCTA(plan.tier)
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <Badge className="bg-purple-600 text-white px-4 py-1">Most Popular</Badge>
+                    </div>
                   )}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <CardHeader className="text-center pb-8">
+                    <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                    <div className="flex items-baseline justify-center">
+                      <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+                      {plan.period && <span className="text-gray-700 ml-2">/{plan.period}</span>}
+                    </div>
+                    <CardDescription className="mt-4">{plan.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <ul className="space-y-3">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700">{feature}</span>
+                        </li>
+                      ))}
+                      {plan.notIncluded.map((feature, idx) => (
+                        <li key={idx} className="flex items-start opacity-50">
+                          <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      onClick={() => handleSelectPlan(plan.tier)}
+                      disabled={(loading && selectedTier !== plan.tier) || isCurrentPlanOption}
+                      className={buttonClasses}
+                      variant={buttonVariant}
+                      size="lg"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        ctaText
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
         <div className="mt-12 text-center text-gray-600">
           <p>All plans include a 14-day free trial. Cancel anytime.</p>
