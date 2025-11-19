@@ -268,7 +268,7 @@ export default function GlobalNav() {
                     </Button>
                   </>
                 ) : isOnSettings ? (
-                  // On settings pages: Dashboard, Home (no border), Sign Out (purple border)
+                  // On settings pages: Dashboard, Home, Dark Mode (no border), Sign Out (purple border)
                   <>
                     <Link
                       href={
@@ -286,7 +286,17 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    {/* NO DARK MODE BUTTON ON SETTINGS PAGES - hidden on home page */}
+                    <button
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-purple-600 transition-all duration-200"
+                      aria-label="Toggle theme"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5 text-foreground" />
+                      ) : (
+                        <Moon className="h-5 w-5 text-foreground" />
+                      )}
+                    </button>
                     <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="outline"
@@ -419,31 +429,29 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
-                    {!isHomePage && (
-                      <button
-                        onClick={() => {
-                          const currentTheme = theme || "light";
-                          setTheme(currentTheme === "dark" ? "light" : "dark");
-                        }}
-                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
-                      >
-                        {theme === "dark" ? (
-                          <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
-                            <span className="text-white group-hover:text-servio-purple">
-                              Light Mode
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
-                            <span className="text-white group-hover:text-servio-purple">
-                              Dark Mode
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Light Mode
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Dark Mode
+                          </span>
+                        </>
+                      )}
+                    </button>
                     <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
@@ -483,31 +491,29 @@ export default function GlobalNav() {
                         <span>Settings</span>
                       </Link>
                     )}
-                    {!isHomePage && (
-                      <button
-                        onClick={() => {
-                          const currentTheme = theme || "light";
-                          setTheme(currentTheme === "dark" ? "light" : "dark");
-                        }}
-                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
-                      >
-                        {theme === "dark" ? (
-                          <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
-                            <span className="text-white group-hover:text-servio-purple">
-                              Light Mode
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
-                            <span className="text-white group-hover:text-servio-purple">
-                              Dark Mode
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Light Mode
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Dark Mode
+                          </span>
+                        </>
+                      )}
+                    </button>
                     <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
@@ -541,31 +547,29 @@ export default function GlobalNav() {
                       <Home className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
                       <span>Home</span>
                     </Link>
-                    {!isHomePage && (
-                      <button
-                        onClick={() => {
-                          const currentTheme = theme || "light";
-                          setTheme(currentTheme === "dark" ? "light" : "dark");
-                        }}
-                        className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
-                      >
-                        {theme === "dark" ? (
-                          <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
-                            <span className="text-white group-hover:text-servio-purple">
-                              Light Mode
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
-                            <span className="text-white group-hover:text-servio-purple">
-                              Dark Mode
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Light Mode
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Dark Mode
+                          </span>
+                        </>
+                      )}
+                    </button>
                     <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {

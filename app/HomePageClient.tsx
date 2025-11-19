@@ -14,6 +14,7 @@ import { CTASection } from "./components/CTASection";
 import { Footer } from "./components/Footer";
 import { supabaseBrowser } from "@/lib/supabase";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { cn } from "@/lib/utils";
 
 // FAQ Item Component
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -460,6 +461,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
             {pricingPlans.map((plan, index) => {
               const ctaText = getPlanCTA(plan.name);
               const isCurrentPlan = ctaText === "Current Plan";
+              const isDowngradeCTA = ctaText.toLowerCase().includes("downgrade");
+              const pricingButtonClass = cn(
+                "w-full group transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 hover:text-servio-purple disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white border-2 border-servio-purple bg-servio-purple text-white",
+                isDowngradeCTA && "bg-servio-purple text-white"
+              );
 
               return (
                 <Card
@@ -503,7 +509,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
                       variant="servio"
-                      className="w-full disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                      className={pricingButtonClass}
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
