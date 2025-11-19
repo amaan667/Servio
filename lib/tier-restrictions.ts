@@ -20,7 +20,7 @@ export interface TierLimits {
 // Tier limits based on homepage pricing
 export const TIER_LIMITS: Record<string, TierLimits> = {
   starter: {
-    maxTables: 10,
+    maxTables: 20,
     maxMenuItems: 50,
     maxStaff: 3,
     maxVenues: 1,
@@ -35,12 +35,12 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     },
   },
   pro: {
-    maxTables: 20,
+    maxTables: 50,
     maxMenuItems: 200,
     maxStaff: 10,
     maxVenues: 1,
     features: {
-      kds: true,
+      kds: false,
       inventory: true,
       analytics: true,
       aiAssistant: false,
