@@ -1601,20 +1601,50 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important;
   }
 
-  /* CRITICAL: Ensure mobile menu button (hamburger/X) is visible in top right */
+  /* CRITICAL: Ensure mobile menu button (hamburger/X) is visible in top right - HIGHEST SPECIFICITY */
+  button.mobile-menu-button,
+  button.mobile-menu-button *,
+  button.mobile-menu-button svg,
   .mobile-menu-button,
-  .mobile-menu-button svg {
-    color: #111827 !important; /* gray-900 - dark text */
+  .mobile-menu-button *,
+  .mobile-menu-button svg,
+  nav button[class*="mobile-menu-button"],
+  nav button[class*="mobile-menu-button"] *,
+  nav button[class*="mobile-menu-button"] svg {
+    color: #111827 !important; /* gray-900 - dark black text */
+    fill: none !important;
+    stroke: #111827 !important; /* Ensure stroke color is also black */
   }
 
+  .dark button.mobile-menu-button,
+  .dark button.mobile-menu-button *,
+  .dark button.mobile-menu-button svg,
   .dark .mobile-menu-button,
-  .dark .mobile-menu-button svg {
+  .dark .mobile-menu-button *,
+  .dark .mobile-menu-button svg,
+  .dark nav button[class*="mobile-menu-button"],
+  .dark nav button[class*="mobile-menu-button"] *,
+  .dark nav button[class*="mobile-menu-button"] svg {
     color: #f3f4f6 !important; /* gray-100 - light text */
+    stroke: #f3f4f6 !important; /* Ensure stroke color is also light */
   }
 
+  button.mobile-menu-button:hover,
+  button.mobile-menu-button:hover *,
+  button.mobile-menu-button:hover svg,
   .mobile-menu-button:hover,
+  .mobile-menu-button:hover *,
   .mobile-menu-button:hover svg {
     color: #7c3aed !important; /* servio-purple on hover */
+    stroke: #7c3aed !important;
+  }
+
+  /* Override any text-foreground rules that might affect the button */
+  button[class*="ghost"].mobile-menu-button,
+  button[class*="ghost"].mobile-menu-button *,
+  button[class*="ghost"].mobile-menu-button svg {
+    color: #111827 !important;
+    stroke: #111827 !important;
   }
 
   /* CRITICAL: Ensure mobile dropdown menu text is visible on home page */
@@ -1664,6 +1694,143 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   .mobile-dropdown-menu button[class*="bg-purple"] span,
   .mobile-dropdown-menu button[class*="bg-servio-purple"] svg,
   .mobile-dropdown-menu button[class*="bg-purple"] svg {
+    color: #ffffff !important;
+  }
+
+  /* CRITICAL: Ensure all button text is visible across the app - HIGHEST PRIORITY */
+  /* Purple/Servio buttons - white text */
+  button[class*="bg-servio-purple"],
+  button[class*="bg-purple"],
+  button[class*="servio"],
+  button[class*="variant-servio"],
+  [class*="servio-purple"] button,
+  [class*="bg-servio-purple"] button {
+    color: #ffffff !important;
+  }
+
+  button[class*="bg-servio-purple"] *,
+  button[class*="bg-purple"] *,
+  button[class*="servio"] *,
+  button[class*="variant-servio"] *,
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"] span,
+  button[class*="servio"] span,
+  button[class*="variant-servio"] span,
+  button[class*="bg-servio-purple"] svg,
+  button[class*="bg-purple"] svg,
+  button[class*="servio"] svg,
+  button[class*="variant-servio"] svg {
+    color: #ffffff !important;
+  }
+
+  /* Pricing cards buttons - ensure white text on purple */
+  [class*="pricing"] button[class*="bg-servio-purple"],
+  [class*="pricing"] button[class*="bg-purple"],
+  [class*="pricing"] button[class*="servio"],
+  [class*="Card"] button[class*="bg-servio-purple"],
+  [class*="Card"] button[class*="bg-purple"],
+  [class*="Card"] button[class*="servio"] {
+    color: #ffffff !important;
+  }
+
+  [class*="pricing"] button[class*="bg-servio-purple"] *,
+  [class*="pricing"] button[class*="bg-purple"] *,
+  [class*="pricing"] button[class*="servio"] *,
+  [class*="Card"] button[class*="bg-servio-purple"] *,
+  [class*="Card"] button[class*="bg-purple"] *,
+  [class*="Card"] button[class*="servio"] *,
+  [class*="pricing"] button[class*="bg-servio-purple"] span,
+  [class*="pricing"] button[class*="bg-purple"] span,
+  [class*="pricing"] button[class*="servio"] span,
+  [class*="Card"] button[class*="bg-servio-purple"] span,
+  [class*="Card"] button[class*="bg-purple"] span,
+  [class*="Card"] button[class*="servio"] span {
+    color: #ffffff !important;
+  }
+
+  /* QR codes page buttons - ensure white text on purple */
+  [class*="qr-code"] button[class*="bg-servio-purple"],
+  [class*="qr-code"] button[class*="bg-purple"],
+  [class*="qr-code"] button[class*="servio"],
+  [id*="qr"] button[class*="bg-servio-purple"],
+  [id*="qr"] button[class*="bg-purple"],
+  [id*="qr"] button[class*="servio"] {
+    color: #ffffff !important;
+  }
+
+  [class*="qr-code"] button[class*="bg-servio-purple"] *,
+  [class*="qr-code"] button[class*="bg-purple"] *,
+  [class*="qr-code"] button[class*="servio"] *,
+  [id*="qr"] button[class*="bg-servio-purple"] *,
+  [id*="qr"] button[class*="bg-purple"] *,
+  [id*="qr"] button[class*="servio"] * {
+    color: #ffffff !important;
+  }
+
+  /* Customer ordering UI buttons - ensure white text on purple */
+  [class*="order"] button[class*="bg-servio-purple"],
+  [class*="order"] button[class*="bg-purple"],
+  [class*="order"] button[class*="servio"],
+  [class*="cart"] button[class*="bg-servio-purple"],
+  [class*="cart"] button[class*="bg-purple"],
+  [class*="cart"] button[class*="servio"],
+  [class*="checkout"] button[class*="bg-servio-purple"],
+  [class*="checkout"] button[class*="bg-purple"],
+  [class*="checkout"] button[class*="servio"] {
+    color: #ffffff !important;
+  }
+
+  [class*="order"] button[class*="bg-servio-purple"] *,
+  [class*="order"] button[class*="bg-purple"] *,
+  [class*="order"] button[class*="servio"] *,
+  [class*="cart"] button[class*="bg-servio-purple"] *,
+  [class*="cart"] button[class*="bg-purple"] *,
+  [class*="cart"] button[class*="servio"] *,
+  [class*="checkout"] button[class*="bg-servio-purple"] *,
+  [class*="checkout"] button[class*="bg-purple"] *,
+  [class*="checkout"] button[class*="servio"] *,
+  [class*="order"] button[class*="bg-servio-purple"] span,
+  [class*="order"] button[class*="bg-purple"] span,
+  [class*="order"] button[class*="servio"] span,
+  [class*="cart"] button[class*="bg-servio-purple"] span,
+  [class*="cart"] button[class*="bg-purple"] span,
+  [class*="cart"] button[class*="servio"] span,
+  [class*="checkout"] button[class*="bg-servio-purple"] span,
+  [class*="checkout"] button[class*="bg-purple"] span,
+  [class*="checkout"] button[class*="servio"] span {
+    color: #ffffff !important;
+  }
+
+  /* Ensure button text is visible even when disabled */
+  button[disabled] {
+    opacity: 0.6;
+  }
+
+  button[disabled][class*="bg-servio-purple"],
+  button[disabled][class*="bg-purple"],
+  button[disabled][class*="servio"] {
+    color: #ffffff !important;
+  }
+
+  button[disabled][class*="bg-servio-purple"] *,
+  button[disabled][class*="bg-purple"] *,
+  button[disabled][class*="servio"] *,
+  button[disabled][class*="bg-servio-purple"] span,
+  button[disabled][class*="bg-purple"] span,
+  button[disabled][class*="servio"] span {
+    color: #ffffff !important;
+  }
+
+  /* Override any text-foreground rules that might affect buttons */
+  button span,
+  button * span:not([class*="text-"]) {
+    color: inherit !important;
+  }
+
+  /* Ensure button text inherits from button color */
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"] span,
+  button[class*="servio"] span {
     color: #ffffff !important;
   }
 
