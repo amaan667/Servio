@@ -169,7 +169,7 @@ export default function MobileNav({
     <>
       {/* Bottom Navigation Bar */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-servio-purple border-t-2 border-servio-purple transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-gray-200 transition-transform duration-300 shadow-lg ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -181,14 +181,12 @@ export default function MobileNav({
               onClick={() => handleNavigation(item.href)}
               className={`flex flex-col items-center justify-center p-2 relative rounded-lg transition-all duration-200 ${
                 item.isActive
-                  ? "bg-white text-servio-purple"
-                  : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple"
+                  ? "text-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] bg-purple-50"
+                  : "text-servio-purple hover:bg-purple-50"
               }`}
             >
               <div className="relative mb-1">
-                <item.icon
-                  className={`h-5 w-5 transition-colors ${item.isActive ? "text-servio-purple" : "text-white"}`}
-                />
+                <item.icon className="h-5 w-5 text-servio-purple transition-colors" />
                 {item.badge && item.badge > 0 && (
                   <Badge
                     variant="destructive"
@@ -199,9 +197,7 @@ export default function MobileNav({
                 )}
               </div>
               <span
-                className={`text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate ${
-                  item.isActive ? "text-servio-purple" : "text-white"
-                }`}
+                className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate text-servio-purple"
                 style={{ lineHeight: "1.2", fontSize: "10px" }}
               >
                 {item.label}

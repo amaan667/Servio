@@ -217,7 +217,7 @@ export default function GlobalBottomNav({
     <>
       {/* Bottom Navigation Bar */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-servio-purple border-t-2 border-servio-purple shadow-lg transition-transform duration-300 mobile-nav ${
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -229,20 +229,16 @@ export default function GlobalBottomNav({
               onClick={() => handleNavigation(item.href, item.id, item.label)}
               className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg active:scale-95 h-full ${
                 item.isActive
-                  ? "bg-white text-servio-purple"
-                  : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple"
+                  ? "text-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] bg-purple-50"
+                  : "text-servio-purple hover:bg-purple-50"
               }`}
             >
               <div className="relative mb-0.5 flex flex-col items-center justify-center">
-                <item.icon
-                  className={`h-5 w-5 transition-colors ${
-                    item.isActive ? "text-servio-purple" : "text-white"
-                  }`}
-                />
+                <item.icon className="h-5 w-5 text-servio-purple transition-colors" />
               </div>
               <span
-                className={`font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden ${
-                  item.isActive ? "font-bold underline underline-offset-2" : ""
+                className={`font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden text-servio-purple ${
+                  item.isActive ? "font-bold" : ""
                 }`}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}

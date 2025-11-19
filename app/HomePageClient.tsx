@@ -509,11 +509,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
                       variant="servio"
-                      className={pricingButtonClass}
+                      className="w-full disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
-                      <span className="font-bold text-sm sm:text-base text-white">
+                      <span className="font-bold text-xs sm:text-sm md:text-base text-white break-words leading-tight px-1">
                         {ctaText || "Start Free Trial"}
                       </span>
                     </Button>
