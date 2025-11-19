@@ -1636,23 +1636,30 @@ div {
     transition: transform 0.1s ease;
   }
 
-  /* Ensure all text in ordering UI buttons is visible */
+  /* CRITICAL: Ensure all button text is visible by default on mobile */
   button.bg-servio-purple,
-  button[class*="servio"]:not([class*="hover"]),
-  .bg-servio-purple button {
+  button.bg-servio-purple *,
+  button[class*="bg-servio-purple"],
+  button[class*="bg-servio-purple"] *,
+  .bg-servio-purple,
+  .bg-servio-purple * {
     color: #ffffff !important;
   }
 
-  button.bg-servio-purple span,
-  button[class*="servio"] span:not(.group-hover),
-  .bg-servio-purple button span {
+  /* Force white text on purple buttons */
+  button[class*="servio"],
+  button[class*="servio"] span,
+  button[class*="servio"] svg {
     color: #ffffff !important;
   }
 
-  button.bg-servio-purple svg,
-  button[class*="servio"] svg:not(.group-hover),
-  .bg-servio-purple button svg {
-    color: #ffffff !important;
+  /* Only change color on actual hover, not by default */
+  button.bg-servio-purple:hover,
+  button.bg-servio-purple:hover *,
+  button[class*="servio"]:hover,
+  button[class*="servio"]:hover span,
+  button[class*="servio"]:hover svg {
+    color: #7c3aed !important;
   }
 
   /* Ensure interactive elements meet touch target requirements */
