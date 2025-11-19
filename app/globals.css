@@ -1601,10 +1601,54 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important;
   }
 
-  /* Ensure mobile menu text is visible */
-  .md\\:hidden [class*="text-gray-900"],
-  .md\\:hidden [class*="text-gray-100"] {
-    color: inherit !important;
+  /* CRITICAL: Ensure mobile dropdown menu text is visible on home page */
+  .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]),
+  .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) {
+    color: #111827 !important; /* gray-900 - dark text */
+  }
+
+  .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) span,
+  .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) span {
+    color: #111827 !important; /* gray-900 */
+  }
+
+  .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) svg,
+  .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) svg {
+    color: #111827 !important; /* gray-900 */
+  }
+
+  /* Dark mode mobile menu text */
+  .dark .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]),
+  .dark .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) {
+    color: #f3f4f6 !important; /* gray-100 - light text */
+  }
+
+  .dark .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) span,
+  .dark
+    .mobile-dropdown-menu
+    button:not([class*="bg-servio-purple"]):not([class*="bg-purple"])
+    span {
+    color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  .dark .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) svg,
+  .dark
+    .mobile-dropdown-menu
+    button:not([class*="bg-servio-purple"]):not([class*="bg-purple"])
+    svg {
+    color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  /* Override for purple buttons in mobile menu - keep white text */
+  .mobile-dropdown-menu button[class*="bg-servio-purple"],
+  .mobile-dropdown-menu button[class*="bg-purple"],
+  .mobile-dropdown-menu button[class*="bg-servio-purple"] *,
+  .mobile-dropdown-menu button[class*="bg-purple"] *,
+  .mobile-dropdown-menu button[class*="bg-servio-purple"] span,
+  .mobile-dropdown-menu button[class*="bg-purple"] span,
+  .mobile-dropdown-menu button[class*="bg-servio-purple"] svg,
+  .mobile-dropdown-menu button[class*="bg-purple"] svg {
+    color: #ffffff !important;
   }
 
   /* Better touch targets for small buttons */
