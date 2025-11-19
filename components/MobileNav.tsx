@@ -184,10 +184,9 @@ export default function MobileNav({
                   ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
                   : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
               }`}
-              style={{ color: "#7c3aed" }}
             >
               <div className="relative mb-1">
-                <item.icon className="h-5 w-5" style={{ color: "#7c3aed" }} />
+                <item.icon className="h-5 w-5 text-[#7c3aed]" />
                 {item.badge && item.badge > 0 && (
                   <Badge
                     variant="destructive"
@@ -198,7 +197,7 @@ export default function MobileNav({
                 )}
               </div>
               <span
-                className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate"
+                className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate text-[#7c3aed]"
                 style={{ lineHeight: "1.2", fontSize: "10px" }}
               >
                 {item.label}
