@@ -174,19 +174,20 @@ export default function MobileNav({
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-4 h-20">
+        <div className="grid grid-cols-4 h-20 gap-2 px-2">
           {navItems.slice(0, 4).map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative rounded-lg transition-all duration-200 bg-white ${
+              className={`flex flex-col items-center justify-center p-2 relative rounded-lg transition-all duration-200 bg-white border ${
                 item.isActive
-                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200"
-                  : "hover:bg-purple-50"
+                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
+                  : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
               }`}
+              style={{ color: "#7c3aed" }}
             >
               <div className="relative mb-1">
-                <item.icon className="h-5 w-5 text-servio-purple transition-colors" />
+                <item.icon className="h-5 w-5" style={{ color: "#7c3aed" }} />
                 {item.badge && item.badge > 0 && (
                   <Badge
                     variant="destructive"
@@ -197,8 +198,8 @@ export default function MobileNav({
                 )}
               </div>
               <span
-                className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate text-servio-purple"
-                style={{ lineHeight: "1.2", fontSize: "10px", color: "#7c3aed" }}
+                className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate"
+                style={{ lineHeight: "1.2", fontSize: "10px" }}
               >
                 {item.label}
               </span>

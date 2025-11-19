@@ -227,20 +227,20 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg active:scale-95 h-full bg-white ${
+              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg active:scale-95 h-full bg-white border ${
                 item.isActive
-                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200"
-                  : "hover:bg-purple-50"
+                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
+                  : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
               }`}
+              style={{ color: "#7c3aed" }}
             >
               <div className="relative mb-0.5 flex flex-col items-center justify-center">
-                <item.icon className="h-5 w-5 text-servio-purple transition-colors" />
+                <item.icon className="h-5 w-5" style={{ color: "#7c3aed" }} />
               </div>
               <span
-                className={`font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden text-servio-purple ${
+                className={`font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden ${
                   item.isActive ? "font-bold" : ""
                 }`}
-                style={{ color: "#7c3aed" }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>
