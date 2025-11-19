@@ -507,7 +507,9 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
-                      <span className="font-bold text-base">{ctaText || "Start Free Trial"}</span>
+                      <span className="font-bold text-sm sm:text-base text-white">
+                        {ctaText || "Start Free Trial"}
+                      </span>
                     </Button>
                   </CardContent>
                 </Card>

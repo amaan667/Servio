@@ -217,7 +217,7 @@ export default function GlobalBottomNav({
     <>
       {/* Bottom Navigation Bar */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-purple-600 border-t border-purple-700 shadow-lg transition-transform duration-300 mobile-nav ${
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-servio-purple border-t-2 border-servio-purple shadow-lg transition-transform duration-300 mobile-nav ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -227,22 +227,23 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className="flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg hover:bg-purple-500 active:scale-95 h-full"
-              style={{ color: "white" }}
+              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg active:scale-95 h-full ${
+                item.isActive
+                  ? "bg-white text-servio-purple"
+                  : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple"
+              }`}
             >
-              <div
-                className="relative mb-0.5 flex flex-col items-center justify-center [&>svg]:!text-white"
-                style={{ color: "white" }}
-              >
-                <item.icon className="h-5 w-5 transition-colors !text-white [&>*]:!text-white" />
+              <div className="relative mb-0.5 flex flex-col items-center justify-center">
+                <item.icon
+                  className={`h-5 w-5 transition-colors ${
+                    item.isActive ? "text-servio-purple" : "text-white"
+                  }`}
+                />
               </div>
               <span
-                className={
-                  item.isActive
-                    ? "font-bold text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden underline underline-offset-2 [text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
-                    : "font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden"
-                }
-                style={{ color: "white" }}
+                className={`font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden ${
+                  item.isActive ? "font-bold underline underline-offset-2" : ""
+                }`}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>
