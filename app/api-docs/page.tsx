@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 
+// API documentation page with mobile-responsive styling
+
 export default function ApiDocsPage() {
   const [spec, setSpec] = useState(null);
 
