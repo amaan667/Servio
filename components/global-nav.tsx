@@ -400,7 +400,7 @@ export default function GlobalNav() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-md shadow-lg">
+        <div className="md:hidden border-t border-border bg-white dark:bg-gray-900 shadow-lg z-50">
           <div className="px-4 pt-4 pb-6 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
             {isAuthenticated ? (
               // Signed in mobile navigation
@@ -409,11 +409,11 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                      <span>Home</span>
+                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Home</span>
                     </Link>
                     {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
@@ -422,11 +422,11 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                        <span>Settings</span>
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                        <span className="text-gray-900 dark:text-gray-100">Settings</span>
                       </Link>
                     )}
                     <button
@@ -471,11 +471,11 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                      <span>Dashboard</span>
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Dashboard</span>
                     </Link>
                     {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
@@ -484,11 +484,11 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                        <span>Settings</span>
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                        <span className="text-gray-900 dark:text-gray-100">Settings</span>
                       </Link>
                     )}
                     <button
@@ -533,19 +533,19 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                      <span>Dashboard</span>
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Dashboard</span>
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                      <span>Home</span>
+                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Home</span>
                     </Link>
                     <button
                       onClick={() => {
@@ -589,11 +589,11 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                      <span>Dashboard</span>
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Dashboard</span>
                     </Link>
                     {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
@@ -602,11 +602,11 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-foreground" />
-                        <span>Settings</span>
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                        <span className="text-gray-900 dark:text-gray-100">Settings</span>
                       </Link>
                     )}
                     {/* Dark mode button hidden on home page */}
@@ -630,21 +630,21 @@ export default function GlobalNav() {
               <>
                 <Link
                   href="/"
-                  className="px-4 py-3 text-base font-semibold text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="px-4 py-3 text-base font-semibold text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="px-4 py-3 text-base font-semibold text-foreground hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Pricing

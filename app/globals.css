@@ -1575,6 +1575,28 @@ div {
     stroke-width: 2 !important;
   }
 
+  /* Ensure button text is always visible on mobile */
+  button[class*="bg-servio-purple"],
+  button[class*="bg-purple"],
+  button[class*="servio"] {
+    color: #ffffff !important;
+  }
+
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"] span,
+  button[class*="servio"] span,
+  button[class*="bg-servio-purple"] > *:not(svg),
+  button[class*="bg-purple"] > *:not(svg),
+  button[class*="servio"] > *:not(svg) {
+    color: #ffffff !important;
+  }
+
+  /* Ensure mobile menu text is visible */
+  .md\\:hidden [class*="text-gray-900"],
+  .md\\:hidden [class*="text-gray-100"] {
+    color: inherit !important;
+  }
+
   /* Better touch targets for small buttons */
   button[class*="sm"] {
     min-width: 48px !important;
