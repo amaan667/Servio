@@ -61,13 +61,15 @@ export function ItemDetailsModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-w-[95vw]">
         <DialogHeader>
-          <DialogTitle className="text-xl md:text-2xl">{item.name}</DialogTitle>
+          <DialogTitle className="text-xl sm:text-2xl md:text-3xl leading-tight">
+            {item.name}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Item Image (if available) - Smaller on mobile */}
+        <div className="space-y-4 sm:space-y-5 md:space-y-6">
+          {/* Item Image (if available) - Optimized for mobile/tablet */}
           {item.image_url && (
-            <div className="relative w-full h-48 md:h-64 lg:aspect-square bg-white rounded-lg overflow-hidden">
+            <div className="relative w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 rounded-lg overflow-hidden">
               <img
                 src={item.image_url}
                 alt={item.name}
@@ -87,14 +89,14 @@ export function ItemDetailsModal({
 
           {/* Description */}
           {item.description && (
-            <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
               {item.description}
             </p>
           )}
 
           {/* Price */}
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-lg md:text-xl font-bold text-primary">
+          <div className="flex items-center justify-between pt-2 sm:pt-3">
+            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
               {formatPriceWithCurrency(item.price, "£")}
             </span>
           </div>
@@ -109,55 +111,58 @@ export function ItemDetailsModal({
           {/* Cart functionality only shown when NOT in preview mode */}
           {!isPreview && (
             <>
-              {/* Quantity Controls - Always Visible */}
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center space-x-3 md:space-x-4 w-full">
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-sm md:text-base font-medium text-muted-foreground">
+              {/* Quantity Controls - Always Visible - Optimized for mobile/tablet */}
+              <div className="flex items-center justify-between pt-4 sm:pt-5 border-t">
+                <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-4 w-full">
+                  <div className="flex flex-col space-y-1 sm:space-y-2">
+                    <label className="text-sm sm:text-base md:text-lg font-semibold text-muted-foreground">
                       Quantity
                     </label>
-                    <div className="flex items-center space-x-2 md:space-x-3 bg-muted rounded-lg p-2 md:p-2.5">
+                    <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-3 bg-muted rounded-lg p-2 sm:p-2.5 md:p-3">
                       <Button
                         onClick={handleDecrement}
                         variant="ghost"
                         size="sm"
-                        className="h-10 w-10 md:h-8 md:w-8 p-0"
+                        className="h-12 w-12 sm:h-11 sm:w-11 md:h-10 md:w-10 p-0 min-h-[48px] sm:min-h-[44px]"
                         disabled={quantity === 0}
                       >
-                        <Minus className="h-5 w-5 md:h-4 md:w-4" />
+                        <Minus className="h-5 w-5 sm:h-5 sm:w-5 md:h-4 md:w-4" />
                       </Button>
-                      <span className="text-xl md:text-lg font-bold min-w-[2.5rem] md:min-w-[2rem] text-center">
+                      <span className="text-2xl sm:text-xl md:text-lg font-bold min-w-[3rem] sm:min-w-[2.5rem] md:min-w-[2rem] text-center">
                         {quantity}
                       </span>
                       <Button
                         onClick={handleIncrement}
                         variant="ghost"
                         size="sm"
-                        className="h-10 w-10 md:h-8 md:w-8 p-0"
+                        className="h-12 w-12 sm:h-11 sm:w-11 md:h-10 md:w-10 p-0 min-h-[48px] sm:min-h-[44px]"
                         disabled={!item.is_available}
                       >
-                        <Plus className="h-5 w-5 md:h-4 md:w-4" />
+                        <Plus className="h-5 w-5 sm:h-5 sm:w-5 md:h-4 md:w-4" />
                       </Button>
                     </div>
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-sm md:text-base text-muted-foreground">Total</p>
-                    <p className="text-xl md:text-lg font-bold text-primary">
+                    <p className="text-sm sm:text-base md:text-lg text-muted-foreground font-medium">
+                      Total
+                    </p>
+                    <p className="text-2xl sm:text-2xl md:text-2xl font-bold text-primary">
                       {formatPriceWithCurrency(item.price * quantity, "£")}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Add to Cart Button - Only show when quantity > 0 - Larger on mobile */}
+              {/* Add to Cart Button - Only show when quantity > 0 - Optimized for mobile/tablet */}
               {quantity > 0 && (
                 <Button
                   onClick={handleAddToCart}
                   disabled={!item.is_available}
-                  className="w-full flex items-center justify-center space-x-2 h-12 md:h-11 text-base md:text-sm"
+                  className="w-full flex items-center justify-center space-x-2 h-14 sm:h-12 md:h-11 text-base sm:text-base md:text-sm font-semibold"
                   size="mobile"
+                  variant="servio"
                 >
-                  <ShoppingCart className="h-6 w-6 md:h-5 md:w-5" />
+                  <ShoppingCart className="h-6 w-6 sm:h-6 sm:w-6 md:h-5 md:w-5" />
                   <span>Add to Cart</span>
                 </Button>
               )}

@@ -1604,6 +1604,32 @@ div {
     padding: 12px !important;
   }
 
+  /* Mobile ordering UI optimizations */
+  /* Ensure images don't overflow on mobile */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Optimize menu item cards for mobile */
+  [class*="menu"] [class*="card"],
+  [class*="menu"] [class*="rounded"] {
+    padding: 1rem !important;
+  }
+
+  /* Ensure text is readable on mobile */
+  h1,
+  h2,
+  h3 {
+    line-height: 1.2 !important;
+  }
+
+  /* Optimize button spacing on mobile */
+  button[class*="Add"] {
+    min-height: 48px !important;
+    padding: 0.75rem 1rem !important;
+  }
+
   /* Enhanced button states */
   button:active {
     transform: scale(0.98);

@@ -466,7 +466,7 @@ export function EnhancedPDFMenuDisplay({
 
       {/* List View */}
       {viewMode === "list" && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-5 md:space-y-6 px-3 sm:px-4 md:px-6">
           {categories.map((category) => {
             const items = groupedItems[category] || [];
             if (items.length === 0) return null;
@@ -479,10 +479,10 @@ export function EnhancedPDFMenuDisplay({
                   categoryRefs.current[category] = el;
                 }}
               >
-                <h2 className="text-2xl font-bold text-foreground border-b-2 border-primary pb-2">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground border-b-2 border-primary pb-2 sm:pb-3">
                   {category}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
                   {items
                     .filter((item: MenuItem) => item.is_available)
                     .map((item: MenuItem) => {
@@ -498,9 +498,9 @@ export function EnhancedPDFMenuDisplay({
                             setIsModalOpen(true);
                           }}
                         >
-                          {/* IMAGE - Show if available from hybrid merge - Smaller on mobile */}
+                          {/* IMAGE - Show if available from hybrid merge - Optimized for mobile/tablet */}
                           {item.image_url && (
-                            <div className="relative w-full h-32 md:h-48 lg:aspect-square bg-white overflow-hidden flex items-center justify-center">
+                            <div className="relative w-full h-40 sm:h-48 md:h-56 lg:h-64 bg-gray-100 overflow-hidden flex items-center justify-center">
                               <img
                                 src={item.image_url}
                                 alt={item.name}
@@ -516,19 +516,21 @@ export function EnhancedPDFMenuDisplay({
                             </div>
                           )}
 
-                          <div className="p-3 md:p-4">
-                            <h3 className="font-semibold text-base md:text-lg mb-2">{item.name}</h3>
+                          <div className="p-4 sm:p-5 md:p-6">
+                            <h3 className="font-semibold text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 leading-tight">
+                              {item.name}
+                            </h3>
                             {item.description && (
-                              <p className="text-sm md:text-base text-muted-foreground mb-3 line-clamp-2">
+                              <p className="text-sm sm:text-base md:text-lg text-muted-foreground mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                                 {item.description}
                               </p>
                             )}
-                            <div className="flex items-center justify-between">
-                              <span className="text-base md:text-lg font-bold text-primary">
+                            <div className="flex items-center justify-between mt-4">
+                              <span className="text-lg sm:text-xl md:text-2xl font-bold text-primary">
                                 {formatPriceWithCurrency(item.price, "£")}
                               </span>
                               {isOrdering && quantity > 0 && (
-                                <span className="text-xs md:text-sm text-muted-foreground">
+                                <span className="text-sm sm:text-base md:text-lg text-muted-foreground font-medium">
                                   {quantity} in cart
                                 </span>
                               )}
