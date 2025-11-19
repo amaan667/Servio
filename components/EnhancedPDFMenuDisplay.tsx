@@ -567,7 +567,7 @@ export function EnhancedPDFMenuDisplay({
                                       onAddToCart(item);
                                     }}
                                     variant="servio"
-                                    className="w-full h-12 sm:h-11 md:h-10 text-base sm:text-sm font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                                    className="w-full h-12 sm:h-11 md:h-10 text-base sm:text-sm font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple group"
                                     size="mobile"
                                   >
                                     <Plus className="h-5 w-5 mr-2 text-white group-hover:text-servio-purple" />

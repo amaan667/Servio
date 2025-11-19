@@ -107,7 +107,7 @@ export function OrderHeader({
           {/* Mobile Cart Button */}
           <Button
             onClick={onShowMobileCart}
-            className="md:hidden ml-2 flex-shrink-0 bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+            className="md:hidden ml-2 flex-shrink-0 bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple group"
             variant="servio"
             size="default"
           >
