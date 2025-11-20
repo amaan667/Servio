@@ -1605,7 +1605,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important;
   }
 
-  /* CRITICAL: Ensure mobile menu button (hamburger/X) is visible in top right - HIGHEST SPECIFICITY */
+  /* Mobile menu button (hamburger/X) - Simple grey, no background changes */
   button.mobile-menu-button,
   button.mobile-menu-button *,
   button.mobile-menu-button svg,
@@ -1615,9 +1615,10 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   nav button[class*="mobile-menu-button"],
   nav button[class*="mobile-menu-button"] *,
   nav button[class*="mobile-menu-button"] svg {
-    color: #111827 !important; /* gray-900 - dark black text */
+    color: #6b7280 !important; /* gray-500 - simple grey */
+    background-color: transparent !important;
     fill: none !important;
-    stroke: #111827 !important; /* Ensure stroke color is also black */
+    stroke: #6b7280 !important;
   }
 
   .dark button.mobile-menu-button,
@@ -1629,26 +1630,41 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   .dark nav button[class*="mobile-menu-button"],
   .dark nav button[class*="mobile-menu-button"] *,
   .dark nav button[class*="mobile-menu-button"] svg {
-    color: #f3f4f6 !important; /* gray-100 - light text */
-    stroke: #f3f4f6 !important; /* Ensure stroke color is also light */
+    color: #9ca3af !important; /* gray-400 - light grey */
+    background-color: transparent !important;
+    stroke: #9ca3af !important;
   }
 
+  /* No hover background change - keep it simple grey */
   button.mobile-menu-button:hover,
   button.mobile-menu-button:hover *,
   button.mobile-menu-button:hover svg,
   .mobile-menu-button:hover,
   .mobile-menu-button:hover *,
   .mobile-menu-button:hover svg {
-    color: #7c3aed !important; /* servio-purple on hover */
-    stroke: #7c3aed !important;
+    color: #6b7280 !important; /* Stay grey on hover */
+    background-color: transparent !important;
+    stroke: #6b7280 !important;
+  }
+
+  .dark button.mobile-menu-button:hover,
+  .dark button.mobile-menu-button:hover *,
+  .dark button.mobile-menu-button:hover svg,
+  .dark .mobile-menu-button:hover,
+  .dark .mobile-menu-button:hover *,
+  .dark .mobile-menu-button:hover svg {
+    color: #9ca3af !important; /* Stay grey on hover */
+    background-color: transparent !important;
+    stroke: #9ca3af !important;
   }
 
   /* Override any text-foreground rules that might affect the button */
   button[class*="ghost"].mobile-menu-button,
   button[class*="ghost"].mobile-menu-button *,
   button[class*="ghost"].mobile-menu-button svg {
-    color: #111827 !important;
-    stroke: #111827 !important;
+    color: #6b7280 !important;
+    background-color: transparent !important;
+    stroke: #6b7280 !important;
   }
 
   /* CRITICAL: Ensure mobile dropdown menu text is visible on home page */
@@ -1701,7 +1717,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important;
   }
 
-  /* PLATFORM-WIDE BUTTON STYLING: Purple background, white text by default */
+  /* PLATFORM-WIDE BUTTON STYLING: White background, purple text by default - TEXT MUST BE VISIBLE */
   /* Apply to ALL buttons with servio/purple styling - OVERRIDE ANY CUSTOM CLASSES */
   button[class*="bg-servio-purple"],
   button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not([class*="gradient"]),
@@ -1712,17 +1728,17 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]),
   [class*="servio-purple"] button:not([class*="ghost"]):not([class*="destructive"]),
   [class*="bg-servio-purple"] button:not([class*="ghost"]):not([class*="destructive"]),
-  /* Also target buttons by gradient classes and ensure they're purple */
+  /* Also target buttons by gradient classes */
   button[class*="from-purple"],
   button[class*="bg-gradient"] {
-    /* Default: Purple background, white text - OVERRIDE custom classes */
-    background-color: hsl(var(--servio-purple)) !important;
+    /* Default: White background, purple text - OVERRIDE custom classes */
+    background-color: #ffffff !important;
     background-image: none !important;
-    color: #ffffff !important;
-    border-color: hsl(var(--servio-purple)) !important;
+    color: #7c3aed !important; /* servio-purple - explicit color for visibility */
+    border-color: #7c3aed !important;
   }
 
-  /* All child elements (spans, SVGs, etc.) - white text by default - OVERRIDE CUSTOM CLASSES */
+  /* All child elements (spans, SVGs, etc.) - purple text by default - OVERRIDE CUSTOM CLASSES - TEXT MUST BE VISIBLE */
   button[class*="bg-servio-purple"] *,
   button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
       [class*="gradient"]
@@ -1759,6 +1775,15 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) span,
   button[class*="from-purple"] span,
   button[class*="bg-gradient"] span,
+  /* Ensure ALL button text is visible - highest priority */
+  button span:not([class*="text-white"]):not([class*="text-gray"]):not([class*="text-black"]),
+  button[class*="servio"] span,
+  button[class*="variant-servio"] span,
+  button[class*="variant-default"] span,
+  button[class*="variant-outline"] span,
+  button[class*="variant-secondary"] span {
+    color: #7c3aed !important; /* servio-purple - explicit color for visibility */
+  }
   [class*="order"]
     button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
     span,
@@ -1782,7 +1807,9 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) svg,
   button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) svg,
   button[class*="from-purple"] svg,
-  button[class*="bg-gradient"] svg,
+  button[class*="bg-gradient"] svg {
+    color: #7c3aed !important; /* servio-purple - explicit color for visibility */
+  }
   [class*="order"]
     button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
     svg,
@@ -1795,10 +1822,10 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   [class*="menu"]
     button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
     svg {
-    color: #ffffff !important;
+    color: hsl(var(--servio-purple)) !important;
   }
 
-  /* DESKTOP HOVER: White background, purple text on hover - ONLY on desktop */
+  /* DESKTOP HOVER: Purple background, white text on hover - ONLY on desktop */
   @media (hover: hover) and (pointer: fine) {
     button[class*="bg-servio-purple"]:hover,
     button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
@@ -1811,10 +1838,10 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover,
     button[class*="from-purple"]:hover,
     button[class*="bg-gradient"]:hover {
-      background-color: #ffffff !important;
+      background-color: #7c3aed !important; /* servio-purple background on hover */
       background-image: none !important;
-      color: hsl(var(--servio-purple)) !important;
-      border-color: hsl(var(--servio-purple)) !important;
+      color: #ffffff !important; /* white text on hover */
+      border-color: #7c3aed !important;
     }
 
     button[class*="bg-servio-purple"]:hover *,
@@ -1853,7 +1880,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover svg,
     button[class*="from-purple"]:hover svg,
     button[class*="bg-gradient"]:hover svg {
-      color: hsl(var(--servio-purple)) !important;
+      color: #ffffff !important; /* white text on hover */
     }
   }
 

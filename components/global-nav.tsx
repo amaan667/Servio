@@ -381,17 +381,17 @@ export default function GlobalNav() {
             )}
           </div>
 
-          {/* Mobile menu button - Positioned absolutely on the right */}
+          {/* Mobile menu button - Positioned absolutely on the right - Simple grey */}
           <div className="absolute right-0 md:hidden">
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 sm:p-3 !text-gray-900 dark:!text-gray-100 hover:!text-servio-purple hover:bg-accent rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center mobile-menu-button"
+              className="p-2 sm:p-3 text-gray-500 dark:text-gray-400 hover:bg-transparent rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center mobile-menu-button"
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5 sm:h-6 sm:w-6 !text-gray-900 dark:!text-gray-100" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 dark:text-gray-400" />
               ) : (
-                <Menu className="h-5 w-5 sm:h-6 sm:w-6 !text-gray-900 dark:!text-gray-100" />
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 dark:text-gray-400" />
               )}
             </Button>
           </div>
