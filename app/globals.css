@@ -1605,11 +1605,12 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important; /* white text on mobile */
   }
 
-  /* Mobile menu button (hamburger/X) - Grey lines with constant purple glow */
+  /* Mobile menu button (hamburger/X) - Grey lines with constant purple glow, NO border */
   button.mobile-menu-button,
   .mobile-menu-button {
-    background-color: #f3f4f6 !important; /* light grey background */
-    border: 1px solid transparent !important;
+    background-color: transparent !important; /* transparent background */
+    border: none !important; /* NO border */
+    border-width: 0 !important;
     color: #6b7280 !important; /* grey lines */
     fill: none !important;
     stroke: #6b7280 !important;
@@ -1630,8 +1631,9 @@ span:not(button span):not(button * span):not([class*="button"] span) {
 
   .dark button.mobile-menu-button,
   .dark .mobile-menu-button {
-    background-color: #1f2937 !important; /* dark grey background */
-    border: 1px solid transparent !important;
+    background-color: transparent !important; /* transparent background */
+    border: none !important; /* NO border */
+    border-width: 0 !important;
     color: #9ca3af !important;
     stroke: #9ca3af !important;
     box-shadow: 0 0 8px rgba(124, 58, 237, 0.35) !important; /* purple glow */
@@ -2523,6 +2525,22 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[class*="flex"][class*="flex-col"][class*="items-center"] * svg {
     color: #7c3aed !important; /* servio-purple */
     stroke: #7c3aed !important;
+  }
+
+  /* CRITICAL: Force purple text on bottom nav buttons - highest specificity */
+  /* Target grid container and all buttons inside */
+  [class*="grid-cols-4"] button span,
+  [class*="grid-cols-4"] button > span,
+  [class*="grid-cols-4"] button div span,
+  [class*="grid-cols-4"] button * span,
+  .mobile-nav [class*="grid"] button span,
+  .mobile-nav [class*="grid"] button > span,
+  .mobile-nav [class*="grid"] button div span,
+  .mobile-nav [class*="grid"] button * span {
+    color: #7c3aed !important; /* Force purple text */
+    display: block !important; /* Ensure text is displayed */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   /* Enhanced mobile card styling - respects dark mode */
