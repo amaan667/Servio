@@ -386,7 +386,7 @@
   /* Hero section buttons - white background with purple text */
   section button.bg-purple-600,
   section button.bg-white {
-    background-color: #ffffff !important;
+    background-color: #7c3aed !important; /* purple text on mobile */
     color: hsl(var(--servio-purple)) !important;
     border: 2px solid hsl(var(--servio-purple)) !important;
   }
@@ -473,7 +473,7 @@ button.bg-slate-800,
 .SelectTrigger.bg-neutral-800,
 .SelectTrigger.bg-slate-900,
 .SelectTrigger.bg-slate-800 {
-  color: #ffffff !important;
+  color: #7c3aed !important; /* purple text on mobile */
 }
 
 /* Ensure white text on purple backgrounds - always enforced */
@@ -492,7 +492,7 @@ button[class*="bg-purple"],
 .bg-purple-800 > button,
 .bg-servio-purple > button,
 [class*="bg-purple"] > button {
-  color: #ffffff !important;
+  color: #7c3aed !important; /* purple text on mobile */
 }
 
 /* Purple buttons hover state: white background, purple text - ONLY on desktop */
@@ -517,7 +517,7 @@ button[class*="bg-purple"],
   .bg-purple-800 > button:hover,
   .bg-servio-purple > button:hover,
   [class*="bg-purple"] > button:hover {
-    background-color: #ffffff !important;
+    background-color: #7c3aed !important; /* purple text on mobile */
     color: hsl(var(--servio-purple)) !important;
     border-color: hsl(var(--servio-purple)) !important;
   }
@@ -528,7 +528,7 @@ button[class*="bg-purple"],
   .group:hover button.bg-purple-800,
   .group:hover button.bg-servio-purple,
   .group:hover button[class*="bg-purple"] {
-    background-color: #ffffff !important;
+    background-color: #7c3aed !important; /* purple text on mobile */
     color: hsl(var(--servio-purple)) !important;
     border-color: hsl(var(--servio-purple)) !important;
   }
@@ -555,7 +555,7 @@ button[class*="bg-purple"] span,
 [role="button"].bg-purple-800 span,
 [role="button"].bg-servio-purple span,
 [role="button"][class*="bg-purple"] span {
-  color: #ffffff !important;
+  color: #7c3aed !important; /* purple text on mobile */
 }
 
 /* Icons and text inside purple buttons on hover: purple color - ONLY on desktop */
@@ -629,7 +629,7 @@ button.bg-slate-800 svg,
 .SelectTrigger.bg-neutral-800 svg,
 .SelectTrigger.bg-slate-900 svg,
 .SelectTrigger.bg-slate-800 svg {
-  color: #ffffff !important;
+  color: #7c3aed !important; /* purple text on mobile */
 }
 
 /* Desktop-specific improvements - respects dark mode */
@@ -1593,7 +1593,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[class*="bg-servio-purple"],
   button[class*="bg-purple"],
   button[class*="servio"] {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   button[class*="bg-servio-purple"] span,
@@ -1602,7 +1602,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[class*="bg-servio-purple"] > *:not(svg),
   button[class*="bg-purple"] > *:not(svg),
   button[class*="servio"] > *:not(svg) {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* Mobile menu button (hamburger/X) - Simple grey, no background changes */
@@ -1714,7 +1714,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   .mobile-dropdown-menu button[class*="bg-purple"] span,
   .mobile-dropdown-menu button[class*="bg-servio-purple"] svg,
   .mobile-dropdown-menu button[class*="bg-purple"] svg {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* PLATFORM-WIDE BUTTON STYLING: White background, purple text by default - TEXT MUST BE VISIBLE */
@@ -1732,7 +1732,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[class*="from-purple"],
   button[class*="bg-gradient"] {
     /* Default: White background, purple text - OVERRIDE custom classes */
-    background-color: #ffffff !important;
+    background-color: #7c3aed !important; /* purple text on mobile */
     background-image: none !important;
     color: #7c3aed !important; /* servio-purple - explicit color for visibility */
     border-color: #7c3aed !important;
@@ -1932,7 +1932,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     button[class*="bg-gradient"]:focus {
       background-color: hsl(var(--servio-purple)) !important;
       background-image: none !important;
-      color: #ffffff !important;
+      color: #7c3aed !important; /* purple text on mobile */
       border-color: hsl(var(--servio-purple)) !important;
     }
 
@@ -2039,6 +2039,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
       color: #7c3aed !important; /* purple text on mobile */
     }
 
+    /* Mobile button SVGs - purple text */
     button[class*="bg-servio-purple"] svg,
     button[class*="bg-servio-purple"]:hover svg,
     button[class*="bg-servio-purple"]:active svg,
@@ -2098,7 +2099,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   [class*="Card"] button[class*="bg-servio-purple"],
   [class*="Card"] button[class*="bg-purple"],
   [class*="Card"] button[class*="servio"] {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   [class*="pricing"] button[class*="bg-servio-purple"] *,
@@ -2113,7 +2114,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   [class*="Card"] button[class*="bg-servio-purple"] span,
   [class*="Card"] button[class*="bg-purple"] span,
   [class*="Card"] button[class*="servio"] span {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* QR codes page buttons - ensure white text on purple */
@@ -2123,7 +2124,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   [id*="qr"] button[class*="bg-servio-purple"],
   [id*="qr"] button[class*="bg-purple"],
   [id*="qr"] button[class*="servio"] {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   [class*="qr-code"] button[class*="bg-servio-purple"] *,
@@ -2132,7 +2133,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   [id*="qr"] button[class*="bg-servio-purple"] *,
   [id*="qr"] button[class*="bg-purple"] *,
   [id*="qr"] button[class*="servio"] * {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* Customer ordering UI buttons - ensure white text on purple */
@@ -2145,7 +2146,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   [class*="checkout"] button[class*="bg-servio-purple"],
   [class*="checkout"] button[class*="bg-purple"],
   [class*="checkout"] button[class*="servio"] {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   [class*="order"] button[class*="bg-servio-purple"] *,
@@ -2166,7 +2167,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   [class*="checkout"] button[class*="bg-servio-purple"] span,
   [class*="checkout"] button[class*="bg-purple"] span,
   [class*="checkout"] button[class*="servio"] span {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* Ensure button text is visible even when disabled */
@@ -2177,7 +2178,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[disabled][class*="bg-servio-purple"],
   button[disabled][class*="bg-purple"],
   button[disabled][class*="servio"] {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   button[disabled][class*="bg-servio-purple"] *,
@@ -2186,7 +2187,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button[disabled][class*="bg-servio-purple"] span,
   button[disabled][class*="bg-purple"] span,
   button[disabled][class*="servio"] span {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* PLATFORM-WIDE: Ensure ALL buttons with servio/purple styling show white text */
@@ -2203,7 +2204,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   button.bg-purple-600 span,
   button.bg-purple-700 span,
   button.bg-purple-800 span {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* Override any text-foreground rules that might affect buttons */
@@ -2273,7 +2274,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   .bg-servio-purple button *,
   .bg-servio-purple button span,
   .bg-servio-purple button svg {
-    color: #ffffff !important;
+    color: #7c3aed !important; /* purple text on mobile */
   }
 
   /* Override text-foreground for button children */
@@ -2317,7 +2318,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     button[class*="servio"] svg,
     button[class*="servio"]:hover svg,
     button[class*="servio"]:active svg {
-      color: #ffffff !important;
+      color: #7c3aed !important; /* purple text on mobile */
     }
   }
 
