@@ -145,21 +145,12 @@ export function QRCodeGenerator({
         )}
 
         <div className="flex gap-2">
-          <Button
-            onClick={onGenerate}
-            disabled={!inputName}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
-          >
+          <Button onClick={onGenerate} disabled={!inputName} variant="servio" className="flex-1">
             <Plus className="h-4 w-4 mr-2" />
             Generate QR Code
           </Button>
           {qrCodeType !== "custom" && (
-            <Button
-              variant="outline"
-              onClick={onGenerateAll}
-              disabled={items.length === 0}
-              className="text-purple-600 hover:text-white hover:bg-purple-600"
-            >
+            <Button variant="servio" onClick={onGenerateAll} disabled={items.length === 0}>
               Generate All
             </Button>
           )}

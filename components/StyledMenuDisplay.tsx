@@ -223,15 +223,12 @@ export function StyledMenuDisplay({
                           {quantity === 0 ? (
                             <Button
                               onClick={() => onAddToCart(item)}
+                              variant="servio"
                               size="mobile"
                               className="h-14 sm:h-12 md:h-11 text-base sm:text-base md:text-sm px-6 sm:px-8 font-semibold"
-                              style={{
-                                backgroundColor: menuStyle.primary_color,
-                                color: "#ffffff",
-                              }}
                             >
                               <Plus className="h-5 w-5 sm:h-5 sm:w-5 md:h-4 md:w-4 mr-2" />
-                              Add
+                              <span>Add</span>
                             </Button>
                           ) : (
                             <div className="flex items-center gap-2 sm:gap-3">
@@ -251,12 +248,9 @@ export function StyledMenuDisplay({
                               </span>
                               <Button
                                 onClick={() => onUpdateQuantity(item.id, quantity + 1)}
+                                variant="servio"
                                 size="mobile"
                                 className="h-12 sm:h-11 md:h-10 w-12 sm:w-11 md:w-10 min-h-[48px] sm:min-h-[44px]"
-                                style={{
-                                  backgroundColor: menuStyle.primary_color,
-                                  color: "#ffffff",
-                                }}
                               >
                                 <Plus className="h-5 w-5 sm:h-5 sm:w-5 md:h-4 md:w-4" />
                               </Button>
