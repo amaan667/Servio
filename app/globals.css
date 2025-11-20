@@ -2039,7 +2039,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
       color: #ffffff !important; /* white text on mobile */
     }
 
-    /* Mobile button SVGs - purple text */
+    /* Mobile button SVGs - white text */
     button[class*="bg-servio-purple"] svg,
     button[class*="bg-servio-purple"]:hover svg,
     button[class*="bg-servio-purple"]:active svg,
