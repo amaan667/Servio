@@ -2507,21 +2507,41 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     height: auto;
   }
 
-  /* Enhanced mobile navigation text visibility */
+  /* Enhanced mobile navigation text visibility - ENFORCE PURPLE TEXT */
   .mobile-nav span,
-  .mobile-nav button span {
-    color: hsl(var(--servio-purple));
+  .mobile-nav button span,
+  .mobile-nav button * span,
+  .mobile-nav button span * {
+    color: #7c3aed !important; /* servio-purple - enforce purple text */
     font-weight: 700;
   }
 
-  /* Enhanced mobile navigation icon visibility */
-  .mobile-nav svg {
-    color: hsl(var(--servio-purple));
+  /* Enhanced mobile navigation icon visibility - ENFORCE PURPLE ICONS */
+  .mobile-nav svg,
+  .mobile-nav button svg,
+  .mobile-nav button * svg,
+  .mobile-nav button svg * {
+    color: #7c3aed !important; /* servio-purple - enforce purple icons */
+    stroke: #7c3aed !important; /* ensure icon stroke is purple */
   }
 
+  .mobile-nav button[class*="active"],
   .mobile-nav button[class*="active"] span,
-  .mobile-nav button[class*="active"] svg {
-    color: hsl(var(--servio-purple));
+  .mobile-nav button[class*="active"] svg,
+  .mobile-nav button[class*="active"] * span,
+  .mobile-nav button[class*="active"] * svg {
+    color: #7c3aed !important; /* servio-purple - enforce purple for active */
+    stroke: #7c3aed !important;
+  }
+
+  /* Also target by class names used in GlobalBottomNav */
+  button[class*="flex"][class*="flex-col"][class*="items-center"],
+  button[class*="flex"][class*="flex-col"][class*="items-center"] span,
+  button[class*="flex"][class*="flex-col"][class*="items-center"] svg,
+  button[class*="flex"][class*="flex-col"][class*="items-center"] * span,
+  button[class*="flex"][class*="flex-col"][class*="items-center"] * svg {
+    color: #7c3aed !important; /* servio-purple */
+    stroke: #7c3aed !important;
   }
 
   /* Enhanced mobile card styling - respects dark mode */
