@@ -1605,14 +1605,16 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important; /* white text on mobile */
   }
 
-  /* Mobile menu button (hamburger/X) - Grey background with purple border like bottom menu */
+  /* Mobile menu button (hamburger/X) - Grey lines with purple glow border like bottom menu */
   button.mobile-menu-button,
   .mobile-menu-button {
     background-color: #ffffff !important; /* white background */
     border: 1px solid #e9d5ff !important; /* purple-200 border like bottom menu */
-    color: #6b7280 !important; /* gray-500 - grey text */
+    color: #6b7280 !important; /* gray-500 - grey lines */
     fill: none !important;
     stroke: #6b7280 !important;
+    box-shadow: 0 0 0 rgba(124, 58, 237, 0) !important; /* no shadow by default */
+    transition: all 0.2s ease !important;
   }
 
   button.mobile-menu-button *,
@@ -1622,7 +1624,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   nav button[class*="mobile-menu-button"],
   nav button[class*="mobile-menu-button"] *,
   nav button[class*="mobile-menu-button"] svg {
-    color: #6b7280 !important; /* gray-500 - grey text */
+    color: #6b7280 !important; /* gray-500 - grey lines */
     stroke: #6b7280 !important;
   }
 
@@ -1630,7 +1632,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   .dark .mobile-menu-button {
     background-color: #1f2937 !important; /* dark background */
     border: 1px solid #7c3aed !important; /* purple border */
-    color: #9ca3af !important; /* gray-400 - light grey */
+    color: #9ca3af !important; /* gray-400 - light grey lines */
     stroke: #9ca3af !important;
   }
 
@@ -1641,15 +1643,16 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   .dark nav button[class*="mobile-menu-button"],
   .dark nav button[class*="mobile-menu-button"] *,
   .dark nav button[class*="mobile-menu-button"] svg {
-    color: #9ca3af !important; /* gray-400 - light grey */
+    color: #9ca3af !important; /* gray-400 - light grey lines */
     stroke: #9ca3af !important;
   }
 
-  /* Hover - subtle purple border like bottom menu */
+  /* Hover - purple glow border like bottom menu */
   button.mobile-menu-button:hover,
   .mobile-menu-button:hover {
     border-color: #c084fc !important; /* purple-300 on hover */
     background-color: #ffffff !important;
+    box-shadow: 0 0 6px rgba(124, 58, 237, 0.25) !important; /* purple glow like bottom menu */
   }
 
   button.mobile-menu-button:hover *,
@@ -1664,6 +1667,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
   .dark .mobile-menu-button:hover {
     border-color: #a855f7 !important; /* purple-500 on hover */
     background-color: #1f2937 !important;
+    box-shadow: 0 0 6px rgba(124, 58, 237, 0.25) !important; /* purple glow */
   }
 
   .dark button.mobile-menu-button:hover *,
