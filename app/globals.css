@@ -1884,7 +1884,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     }
   }
 
-  /* MOBILE FIX: Keep text white at all times on touch devices - OVERRIDE ALL STATES */
+  /* MOBILE FIX: Keep white background with purple text at all times on touch devices */
   @media (hover: none) and (pointer: coarse) {
     button[class*="bg-servio-purple"],
     button[class*="bg-servio-purple"]:hover,
@@ -1984,7 +1984,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     button[class*="bg-gradient"]:hover *,
     button[class*="bg-gradient"]:active *,
     button[class*="bg-gradient"]:focus * {
-      color: #ffffff !important;
+      color: #7c3aed !important; /* purple text on mobile */
     }
 
     button[class*="bg-servio-purple"] span,
@@ -2036,7 +2036,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     button[class*="bg-gradient"]:hover span,
     button[class*="bg-gradient"]:active span,
     button[class*="bg-gradient"]:focus span {
-      color: #ffffff !important;
+      color: #7c3aed !important; /* purple text on mobile */
     }
 
     button[class*="bg-servio-purple"] svg,
@@ -2087,7 +2087,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     button[class*="bg-gradient"]:hover svg,
     button[class*="bg-gradient"]:active svg,
     button[class*="bg-gradient"]:focus svg {
-      color: #ffffff !important;
+      color: #7c3aed !important; /* purple text on mobile */
     }
   }
 
