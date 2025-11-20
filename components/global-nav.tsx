@@ -386,7 +386,7 @@ export default function GlobalNav() {
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 sm:p-3 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 text-gray-500 dark:text-gray-400 hover:border-purple-300 dark:hover:border-purple-500 rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center mobile-menu-button"
+              className="p-2 sm:p-3 bg-gray-100 dark:bg-gray-800 border border-transparent text-gray-500 dark:text-gray-400 rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center mobile-menu-button"
             >
               {mobileMenuOpen ? (
                 <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 dark:text-gray-400" />
