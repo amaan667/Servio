@@ -84,6 +84,23 @@ export function useVenueSettings(venue: Venue) {
   );
   const [latitude, setLatitude] = useState<number | undefined>(venue.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(venue.longitude);
+  
+  // Receipt settings state
+  const [autoEmailReceipts, setAutoEmailReceipts] = useState(
+    (venue as { auto_email_receipts?: boolean }).auto_email_receipts ?? false
+  );
+  const [showVATBreakdown, setShowVATBreakdown] = useState(
+    (venue as { show_vat_breakdown?: boolean }).show_vat_breakdown ?? true
+  );
+  const [allowEmailInput, setAllowEmailInput] = useState(
+    (venue as { allow_email_input?: boolean }).allow_email_input ?? true
+  );
+  const [receiptLogoUrl, setReceiptLogoUrl] = useState(
+    (venue as { receipt_logo_url?: string }).receipt_logo_url || ""
+  );
+  const [receiptFooterText, setReceiptFooterText] = useState(
+    (venue as { receipt_footer_text?: string }).receipt_footer_text || ""
+  );
 
   // Auto-detect timezone on mount
   useEffect(() => {
@@ -105,10 +122,29 @@ export function useVenueSettings(venue: Venue) {
       venueAddress !== (venue.address || "") ||
       timezone !== (venue.timezone || "Europe/London") ||
       venueType !== (venue.venue_type || "restaurant") ||
-      serviceType !== (venue.service_type || "table_service");
+      serviceType !== (venue.service_type || "table_service") ||
+      autoEmailReceipts !== ((venue as { auto_email_receipts?: boolean }).auto_email_receipts ?? false) ||
+      showVATBreakdown !== ((venue as { show_vat_breakdown?: boolean }).show_vat_breakdown ?? true) ||
+      allowEmailInput !== ((venue as { allow_email_input?: boolean }).allow_email_input ?? true) ||
+      receiptLogoUrl !== ((venue as { receipt_logo_url?: string }).receipt_logo_url || "") ||
+      receiptFooterText !== ((venue as { receipt_footer_text?: string }).receipt_footer_text || "");
 
     setHasUnsavedChanges(changed);
-  }, [venueName, venueEmail, venuePhone, venueAddress, timezone, venueType, serviceType, venue]);
+  }, [
+    venueName,
+    venueEmail,
+    venuePhone,
+    venueAddress,
+    timezone,
+    venueType,
+    serviceType,
+    venue,
+    autoEmailReceipts,
+    showVATBreakdown,
+    allowEmailInput,
+    receiptLogoUrl,
+    receiptFooterText,
+  ]);
 
   const updateVenueSettings = async () => {
     setLoading(true);
@@ -129,6 +165,11 @@ export function useVenueSettings(venue: Venue) {
           operating_hours: Object.keys(operatingHours).length > 0 ? operatingHours : null,
           latitude: latitude || null,
           longitude: longitude || null,
+          auto_email_receipts: autoEmailReceipts,
+          show_vat_breakdown: showVATBreakdown,
+          allow_email_input: allowEmailInput,
+          receipt_logo_url: receiptLogoUrl || null,
+          receipt_footer_text: receiptFooterText || null,
           updated_at: new Date().toISOString(),
         })
         .eq("venue_id", venue.venue_id);
@@ -200,6 +241,16 @@ export function useVenueSettings(venue: Venue) {
     setLatitude,
     longitude,
     setLongitude,
+    autoEmailReceipts,
+    setAutoEmailReceipts,
+    showVATBreakdown,
+    setShowVATBreakdown,
+    allowEmailInput,
+    setAllowEmailInput,
+    receiptLogoUrl,
+    setReceiptLogoUrl,
+    receiptFooterText,
+    setReceiptFooterText,
     updateVenueSettings,
     updateDayHours,
   };

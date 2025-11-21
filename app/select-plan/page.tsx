@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +14,15 @@ import { cn } from "@/lib/utils";
 
 export default function SelectPlanPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { session, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [currentTier, setCurrentTier] = useState<string | null>(null);
+
+  // Read the focus query param from URL
+  const focus = searchParams.get("focus"); // null | 'menu' | 'kds'
 
   // Check if user already has venues and get their current plan
   useEffect(() => {
@@ -35,28 +39,43 @@ export default function SelectPlanPage() {
         const supabase = supabaseBrowser();
 
         // Check for owner venues first
-        const { data: ownerVenues, error: venueError } = await supabase
+        const { data: ownerVenuesData, error: venueError } = await supabase
           .from("venues")
           .select("venue_id, organization_id")
           .eq("owner_user_id", session.user.id)
-          .limit(1)
-          .maybeSingle();
+          .order("created_at", { ascending: true })
+          .limit(1);
 
         console.log("[SELECT-PLAN] Checking owner venues", {
-          hasOwnerVenues: !!ownerVenues,
-          venueId: ownerVenues?.venue_id,
-          organizationId: ownerVenues?.organization_id,
+          hasOwnerVenues: !!ownerVenuesData?.length,
+          venueId: ownerVenuesData?.[0]?.venue_id,
+          organizationId: ownerVenuesData?.[0]?.organization_id,
           error: venueError?.message,
+          focus: focus,
         });
 
-        if (ownerVenues && ownerVenues.venue_id) {
-          // User has owner venues - redirect to dashboard (they already have an owner account)
-          console.log("[SELECT-PLAN] User has owner venues, redirecting to dashboard", {
-            venueId: ownerVenues.venue_id,
+        if (ownerVenuesData && ownerVenuesData.length > 0 && ownerVenuesData[0]?.venue_id) {
+          // User has owner venues - redirect based on focus param
+          const mainVenueId = ownerVenuesData[0].venue_id;
+          let redirectPath = `/dashboard/${mainVenueId}`;
+
+          // Determine redirect path based on focus param
+          if (focus === "menu") {
+            redirectPath = `/dashboard/${mainVenueId}/menu-management`;
+          } else if (focus === "kds") {
+            redirectPath = `/dashboard/${mainVenueId}/kds`;
+          }
+
+          console.log("[SELECT-PLAN] User has owner venues, redirecting", {
+            venueId: mainVenueId,
+            focus: focus,
+            redirectPath: redirectPath,
           });
-          router.push(`/dashboard/${ownerVenues.venue_id}`);
+          router.push(redirectPath);
           return;
         }
+
+        const ownerVenues = ownerVenuesData?.[0];
 
         // Check if user has staff roles but no owner venues
         const { data: staffRoles, error: staffError } = await supabase
@@ -148,7 +167,7 @@ export default function SelectPlanPage() {
     };
 
     checkExistingVenues();
-  }, [session, authLoading, router]);
+  }, [session, authLoading, router, focus]);
 
   // Get CTA button text based on current tier
   const getPlanCTA = (planTier: string) => {

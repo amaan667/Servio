@@ -20,6 +20,7 @@ import { SecuritySettingsCard } from "./components/SecuritySettingsCard";
 import { VenueSettingsCard } from "./components/VenueSettingsCard";
 import { OperatingHoursCard } from "./components/OperatingHoursCard";
 import { DeleteAccountCard } from "./components/DeleteAccountCard";
+import { ReceiptSettingsCard } from "./components/ReceiptSettingsCard";
 
 interface VenueSettingsClientProps {
   user: User;
@@ -142,6 +143,19 @@ export default function VenueSettingsClient({
             <OperatingHoursCard
               operatingHours={venueSettings.operatingHours}
               updateDayHours={venueSettings.updateDayHours}
+            />
+
+            <ReceiptSettingsCard
+              autoEmailReceipts={venueSettings.autoEmailReceipts}
+              setAutoEmailReceipts={venueSettings.setAutoEmailReceipts}
+              showVATBreakdown={venueSettings.showVATBreakdown}
+              setShowVATBreakdown={venueSettings.setShowVATBreakdown}
+              allowEmailInput={venueSettings.allowEmailInput}
+              setAllowEmailInput={venueSettings.setAllowEmailInput}
+              receiptLogoUrl={venueSettings.receiptLogoUrl}
+              setReceiptLogoUrl={venueSettings.setReceiptLogoUrl}
+              receiptFooterText={venueSettings.receiptFooterText}
+              setReceiptFooterText={venueSettings.setReceiptFooterText}
             />
           </div>
         </div>

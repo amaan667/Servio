@@ -7,6 +7,7 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import VenueSettingsClient from "./VenueSettingsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { User } from "@supabase/supabase-js";
+import { useAuthRedirect } from "../hooks/useAuthRedirect";
 
 interface Organization {
   id: string;
@@ -29,11 +30,29 @@ interface SettingsPageClientProps {
 
 export default function SettingsPageClient({ venueId, initialData }: SettingsPageClientProps) {
   const router = useRouter();
+  const { user, isLoading: authRedirectLoading } = useAuthRedirect();
   const { session, loading: authLoading } = useAuth(); // Get session from AuthProvider
 
   // Fetch data on client if not provided by server
   const [data, setData] = useState(initialData || null);
   const [loading, setLoading] = useState(!initialData);
+
+  // Show loading while checking auth
+  if (authRedirectLoading || authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null;
+  }
 
   useEffect(() => {
     // If we have initial data, cache it (overwriting any stale cache)

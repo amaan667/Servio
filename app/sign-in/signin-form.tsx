@@ -283,7 +283,7 @@ export default function SignInForm({
           className="w-full h-10 sm:h-11 text-sm sm:text-base !text-white bg-servio-purple"
         >
           <span className="!text-white font-medium">
-            {loading ? "Signing in..." : "Sign in with Email"}
+          {loading ? "Signing in..." : "Sign in with Email"}
           </span>
         </Button>
       </form>
