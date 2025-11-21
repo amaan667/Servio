@@ -234,7 +234,7 @@ export default function GlobalBottomNav({
               }`}
             >
               <div className="relative mb-1 flex-shrink-0">
-                <item.icon className="h-5 w-5 text-[#7c3aed]" />
+                <item.icon className="h-6 w-6 text-[#7c3aed]" />
               </div>
               <span
                 className={`font-medium text-center px-0.5 transition-colors leading-tight text-xs w-full block whitespace-nowrap text-[#7c3aed] flex-shrink-0 min-h-[14px] ${
