@@ -222,27 +222,39 @@ export default function GlobalBottomNav({
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-4 h-24 gap-2 px-3 py-2 items-stretch">
+        <div
+          className="grid grid-cols-4 gap-2 px-3 py-3 items-stretch"
+          style={{ minHeight: "88px" }}
+        >
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center pt-1 pb-1.5 px-1 relative transition-all duration-200 rounded-lg active:scale-95 min-h-full bg-white border overflow-visible ${
+              className={`flex flex-col items-center justify-between pt-2 pb-2 px-1 relative transition-all duration-200 rounded-lg active:scale-95 bg-white border ${
                 item.isActive
                   ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
                   : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
               }`}
+              style={{ minHeight: "82px", overflow: "visible" }}
             >
-              <div className="relative mb-1.5 flex-shrink-0">
+              <div
+                className="relative flex-shrink-0"
+                style={{
+                  height: "24px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 <item.icon className="h-6 w-6 text-[#7c3aed]" />
               </div>
               <span
-                className={`font-semibold text-center px-0.5 transition-colors leading-tight text-sm w-full block whitespace-nowrap text-[#7c3aed] flex-shrink-0 ${
+                className={`font-semibold text-center px-0.5 transition-colors w-full text-[#7c3aed] flex-shrink-0 ${
                   item.isActive ? "font-bold" : ""
                 }`}
                 style={{
                   fontSize: "11px",
-                  lineHeight: "1.3",
+                  lineHeight: "1.2",
                   display: "block",
                   visibility: "visible",
                   opacity: 1,
@@ -257,6 +269,7 @@ export default function GlobalBottomNav({
                   clipPath: "none",
                   position: "relative",
                   zIndex: 1,
+                  marginTop: "4px",
                 }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
