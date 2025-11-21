@@ -267,8 +267,8 @@ export default function QRCodeClient({
           <div>
             <Label>QR Code Type</Label>
             <Select value={qrType} onValueChange={(v) => setQrType(v as "table" | "counter")}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
-                <SelectValue className="!text-white [&>*]:!text-white" />
+              <SelectTrigger className="rounded-lg mt-1 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
+                <SelectValue className="text-servio-purple" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="table">Tables</SelectItem>
@@ -288,7 +288,7 @@ export default function QRCodeClient({
                 onKeyDown={(e) => e.key === "Enter" && handleGenerateSingle()}
                 className="rounded-lg"
               />
-              <Button onClick={handleGenerateSingle} disabled={!singleName.trim()}>
+              <Button variant="servio" onClick={handleGenerateSingle} disabled={!singleName.trim()}>
                 <QrCode className="h-4 w-4 mr-2" />
                 Generate
               </Button>
@@ -299,7 +299,7 @@ export default function QRCodeClient({
           <div className="pt-2 border-t">
             <Dialog open={showBulkDialog} onOpenChange={setShowBulkDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full">
+                <Button variant="servio" className="w-full">
                   <Grid3x3 className="h-4 w-4 mr-2" />
                   Generate Multiple
                 </Button>
@@ -338,7 +338,7 @@ export default function QRCodeClient({
                       {bulkPrefix || (qrType === "table" ? "Table" : "Counter")} 2, ...
                     </p>
                   </div>
-                  <Button onClick={handleGenerateBulk} className="w-full">
+                  <Button variant="servio" onClick={handleGenerateBulk} className="w-full">
                     Generate {bulkCount} QR Codes
                   </Button>
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +10,19 @@ import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { cn } from "@/lib/utils";
 
 export default function SelectPlanPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { session, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [currentTier, setCurrentTier] = useState<string | null>(null);
+
+  // Read the focus query param from URL
+  const focus = searchParams.get("focus"); // null | 'menu' | 'kds'
 
   // Check if user already has venues and get their current plan
   useEffect(() => {
@@ -34,28 +39,43 @@ export default function SelectPlanPage() {
         const supabase = supabaseBrowser();
 
         // Check for owner venues first
-        const { data: ownerVenues, error: venueError } = await supabase
+        const { data: ownerVenuesData, error: venueError } = await supabase
           .from("venues")
           .select("venue_id, organization_id")
           .eq("owner_user_id", session.user.id)
-          .limit(1)
-          .maybeSingle();
+          .order("created_at", { ascending: true })
+          .limit(1);
 
         console.log("[SELECT-PLAN] Checking owner venues", {
-          hasOwnerVenues: !!ownerVenues,
-          venueId: ownerVenues?.venue_id,
-          organizationId: ownerVenues?.organization_id,
+          hasOwnerVenues: !!ownerVenuesData?.length,
+          venueId: ownerVenuesData?.[0]?.venue_id,
+          organizationId: ownerVenuesData?.[0]?.organization_id,
           error: venueError?.message,
+          focus: focus,
         });
 
-        if (ownerVenues && ownerVenues.venue_id) {
-          // User has owner venues - redirect to dashboard (they already have an owner account)
-          console.log("[SELECT-PLAN] User has owner venues, redirecting to dashboard", {
-            venueId: ownerVenues.venue_id,
+        if (ownerVenuesData && ownerVenuesData.length > 0 && ownerVenuesData[0]?.venue_id) {
+          // User has owner venues - redirect based on focus param
+          const mainVenueId = ownerVenuesData[0].venue_id;
+          let redirectPath = `/dashboard/${mainVenueId}`;
+
+          // Determine redirect path based on focus param
+          if (focus === "menu") {
+            redirectPath = `/dashboard/${mainVenueId}/menu-management`;
+          } else if (focus === "kds") {
+            redirectPath = `/dashboard/${mainVenueId}/kds`;
+          }
+
+          console.log("[SELECT-PLAN] User has owner venues, redirecting", {
+            venueId: mainVenueId,
+            focus: focus,
+            redirectPath: redirectPath,
           });
-          router.push(`/dashboard/${ownerVenues.venue_id}`);
+          router.push(redirectPath);
           return;
         }
+
+        const ownerVenues = ownerVenuesData?.[0];
 
         // Check if user has staff roles but no owner venues
         const { data: staffRoles, error: staffError } = await supabase
@@ -147,7 +167,7 @@ export default function SelectPlanPage() {
     };
 
     checkExistingVenues();
-  }, [session, authLoading, router]);
+  }, [session, authLoading, router, focus]);
 
   // Get CTA button text based on current tier
   const getPlanCTA = (planTier: string) => {
@@ -247,64 +267,73 @@ export default function SelectPlanPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {pricingPlans.map((plan) => (
-            <Card
-              key={plan.tier}
-              className={`border-2 shadow-lg relative ${plan.popular ? "border-purple-500" : ""}`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-purple-600 text-white px-4 py-1">Most Popular</Badge>
-                </div>
-              )}
-              <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
-                <div className="flex items-baseline justify-center">
-                  <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
-                  {plan.period && <span className="text-gray-700 ml-2">/{plan.period}</span>}
-                </div>
-                <CardDescription className="mt-4">{plan.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <ul className="space-y-3">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                  {plan.notIncluded.map((feature, idx) => (
-                    <li key={idx} className="flex items-start opacity-50">
-                      <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  onClick={() => {
-                    handleSelectPlan(plan.tier);
-                  }}
-                  disabled={(loading && selectedTier !== plan.tier) || currentTier === plan.tier}
-                  className={`w-full font-semibold ${
-                    plan.popular
-                      ? "bg-purple-600 hover:bg-purple-700 text-white"
-                      : "border-2 border-purple-600 text-purple-600 hover:bg-purple-50 bg-white"
-                  }`}
-                  variant={plan.popular ? "default" : "outline"}
-                  size="lg"
-                >
-                  {loading && selectedTier === plan.tier ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    getPlanCTA(plan.tier)
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+          {pricingPlans.map((plan) => {
+            const ctaText = getPlanCTA(plan.tier);
+            const isDowngradeCTA = ctaText.toLowerCase().includes("downgrade");
+            const isProcessing = loading && selectedTier === plan.tier;
+            const isCurrentPlanOption = currentTier === plan.tier;
+            const buttonVariant = plan.popular || isDowngradeCTA ? "servio" : "outline";
+            const buttonClasses = cn(
+              "w-full font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-servio-purple",
+              plan.popular || isDowngradeCTA
+                ? "bg-purple-600 text-white border-2 border-purple-600 hover:bg-purple-700 hover:text-white"
+                : "border-2 border-purple-600 text-purple-600 hover:bg-purple-50 bg-white",
+              "disabled:cursor-not-allowed disabled:bg-gray-300 disabled:border-gray-300 disabled:text-white"
+            );
+
+            return (
+              <Card
+                key={plan.tier}
+                className={`border-2 shadow-lg relative ${plan.popular ? "border-purple-500" : ""}`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-purple-600 text-white px-4 py-1">Most Popular</Badge>
+                  </div>
+                )}
+                <CardHeader className="text-center pb-8">
+                  <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+                    {plan.period && <span className="text-gray-700 ml-2">/{plan.period}</span>}
+                  </div>
+                  <CardDescription className="mt-4">{plan.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <ul className="space-y-3">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                    {plan.notIncluded.map((feature, idx) => (
+                      <li key={idx} className="flex items-start opacity-50">
+                        <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    onClick={() => handleSelectPlan(plan.tier)}
+                    disabled={(loading && selectedTier !== plan.tier) || isCurrentPlanOption}
+                    className={buttonClasses}
+                    variant={buttonVariant}
+                    size="lg"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      ctaText
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="mt-12 text-center text-gray-600">

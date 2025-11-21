@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 
+// API documentation page with mobile-responsive styling
+// Rebuild trigger after bottom nav fixes
+
 export default function ApiDocsPage() {
   const [spec, setSpec] = useState(null);
 
@@ -11,7 +14,9 @@ export default function ApiDocsPage() {
     fetch("/api/docs")
       .then((res) => res.json())
       .then((data) => setSpec(data))
-      .catch((err) => console.error("Failed to load API docs", err));
+      .catch(() => {
+        // Failed to load API docs - component will show loading state
+      });
   }, []);
 
   if (!spec) {

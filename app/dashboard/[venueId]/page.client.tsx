@@ -10,6 +10,7 @@ import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { supabaseBrowser } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
+import { useAuthRedirect } from "./hooks/useAuthRedirect";
 
 // Removed PullToRefresh - not needed, causes build issues
 
@@ -72,10 +73,18 @@ const DashboardClient = React.memo(function DashboardClient({
     return sessionStorage.getItem(`user_role_${venueId}`);
   };
 
+  const { user: authUser, isLoading: authRedirectLoading } = useAuthRedirect();
   const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole());
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
+
+  // Sync authUser to local user state if needed
+  useEffect(() => {
+    if (authUser && !user) {
+      setUser(authUser);
+    }
+  }, [authUser, user]);
 
   // Monitor connection status (must be at top before any returns)
   useConnectionMonitor();
@@ -169,7 +178,7 @@ const DashboardClient = React.memo(function DashboardClient({
     return [];
   }, [analyticsData.data?.revenueByCategory]);
 
-  // Check authentication and venue access
+  // Check authentication and venue access (must be before early returns)
   useEffect(() => {
     async function checkAuth() {
       console.log("[DASHBOARD AUTH] 🔍 Starting auth check", {
@@ -433,6 +442,23 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Log whenever userRole changes for dashboard rendering
   useEffect(() => {}, [userRole]);
+
+  // Show loading while checking auth redirect (AFTER all hooks)
+  if (authRedirectLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no authenticated user (will redirect) (AFTER all hooks)
+  if (!authUser) {
+    return null;
+  }
 
   // NO AUTH REDIRECTS - User requested ZERO sign-in redirects
   // If there's truly no user data (after trying cache), just render anyway

@@ -142,7 +142,8 @@ export function MobileCart({
                   onShowCheckout();
                 }
               }}
-              className="w-full min-h-[48px] text-base font-medium bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white"
+              variant="servio"
+              className="w-full min-h-[48px] text-base font-medium"
               disabled={cart.length === 0}
             >
               <CreditCard className="h-5 w-5 mr-2" />

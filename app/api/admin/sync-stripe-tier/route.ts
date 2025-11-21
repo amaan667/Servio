@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger";
  * POST /api/admin/sync-stripe-tier
  * Fetches actual subscription from Stripe and updates database
  */
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient();
 

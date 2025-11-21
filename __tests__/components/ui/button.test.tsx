@@ -18,7 +18,8 @@ describe("Button", () => {
     render(<Button variant="servio">Servio Button</Button>);
     const button = screen.getByRole("button", { name: /servio button/i });
     expect(button).toBeInTheDocument();
-    expect(button).toHaveClass("bg-white", "text-servio-purple");
+    expect(button).toHaveClass("bg-servio-purple", "text-white");
+    expect(button).toHaveClass("hover:bg-white", "hover:text-servio-purple");
   });
 
   it("should render button with destructive variant", () => {
@@ -73,7 +74,7 @@ describe("Button", () => {
   it("should have active scale animation", () => {
     render(<Button>Animated</Button>);
     const button = screen.getByRole("button", { name: /animated/i });
-    expect(button).toHaveClass("active:scale-95");
+    expect(button).toHaveClass("active:scale-[0.97]");
   });
 
   it("should have will-change-transform for performance", () => {

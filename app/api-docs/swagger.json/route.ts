@@ -80,7 +80,7 @@ export async function GET() {
   try {
     const swaggerSpec = swaggerJsdoc(options);
     return NextResponse.json(swaggerSpec);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to generate API documentation" }, { status: 500 });
   }
 }

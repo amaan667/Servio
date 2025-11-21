@@ -14,40 +14,34 @@ import { CTASection } from "./components/CTASection";
 import { Footer } from "./components/Footer";
 import { supabaseBrowser } from "@/lib/supabase";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { cn } from "@/lib/utils";
 
 // FAQ Item Component
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="rounded-xl bg-purple-600 shadow-lg hover:shadow-xl transition-all duration-200">
+    <div className="rounded-xl bg-servio-purple shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-servio-purple group">
+      {/* Question Button - follows hover logic */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-5 py-4 text-left flex justify-between items-center gap-4 focus:outline-none group"
-        style={{ color: "white" }}
+        className="w-full px-5 py-4 text-left flex justify-between items-center gap-4 focus:outline-none bg-servio-purple hover:bg-white transition-all duration-200 rounded-t-xl"
       >
-        <h3 className="font-semibold text-base md:text-lg !text-white" style={{ color: "white" }}>
+        <h3 className="font-semibold text-base md:text-lg text-white group-hover:text-servio-purple transition-colors duration-200">
           {question}
         </h3>
         <div className="ml-4 flex-shrink-0">
           {isOpen ? (
-            <ChevronUp
-              className="h-5 w-5 !text-white transition-transform duration-200 ease-out"
-              style={{ color: "white" }}
-            />
+            <ChevronUp className="h-5 w-5 text-white group-hover:text-servio-purple transition-all duration-200 ease-out" />
           ) : (
-            <ChevronDown
-              className="h-5 w-5 !text-white transition-transform duration-200 ease-out"
-              style={{ color: "white" }}
-            />
+            <ChevronDown className="h-5 w-5 text-white group-hover:text-servio-purple transition-all duration-200 ease-out" />
           )}
         </div>
       </button>
+      {/* Answer - always white on purple, no hover */}
       {isOpen && (
-        <div className="px-5 pt-3 pb-4 border-t border-purple-500/30">
-          <p className="!text-white leading-relaxed" style={{ color: "white" }}>
-            {answer}
-          </p>
+        <div className="px-5 pt-3 pb-4 border-t border-purple-500/30 bg-servio-purple rounded-b-xl">
+          <p className="text-white leading-relaxed">{answer}</p>
         </div>
       )}
     </div>
@@ -69,12 +63,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     initialUserPlan
   );
   const [loadingPlan, setLoadingPlan] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  // Set mounted state on client-side only
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Sync with auth context when it updates (but only if different)
   useEffect(() => {
@@ -108,29 +96,15 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
             .limit(1)
             .maybeSingle();
 
-          console.log("[HOMEPAGE] Fetching user plan - venue query", {
-            hasVenue: !!venues,
-            organizationId: venues?.organization_id,
-            error: venueError?.message,
-          });
-
           let organizationId = venues?.organization_id;
 
           // If venue query fails or no organization_id, query organizations table directly
           if (!organizationId || venueError) {
-            console.log("[HOMEPAGE] Querying organizations table directly");
-            const { data: org, error: orgError } = await supabase
+            const { data: org } = await supabase
               .from("organizations")
               .select("id, subscription_tier")
               .eq("owner_user_id", user.id)
               .maybeSingle();
-
-            console.log("[HOMEPAGE] Organization query result", {
-              hasOrg: !!org,
-              organizationId: org?.id,
-              tier: org?.subscription_tier,
-              error: orgError?.message,
-            });
 
             if (org?.subscription_tier) {
               organizationId = org.id;
@@ -145,10 +119,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                       ? "starter"
                       : tier;
               const plan = normalizedTier as "starter" | "pro" | "enterprise";
-              console.log("[HOMEPAGE] Setting user plan", {
-                originalTier: tier,
-                normalizedTier: plan,
-              });
               setUserPlan(plan);
             }
           } else if (organizationId) {
@@ -171,16 +141,10 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                       ? "starter"
                       : tier;
               const plan = normalizedTier as "starter" | "pro" | "enterprise";
-              console.log("[HOMEPAGE] Setting user plan from venue org", {
-                originalTier: tier,
-                normalizedTier: plan,
-              });
               setUserPlan(plan);
             }
           }
-        } catch (error) {
-          console.error("[HOMEPAGE] Error fetching user plan:", error);
-        }
+        } catch (error) {}
       }
     };
 
@@ -259,41 +223,26 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         const supabase = supabaseBrowser();
 
         // First try to get venue with organization_id
-        const { data: venues, error: venueError } = await supabase
+        const { data: venues } = await supabase
           .from("venues")
           .select("venue_id, organization_id")
           .eq("owner_user_id", user.id)
           .limit(1)
           .maybeSingle();
 
-        console.log("[PRICING] Venue query result", {
-          hasVenue: !!venues,
-          venueId: venues?.venue_id,
-          organizationId: venues?.organization_id,
-          error: venueError?.message,
-        });
-
         let organizationId = venues?.organization_id;
 
         // If no organization_id from venue, try to get it directly from organizations table
         if (!organizationId) {
-          console.log("[PRICING] No organization_id in venue, querying organizations table");
           const { data: org, error: orgError } = await supabase
             .from("organizations")
             .select("id")
             .eq("owner_user_id", user.id)
             .maybeSingle();
 
-          console.log("[PRICING] Organization query result", {
-            hasOrg: !!org,
-            organizationId: org?.id,
-            error: orgError?.message,
-          });
-
           if (org?.id) {
             organizationId = org.id;
           } else if (orgError) {
-            console.error("[PRICING] Error fetching organization:", orgError);
             alert(`Error fetching organization: ${orgError.message}`);
             setLoadingPlan(false);
             return;
@@ -301,7 +250,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         }
 
         if (!organizationId) {
-          console.warn("[PRICING] No organization found - redirecting to select-plan");
           // No organization found - user needs to sign up first
           router.push("/select-plan");
           setLoadingPlan(false);
@@ -331,7 +279,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
           if (!response.ok) {
             const data = await response.json();
-            console.error("[PRICING] Failed to open billing portal:", data);
             alert(`Unable to open billing portal. ${data.error || "Please try again."}`);
             setLoadingPlan(false);
             return;
@@ -380,8 +327,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         else if (ctaText === "Start Free Trial") {
           router.push("/select-plan");
         }
-      } catch (error) {
-        console.error("[PRICING] Error processing plan change:", error);
+      } catch {
         alert("Failed to process plan change. Please try again.");
       } finally {
         setLoadingPlan(false);
@@ -442,7 +388,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     }
 
     // Fallback (shouldn't reach here but ensures we always return a string)
-    console.warn("[HOMEPAGE] getPlanCTA fallback reached", { planName, userPlan, isSignedIn });
     return planName === "Enterprise" ? "Contact Sales" : "Start Free Trial";
   };
 
@@ -516,6 +461,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
             {pricingPlans.map((plan, index) => {
               const ctaText = getPlanCTA(plan.name);
               const isCurrentPlan = ctaText === "Current Plan";
+              const isDowngradeCTA = ctaText.toLowerCase().includes("downgrade");
+              const pricingButtonClass = cn(
+                "w-full group transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 hover:text-servio-purple disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-white border-2 border-servio-purple bg-servio-purple text-white",
+                isDowngradeCTA && "bg-servio-purple text-white"
+              );
 
               return (
                 <Card
@@ -558,12 +508,12 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                     </ul>
                     <Button
                       onClick={() => handlePlanAction(ctaText)}
-                      variant={null}
-                      className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 border-0"
+                      variant="servio"
+                      className={pricingButtonClass}
                       size="lg"
                       disabled={isCurrentPlan || loadingPlan}
                     >
-                      <span className="text-white font-bold text-base" style={{ color: "white" }}>
+                      <span className="font-bold text-xs sm:text-sm md:text-base text-white break-words leading-tight px-1">
                         {ctaText || "Start Free Trial"}
                       </span>
                     </Button>

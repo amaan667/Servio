@@ -20,8 +20,8 @@ export function PreviewControls({ previewMode, setPreviewMode }: PreviewControls
           onClick={() => setPreviewMode("pdf")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
             previewMode === "pdf"
-              ? "bg-purple-600 text-white"
-              : "bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-2 hover:border-purple-600"
+              ? "bg-servio-purple text-white"
+              : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple hover:border-2 hover:border-servio-purple"
           }`}
         >
           <Image className="h-4 w-4" />
@@ -31,8 +31,8 @@ export function PreviewControls({ previewMode, setPreviewMode }: PreviewControls
           onClick={() => setPreviewMode("styled")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
             previewMode === "styled"
-              ? "bg-purple-600 text-white"
-              : "bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-2 hover:border-purple-600"
+              ? "bg-servio-purple text-white"
+              : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple hover:border-2 hover:border-servio-purple"
           }`}
         >
           <Layout className="h-4 w-4" />
@@ -42,8 +42,8 @@ export function PreviewControls({ previewMode, setPreviewMode }: PreviewControls
           onClick={() => setPreviewMode("simple")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
             previewMode === "simple"
-              ? "bg-purple-600 text-white"
-              : "bg-purple-600 text-white hover:bg-white hover:text-purple-600 hover:border-2 hover:border-purple-600"
+              ? "bg-servio-purple text-white"
+              : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple hover:border-2 hover:border-servio-purple"
           }`}
         >
           <List className="h-4 w-4" />

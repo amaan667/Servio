@@ -41,10 +41,18 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // Use Supabase's built-in password reset functionality
-    // This will send an email automatically with a reset link
-    // Supabase verify endpoint redirects to reset-password with hash fragments (#access_token=...&type=recovery)
-    // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard > Authentication > URL Configuration
+    // This sends an email with a reset link that redirects to /reset-password
+    // IMPORTANT: The redirectTo URL must be whitelisted in Supabase Dashboard:
+    // Authentication > URL Configuration > Redirect URLs
+    //
+    // Try to get the actual origin from the request first, then fall back to env vars
+    const origin =
+      request.headers.get("origin") || request.headers.get("x-forwarded-host")
+        ? `https://${request.headers.get("x-forwarded-host")}`
+        : null;
+
     const appUrl =
+      origin ||
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
       "https://servio-production.up.railway.app";
@@ -53,17 +61,34 @@ export async function POST(request: NextRequest) {
     logger.info(`[FORGOT PASSWORD API] ${requestId} - Preparing to send reset email`, {
       email: email.trim(),
       redirectUrl,
-      appUrl,
-      envVars: {
-        NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-        NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+      origin,
+      envUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL,
+      headers: {
+        origin: request.headers.get("origin"),
+        host: request.headers.get("host"),
+        forwardedHost: request.headers.get("x-forwarded-host"),
+        forwardedProto: request.headers.get("x-forwarded-proto"),
       },
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + "...",
+      warning:
+        "Ensure this redirectUrl is whitelisted in Supabase Dashboard > Authentication > URL Configuration > Redirect URLs",
+    });
+
+    // Ensure redirect URL is absolute and properly formatted
+    // Supabase requires exact match with whitelisted URLs
+    const finalRedirectUrl = redirectUrl.startsWith("http")
+      ? redirectUrl
+      : `https://${redirectUrl}`;
+
+    logger.info(`[FORGOT PASSWORD API] ${requestId} - Final redirect URL`, {
+      finalRedirectUrl,
+      originalRedirectUrl: redirectUrl,
     });
 
     const resetStartTime = Date.now();
     const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: redirectUrl,
+      redirectTo: finalRedirectUrl,
+      // Note: Supabase password reset links expire after 1 hour by default
+      // This cannot be changed via the API - it's configured in Supabase Dashboard
     });
     const resetDuration = Date.now() - resetStartTime;
 

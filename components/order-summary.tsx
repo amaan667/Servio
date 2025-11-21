@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Order, OrderStatus } from "@/types/order";
+import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 
 interface OrderSummaryProps {
   orderId?: string;
@@ -57,6 +58,12 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [venueInfo, setVenueInfo] = useState<{
+    name?: string;
+    email?: string;
+    address?: string;
+  }>({});
 
   // Generate short order number for display
   const getShortOrderNumber = (orderId: string) => {
@@ -471,7 +478,15 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={() => setShowReceipt(true)}
+            variant="outline"
+            className="flex-1"
+          >
+            <Receipt className="h-4 w-4 mr-2" />
+            View Receipt
+          </Button>
           <Button
             onClick={() => {
               const orderObj = order as
@@ -490,6 +505,19 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
           </Button>
         </div>
       </div>
+
+      {/* Receipt Modal */}
+      {order && (
+        <ReceiptModal
+          order={order}
+          venueName={venueInfo.name}
+          venueEmail={venueInfo.email}
+          venueAddress={venueInfo.address}
+          isOpen={showReceipt}
+          onClose={() => setShowReceipt(false)}
+          isCustomerView={true}
+        />
+      )}
     </div>
   );
 }

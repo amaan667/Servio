@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, User, Hash, MapPin, CreditCard, CheckCircle, X, QrCode } from "lucide-react";
+import { Clock, User, Hash, MapPin, CreditCard, CheckCircle, X, QrCode, Receipt } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { OrderForCard } from "@/types/orders";
@@ -13,6 +14,8 @@ import { OrderStatusChip, PaymentStatusChip } from "@/components/ui/chips";
 import { formatCurrency, formatOrderTime } from "@/lib/orders/mapOrderToCardData";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { PaymentCollectionDialog } from "./PaymentCollectionDialog";
+import { ReceiptModal } from "@/components/receipt/ReceiptModal";
+import { Order } from "@/types/order";
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -34,12 +37,90 @@ export function OrderCard({
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [venueInfo, setVenueInfo] = useState<{
+    name?: string;
+    email?: string;
+    address?: string;
+  }>({});
 
   // Determine variant automatically if not specified
   const finalVariant =
     variant === "auto" ? (deriveEntityKind(order) === "table" ? "table" : "counter") : variant;
 
   const isTableVariant = finalVariant === "table";
+
+  // Fetch venue info for receipt
+  React.useEffect(() => {
+    if (!venueId) return;
+
+    const fetchVenueInfo = async () => {
+      try {
+        const supabase = createClient();
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_name, venue_email, venue_address")
+          .eq("venue_id", venueId)
+          .single();
+
+        if (venue) {
+          setVenueInfo({
+            name: venue.venue_name,
+            email: venue.venue_email,
+            address: venue.venue_address,
+          });
+        }
+      } catch {
+        // Silently fail - venue info is optional
+      }
+    };
+
+    fetchVenueInfo();
+  }, [venueId]);
+
+  // Convert OrderForCard to Order type for ReceiptModal
+  const convertToOrder = (): Order | null => {
+    if (!order) return null;
+
+    // Normalize payment status to uppercase PaymentStatus type
+    const normalizePaymentStatus = (status: string): Order["payment_status"] => {
+      const upper = status.toUpperCase();
+      if (upper === "PAID" || upper === "UNPAID" || upper === "REFUNDED" || upper === "PARTIALLY_PAID") {
+        return upper as Order["payment_status"];
+      }
+      return "UNPAID";
+    };
+
+    // Normalize payment method
+    const normalizePaymentMethod = (mode: string): Order["payment_method"] => {
+      const normalized = mode.replace("_", " ").toLowerCase();
+      if (normalized === "demo" || normalized === "stripe" || normalized === "till" || normalized === "cash" || normalized === "card") {
+        return normalized as Order["payment_method"];
+      }
+      return null;
+    };
+
+    return {
+      id: order.id,
+      venue_id: venueId || "",
+      table_number: order.table_number || undefined,
+      customer_name: order.customer?.name || order.customer_name || undefined,
+      customer_phone: order.customer?.phone || order.customer_phone || undefined,
+      customer_email: undefined, // Not available in OrderForCard
+      items: order.items?.map((item) => ({
+        menu_item_id: item.menu_item_id || "",
+        item_name: (item as { item_name?: string }).item_name || "Item",
+        quantity: item.quantity,
+        price: item.price,
+        special_instructions: (item as { specialInstructions?: string }).specialInstructions,
+      })) || [],
+      total_amount: order.total_amount,
+      order_status: order.order_status.toUpperCase() as Order["order_status"],
+      payment_status: normalizePaymentStatus(order.payment.status),
+      payment_method: normalizePaymentMethod(order.payment.mode),
+      created_at: order.placed_at,
+    };
+  };
 
   // Get appropriate label and icon
   const getEntityDisplay = () => {
@@ -253,7 +334,8 @@ export function OrderCard({
                 size="sm"
                 onClick={() => setShowPaymentDialog(true)}
                 disabled={isProcessing}
-                className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
+                variant="servio"
+                className="w-full sm:w-auto"
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Collect Payment at Till
@@ -334,13 +416,34 @@ export function OrderCard({
             </div>
           </div>
 
-          {/* Total Amount and Remove Button */}
-          <div className="flex items-center gap-3">
+          {/* Total Amount and Action Buttons */}
+          <div className="flex items-center gap-2">
             <div className="text-right">
               <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(order.total_amount, order.currency)}
               </div>
             </div>
+
+            {/* Receipt Button */}
+            {showActions && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                      onClick={() => setShowReceipt(true)}
+                    >
+                      <Receipt className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>View Receipt</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
 
             {/* Remove Button - On Hover */}
             {showActions && venueId && (
@@ -418,6 +521,19 @@ export function OrderCard({
             setShowPaymentDialog(false);
             onActionComplete?.();
           }}
+        />
+      )}
+
+      {/* Receipt Modal */}
+      {convertToOrder() && (
+        <ReceiptModal
+          order={convertToOrder()!}
+          venueName={venueInfo.name}
+          venueEmail={venueInfo.email}
+          venueAddress={venueInfo.address}
+          isOpen={showReceipt}
+          onClose={() => setShowReceipt(false)}
+          isCustomerView={false}
         />
       )}
     </Card>

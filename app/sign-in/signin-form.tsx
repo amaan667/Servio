@@ -199,7 +199,8 @@ export default function SignInForm({
       <Button
         onClick={onGoogleSignIn}
         disabled={isLoading || loading}
-        className="w-full flex items-center justify-center gap-2 mb-4 sm:mb-6 h-10 sm:h-11 font-medium text-white"
+        variant="servio"
+        className="w-full flex items-center justify-center gap-2 mb-4 sm:mb-6 h-10 sm:h-11 font-medium !text-white bg-servio-purple"
       >
         <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24">
           <path
@@ -219,7 +220,7 @@ export default function SignInForm({
             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
           />
         </svg>
-        <span className="text-sm sm:text-base font-medium">
+        <span className="text-sm sm:text-base font-medium !text-white">
           {isLoading ? "Signing in..." : "Sign in with Google"}
         </span>
       </Button>
@@ -278,9 +279,12 @@ export default function SignInForm({
         <Button
           type="submit"
           disabled={loading || isLoading}
-          className="w-full h-10 sm:h-11 text-sm sm:text-base"
+          variant="servio"
+          className="w-full h-10 sm:h-11 text-sm sm:text-base !text-white bg-servio-purple"
         >
+          <span className="!text-white font-medium">
           {loading ? "Signing in..." : "Sign in with Email"}
+          </span>
         </Button>
       </form>
 

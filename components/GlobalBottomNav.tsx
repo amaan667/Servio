@@ -217,32 +217,47 @@ export default function GlobalBottomNav({
     <>
       {/* Bottom Navigation Bar */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-purple-600 border-t border-purple-700 shadow-lg transition-transform duration-300 mobile-nav ${
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-gray-200 shadow-lg transition-transform duration-300 mobile-nav ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-4 h-20 gap-2 px-3 pb-2 pt-2 items-stretch">
+        <div className="grid grid-cols-4 h-24 gap-2 px-3 py-2 items-stretch">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className="flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg hover:bg-purple-500 active:scale-95 h-full"
-              style={{ color: "white" }}
+              className={`flex flex-col items-center justify-center pt-1 pb-1.5 px-1 relative transition-all duration-200 rounded-lg active:scale-95 min-h-full bg-white border overflow-visible ${
+                item.isActive
+                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
+                  : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
+              }`}
             >
-              <div
-                className="relative mb-0.5 flex flex-col items-center justify-center [&>svg]:!text-white"
-                style={{ color: "white" }}
-              >
-                <item.icon className="h-5 w-5 transition-colors !text-white [&>*]:!text-white" />
+              <div className="relative mb-1.5 flex-shrink-0">
+                <item.icon className="h-6 w-6 text-[#7c3aed]" />
               </div>
               <span
-                className={
-                  item.isActive
-                    ? "font-bold text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden underline underline-offset-2 [text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
-                    : "font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden"
-                }
-                style={{ color: "white" }}
+                className={`font-semibold text-center px-0.5 transition-colors leading-tight text-sm w-full block whitespace-nowrap text-[#7c3aed] flex-shrink-0 ${
+                  item.isActive ? "font-bold" : ""
+                }`}
+                style={{
+                  fontSize: "11px",
+                  lineHeight: "1.3",
+                  display: "block",
+                  visibility: "visible",
+                  opacity: 1,
+                  height: "auto",
+                  minHeight: "auto",
+                  maxHeight: "none",
+                  overflow: "visible",
+                  color: "#7c3aed",
+                  fontWeight: 600,
+                  textIndent: 0,
+                  clip: "auto",
+                  clipPath: "none",
+                  position: "relative",
+                  zIndex: 1,
+                }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>
@@ -268,7 +283,7 @@ export default function GlobalBottomNav({
       )}
 
       {/* Bottom Padding for Fixed Navigation */}
-      <div className="h-20" />
+      <div className="h-24" />
     </>
   );
 }

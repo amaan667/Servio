@@ -7,9 +7,10 @@ import QRCodeClient from "./QRCodeClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 import { isValidUserRole, toUserRole } from "@/lib/utils/userRole";
+import { useAuthRedirect } from "../hooks/useAuthRedirect";
 
 export default function QRCodeClientPage({ venueId }: { venueId: string }) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuthRedirect();
   const [venueName, setVenueName] = useState<string>("My Venue");
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
@@ -66,10 +67,23 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
     fetchVenueData();
   }, [user, venueId]);
 
-  // Debug: Log venueId to ensure it's present
-  // QR codes page loaded
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Render immediately - no auth checks, no loading spinners
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">

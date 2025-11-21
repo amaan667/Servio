@@ -141,7 +141,8 @@ export function GroupSizeModal({
                   onSetCustomGroupSize("");
                 }
               }}
-              className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-sm"
+              variant="servio"
+              className="flex-1 h-10 sm:h-12 font-medium shadow-sm"
               disabled={
                 showCustomGroupSize
                   ? !customGroupSize ||

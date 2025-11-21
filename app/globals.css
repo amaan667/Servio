@@ -8,7 +8,7 @@
   .btn-outline,
   .btn-secondary,
   .btn-ghost {
-    @apply bg-white text-servio-purple border-2 border-servio-purple rounded-lg py-2 px-4 font-semibold shadow-md hover:bg-gray-50 hover:text-servio-purple-dark hover:shadow-lg transition;
+    @apply bg-white dark:bg-card text-servio-purple dark:text-servio-purple-light border-2 border-servio-purple dark:border-servio-purple rounded-lg py-2 px-4 font-semibold shadow-md hover:bg-gray-50 dark:hover:bg-accent hover:text-servio-purple-dark dark:hover:text-servio-purple hover:shadow-lg transition;
   }
 
   /* Unified button styles for all devices */
@@ -21,7 +21,7 @@
   .btn-unified-servio,
   .btn-unified-secondary,
   .btn-unified-ghost {
-    @apply bg-white text-servio-purple border-2 border-servio-purple hover:bg-gray-50 hover:text-servio-purple-dark shadow-md hover:shadow-lg;
+    @apply bg-white dark:bg-card text-servio-purple dark:text-servio-purple-light border-2 border-servio-purple dark:border-servio-purple hover:bg-gray-50 dark:hover:bg-accent hover:text-servio-purple-dark dark:hover:text-servio-purple shadow-md hover:shadow-lg;
   }
 }
 
@@ -68,12 +68,12 @@
     --background: 262 50% 8%;
     --foreground: 262 10% 98%;
 
-    /* Cards with visible contrast */
-    --card: 262 40% 12%;
+    /* Cards with visible contrast - lighter for better readability */
+    --card: 262 35% 15%;
     --card-foreground: 262 10% 98%;
 
     /* Popovers with good contrast */
-    --popover: 262 40% 12%;
+    --popover: 262 35% 15%;
     --popover-foreground: 262 10% 98%;
 
     /* Primary uses brand purple */
@@ -84,12 +84,12 @@
     --secondary: 262 30% 20%;
     --secondary-foreground: 262 10% 98%;
 
-    /* Muted with proper visibility */
-    --muted: 262 25% 22%;
-    --muted-foreground: 262 10% 75%;
+    /* Muted with proper visibility - lighter for better readability */
+    --muted: 262 30% 25%;
+    --muted-foreground: 262 10% 85%;
 
-    /* Accent with purple */
-    --accent: 262 30% 24%;
+    /* Accent with purple - lighter for better visibility */
+    --accent: 262 35% 28%;
     --accent-foreground: 262 83% 68%;
 
     /* Destructive stays red but more visible */
@@ -97,8 +97,8 @@
     --destructive-foreground: 0 0% 98%;
 
     /* Borders with better visibility */
-    --border: 262 25% 28%;
-    --input: 262 25% 28%;
+    --border: 262 30% 32%;
+    --input: 262 30% 32%;
 
     /* Ring uses brand purple */
     --ring: 262 83% 58%;
@@ -133,20 +133,21 @@
   .dark h5,
   .dark h6 {
     color: hsl(262 10% 98%);
+    font-weight: 600;
   }
 
-  /* Ensure all text is visible in dark mode */
+  /* Ensure all text is visible in dark mode - improved contrast */
   .dark p,
   .dark span,
-  .dark div,
+  .dark div:not([class*="bg-"]):not([class*="text-"]),
   .dark label {
-    color: hsl(262 10% 90%);
+    color: hsl(262 10% 92%);
   }
 
-  /* Card text visibility */
+  /* Card text visibility - improved contrast */
   .dark [class*="card"] {
-    background-color: hsl(262 40% 12%);
-    border-color: hsl(262 25% 28%);
+    background-color: hsl(262 35% 15%);
+    border-color: hsl(262 30% 32%);
   }
 
   .dark [class*="card"] h1,
@@ -156,26 +157,27 @@
   .dark [class*="card"] h5,
   .dark [class*="card"] h6 {
     color: hsl(262 10% 98%);
+    font-weight: 600;
   }
 
   .dark [class*="card"] p,
   .dark [class*="card"] span,
-  .dark [class*="card"] div:not([class*="bg-"]) {
-    color: hsl(262 10% 88%);
+  .dark [class*="card"] div:not([class*="bg-"]):not([class*="text-"]) {
+    color: hsl(262 10% 90%);
   }
 
-  /* Form inputs in dark mode */
+  /* Form inputs in dark mode - improved contrast */
   .dark input,
   .dark textarea,
   .dark select {
-    background-color: hsl(262 30% 16%);
-    border-color: hsl(262 25% 28%);
+    background-color: hsl(262 35% 18%);
+    border-color: hsl(262 30% 32%);
     color: hsl(262 10% 98%);
   }
 
   .dark input::placeholder,
   .dark textarea::placeholder {
-    color: hsl(262 10% 60%);
+    color: hsl(262 10% 70%);
   }
 
   .dark input:focus,
@@ -186,60 +188,68 @@
     outline: none;
   }
 
-  /* Button visibility in dark mode */
-  .dark button:not([class*="destructive"]) {
-    background-color: hsl(262 83% 58%);
-    color: white;
-    border-color: hsl(262 83% 58%);
+  /* Button visibility in dark mode - use theme variables */
+  .dark button:not([class*="destructive"]):not([class*="bg-"]) {
+    background-color: hsl(var(--card));
+    color: hsl(var(--servio-purple-light));
+    border-color: hsl(var(--servio-purple));
   }
 
-  .dark button:not([class*="destructive"]):hover {
-    background-color: hsl(262 83% 48%);
-    border-color: hsl(262 83% 48%);
+  .dark button:not([class*="destructive"]):not([class*="bg-"]):hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--servio-purple));
+    border-color: hsl(var(--servio-purple));
   }
 
-  /* Override problematic gray classes in dark mode */
+  /* Override problematic gray classes in dark mode - improved contrast */
   .dark .text-gray-900,
   .dark .text-gray-800,
   .dark .text-gray-700 {
-    color: hsl(262 10% 95%);
+    color: hsl(262 10% 96%);
   }
 
   .dark .text-gray-600,
   .dark .text-gray-500 {
-    color: hsl(262 10% 80%);
+    color: hsl(262 10% 85%);
   }
 
   .dark .text-gray-400 {
-    color: hsl(262 10% 70%);
+    color: hsl(262 10% 75%);
   }
 
-  /* Background overrides for dark mode */
+  /* Background overrides for dark mode - improved contrast */
   .dark .bg-white {
-    background-color: hsl(262 40% 12%);
-    color: hsl(262 10% 98%);
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
   }
 
   .dark .bg-gray-50 {
-    background-color: hsl(262 30% 14%);
+    background-color: hsl(var(--muted));
   }
 
   .dark .bg-gray-100 {
-    background-color: hsl(262 25% 18%);
+    background-color: hsl(var(--secondary));
   }
 
-  /* Border overrides for dark mode */
-  .dark .border-gray-200 {
-    border-color: hsl(262 25% 28%);
+  /* Additional dark mode text improvements */
+  .dark .text-slate-600,
+  .dark .text-slate-700,
+  .dark .text-slate-800,
+  .dark .text-slate-900 {
+    color: hsl(262 10% 92%);
   }
 
-  .dark .border-gray-300 {
-    border-color: hsl(262 25% 32%);
+  .dark .text-slate-500 {
+    color: hsl(262 10% 85%);
   }
 
-  /* Muted text with proper contrast */
-  .dark .text-muted-foreground {
+  .dark .text-slate-400 {
     color: hsl(262 10% 75%);
+  }
+
+  /* Muted text with proper contrast - improved readability */
+  .dark .text-muted-foreground {
+    color: hsl(262 10% 85%);
   }
 
   /* Purple brand colors remain consistent */
@@ -376,7 +386,7 @@
   /* Hero section buttons - white background with purple text */
   section button.bg-purple-600,
   section button.bg-white {
-    background-color: #ffffff !important;
+    background-color: #ffffff !important; /* white text on mobile */
     color: hsl(var(--servio-purple)) !important;
     border: 2px solid hsl(var(--servio-purple)) !important;
   }
@@ -463,7 +473,139 @@ button.bg-slate-800,
 .SelectTrigger.bg-neutral-800,
 .SelectTrigger.bg-slate-900,
 .SelectTrigger.bg-slate-800 {
-  color: #ffffff !important;
+  color: #ffffff !important; /* white text on mobile */
+}
+
+/* Ensure white text on purple backgrounds - always enforced */
+button.bg-purple-600,
+button.bg-purple-700,
+button.bg-purple-800,
+button.bg-servio-purple,
+button[class*="bg-purple"],
+[role="button"].bg-purple-600,
+[role="button"].bg-purple-700,
+[role="button"].bg-purple-800,
+[role="button"].bg-servio-purple,
+[role="button"][class*="bg-purple"],
+.bg-purple-600 > button,
+.bg-purple-700 > button,
+.bg-purple-800 > button,
+.bg-servio-purple > button,
+[class*="bg-purple"] > button {
+  color: #ffffff !important; /* white text on mobile */
+}
+
+/* Purple buttons hover state: white background, purple text - ONLY on desktop */
+@media (hover: hover) and (pointer: fine) {
+  button.bg-purple-600:hover,
+  button.bg-purple-700:hover,
+  button.bg-purple-800:hover,
+  button.bg-servio-purple:hover,
+  button[class*="bg-purple"]:hover,
+  button.group:hover.bg-purple-600,
+  button.group:hover.bg-purple-700,
+  button.group:hover.bg-purple-800,
+  button.group:hover.bg-servio-purple,
+  button.group:hover[class*="bg-purple"],
+  [role="button"].bg-purple-600:hover,
+  [role="button"].bg-purple-700:hover,
+  [role="button"].bg-purple-800:hover,
+  [role="button"].bg-servio-purple:hover,
+  [role="button"][class*="bg-purple"]:hover,
+  .bg-purple-600 > button:hover,
+  .bg-purple-700 > button:hover,
+  .bg-purple-800 > button:hover,
+  .bg-servio-purple > button:hover,
+  [class*="bg-purple"] > button:hover {
+    background-color: #ffffff !important; /* white text on mobile */
+    color: hsl(var(--servio-purple)) !important;
+    border-color: hsl(var(--servio-purple)) !important;
+  }
+
+  /* Handle group-hover for purple buttons */
+  .group:hover button.bg-purple-600,
+  .group:hover button.bg-purple-700,
+  .group:hover button.bg-purple-800,
+  .group:hover button.bg-servio-purple,
+  .group:hover button[class*="bg-purple"] {
+    background-color: #ffffff !important; /* white text on mobile */
+    color: hsl(var(--servio-purple)) !important;
+    border-color: hsl(var(--servio-purple)) !important;
+  }
+}
+
+/* Ensure icons and text inside purple buttons are white */
+button.bg-purple-600 svg,
+button.bg-purple-700 svg,
+button.bg-purple-800 svg,
+button.bg-servio-purple svg,
+button[class*="bg-purple"] svg,
+button.bg-purple-600 span,
+button.bg-purple-700 span,
+button.bg-purple-800 span,
+button.bg-servio-purple span,
+button[class*="bg-purple"] span,
+[role="button"].bg-purple-600 svg,
+[role="button"].bg-purple-700 svg,
+[role="button"].bg-purple-800 svg,
+[role="button"].bg-servio-purple svg,
+[role="button"][class*="bg-purple"] svg,
+[role="button"].bg-purple-600 span,
+[role="button"].bg-purple-700 span,
+[role="button"].bg-purple-800 span,
+[role="button"].bg-servio-purple span,
+[role="button"][class*="bg-purple"] span {
+  color: #ffffff !important; /* white text on mobile */
+}
+
+/* Icons and text inside purple buttons on hover: purple color - ONLY on desktop */
+@media (hover: hover) and (pointer: fine) {
+  button.bg-purple-600:hover svg,
+  button.bg-purple-700:hover svg,
+  button.bg-purple-800:hover svg,
+  button.bg-servio-purple:hover svg,
+  button[class*="bg-purple"]:hover svg,
+  button.bg-purple-600:hover span,
+  button.bg-purple-700:hover span,
+  button.bg-purple-800:hover span,
+  button.bg-servio-purple:hover span,
+  button[class*="bg-purple"]:hover span,
+  button.group:hover.bg-purple-600 svg,
+  button.group:hover.bg-purple-700 svg,
+  button.group:hover.bg-purple-800 svg,
+  button.group:hover.bg-servio-purple svg,
+  button.group:hover[class*="bg-purple"] svg,
+  button.group:hover.bg-purple-600 span,
+  button.group:hover.bg-purple-700 span,
+  button.group:hover.bg-purple-800 span,
+  button.group:hover.bg-servio-purple span,
+  button.group:hover[class*="bg-purple"] span,
+  [role="button"].bg-purple-600:hover svg,
+  [role="button"].bg-purple-700:hover svg,
+  [role="button"].bg-purple-800:hover svg,
+  [role="button"].bg-servio-purple:hover svg,
+  [role="button"][class*="bg-purple"]:hover svg,
+  [role="button"].bg-purple-600:hover span,
+  [role="button"].bg-purple-700:hover span,
+  [role="button"].bg-purple-800:hover span,
+  [role="button"].bg-servio-purple:hover span,
+  [role="button"][class*="bg-purple"]:hover span {
+    color: hsl(var(--servio-purple)) !important;
+  }
+
+  /* Handle group-hover for icons and text inside purple buttons */
+  .group:hover button.bg-purple-600 svg,
+  .group:hover button.bg-purple-700 svg,
+  .group:hover button.bg-purple-800 svg,
+  .group:hover button.bg-servio-purple svg,
+  .group:hover button[class*="bg-purple"] svg,
+  .group:hover button.bg-purple-600 span,
+  .group:hover button.bg-purple-700 span,
+  .group:hover button.bg-purple-800 span,
+  .group:hover button.bg-servio-purple span,
+  .group:hover button[class*="bg-purple"] span {
+    color: hsl(var(--servio-purple)) !important;
+  }
 }
 
 /* Ensure icons inside dark buttons are also white */
@@ -487,7 +629,7 @@ button.bg-slate-800 svg,
 .SelectTrigger.bg-neutral-800 svg,
 .SelectTrigger.bg-slate-900 svg,
 .SelectTrigger.bg-slate-800 svg {
-  color: #ffffff !important;
+  color: #ffffff !important; /* white text on mobile */
 }
 
 /* Desktop-specific improvements - respects dark mode */
@@ -546,8 +688,18 @@ h6 {
 }
 
 p,
-span,
 div {
+  @apply text-foreground;
+}
+
+/* Exclude button spans from global text-foreground rule - CRITICAL FIX */
+button span,
+button * span,
+[class*="button"] span {
+  color: inherit !important;
+}
+
+span:not(button span):not(button * span):not([class*="button"] span) {
   @apply text-foreground;
 }
 
@@ -1437,6 +1589,615 @@ div {
     stroke-width: 2 !important;
   }
 
+  /* Ensure button text is always visible on mobile */
+  button[class*="bg-servio-purple"],
+  button[class*="bg-purple"],
+  button[class*="servio"] {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"] span,
+  button[class*="servio"] span,
+  button[class*="bg-servio-purple"] > *:not(svg),
+  button[class*="bg-purple"] > *:not(svg),
+  button[class*="servio"] > *:not(svg) {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* Mobile menu button (hamburger/X) - Grey lines with constant purple glow, NO border */
+  button.mobile-menu-button,
+  .mobile-menu-button {
+    background-color: transparent !important; /* transparent background */
+    border: none !important; /* NO border */
+    border-width: 0 !important;
+    color: #6b7280 !important; /* grey lines */
+    fill: none !important;
+    stroke: #6b7280 !important;
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.35) !important; /* constant purple glow */
+    transition: all 0.2s ease !important;
+  }
+
+  button.mobile-menu-button *,
+  button.mobile-menu-button svg,
+  .mobile-menu-button *,
+  .mobile-menu-button svg,
+  nav button[class*="mobile-menu-button"],
+  nav button[class*="mobile-menu-button"] *,
+  nav button[class*="mobile-menu-button"] svg {
+    color: #6b7280 !important;
+    stroke: #6b7280 !important;
+  }
+
+  .dark button.mobile-menu-button,
+  .dark .mobile-menu-button {
+    background-color: transparent !important; /* transparent background */
+    border: none !important; /* NO border */
+    border-width: 0 !important;
+    color: #9ca3af !important;
+    stroke: #9ca3af !important;
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.35) !important; /* purple glow */
+  }
+
+  .dark button.mobile-menu-button *,
+  .dark button.mobile-menu-button svg,
+  .dark .mobile-menu-button *,
+  .dark .mobile-menu-button svg,
+  .dark nav button[class*="mobile-menu-button"],
+  .dark nav button[class*="mobile-menu-button"] *,
+  .dark nav button[class*="mobile-menu-button"] svg {
+    color: #9ca3af !important;
+    stroke: #9ca3af !important;
+  }
+
+  /* Hover - maintain glow, no border change */
+  button.mobile-menu-button:hover,
+  .mobile-menu-button:hover,
+  .dark button.mobile-menu-button:hover,
+  .dark .mobile-menu-button:hover {
+    background-color: inherit !important;
+    box-shadow: 0 0 10px rgba(124, 58, 237, 0.5) !important;
+  }
+
+  /* CRITICAL: Ensure mobile dropdown menu text is visible on home page */
+  .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]),
+  .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) {
+    color: #111827 !important; /* gray-900 - dark text */
+  }
+
+  .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) span,
+  .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) span {
+    color: #111827 !important; /* gray-900 */
+  }
+
+  .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) svg,
+  .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) svg {
+    color: #111827 !important; /* gray-900 */
+  }
+
+  /* Dark mode mobile menu text */
+  .dark .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]),
+  .dark .mobile-dropdown-menu button:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) {
+    color: #f3f4f6 !important; /* gray-100 - light text */
+  }
+
+  .dark .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) span,
+  .dark
+    .mobile-dropdown-menu
+    button:not([class*="bg-servio-purple"]):not([class*="bg-purple"])
+    span {
+    color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  .dark .mobile-dropdown-menu a:not([class*="bg-servio-purple"]):not([class*="bg-purple"]) svg,
+  .dark
+    .mobile-dropdown-menu
+    button:not([class*="bg-servio-purple"]):not([class*="bg-purple"])
+    svg {
+    color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  /* Override for purple buttons in mobile menu - keep white text */
+  .mobile-dropdown-menu button[class*="bg-servio-purple"],
+  .mobile-dropdown-menu button[class*="bg-purple"],
+  .mobile-dropdown-menu button[class*="bg-servio-purple"] *,
+  .mobile-dropdown-menu button[class*="bg-purple"] *,
+  .mobile-dropdown-menu button[class*="bg-servio-purple"] span,
+  .mobile-dropdown-menu button[class*="bg-purple"] span,
+  .mobile-dropdown-menu button[class*="bg-servio-purple"] svg,
+  .mobile-dropdown-menu button[class*="bg-purple"] svg {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* PLATFORM-WIDE BUTTON STYLING: Purple background, white text by default - TEXT MUST BE VISIBLE */
+  /* Apply to ALL buttons with servio/purple styling - OVERRIDE ANY CUSTOM CLASSES */
+  button[class*="bg-servio-purple"],
+  button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not([class*="gradient"]),
+  button[class*="servio"],
+  button[class*="variant-servio"],
+  button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]),
+  button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]),
+  button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]),
+  [class*="servio-purple"] button:not([class*="ghost"]):not([class*="destructive"]),
+  [class*="bg-servio-purple"] button:not([class*="ghost"]):not([class*="destructive"]),
+  /* Also target buttons by gradient classes */
+  button[class*="from-purple"],
+  button[class*="bg-gradient"] {
+    /* Default: Purple background, white text - OVERRIDE custom classes */
+    background-color: #7c3aed !important; /* servio-purple background */
+    background-image: none !important;
+    color: #ffffff !important; /* white text - explicit color for visibility */
+    border-color: #7c3aed !important;
+  }
+
+  /* All child elements (spans, SVGs, etc.) - white text by default - OVERRIDE CUSTOM CLASSES - TEXT MUST BE VISIBLE */
+  button[class*="bg-servio-purple"] *,
+  button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+      [class*="gradient"]
+    )
+    *,
+  button[class*="servio"] *,
+  button[class*="variant-servio"] *,
+  button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]) *,
+  button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) *,
+  button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) *,
+  button[class*="from-purple"] *,
+  button[class*="bg-gradient"] *,
+  [class*="order"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    *,
+  [class*="cart"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    *,
+  [class*="checkout"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    *,
+  [class*="menu"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    *,
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+      [class*="gradient"]
+    )
+    span,
+  button[class*="servio"] span,
+  button[class*="variant-servio"] span,
+  button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]) span,
+  button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) span,
+  button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) span,
+  button[class*="from-purple"] span,
+  button[class*="bg-gradient"] span {
+    color: #ffffff !important; /* white text - explicit color for visibility */
+  }
+  [class*="order"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    span,
+  [class*="cart"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    span,
+  [class*="checkout"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    span,
+  [class*="menu"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    span,
+  button[class*="bg-servio-purple"] svg,
+  button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+      [class*="gradient"]
+    )
+    svg,
+  button[class*="servio"] svg,
+  button[class*="variant-servio"] svg,
+  button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]) svg,
+  button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) svg,
+  button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) svg,
+  button[class*="from-purple"] svg,
+  button[class*="bg-gradient"] svg {
+    color: #ffffff !important; /* white text - explicit color for visibility */
+  }
+  [class*="order"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    svg,
+  [class*="cart"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    svg,
+  [class*="checkout"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    svg,
+  [class*="menu"]
+    button:not([class*="ghost"]):not([class*="destructive"]):not([class*="outline"])
+    svg {
+    color: hsl(var(--servio-purple)) !important;
+  }
+
+  /* DESKTOP HOVER: Purple background, white text on hover - ONLY on desktop */
+  @media (hover: hover) and (pointer: fine) {
+    button[class*="bg-servio-purple"]:hover,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover,
+    button[class*="servio"]:hover,
+    button[class*="variant-servio"]:hover,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover,
+    button[class*="from-purple"]:hover,
+    button[class*="bg-gradient"]:hover {
+      background-color: #7c3aed !important; /* servio-purple background on hover */
+      background-image: none !important;
+      color: #ffffff !important; /* white text on hover */
+      border-color: #7c3aed !important;
+    }
+
+    button[class*="bg-servio-purple"]:hover *,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover
+      *,
+    button[class*="servio"]:hover *,
+    button[class*="variant-servio"]:hover *,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover *,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover *,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover *,
+    button[class*="from-purple"]:hover *,
+    button[class*="bg-gradient"]:hover *,
+    button[class*="bg-servio-purple"]:hover span,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover
+      span,
+    button[class*="servio"]:hover span,
+    button[class*="variant-servio"]:hover span,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover span,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover span,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover span,
+    button[class*="from-purple"]:hover span,
+    button[class*="bg-gradient"]:hover span,
+    button[class*="bg-servio-purple"]:hover svg,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover
+      svg,
+    button[class*="servio"]:hover svg,
+    button[class*="variant-servio"]:hover svg,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover svg,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover svg,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover svg,
+    button[class*="from-purple"]:hover svg,
+    button[class*="bg-gradient"]:hover svg {
+      color: #ffffff !important; /* white text on hover */
+    }
+  }
+
+  /* MOBILE FIX: Keep white background with purple text at all times on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    button[class*="bg-servio-purple"],
+    button[class*="bg-servio-purple"]:hover,
+    button[class*="bg-servio-purple"]:active,
+    button[class*="bg-servio-purple"]:focus,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ),
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):active,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):focus,
+    button[class*="servio"],
+    button[class*="servio"]:hover,
+    button[class*="servio"]:active,
+    button[class*="servio"]:focus,
+    button[class*="variant-servio"],
+    button[class*="variant-servio"]:hover,
+    button[class*="variant-servio"]:active,
+    button[class*="variant-servio"]:focus,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]),
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):active,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):focus,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]),
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):active,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):focus,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]),
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):active,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):focus,
+    button[class*="from-purple"],
+    button[class*="from-purple"]:hover,
+    button[class*="from-purple"]:active,
+    button[class*="from-purple"]:focus,
+    button[class*="bg-gradient"],
+    button[class*="bg-gradient"]:hover,
+    button[class*="bg-gradient"]:active,
+    button[class*="bg-gradient"]:focus {
+      background-color: hsl(var(--servio-purple)) !important;
+      background-image: none !important;
+      color: #ffffff !important; /* white text on mobile */
+      border-color: hsl(var(--servio-purple)) !important;
+    }
+
+    button[class*="bg-servio-purple"] *,
+    button[class*="bg-servio-purple"]:hover *,
+    button[class*="bg-servio-purple"]:active *,
+    button[class*="bg-servio-purple"]:focus *,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      )
+      *,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover
+      *,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):active
+      *,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):focus
+      *,
+    button[class*="servio"] *,
+    button[class*="servio"]:hover *,
+    button[class*="servio"]:active *,
+    button[class*="servio"]:focus *,
+    button[class*="variant-servio"] *,
+    button[class*="variant-servio"]:hover *,
+    button[class*="variant-servio"]:active *,
+    button[class*="variant-servio"]:focus *,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]) *,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover *,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):active *,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):focus *,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) *,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover *,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):active *,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):focus *,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) *,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover *,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):active *,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):focus *,
+    button[class*="from-purple"] *,
+    button[class*="from-purple"]:hover *,
+    button[class*="from-purple"]:active *,
+    button[class*="from-purple"]:focus *,
+    button[class*="bg-gradient"] *,
+    button[class*="bg-gradient"]:hover *,
+    button[class*="bg-gradient"]:active *,
+    button[class*="bg-gradient"]:focus * {
+      color: #ffffff !important; /* white text on mobile */
+    }
+
+    button[class*="bg-servio-purple"] span,
+    button[class*="bg-servio-purple"]:hover span,
+    button[class*="bg-servio-purple"]:active span,
+    button[class*="bg-servio-purple"]:focus span,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      )
+      span,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover
+      span,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):active
+      span,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):focus
+      span,
+    button[class*="servio"] span,
+    button[class*="servio"]:hover span,
+    button[class*="servio"]:active span,
+    button[class*="servio"]:focus span,
+    button[class*="variant-servio"] span,
+    button[class*="variant-servio"]:hover span,
+    button[class*="variant-servio"]:active span,
+    button[class*="variant-servio"]:focus span,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]) span,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover span,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):active span,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):focus span,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) span,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover span,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):active span,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):focus span,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) span,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover span,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):active
+      span,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):focus span,
+    button[class*="from-purple"] span,
+    button[class*="from-purple"]:hover span,
+    button[class*="from-purple"]:active span,
+    button[class*="from-purple"]:focus span,
+    button[class*="bg-gradient"] span,
+    button[class*="bg-gradient"]:hover span,
+    button[class*="bg-gradient"]:active span,
+    button[class*="bg-gradient"]:focus span {
+      color: #ffffff !important; /* white text on mobile */
+    }
+
+    /* Mobile button SVGs - white text */
+    button[class*="bg-servio-purple"] svg,
+    button[class*="bg-servio-purple"]:hover svg,
+    button[class*="bg-servio-purple"]:active svg,
+    button[class*="bg-servio-purple"]:focus svg,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      )
+      svg,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):hover
+      svg,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):active
+      svg,
+    button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]):not(
+        [class*="gradient"]
+      ):focus
+      svg,
+    button[class*="servio"] svg,
+    button[class*="servio"]:hover svg,
+    button[class*="servio"]:active svg,
+    button[class*="servio"]:focus svg,
+    button[class*="variant-servio"] svg,
+    button[class*="variant-servio"]:hover svg,
+    button[class*="variant-servio"]:active svg,
+    button[class*="variant-servio"]:focus svg,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]) svg,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):hover svg,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):active svg,
+    button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]):focus svg,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) svg,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):hover svg,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):active svg,
+    button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]):focus svg,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) svg,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):hover svg,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):active svg,
+    button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]):focus svg,
+    button[class*="from-purple"] svg,
+    button[class*="from-purple"]:hover svg,
+    button[class*="from-purple"]:active svg,
+    button[class*="from-purple"]:focus svg,
+    button[class*="bg-gradient"] svg,
+    button[class*="bg-gradient"]:hover svg,
+    button[class*="bg-gradient"]:active svg,
+    button[class*="bg-gradient"]:focus svg {
+      color: #ffffff !important; /* white text on mobile */
+    }
+  }
+
+  /* Pricing cards buttons - ensure white text on purple */
+  [class*="pricing"] button[class*="bg-servio-purple"],
+  [class*="pricing"] button[class*="bg-purple"],
+  [class*="pricing"] button[class*="servio"],
+  [class*="Card"] button[class*="bg-servio-purple"],
+  [class*="Card"] button[class*="bg-purple"],
+  [class*="Card"] button[class*="servio"] {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  [class*="pricing"] button[class*="bg-servio-purple"] *,
+  [class*="pricing"] button[class*="bg-purple"] *,
+  [class*="pricing"] button[class*="servio"] *,
+  [class*="Card"] button[class*="bg-servio-purple"] *,
+  [class*="Card"] button[class*="bg-purple"] *,
+  [class*="Card"] button[class*="servio"] *,
+  [class*="pricing"] button[class*="bg-servio-purple"] span,
+  [class*="pricing"] button[class*="bg-purple"] span,
+  [class*="pricing"] button[class*="servio"] span,
+  [class*="Card"] button[class*="bg-servio-purple"] span,
+  [class*="Card"] button[class*="bg-purple"] span,
+  [class*="Card"] button[class*="servio"] span {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* QR codes page buttons - ensure white text on purple */
+  [class*="qr-code"] button[class*="bg-servio-purple"],
+  [class*="qr-code"] button[class*="bg-purple"],
+  [class*="qr-code"] button[class*="servio"],
+  [id*="qr"] button[class*="bg-servio-purple"],
+  [id*="qr"] button[class*="bg-purple"],
+  [id*="qr"] button[class*="servio"] {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  [class*="qr-code"] button[class*="bg-servio-purple"] *,
+  [class*="qr-code"] button[class*="bg-purple"] *,
+  [class*="qr-code"] button[class*="servio"] *,
+  [id*="qr"] button[class*="bg-servio-purple"] *,
+  [id*="qr"] button[class*="bg-purple"] *,
+  [id*="qr"] button[class*="servio"] * {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* Customer ordering UI buttons - ensure white text on purple */
+  [class*="order"] button[class*="bg-servio-purple"],
+  [class*="order"] button[class*="bg-purple"],
+  [class*="order"] button[class*="servio"],
+  [class*="cart"] button[class*="bg-servio-purple"],
+  [class*="cart"] button[class*="bg-purple"],
+  [class*="cart"] button[class*="servio"],
+  [class*="checkout"] button[class*="bg-servio-purple"],
+  [class*="checkout"] button[class*="bg-purple"],
+  [class*="checkout"] button[class*="servio"] {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  [class*="order"] button[class*="bg-servio-purple"] *,
+  [class*="order"] button[class*="bg-purple"] *,
+  [class*="order"] button[class*="servio"] *,
+  [class*="cart"] button[class*="bg-servio-purple"] *,
+  [class*="cart"] button[class*="bg-purple"] *,
+  [class*="cart"] button[class*="servio"] *,
+  [class*="checkout"] button[class*="bg-servio-purple"] *,
+  [class*="checkout"] button[class*="bg-purple"] *,
+  [class*="checkout"] button[class*="servio"] *,
+  [class*="order"] button[class*="bg-servio-purple"] span,
+  [class*="order"] button[class*="bg-purple"] span,
+  [class*="order"] button[class*="servio"] span,
+  [class*="cart"] button[class*="bg-servio-purple"] span,
+  [class*="cart"] button[class*="bg-purple"] span,
+  [class*="cart"] button[class*="servio"] span,
+  [class*="checkout"] button[class*="bg-servio-purple"] span,
+  [class*="checkout"] button[class*="bg-purple"] span,
+  [class*="checkout"] button[class*="servio"] span {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* Ensure button text is visible even when disabled */
+  button[disabled] {
+    opacity: 0.6;
+  }
+
+  button[disabled][class*="bg-servio-purple"],
+  button[disabled][class*="bg-purple"],
+  button[disabled][class*="servio"] {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  button[disabled][class*="bg-servio-purple"] *,
+  button[disabled][class*="bg-purple"] *,
+  button[disabled][class*="servio"] *,
+  button[disabled][class*="bg-servio-purple"] span,
+  button[disabled][class*="bg-purple"] span,
+  button[disabled][class*="servio"] span {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* PLATFORM-WIDE: Ensure ALL buttons with servio/purple styling show white text */
+  /* This overrides any conflicting rules */
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"]:not([class*="ghost"]):not([class*="destructive"]) span,
+  button[class*="servio"] span,
+  button[class*="variant-servio"] span,
+  button[class*="variant-default"]:not([class*="ghost"]):not([class*="destructive"]) span,
+  button[class*="variant-outline"]:not([class*="ghost"]):not([class*="destructive"]) span,
+  button[class*="variant-secondary"]:not([class*="ghost"]):not([class*="destructive"]) span,
+  /* Also target buttons by their actual rendered classes */
+  button.bg-servio-purple span,
+  button.bg-purple-600 span,
+  button.bg-purple-700 span,
+  button.bg-purple-800 span {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* Override any text-foreground rules that might affect buttons */
+  button span:not([class*="text-"]),
+  button * span:not([class*="text-"]) {
+    color: inherit !important;
+  }
+
   /* Better touch targets for small buttons */
   button[class*="sm"] {
     min-width: 48px !important;
@@ -1444,10 +2205,106 @@ div {
     padding: 12px !important;
   }
 
+  /* Mobile ordering UI optimizations */
+  /* Ensure images don't overflow on mobile */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Optimize menu item cards for mobile */
+  [class*="menu"] [class*="card"],
+  [class*="menu"] [class*="rounded"] {
+    padding: 1rem !important;
+  }
+
+  /* Ensure text is readable on mobile */
+  h1,
+  h2,
+  h3 {
+    line-height: 1.2 !important;
+  }
+
+  /* Optimize button spacing on mobile */
+  button[class*="Add"] {
+    min-height: 48px !important;
+    padding: 0.75rem 1rem !important;
+  }
+
   /* Enhanced button states */
   button:active {
     transform: scale(0.98);
     transition: transform 0.1s ease;
+  }
+
+  /* CRITICAL MOBILE FIX: Force white text on ALL purple buttons - HIGHEST SPECIFICITY */
+  button.bg-servio-purple,
+  button.bg-servio-purple *,
+  button.bg-servio-purple span,
+  button.bg-servio-purple svg,
+  button[class*="bg-servio-purple"],
+  button[class*="bg-servio-purple"] *,
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-servio-purple"] svg,
+  button[class*="bg-purple"],
+  button[class*="bg-purple"] *,
+  button[class*="bg-purple"] span,
+  button[class*="bg-purple"] svg,
+  button[class*="servio"],
+  button[class*="servio"] *,
+  button[class*="servio"] span,
+  button[class*="servio"] svg,
+  button[class*="servio"] > *,
+  .bg-servio-purple button,
+  .bg-servio-purple button *,
+  .bg-servio-purple button span,
+  .bg-servio-purple button svg {
+    color: #ffffff !important; /* white text on mobile */
+  }
+
+  /* Override text-foreground for button children */
+  button span,
+  button[class*="servio"] span,
+  button[class*="bg-servio-purple"] span,
+  button[class*="bg-purple"] span {
+    color: inherit !important;
+  }
+
+  /* CRITICAL: Disable hover effects on mobile - keep text white on touch devices */
+  /* Only apply hover color changes on devices that actually support hover (desktop) */
+  @media (hover: hover) and (pointer: fine) {
+    button.bg-servio-purple:hover,
+    button.bg-servio-purple:hover *,
+    button.bg-servio-purple:hover span,
+    button[class*="servio"]:hover,
+    button[class*="servio"]:hover span,
+    button[class*="servio"]:hover svg {
+      color: #7c3aed !important;
+    }
+  }
+
+  /* On mobile/touch devices, keep text white at all times */
+  @media (hover: none) and (pointer: coarse) {
+    button.bg-servio-purple,
+    button.bg-servio-purple *,
+    button.bg-servio-purple:hover,
+    button.bg-servio-purple:hover *,
+    button.bg-servio-purple:active,
+    button.bg-servio-purple:active *,
+    button[class*="servio"],
+    button[class*="servio"] *,
+    button[class*="servio"]:hover,
+    button[class*="servio"]:hover *,
+    button[class*="servio"]:active,
+    button[class*="servio"]:active *,
+    button[class*="servio"] span,
+    button[class*="servio"]:hover span,
+    button[class*="servio"]:active span,
+    button[class*="servio"] svg,
+    button[class*="servio"]:hover svg,
+    button[class*="servio"]:active svg {
+      color: #ffffff !important; /* white text on mobile */
+    }
   }
 
   /* Ensure interactive elements meet touch target requirements */
@@ -1631,21 +2488,141 @@ div {
     height: auto;
   }
 
-  /* Enhanced mobile navigation text visibility */
+  /* Enhanced mobile navigation text visibility - ENFORCE PURPLE TEXT */
+  .mobile-nav button,
+  .mobile-nav button *,
   .mobile-nav span,
-  .mobile-nav button span {
-    color: hsl(var(--servio-purple));
+  .mobile-nav button span,
+  .mobile-nav button * span,
+  .mobile-nav button span * {
+    color: #7c3aed !important; /* servio-purple - enforce purple text */
     font-weight: 700;
   }
 
-  /* Enhanced mobile navigation icon visibility */
-  .mobile-nav svg {
-    color: hsl(var(--servio-purple));
+  /* Enhanced mobile navigation icon visibility - ENFORCE PURPLE ICONS */
+  .mobile-nav svg,
+  .mobile-nav button svg,
+  .mobile-nav button * svg,
+  .mobile-nav button svg * {
+    color: #7c3aed !important; /* servio-purple - enforce purple icons */
+    stroke: #7c3aed !important; /* ensure icon stroke is purple */
   }
 
+  .mobile-nav button[class*="active"],
   .mobile-nav button[class*="active"] span,
-  .mobile-nav button[class*="active"] svg {
-    color: hsl(var(--servio-purple));
+  .mobile-nav button[class*="active"] svg,
+  .mobile-nav button[class*="active"] * span,
+  .mobile-nav button[class*="active"] * svg {
+    color: #7c3aed !important; /* servio-purple - enforce purple for active */
+    stroke: #7c3aed !important;
+  }
+
+  /* Also target by class names used in GlobalBottomNav */
+  button[class*="flex"][class*="flex-col"][class*="items-center"],
+  button[class*="flex"][class*="flex-col"][class*="items-center"] span,
+  button[class*="flex"][class*="flex-col"][class*="items-center"] svg,
+  button[class*="flex"][class*="flex-col"][class*="items-center"] * span,
+  button[class*="flex"][class*="flex-col"][class*="items-center"] * svg {
+    color: #7c3aed !important; /* servio-purple */
+    stroke: #7c3aed !important;
+  }
+
+  /* CRITICAL: Force purple text on bottom nav buttons - highest specificity */
+  /* Target grid container and all buttons inside */
+  [class*="grid-cols-4"] button span,
+  [class*="grid-cols-4"] button > span,
+  [class*="grid-cols-4"] button div span,
+  [class*="grid-cols-4"] button * span,
+  .mobile-nav [class*="grid"] button span,
+  .mobile-nav [class*="grid"] button > span,
+  .mobile-nav [class*="grid"] button div span,
+  .mobile-nav [class*="grid"] button * span {
+    color: #7c3aed !important; /* Force purple text */
+    display: block !important; /* Ensure text is displayed */
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    line-height: 1.4 !important;
+    font-size: 11px !important;
+    text-indent: 0 !important;
+    clip: auto !important;
+    clip-path: none !important;
+    position: relative !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+  }
+
+  /* ENFORCE TEXT VISIBILITY - Override any conflicting styles */
+  .mobile-nav button span,
+  .mobile-nav button > span,
+  .mobile-nav button div + span,
+  .mobile-nav [class*="flex-col"] span,
+  .mobile-nav [class*="flex-col"] > span,
+  .mobile-nav button[class*="flex-col"] span,
+  .mobile-nav button[class*="flex-col"] > span {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    color: #7c3aed !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    text-indent: 0 !important;
+    clip: auto !important;
+    clip-path: none !important;
+    position: relative !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure button container allows text to show */
+  .mobile-nav button,
+  .mobile-nav [class*="grid"] button,
+  .mobile-nav [class*="grid-cols-4"] button {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    gap: 0 !important;
+  }
+
+  /* Ensure icon container has proper spacing */
+  .mobile-nav button > div:first-child,
+  .mobile-nav button div[class*="relative"] {
+    margin-bottom: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Ensure text span has proper spacing and is always visible */
+  .mobile-nav button span:last-child,
+  .mobile-nav button > span:last-of-type {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Prevent any text hiding techniques */
+  .mobile-nav button span:not([style*="display: none"]),
+  .mobile-nav button > span:not([style*="display: none"]),
+  .mobile-nav [class*="flex-col"] span:not([style*="display: none"]) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   /* Enhanced mobile card styling - respects dark mode */
@@ -1849,17 +2826,30 @@ div {
   }
 }
 
-/* Consistent button theme - respects dark mode */
-button:not([class*="destructive"]) {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  border: 2px solid hsl(var(--primary));
+/* Consistent button theme - purple background with white text by default, white background with purple text on hover */
+button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]) {
+  background-color: hsl(var(--servio-purple));
+  color: #ffffff;
+  border: 2px solid hsl(var(--servio-purple));
   border-radius: 12px;
   font-weight: 600;
 }
 
-button:not([class*="destructive"]):hover {
-  opacity: 0.9;
+.dark button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]) {
+  background-color: hsl(var(--servio-purple));
+  color: #ffffff;
+  border-color: hsl(var(--servio-purple));
+}
+
+button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]):hover {
+  background-color: #ffffff;
+  color: hsl(var(--servio-purple));
+  opacity: 1;
+}
+
+.dark button:not([class*="destructive"]):not([class*="bg-"]):not([class*="variant-"]):hover {
+  background-color: #ffffff;
+  color: hsl(var(--servio-purple));
 }
 
 /* Destructive buttons */

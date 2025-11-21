@@ -53,9 +53,9 @@ export function FeedbackMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "shadow-lg hover:shadow-xl transition-all duration-200",
-          "bg-purple-600 hover:bg-purple-700",
-          "h-12 px-4 rounded-full md:rounded-lg",
-          isOpen && "bg-purple-700",
+          "bg-servio-purple hover:bg-white hover:text-servio-purple text-white",
+          "h-12 px-4 rounded-full md:rounded-lg border-2 border-servio-purple",
+          isOpen && "bg-white text-servio-purple",
           // Mobile: full width button, Desktop: icon + text with white text
           isMobile ? "w-full" : "text-white"
         )}

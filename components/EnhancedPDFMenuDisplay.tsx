@@ -315,8 +315,8 @@ export function EnhancedPDFMenuDisplay({
                 }}
                 className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedCategory === null
-                    ? "bg-purple-600 !text-white border-2 border-purple-600 shadow-lg [&>*]:!text-white"
-                    : "bg-purple-600 !text-white border-2 border-purple-600 [&>*]:!text-white hover:bg-white hover:!text-purple-600 hover:[&>*]:!text-purple-600"
+                    ? "bg-servio-purple !text-white border-2 border-servio-purple shadow-lg [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
+                    : "bg-servio-purple !text-white border-2 border-servio-purple [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
                 }`}
               >
                 All
@@ -327,8 +327,8 @@ export function EnhancedPDFMenuDisplay({
                   onClick={() => scrollToCategory(category)}
                   className={`shrink-0 min-w-fit px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedCategory === category
-                      ? "bg-purple-600 !text-white border-2 border-purple-600 shadow-lg [&>*]:!text-white"
-                      : "bg-purple-600 !text-white border-2 border-purple-600 [&>*]:!text-white hover:bg-white hover:!text-purple-600 hover:[&>*]:!text-purple-600"
+                      ? "bg-servio-purple !text-white border-2 border-servio-purple shadow-lg [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
+                      : "bg-servio-purple !text-white border-2 border-servio-purple [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
                   }`}
                 >
                   <span className="truncate max-w-[120px] px-1">{category}</span>
@@ -340,10 +340,10 @@ export function EnhancedPDFMenuDisplay({
       )}
 
       {/* View Mode Toggle - Always show both buttons */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 px-3 sm:px-4">
         <div className="flex items-center space-x-2">
           <Button
-            variant={viewMode === "pdf" ? "default" : "outline"}
+            variant="servio"
             size="sm"
             onClick={() => {
               if (pdfImages.length > 0 || hasPdfImages) {
@@ -353,17 +353,47 @@ export function EnhancedPDFMenuDisplay({
               }
             }}
             disabled={!hasPdfImages && pdfImages.length === 0}
+            className={
+              viewMode === "pdf"
+                ? "bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                : "bg-white text-servio-purple hover:bg-servio-purple hover:text-white border-2 border-servio-purple"
+            }
           >
-            <Grid className="h-4 w-4 mr-2" />
-            Visual Menu
+            <Grid
+              className={`h-4 w-4 mr-2 ${viewMode === "pdf" ? "text-white group-hover:text-servio-purple" : "text-servio-purple group-hover:text-white"}`}
+            />
+            <span
+              className={
+                viewMode === "pdf"
+                  ? "text-white group-hover:text-servio-purple"
+                  : "text-servio-purple group-hover:text-white font-semibold"
+              }
+            >
+              Visual Menu
+            </span>
           </Button>
           <Button
-            variant={viewMode === "list" ? "default" : "outline"}
+            variant="servio"
             size="sm"
             onClick={() => setViewMode("list")}
+            className={
+              viewMode === "list"
+                ? "bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
+                : "bg-white text-servio-purple hover:bg-servio-purple hover:text-white border-2 border-servio-purple"
+            }
           >
-            <List className="h-4 w-4 mr-2" />
-            List View
+            <List
+              className={`h-4 w-4 mr-2 ${viewMode === "list" ? "text-white group-hover:text-servio-purple" : "text-servio-purple group-hover:text-white"}`}
+            />
+            <span
+              className={
+                viewMode === "list"
+                  ? "text-white group-hover:text-servio-purple"
+                  : "text-servio-purple group-hover:text-white font-semibold"
+              }
+            >
+              List View
+            </span>
           </Button>
         </div>
 
@@ -466,7 +496,7 @@ export function EnhancedPDFMenuDisplay({
 
       {/* List View */}
       {viewMode === "list" && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-5 md:space-y-6 px-3 sm:px-4 md:px-6">
           {categories.map((category) => {
             const items = groupedItems[category] || [];
             if (items.length === 0) return null;
@@ -479,10 +509,10 @@ export function EnhancedPDFMenuDisplay({
                   categoryRefs.current[category] = el;
                 }}
               >
-                <h2 className="text-2xl font-bold text-foreground border-b-2 border-primary pb-2">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground border-b-2 border-primary pb-2 sm:pb-3">
                   {category}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
                   {items
                     .filter((item: MenuItem) => item.is_available)
                     .map((item: MenuItem) => {
@@ -492,15 +522,11 @@ export function EnhancedPDFMenuDisplay({
                       return (
                         <div
                           key={item.id}
-                          className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer bg-white"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setIsModalOpen(true);
-                          }}
+                          className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white"
                         >
-                          {/* IMAGE - Show if available from hybrid merge - Smaller on mobile */}
+                          {/* IMAGE - Show if available from hybrid merge - Optimized for mobile/tablet */}
                           {item.image_url && (
-                            <div className="relative w-full h-32 md:h-48 lg:aspect-square bg-white overflow-hidden flex items-center justify-center">
+                            <div className="relative w-full h-40 sm:h-48 md:h-56 lg:h-64 bg-gray-100 overflow-hidden flex items-center justify-center">
                               <img
                                 src={item.image_url}
                                 alt={item.name}
@@ -516,23 +542,70 @@ export function EnhancedPDFMenuDisplay({
                             </div>
                           )}
 
-                          <div className="p-3 md:p-4">
-                            <h3 className="font-semibold text-base md:text-lg mb-2">{item.name}</h3>
+                          <div className="p-4 sm:p-5 md:p-6">
+                            <h3 className="font-semibold text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 leading-tight text-gray-900">
+                              {item.name}
+                            </h3>
                             {item.description && (
-                              <p className="text-sm md:text-base text-muted-foreground mb-3 line-clamp-2">
+                              <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                                 {item.description}
                               </p>
                             )}
-                            <div className="flex items-center justify-between">
-                              <span className="text-base md:text-lg font-bold text-primary">
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="text-lg sm:text-xl md:text-2xl font-bold text-purple-600">
                                 {formatPriceWithCurrency(item.price, "£")}
                               </span>
-                              {isOrdering && quantity > 0 && (
-                                <span className="text-xs md:text-sm text-muted-foreground">
-                                  {quantity} in cart
-                                </span>
-                              )}
                             </div>
+
+                            {/* Add to Cart Controls - Direct on item */}
+                            {isOrdering && (
+                              <div className="mt-4">
+                                {quantity === 0 ? (
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onAddToCart(item);
+                                    }}
+                                    variant="servio"
+                                    className="w-full h-12 sm:h-11 md:h-10 text-base sm:text-sm font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple group"
+                                    size="mobile"
+                                  >
+                                    <Plus className="h-5 w-5 mr-2 text-white group-hover:text-servio-purple" />
+                                    <span className="text-white group-hover:text-servio-purple">
+                                      Add to Cart
+                                    </span>
+                                  </Button>
+                                ) : (
+                                  <div className="flex items-center gap-2 sm:gap-3 w-full">
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onUpdateQuantity(item.id, quantity - 1);
+                                      }}
+                                      variant="outline"
+                                      size="mobile"
+                                      className="flex-1 h-12 sm:h-11 md:h-10 min-h-[48px] sm:min-h-[44px] border-2 border-servio-purple text-servio-purple hover:bg-servio-purple hover:text-white"
+                                    >
+                                      <Minus className="h-5 w-5" />
+                                    </Button>
+                                    <span className="text-2xl sm:text-xl md:text-lg font-bold min-w-[3rem] sm:min-w-[2.5rem] md:min-w-[40px] text-center text-purple-600">
+                                      {quantity}
+                                    </span>
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onUpdateQuantity(item.id, quantity + 1);
+                                      }}
+                                      size="mobile"
+                                      variant="servio"
+                                      className="flex-1 h-12 sm:h-11 md:h-10 min-h-[48px] sm:min-h-[44px] bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple group"
+                                    >
+                                      <Plus className="h-5 w-5 text-white group-hover:text-servio-purple" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

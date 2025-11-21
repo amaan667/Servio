@@ -46,23 +46,18 @@ export default function GlobalNav() {
     pathname?.startsWith("/sign-in") ||
     pathname?.startsWith("/sign-up");
 
-  // Check if on home page
-  const isOnHomePage = pathname === "/" || pathname === "/home";
-
   // Use session from auth context - already initialized from server
   // This prevents flicker because the session is available immediately
   const shouldHidePublicActions = isAuthenticatedRoute || isAuthenticated;
 
-  // Use theme-aware colors for authenticated routes, light mode colors for public pages
-  const navClasses = isAuthenticatedRoute
-    ? "bg-background border-b border-border shadow-sm sticky top-0 z-50"
-    : "bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50";
+  // Use theme-aware colors for all routes
+  const navClasses =
+    "bg-background dark:bg-background border-b border-border dark:border-border shadow-sm sticky top-0 z-50";
 
-  const textClasses = isAuthenticatedRoute
-    ? "text-foreground hover:text-primary hover:bg-accent"
-    : "text-foreground/80 hover:text-foreground hover:bg-accent";
+  const textClasses =
+    "text-foreground hover:text-primary dark:hover:text-primary hover:bg-accent dark:hover:bg-accent";
 
-  const borderClasses = isAuthenticatedRoute ? "border-border" : "border-gray-200";
+  const borderClasses = "border-border dark:border-border";
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith("/dashboard");
@@ -127,7 +122,7 @@ export default function GlobalNav() {
             sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
             sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
           }
-        } catch (_error) {
+        } catch {
           // Error handled silently
         }
       } else if (!isAuthenticated) {
@@ -181,7 +176,7 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
@@ -193,7 +188,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
@@ -201,23 +196,23 @@ export default function GlobalNav() {
                     )}
                     <button
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-purple-600 transition-all duration-200"
                       aria-label="Toggle theme"
                     >
                       {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
+                        <Sun className="h-5 w-5 text-foreground" />
                       ) : (
-                        <Moon className="h-5 w-5" />
+                        <Moon className="h-5 w-5 text-foreground" />
                       )}
                     </button>
-                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
+                    <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
@@ -230,7 +225,7 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -242,7 +237,7 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
@@ -250,56 +245,66 @@ export default function GlobalNav() {
                     )}
                     <button
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-purple-600 transition-all duration-200"
                       aria-label="Toggle theme"
                     >
                       {theme === "dark" ? (
-                        <Sun className="h-5 w-5" />
+                        <Sun className="h-5 w-5 text-foreground" />
                       ) : (
-                        <Moon className="h-5 w-5" />
+                        <Moon className="h-5 w-5 text-foreground" />
                       )}
                     </button>
-                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
+                    <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
                     </Button>
                   </>
                 ) : isOnSettings ? (
-                  // On settings pages: Dashboard, Home (no border), Sign Out (purple border)
+                  // On settings pages: Dashboard, Home, Dark Mode (no border), Sign Out (purple border)
                   <>
                     <Link
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
-                    {/* NO DARK MODE BUTTON ON SETTINGS PAGES - hidden on home page */}
-                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
+                    <button
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-purple-600 transition-all duration-200"
+                      aria-label="Toggle theme"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5 text-foreground" />
+                      ) : (
+                        <Moon className="h-5 w-5 text-foreground" />
+                      )}
+                    </button>
+                    <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
@@ -312,7 +317,7 @@ export default function GlobalNav() {
                     {(venueId || primaryVenueId) && (
                       <Link
                         href={`/dashboard/${venueId || primaryVenueId}`}
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <LayoutDashboard className="mr-3 h-5 w-5" />
                         Dashboard
@@ -325,21 +330,21 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-purple-600 transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
                         <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Link>
                     )}
                     {/* NO DARK MODE TOGGLE ON HOME PAGE */}
-                    <div className="w-px h-8 bg-gray-200 mx-2"></div>
+                    <div className="w-px h-8 bg-border mx-2"></div>
                     <Button
                       variant="outline"
                       onClick={async () => {
                         await signOut();
                         router.replace("/");
                       }}
-                      className="flex items-center px-4 py-3 text-base font-medium bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-600 hover:text-white rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium"
                     >
                       <LogOut className="mr-3 h-5 w-5" />
                       Sign Out
@@ -376,17 +381,17 @@ export default function GlobalNav() {
             )}
           </div>
 
-          {/* Mobile menu button - Positioned absolutely on the right */}
+          {/* Mobile menu button - Positioned absolutely on the right - Grey with purple border like bottom menu */}
           <div className="absolute right-0 md:hidden">
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 sm:p-3 text-foreground hover:text-primary hover:bg-accent rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 sm:p-3 bg-transparent border-0 text-gray-500 dark:text-gray-400 rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center mobile-menu-button"
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 dark:text-gray-400" />
               ) : (
-                <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 dark:text-gray-400" />
               )}
             </Button>
           </div>
@@ -395,7 +400,7 @@ export default function GlobalNav() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-md shadow-lg">
+        <div className="md:hidden border-t border-border bg-white dark:bg-gray-900 shadow-lg z-50 mobile-dropdown-menu">
           <div className="px-4 pt-4 pb-6 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
             {isAuthenticated ? (
               // Signed in mobile navigation
@@ -404,11 +409,11 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Home</span>
+                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Home</span>
                     </Link>
                     {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
@@ -417,45 +422,47 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                        <span>Settings</span>
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                        <span className="text-gray-900 dark:text-gray-100">Settings</span>
                       </Link>
                     )}
-                    {!isHomePage && (
-                      <button
-                        onClick={() => {
-                          const currentTheme = theme || "light";
-                          setTheme(currentTheme === "dark" ? "light" : "dark");
-                        }}
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
-                      >
-                        {theme === "dark" ? (
-                          <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                            <span>Light Mode</span>
-                          </>
-                        ) : (
-                          <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                            <span>Dark Mode</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                    <div className="w-full h-px bg-gray-100 my-4"></div>
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Light Mode
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Dark Mode
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
                         await signOut();
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <span className="text-white">Sign Out</span>
                     </button>
                   </>
                 ) : isOnFeaturePage || isOnQRPage ? (
@@ -464,11 +471,11 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Dashboard</span>
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Dashboard</span>
                     </Link>
                     {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
@@ -477,45 +484,47 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                        <span>Settings</span>
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                        <span className="text-gray-900 dark:text-gray-100">Settings</span>
                       </Link>
                     )}
-                    {!isHomePage && (
-                      <button
-                        onClick={() => {
-                          const currentTheme = theme || "light";
-                          setTheme(currentTheme === "dark" ? "light" : "dark");
-                        }}
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
-                      >
-                        {theme === "dark" ? (
-                          <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                            <span>Light Mode</span>
-                          </>
-                        ) : (
-                          <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                            <span>Dark Mode</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                    <div className="w-full h-px bg-gray-100 my-4"></div>
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Light Mode
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Dark Mode
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
                         await signOut();
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <span className="text-white">Sign Out</span>
                     </button>
                   </>
                 ) : isOnSettings ? (
@@ -524,52 +533,54 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Dashboard</span>
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Dashboard</span>
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Home</span>
+                      <Home className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900 dark:text-gray-100" />
+                      <span className="text-gray-900 dark:text-gray-100">Home</span>
                     </Link>
-                    {!isHomePage && (
-                      <button
-                        onClick={() => {
-                          const currentTheme = theme || "light";
-                          setTheme(currentTheme === "dark" ? "light" : "dark");
-                        }}
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] w-full"
-                      >
-                        {theme === "dark" ? (
-                          <>
-                            <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-yellow-500" />
-                            <span>Light Mode</span>
-                          </>
-                        ) : (
-                          <>
-                            <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                            <span>Dark Mode</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                    <div className="w-full h-px bg-gray-100 my-4"></div>
+                    <button
+                      onClick={() => {
+                        const currentTheme = theme || "light";
+                        setTheme(currentTheme === "dark" ? "light" : "dark");
+                      }}
+                      className="flex items-center px-4 py-3 text-base font-medium bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] w-full border-2 border-servio-purple"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Light Mode
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="mr-3 h-5 w-5 flex-shrink-0 text-white group-hover:text-servio-purple" />
+                          <span className="text-white group-hover:text-servio-purple">
+                            Dark Mode
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
                         await signOut();
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
                       <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <span className="text-white">Sign Out</span>
                     </button>
                   </>
                 ) : (
@@ -578,11 +589,13 @@ export default function GlobalNav() {
                       href={
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                      className="flex items-center px-4 py-3 text-base font-medium !text-gray-900 dark:!text-gray-100 hover:!text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                      <span>Dashboard</span>
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0 !text-gray-900 dark:!text-gray-100" />
+                      <span className="!text-gray-900 dark:!text-gray-100 font-semibold">
+                        Dashboard
+                      </span>
                     </Link>
                     {(!userRole || userRole === "owner" || userRole === "manager") && (
                       <Link
@@ -591,25 +604,27 @@ export default function GlobalNav() {
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
                             : "/"
                         }
-                        className="flex items-center px-4 py-3 text-base font-medium text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
+                        className="flex items-center px-4 py-3 text-base font-medium !text-gray-900 dark:!text-gray-100 hover:!text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 text-gray-900" />
-                        <span>Settings</span>
+                        <Settings className="mr-3 h-5 w-5 flex-shrink-0 !text-gray-900 dark:!text-gray-100" />
+                        <span className="!text-gray-900 dark:!text-gray-100 font-semibold">
+                          Settings
+                        </span>
                       </Link>
                     )}
                     {/* Dark mode button hidden on home page */}
-                    <div className="w-full h-px bg-gray-100 my-4"></div>
+                    <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
                         await signOut();
                         setMobileMenuOpen(false);
                         router.replace("/");
                       }}
-                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 min-h-[48px] justify-start"
+                      className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple !text-white hover:bg-white hover:!text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
-                      <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
-                      <span>Sign Out</span>
+                      <LogOut className="mr-3 h-5 w-5 flex-shrink-0 !text-white" />
+                      <span className="!text-white font-semibold">Sign Out</span>
                     </button>
                   </>
                 )}
@@ -619,32 +634,32 @@ export default function GlobalNav() {
               <>
                 <Link
                   href="/"
-                  className="px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="px-4 py-3 text-base font-semibold text-gray-900 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
+                  className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px] flex items-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Pricing
                 </Link>
-                <div className="w-full h-px bg-gray-100 my-4"></div>
+                <div className="w-full h-px bg-border dark:bg-border my-4"></div>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     router.push("/sign-in");
                   }}
-                  className="w-full px-4 py-3 text-base font-semibold text-white bg-servio-purple hover:bg-servio-purple-dark rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center"
+                  className="w-full px-4 py-3 text-base font-semibold text-white bg-servio-purple hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center border-2 border-servio-purple"
                 >
                   Sign In
                 </button>

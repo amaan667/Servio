@@ -314,7 +314,8 @@ export default function OnboardingMenuPage() {
               <Button
                 onClick={handleManualCreate}
                 disabled={uploading}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                variant="servio"
+                className="w-full"
               >
                 {uploading ? "Creating..." : "Create Menu Items"}
                 <ArrowRight className="ml-2 w-4 h-4" />

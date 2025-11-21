@@ -1,10 +1,10 @@
 // Admin endpoint to update old tier names to new ones
 // Updates "premium" → "enterprise", "standard" → "pro", "basic" → "starter"
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const supabase = createAdminClient();
 

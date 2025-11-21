@@ -10,6 +10,7 @@ export function ScrollToTop() {
   useEffect(() => {
     const toggleVisibility = () => {
       // Show button when page is scrolled down more than 300px
+      // Updated: Uses opacity transitions for better mobile visibility
       if (window.scrollY > 300) {
         setIsVisible(true);
       } else {
@@ -31,18 +32,15 @@ export function ScrollToTop() {
     });
   };
 
-  if (!isVisible) {
-    return null;
-  }
-
   return (
     <Button
       onClick={scrollToTop}
-      className="fixed bottom-24 right-6 z-50 h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 p-0 flex items-center justify-center"
+      className={`fixed bottom-24 right-6 z-50 h-12 w-12 rounded-full bg-white text-servio-purple hover:bg-gray-50 shadow-lg hover:shadow-xl border-2 border-servio-purple transition-all duration-300 p-0 flex items-center justify-center group ${
+        isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
       aria-label="Scroll to top"
-      style={{ color: "white" }}
     >
-      <ArrowUp className="h-5 w-5 text-white" style={{ color: "white" }} />
+      <ArrowUp className="h-5 w-5 text-servio-purple" />
     </Button>
   );
 }

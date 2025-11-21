@@ -64,8 +64,8 @@ export function QRCodeGenerator({
         <div>
           <Label>QR Code Type</Label>
           <Select value={qrCodeType} onValueChange={onTypeChange}>
-            <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
-              <SelectValue className="!text-white [&>*]:!text-white" />
+            <SelectTrigger className="rounded-lg mt-1 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
+              <SelectValue className="text-servio-purple" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tables">Tables</SelectItem>
@@ -89,9 +89,9 @@ export function QRCodeGenerator({
           <div>
             <Label>Select {qrCodeType === "tables" ? "Table" : "Counter"}</Label>
             <Select value={inputName} onValueChange={onInputNameChange}>
-              <SelectTrigger className="rounded-lg mt-1 bg-purple-600 !text-white border-purple-600 hover:bg-purple-700 [&>span]:!text-white [&_svg]:!text-white [&>*]:!text-white">
+              <SelectTrigger className="rounded-lg mt-1 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
                 <SelectValue
-                  className="!text-white [&>*]:!text-white"
+                  className="text-servio-purple"
                   placeholder={`Select a ${qrCodeType === "tables" ? "table" : "counter"}`}
                 />
               </SelectTrigger>
@@ -145,21 +145,12 @@ export function QRCodeGenerator({
         )}
 
         <div className="flex gap-2">
-          <Button
-            onClick={onGenerate}
-            disabled={!inputName}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
-          >
+          <Button onClick={onGenerate} disabled={!inputName} variant="servio" className="flex-1">
             <Plus className="h-4 w-4 mr-2" />
             Generate QR Code
           </Button>
           {qrCodeType !== "custom" && (
-            <Button
-              variant="outline"
-              onClick={onGenerateAll}
-              disabled={items.length === 0}
-              className="text-purple-600 hover:text-white hover:bg-purple-600"
-            >
+            <Button variant="servio" onClick={onGenerateAll} disabled={items.length === 0}>
               Generate All
             </Button>
           )}

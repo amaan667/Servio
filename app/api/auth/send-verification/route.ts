@@ -41,7 +41,6 @@ export async function POST(_request: NextRequest) {
     }
 
     // Also send custom email
-    const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=PLACEHOLDER`;
     await sendEmail({
       to: user.email!,
       subject: "Verify your Servio account",
