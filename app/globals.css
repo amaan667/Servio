@@ -2546,6 +2546,83 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     max-height: none !important;
     overflow: visible !important;
     line-height: 1.4 !important;
+    font-size: 11px !important;
+    text-indent: 0 !important;
+    clip: auto !important;
+    clip-path: none !important;
+    position: relative !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+  }
+
+  /* ENFORCE TEXT VISIBILITY - Override any conflicting styles */
+  .mobile-nav button span,
+  .mobile-nav button > span,
+  .mobile-nav button div + span,
+  .mobile-nav [class*="flex-col"] span,
+  .mobile-nav [class*="flex-col"] > span,
+  .mobile-nav button[class*="flex-col"] span,
+  .mobile-nav button[class*="flex-col"] > span {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    color: #7c3aed !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    text-indent: 0 !important;
+    clip: auto !important;
+    clip-path: none !important;
+    position: relative !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure button container allows text to show */
+  .mobile-nav button,
+  .mobile-nav [class*="grid"] button,
+  .mobile-nav [class*="grid-cols-4"] button {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    gap: 0 !important;
+  }
+
+  /* Ensure icon container has proper spacing */
+  .mobile-nav button > div:first-child,
+  .mobile-nav button div[class*="relative"] {
+    margin-bottom: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Ensure text span has proper spacing and is always visible */
+  .mobile-nav button span:last-child,
+  .mobile-nav button > span:last-of-type {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Prevent any text hiding techniques */
+  .mobile-nav button span:not([style*="display: none"]),
+  .mobile-nav button > span:not([style*="display: none"]),
+  .mobile-nav [class*="flex-col"] span:not([style*="display: none"]) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   /* Enhanced mobile card styling - respects dark mode */

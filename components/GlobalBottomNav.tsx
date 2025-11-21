@@ -243,9 +243,20 @@ export default function GlobalBottomNav({
                 style={{
                   fontSize: "11px",
                   lineHeight: "1.3",
-                  display: "block",
-                  visibility: "visible",
-                  opacity: 1,
+                  display: "block !important",
+                  visibility: "visible !important",
+                  opacity: "1 !important",
+                  height: "auto !important",
+                  minHeight: "auto !important",
+                  maxHeight: "none !important",
+                  overflow: "visible !important",
+                  color: "#7c3aed !important",
+                  fontWeight: "600 !important",
+                  textIndent: "0 !important",
+                  clip: "auto !important",
+                  clipPath: "none !important",
+                  position: "relative !important",
+                  zIndex: 1,
                 }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
