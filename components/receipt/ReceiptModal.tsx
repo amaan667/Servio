@@ -159,7 +159,7 @@ export function ReceiptModal({
             Receipt #{getShortOrderNumber(order.id)}
           </DialogTitle>
           <DialogDescription>
-            {new Date(order.created_at).toLocaleString()}
+            {order.created_at ? new Date(order.created_at).toLocaleString() : "N/A"}
           </DialogDescription>
         </DialogHeader>
 
@@ -199,13 +199,13 @@ export function ReceiptModal({
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Date:</span>
               <span className="font-semibold">
-                {new Date(order.created_at).toLocaleDateString()}
+                {order.created_at ? new Date(order.created_at).toLocaleDateString() : "N/A"}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Time:</span>
               <span className="font-semibold">
-                {new Date(order.created_at).toLocaleTimeString()}
+                {order.created_at ? new Date(order.created_at).toLocaleTimeString() : "N/A"}
               </span>
             </div>
           </div>

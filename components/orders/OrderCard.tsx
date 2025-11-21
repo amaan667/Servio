@@ -82,12 +82,30 @@ export function OrderCard({
   const convertToOrder = (): Order | null => {
     if (!order) return null;
 
+    // Normalize payment status to uppercase PaymentStatus type
+    const normalizePaymentStatus = (status: string): Order["payment_status"] => {
+      const upper = status.toUpperCase();
+      if (upper === "PAID" || upper === "UNPAID" || upper === "REFUNDED" || upper === "PARTIALLY_PAID") {
+        return upper as Order["payment_status"];
+      }
+      return "UNPAID";
+    };
+
+    // Normalize payment method
+    const normalizePaymentMethod = (mode: string): Order["payment_method"] => {
+      const normalized = mode.replace("_", " ").toLowerCase();
+      if (normalized === "demo" || normalized === "stripe" || normalized === "till" || normalized === "cash" || normalized === "card") {
+        return normalized as Order["payment_method"];
+      }
+      return null;
+    };
+
     return {
       id: order.id,
       venue_id: venueId || "",
-      table_number: order.table_number || null,
-      customer_name: order.customer?.name || order.customer_name || null,
-      customer_phone: order.customer?.phone || order.customer_phone || null,
+      table_number: order.table_number || undefined,
+      customer_name: order.customer?.name || order.customer_name || undefined,
+      customer_phone: order.customer?.phone || order.customer_phone || undefined,
       customer_email: undefined, // Not available in OrderForCard
       items: order.items?.map((item) => ({
         menu_item_id: item.menu_item_id || "",
@@ -98,8 +116,8 @@ export function OrderCard({
       })) || [],
       total_amount: order.total_amount,
       order_status: order.order_status.toUpperCase() as Order["order_status"],
-      payment_status: order.payment.status,
-      payment_method: order.payment.mode.replace("_", " "),
+      payment_status: normalizePaymentStatus(order.payment.status),
+      payment_method: normalizePaymentMethod(order.payment.mode),
       created_at: order.placed_at,
     };
   };
