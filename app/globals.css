@@ -2626,14 +2626,12 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-=======
     line-height: 1.2 !important;
     font-size: 11px !important;
     font-weight: 600 !important;
     position: relative !important;
     z-index: 1 !important;
     margin-top: 4px !important;
->>>>>>> 1ee4fa05d (URGENT: Fix bottom nav text visibility - comprehensive fix)
   }
 
   /* Enhanced mobile card styling - respects dark mode */
