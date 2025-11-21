@@ -237,7 +237,7 @@ export default function GlobalBottomNav({
                 <item.icon className="h-5 w-5 text-[#7c3aed]" />
               </div>
               <span
-                className={`font-medium text-center px-0.5 transition-colors leading-tight text-xs w-full flex items-center justify-center whitespace-nowrap text-[#7c3aed] ${
+                className={`font-medium text-center px-0.5 transition-colors leading-tight text-xs w-full block whitespace-nowrap text-[#7c3aed] ${
                   item.isActive ? "font-bold" : ""
                 }`}
               >
