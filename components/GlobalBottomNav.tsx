@@ -222,24 +222,25 @@ export default function GlobalBottomNav({
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-4 h-20 gap-2 px-3 pb-2 pt-2 items-stretch">
+        <div className="grid grid-cols-4 h-24 gap-2 px-3 py-2 items-stretch">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center p-1.5 relative transition-all duration-200 rounded-lg active:scale-95 h-full bg-white border ${
+              className={`flex flex-col items-center justify-start pt-1.5 pb-1 px-1.5 relative transition-all duration-200 rounded-lg active:scale-95 min-h-full bg-white border overflow-visible ${
                 item.isActive
                   ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
                   : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
               }`}
             >
-              <div className="relative mb-1 flex flex-col items-center justify-center">
+              <div className="relative mb-1 flex-shrink-0">
                 <item.icon className="h-5 w-5 text-[#7c3aed]" />
               </div>
               <span
-                className={`font-medium text-center px-0.5 transition-colors leading-tight text-xs w-full block whitespace-nowrap text-[#7c3aed] ${
+                className={`font-medium text-center px-0.5 transition-colors leading-tight text-xs w-full block whitespace-nowrap text-[#7c3aed] flex-shrink-0 min-h-[14px] ${
                   item.isActive ? "font-bold" : ""
                 }`}
+                style={{ minHeight: '14px', lineHeight: '1.4' }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
               </span>
@@ -265,7 +266,7 @@ export default function GlobalBottomNav({
       )}
 
       {/* Bottom Padding for Fixed Navigation */}
-      <div className="h-20" />
+      <div className="h-24" />
     </>
   );
 }
