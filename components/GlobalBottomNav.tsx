@@ -233,11 +233,11 @@ export default function GlobalBottomNav({
                   : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
               }`}
             >
-              <div className="relative mb-0.5 flex flex-col items-center justify-center">
+              <div className="relative mb-1 flex flex-col items-center justify-center">
                 <item.icon className="h-5 w-5 text-[#7c3aed]" />
               </div>
               <span
-                className={`font-medium text-center px-0.5 transition-colors leading-tight text-[10px] w-full flex items-center justify-center whitespace-nowrap overflow-hidden text-[#7c3aed] ${
+                className={`font-medium text-center px-0.5 transition-colors leading-tight text-xs w-full flex items-center justify-center whitespace-nowrap text-[#7c3aed] ${
                   item.isActive ? "font-bold" : ""
                 }`}
               >
