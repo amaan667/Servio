@@ -1,5 +1,9 @@
 // Tier-based feature restrictions
+// Based on pricing table: Starter (£99), Pro (£249), Enterprise (£449+)
 import { createClient } from "@/lib/supabase";
+
+export type AnalyticsTier = "basic" | "advanced" | "advanced+exports";
+export type SupportLevel = "email" | "priority" | "24/7";
 
 export interface TierLimits {
   maxTables: number;
@@ -9,15 +13,18 @@ export interface TierLimits {
   features: {
     kds: boolean;
     inventory: boolean;
-    analytics: boolean;
+    analytics: AnalyticsTier; // "basic" | "advanced" | "advanced+exports"
+    customerFeedback: boolean;
+    customBranding: boolean;
+    apiAccess: boolean;
     aiAssistant: boolean;
     multiVenue: boolean;
     customIntegrations: boolean;
-    prioritySupport: boolean;
+    supportLevel: SupportLevel; // "email" | "priority" | "24/7"
   };
 }
 
-// Tier limits based on homepage pricing
+// Tier limits based on homepage pricing table
 export const TIER_LIMITS: Record<string, TierLimits> = {
   starter: {
     maxTables: 20,
@@ -27,11 +34,14 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     features: {
       kds: false,
       inventory: false,
-      analytics: true,
+      analytics: "basic", // Basic dashboard only
+      customerFeedback: false,
+      customBranding: false,
+      apiAccess: false,
       aiAssistant: false,
       multiVenue: false,
       customIntegrations: false,
-      prioritySupport: false,
+      supportLevel: "email", // Email support
     },
   },
   pro: {
@@ -42,11 +52,14 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     features: {
       kds: false,
       inventory: true,
-      analytics: true,
-      aiAssistant: false,
+      analytics: "advanced", // Advanced & AI insights (PredictiveInsights component)
+      customerFeedback: true,
+      customBranding: false,
+      apiAccess: false,
+      aiAssistant: false, // AI Assistant chat is Enterprise only
       multiVenue: false,
       customIntegrations: false,
-      prioritySupport: true,
+      supportLevel: "priority", // Priority email support
     },
   },
   enterprise: {
@@ -57,11 +70,14 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     features: {
       kds: true,
       inventory: true,
-      analytics: true,
+      analytics: "advanced+exports", // Advanced + exports
+      customerFeedback: true,
+      customBranding: true,
+      apiAccess: true,
       aiAssistant: true,
       multiVenue: true,
       customIntegrations: true,
-      prioritySupport: true,
+      supportLevel: "24/7", // 24/7 priority support
     },
   },
 };
@@ -91,17 +107,62 @@ export async function checkFeatureAccess(
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
 
-  if (limits.features[feature]) {
+  // Special handling for analytics tier
+  if (feature === "analytics") {
+    const currentAnalytics = limits.features.analytics;
+    if (currentAnalytics === "advanced+exports") {
+      return { allowed: true, currentTier: tier };
+    }
+    if (currentAnalytics === "advanced") {
+      // Pro tier has advanced analytics
+      return { allowed: true, currentTier: tier };
+    }
+    // Starter tier has basic analytics
+    return { allowed: true, currentTier: tier };
+  }
+
+  // Special handling for support level
+  if (feature === "supportLevel") {
+    // All tiers have support, just different levels
+    return { allowed: true, currentTier: tier };
+  }
+
+  // Boolean features
+  const featureValue = limits.features[feature];
+  if (typeof featureValue === "boolean" && featureValue) {
     return { allowed: true, currentTier: tier };
   }
 
   // Find the minimum tier that has this feature
   let requiredTier = "enterprise";
   if (TIER_LIMITS.pro.features[feature]) {
-    requiredTier = "pro";
+    const proValue = TIER_LIMITS.pro.features[feature];
+    if (typeof proValue === "boolean" && proValue) {
+      requiredTier = "pro";
+    }
   }
 
   return { allowed: false, currentTier: tier, requiredTier };
+}
+
+/**
+ * Check if user has access to advanced analytics features
+ */
+export async function hasAdvancedAnalytics(userId: string): Promise<boolean> {
+  const tier = await getUserTier(userId);
+  const limits = TIER_LIMITS[tier];
+  return (
+    limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
+  );
+}
+
+/**
+ * Check if user has access to analytics exports
+ */
+export async function hasAnalyticsExports(userId: string): Promise<boolean> {
+  const tier = await getUserTier(userId);
+  const limits = TIER_LIMITS[tier];
+  return limits.features.analytics === "advanced+exports";
 }
 
 export async function checkLimit(

@@ -3,8 +3,10 @@
 // AI Assistant - Command Palette Component
 // Global ⌘K / Ctrl-K command palette for AI assistance
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useAuth } from "@/app/auth/AuthProvider";
+import { checkFeatureAccess } from "@/lib/tier-restrictions";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +31,6 @@ import {
 import { AIPlanResponse, AIPreviewDiff } from "@/types/ai-assistant";
 import { AIAssistantFloat } from "./ai-assistant-float";
 import { SimpleChatInterface } from "./simple-chat-interface";
-import { aiLogger } from "@/lib/logger";
 
 interface Tool {
   name: string;
@@ -75,10 +76,10 @@ export function AssistantCommandPalette({
 }: AssistantCommandPaletteProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useAuth();
+  const [hasAccess, setHasAccess] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [open, setOpen] = useState(false);
-
-  // Detect current page from pathname
-  const currentPage = pathname?.split("/").pop() || page;
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<AIPlanResponse | null>(null);
@@ -88,6 +89,26 @@ export function AssistantCommandPalette({
   const [success, setSuccess] = useState(false);
   const [executionResults, setExecutionResults] = useState<ExecutionResult[]>([]);
   const [showChatInterface, setShowChatInterface] = useState(false);
+
+  // Detect current page from pathname
+  const currentPage = pathname?.split("/").pop() || page;
+
+  // Check tier access - AI Assistant requires Enterprise tier
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user?.id) {
+        setChecking(false);
+        setHasAccess(false);
+        return;
+      }
+
+      const access = await checkFeatureAccess(user.id, "aiAssistant");
+      setHasAccess(access.allowed);
+      setChecking(false);
+    };
+
+    checkAccess();
+  }, [user]);
 
   // Keyboard shortcut: ⌘K / Ctrl-K - Opens expanded chat interface directly
   useEffect(() => {

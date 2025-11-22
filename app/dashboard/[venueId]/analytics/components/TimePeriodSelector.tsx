@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TimePeriod } from "../hooks/useAnalyticsData";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TimePeriodSelectorProps {
   timePeriod: TimePeriod;
@@ -20,6 +21,7 @@ interface TimePeriodSelectorProps {
   onExportCSV: () => void;
   isDownloading: boolean;
   hasData: boolean;
+  canExport?: boolean; // Enterprise tier required for exports
 }
 
 export function TimePeriodSelector({
@@ -30,6 +32,7 @@ export function TimePeriodSelector({
   onExportCSV,
   isDownloading,
   hasData,
+  canExport = false,
 }: TimePeriodSelectorProps) {
   return (
     <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -113,15 +116,32 @@ export function TimePeriodSelector({
         </div>
       </div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-        <Button
-          onClick={onExportCSV}
-          disabled={!hasData || isDownloading}
-          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-white text-sm hover:bg-purple-700 disabled:opacity-50 w-full sm:w-auto"
-          title="Exports the rows you're viewing"
-        >
-          <Download className="h-4 w-4" />
-          {isDownloading ? "Generating..." : "Download CSV"}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  onClick={canExport ? onExportCSV : undefined}
+                  disabled={!hasData || isDownloading || !canExport}
+                  className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-white text-sm hover:bg-purple-700 disabled:opacity-50 w-full sm:w-auto"
+                  title={
+                    canExport
+                      ? "Exports the rows you're viewing"
+                      : "CSV exports require Enterprise tier"
+                  }
+                >
+                  <Download className="h-4 w-4" />
+                  {isDownloading ? "Generating..." : "Download CSV"}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!canExport && (
+              <TooltipContent>
+                <p>CSV exports require Enterprise tier</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
         <div className="flex items-center space-x-2 text-xs sm:text-sm">
           <span className="text-gray-900">Last updated:</span>
           <span className="font-medium text-gray-900">{new Date().toLocaleTimeString()}</span>

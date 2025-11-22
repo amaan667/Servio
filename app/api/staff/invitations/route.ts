@@ -153,6 +153,38 @@ export async function POST(_request: NextRequest) {
       hasPermission,
     });
 
+    // Check tier limits for staff count
+    const { checkLimit } = await import("@/lib/tier-restrictions");
+
+    // Count current staff (active user_venue_roles)
+    const { count: currentStaffCount } = await supabase
+      .from("user_venue_roles")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", venue_id);
+
+    const staffCount = currentStaffCount || 0;
+
+    // Check tier limit
+    const limitCheck = await checkLimit(user.id, "maxStaff", staffCount);
+    if (!limitCheck.allowed) {
+      logger.warn("[STAFF INVITATION POST] Staff limit reached", {
+        userId: user.id,
+        currentCount: staffCount,
+        limit: limitCheck.limit,
+        tier: limitCheck.currentTier,
+      });
+      return NextResponse.json(
+        {
+          error: `Staff limit reached. You have ${staffCount}/${limitCheck.limit} staff members. Upgrade to ${limitCheck.limit === 3 ? "Pro" : "Enterprise"} tier for more staff.`,
+          limitReached: true,
+          currentCount: staffCount,
+          limit: limitCheck.limit,
+          tier: limitCheck.currentTier,
+        },
+        { status: 403 }
+      );
+    }
+
     // Check if a pending invitation already exists for this email/venue
     const { data: existingInvitation } = await supabase
       .from("staff_invitations")

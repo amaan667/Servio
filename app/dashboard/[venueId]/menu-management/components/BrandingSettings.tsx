@@ -1,16 +1,21 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Image, Upload } from "lucide-react";
 import { DesignSettings } from "../types";
+import { checkFeatureAccess, getUserTier } from "@/lib/tier-restrictions";
+import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
+import { useAuth } from "@/app/auth/AuthProvider";
 
 interface BrandingSettingsProps {
   designSettings: DesignSettings;
   setDesignSettings: (settings: DesignSettings) => void;
   onLogoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isUploadingLogo: boolean;
+  venueId: string;
 }
 
 export function BrandingSettings({
@@ -18,7 +23,67 @@ export function BrandingSettings({
   setDesignSettings,
   onLogoUpload,
   isUploadingLogo,
+  venueId,
 }: BrandingSettingsProps) {
+  const { user } = useAuth();
+  const [hasAccess, setHasAccess] = useState(true);
+  const [currentTier, setCurrentTier] = useState("starter");
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const checkTier = async () => {
+      if (!user?.id) {
+        setChecking(false);
+        return;
+      }
+
+      const tier = await getUserTier(user.id);
+      setCurrentTier(tier);
+      const access = await checkFeatureAccess(user.id, "customBranding");
+      setHasAccess(access.allowed);
+      setChecking(false);
+    };
+
+    checkTier();
+  }, [user]);
+
+  if (checking) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Image className="h-5 w-5" />
+            <span>Branding</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500">Checking access...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Image className="h-5 w-5" />
+            <span>Branding</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TierRestrictionBanner
+            currentTier={currentTier}
+            requiredTier="enterprise"
+            featureName="Custom Branding"
+            venueId={venueId}
+            reason="Custom branding (logo upload, colors, fonts) requires Enterprise tier"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card>
       <CardHeader>

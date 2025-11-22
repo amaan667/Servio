@@ -43,6 +43,8 @@ interface AnalyticsClientProps {
     revenueByHour: unknown[];
     revenueByDay: Record<string, number>;
   };
+  hasAdvancedAnalytics?: boolean;
+  currentTier?: string;
 }
 
 export default function AnalyticsClient({
