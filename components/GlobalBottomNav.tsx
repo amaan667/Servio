@@ -113,15 +113,12 @@ export default function GlobalBottomNav({
           table: "orders",
           filter: `venue_id=eq.${venueId}`,
         },
-        async () => {
+        async (payload) => {
           if (!isSubscribed || !isMountedRef.current) return;
 
-          // Debounce the updates to prevent rapid state changes
-          if (debounceTimeout) {
-            clearTimeout(debounceTimeout);
-          }
-
-          debounceTimeout = setTimeout(async () => {
+          // For INSERT events (new orders), update immediately
+          // For UPDATE/DELETE events, use debounced update
+          const updateCounts = async () => {
             if (!isSubscribed || !isMountedRef.current) return;
 
             try {
@@ -148,7 +145,18 @@ export default function GlobalBottomNav({
             } catch {
               // Silent error handling
             }
-          }, 300);
+          };
+
+          if (payload.eventType === "INSERT") {
+            // Immediate update for new orders
+            updateCounts();
+          } else {
+            // Debounced update for updates/deletes
+            if (debounceTimeout) {
+              clearTimeout(debounceTimeout);
+            }
+            debounceTimeout = setTimeout(updateCounts, 300);
+          }
         }
       )
       .subscribe();
@@ -230,7 +238,7 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-between pt-2 pb-2 px-1 relative transition-all duration-200 rounded-lg active:scale-95 bg-white border ${
+              className={`flex flex-col items-center justify-center gap-1 pt-2 pb-2 px-1 relative transition-all duration-200 rounded-lg active:scale-95 bg-white border ${
                 item.isActive
                   ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
                   : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
@@ -238,12 +246,10 @@ export default function GlobalBottomNav({
               style={{ minHeight: "82px", overflow: "visible" }}
             >
               <div
-                className="relative flex-shrink-0"
+                className="relative flex-shrink-0 flex items-center justify-center"
                 style={{
                   height: "24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: "100%",
                 }}
               >
                 <item.icon className="h-6 w-6 text-[#7c3aed]" />
@@ -259,7 +265,7 @@ export default function GlobalBottomNav({
                   visibility: "visible",
                   opacity: 1,
                   height: "auto",
-                  minHeight: "auto",
+                  minHeight: "16px",
                   maxHeight: "none",
                   overflow: "visible",
                   color: "#7c3aed",
@@ -269,7 +275,9 @@ export default function GlobalBottomNav({
                   clipPath: "none",
                   position: "relative",
                   zIndex: 1,
-                  marginTop: "4px",
+                  whiteSpace: "normal",
+                  wordWrap: "break-word",
+                  textOverflow: "clip",
                 }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}

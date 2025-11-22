@@ -99,9 +99,15 @@ export default function ConditionalBottomNav() {
           table: "orders",
           filter: `venue_id=eq.${venueIdFromPath}`,
         },
-        () => {
+        (payload) => {
           if (!isMounted) return;
-          debouncedLoadCounts();
+          // For INSERT events (new orders), update immediately
+          // For UPDATE/DELETE events, use debounced update
+          if (payload.eventType === "INSERT") {
+            loadCounts();
+          } else {
+            debouncedLoadCounts();
+          }
         }
       )
       .subscribe();
