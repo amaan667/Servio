@@ -28,16 +28,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orde
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Get venue info
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("venue_name, venue_email, venue_address")
+    // Get menu design settings (for branding - logo, colors, venue name)
+    const { data: designSettings } = await supabase
+      .from("menu_design_settings")
+      .select("venue_name, logo_url, primary_color")
       .eq("venue_id", order.venue_id)
       .single();
 
-    const venueName = venue?.venue_name || "Restaurant";
+    // Get venue contact info
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("venue_email, venue_address")
+      .eq("venue_id", order.venue_id)
+      .single();
+
+    // Use menu design settings for branding, fallback to venue name if design settings don't exist
+    const venueName = designSettings?.venue_name || venue?.venue_name || "Restaurant";
     const venueAddress = venue?.venue_address || "";
     const venueEmail = venue?.venue_email || "";
+    const logoUrl = designSettings?.logo_url || undefined;
+    const primaryColor = designSettings?.primary_color || "#8b5cf6";
 
     // Calculate VAT (20% UK standard rate)
     const totalAmount = order.total_amount || 0;
@@ -50,6 +60,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orde
       venueName,
       venueAddress,
       venueEmail,
+      logoUrl,
+      primaryColor,
       orderId: order.id,
       orderNumber: orderId.slice(-6).toUpperCase(),
       tableNumber: order.table_number,

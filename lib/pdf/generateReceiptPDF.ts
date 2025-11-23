@@ -6,6 +6,8 @@ interface ReceiptData {
   venueName: string;
   venueAddress?: string;
   venueEmail?: string;
+  logoUrl?: string;
+  primaryColor?: string;
   orderId: string;
   orderNumber: string;
   tableNumber?: number | string;
@@ -85,13 +87,18 @@ function generateReceiptHTML(data: ReceiptData): string {
           
           .header {
             text-align: center;
-            border-bottom: 3px solid #7c3aed;
+            border-bottom: 3px solid ${data.primaryColor || "#7c3aed"};
             padding-bottom: 20px;
             margin-bottom: 30px;
           }
           
+          .header img {
+            max-height: 80px;
+            margin-bottom: 12px;
+          }
+          
           .header h1 {
-            color: #7c3aed;
+            color: ${data.primaryColor || "#7c3aed"};
             margin: 0;
             font-size: 28px;
             font-weight: 700;
@@ -136,7 +143,7 @@ function generateReceiptHTML(data: ReceiptData): string {
           .order-number {
             font-size: 18px;
             font-weight: 700;
-            color: #7c3aed;
+            color: ${data.primaryColor || "#7c3aed"};
             margin-bottom: 12px;
             padding-bottom: 12px;
             border-bottom: 2px solid #e5e7eb;
@@ -192,10 +199,13 @@ function generateReceiptHTML(data: ReceiptData): string {
           .total-row.total-final {
             font-size: 20px;
             font-weight: 700;
-            color: #1f2937;
             margin-top: 12px;
             padding-top: 12px;
             border-top: 2px solid #e5e7eb;
+          }
+          
+          .total-row.total-final .total-value {
+            color: ${data.primaryColor || "#7c3aed"};
           }
           
           .total-label {
@@ -244,6 +254,7 @@ function generateReceiptHTML(data: ReceiptData): string {
       </head>
       <body>
         <div class="header">
+          ${data.logoUrl ? `<img src="${data.logoUrl}" alt="${data.venueName}" />` : ""}
           <h1>${data.venueName}</h1>
           ${data.venueAddress ? `<p>${data.venueAddress}</p>` : ""}
           ${data.venueEmail ? `<p>${data.venueEmail}</p>` : ""}

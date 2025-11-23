@@ -35,8 +35,9 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     venue_name?: string;
     venue_email?: string;
     venue_address?: string;
-    receipt_logo_url?: string;
-    receipt_footer_text?: string;
+    logo_url?: string;
+    primary_color?: string;
+    secondary_color?: string;
     show_vat_breakdown?: boolean;
   }>({});
   const [activeTab, setActiveTab] = useState("today");
@@ -57,23 +58,35 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         endUtcISO: todayWindowData.endUtcISO || new Date().toISOString(),
       };
 
-      // Get venue info including receipt customization settings
-      const { data: venue } = await supabase
-        .from("venues")
-        .select("venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown")
+      // Get menu design settings (for branding - logo, colors, venue name)
+      const { data: designSettings } = await supabase
+        .from("menu_design_settings")
+        .select("venue_name, logo_url, primary_color, secondary_color")
         .eq("venue_id", venueId)
         .single();
 
-      if (venue) {
-        setVenueInfo({
-          venue_name: venue.venue_name || undefined,
-          venue_email: venue.venue_email || undefined,
-          venue_address: venue.venue_address || undefined,
-          receipt_logo_url: venue.receipt_logo_url || undefined,
-          receipt_footer_text: venue.receipt_footer_text || undefined,
-          show_vat_breakdown: venue.show_vat_breakdown ?? true,
-        });
-      }
+      // Get venue contact info
+      const { data: venue } = await supabase
+        .from("venues")
+        .select("venue_email, venue_address, show_vat_breakdown")
+        .eq("venue_id", venueId)
+        .single();
+
+      // Use menu design settings for branding, fallback to venue name if design settings don't exist
+      const venueName = designSettings?.venue_name || venue?.venue_name;
+      const logoUrl = designSettings?.logo_url;
+      const primaryColor = designSettings?.primary_color || "#8b5cf6";
+      const secondaryColor = designSettings?.secondary_color || "#f3f4f6";
+
+      setVenueInfo({
+        venue_name: venueName || undefined,
+        venue_email: venue?.venue_email || undefined,
+        venue_address: venue?.venue_address || undefined,
+        logo_url: logoUrl || undefined,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
+        show_vat_breakdown: venue?.show_vat_breakdown ?? true,
+      });
 
       // Fetch paid orders only
       const { data: ordersData, error: fetchError } = await supabase
@@ -386,8 +399,9 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
           venueName={venueInfo.venue_name}
           venueEmail={venueInfo.venue_email}
           venueAddress={venueInfo.venue_address}
-          receiptLogoUrl={venueInfo.receipt_logo_url}
-          receiptFooterText={venueInfo.receipt_footer_text}
+          logoUrl={venueInfo.logo_url}
+          primaryColor={venueInfo.primary_color}
+          secondaryColor={venueInfo.secondary_color}
           isOpen={!!selectedReceipt}
           onClose={() => setSelectedReceipt(null)}
           showVAT={venueInfo.show_vat_breakdown ?? true}
