@@ -22,6 +22,7 @@ export interface CheckoutData {
   customerEmail?: string;
   orderType?: string;
   isDemo?: boolean;
+  isSplit?: boolean;
 }
 
 export type PaymentAction = "demo" | "stripe" | "till" | "later";

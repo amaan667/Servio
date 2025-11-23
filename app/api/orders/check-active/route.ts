@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       .eq("venue_id", venueId)
       .eq("table_number", tableNumber)
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "OUT_FOR_DELIVERY", "SERVING"])
-      .in("payment_status", ["UNPAID", "PAY_LATER", "IN_PROGRESS"]);
+      .in("payment_status", ["UNPAID", "IN_PROGRESS"]);
 
     if (error) {
       logger.error("❌ [CHECK ACTIVE ORDERS] Database error", {

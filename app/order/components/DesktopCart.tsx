@@ -57,8 +57,22 @@ export function DesktopCart({
                         {item.name}
                       </h4>
                       <p className="text-xs text-gray-900 dark:text-gray-600">
-                        £{item.price.toFixed(2)} each
+                        £{(item.price + (item.modifierPrice || 0)).toFixed(2)} each
+                        {item.modifierPrice && item.modifierPrice > 0 && (
+                          <span className="text-purple-600 dark:text-purple-400 ml-1">
+                            (+£{item.modifierPrice.toFixed(2)} modifiers)
+                          </span>
+                        )}
                       </p>
+                      {item.selectedModifiers && Object.keys(item.selectedModifiers).length > 0 && (
+                        <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                          {Object.entries(item.selectedModifiers).map(([modName, options]) => (
+                            <span key={modName} className="mr-2">
+                              {modName}: {options.join(", ")}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <Button
                       onClick={() => onRemoveFromCart(item.id)}
@@ -93,7 +107,7 @@ export function DesktopCart({
                       </Button>
                     </div>
                     <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-                      £{(item.price * item.quantity).toFixed(2)}
+                      £{((item.price + (item.modifierPrice || 0)) * item.quantity).toFixed(2)}
                     </span>
                   </div>
 

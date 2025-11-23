@@ -470,6 +470,17 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
                       <Badge className="text-lg font-bold shrink-0">{ticket.quantity}x</Badge>
                     </div>
 
+                    {/* Modifiers */}
+                    {(ticket as { modifiers?: Record<string, string[]> }).modifiers && (
+                      <div className="bg-purple-50 border border-purple-200 p-2 rounded text-sm">
+                        <p className="font-medium text-purple-800 mb-1">Modifiers:</p>
+                        {Object.entries((ticket as { modifiers?: Record<string, string[]> }).modifiers || {}).map(([modName, options]) => (
+                          <p key={modName} className="text-xs text-purple-700">
+                            {modName}: {options.join(", ")}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                     {/* Special Instructions */}
                     {ticket.special_instructions && (
                       <div className="bg-yellow-50 border border-yellow-200 p-2 rounded text-sm">
@@ -544,17 +555,38 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
 
                         {/* Items */}
                         <div className="space-y-1">
-                          {readyOrderTickets.map((ticket) => (
+                          {readyOrderTickets.map((ticket) => {
+                            const modifiers = (ticket as { modifiers?: Record<string, string[]> }).modifiers;
+                            const modifierText = modifiers 
+                              ? Object.entries(modifiers)
+                                  .map(([modName, options]) => `${modName}: ${options.join(", ")}`)
+                                  .join("; ")
+                              : null;
+                            
+                            return (
                             <div
                               key={ticket.id}
-                              className="flex items-center justify-between text-sm"
+                              className="flex flex-col gap-1 text-sm"
                             >
-                              <span>
-                                {ticket.quantity}x {ticket.item_name}
-                              </span>
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              <div className="flex items-center justify-between">
+                                <span>
+                                  {ticket.quantity}x {ticket.item_name}
+                                </span>
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              </div>
+                              {modifierText && (
+                                <p className="text-xs text-muted-foreground pl-2 border-l-2 border-purple-300">
+                                  {modifierText}
+                                </p>
+                              )}
+                              {ticket.special_instructions && (
+                                <p className="text-xs text-yellow-700 pl-2 border-l-2 border-yellow-300">
+                                  Note: {ticket.special_instructions}
+                                </p>
+                              )}
                             </div>
-                          ))}
+                          );
+                          })}
                         </div>
 
                         {/* Time */}

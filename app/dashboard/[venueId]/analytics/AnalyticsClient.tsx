@@ -12,6 +12,7 @@ import {
   BarChart3,
   PieChart,
 } from "lucide-react";
+import { CostInsights } from "./components/CostInsights";
 
 interface TopSellingItem {
   name: string;
@@ -45,12 +46,14 @@ interface AnalyticsClientProps {
   };
   hasAdvancedAnalytics?: boolean;
   currentTier?: string;
+  venueId: string;
 }
 
 export default function AnalyticsClient({
   ordersData,
   menuData,
   revenueData,
+  venueId,
 }: AnalyticsClientProps) {
   return (
     <div className="space-y-6">
@@ -83,6 +86,7 @@ export default function AnalyticsClient({
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="menu">Menu Performance</TabsTrigger>
+          <TabsTrigger value="costs">Cost Insights</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
         </TabsList>
 
@@ -188,6 +192,18 @@ export default function AnalyticsClient({
               icon={<PieChart className="h-4 w-4" />}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="costs" className="space-y-4">
+          {venueId ? (
+            <CostInsights venueId={venueId} timePeriod="30d" />
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-muted-foreground">Venue ID required for cost insights</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="trends" className="space-y-4">

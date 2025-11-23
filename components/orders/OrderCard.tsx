@@ -14,8 +14,10 @@ import { OrderStatusChip, PaymentStatusChip } from "@/components/ui/chips";
 import { formatCurrency, formatOrderTime } from "@/lib/orders/mapOrderToCardData";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { PaymentCollectionDialog } from "./PaymentCollectionDialog";
+import { TablePaymentDialog } from "./TablePaymentDialog";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order } from "@/types/order";
+import { Users } from "lucide-react";
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -37,7 +39,9 @@ export function OrderCard({
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showTablePaymentDialog, setShowTablePaymentDialog] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [tableUnpaidCount, setTableUnpaidCount] = useState<number | null>(null);
   const [venueInfo, setVenueInfo] = useState<{
     name?: string;
     email?: string;
@@ -51,6 +55,36 @@ export function OrderCard({
     variant === "auto" ? (deriveEntityKind(order) === "table" ? "table" : "counter") : variant;
 
   const isTableVariant = finalVariant === "table";
+
+  // Fetch table unpaid count for "Pay Entire Table" button
+  React.useEffect(() => {
+    if (!venueId || !order.table_number) return;
+
+    const fetchTableUnpaidCount = async () => {
+      try {
+        const supabase = createClient();
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const { count } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("venue_id", venueId)
+          .eq("table_number", order.table_number)
+          .in("payment_status", ["UNPAID", "PAY_LATER"])
+          .gte("created_at", todayStart.toISOString())
+          .lte("created_at", todayEnd.toISOString());
+
+        setTableUnpaidCount(count || 0);
+      } catch {
+        // Silently fail
+      }
+    };
+
+    fetchTableUnpaidCount();
+  }, [venueId, order.table_number]);
 
   // Fetch venue info and logo for receipt
   React.useEffect(() => {
@@ -333,27 +367,47 @@ export function OrderCard({
 
       // CASE 2: Pay at Till - staff must collect payment
       if (paymentMode === "pay_at_till") {
+        const hasMultipleUnpaid = tableUnpaidCount !== null && tableUnpaidCount > 1;
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-orange-600">
                   <span className="font-medium">Served - Unpaid</span>
+                  {hasMultipleUnpaid && (
+                    <span className="ml-2 text-xs">
+                      ({tableUnpaidCount} unpaid orders at table)
+                    </span>
+                  )}
                 </div>
                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                   Unpaid - {formatCurrency(order.total_amount, order.currency)}
                 </Badge>
               </div>
-              <Button
-                size="sm"
-                onClick={() => setShowPaymentDialog(true)}
-                disabled={isProcessing}
-                variant="servio"
-                className="w-full sm:w-auto"
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Collect Payment at Till
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                {hasMultipleUnpaid && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowTablePaymentDialog(true)}
+                    disabled={isProcessing}
+                    variant="outline"
+                    className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Pay Entire Table
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => setShowPaymentDialog(true)}
+                  disabled={isProcessing}
+                  variant="servio"
+                  className="w-full sm:w-auto"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Collect Payment at Till
+                </Button>
+              </div>
             </div>
           </div>
         );
@@ -361,7 +415,6 @@ export function OrderCard({
 
       // CASE 3: Pay Later - customer must rescan QR and pay
       if (paymentMode === "pay_later") {
-        const payLaterUrl = `${window.location.origin}/pay-later/${order.id}`;
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="flex flex-col gap-3">
@@ -378,7 +431,9 @@ export function OrderCard({
                   <QrCode className="h-4 w-4" />
                   Customer can rescan QR code to pay
                 </p>
-                <p className="text-xs text-gray-600">Payment link: {payLaterUrl}</p>
+                <p className="text-xs text-gray-600">
+                  When customer rescans QR code, they will see their unpaid orders and can pay from the order page.
+                </p>
               </div>
             </div>
           </div>
@@ -516,28 +571,43 @@ export function OrderCard({
 
       {/* Payment Collection Dialog (for pay_at_till orders) */}
       {venueId && (
-        <PaymentCollectionDialog
-          open={showPaymentDialog}
-          onOpenChange={setShowPaymentDialog}
-          orderId={order.id}
-          orderNumber={order.short_id}
-          customerName={order.customer_name || "Customer"}
-          totalAmount={order.total_amount}
-          venueId={venueId}
-          items={
-            order.items?.map((item: Record<string, unknown>) => ({
-              item_name: (item.item_name as string) || (item.name as string) || "Item",
-              quantity: (item.quantity as number) || (item.qty as number) || 1,
-              price: (item.price as number) || (item.unit_price as number) || 0,
-            })) || []
-          }
-          onSuccess={async () => {
-            setShowPaymentDialog(false);
-            // Refresh order data to get updated payment status
-            // This will trigger a re-render showing "Mark Completed" button
-            await onActionComplete?.();
-          }}
-        />
+        <>
+          <PaymentCollectionDialog
+            open={showPaymentDialog}
+            onOpenChange={setShowPaymentDialog}
+            orderId={order.id}
+            orderNumber={order.short_id}
+            customerName={order.customer_name || "Customer"}
+            totalAmount={order.total_amount}
+            venueId={venueId}
+            items={
+              order.items?.map((item: Record<string, unknown>) => ({
+                item_name: (item.item_name as string) || (item.name as string) || "Item",
+                quantity: (item.quantity as number) || (item.qty as number) || 1,
+                price: (item.price as number) || (item.unit_price as number) || 0,
+              })) || []
+            }
+            onSuccess={async () => {
+              setShowPaymentDialog(false);
+              // Refresh order data to get updated payment status
+              // This will trigger a re-render showing "Mark Completed" button
+              await onActionComplete?.();
+            }}
+          />
+          {/* Table Payment Dialog (for paying entire table) */}
+          {order.table_number && (
+            <TablePaymentDialog
+              open={showTablePaymentDialog}
+              onOpenChange={setShowTablePaymentDialog}
+              tableNumber={order.table_number}
+              venueId={venueId}
+              onSuccess={async () => {
+                setShowTablePaymentDialog(false);
+                await onActionComplete?.();
+              }}
+            />
+          )}
+        </>
       )}
 
       {/* Receipt Modal */}

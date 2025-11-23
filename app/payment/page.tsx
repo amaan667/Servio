@@ -17,6 +17,7 @@ import {
   Loader2,
   User,
   Phone,
+  Users,
 } from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 import { OrderTimeline } from "@/components/order-timeline";
@@ -190,26 +191,41 @@ export default function PaymentPage() {
               <div className="space-y-3">
                 {/* Stripe Payment */}
                 {!paymentState.isDemo && (
-                  <Button
-                    onClick={() => {
-                      handlePayment("stripe");
-                    }}
-                    disabled={paymentState.isProcessing}
-                    variant="default"
-                    className="w-full h-12 text-base"
-                  >
-                    {paymentState.isProcessing && paymentState.paymentAction === "stripe" ? (
-                      <>
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-5 w-5 mr-2" />
-                        Pay Now
-                      </>
+                  <>
+                    <Button
+                      onClick={() => {
+                        handlePayment("stripe");
+                      }}
+                      disabled={paymentState.isProcessing}
+                      variant="default"
+                      className="w-full h-12 text-base"
+                    >
+                      {paymentState.isProcessing && paymentState.paymentAction === "stripe" ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-5 w-5 mr-2" />
+                          Pay Now
+                        </>
+                      )}
+                    </Button>
+                    {paymentState.checkoutData && !paymentState.checkoutData.isSplit && (
+                      <Button
+                        onClick={() => {
+                          // Redirect to bill split flow
+                          window.location.href = `/order?venue=${paymentState.checkoutData?.venueId}&table=${paymentState.checkoutData?.tableNumber}&splitBill=true`;
+                        }}
+                        variant="outline"
+                        className="w-full h-12 text-base"
+                      >
+                        <Users className="h-5 w-5 mr-2" />
+                        Split Bill
+                      </Button>
                     )}
-                  </Button>
+                  </>
                 )}
 
                 {/* Pay at Till */}

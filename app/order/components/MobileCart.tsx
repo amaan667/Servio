@@ -67,7 +67,18 @@ export function MobileCart({
                 <div key={item.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
+                        {item.selectedModifiers && Object.keys(item.selectedModifiers).length > 0 && (
+                          <div className="text-xs text-purple-600 mt-1">
+                            {Object.entries(item.selectedModifiers).map(([modName, options]) => (
+                              <span key={modName} className="mr-2">
+                                {modName}: {options.join(", ")}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-900">£{item.price.toFixed(2)} each</p>
                     </div>
                     <Button
@@ -103,7 +114,7 @@ export function MobileCart({
                       </Button>
                     </div>
                     <span className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                      £{(item.price * item.quantity).toFixed(2)}
+                      £{((item.price + (item.modifierPrice || 0)) * item.quantity).toFixed(2)}
                     </span>
                   </div>
 

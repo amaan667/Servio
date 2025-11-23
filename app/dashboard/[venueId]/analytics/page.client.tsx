@@ -236,6 +236,7 @@ export default function AnalyticsClientPage({
           revenueData={revenueData}
           hasAdvancedAnalytics={hasAdvanced}
           currentTier={currentTier}
+          venueId={venueId}
         />
       </div>
     </div>

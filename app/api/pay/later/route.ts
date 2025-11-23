@@ -73,9 +73,11 @@ export async function POST(req: Request) {
     }
 
     // Step 3: Attempt to update order
+    // IMPORTANT: payment_status should remain "UNPAID", only payment_mode changes to "pay_later"
     const updateData = {
-      payment_status: "PAY_LATER",
-      payment_method: "later",
+      payment_mode: "pay_later", // Set payment mode to pay_later
+      payment_status: "UNPAID", // Keep as UNPAID (not PAY_LATER)
+      payment_method: null, // No payment method yet
       updated_at: new Date().toISOString(),
     };
 
@@ -120,8 +122,8 @@ export async function POST(req: Request) {
       order_number: order.order_number,
       data: {
         order_id: order.id,
-        payment_status: "PAY_LATER",
-        payment_method: "later",
+        payment_status: "UNPAID",
+        payment_mode: "pay_later",
         total_amount: order.total_amount,
       },
     };

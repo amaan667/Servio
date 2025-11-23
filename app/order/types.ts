@@ -17,6 +17,8 @@ export interface MenuItem {
 export interface CartItem extends MenuItem {
   quantity: number;
   specialInstructions?: string;
+  selectedModifiers?: Record<string, string[]>; // Modifier name -> selected option names
+  modifierPrice?: number; // Total price modifier from all selected modifiers
 }
 
 export interface CustomerInfo {

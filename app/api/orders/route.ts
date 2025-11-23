@@ -296,6 +296,7 @@ async function createKDSTickets(
             ? parseInt(itemData.quantity)
             : itemData.quantity || 1,
         special_instructions: itemData.specialInstructions || null,
+        modifiers: (itemData as { modifiers?: unknown }).modifiers || null,
         table_number: tableNumber,
         table_label: tableLabel,
         status: "new",
@@ -599,12 +600,14 @@ export async function POST(req: Request) {
     const safeItems = body.items.map((it) => ({
       menu_item_id: it.menu_item_id ?? null,
       quantity: Number(it.quantity) || 0,
-      price: Number(it.price) || 0, // Use 'price' field directly
+      price: Number(it.price) || 0, // Use 'price' field directly (includes modifier price)
       item_name: it.item_name,
       specialInstructions:
         ((it as Record<string, unknown>).special_instructions as string) ??
         (it as { specialInstructions?: string }).specialInstructions ??
         null,
+      modifiers: (it as { modifiers?: unknown }).modifiers || null,
+      modifierPrice: (it as { modifierPrice?: number }).modifierPrice || 0,
     }));
 
     // Use the source provided by the client (determined from URL parameters)

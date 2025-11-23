@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { logger } from "@/lib/logger";
+import { withStripeRetry } from "@/lib/stripe-retry";
+import { getStripeClient } from "@/lib/stripe-client";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" });
+const stripe = getStripeClient();
 
 export async function POST(req: Request) {
   try {
@@ -66,7 +68,10 @@ export async function POST(req: Request) {
       sessionParams.customer_email = customerEmail.trim();
     }
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await withStripeRetry(
+      () => stripe.checkout.sessions.create(sessionParams),
+      { maxRetries: 3 }
+    );
 
     logger.info("[CHECKOUT] Created Stripe session:", {
       sessionId: session.id,

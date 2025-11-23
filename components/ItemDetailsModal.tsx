@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
+import { ModifierSelector, type MenuItemModifier, type SelectedModifiers } from "@/components/ModifierSelector";
+import { supabaseBrowser } from "@/lib/supabase";
 
 interface MenuItem {
   id: string;
@@ -18,13 +20,14 @@ interface MenuItem {
   created_at?: string;
   venue_name?: string;
   options?: Array<{ label: string; values: string[] }>;
+  modifiers?: MenuItemModifier[];
 }
 
 interface ItemDetailsModalProps {
   item: MenuItem | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart: (item: MenuItem) => void;
+  onAddToCart: (item: MenuItem & { selectedModifiers?: SelectedModifiers; modifierPrice?: number }) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   quantity: number;
   isPreview?: boolean; // If true, hide cart functionality
@@ -34,18 +37,90 @@ export function ItemDetailsModal({
   item,
   isOpen,
   onClose,
-  onAddToCart: _onAddToCart,
+  onAddToCart,
   onUpdateQuantity,
   quantity,
   isPreview = false,
 }: ItemDetailsModalProps) {
-  if (!item) return null;
+  const [modifiers, setModifiers] = useState<MenuItemModifier[]>([]);
+  const [selectedModifiers, setSelectedModifiers] = useState<SelectedModifiers>({});
+  const [modifierPrice, setModifierPrice] = useState(0);
+  const [loadingModifiers, setLoadingModifiers] = useState(false);
+
+  useEffect(() => {
+    if (item && isOpen) {
+      fetchModifiers();
+    }
+  }, [item?.id, isOpen]);
+
+  const fetchModifiers = async () => {
+    if (!item?.id) return;
+
+    setLoadingModifiers(true);
+    try {
+      const supabase = supabaseBrowser();
+      
+      // Try to get modifiers from menu_items table (JSONB column)
+      const { data: menuItem, error } = await supabase
+        .from("menu_items")
+        .select("modifiers")
+        .eq("id", item.id)
+        .single();
+
+      if (!error && menuItem?.modifiers) {
+        setModifiers(menuItem.modifiers as MenuItemModifier[]);
+      } else {
+        // Fallback: try API endpoint
+        const response = await fetch(`/api/menu-items/${item.id}/modifiers?venueId=${item.venue_id || ""}`);
+        if (response.ok) {
+          const data = await response.json();
+          setModifiers(data.modifiers || []);
+        }
+      }
+    } catch (err) {
+      console.error("[MODIFIERS] Error fetching modifiers:", err);
+    } finally {
+      setLoadingModifiers(false);
+    }
+  };
+
+  const handleModifiersChange = (selected: SelectedModifiers, priceMod: number) => {
+    setSelectedModifiers(selected);
+    setModifierPrice(priceMod);
+  };
 
   const handleAddToCart = () => {
-    // Quantity is already tracked via onUpdateQuantity
-    // Just close the modal
+    if (!item) return;
+
+    // Validate required modifiers
+    const hasRequiredModifiers = modifiers.every((modifier) => {
+      if (!modifier.required) return true;
+      const selected = selectedModifiers[modifier.name] || [];
+      return selected.length > 0;
+    });
+
+    if (!hasRequiredModifiers) {
+      // Show error - required modifiers not selected
+      alert("Please select all required modifiers before adding to cart.");
+      return;
+    }
+
+    // Add item with modifiers to cart
+    onAddToCart({
+      ...item,
+      selectedModifiers: Object.keys(selectedModifiers).length > 0 ? selectedModifiers : undefined,
+      modifierPrice: modifierPrice !== 0 ? modifierPrice : undefined,
+    });
+
+    // Reset and close
+    setSelectedModifiers({});
+    setModifierPrice(0);
     onClose();
   };
+
+  if (!item) return null;
+
+  const totalPrice = (item.price + modifierPrice) * quantity;
 
   const handleIncrement = () => {
     onUpdateQuantity(item.id, quantity + 1);
@@ -96,10 +171,26 @@ export function ItemDetailsModal({
 
           {/* Price */}
           <div className="flex items-center justify-between pt-2 sm:pt-3">
-            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-              {formatPriceWithCurrency(item.price, "£")}
-            </span>
+            <div>
+              <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
+                {formatPriceWithCurrency(item.price, "£")}
+              </span>
+              {modifierPrice !== 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  + {formatPriceWithCurrency(modifierPrice, "£")} modifiers
+                </p>
+              )}
+            </div>
           </div>
+
+          {/* Modifiers */}
+          {!isPreview && (
+            <ModifierSelector
+              modifiers={modifiers}
+              onModifiersChange={handleModifiersChange}
+              initialSelected={selectedModifiers}
+            />
+          )}
 
           {/* Availability Status */}
           {!item.is_available && (
@@ -147,7 +238,7 @@ export function ItemDetailsModal({
                       Total
                     </p>
                     <p className="text-2xl sm:text-2xl md:text-2xl font-bold text-primary">
-                      {formatPriceWithCurrency(item.price * quantity, "£")}
+                      {formatPriceWithCurrency(totalPrice, "£")}
                     </p>
                   </div>
                 </div>
@@ -157,13 +248,13 @@ export function ItemDetailsModal({
               {quantity > 0 && (
                 <Button
                   onClick={handleAddToCart}
-                  disabled={!item.is_available}
+                  disabled={!item.is_available || loadingModifiers}
                   className="w-full flex items-center justify-center space-x-2 h-14 sm:h-12 md:h-11 text-base sm:text-base md:text-sm font-semibold"
                   size="mobile"
                   variant="servio"
                 >
                   <ShoppingCart className="h-6 w-6 sm:h-6 sm:w-6 md:h-5 md:w-5" />
-                  <span>Add to Cart</span>
+                  <span>{loadingModifiers ? "Loading..." : "Add to Cart"}</span>
                 </Button>
               )}
             </>

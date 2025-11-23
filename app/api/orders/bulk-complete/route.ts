@@ -41,11 +41,66 @@ export async function POST(req: Request) {
       });
     }
 
+    // CRITICAL: Verify all orders are PAID before bulk completing
+    const { data: ordersToComplete, error: fetchError } = await supabase
+      .from("orders")
+      .select("id, payment_status, order_status")
+      .in("id", targetOrderIds)
+      .eq("venue_id", venueId);
+
+    if (fetchError) {
+      logger.error("[BULK COMPLETE] Error fetching orders:", { value: fetchError });
+      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+    }
+
+    // Filter out unpaid orders
+    const unpaidOrders = ordersToComplete?.filter(
+      (order) => order.payment_status !== "PAID"
+    ) || [];
+
+    if (unpaidOrders.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Cannot complete ${unpaidOrders.length} unpaid order(s). All orders must be PAID before completion.`,
+          unpaid_order_ids: unpaidOrders.map((o) => o.id),
+        },
+        { status: 400 }
+      );
+    }
+
+    // Filter to only completable statuses
+    const completableStatuses = ["SERVED", "READY", "SERVING"];
+    const nonCompletableOrders = ordersToComplete?.filter(
+      (order) => !completableStatuses.includes(order.order_status)
+    ) || [];
+
+    if (nonCompletableOrders.length > 0) {
+      logger.warn("[BULK COMPLETE] Some orders not in completable status", {
+        order_ids: nonCompletableOrders.map((o) => o.id),
+      });
+      // Continue with completable orders only
+      const completableOrderIds = ordersToComplete
+        ?.filter((order) => completableStatuses.includes(order.order_status))
+        .map((o) => o.id) || [];
+
+      if (completableOrderIds.length === 0) {
+        return NextResponse.json(
+          {
+            error: "No orders in completable status (must be SERVED, READY, or SERVING)",
+          },
+          { status: 400 }
+        );
+      }
+
+      targetOrderIds = completableOrderIds;
+    }
+
     // Update all orders to COMPLETED status
     const { data: updatedOrders, error: updateError } = await supabase
       .from("orders")
       .update({
         order_status: "COMPLETED",
+        completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .in("id", targetOrderIds)

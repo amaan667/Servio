@@ -48,15 +48,34 @@ export function useOrderCart() {
     }
   }, [venueSlug, tableNumber, CART_STORAGE_KEY]);
 
-  const addToCart = useCallback((item: MenuItem) => {
+  const addToCart = useCallback((item: MenuItem & { selectedModifiers?: Record<string, string[]>; modifierPrice?: number }) => {
     setCart((prev) => {
-      const existing = prev.find((cartItem) => cartItem.id === item.id);
+      // Check if item with same modifiers already exists
+      const existing = prev.find((cartItem) => {
+        if (cartItem.id !== item.id) return false;
+        // Compare modifiers
+        const cartModifiers = JSON.stringify(cartItem.selectedModifiers || {});
+        const itemModifiers = JSON.stringify(item.selectedModifiers || {});
+        return cartModifiers === itemModifiers;
+      });
+
       if (existing) {
         return prev.map((cartItem) =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
+          cartItem.id === item.id && 
+          JSON.stringify(cartItem.selectedModifiers || {}) === JSON.stringify(item.selectedModifiers || {})
+            ? { 
+                ...cartItem, 
+                quantity: cartItem.quantity + 1 
+              } 
+            : cartItem
         );
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { 
+        ...item, 
+        quantity: 1,
+        selectedModifiers: item.selectedModifiers,
+        modifierPrice: item.modifierPrice || 0,
+      }];
     });
   }, []);
 
@@ -85,7 +104,10 @@ export function useOrderCart() {
   }, []);
 
   const getTotalPrice = useCallback(() => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cart.reduce((total, item) => {
+      const itemPrice = item.price + (item.modifierPrice || 0);
+      return total + itemPrice * item.quantity;
+    }, 0);
   }, [cart]);
 
   const getTotalItems = useCallback(() => {

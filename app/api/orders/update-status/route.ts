@@ -57,6 +57,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
 
+    // CRITICAL: Verify payment status before allowing COMPLETED
+    if (status === "COMPLETED") {
+      const { data: currentOrder } = await supabase
+        .from("orders")
+        .select("payment_status, order_status")
+        .eq("id", orderId)
+        .single();
+
+      if (!currentOrder) {
+        return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+      }
+
+      if (currentOrder.payment_status !== "PAID") {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID before completion.`,
+            payment_status: currentOrder.payment_status,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Also verify order is in a completable state
+      const completableStatuses = ["SERVED", "READY", "SERVING"];
+      if (!completableStatuses.includes(currentOrder.order_status)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Cannot complete order: current status is ${currentOrder.order_status}. Order must be SERVED, READY, or SERVING before completion.`,
+            current_status: currentOrder.order_status,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const { data, error } = await supabase
       .from("orders")
       .update({ order_status: status })

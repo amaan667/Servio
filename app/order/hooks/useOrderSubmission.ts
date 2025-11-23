@@ -114,12 +114,17 @@ export function useOrderSubmission() {
         cart: cart.map((item) => ({
           id: item.id && item.id.startsWith("demo-") ? null : item.id,
           name: item.name,
-          price: item.price,
+          price: item.price + (item.modifierPrice || 0),
           quantity: item.quantity,
           specialInstructions: item.specialInstructions || null,
           image: (item as { image?: string | null }).image || null,
+          modifiers: item.selectedModifiers || null,
+          modifierPrice: item.modifierPrice || 0,
         })),
-        total: cart.reduce((total, item) => total + item.price * item.quantity, 0),
+        total: cart.reduce((total, item) => {
+          const itemPrice = item.price + (item.modifierPrice || 0);
+          return total + itemPrice * item.quantity;
+        }, 0),
         notes: cart
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)

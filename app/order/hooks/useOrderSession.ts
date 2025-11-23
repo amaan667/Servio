@@ -166,6 +166,35 @@ export function useOrderSession(orderParams: OrderParams) {
           }
 
           if (sessionOrderInDb) {
+            // Check if there are multiple unpaid orders for this table
+            // If so, show table payment screen instead of single order payment
+            try {
+              const { data: tableOrders } = await supabase
+                .from("orders")
+                .select("id, payment_status, payment_mode")
+                .eq("venue_id", orderParams.venueSlug)
+                .eq("table_number", orderData.tableNumber)
+                .in("payment_status", ["UNPAID"])
+                .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
+                .lte("created_at", new Date(new Date().setHours(23, 59, 59, 999)).toISOString());
+
+              if (tableOrders && tableOrders.length > 1) {
+                // Multiple unpaid orders - redirect to table payment screen
+                logger.info("📱 [ORDER SESSION] Multiple unpaid orders detected, showing table payment", {
+                  orderCount: tableOrders.length,
+                  tableNumber: orderData.tableNumber,
+                });
+                window.location.href = `/payment/table?venue=${orderParams.venueSlug}&table=${orderData.tableNumber}`;
+                return;
+              }
+            } catch (tableCheckError) {
+              // Fall back to single order payment if table check fails
+              logger.warn("[ORDER SESSION] Failed to check table orders, using single order flow", {
+                error: tableCheckError instanceof Error ? tableCheckError.message : String(tableCheckError),
+              });
+            }
+
+            // Single order or fallback - use existing payment flow
             const checkoutData = {
               venueId: orderData.venueId,
               venueName: "Restaurant",
@@ -187,6 +216,42 @@ export function useOrderSession(orderParams: OrderParams) {
             localStorage.removeItem(`servio-order-${storedSession}`);
             localStorage.removeItem("servio-current-session");
           }
+        }
+      }
+
+      // NEW: Check for unpaid orders for this table even without localStorage session
+      // This handles cases where customer rescans QR on different device
+      if (orderParams.tableNumber && !orderParams.isCounterOrder && !orderParams.isDemo) {
+        try {
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const todayEnd = new Date();
+          todayEnd.setHours(23, 59, 59, 999);
+
+          const { data: unpaidTableOrders } = await supabase
+            .from("orders")
+            .select("id, payment_status, payment_mode, total_amount")
+            .eq("venue_id", orderParams.venueSlug)
+            .eq("table_number", parseInt(orderParams.tableNumber))
+            .in("payment_status", ["UNPAID"])
+            .in("payment_mode", ["pay_later", "pay_at_till", "online"])
+            .gte("created_at", todayStart.toISOString())
+            .lte("created_at", todayEnd.toISOString());
+
+          if (unpaidTableOrders && unpaidTableOrders.length > 0) {
+            logger.info("📱 [ORDER SESSION] Found unpaid orders for table, showing payment screen", {
+              orderCount: unpaidTableOrders.length,
+              tableNumber: orderParams.tableNumber,
+            });
+            // Redirect to table payment screen
+            window.location.href = `/payment/table?venue=${orderParams.venueSlug}&table=${orderParams.tableNumber}`;
+            return;
+          }
+        } catch (tableCheckError) {
+          // Silently continue to normal order flow if check fails
+          logger.debug("[ORDER SESSION] Table order check failed, continuing normal flow", {
+            error: tableCheckError instanceof Error ? tableCheckError.message : String(tableCheckError),
+          });
         }
       }
     } catch (_error) {
