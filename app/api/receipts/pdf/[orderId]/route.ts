@@ -90,7 +90,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orde
     try {
       const pdfBuffer = await generateReceiptPDF(receiptData);
 
-      return new NextResponse(pdfBuffer, {
+      return new NextResponse(pdfBuffer as unknown as BodyInit, {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="receipt-${receiptData.orderNumber}.pdf"`,

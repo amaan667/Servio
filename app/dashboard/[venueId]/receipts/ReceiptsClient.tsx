@@ -14,10 +14,10 @@ type ReceiptsClientProps = {
   venueId: string;
 };
 
-interface ReceiptOrder extends Order {
+interface ReceiptOrder extends Omit<Order, "table_number"> {
   table_label?: string;
   counter_label?: string;
-  table_number?: number | null;
+  table_number?: number | string | null;
   created_at: string;
 }
 
