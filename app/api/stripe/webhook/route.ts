@@ -92,5 +92,43 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
   }
 
+  // Auto-send receipt if enabled and customer email is available
+  try {
+    const { data: venue } = await supabaseAdmin
+      .from("venues")
+      .select("auto_email_receipts, venue_name, venue_email, venue_address")
+      .eq("venue_id", updatedOrder.venue_id)
+      .single();
+
+    const customerEmail = session.customer_email || updatedOrder.customer_email;
+
+    if (
+      venue?.auto_email_receipts &&
+      customerEmail &&
+      updatedOrder.payment_status === "PAID"
+    ) {
+      // Send receipt email asynchronously (don't wait for it)
+      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/receipts/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: updatedOrder.id,
+          email: customerEmail,
+          venueId: updatedOrder.venue_id,
+        }),
+      }).catch((err) => {
+        apiLogger.error("[CUSTOMER ORDER WEBHOOK] Failed to auto-send receipt", {
+          error: err instanceof Error ? err.message : "Unknown error",
+          orderId: updatedOrder.id,
+        });
+      });
+    }
+  } catch (error) {
+    // Don't fail webhook if receipt sending fails
+    apiLogger.error("[CUSTOMER ORDER WEBHOOK] Error checking auto-send receipt", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+
   return NextResponse.json({ ok: true, orderId: updatedOrder.id });
 }
