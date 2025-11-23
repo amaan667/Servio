@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { withSupabaseRetry } from "@/lib/retry";
 import { todayWindowForTZ } from "@/lib/time";
+import {
+  getCachedCounts,
+  setCachedCounts,
+  isCacheFresh,
+  type CachedCounts,
+} from "@/lib/cache/count-cache";
 
 export interface DashboardCounts {
   live_count: number;
@@ -27,12 +33,7 @@ export function useDashboardData(
   initialCounts?: DashboardCounts,
   initialStats?: DashboardStats
 ) {
-  // Cache dashboard data to prevent flicker when navigating back
-  const getCachedCounts = () => {
-    if (typeof window === "undefined") return null;
-    const cached = sessionStorage.getItem(`dashboard_counts_${venueId}`);
-    return cached ? JSON.parse(cached) : null;
-  };
+  // Use shared cache utility for counts
 
   const getCachedStats = () => {
     if (typeof window === "undefined") return null;
@@ -55,8 +56,19 @@ export function useDashboardData(
   // Priority: initialCounts from server → cached → default 0
   // NEVER show 0 if we have cached data - this prevents flicker
   const [counts, setCounts] = useState<DashboardCounts>(() => {
-    const cached = getCachedCounts();
-    if (cached) return cached;
+    const cached = getCachedCounts(venueId);
+    if (cached) {
+      return {
+        live_count: cached.live_count || 0,
+        earlier_today_count: cached.earlier_today_count || 0,
+        history_count: cached.history_count || 0,
+        today_orders_count: cached.today_orders_count || 0,
+        active_tables_count: cached.active_tables_count || 0,
+        tables_set_up: cached.tables_set_up || 0,
+        tables_in_use: cached.tables_in_use || 0,
+        tables_reserved_now: cached.tables_reserved_now || 0,
+      };
+    }
     if (initialCounts) return initialCounts;
     return {
       live_count: 0,
@@ -89,16 +101,13 @@ export function useDashboardData(
 
   // Cache initial data immediately on mount to prevent future flicker
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (initialCounts) {
-        sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(initialCounts));
-        sessionStorage.setItem(`dashboard_counts_time_${venueId}`, Date.now().toString());
-      }
-      if (initialStats) {
-        sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(initialStats));
-      }
+    if (initialCounts) {
+      setCachedCounts(venueId, initialCounts);
     }
-  }, []); // Run once on mount
+    if (initialStats && typeof window !== "undefined") {
+      sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(initialStats));
+    }
+  }, [venueId, initialCounts, initialStats]); // Run when initial data changes
 
   const loadStats = useCallback(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
@@ -209,11 +218,8 @@ export function useDashboardData(
         };
 
         setCounts(finalCounts);
-        // Cache the counts to prevent flicker (but allow refresh)
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem(`dashboard_counts_${venueId}`, JSON.stringify(finalCounts));
-          sessionStorage.setItem(`dashboard_counts_time_${venueId}`, Date.now().toString());
-        }
+        // Cache the counts using shared cache utility
+        setCachedCounts(venueId, finalCounts);
       } else {
         console.warn("[Dashboard] No counts data received from RPC");
       }
@@ -223,28 +229,34 @@ export function useDashboardData(
     }
   }, [venueId, venueTz]);
 
-  // Force refresh on mount AND when venueId changes
+  // Only refresh on mount if cache is stale or missing
+  // DON'T refresh on every navigation - use cached data instead
   useEffect(() => {
     if (venueId) {
-      // Check if we have fresh cached data (less than 30 seconds old)
-      const hasFreshCache = (() => {
-        if (typeof window === "undefined") return false;
-        const cached = sessionStorage.getItem(`dashboard_counts_${venueId}`);
-        const cacheTime = sessionStorage.getItem(`dashboard_counts_time_${venueId}`);
-        if (!cached || !cacheTime) return false;
-        const age = Date.now() - parseInt(cacheTime);
-        return age < 30000; // 30 seconds
-      })();
-
-      if (hasFreshCache) {
+      // If we have fresh cache, use it and skip refresh
+      if (isCacheFresh(venueId)) {
+        const cached = getCachedCounts(venueId);
+        if (cached) {
+          setCounts({
+            live_count: cached.live_count || 0,
+            earlier_today_count: cached.earlier_today_count || 0,
+            history_count: cached.history_count || 0,
+            today_orders_count: cached.today_orders_count || 0,
+            active_tables_count: cached.active_tables_count || 0,
+            tables_set_up: cached.tables_set_up || 0,
+            tables_in_use: cached.tables_in_use || 0,
+            tables_reserved_now: cached.tables_reserved_now || 0,
+          });
+        }
         return;
       }
 
-      // Clear old venue's cache when switching to ensure fresh data
+      // Only clear old venue's cache when switching venues (not on navigation)
+      // This prevents clearing cache when just navigating between pages
       if (typeof window !== "undefined") {
         const allKeys = Object.keys(sessionStorage);
         allKeys.forEach((key) => {
-          if (key.startsWith("dashboard_stats_") || key.startsWith("dashboard_counts_")) {
+          if (key.startsWith("dashboard_stats_")) {
             const cachedVenueId = key.split("_")[key.split("_").length - 1];
             if (cachedVenueId !== venueId) {
               sessionStorage.removeItem(key);
@@ -252,17 +264,21 @@ export function useDashboardData(
           }
         });
       }
+
+      // Only refresh if cache is stale or missing
+      // This prevents unnecessary refreshes when navigating between pages
       refreshCounts();
     }
-  }, [venueId, refreshCounts]); // Re-run when venueId changes
+  }, [venueId]); // Only depend on venueId - don't include refreshCounts to prevent re-runs
 
-  // Refresh data when page becomes visible (DON'T clear cache to prevent flicker)
+  // Refresh data when page becomes visible (only if cache is stale)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && venueId) {
-        // Refresh data WITHOUT clearing cache first
-        // Old data shows instantly, new data updates smoothly
-        refreshCounts();
+        // Only refresh if cache is stale - prevents unnecessary refreshes
+        if (!isCacheFresh(venueId)) {
+          refreshCounts();
+        }
         const timeWindow = todayWindowForTZ(venueTz);
         if (timeWindow.startUtcISO && timeWindow.endUtcISO) {
           loadStats(venueId, {

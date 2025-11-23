@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import { logger } from "@/lib/logger";
+import { getCachedCounts, setCachedCounts } from "@/lib/cache/count-cache";
 
 interface GlobalBottomNavProps {
   venueId?: string;
@@ -32,7 +33,16 @@ export default function GlobalBottomNav({
   },
 }: GlobalBottomNavProps) {
   const [isVisible, setIsVisible] = useState(true);
-  const [liveOrdersCount, setLiveOrdersCount] = useState(counts.live_orders || 0);
+  // Initialize with cached data if available, otherwise use props
+  const [liveOrdersCount, setLiveOrdersCount] = useState(() => {
+    if (venueId) {
+      const cached = getCachedCounts(venueId);
+      if (cached?.live_count !== undefined) {
+        return cached.live_count;
+      }
+    }
+    return counts.live_orders || 0;
+  });
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = useIsMobile();
@@ -141,6 +151,31 @@ export default function GlobalBottomNav({
               ) {
                 const liveCount = (data as { live_count?: number }).live_count;
                 setLiveOrdersCount(liveCount || 0);
+                
+                // Update cache to keep it in sync
+                const cached = getCachedCounts(venueId);
+                if (cached) {
+                  setCachedCounts(venueId, {
+                    ...cached,
+                    live_count: liveCount || 0,
+                  });
+                } else if (data) {
+                  // Cache the full result if we don't have cached data
+                  setCachedCounts(venueId, data as {
+                    live_count?: number;
+                    earlier_today_count?: number;
+                    history_count?: number;
+                    today_orders_count?: number;
+                    active_tables_count?: number;
+                    tables_set_up?: number;
+                    tables_in_use?: number;
+                    tables_reserved_now?: number;
+                    in_use_now?: number;
+                    reserved_now?: number;
+                    reserved_later?: number;
+                    waiting?: number;
+                  });
+                }
               }
             } catch {
               // Silent error handling

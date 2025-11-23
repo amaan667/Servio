@@ -11,6 +11,7 @@ import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { supabaseBrowser } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
 import { useAuthRedirect } from "./hooks/useAuthRedirect";
+import { isCacheFresh } from "@/lib/cache/count-cache";
 
 // Removed PullToRefresh - not needed, causes build issues
 
@@ -144,12 +145,14 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [handleRefresh]);
 
   // Auto-refresh when user navigates back to dashboard
-  // DON'T clear cache immediately - prevents flicker
+  // Only refresh if cache is stale - prevents unnecessary refreshes
   useEffect(() => {
     const handleFocus = () => {
-      // Refresh data in background without clearing cache first
-      // This prevents flicker by showing cached data while new data loads
-      handleRefresh();
+      // Only refresh if cache is stale (older than 5 minutes)
+      // This prevents flicker and unnecessary API calls
+      if (!isCacheFresh(venueId)) {
+        handleRefresh();
+      }
     };
 
     window.addEventListener("focus", handleFocus);

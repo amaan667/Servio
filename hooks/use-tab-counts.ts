@@ -1,8 +1,14 @@
 import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { logger } from "@/lib/logger";
+import {
+  getCachedCounts,
+  setCachedCounts,
+  isCacheFresh,
+  type CachedCounts,
+} from "@/lib/cache/count-cache";
 
 export interface TabCounts {
   live_count: number;
@@ -18,44 +24,96 @@ export interface TabCounts {
 }
 
 export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
-  const [data, setData] = useState<TabCounts | null>(null);
+  // Initialize with cached data to prevent flicker
+  const [data, setData] = useState<TabCounts | null>(() => {
+    const cached = getCachedCounts(venueId);
+    if (cached) {
+      // Ensure all required fields are present
+      return {
+        live_count: cached.live_count || 0,
+        earlier_today_count: cached.earlier_today_count || 0,
+        history_count: cached.history_count || 0,
+        today_orders_count: cached.today_orders_count || 0,
+        active_tables_count: cached.active_tables_count || 0,
+        tables_set_up: cached.tables_set_up || 0,
+        in_use_now: cached.in_use_now || 0,
+        reserved_now: cached.reserved_now || 0,
+        reserved_later: cached.reserved_later || 0,
+        waiting: cached.waiting || 0,
+      };
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCounts = useCallback(async () => {
-    if (!venueId || !tz) return;
+  const fetchCounts = useCallback(
+    async (forceRefresh = false) => {
+      if (!venueId || !tz) return;
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const supabase = createClient();
-      const { data: result, error: rpcError } = await supabase
-        .rpc("dashboard_counts", {
-          p_venue_id: venueId,
-          p_tz: tz,
-          p_live_window_mins: liveWindowMins,
-        })
-        .single();
-
-      if (rpcError) {
-        logger.error("[TAB_COUNTS] RPC error:", rpcError);
-        setError(rpcError.message);
-        return;
+      // If cache is fresh and not forcing refresh, skip fetch
+      if (!forceRefresh && isCacheFresh(venueId)) {
+        const cached = getCachedCounts(venueId);
+        if (cached) {
+          setData({
+            live_count: cached.live_count || 0,
+            earlier_today_count: cached.earlier_today_count || 0,
+            history_count: cached.history_count || 0,
+            today_orders_count: cached.today_orders_count || 0,
+            active_tables_count: cached.active_tables_count || 0,
+            tables_set_up: cached.tables_set_up || 0,
+            in_use_now: cached.in_use_now || 0,
+            reserved_now: cached.reserved_now || 0,
+            reserved_later: cached.reserved_later || 0,
+            waiting: cached.waiting || 0,
+          });
+          return;
+        }
       }
 
-      setData(result as TabCounts | null);
-    } catch (_err) {
-      logger.error("[TAB_COUNTS] Fetch error:", errorToContext(_err));
-      setError(_err instanceof Error ? _err.message : "Unknown error");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [venueId, tz, liveWindowMins]);
+      setIsLoading(true);
+      setError(null);
 
+      try {
+        const supabase = createClient();
+        const { data: result, error: rpcError } = await supabase
+          .rpc("dashboard_counts", {
+            p_venue_id: venueId,
+            p_tz: tz,
+            p_live_window_mins: liveWindowMins,
+          })
+          .single();
+
+        if (rpcError) {
+          logger.error("[TAB_COUNTS] RPC error:", rpcError);
+          setError(rpcError.message);
+          // Don't clear data on error - keep showing cached data
+          return;
+        }
+
+        if (result) {
+          const counts = result as TabCounts;
+          setData(counts);
+          // Cache the result
+          setCachedCounts(venueId, counts);
+        }
+      } catch (_err) {
+        logger.error("[TAB_COUNTS] Fetch error:", errorToContext(_err));
+        setError(_err instanceof Error ? _err.message : "Unknown error");
+        // Don't clear data on error - keep showing cached data
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [venueId, tz, liveWindowMins]
+  );
+
+  // Only fetch on mount if cache is not fresh
   useEffect(() => {
-    fetchCounts();
-  }, [fetchCounts]);
+    if (!isCacheFresh(venueId)) {
+      fetchCounts(false);
+    }
+  }, [venueId]); // Only depend on venueId, not fetchCounts
 
-  return { data, isLoading, error, refetch: fetchCounts };
+  return { data, isLoading, error, refetch: () => fetchCounts(true) };
 }
