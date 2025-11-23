@@ -28,6 +28,8 @@ interface ReceiptModalProps {
   venueName?: string;
   venueEmail?: string;
   venueAddress?: string;
+  receiptLogoUrl?: string;
+  receiptFooterText?: string;
   isOpen: boolean;
   onClose: () => void;
   showVAT?: boolean;
@@ -39,6 +41,8 @@ export function ReceiptModal({
   venueName = "Restaurant",
   venueEmail,
   venueAddress,
+  receiptLogoUrl,
+  receiptFooterText,
   isOpen,
   onClose,
   showVAT = true,
@@ -220,6 +224,13 @@ export function ReceiptModal({
           <div className="space-y-6 print:space-y-4">
             {/* Venue Info */}
             <div className="text-center border-b pb-4 print:border-b-2 print:border-purple-600">
+              {receiptLogoUrl && (
+                <img
+                  src={receiptLogoUrl}
+                  alt={venueName}
+                  className="h-16 mx-auto mb-3 print:h-20 print:mb-4"
+                />
+              )}
               <h2 className="text-2xl font-bold text-purple-600 print:text-3xl">{venueName}</h2>
               {venueAddress && (
                 <p className="text-sm text-gray-600 mt-2 print:text-base">{venueAddress}</p>
@@ -360,7 +371,7 @@ export function ReceiptModal({
 
             {/* Footer */}
             <div className="text-center text-xs text-gray-500 pt-4 border-t print:text-sm print:pt-6 print:border-t-2 print:border-gray-300">
-              <p className="font-medium">Thank you for your order!</p>
+              <p className="font-medium">{receiptFooterText || "Thank you for your order!"}</p>
               {isCustomerView && (
                 <p className="mt-2 print:mt-3">
                   You can always re-open this receipt from the link in your email/SMS.

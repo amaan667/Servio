@@ -35,6 +35,9 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     venue_name?: string;
     venue_email?: string;
     venue_address?: string;
+    receipt_logo_url?: string;
+    receipt_footer_text?: string;
+    show_vat_breakdown?: boolean;
   }>({});
   const [activeTab, setActiveTab] = useState("today");
 
@@ -54,10 +57,10 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         endUtcISO: todayWindowData.endUtcISO || new Date().toISOString(),
       };
 
-      // Get venue info
+      // Get venue info including receipt customization settings
       const { data: venue } = await supabase
         .from("venues")
-        .select("venue_name, venue_email, venue_address")
+        .select("venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown")
         .eq("venue_id", venueId)
         .single();
 
@@ -66,6 +69,9 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
           venue_name: venue.venue_name || undefined,
           venue_email: venue.venue_email || undefined,
           venue_address: venue.venue_address || undefined,
+          receipt_logo_url: venue.receipt_logo_url || undefined,
+          receipt_footer_text: venue.receipt_footer_text || undefined,
+          show_vat_breakdown: venue.show_vat_breakdown ?? true,
         });
       }
 
@@ -380,9 +386,11 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
           venueName={venueInfo.venue_name}
           venueEmail={venueInfo.venue_email}
           venueAddress={venueInfo.venue_address}
+          receiptLogoUrl={venueInfo.receipt_logo_url}
+          receiptFooterText={venueInfo.receipt_footer_text}
           isOpen={!!selectedReceipt}
           onClose={() => setSelectedReceipt(null)}
-          showVAT={true}
+          showVAT={venueInfo.show_vat_breakdown ?? true}
           isCustomerView={false}
         />
       )}
