@@ -93,8 +93,10 @@ function generateReceiptHTML(data: ReceiptData): string {
           }
           
           .header img {
-            max-height: 80px;
-            margin-bottom: 12px;
+            max-height: 160px;
+            max-width: 100%;
+            margin-bottom: 20px;
+            object-fit: contain;
           }
           
           .header h1 {

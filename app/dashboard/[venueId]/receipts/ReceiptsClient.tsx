@@ -9,6 +9,7 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order } from "@/types/order";
+import { detectColorsFromImage } from "@/app/dashboard/[venueId]/menu-management/utils/colorDetection";
 
 type ReceiptsClientProps = {
   venueId: string;
@@ -57,27 +58,35 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         endUtcISO: todayWindowData.endUtcISO || new Date().toISOString(),
       };
 
-      // Get menu design settings (for branding - logo, colors, venue name)
+      // Get logo from menu design settings
       const { data: designSettings } = await supabase
         .from("menu_design_settings")
-        .select("venue_name, logo_url, primary_color, secondary_color")
+        .select("logo_url")
         .eq("venue_id", venueId)
         .single();
 
-      // Get venue contact info (including venue_name as fallback)
+      // Get venue contact info
       const { data: venue } = await supabase
         .from("venues")
         .select("venue_name, venue_email, venue_address, show_vat_breakdown")
         .eq("venue_id", venueId)
         .single();
 
-      // Use menu design settings for branding, fallback to venue name if design settings don't exist
-      const venueName = designSettings?.venue_name || venue?.venue_name;
       const logoUrl = designSettings?.logo_url;
-      const primaryColor = designSettings?.primary_color || "#8b5cf6";
+      let primaryColor = "#8b5cf6"; // Default fallback
+
+      // Extract colors from logo if it exists
+      if (logoUrl) {
+        try {
+          const colors = await detectColorsFromImage(logoUrl);
+          primaryColor = colors.primary;
+        } catch {
+          // Fallback to default if color detection fails
+        }
+      }
 
       setVenueInfo({
-        venue_name: venueName || undefined,
+        venue_name: venue?.venue_name || undefined,
         venue_email: venue?.venue_email || undefined,
         venue_address: venue?.venue_address || undefined,
         logo_url: logoUrl || undefined,
