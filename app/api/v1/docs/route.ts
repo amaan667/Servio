@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
-import swaggerSpec from "@/swagger.config.js";
+import { swaggerSpec } from "@/lib/swagger/config";
 
 export async function GET() {
   try {

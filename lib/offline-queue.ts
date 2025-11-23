@@ -21,10 +21,12 @@ class OfflineQueue {
   private readonly MAX_RETRIES = 3;
 
   constructor() {
-    if (typeof window !== "undefined") {
-      this.loadQueue();
-      this.setupSyncListener();
+    // Only initialize in browser environment
+    if (typeof window === "undefined") {
+      return;
     }
+    this.loadQueue();
+    this.setupSyncListener();
   }
 
   /**
@@ -293,10 +295,19 @@ class OfflineQueue {
 let offlineQueueInstance: OfflineQueue | null = null;
 
 export function getOfflineQueue(): OfflineQueue {
-  if (!offlineQueueInstance && typeof window !== "undefined") {
+  if (typeof window === "undefined") {
+    // Return a no-op instance for SSR
+    return {
+      queueOperation: async () => "",
+      syncQueue: async () => {},
+      getQueueStatus: () => ({ count: 0, oldestTimestamp: null }),
+      clearQueue: () => {},
+    } as unknown as OfflineQueue;
+  }
+  if (!offlineQueueInstance) {
     offlineQueueInstance = new OfflineQueue();
   }
-  return offlineQueueInstance!;
+  return offlineQueueInstance;
 }
 
 /**

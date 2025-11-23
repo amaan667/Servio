@@ -16,7 +16,11 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     // Initialize online status - default to true to avoid false offline warnings
     setIsOnline(true);
 
-    // Initialize offline queue
+    // Initialize offline queue (only in browser)
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const queue = getOfflineQueue();
 
     // Check queue status periodically
@@ -124,9 +128,12 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
               <span>
                 You&apos;re offline. {queueCount > 0 && `${queueCount} operation${queueCount > 1 ? "s" : ""} queued.`}
               </span>
-              {queueCount > 0 && isOnline && (
+              {queueCount > 0 && isOnline && typeof window !== "undefined" && (
                 <button
-                  onClick={() => queue.syncQueue()}
+                  onClick={() => {
+                    const queue = getOfflineQueue();
+                    queue.syncQueue();
+                  }}
                   className="ml-2 underline hover:no-underline flex items-center gap-1"
                 >
                   <RefreshCw className="h-3 w-3" />
