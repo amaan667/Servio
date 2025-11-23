@@ -55,7 +55,8 @@ export async function POST(req: NextRequest) {
       .join(", ");
     const moreItems = (order.items || []).length > 3 ? ` +${(order.items || []).length - 3} more` : "";
 
-    const receiptText = `Receipt - ${venueName}\nOrder #${orderNumber}\n${itemsText}${moreItems}\nTotal: £${total}\n\nThank you for your order!`;
+    const receiptUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://servio.app"}/receipts/${orderId}`;
+    const receiptText = `Receipt - ${venueName}\nOrder #${orderNumber}\n${itemsText}${moreItems}\nTotal: £${total}\n\nView receipt: ${receiptUrl}\n\nThank you for your order!`;
 
     // TODO: Integrate with SMS service (Twilio, etc.)
     // For now, we'll log it and mark as sent

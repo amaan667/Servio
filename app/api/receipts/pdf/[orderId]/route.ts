@@ -117,35 +117,54 @@ export async function GET(
       </html>
     `;
 
-    // For now, return HTML that can be printed as PDF
-    // In production, use a library like puppeteer or @sparticuz/chromium to generate actual PDF
-    // For now, we'll return HTML that browsers can print to PDF
-    return new NextResponse(pdfHtml, {
-      headers: {
-        "Content-Type": "text/html",
-        "Content-Disposition": `attachment; filename="receipt-${orderId.slice(-6).toUpperCase()}.html"`,
-      },
-    });
+    // Generate actual PDF using puppeteer/chromium
+    try {
+      const chromium = require("@sparticuz/chromium");
+      const puppeteer = require("puppeteer-core");
 
-    // TODO: Generate actual PDF using puppeteer/chromium
-    // Example:
-    // const chromium = require('@sparticuz/chromium');
-    // const puppeteer = require('puppeteer-core');
-    // const browser = await puppeteer.launch({
-    //   args: chromium.args,
-    //   defaultViewport: chromium.defaultViewport,
-    //   executablePath: await chromium.executablePath(),
-    // });
-    // const page = await browser.newPage();
-    // await page.setContent(pdfHtml);
-    // const pdf = await page.pdf({ format: 'A4' });
-    // await browser.close();
-    // return new NextResponse(pdf, {
-    //   headers: {
-    //     'Content-Type': 'application/pdf',
-    //     'Content-Disposition': `attachment; filename="receipt-${orderId.slice(-6).toUpperCase()}.pdf"`
-    //   }
-    // });
+      // Configure chromium for serverless environments
+      chromium.setGraphicsMode(false);
+
+      const browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      });
+
+      const page = await browser.newPage();
+      await page.setContent(pdfHtml, { waitUntil: "networkidle0" });
+
+      const pdf = await page.pdf({
+        format: "A4",
+        margin: {
+          top: "20mm",
+          right: "20mm",
+          bottom: "20mm",
+          left: "20mm",
+        },
+        printBackground: true,
+      });
+
+      await browser.close();
+
+      return new NextResponse(pdf, {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="receipt-${orderId.slice(-6).toUpperCase()}.pdf"`,
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (pdfError) {
+      logger.warn("[RECEIPTS PDF] PDF generation failed, falling back to HTML:", pdfError);
+      // Fallback to HTML if PDF generation fails
+      return new NextResponse(pdfHtml, {
+        headers: {
+          "Content-Type": "text/html",
+          "Content-Disposition": `attachment; filename="receipt-${orderId.slice(-6).toUpperCase()}.html"`,
+        },
+      });
+    }
   } catch (error) {
     logger.error("[RECEIPTS PDF] Error:", error);
     return NextResponse.json(

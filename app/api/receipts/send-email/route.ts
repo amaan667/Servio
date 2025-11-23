@@ -118,7 +118,15 @@ export async function POST(req: NextRequest) {
 
             <div class="footer">
               <p>Thank you for your order!</p>
-              <p>You can always re-open this receipt from the link in your email.</p>
+              <p style="margin-top: 15px;">
+                <a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://servio.app"}/receipts/${orderId}" 
+                   style="display: inline-block; background-color: #7c3aed; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                  View Receipt Online
+                </a>
+              </p>
+              <p style="margin-top: 10px; font-size: 11px; color: #6b7280;">
+                You can always access this receipt at: ${process.env.NEXT_PUBLIC_BASE_URL || "https://servio.app"}/receipts/${orderId}
+              </p>
             </div>
           </div>
         </body>

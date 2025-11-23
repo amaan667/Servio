@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WifiOff } from "lucide-react";
+import { WifiOff, RefreshCw } from "lucide-react";
+import { getOfflineQueue } from "@/lib/offline-queue";
 
 interface ServiceWorkerRegistrationProps {
   children: React.ReactNode;
@@ -9,18 +10,32 @@ interface ServiceWorkerRegistrationProps {
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
   const [isOnline, setIsOnline] = useState(true);
+  const [queueCount, setQueueCount] = useState(0);
 
   useEffect(() => {
     // Initialize online status - default to true to avoid false offline warnings
     setIsOnline(true);
 
+    // Initialize offline queue
+    const queue = getOfflineQueue();
+
+    // Check queue status periodically
+    const updateQueueStatus = () => {
+      const status = queue.getQueueStatus();
+      setQueueCount(status.count);
+    };
+
     // Check online status
-    const handleOnline = () => {
+    const handleOnline = async () => {
       // Network online
       setIsOnline(true);
+      // Sync queue when coming back online
+      await queue.syncQueue();
+      updateQueueStatus();
     };
     const handleOffline = () => {
       setIsOnline(false);
+      updateQueueStatus();
     };
 
     window.addEventListener("online", handleOnline);
@@ -43,6 +58,10 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
 
     // Check connectivity on mount
     checkConnectivity();
+    updateQueueStatus();
+
+    // Update queue status periodically
+    const queueInterval = setInterval(updateQueueStatus, 5000);
 
     // Register service worker
     if ("serviceWorker" in navigator) {
@@ -83,6 +102,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      clearInterval(queueInterval);
     };
   }, []);
 
@@ -92,14 +112,27 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     <>
       {children}
 
-      {/* Offline Indicator - Only show on dashboard pages */}
+      {/* Offline Indicator - Show on dashboard and order pages */}
       {!isOnline &&
         typeof window !== "undefined" &&
-        window.location.pathname.startsWith("/dashboard") && (
+        (window.location.pathname.startsWith("/dashboard") ||
+          window.location.pathname.startsWith("/order") ||
+          window.location.pathname.startsWith("/payment")) && (
           <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white p-2 text-center text-sm">
             <div className="flex items-center justify-center space-x-2">
               <WifiOff className="h-4 w-4" />
-              <span>You&apos;re offline. Some features may be limited.</span>
+              <span>
+                You&apos;re offline. {queueCount > 0 && `${queueCount} operation${queueCount > 1 ? "s" : ""} queued.`}
+              </span>
+              {queueCount > 0 && isOnline && (
+                <button
+                  onClick={() => queue.syncQueue()}
+                  className="ml-2 underline hover:no-underline flex items-center gap-1"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Sync
+                </button>
+              )}
             </div>
           </div>
         )}
