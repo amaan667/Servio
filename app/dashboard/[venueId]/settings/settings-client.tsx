@@ -33,27 +33,19 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   const { user, isLoading: authRedirectLoading } = useAuthRedirect();
   const { session, loading: authLoading } = useAuth(); // Get session from AuthProvider
 
+  // Track if component has mounted to prevent hydration mismatches
+  const [mounted, setMounted] = useState(false);
+
   // Fetch data on client if not provided by server
   const [data, setData] = useState(initialData || null);
   const [loading, setLoading] = useState(!initialData);
 
-  // Show loading while checking auth
-  if (authRedirectLoading || authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Set mounted flag after hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Don't render if no user (will redirect)
-  if (!user) {
-    return null;
-  }
-
+  // Fetch data effect - must be before early returns
   useEffect(() => {
     // If we have initial data, cache it (overwriting any stale cache)
     if (initialData && typeof window !== "undefined") {
@@ -65,18 +57,14 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     const fetchData = async () => {
       try {
         // Wait for auth to finish loading
-        if (authLoading) {
+        if (authLoading || !mounted) {
           return;
         }
 
         // Use session from AuthProvider (already authenticated)
-        const user = session?.user;
+        const currentUser = session?.user;
 
-        if (!user) {
-          console.error("[SETTINGS] ❌ No user from AuthProvider after loading!", {
-            hasSession: !!session,
-            authLoading,
-          });
+        if (!currentUser) {
           setLoading(false);
           return;
         }
@@ -84,16 +72,16 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         const supabase = supabaseBrowser();
 
         // Fetch venues first to get organization_id
-        const { data: venuesForOrg, error: venuesError } = await supabase
+        const { data: venuesForOrg } = await supabase
           .from("venues")
           .select("organization_id")
-          .eq("owner_user_id", user.id)
+          .eq("owner_user_id", currentUser.id)
           .limit(1);
 
         // Fetch organization
         let organization = null;
         if (venuesForOrg && venuesForOrg.length > 0 && venuesForOrg[0]?.organization_id) {
-          const { data: orgData, error: orgError } = await supabase
+          const { data: orgData } = await supabase
             .from("organizations")
             .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
             .eq("id", venuesForOrg[0].organization_id)
@@ -110,18 +98,18 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
             .from("venues")
             .select("*")
             .eq("venue_id", venueId)
-            .eq("owner_user_id", user.id)
+            .eq("owner_user_id", currentUser.id)
             .maybeSingle(),
           supabase
             .from("user_venue_roles")
             .select("role")
-            .eq("user_id", user.id)
+            .eq("user_id", currentUser.id)
             .eq("venue_id", venueId)
             .maybeSingle(),
           supabase
             .from("venues")
             .select("*")
-            .eq("owner_user_id", user.id)
+            .eq("owner_user_id", currentUser.id)
             .order("created_at", { ascending: true }),
         ]);
 
@@ -143,7 +131,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         }
 
         const fetchedData = {
-          user,
+          user: currentUser,
           venue: finalVenue,
           venues: allVenues,
           organization,
@@ -154,18 +142,38 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         setData(fetchedData);
         sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
-      } catch (error) {
-        console.error("[SETTINGS] ❌ Error fetching data:", error);
+      } catch (_error) {
+        // Error handled silently
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [venueId, initialData, session, authLoading]);
+    // Only fetch if mounted and no initial data
+    if (mounted && !initialData) {
+      fetchData();
+    }
+  }, [venueId, initialData, session, authLoading, mounted]);
+
+  // Show loading while checking auth or before mount (prevents hydration mismatch)
+  if (!mounted || authRedirectLoading || authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null;
+  }
 
   // Show loading state while fetching
-  if (loading || authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -175,15 +183,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
   // If no data after loading, wait for session or show minimal UI
   if (!data || !data.user || !data.venue) {
-    // If still loading or auth loading, show spinner
-    if (loading || authLoading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      );
-    }
-
     // If not loading but no data, show error
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
