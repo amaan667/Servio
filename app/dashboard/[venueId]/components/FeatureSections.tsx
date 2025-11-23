@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Settings,
   QrCode,
+  Receipt,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -73,6 +74,14 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
           icon: Table,
           color: "text-purple-600",
           bgColor: "bg-purple-100",
+        },
+        {
+          title: "Receipts",
+          description: "View, manage, and export order receipts",
+          href: `/dashboard/${venueId}/receipts`,
+          icon: Receipt,
+          color: "text-emerald-600",
+          bgColor: "bg-emerald-100",
         },
       ],
     },
