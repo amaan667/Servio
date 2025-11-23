@@ -42,6 +42,8 @@ export function OrderCard({
     name?: string;
     email?: string;
     address?: string;
+    logoUrl?: string;
+    primaryColor?: string;
   }>({});
 
   // Determine variant automatically if not specified
@@ -50,26 +52,38 @@ export function OrderCard({
 
   const isTableVariant = finalVariant === "table";
 
-  // Fetch venue info for receipt
+  // Fetch venue info and logo for receipt
   React.useEffect(() => {
     if (!venueId) return;
 
     const fetchVenueInfo = async () => {
       try {
         const supabase = createClient();
+        
+        // Get logo from menu design settings
+        const { data: designSettings } = await supabase
+          .from("menu_design_settings")
+          .select("logo_url, detected_primary_color, primary_color")
+          .eq("venue_id", venueId)
+          .single();
+
+        // Get venue contact info
         const { data: venue } = await supabase
           .from("venues")
           .select("venue_name, venue_email, venue_address")
           .eq("venue_id", venueId)
           .single();
 
-        if (venue) {
-          setVenueInfo({
-            name: venue.venue_name,
-            email: venue.venue_email,
-            address: venue.venue_address,
-          });
-        }
+        const logoUrl = designSettings?.logo_url;
+        const primaryColor = designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
+
+        setVenueInfo({
+          name: venue?.venue_name,
+          email: venue?.venue_email,
+          address: venue?.venue_address,
+          logoUrl,
+          primaryColor,
+        });
       } catch {
         // Silently fail - venue info is optional
       }
@@ -517,9 +531,11 @@ export function OrderCard({
               price: (item.price as number) || (item.unit_price as number) || 0,
             })) || []
           }
-          onSuccess={() => {
+          onSuccess={async () => {
             setShowPaymentDialog(false);
-            onActionComplete?.();
+            // Refresh order data to get updated payment status
+            // This will trigger a re-render showing "Mark Completed" button
+            await onActionComplete?.();
           }}
         />
       )}
@@ -531,6 +547,8 @@ export function OrderCard({
           venueName={venueInfo.name}
           venueEmail={venueInfo.email}
           venueAddress={venueInfo.address}
+          logoUrl={venueInfo.logoUrl}
+          primaryColor={venueInfo.primaryColor}
           isOpen={showReceipt}
           onClose={() => setShowReceipt(false)}
           isCustomerView={false}

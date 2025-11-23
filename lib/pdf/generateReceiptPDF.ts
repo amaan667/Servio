@@ -256,8 +256,7 @@ function generateReceiptHTML(data: ReceiptData): string {
       </head>
       <body>
         <div class="header">
-          ${data.logoUrl ? `<img src="${data.logoUrl}" alt="${data.venueName}" />` : ""}
-          <h1>${data.venueName}</h1>
+          ${data.logoUrl ? `<img src="${data.logoUrl}" alt="" />` : ""}
           ${data.venueAddress ? `<p>${data.venueAddress}</p>` : ""}
           ${data.venueEmail ? `<p>${data.venueEmail}</p>` : ""}
         </div>

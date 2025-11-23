@@ -35,7 +35,7 @@ interface OrderTimelineItem {
 }
 
 const ORDER_STATUSES: Record<
-  OrderStatus,
+  OrderStatus | "SERVED",
   { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
 > = {
   PLACED: { label: "Order Placed", icon: Receipt, color: "bg-blue-100 text-blue-800" },
@@ -47,6 +47,7 @@ const ORDER_STATUSES: Record<
     color: "bg-purple-100 text-purple-800",
   },
   SERVING: { label: "Serving", icon: Truck, color: "bg-indigo-100 text-indigo-800" },
+  SERVED: { label: "Served", icon: CheckCircle, color: "bg-indigo-100 text-indigo-800" },
   COMPLETED: { label: "Completed", icon: Check, color: "bg-green-100 text-green-800" },
   CANCELLED: { label: "Cancelled", icon: Check, color: "bg-red-100 text-red-800" },
 };
@@ -63,6 +64,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     name?: string;
     email?: string;
     address?: string;
+    logoUrl?: string;
+    primaryColor?: string;
   }>({});
 
   // Generate short order number for display
@@ -174,26 +177,38 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     fetchOrder();
   }, [orderId, sessionId, orderData]);
 
-  // Fetch venue info when order is loaded
+  // Fetch venue info and logo when order is loaded
   useEffect(() => {
     if (!order?.venue_id) return;
 
     const fetchVenueInfo = async () => {
       try {
         const supabase = createClient();
+        
+        // Get logo from menu design settings
+        const { data: designSettings } = await supabase
+          .from("menu_design_settings")
+          .select("logo_url, detected_primary_color, primary_color")
+          .eq("venue_id", order.venue_id)
+          .single();
+
+        // Get venue contact info
         const { data: venue } = await supabase
           .from("venues")
           .select("venue_name, venue_email, venue_address")
           .eq("venue_id", order.venue_id)
           .single();
 
-        if (venue) {
-          setVenueInfo({
-            name: venue.venue_name || undefined,
-            email: venue.venue_email || undefined,
-            address: venue.venue_address || undefined,
-          });
-        }
+        const logoUrl = designSettings?.logo_url;
+        const primaryColor = designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
+
+        setVenueInfo({
+          name: venue?.venue_name || undefined,
+          email: venue?.venue_email || undefined,
+          address: venue?.venue_address || undefined,
+          logoUrl,
+          primaryColor,
+        });
       } catch (error) {
         console.error("[ORDER SUMMARY] Error fetching venue info:", error);
       }
@@ -244,14 +259,16 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
       "ACCEPTED",
       "IN_PREP",
       "READY",
-      "SERVING",
+      "SERVED",
       "COMPLETED",
     ];
     const currentStatus = order?.order_status || "PLACED";
-    const currentIndex = statusOrder.indexOf(currentStatus);
+    // Map SERVING to SERVED for timeline display
+    const displayStatus = currentStatus === "SERVING" ? "SERVED" : currentStatus;
+    const currentIndex = statusOrder.indexOf(displayStatus);
 
     return statusOrder.map((status, index) => {
-      const statusInfo = ORDER_STATUSES[status];
+      const statusInfo = ORDER_STATUSES[status] || ORDER_STATUSES["SERVING"]; // Fallback for SERVED
       const completed = index <= currentIndex;
       const current = index === currentIndex;
 
@@ -537,6 +554,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
           venueName={venueInfo.name}
           venueEmail={venueInfo.email}
           venueAddress={venueInfo.address}
+          logoUrl={venueInfo.logoUrl}
+          primaryColor={venueInfo.primaryColor}
           isOpen={showReceipt}
           onClose={() => setShowReceipt(false)}
           isCustomerView={true}

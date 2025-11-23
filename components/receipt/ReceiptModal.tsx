@@ -227,19 +227,12 @@ export function ReceiptModal({
               className="text-center border-b pb-6 print:border-b-2 print:pb-8"
               style={{ borderBottomColor: primaryColor }}
             >
-              {logoUrl ? (
+              {logoUrl && (
                 <img
                   src={logoUrl}
-                  alt={venueName}
+                  alt=""
                   className="h-32 mx-auto mb-4 print:h-40 print:mb-6 max-w-full object-contain"
                 />
-              ) : (
-                <h2 
-                  className="text-2xl font-bold print:text-3xl"
-                  style={{ color: primaryColor }}
-                >
-                  {venueName}
-                </h2>
               )}
               {venueAddress && (
                 <p className="text-sm text-gray-600 mt-2 print:text-base">{venueAddress}</p>

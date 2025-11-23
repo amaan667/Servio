@@ -73,12 +73,11 @@ export async function POST(req: Request) {
     }
 
 
-    // Update the order status to SERVING (which is allowed by DB constraint)
-    // SERVED may not be in the constraint, so use SERVING as intermediate status
+    // Update the order status to SERVED
     const { error } = await admin
       .from("orders")
       .update({
-        order_status: "SERVING",
+        order_status: "SERVED",
         served_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -119,7 +118,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: "Order marked as served",
-      orderStatus: "SERVING",
+      orderStatus: "SERVED",
       paymentStatus: orderData.payment_status,
       paymentMode: orderData.payment_mode,
     });
