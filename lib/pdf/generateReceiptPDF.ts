@@ -317,9 +317,9 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
     const browserOptions = isProduction
       ? {
           args: chromium.args,
-          defaultViewport: chromium.defaultViewport || { width: 1920, height: 1080 },
+          defaultViewport: { width: 1920, height: 1080 },
           executablePath: await chromium.executablePath(),
-          headless: chromium.headless ?? true,
+          headless: true,
         }
       : {
           headless: true,
