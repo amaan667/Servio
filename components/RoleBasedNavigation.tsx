@@ -10,6 +10,7 @@ import {
   Table,
   CreditCard,
   Package,
+  Receipt,
 } from "lucide-react";
 import { canAccess, getRoleDisplayName, getRoleColor, UserRole } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ export default function RoleBasedNavigation({
     if (path.includes("/feedback")) return "Feedback";
     if (path.includes("/live-orders")) return "Live Orders";
     if (path.includes("/orders")) return "Orders";
+    if (path.includes("/receipts")) return "Receipts";
     if (path.includes("/ai-chat")) return "AI Assistant";
     return "Dashboard";
   };
@@ -106,6 +108,13 @@ export default function RoleBasedNavigation({
       label: "POS",
       href: `/dashboard/${venueId}/pos`,
       icon: CreditCard,
+      feature: "payments",
+      show: canAccess(userRole, "payments"),
+    },
+    {
+      label: "Receipts",
+      href: `/dashboard/${venueId}/receipts`,
+      icon: Receipt,
       feature: "payments",
       show: canAccess(userRole, "payments"),
     },

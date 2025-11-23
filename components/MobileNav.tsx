@@ -19,6 +19,7 @@ import {
   MessageSquare,
   ChevronRight,
   Bell,
+  Receipt,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeNavigation } from "@/hooks/useGestures";
@@ -145,6 +146,14 @@ export default function MobileNav({
       badge: counts.notifications,
       description: "Customer feedback",
       isActive: pathname === `/dashboard/${venueId}/feedback`,
+    },
+    {
+      id: "receipts",
+      label: "Receipts",
+      href: `/dashboard/${venueId}/receipts`,
+      icon: Receipt,
+      description: "View order receipts",
+      isActive: pathname === `/dashboard/${venueId}/receipts`,
     },
     {
       id: "settings",

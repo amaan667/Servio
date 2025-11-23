@@ -174,6 +174,34 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     fetchOrder();
   }, [orderId, sessionId, orderData]);
 
+  // Fetch venue info when order is loaded
+  useEffect(() => {
+    if (!order?.venue_id) return;
+
+    const fetchVenueInfo = async () => {
+      try {
+        const supabase = createClient();
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_name, venue_email, venue_address")
+          .eq("venue_id", order.venue_id)
+          .single();
+
+        if (venue) {
+          setVenueInfo({
+            name: venue.venue_name || undefined,
+            email: venue.venue_email || undefined,
+            address: venue.venue_address || undefined,
+          });
+        }
+      } catch (error) {
+        console.error("[ORDER SUMMARY] Error fetching venue info:", error);
+      }
+    };
+
+    fetchVenueInfo();
+  }, [order?.venue_id]);
+
   // Set up real-time subscription for order updates
   useEffect(() => {
     if (!order?.id) return;
@@ -479,11 +507,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button
-            onClick={() => setShowReceipt(true)}
-            variant="outline"
-            className="flex-1"
-          >
+          <Button onClick={() => setShowReceipt(true)} variant="outline" className="flex-1">
             <Receipt className="h-4 w-4 mr-2" />
             View Receipt
           </Button>

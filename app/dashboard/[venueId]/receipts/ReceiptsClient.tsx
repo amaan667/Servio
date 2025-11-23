@@ -1,171 +1,165 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Receipt,
-  Search,
-  Download,
-  Printer,
-  Mail,
-  MessageSquare,
-  Filter,
-  Calendar,
-  FileText,
-} from "lucide-react";
+import { Receipt, Download, Mail, MessageSquare, Printer } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { Order } from "@/types/order";
+import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { Order } from "@/types/order";
 
-interface ReceiptsClientProps {
+type ReceiptsClientProps = {
   venueId: string;
+};
+
+interface ReceiptOrder extends Order {
+  table_label?: string;
+  counter_label?: string;
+  table_number?: number | null;
+  created_at: string;
 }
 
-interface ReceiptWithVenue extends Order {
-  venue_name?: string;
-  venue_email?: string;
-  venue_address?: string;
-  receipt_logo_url?: string;
-  receipt_footer_text?: string;
-  show_vat_breakdown?: boolean;
+interface GroupedReceipts {
+  [date: string]: ReceiptOrder[];
 }
 
-export default function ReceiptsClient({ venueId }: ReceiptsClientProps) {
-  const [receipts, setReceipts] = useState<ReceiptWithVenue[]>([]);
-  const [filteredReceipts, setFilteredReceipts] = useState<ReceiptWithVenue[]>([]);
+const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
+  const [receipts, setReceipts] = useState<ReceiptOrder[]>([]);
+  const [todayReceipts, setTodayReceipts] = useState<ReceiptOrder[]>([]);
+  const [historyReceipts, setHistoryReceipts] = useState<ReceiptOrder[]>([]);
+  const [groupedHistoryReceipts, setGroupedHistoryReceipts] = useState<GroupedReceipts>({});
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptWithVenue | null>(null);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "PAID" | "UNPAID">("all");
-  const { toast } = useToast();
+  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptOrder | null>(null);
+  const [venueInfo, setVenueInfo] = useState<{
+    venue_name?: string;
+    venue_email?: string;
+    venue_address?: string;
+  }>({});
+  const [activeTab, setActiveTab] = useState("today");
 
-  const getShortOrderNumber = (orderId: string) => {
-    return orderId.slice(-6).toUpperCase();
-  };
+  const loadReceipts = useCallback(async () => {
+    if (!venueId) return;
 
-  const fetchReceipts = useCallback(async () => {
+    setLoading(true);
+
     try {
-      setLoading(true);
       const supabase = createClient();
+      const venueTz = "Europe/London";
 
-      // Build query
-      let query = supabase
-        .from("orders")
-        .select("*")
-        .eq("venue_id", venueId)
-        .order("created_at", { ascending: false });
-
-      // Apply date filter
-      if (dateFilter !== "all") {
-        const now = new Date();
-        let startDate: Date;
-
-        switch (dateFilter) {
-          case "today":
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            break;
-          case "week":
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case "month":
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            break;
-          default:
-            startDate = new Date(0);
-        }
-
-        query = query.gte("created_at", startDate.toISOString());
-      }
-
-      const { data: ordersData, error: ordersError } = await query;
-
-      if (ordersError) {
-        throw ordersError;
-      }
+      // Get today's time window
+      const todayWindowData = todayWindowForTZ(venueTz);
+      const todayWindow = {
+        startUtcISO: todayWindowData.startUtcISO || new Date().toISOString(),
+        endUtcISO: todayWindowData.endUtcISO || new Date().toISOString(),
+      };
 
       // Get venue info
-      const { data: venueData } = await supabase
+      const { data: venue } = await supabase
         .from("venues")
-        .select("venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown")
+        .select("venue_name, venue_email, venue_address")
         .eq("venue_id", venueId)
         .single();
 
-      // Combine order and venue data
-      const receiptsWithVenue: ReceiptWithVenue[] = (ordersData || []).map((order) => ({
-        ...order,
-        venue_name: venueData?.venue_name,
-        venue_email: venueData?.venue_email,
-        venue_address: venueData?.venue_address,
-        receipt_logo_url: venueData?.receipt_logo_url,
-        receipt_footer_text: venueData?.receipt_footer_text,
-        show_vat_breakdown: venueData?.show_vat_breakdown ?? true,
-      }));
+      if (venue) {
+        setVenueInfo({
+          venue_name: venue.venue_name || undefined,
+          venue_email: venue.venue_email || undefined,
+          venue_address: venue.venue_address || undefined,
+        });
+      }
 
-      setReceipts(receiptsWithVenue);
-    } catch (error) {
-      console.error("Error fetching receipts:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load receipts",
-        variant: "destructive",
+      // Fetch paid orders only
+      const { data: ordersData, error: fetchError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("payment_status", "PAID")
+        .order("created_at", { ascending: false });
+
+      if (fetchError) {
+        console.error("[RECEIPTS] Error fetching receipts:", fetchError);
+        setLoading(false);
+        return;
+      }
+
+      const allReceipts = (ordersData || []) as ReceiptOrder[];
+
+      // Categorize receipts
+      const todayReceiptsList = allReceipts.filter((receipt) => {
+        const receiptDate = new Date(receipt.created_at);
+        const todayStart = new Date(todayWindow.startUtcISO);
+        const todayEnd = new Date(todayWindow.endUtcISO);
+        return receiptDate >= todayStart && receiptDate < todayEnd;
       });
-    } finally {
+
+      const historyReceiptsList = allReceipts.filter(
+        (receipt) => new Date(receipt.created_at) < new Date(todayWindow.startUtcISO)
+      );
+
+      setReceipts(allReceipts);
+      setTodayReceipts(todayReceiptsList);
+      setHistoryReceipts(historyReceiptsList);
+
+      // Group history receipts by date
+      const grouped = historyReceiptsList.reduce((acc: GroupedReceipts, receipt) => {
+        const date = new Date(receipt.created_at).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+        acc[date].push(receipt);
+        return acc;
+      }, {});
+      setGroupedHistoryReceipts(grouped);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("[RECEIPTS] Error loading receipts:", error);
       setLoading(false);
     }
-  }, [venueId, dateFilter, toast]);
+  }, [venueId]);
 
   useEffect(() => {
-    fetchReceipts();
-  }, [fetchReceipts]);
+    loadReceipts();
+  }, [loadReceipts]);
 
-  // Filter receipts based on search and status
+  // Set up real-time subscription
   useEffect(() => {
-    let filtered = receipts;
+    if (!venueId) return;
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (receipt) =>
-          receipt.id.toLowerCase().includes(query) ||
-          getShortOrderNumber(receipt.id).toLowerCase().includes(query) ||
-          receipt.customer_name?.toLowerCase().includes(query) ||
-          receipt.customer_email?.toLowerCase().includes(query) ||
-          receipt.customer_phone?.toLowerCase().includes(query) ||
-          receipt.table_number?.toString().includes(query)
-      );
-    }
+    const supabase = createClient();
+    const channel = supabase
+      .channel("receipts-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `venue_id=eq.${venueId}`,
+        },
+        () => {
+          loadReceipts();
+        }
+      )
+      .subscribe();
 
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((receipt) => receipt.payment_status === statusFilter);
-    }
-
-    setFilteredReceipts(filtered);
-  }, [receipts, searchQuery, statusFilter]);
-
-  const handleViewReceipt = (receipt: ReceiptWithVenue) => {
-    setSelectedReceipt(receipt);
-    setShowReceiptModal(true);
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [venueId, loadReceipts]);
 
   const handleDownloadPDF = async (orderId: string) => {
     try {
-      const response = await fetch(`/api/receipts/pdf/${orderId}`);
+      const response = await fetch(`/api/receipts/pdf/${orderId}`, {
+        method: "GET",
+      });
+
       if (!response.ok) {
         throw new Error("Failed to generate PDF");
       }
@@ -174,408 +168,251 @@ export default function ReceiptsClient({ venueId }: ReceiptsClientProps) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `receipt-${getShortOrderNumber(orderId)}.pdf`;
+      a.download = `receipt-${orderId.slice(-6).toUpperCase()}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
-      toast({
-        title: "Download started",
-        description: "Receipt PDF is downloading",
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download PDF",
-        variant: "destructive",
-      });
+      console.error("[RECEIPTS] Error downloading PDF:", error);
     }
   };
 
-  const handlePrintReceipt = async (receipt: ReceiptWithVenue) => {
-    setSelectedReceipt(receipt);
-    setShowReceiptModal(true);
-    // Print will be handled by ReceiptModal component
-    setTimeout(() => {
-      window.print();
-    }, 500);
-  };
-
-  const handleSendEmail = async (receipt: ReceiptWithVenue, email?: string) => {
-    const emailToSend = email || receipt.customer_email;
-    if (!emailToSend) {
-      toast({
-        title: "Error",
-        description: "No email address available",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/receipts/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: receipt.id,
-          email: emailToSend,
-          venueId: receipt.venue_id,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to send email");
-      }
-
-      toast({
-        title: "Receipt sent",
-        description: `Receipt has been sent to ${emailToSend}`,
-      });
-
-      // Refresh receipts to update receipt_sent_at
-      fetchReceipts();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send email",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSendSMS = async (receipt: ReceiptWithVenue, phone?: string) => {
-    const phoneToSend = phone || receipt.customer_phone;
-    if (!phoneToSend) {
-      toast({
-        title: "Error",
-        description: "No phone number available",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/receipts/send-sms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: receipt.id,
-          phone: phoneToSend,
-          venueId: receipt.venue_id,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to send SMS");
-      }
-
-      toast({
-        title: "Receipt sent",
-        description: `Receipt has been sent via SMS to ${phoneToSend}`,
-      });
-
-      // Refresh receipts
-      fetchReceipts();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send SMS",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const exportToCSV = () => {
-    const headers = [
-      "Order ID",
-      "Order Number",
-      "Date",
-      "Customer Name",
-      "Customer Email",
-      "Customer Phone",
-      "Table",
-      "Items",
-      "Total Amount",
-      "Payment Status",
-      "Payment Method",
-      "Order Status",
-    ];
-
-    const rows = filteredReceipts.map((receipt) => {
-      const items = receipt.items
-        ?.map((item) => `${item.item_name} (x${item.quantity})`)
-        .join("; ") || "N/A";
-
-      return [
-        receipt.id,
-        getShortOrderNumber(receipt.id),
-        receipt.created_at ? new Date(receipt.created_at).toLocaleString() : "N/A",
-        receipt.customer_name || "N/A",
-        receipt.customer_email || "N/A",
-        receipt.customer_phone || "N/A",
-        receipt.table_number?.toString() || "N/A",
-        items,
-        `£${receipt.total_amount?.toFixed(2) || "0.00"}`,
-        receipt.payment_status || "N/A",
-        receipt.payment_method || "N/A",
-        receipt.order_status || "N/A",
-      ];
+  const renderReceiptCard = (receipt: ReceiptOrder) => {
+    const orderNumber = receipt.id.slice(-6).toUpperCase();
+    const date = new Date(receipt.created_at);
+    const formattedDate = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const formattedTime = date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
 
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `receipts-export-${new Date().toISOString().split("T")[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    toast({
-      title: "Export started",
-      description: "Receipts CSV is downloading",
-    });
+    return (
+      <Card key={receipt.id} className="hover:shadow-md transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Receipt className="h-5 w-5 text-purple-600" />
+                <span className="font-semibold text-lg">#{orderNumber}</span>
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  Paid
+                </Badge>
+              </div>
+              <div className="space-y-1 text-sm text-gray-600">
+                {receipt.table_label && (
+                  <div>
+                    <span className="font-medium">Table:</span> {receipt.table_label}
+                  </div>
+                )}
+                {receipt.counter_label && (
+                  <div>
+                    <span className="font-medium">Counter:</span> {receipt.counter_label}
+                  </div>
+                )}
+                {receipt.customer_name && (
+                  <div>
+                    <span className="font-medium">Customer:</span> {receipt.customer_name}
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium">Date:</span> {formattedDate} at {formattedTime}
+                </div>
+                {receipt.payment_method && (
+                  <div>
+                    <span className="font-medium">Payment:</span>{" "}
+                    {receipt.payment_method.replace("_", " ").toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="mt-3">
+                <span className="text-2xl font-bold text-gray-900">
+                  £{receipt.total_amount.toFixed(2)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 ml-4">
+              <Button
+                onClick={() => setSelectedReceipt(receipt)}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Receipt className="h-4 w-4 mr-1" />
+                View
+              </Button>
+              <Button
+                onClick={() => handleDownloadPDF(receipt.id)}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                PDF
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading receipts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <Receipt className="h-8 w-8 text-purple-600" />
-                Receipts
-              </h1>
-              <p className="text-gray-600 mt-2">
-                View, manage, and export receipts for all orders
-              </p>
-            </div>
-            <Button onClick={exportToCSV} variant="outline" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Export CSV
-            </Button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search by order ID, customer name, email, phone, or table..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Date Filter */}
-              <div>
-                <Label htmlFor="date-filter">Date Range</Label>
-                <Select value={dateFilter} onValueChange={(value) => setDateFilter(value as typeof dateFilter)}>
-                  <SelectTrigger id="date-filter">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="week">Last 7 Days</SelectItem>
-                    <SelectItem value="month">Last 30 Days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Status Filter */}
-              <div>
-                <Label htmlFor="status-filter">Payment Status</Label>
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}
-                >
-                  <SelectTrigger id="status-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="PAID">Paid</SelectItem>
-                    <SelectItem value="UNPAID">Unpaid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Receipts List */}
-        {loading ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading receipts...</p>
-            </CardContent>
-          </Card>
-        ) : filteredReceipts.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
-                {searchQuery || dateFilter !== "all" || statusFilter !== "all"
-                  ? "No receipts match your filters"
-                  : "No receipts found"}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            <div className="text-sm text-gray-600 mb-4">
-              Showing {filteredReceipts.length} of {receipts.length} receipts
-            </div>
-
-            {filteredReceipts.map((receipt) => (
-              <Card key={receipt.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Order #{getShortOrderNumber(receipt.id)}
-                        </h3>
-                        <Badge
-                          variant={
-                            receipt.payment_status === "PAID" ? "default" : "secondary"
-                          }
-                        >
-                          {receipt.payment_status || "UNPAID"}
-                        </Badge>
-                        <Badge variant="outline">{receipt.order_status}</Badge>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
-                        <div>
-                          <span className="font-medium">Date:</span>{" "}
-                          {receipt.created_at
-                            ? new Date(receipt.created_at).toLocaleDateString()
-                            : "N/A"}
-                        </div>
-                        <div>
-                          <span className="font-medium">Customer:</span>{" "}
-                          {receipt.customer_name || "N/A"}
-                        </div>
-                        <div>
-                          <span className="font-medium">Table:</span>{" "}
-                          {receipt.table_number || "N/A"}
-                        </div>
-                        <div>
-                          <span className="font-medium">Total:</span>{" "}
-                          <span className="font-semibold text-gray-900">
-                            £{receipt.total_amount?.toFixed(2) || "0.00"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {receipt.items && receipt.items.length > 0 && (
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">Items:</span>{" "}
-                          {receipt.items.length} item{receipt.items.length !== 1 ? "s" : ""}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 ml-4">
-                      <Button
-                        onClick={() => handleViewReceipt(receipt)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                      >
-                        <Receipt className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      <Button
-                        onClick={() => handleDownloadPDF(receipt.id)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        PDF
-                      </Button>
-                      <Button
-                        onClick={() => handlePrintReceipt(receipt)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                      >
-                        <Printer className="h-4 w-4 mr-1" />
-                        Print
-                      </Button>
-                      {receipt.customer_email && (
-                        <Button
-                          onClick={() => handleSendEmail(receipt)}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          <Mail className="h-4 w-4 mr-1" />
-                          Email
-                        </Button>
-                      )}
-                      {receipt.customer_phone && (
-                        <Button
-                          onClick={() => handleSendSMS(receipt)}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          SMS
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Tab Navigation */}
+        <section className="mb-6 sm:mb-8">
+          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+            {[
+              {
+                key: "today",
+                label: "Today",
+                count: todayReceipts.length,
+              },
+              {
+                key: "all",
+                label: "All Receipts",
+                count: receipts.length,
+              },
+              {
+                key: "history",
+                label: "History",
+                count: historyReceipts.length,
+              },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`
+                  group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition-all duration-200 border-2
+                  ${
+                    activeTab === tab.key
+                      ? "bg-servio-purple text-white border-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] hover:bg-white hover:text-servio-purple"
+                      : "bg-servio-purple text-white border-servio-purple hover:bg-white hover:text-servio-purple hover:border-servio-purple"
+                  }
+                `}
+              >
+                <span className="flex items-center justify-between">
+                  <span className="font-medium">{tab.label}</span>
+                  <span
+                    className={`
+                    ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs font-medium transition-all duration-200
+                    ${
+                      activeTab === tab.key
+                        ? "bg-white text-servio-purple"
+                        : "bg-servio-purple text-white group-hover:bg-white group-hover:text-servio-purple"
+                    }
+                  `}
+                  >
+                    {tab.count}
+                  </span>
+                </span>
+              </button>
             ))}
           </div>
-        )}
+        </section>
 
-        {/* Receipt Modal */}
-        {selectedReceipt && (
-          <ReceiptModal
-            order={selectedReceipt}
-            venueName={selectedReceipt.venue_name}
-            venueEmail={selectedReceipt.venue_email}
-            venueAddress={selectedReceipt.venue_address}
-            isOpen={showReceiptModal}
-            onClose={() => {
-              setShowReceiptModal(false);
-              setSelectedReceipt(null);
-            }}
-            showVAT={selectedReceipt.show_vat_breakdown}
-            isCustomerView={false}
-          />
-        )}
+        {/* Receipts Content */}
+        <div className="space-y-4">
+          {activeTab === "today" && (
+            <div>
+              {todayReceipts.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Receipts Today</h3>
+                    <p className="text-gray-600">No paid orders found for today</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {todayReceipts.map(renderReceiptCard)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "all" && (
+            <div>
+              {receipts.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Receipts</h3>
+                    <p className="text-gray-600">No paid orders found</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {receipts.map(renderReceiptCard)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "history" && (
+            <div>
+              {historyReceipts.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Historical Receipts
+                    </h3>
+                    <p className="text-gray-600">No receipts from previous days</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  {Object.entries(groupedHistoryReceipts)
+                    .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+                    .map(([date, dateReceipts]) => (
+                      <div key={date}>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 sticky top-0 bg-background py-2">
+                          {date}
+                        </h3>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {dateReceipts.map(renderReceiptCard)}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Receipt Modal */}
+      {selectedReceipt && (
+        <ReceiptModal
+          order={selectedReceipt}
+          venueName={venueInfo.venue_name}
+          venueEmail={venueInfo.venue_email}
+          venueAddress={venueInfo.venue_address}
+          isOpen={!!selectedReceipt}
+          onClose={() => setSelectedReceipt(null)}
+          showVAT={true}
+          isCustomerView={false}
+        />
+      )}
     </div>
   );
-}
+};
+
+export default ReceiptsClient;
