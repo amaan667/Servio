@@ -312,14 +312,18 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
 
   try {
     // Configure Chromium for serverless/server environments
-    chromium.setGraphicsMode(false);
+    const isProduction = process.env.NODE_ENV === "production";
 
-    const browserOptions = {
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    };
+    const browserOptions = isProduction
+      ? {
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport || { width: 1920, height: 1080 },
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless ?? true,
+        }
+      : {
+          headless: true,
+        };
 
     browser = await puppeteerCore.launch(browserOptions);
     const page = await browser.newPage();

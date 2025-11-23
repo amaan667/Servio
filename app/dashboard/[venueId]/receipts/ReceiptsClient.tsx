@@ -401,7 +401,7 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       {/* Receipt Modal */}
       {selectedReceipt && (
         <ReceiptModal
-          order={selectedReceipt}
+          order={selectedReceipt as Order}
           venueName={venueInfo.venue_name}
           venueEmail={venueInfo.venue_email}
           venueAddress={venueInfo.venue_address}
