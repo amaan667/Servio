@@ -26,7 +26,6 @@ interface GroupedReceipts {
 }
 
 const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
-  const [receipts, setReceipts] = useState<ReceiptOrder[]>([]);
   const [todayReceipts, setTodayReceipts] = useState<ReceiptOrder[]>([]);
   const [historyReceipts, setHistoryReceipts] = useState<ReceiptOrder[]>([]);
   const [groupedHistoryReceipts, setGroupedHistoryReceipts] = useState<GroupedReceipts>({});
@@ -98,7 +97,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         (receipt) => new Date(receipt.created_at) < new Date(todayWindow.startUtcISO)
       );
 
-      setReceipts(allReceipts);
       setTodayReceipts(todayReceiptsList);
       setHistoryReceipts(historyReceiptsList);
 
@@ -285,11 +283,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                 count: todayReceipts.length,
               },
               {
-                key: "all",
-                label: "All Receipts",
-                count: receipts.length,
-              },
-              {
                 key: "history",
                 label: "History",
                 count: historyReceipts.length,
@@ -342,24 +335,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {todayReceipts.map(renderReceiptCard)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "all" && (
-            <div>
-              {receipts.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Receipts</h3>
-                    <p className="text-gray-600">No paid orders found</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {receipts.map(renderReceiptCard)}
                 </div>
               )}
             </div>
