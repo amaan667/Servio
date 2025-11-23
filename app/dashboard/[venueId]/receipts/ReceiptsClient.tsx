@@ -37,7 +37,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     venue_address?: string;
     logo_url?: string;
     primary_color?: string;
-    secondary_color?: string;
     show_vat_breakdown?: boolean;
   }>({});
   const [activeTab, setActiveTab] = useState("today");
@@ -65,10 +64,10 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         .eq("venue_id", venueId)
         .single();
 
-      // Get venue contact info
+      // Get venue contact info (including venue_name as fallback)
       const { data: venue } = await supabase
         .from("venues")
-        .select("venue_email, venue_address, show_vat_breakdown")
+        .select("venue_name, venue_email, venue_address, show_vat_breakdown")
         .eq("venue_id", venueId)
         .single();
 
@@ -76,7 +75,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       const venueName = designSettings?.venue_name || venue?.venue_name;
       const logoUrl = designSettings?.logo_url;
       const primaryColor = designSettings?.primary_color || "#8b5cf6";
-      const secondaryColor = designSettings?.secondary_color || "#f3f4f6";
 
       setVenueInfo({
         venue_name: venueName || undefined,
@@ -84,7 +82,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         venue_address: venue?.venue_address || undefined,
         logo_url: logoUrl || undefined,
         primary_color: primaryColor,
-        secondary_color: secondaryColor,
         show_vat_breakdown: venue?.show_vat_breakdown ?? true,
       });
 
@@ -401,7 +398,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
           venueAddress={venueInfo.venue_address}
           logoUrl={venueInfo.logo_url}
           primaryColor={venueInfo.primary_color}
-          secondaryColor={venueInfo.secondary_color}
           isOpen={!!selectedReceipt}
           onClose={() => setSelectedReceipt(null)}
           showVAT={venueInfo.show_vat_breakdown ?? true}

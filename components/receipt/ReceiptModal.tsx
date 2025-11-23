@@ -30,7 +30,6 @@ interface ReceiptModalProps {
   venueAddress?: string;
   logoUrl?: string;
   primaryColor?: string;
-  secondaryColor?: string;
   isOpen: boolean;
   onClose: () => void;
   showVAT?: boolean;
@@ -44,7 +43,6 @@ export function ReceiptModal({
   venueAddress,
   logoUrl,
   primaryColor = "#8b5cf6",
-  secondaryColor = "#f3f4f6",
   isOpen,
   onClose,
   showVAT = true,

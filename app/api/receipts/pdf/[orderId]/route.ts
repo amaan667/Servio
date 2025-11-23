@@ -35,10 +35,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orde
       .eq("venue_id", order.venue_id)
       .single();
 
-    // Get venue contact info
+    // Get venue contact info (including venue_name as fallback)
     const { data: venue } = await supabase
       .from("venues")
-      .select("venue_email, venue_address")
+      .select("venue_name, venue_email, venue_address")
       .eq("venue_id", order.venue_id)
       .single();
 
