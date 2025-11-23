@@ -5,7 +5,6 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import ReceiptsClient from "./ReceiptsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import type { UserRole } from "@/lib/permissions";
 import { isValidUserRole } from "@/lib/utils/userRole";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
@@ -92,8 +91,6 @@ export default function ReceiptsClientPage({ venueId }: { venueId: string }) {
             userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
           />
         )}
-
-        <NavigationBreadcrumb venueId={venueId} />
 
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Receipts</h1>
