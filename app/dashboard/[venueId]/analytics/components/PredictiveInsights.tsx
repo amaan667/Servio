@@ -12,10 +12,33 @@ interface Insight {
   trend?: "up" | "down" | "neutral";
 }
 
+interface OrdersData {
+  avgOrderValue?: number;
+  totalOrders?: number;
+  completedOrders?: number;
+}
+
+interface MenuData {
+  topSellingItems?: Array<{
+    price?: number;
+    revenue?: number;
+    name?: string;
+  }>;
+}
+
+interface RevenueData {
+  totalRevenue?: number;
+  revenueByHour?: Array<{
+    hour: string;
+    revenue: number;
+  }>;
+  revenueByDay?: Record<string, number>;
+}
+
 interface PredictiveInsightsProps {
-  ordersData: any;
-  menuData: any;
-  revenueData: any;
+  ordersData: OrdersData;
+  menuData: MenuData;
+  revenueData: RevenueData;
 }
 
 export function PredictiveInsights({ ordersData, menuData, revenueData }: PredictiveInsightsProps) {
@@ -25,11 +48,11 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
   const avgOrderValue = ordersData.avgOrderValue || 0;
   const lowMarginThreshold = avgOrderValue * 0.6;
   const lowMarginItems = menuData.topSellingItems?.filter(
-    (item: any) => item.price && item.price < lowMarginThreshold
+    (item) => item.price && item.price < lowMarginThreshold
   );
 
   if (lowMarginItems && lowMarginItems.length > 0) {
-    const lowMarginRevenue = lowMarginItems.reduce((sum: number, item: any) => {
+    const lowMarginRevenue = lowMarginItems.reduce((sum: number, item) => {
       return sum + (item.revenue || 0);
     }, 0);
     const totalRevenue = revenueData.totalRevenue || 1;
@@ -47,7 +70,7 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
   // Peak time analysis
   const revenueByHour = revenueData.revenueByHour || [];
   if (revenueByHour.length > 0) {
-    const sortedHours = [...revenueByHour].sort((a: any, b: any) => b.revenue - a.revenue);
+    const sortedHours = [...revenueByHour].sort((a, b) => b.revenue - a.revenue);
     const peakHour = sortedHours[0];
 
     if (peakHour && peakHour.hour) {
@@ -96,10 +119,7 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
   const topItems = menuData.topSellingItems || [];
   if (topItems.length >= 3) {
     const topThree = topItems.slice(0, 3);
-    const topThreeRevenue = topThree.reduce(
-      (sum: number, item: any) => sum + (item.revenue || 0),
-      0
-    );
+    const topThreeRevenue = topThree.reduce((sum: number, item) => sum + (item.revenue || 0), 0);
     const totalRevenue = revenueData.totalRevenue || 1;
     const concentration = (topThreeRevenue / totalRevenue) * 100;
 
@@ -115,10 +135,11 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
   }
 
   // Order completion insights
-  const completionRate =
-    ordersData.totalOrders > 0 ? (ordersData.completedOrders / ordersData.totalOrders) * 100 : 0;
+  const totalOrders = ordersData.totalOrders || 0;
+  const completedOrders = ordersData.completedOrders || 0;
+  const completionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
 
-  if (completionRate < 90 && ordersData.totalOrders > 10) {
+  if (completionRate < 90 && totalOrders > 10) {
     insights.push({
       type: "warning",
       title: "Order Completion Rate Below Target",

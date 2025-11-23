@@ -35,7 +35,10 @@ export function AnalyticsFilters({
 }: AnalyticsFiltersProps) {
   return (
     <div className="flex flex-wrap gap-3 items-center">
-      <Select value={timePeriod} onValueChange={(v) => onTimePeriodChange(v as any)}>
+      <Select
+        value={timePeriod}
+        onValueChange={(v) => onTimePeriodChange(v as "7d" | "30d" | "3m" | "1y" | "custom")}
+      >
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Time period" />
         </SelectTrigger>

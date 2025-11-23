@@ -49,12 +49,31 @@ export function getCachedCounts(venueId: string): CachedCounts | null {
 
 /**
  * Set cached counts for a venue
+ * Accepts partial counts and fills in defaults for missing values
  */
-export function setCachedCounts(venueId: string, counts: CachedCounts): void {
+export function setCachedCounts(
+  venueId: string,
+  counts: Partial<CachedCounts> & { live_count?: number; today_orders_count?: number }
+): void {
   if (typeof window === "undefined") return;
 
   try {
-    sessionStorage.setItem(`${CACHE_KEY_PREFIX}${venueId}`, JSON.stringify(counts));
+    // Ensure all required fields have defaults
+    const fullCounts: CachedCounts = {
+      live_count: counts.live_count ?? 0,
+      earlier_today_count: counts.earlier_today_count ?? 0,
+      history_count: counts.history_count ?? 0,
+      today_orders_count: counts.today_orders_count ?? 0,
+      active_tables_count: counts.active_tables_count ?? 0,
+      tables_set_up: counts.tables_set_up ?? 0,
+      tables_in_use: counts.tables_in_use,
+      tables_reserved_now: counts.tables_reserved_now,
+      in_use_now: counts.in_use_now,
+      reserved_now: counts.reserved_now,
+      reserved_later: counts.reserved_later,
+      waiting: counts.waiting,
+    };
+    sessionStorage.setItem(`${CACHE_KEY_PREFIX}${venueId}`, JSON.stringify(fullCounts));
     sessionStorage.setItem(`${CACHE_TIME_KEY_PREFIX}${venueId}`, Date.now().toString());
   } catch (error) {
     // SessionStorage might be full or unavailable

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface RealtimePayload {
   eventType: "INSERT" | "UPDATE" | "DELETE";
@@ -25,9 +26,9 @@ export function useDashboardRealtime({
   updateRevenueIncrementally,
   venue,
 }: UseDashboardRealtimeProps) {
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const authSubscriptionRef = useRef<any>(null);
+  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
 

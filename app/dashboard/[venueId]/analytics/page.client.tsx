@@ -42,7 +42,7 @@ interface AnalyticsClientPageProps {
   revenueData: {
     totalRevenue: number;
     averageOrderValue: number;
-    revenueByHour: unknown[];
+    revenueByHour: Array<{ hour: string; revenue: number }>;
     revenueByDay: Record<string, number>;
   };
 }

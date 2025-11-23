@@ -3,6 +3,18 @@ import { buildIsoFromLocal, addDaysISO } from "@/lib/time";
 import { LegacyShift } from "./useStaffManagement";
 import { supabaseBrowser } from "@/lib/supabase";
 
+interface ShiftWithStaff {
+  id: string;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
+  area: string | null;
+  staff?: {
+    name: string;
+    role: string;
+  } | null;
+}
+
 export function useShiftManagement(venueId: string, _staff: unknown[]) {
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
@@ -29,12 +41,12 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
 
         if (!error && shiftsData) {
           // Transform to match LegacyShift format
-          const shifts = shiftsData.map((shift: any) => ({
+          const shifts = shiftsData.map((shift: ShiftWithStaff) => ({
             id: shift.id,
             staff_id: shift.staff_id,
             start_time: shift.start_time,
             end_time: shift.end_time,
-            area: shift.area,
+            area: shift.area || undefined,
             staff_name: shift.staff?.name || "",
             staff_role: shift.staff?.role || "",
           }));
@@ -79,14 +91,15 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
       }
 
       // Transform to match LegacyShift format
+      const shiftData = newShift as ShiftWithStaff;
       const shift: LegacyShift = {
-        id: newShift.id,
-        staff_id: newShift.staff_id,
-        start_time: newShift.start_time,
-        end_time: newShift.end_time,
-        area: newShift.area,
-        staff_name: (newShift.staff as any)?.name || "",
-        staff_role: (newShift.staff as any)?.role || "",
+        id: shiftData.id,
+        staff_id: shiftData.staff_id,
+        start_time: shiftData.start_time,
+        end_time: shiftData.end_time,
+        area: shiftData.area || undefined,
+        staff_name: shiftData.staff?.name || "",
+        staff_role: shiftData.staff?.role || "",
       };
 
       setAllShifts((prev) => [...prev, shift]);

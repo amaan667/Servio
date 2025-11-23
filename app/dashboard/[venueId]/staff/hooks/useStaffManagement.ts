@@ -1,6 +1,18 @@
 import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
 
+interface ShiftWithStaff {
+  id: string;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
+  area: string | null;
+  staff?: {
+    name: string;
+    role: string;
+  } | null;
+}
+
 export type StaffRow = {
   id: string;
   name: string;
@@ -90,12 +102,12 @@ export function useStaffManagement(
 
         if (!error && shiftsData) {
           // Transform to match LegacyShift format
-          const shifts = shiftsData.map((shift: any) => ({
+          const shifts = shiftsData.map((shift: ShiftWithStaff) => ({
             id: shift.id,
             staff_id: shift.staff_id,
             start_time: shift.start_time,
             end_time: shift.end_time,
-            area: shift.area,
+            area: shift.area || undefined,
             staff_name: shift.staff?.name || "",
             staff_role: shift.staff?.role || "",
           }));

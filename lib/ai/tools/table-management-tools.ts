@@ -3,6 +3,7 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import { aiLogger } from "@/lib/logger";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface TableAvailabilityResult {
   available: Array<{
@@ -237,7 +238,7 @@ export async function mergeTables(
  * Helper function to perform table merge
  */
 async function performTableMerge(
-  supabase: any,
+  supabase: SupabaseClient,
   venueId: string,
   tableIds: string[],
   mergedLabel: string,
