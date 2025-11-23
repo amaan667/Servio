@@ -544,7 +544,6 @@ export function OrderCard({
       {convertToOrder() && (
         <ReceiptModal
           order={convertToOrder()!}
-          venueName={venueInfo.name}
           venueEmail={venueInfo.email}
           venueAddress={venueInfo.address}
           logoUrl={venueInfo.logoUrl}

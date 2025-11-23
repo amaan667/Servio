@@ -8,6 +8,7 @@ export type OrderStatus =
   | "IN_PREP"
   | "READY"
   | "SERVING"
+  | "SERVED"
   | "COMPLETED"
   | "CANCELLED";
 

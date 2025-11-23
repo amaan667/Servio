@@ -254,7 +254,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
 
   // Generate timeline items
   const getTimelineItems = (): OrderTimelineItem[] => {
-    const statusOrder: OrderStatus[] = [
+    const statusOrder: (OrderStatus | "SERVED")[] = [
       "PLACED",
       "ACCEPTED",
       "IN_PREP",
@@ -264,16 +264,16 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     ];
     const currentStatus = order?.order_status || "PLACED";
     // Map SERVING to SERVED for timeline display
-    const displayStatus = currentStatus === "SERVING" ? "SERVED" : currentStatus;
+    const displayStatus: OrderStatus | "SERVED" = currentStatus === "SERVING" ? "SERVED" : currentStatus;
     const currentIndex = statusOrder.indexOf(displayStatus);
 
     return statusOrder.map((status, index) => {
-      const statusInfo = ORDER_STATUSES[status] || ORDER_STATUSES["SERVING"]; // Fallback for SERVED
+      const statusInfo = ORDER_STATUSES[status] || ORDER_STATUSES["SERVING"]; // Fallback
       const completed = index <= currentIndex;
       const current = index === currentIndex;
 
       return {
-        status,
+        status: status as OrderStatus,
         label: statusInfo.label,
         icon: statusInfo.icon,
         completed,
@@ -551,7 +551,6 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
       {order && (
         <ReceiptModal
           order={order}
-          venueName={venueInfo.name}
           venueEmail={venueInfo.email}
           venueAddress={venueInfo.address}
           logoUrl={venueInfo.logoUrl}

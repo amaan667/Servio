@@ -25,7 +25,6 @@ import { Order } from "@/types/order";
 
 interface ReceiptModalProps {
   order: Order;
-  venueName?: string;
   venueEmail?: string;
   venueAddress?: string;
   logoUrl?: string;
@@ -38,7 +37,6 @@ interface ReceiptModalProps {
 
 export function ReceiptModal({
   order,
-  venueName = "Restaurant",
   venueEmail,
   venueAddress,
   logoUrl,
