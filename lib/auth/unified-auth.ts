@@ -438,6 +438,8 @@ export function withUnifiedAuth(
     try {
       // Extract venueId from params, query, or body
       let venueId: string | null = null;
+      let parsedBody: unknown = null;
+      let bodyConsumed = false;
 
       // Use custom extractor if provided
       if (options?.extractVenueId) {
@@ -455,63 +457,33 @@ export function withUnifiedAuth(
           venueId = url.searchParams.get("venueId") || url.searchParams.get("venue_id");
         }
 
-        // Try body (clone request to avoid consuming it)
-        // IMPORTANT: We clone the request so the original body stream remains available for the handler
+        // Try body - read it ONCE and parse it
+        // This is the permanent solution: read body once, parse once, use everywhere
         if (!venueId && req.method !== "GET") {
-          try {
-            // Check if body exists and is readable
-            const contentType = req.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              try {
-                // Clone the request to read body without consuming original stream
-                // Wrap in try-catch to handle any cloning or parsing errors gracefully
-                let clonedReq: Request | null = null;
-                try {
-                  clonedReq = req.clone();
-                } catch (cloneError) {
-                  // Cloning failed - this can happen if body was already consumed
-                  logger.debug("[UNIFIED AUTH] Request cloning failed (non-critical):", {
-                    method: req.method,
-                    error: cloneError instanceof Error ? cloneError.message : String(cloneError),
-                  });
-                  // Continue without reading body
-                  clonedReq = null;
+          const contentType = req.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              // Read body once and parse it
+              parsedBody = await req.json();
+              bodyConsumed = true;
+              
+              // Extract venueId from parsed body
+              if (parsedBody && typeof parsedBody === "object" && parsedBody !== null) {
+                venueId = (parsedBody as Record<string, unknown>)?.venueId as string || 
+                         (parsedBody as Record<string, unknown>)?.venue_id as string || 
+                         null;
+                if (venueId) {
+                  logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
                 }
-
-                if (clonedReq) {
-                  try {
-                    const body = await clonedReq.json().catch(() => null) as unknown;
-                    if (body && typeof body === "object" && body !== null) {
-                      venueId = (body as Record<string, unknown>)?.venueId as string || 
-                               (body as Record<string, unknown>)?.venue_id as string || 
-                               null;
-                      if (venueId) {
-                        logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
-                      }
-                    }
-                  } catch (parseError) {
-                    // Body parsing failed - this is OK, we'll continue without venueId from body
-                    // The original request body is still available for the handler
-                    logger.debug("[UNIFIED AUTH] Body parsing failed (non-critical):", {
-                      method: req.method,
-                      error: parseError instanceof Error ? parseError.message : String(parseError),
-                    });
-                  }
-                }
-              } catch (innerError) {
-                // Catch any other errors in the inner try block
-                logger.debug("[UNIFIED AUTH] Inner error during body read (non-critical):", {
-                  method: req.method,
-                  error: innerError instanceof Error ? innerError.message : String(innerError),
-                });
               }
+            } catch (parseError) {
+              // Body parsing failed - log but continue
+              logger.debug("[UNIFIED AUTH] Body parsing failed:", {
+                method: req.method,
+                error: parseError instanceof Error ? parseError.message : String(parseError),
+              });
+              parsedBody = null;
             }
-          } catch (error) {
-            // Outer catch - log but don't fail
-            logger.debug("[UNIFIED AUTH] Error attempting body read (non-critical):", {
-              method: req.method,
-              error: error instanceof Error ? error.message : String(error),
-            });
           }
         }
       }
@@ -579,10 +551,28 @@ export function withUnifiedAuth(
         }
       }
 
+      // Reconstruct request with body if it was consumed
+      // This ensures handlers can still call req.json() normally
+      let requestToUse = req;
+      if (bodyConsumed && parsedBody !== null) {
+        // Create a new request with the parsed body re-stringified
+        // This allows handlers to read the body normally via req.json()
+        const bodyString = JSON.stringify(parsedBody);
+        requestToUse = new NextRequest(req.url, {
+          method: req.method,
+          headers: new Headers(req.headers),
+          body: bodyString,
+        }) as NextRequest;
+        
+        // Preserve cookies from original request
+        req.cookies.getAll().forEach((cookie) => {
+          requestToUse.cookies.set(cookie.name, cookie.value);
+        });
+      }
+
       // Call handler with authorized context and route params
-      // Note: If body was read for venueId extraction, the handler can still read it
-      // because we cloned the request, not the original
-      return await handler(req, context, routeParams);
+      // The request body is available for the handler to read normally
+      return await handler(requestToUse, context, routeParams);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
