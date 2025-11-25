@@ -63,7 +63,7 @@ export const POST = withUnifiedAuth(
 
       if (!existingStations || existingStations.length === 0) {
         logger.debug("[KDS BACKFILL ALL] No stations found, creating default stations for venue", {
-          extra: { value: venueId },
+          extra: { value: finalVenueId },
         });
 
         // Create default stations
@@ -78,7 +78,7 @@ export const POST = withUnifiedAuth(
         for (const station of defaultStations) {
           await supabase.from("kds_stations").upsert(
             {
-              venue_id: venueId,
+              venue_id: finalVenueId,
               station_name: station.name,
               station_type: station.type,
               display_order: station.order,

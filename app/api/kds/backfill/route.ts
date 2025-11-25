@@ -50,12 +50,12 @@ export const POST = withUnifiedAuth(
     const { data: existingStations } = await supabase
       .from("kds_stations")
       .select("id, station_type")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .eq("is_active", true);
 
     if (!existingStations || existingStations.length === 0) {
       logger.debug("[KDS BACKFILL] No stations found, creating default stations for venue", {
-        extra: { value: venueId },
+        extra: { value: finalVenueId },
       });
 
       // Create default stations
@@ -70,7 +70,7 @@ export const POST = withUnifiedAuth(
       for (const station of defaultStations) {
         await supabase.from("kds_stations").upsert(
           {
-            venue_id: venueId,
+            venue_id: finalVenueId,
             station_name: station.name,
             station_type: station.type,
             display_order: station.order,
@@ -117,7 +117,7 @@ export const POST = withUnifiedAuth(
       .select(
         "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at"
       )
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .in("payment_status", ["PAID", "UNPAID"]) // Only active orders
       .in("order_status", ["PLACED", "IN_PREP", "READY"]) // Only orders that need preparation
       .order("created_at", { ascending: false });

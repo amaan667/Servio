@@ -86,7 +86,7 @@ export const POST = withUnifiedAuth(
         const body = await req.json();
         const ingredientId = body?.ingredient_id;
         if (ingredientId) {
-          const supabase = createClient();
+          const supabase = await createClient();
           const { data: ingredient } = await supabase
             .from("ingredients")
             .select("venue_id")
