@@ -464,22 +464,45 @@ export function withUnifiedAuth(
             if (contentType && contentType.includes("application/json")) {
               try {
                 // Clone the request to read body without consuming original stream
-                const clonedReq = req.clone();
-                const body = await clonedReq.json().catch(() => null) as unknown;
-                if (body && typeof body === "object" && body !== null) {
-                  venueId = (body as Record<string, unknown>)?.venueId as string || 
-                           (body as Record<string, unknown>)?.venue_id as string || 
-                           null;
-                  if (venueId) {
-                    logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
+                // Wrap in try-catch to handle any cloning or parsing errors gracefully
+                let clonedReq: Request | null = null;
+                try {
+                  clonedReq = req.clone();
+                } catch (cloneError) {
+                  // Cloning failed - this can happen if body was already consumed
+                  logger.debug("[UNIFIED AUTH] Request cloning failed (non-critical):", {
+                    method: req.method,
+                    error: cloneError instanceof Error ? cloneError.message : String(cloneError),
+                  });
+                  // Continue without reading body
+                  clonedReq = null;
+                }
+
+                if (clonedReq) {
+                  try {
+                    const body = await clonedReq.json().catch(() => null) as unknown;
+                    if (body && typeof body === "object" && body !== null) {
+                      venueId = (body as Record<string, unknown>)?.venueId as string || 
+                               (body as Record<string, unknown>)?.venue_id as string || 
+                               null;
+                      if (venueId) {
+                        logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
+                      }
+                    }
+                  } catch (parseError) {
+                    // Body parsing failed - this is OK, we'll continue without venueId from body
+                    // The original request body is still available for the handler
+                    logger.debug("[UNIFIED AUTH] Body parsing failed (non-critical):", {
+                      method: req.method,
+                      error: parseError instanceof Error ? parseError.message : String(parseError),
+                    });
                   }
                 }
-              } catch (parseError) {
-                // Body parsing failed - this is OK, we'll continue without venueId from body
-                // The original request body is still available for the handler
-                logger.debug("[UNIFIED AUTH] Body parsing failed (non-critical):", {
+              } catch (innerError) {
+                // Catch any other errors in the inner try block
+                logger.debug("[UNIFIED AUTH] Inner error during body read (non-critical):", {
                   method: req.method,
-                  error: parseError instanceof Error ? parseError.message : String(parseError),
+                  error: innerError instanceof Error ? innerError.message : String(innerError),
                 });
               }
             }
