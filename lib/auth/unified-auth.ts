@@ -380,10 +380,14 @@ export function withUnifiedAuth(
         // Try body (clone request to avoid consuming it)
         if (!venueId) {
           try {
-            const body = await req.clone().json();
+            const clonedReq = req.clone();
+            const body = await clonedReq.json();
             venueId = body?.venueId || body?.venue_id || null;
-          } catch {
-            // Body parsing failed or no body
+          } catch (error) {
+            // Body parsing failed or no body - this is expected for GET requests
+            logger.debug("[UNIFIED AUTH] Body parsing failed (expected for some requests):", {
+              error: error instanceof Error ? error.message : String(error),
+            });
           }
         }
       }
@@ -391,6 +395,11 @@ export function withUnifiedAuth(
       // Auth + venue access
       // VenueId is required for withUnifiedAuth - routes without venue should use basic auth
       if (!venueId) {
+        logger.warn("[UNIFIED AUTH] venueId not found in request", {
+          url: req.url,
+          method: req.method,
+          hasParams: !!routeParams?.params,
+        });
         return NextResponse.json(
           { error: "Bad Request", message: "venueId is required" },
           { status: 400 }
@@ -400,6 +409,11 @@ export function withUnifiedAuth(
       const authResult = await requireAuthAndVenueAccess(req, venueId);
 
       if (!authResult.success) {
+        logger.warn("[UNIFIED AUTH] Authentication or venue access failed", {
+          url: req.url,
+          venueId,
+          status: authResult.response.status,
+        });
         return authResult.response;
       }
 

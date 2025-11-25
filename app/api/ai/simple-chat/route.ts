@@ -7,14 +7,16 @@ import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 
+export const runtime = "nodejs";
+
 // Set max duration to 60 seconds to handle complex operations like translation
 export const maxDuration = 60;
 
 export const POST = withUnifiedAuth(
-  async (request: NextRequest, context) => {
+  async (req: NextRequest, context) => {
     try {
       // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(request, RATE_LIMITS.GENERAL);
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
@@ -25,8 +27,8 @@ export const POST = withUnifiedAuth(
         );
       }
 
-      const requestBody = await request.json();
-      const { message, currentPage, conversationHistory } = requestBody;
+      const body = await req.json();
+      const { message, currentPage, conversationHistory } = body;
 
       logger.info("[AI SIMPLE CHAT] Request received:", {
         hasMessage: !!message,
@@ -196,13 +198,14 @@ export const POST = withUnifiedAuth(
       response,
       navigation: navigationInfo,
     });
-    } catch (error) {
-      logger.error("[AI SIMPLE CHAT] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+    } catch (_error) {
+      logger.error("[AI SIMPLE CHAT] Unexpected error:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
       });
-
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Failed to process request" },
+        {
+          error: _error instanceof Error ? _error.message : "An unexpected error occurred",
+        },
         { status: 500 }
       );
     }

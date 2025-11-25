@@ -52,12 +52,12 @@ export function SimpleChatInterface({
     setError(null);
 
     try {
-      // Auth is handled by middleware - no need to send token
       const response = await fetch("/api/ai/simple-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify({
           message: userMessage,
           venueId,
