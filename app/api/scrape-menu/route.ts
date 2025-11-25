@@ -23,6 +23,20 @@ async function getBrowser() {
       // Dynamic import - only loaded at runtime, not during build
       const playwright = await import("playwright-core");
 
+      // Try to install chromium if not already installed (lazy install)
+      try {
+        const { execSync } = await import("child_process");
+        execSync("npx playwright install chromium --with-deps", { 
+          stdio: "ignore",
+          timeout: 120000 // 2 minutes max for install
+        });
+      } catch (installError) {
+        // Installation failed or already installed - continue
+        logger.warn("[SCRAPE MENU] Playwright install check failed (may already be installed)", {
+          error: installError instanceof Error ? installError.message : "Unknown"
+        });
+      }
+
       browserInstance = await playwright.chromium.launch({
         headless: true,
         args: [
@@ -40,7 +54,7 @@ async function getBrowser() {
       // Don't crash - throw error to be caught by API handler
       throw new Error(
         `Playwright browser failed to launch. This usually means:\n` +
-          `1. Chromium is not installed (run: npx playwright install chromium)\n` +
+          `1. Chromium is not installed (will auto-install on first use)\n` +
           `2. Missing system dependencies\n` +
           `3. Insufficient memory/resources\n\n` +
           `Error: ${launchError instanceof Error ? launchError.message : "Unknown error"}`

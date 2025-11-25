@@ -1,11 +1,10 @@
 # Railway/Nixpacks configuration
-# Playwright needed for menu scraping feature - optimized
+# Playwright needed for menu scraping feature - lazy install on first use
 
 [phases.install]
-# Install dependencies and Playwright Chromium (Railway has system deps)
+# Install dependencies only - Playwright will be installed on-demand
 cmds = [
-  "pnpm install --frozen-lockfile",
-  "npx playwright install chromium"
+  "pnpm install --frozen-lockfile"
 ]
 
 [phases.build]
