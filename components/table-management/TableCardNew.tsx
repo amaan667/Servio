@@ -219,9 +219,9 @@ export function TableCardNew({
           // Call parent callback if provided
           onActionComplete?.();
         },
-        onError: (error) => {
+        onError: (error: Error) => {
           // Error is already handled by the hook's toast
-          setRemoveError(error instanceof Error ? error.message : "Failed to remove table");
+          setRemoveError(error.message || "Failed to remove table");
           // Reopen the dialog to show the error
           setShowRemoveDialog(true);
         },
@@ -250,7 +250,7 @@ export function TableCardNew({
         });
         setShowPaymentDialog(true);
       }
-    } catch (error) {
+    } catch {
       // Silently handle payment order load error
     }
   };
@@ -315,11 +315,6 @@ export function TableCardNew({
                     .single();
 
                   if (orderData && !error) {
-                    const now = new Date();
-                    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
-                    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    const orderCreatedAt = new Date(orderData.created_at);
-
                     // Simply navigate to live orders with table filter
                     // The filter will search through both live and all tabs automatically
                     router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}`);

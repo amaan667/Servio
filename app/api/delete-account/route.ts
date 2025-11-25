@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     // CRITICAL: Authentication check
     const { requireAuthForAPI } = await import("@/lib/auth/api");
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(req);
     if (authResult.error || !authResult.user || authResult.user.id !== userId) {
       return NextResponse.json(
         { error: "Unauthorized", message: "You can only delete your own account" },

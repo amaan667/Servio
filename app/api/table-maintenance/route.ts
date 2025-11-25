@@ -8,7 +8,7 @@ export async function POST(_req: NextRequest) {
   try {
 
     // CRITICAL: Authentication check
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(_req);
     if (authResult.error || !authResult.user) {
       return NextResponse.json(
         { error: 'Unauthorized', message: authResult.error || 'Authentication required' },

@@ -12,7 +12,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 export async function POST(req: NextRequest) {
   try {
     // CRITICAL: Authentication check (admin function)
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(req);
     if (authResult.error || !authResult.user) {
       return NextResponse.json(
         { error: "Unauthorized", message: authResult.error || "Authentication required" },

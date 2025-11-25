@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   } | null = null;
   try {
     // CRITICAL: Authentication check (signup doesn't require venue access)
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(req);
     if (authResult.error || !authResult.user) {
       // Allow unauthenticated for signup
     }

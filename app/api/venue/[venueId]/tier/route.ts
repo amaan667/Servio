@@ -19,7 +19,7 @@ export async function GET(
       }
     } else {
       const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI();
+      const authResult = await requireAuthForAPI(req);
       if (authResult.error || !authResult.user) {
         return NextResponse.json(
           { error: 'Unauthorized', message: authResult.error || 'Authentication required' },

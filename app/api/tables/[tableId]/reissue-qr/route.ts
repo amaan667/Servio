@@ -1,21 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest } from "@/lib/api-auth";
+import { requireAuthForAPI } from "@/lib/auth/api";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
     const { tableId } = await context.params;
 
-    // Authenticate using Authorization header
-    const auth = await authenticateRequest(req);
-    if (!auth.success || !auth.supabase) {
-      return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
+    // CRITICAL: Authentication
+    const authResult = await requireAuthForAPI(req);
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    const { supabase } = auth;
+    const adminSupabase = createAdminClient();
 
     // Get current table to increment qr_version
-    const { data: currentTable, error: fetchError } = await supabase
+    const { data: currentTable, error: fetchError } = await adminSupabase
       .from("tables")
       .select("qr_version")
       .eq("id", tableId)
@@ -26,7 +32,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
     }
 
     // Increment qr_version
-    const { data: table, error } = await supabase
+    const { data: table, error } = await adminSupabase
       .from("tables")
       .update({
         qr_version: ((currentTable as { qr_version?: number }).qr_version || 1) + 1,

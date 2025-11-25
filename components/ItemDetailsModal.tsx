@@ -77,7 +77,7 @@ export function ItemDetailsModal({
           setModifiers(data.modifiers || []);
         }
       }
-    } catch (err) {
+    } catch {
       // Silently handle modifier fetch error
     } finally {
       setLoadingModifiers(false);

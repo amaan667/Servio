@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
   try {
     // Basic auth check only (no venue required for cart retrieval)
     const { requireAuthForAPI } = await import('@/lib/auth/api');
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(req);
     if (authResult.error || !authResult.user) {
       return NextResponse.json(
         { error: 'Unauthorized', message: authResult.error || 'Authentication required' },

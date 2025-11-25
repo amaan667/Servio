@@ -108,19 +108,39 @@ export async function getAuthUserFromRequest(
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (user && user.id === middlewareUserId) {
+        logger.debug("[UNIFIED AUTH] Successfully got user from getUser() fallback", { userId: user.id });
         return { user, error: null };
       }
       if (userError) {
-        logger.debug("[UNIFIED AUTH] getUser() also failed", { error: userError.message });
+        logger.warn("[UNIFIED AUTH] getUser() also failed", { error: userError.message });
       }
     } catch (error) {
-      logger.debug("[UNIFIED AUTH] Error calling getUser()", {
+      logger.warn("[UNIFIED AUTH] Error calling getUser()", {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+    
+    // If middleware says user is authenticated but we can't get full user object,
+    // construct minimal user object (middleware already verified auth)
+    logger.debug("[UNIFIED AUTH] Constructing minimal user from middleware header", { userId: middlewareUserId });
+    return {
+      user: {
+        id: middlewareUserId,
+        email: request.headers.get("x-user-email") || undefined,
+        app_metadata: {},
+        user_metadata: {},
+        aud: "authenticated",
+        created_at: new Date().toISOString(),
+      } as User,
+      error: null,
+    };
   }
 
-  // No session found
+  // No session found and no middleware header
+  logger.warn("[UNIFIED AUTH] No authentication found", {
+    hasMiddlewareHeader: !!middlewareUserId,
+    url: request.url,
+  });
   return { user: null, error: "No authentication found" };
 }
 
@@ -436,16 +456,25 @@ export function withUnifiedAuth(
         }
 
         // Try body (clone request to avoid consuming it)
-        if (!venueId) {
+        if (!venueId && req.method !== "GET") {
           try {
             const clonedReq = req.clone();
-            const body = await clonedReq.json();
-            venueId = body?.venueId || body?.venue_id || null;
+            const body = await clonedReq.json().catch(() => null);
+            if (body) {
+              venueId = body?.venueId || body?.venue_id || null;
+              if (venueId) {
+                logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
+              }
+            }
           } catch (error) {
-            // Body parsing failed or no body - this is expected for GET requests
-            logger.debug("[UNIFIED AUTH] Body parsing failed (expected for some requests):", {
-              error: error instanceof Error ? error.message : String(error),
-            });
+            // Body parsing failed - log for POST/PUT/PATCH requests
+            if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+              logger.warn("[UNIFIED AUTH] Body parsing failed for non-GET request:", {
+                method: req.method,
+                url: req.url,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
           }
         }
       }

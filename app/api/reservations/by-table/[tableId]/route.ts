@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ tableI
 
     // CRITICAL: Authentication check
     const { requireAuthForAPI } = await import('@/lib/auth/api');
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(req);
     if (authResult.error || !authResult.user) {
       return NextResponse.json(
         { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
