@@ -2,58 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import type { StockAdjustmentRequest } from "@/types/inventory";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-// POST /api/inventory/stock/adjust
-export async function POST(_request: NextRequest) {
-  try {
-    const req = _request;
+export const runtime = "nodejs";
 
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+// POST /api/inventory/stock/adjust
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, _context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const supabase = await createClient();
-    const body: StockAdjustmentRequest = await _request.json();
+      const supabase = await createClient();
+      const body: StockAdjustmentRequest = await req.json();
 
     const { ingredient_id, delta, reason, note } = body;
 
@@ -101,10 +72,36 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json({ data }, { status: 201 });
-  } catch (_error) {
-    logger.error("[INVENTORY API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    } catch (_error) {
+      logger.error("[INVENTORY API] Unexpected error:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      });
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+  },
+  {
+    extractVenueId: async (req) => {
+      // Get venueId from ingredient in body
+      try {
+        const body = await req.json();
+        const ingredientId = body?.ingredient_id;
+        if (ingredientId) {
+          const supabase = createClient();
+          const { data: ingredient } = await supabase
+            .from("ingredients")
+            .select("venue_id")
+            .eq("id", ingredientId)
+            .single();
+          if (ingredient?.venue_id) {
+            return ingredient.venue_id;
+          }
+        }
+      } catch {
+        // Ignore errors
+      }
+      // Fallback to query/body
+      const url = new URL(req.url);
+      return url.searchParams.get("venueId") || url.searchParams.get("venue_id");
+    },
   }
-}
+);

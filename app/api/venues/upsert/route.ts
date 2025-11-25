@@ -1,73 +1,39 @@
 import { NextResponse } from "next/server";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      const body = await req.json();
+      const { name, business_type, address, phone, email  } = body;
+      const finalVenueId = context.venueId || body.venueId;
+      const user = context.user;
 
-    const body = await req.json();
-    const { name, business_type, address, phone, email  } = body;
-    const finalVenueId = venueId || body.venueId;
-
-    if (!finalVenueId || !name || !business_type) {
-      return NextResponse.json(
-        { ok: false, error: "finalVenueId, name, and business_type required" },
-        { status: 400 }
-      );
-    }
-
-    const { user } = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-    }
+      if (!finalVenueId || !name || !business_type) {
+        return NextResponse.json(
+          { ok: false, error: "finalVenueId, name, and business_type required" },
+          { status: 400 }
+        );
+      }
 
     const admin = await createClient();
 
@@ -118,13 +84,14 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
       return NextResponse.json({ ok: true, venue: data });
     }
-  } catch (_error) {
-    logger.error("[VENUES UPSERT] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json(
-      { ok: false, error: _error instanceof Error ? _error.message : "Failed to upsert venue" },
-      { status: 500 }
-    );
+    } catch (_error) {
+      logger.error("[VENUES UPSERT] Error:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      });
+      return NextResponse.json(
+        { ok: false, error: _error instanceof Error ? _error.message : "Failed to upsert venue" },
+        { status: 500 }
+      );
+    }
   }
-}
+);
