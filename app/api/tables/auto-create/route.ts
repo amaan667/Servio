@@ -23,7 +23,8 @@ export const POST = withUnifiedAuth(
         );
       }
 
-        const { venue_id, table_number, table_label, seat_count = 4, area = null } = body;
+      const body = await req.json();
+      const { venue_id, table_number, table_label, seat_count = 4, area = null } = body;
       const finalVenueId = context.venueId || venue_id;
 
       if (!finalVenueId || !table_number) {

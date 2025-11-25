@@ -1,58 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const body = await req.json();
-    const finalVenueId = venueId || body.venueId;
+      const body = await req.json();
+      const finalVenueId = context.venueId || body.venueId;
 
     if (!finalVenueId) {
       return NextResponse.json(
@@ -75,7 +45,7 @@ export async function POST(req: NextRequest) {
     const { data: allActiveReservations, error: fetchError } = await supabase
       .from("reservations")
       .select("*")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .in("status", ["BOOKED", "CHECKED_IN"]);
 
     if (fetchError) {
@@ -212,17 +182,18 @@ export async function POST(req: NextRequest) {
         id: r.id,
         reason: r.completionReason,
       })),
-    });
-  } catch (_error) {
-    logger.error("[AUTO COMPLETE] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json(
-      {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "Internal server _error",
-      },
-      { status: 500 }
-    );
+      });
+    } catch (_error) {
+      logger.error("[AUTO COMPLETE] Error:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: _error instanceof Error ? _error.message : "Internal server _error",
+        },
+        { status: 500 }
+      );
+    }
   }
-}
+);

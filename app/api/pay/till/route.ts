@@ -1,67 +1,29 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    // Authenticate user
-    const { user, error: authError } = await getAuthUserForAPI();
-
-    if (authError || !user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Step 1: Parse request body
-    const body = await req.json();
+      const user = context.user;
+      const body = await req.json();
 
     const { order_id } = body;
 
@@ -170,26 +132,27 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    return NextResponse.json(response);
-  } catch (_error) {
-    logger.error("[PAY TILL] 💥 EXCEPTION CAUGHT:", {
-      error: _error,
-      message: _error instanceof Error ? _error.message : "Unknown error",
-      stack: _error instanceof Error ? _error.stack : undefined,
-    });
+      return NextResponse.json(response);
+    } catch (_error) {
+      logger.error("[PAY TILL] 💥 EXCEPTION CAUGHT:", {
+        error: _error,
+        message: _error instanceof Error ? _error.message : "Unknown error",
+        stack: _error instanceof Error ? _error.stack : undefined,
+      });
 
-    logger.error("[PAY TILL] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-      fullError: _error,
-    });
+      logger.error("[PAY TILL] Error:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+        fullError: _error,
+      });
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-        details: _error instanceof Error ? _error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Internal server error",
+          details: _error instanceof Error ? _error.message : "Unknown error",
+        },
+        { status: 500 }
+      );
+    }
   }
-}
+);

@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  * Call: POST /api/tables/clear-completed
  */
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
