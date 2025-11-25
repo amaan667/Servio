@@ -23,8 +23,9 @@ export const POST = withUnifiedAuth(
       }
 
       const user = context.user;
-      const { id } = body;
-    const venue_id = context.venueId || body.venue_id;
+      const body = await req.json();
+      const { id, venue_id: bodyVenueId } = body;
+      const venue_id = context.venueId || bodyVenueId;
 
     if (!id) {
       return NextResponse.json({ error: "Invitation ID is required" }, { status: 400 });
