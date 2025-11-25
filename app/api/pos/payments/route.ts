@@ -7,7 +7,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 export const runtime = "nodejs";
 
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);

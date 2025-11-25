@@ -81,6 +81,7 @@ export async function PUT(
         updated_at: new Date().toISOString(),
       })
       .eq("id", reservationId)
+      .eq("venue_id", authContext.venueId)
       .select()
       .single();
 
