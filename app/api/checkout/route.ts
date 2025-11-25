@@ -3,72 +3,44 @@ import Stripe from "stripe";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { getStripeClient } from "@/lib/stripe-client";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 
+export const runtime = "nodejs";
+
 const stripe = getStripeClient();
 
-export async function POST(req: NextRequest) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      const body = await req.json();
+      const {
+        amount,
+        tableNumber,
+        customerName,
+        customerPhone,
+        orderId,
+        items,
+        source,
+        venueName,
+        customerEmail,
+      } = body;
 
-    const body = await req.json();
-    const {
-      amount,
-      tableNumber,
-      customerName,
-      customerPhone,
-      orderId,
-      items,
-      source,
-      venueName,
-      customerEmail,
-    } = body;
-
-    // Use venueId from auth check or body
-    const finalVenueId = venueId || body.venueId;
+      // Use venueId from context
+      const finalVenueId = context.venueId || body.venueId;
 
     if (!finalVenueId) {
       return NextResponse.json({ error: "venueId is required" }, { status: 400 });
@@ -133,15 +105,16 @@ export async function POST(req: NextRequest) {
       venue: finalVenueId,
     });
 
-    return NextResponse.json({ id: session.id, url: session.url });
-  } catch (_error) {
-    logger.error("[CHECKOUT] Error creating checkout session:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+      return NextResponse.json({ id: session.id, url: session.url });
+    } catch (_error) {
+      logger.error("[CHECKOUT] Error creating checkout session:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      });
 
-    return NextResponse.json(
-      { error: _error instanceof Error ? _error.message : "An _error occurred" },
-      { status: 500 }
-    );
+      return NextResponse.json(
+        { error: _error instanceof Error ? _error.message : "An _error occurred" },
+        { status: 500 }
+      );
+    }
   }
-}
+);

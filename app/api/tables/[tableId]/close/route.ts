@@ -1,60 +1,30 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 
 export const runtime = "nodejs";
 
 // POST /api/tables/[tableId]/close - Close a table
-export async function POST(_req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
-  try {
-    const req = _req;
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
+export async function POST(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
+  const handler = withUnifiedAuth(
+    async (req: NextRequest, authContext, routeParams) => {
       try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
-        return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
-        );
-      }
-    }
+        // CRITICAL: Rate limiting
+        const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+        if (!rateLimitResult.success) {
+          return NextResponse.json(
+            {
+              error: 'Too many requests',
+              message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+            },
+            { status: 429 }
+          );
+        }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const { tableId } = await context.params;
+        const { tableId } = await routeParams!.params!;
 
     if (!tableId) {
       return NextResponse.json({ ok: false, error: "tableId is required" }, { status: 400 });
@@ -68,6 +38,7 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ table
       .from("tables")
       .select("venue_id")
       .eq("id", tableId)
+      .eq("venue_id", authContext.venueId)
       .single();
 
     if (tableError || !table) {
@@ -77,7 +48,7 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ table
     // Call the database function to close the table
     const { error } = await supabase.rpc("api_close_table", {
       p_table_id: tableId,
-      p_venue_id: table.venue_id,
+      p_venue_id: authContext.venueId,
     });
 
     if (error) {
@@ -91,10 +62,37 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ table
       ok: true,
       message: "Table closed successfully",
     });
-  } catch (_error) {
-    logger.error("[TABLES CLOSE] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
-  }
+      } catch (_error) {
+        logger.error("[TABLES CLOSE] Unexpected error:", {
+          error: _error instanceof Error ? _error.message : "Unknown _error",
+        });
+        return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+      }
+    },
+    {
+      extractVenueId: async (req, routeParams) => {
+        // Get venueId from table record
+        if (routeParams?.params) {
+          const params = await routeParams.params;
+          const tableId = params?.tableId;
+          if (tableId) {
+            const adminSupabase = createAdminClient();
+            const { data: table } = await adminSupabase
+              .from("tables")
+              .select("venue_id")
+              .eq("id", tableId)
+              .single();
+            if (table?.venue_id) {
+              return table.venue_id;
+            }
+          }
+        }
+        // Fallback to query/body
+        const url = new URL(req.url);
+        return url.searchParams.get("venueId") || url.searchParams.get("venue_id");
+      },
+    }
+  );
+
+  return handler(req, context);
 }
