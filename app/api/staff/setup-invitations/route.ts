@@ -2,72 +2,30 @@
 // Creates the required database tables for staff invitations
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function POST(_request: NextRequest) {
-  try {
-    const req = _request;
+export const runtime = "nodejs";
 
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
-
-    // Check if user is authenticated
-    // Use getSession() to avoid refresh token errors
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-    const user = session?.user;
-
-    if (sessionError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+      const user = context.user;
+      const { createAdminClient } = await import("@/lib/supabase");
+      const supabase = createAdminClient();
 
     // Check if staff_invitations table already exists
     const { error: invitationsError } = await supabase
@@ -125,7 +83,7 @@ export async function POST(_request: NextRequest) {
       // This will fail if the table doesn't exist, but that's expected
       const { error: testError } = await supabase.from("staff_invitations").insert({
         venue_id: "test",
-        invited_by: user.id,
+        invited_by: user?.id || "",
         email: "test@example.com",
         role: "staff",
         token: "test-token",
@@ -165,17 +123,18 @@ export async function POST(_request: NextRequest) {
         "Invited staff will receive email invitations to join your venue",
       ],
     });
-  } catch (_error) {
-    logger.error("[STAFF INVITATION SETUP] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to set up staff invitation system",
-        details: _error instanceof Error ? _error.message : "Unknown _error",
-      },
-      { status: 500 }
-    );
+    } catch (_error) {
+      logger.error("[STAFF INVITATION SETUP] Error:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to set up staff invitation system",
+          details: _error instanceof Error ? _error.message : "Unknown _error",
+        },
+        { status: 500 }
+      );
+    }
   }
-}
+);
