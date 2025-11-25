@@ -67,32 +67,14 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     // Update queue status periodically
     const queueInterval = setInterval(updateQueueStatus, 5000);
 
-    // Register service worker
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          // Previously: show update banner when updatefound. Now we silently allow the
-          // new SW to install/activate without surfacing UI to the user.
-          // Silently handle updates in background
-          registration.addEventListener("updatefound", () => {
-            const installing = registration.installing;
-            if (installing) {
-              installing.addEventListener("statechange", () => {
-                if (installing.state === "installed" && navigator.serviceWorker.controller) {
-                  // New service worker installed, will activate on next page load
-                }
-              });
-            }
-          });
-
-          // Check for existing updates
-          registration.update();
-        })
-        .catch(() => {
-          // Service worker registration failed
-        });
-    }
+    // Service worker registration disabled - not currently needed
+    // Offline queue works without service worker using localStorage
+    // If service worker is needed in future, create /public/sw.js first
+    // if ("serviceWorker" in navigator) {
+    //   navigator.serviceWorker.register("/sw.js").catch(() => {
+    //     // Service worker registration failed - not critical
+    //   });
+    // }
 
     // Listen for messages from service worker
     if ("serviceWorker" in navigator) {
