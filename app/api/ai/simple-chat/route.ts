@@ -4,122 +4,48 @@ import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
 import { executeTool } from "@/lib/ai/tool-executors";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 
 // Set max duration to 60 seconds to handle complex operations like translation
 export const maxDuration = 60;
 
-export async function POST(request: NextRequest) {
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(request, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    let requestBody: {
-      message?: string;
-      venueId?: string;
-      currentPage?: string;
-      conversationHistory?: Array<{ role: string; content: string }>;
-    } = {};
-    logger.info("[AI SIMPLE CHAT] 1. Request received");
-
-    // Get auth token from header
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    logger.info("[AI SIMPLE CHAT] 2. Auth header check:", {
-      hasAuthHeader: !!authHeader,
-      authHeaderPrefix: authHeader?.substring(0, 10),
-      hasToken: !!token,
-      tokenLength: token?.length,
-    });
-
-    if (!token) {
-      logger.error("[AI SIMPLE CHAT] ❌ No auth token in header");
-      return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
-    }
-
-    logger.info("[AI SIMPLE CHAT] 3. Token found, creating Supabase client");
-
-    // Create Supabase client with the token
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
+export const POST = withUnifiedAuth(
+  async (request: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(request, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
-        },
+          { status: 429 }
+        );
       }
-    );
 
-    logger.info("[AI SIMPLE CHAT] 4. Verifying token");
+      const requestBody = await request.json();
+      const { message, currentPage, conversationHistory } = requestBody;
 
-    // Verify the token
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    logger.info("[AI SIMPLE CHAT] 5. Auth check complete:", {
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      authError: authError?.message,
-      authErrorName: authError?.name,
-    });
-
-    if (!user || authError) {
-      logger.error("[AI SIMPLE CHAT] ❌ Auth failed - invalid or expired token:", {
-        error: authError?.message,
-        errorName: authError?.name,
+      logger.info("[AI SIMPLE CHAT] Request received:", {
+        hasMessage: !!message,
+        venueId: context.venueId,
+        currentPage,
+        historyLength: conversationHistory?.length || 0,
       });
-      return NextResponse.json(
-        {
-          error: `Authentication failed: ${authError?.message || "Invalid token"}`,
-        },
-        { status: 401 }
-      );
-    }
 
-    requestBody = await request.json();
-    const { message, venueId, currentPage, conversationHistory } = requestBody;
-
-    logger.info("[AI SIMPLE CHAT] 6. Request parsed:", {
-      hasMessage: !!message,
-      venueId,
-      currentPage,
-      historyLength: conversationHistory?.length || 0,
-    });
-
-    if (!message || !venueId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    // CRITICAL: Authentication and venue access verification
-    const venueAccessResult = await requireVenueAccessForAPI(venueId);
-    if (!venueAccessResult.success) {
-      return venueAccessResult.response;
-    }
+      if (!message) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      }
 
     logger.info("[AI SIMPLE CHAT] 7. Getting context and summaries");
 
     // Get context and data summaries
-    const context = await getAssistantContext(venueId, user.id);
+    const assistantContext = await getAssistantContext(context.venueId, context.user.id);
     logger.info("[AI SIMPLE CHAT] 8. Context retrieved");
 
-    const summaries = await getAllSummaries(venueId, context.features);
+    const summaries = await getAllSummaries(context.venueId, assistantContext.features);
     logger.info("[AI SIMPLE CHAT] 9. Summaries retrieved");
 
     // Build conversation context from history
@@ -128,14 +54,14 @@ export async function POST(request: NextRequest) {
       const recentMessages = conversationHistory.slice(-5); // Last 5 messages
       conversationContext =
         "\n\nRECENT CONVERSATION:\n" +
-        recentMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n");
+        recentMessages.map((m: { role: string; content: string }) => `${m.role.toUpperCase()}: ${m.content}`).join("\n");
     }
 
     // Plan the action with conversation context
     const enhancedMessage = conversationContext ? `${message}${conversationContext}` : message;
 
     logger.info("[AI SIMPLE CHAT] 10. Planning action with conversation context");
-    const plan = await planAssistantAction(enhancedMessage, context, summaries);
+    const plan = await planAssistantAction(enhancedMessage, assistantContext, summaries);
     logger.info("[AI SIMPLE CHAT] 11. Plan created:", {
       hasDirectAnswer: !!plan.directAnswer,
       toolCount: plan.tools?.length || 0,
@@ -165,8 +91,8 @@ export async function POST(request: NextRequest) {
         const result = await executeTool(
           tool.name,
           tool.params,
-          venueId,
-          user.id,
+          context.venueId,
+          context.user.id,
           tool.preview // use the preview flag from the plan
         );
 
@@ -270,14 +196,18 @@ export async function POST(request: NextRequest) {
       response,
       navigation: navigationInfo,
     });
-  } catch (error) {
-    logger.error("[AI SIMPLE CHAT] Error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    } catch (error) {
+      logger.error("[AI SIMPLE CHAT] Error:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
 
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to process request" },
-      { status: 500 }
-    );
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Failed to process request" },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    requireFeature: "aiAssistant", // AI Assistant requires Enterprise tier
   }
-}
+);

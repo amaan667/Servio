@@ -26,7 +26,7 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ table
     }
     
     if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
       if (!venueAccessResult.success) {
         return venueAccessResult.response;
       }

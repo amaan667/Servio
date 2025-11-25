@@ -251,7 +251,7 @@ export function TableCardNew({
         setShowPaymentDialog(true);
       }
     } catch (error) {
-      console.error("Error loading order for payment:", error);
+      // Silently handle payment order load error
     }
   };
 

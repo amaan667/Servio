@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     }
     
     if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
       if (!venueAccessResult.success) {
         return venueAccessResult.response;
       }

@@ -5,8 +5,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuth } from "@/app/auth/AuthProvider";
-import { checkFeatureAccess } from "@/lib/tier-restrictions";
+// Access checks handled at page level - removed useAuth import
+// Access checks handled at page level - removed checkFeatureAccess import
 import {
   Dialog,
   DialogContent,
@@ -76,9 +76,7 @@ export function AssistantCommandPalette({
 }: AssistantCommandPaletteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
-  const [hasAccess, setHasAccess] = useState(false);
-  const [checking, setChecking] = useState(true);
+  // Access checks are handled at page level - component just renders
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -93,22 +91,7 @@ export function AssistantCommandPalette({
   // Detect current page from pathname
   const currentPage = pathname?.split("/").pop() || page;
 
-  // Check tier access - AI Assistant requires Enterprise tier
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (!user?.id) {
-        setChecking(false);
-        setHasAccess(false);
-        return;
-      }
-
-      const access = await checkFeatureAccess(user.id, "aiAssistant");
-      setHasAccess(access.allowed);
-      setChecking(false);
-    };
-
-    checkAccess();
-  }, [user]);
+  // Access checks are handled at page level - if component is rendered, user has access
 
   // Keyboard shortcut: ⌘K / Ctrl-K - Opens expanded chat interface directly
   useEffect(() => {
@@ -239,8 +222,8 @@ export function AssistantCommandPalette({
             }
 
             return json;
-          } catch (_error) {
-            throw error;
+          } catch (previewError) {
+            throw previewError instanceof Error ? previewError : new Error("Preview failed");
           }
         });
 

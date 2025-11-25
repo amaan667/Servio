@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // If venueId provided, verify access
     if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
       if (!venueAccessResult.success) {
         return venueAccessResult.response;
       }

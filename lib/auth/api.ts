@@ -1,138 +1,54 @@
 /**
- * Standardized Authentication Utilities for API Routes
+ * DEPRECATED: Use @/lib/auth/unified-auth instead
  * 
- * This module provides consistent authentication patterns for all API routes.
- * Use these utilities instead of manually checking auth in each route.
+ * This module is kept for backward compatibility during migration.
+ * All new code should use withUnifiedAuth() from @/lib/auth/unified-auth
+ * 
+ * @deprecated Use withUnifiedAuth() wrapper instead
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAuthenticatedUser } from "@/lib/supabase";
-import { verifyVenueAccess, type AuthorizedContext } from "@/lib/middleware/authorization";
-import { logger } from "@/lib/logger";
-import { trackAuthError } from "@/lib/monitoring/error-tracking";
-
+import { requireAuthAndVenueAccess } from "@/lib/auth/unified-auth";
 import type { User } from "@supabase/supabase-js";
+import type { AuthContext } from "@/lib/auth/unified-auth";
+import { NextResponse } from "next/server";
 
-/**
- * Result type for authentication checks
- */
-export interface AuthResult {
-  user: User | null;
-  error: string | null;
-}
-
-/**
- * Standardized authentication check for API routes
- * Returns user and error, does not throw
- */
-export async function requireAuthForAPI(): Promise<AuthResult> {
-  try {
-    const { user, error } = await getAuthenticatedUser();
-
-    if (error) {
-      logger.warn("[AUTH API] Authentication failed", { error });
-      trackAuthError(new Error(error), { action: "require_auth_api" });
-      return { user: null, error };
-    }
-
-    if (!user) {
-      logger.warn("[AUTH API] No user session found");
-      trackAuthError(new Error("No user session"), { action: "require_auth_api" });
-      return { user: null, error: "Not authenticated" };
-    }
-
-    return { user, error: null };
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "Authentication failed";
-    logger.error("[AUTH API] Unexpected authentication error", { error: errorMessage });
-    trackAuthError(err, { action: "require_auth_api" });
-    return { user: null, error: errorMessage };
-  }
-}
-
-/**
- * Standardized authentication + venue access check for API routes
- * Returns authorized context or error response
- */
+// Backward-compatible wrapper for requireVenueAccessForAPI
+// This maintains the old signature: requireVenueAccessForAPI(venueId)
+// But internally uses the new unified system
+// NOTE: This is a temporary compatibility layer. Routes should migrate to withUnifiedAuth
 export async function requireVenueAccessForAPI(
-  venueId: string | null | undefined
+  venueId: string | null | undefined,
+  request?: NextRequest
 ): Promise<
-  | { success: true; context: AuthorizedContext }
+  | { success: true; context: AuthContext }
   | { success: false; response: NextResponse }
 > {
-  // Check authentication first
-  const authResult = await requireAuthForAPI();
-
-  if (authResult.error || !authResult.user) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        { error: "Unauthorized", message: authResult.error || "Authentication required" },
-        { status: 401 }
-      ),
-    };
-  }
-
-  // Check venue ID
-  if (!venueId) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        { error: "Bad Request", message: "venueId is required" },
-        { status: 400 }
-      ),
-    };
-  }
-
-  // Verify venue access
-  const access = await verifyVenueAccess(venueId, authResult.user.id);
-
-  if (!access) {
-    logger.warn("[AUTH API] Venue access denied", {
-      userId: authResult.user.id,
-      venueId,
-    });
-    trackAuthError(new Error("Venue access denied"), {
-      userId: authResult.user.id,
-      venueId,
-      action: "require_venue_access_api",
-    });
-    return {
-      success: false,
-      response: NextResponse.json(
-        { error: "Forbidden", message: "Access denied to this venue" },
-        { status: 403 }
-      ),
-    };
-  }
-
-  return {
-    success: true,
-    context: {
-      venue: access.venue,
-      user: access.user,
-      role: access.role,
-      venueId,
-    },
-  };
+  // Use provided request or create a minimal one
+  // Routes should pass the actual request object
+  const req = request || new NextRequest("http://localhost", {
+    method: "GET",
+    headers: new Headers(),
+  });
+  
+  return await requireAuthAndVenueAccess(req, venueId);
 }
 
-/**
- * Helper to extract venueId from request (query params or body)
- */
+// Re-export type for backward compatibility
+export type { AuthContext as AuthorizedContext } from "@/lib/auth/unified-auth";
+
+// Legacy requireAuthForAPI - use withUnifiedAuth wrapper instead
+export async function requireAuthForAPI(): Promise<{ user: User | null; error: string | null }> {
+  const { user, error } = await getAuthenticatedUser();
+  return { user, error };
+}
+
+// Legacy helper - use withUnifiedAuth wrapper instead
 export function extractVenueId(req: Request): string | null {
   try {
     const url = new URL(req.url);
-    const venueIdFromQuery = url.searchParams.get("venueId");
-
-    if (venueIdFromQuery) {
-      return venueIdFromQuery;
-    }
-
-    // Try to parse body (non-destructive - doesn't consume the stream)
-    // Note: This is a best-effort approach. For POST requests, you should
-    // parse the body in your route handler and pass venueId explicitly.
-    return null;
+    return url.searchParams.get("venueId");
   } catch {
     return null;
   }

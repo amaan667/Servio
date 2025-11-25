@@ -13,7 +13,7 @@ export async function GET(
     
     // CRITICAL: Authentication and venue access verification
     if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
       if (!venueAccessResult.success) {
         return venueAccessResult.response;
       }

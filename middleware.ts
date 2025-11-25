@@ -20,6 +20,7 @@ const protectedPaths = [
   "/api/tables",
   "/api/inventory",
   "/api/staff",
+  "/api/ai",
   // "/api/analytics/vitals" - PUBLIC: web performance metrics, no auth needed
   // "/api/auth" - PUBLIC: auth endpoints must be accessible
   "/api/qr",
@@ -107,6 +108,7 @@ export const config = {
     "/api/tables/:path*",
     "/api/inventory/:path*",
     "/api/staff/:path*",
+    "/api/ai/:path*",
     // "/api/analytics/:path*" - REMOVED: vitals endpoint needs to be public
     // "/api/auth/:path*" - PUBLIC: auth endpoints (sign-in, etc) must be accessible
     "/api/qr/:path*",

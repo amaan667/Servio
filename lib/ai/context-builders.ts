@@ -55,6 +55,13 @@ export async function getAssistantContext(
     .eq("venue_id", venueId)
     .single();
 
+  // Ensure features is always defined with defaults
+  const features = {
+    kdsEnabled: venueData?.kds_enabled || false,
+    inventoryEnabled: venueData?.inventory_enabled || false,
+    analyticsEnabled: true, // Always enabled
+  };
+
   return {
     venueId,
     userId,
@@ -66,11 +73,7 @@ export async function getAssistantContext(
     phone: venueData?.phone || null,
     email: venueData?.email || null,
     operatingHours: venueData?.operating_hours || null,
-    features: {
-      kdsEnabled: venueData?.kds_enabled || false,
-      inventoryEnabled: venueData?.inventory_enabled || false,
-      analyticsEnabled: true, // Always enabled
-    },
+    features,
   };
 }
 

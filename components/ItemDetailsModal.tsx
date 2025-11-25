@@ -78,7 +78,7 @@ export function ItemDetailsModal({
         }
       }
     } catch (err) {
-      console.error("[MODIFIERS] Error fetching modifiers:", err);
+      // Silently handle modifier fetch error
     } finally {
       setLoadingModifiers(false);
     }

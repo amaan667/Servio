@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     // CRITICAL: Add authentication and venue access verification
-    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
     if (!venueAccessResult.success) {
       return venueAccessResult.response;
     }

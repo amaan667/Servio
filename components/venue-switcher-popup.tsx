@@ -21,7 +21,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  Check,
   X,
   Store,
   Settings,
@@ -86,8 +85,7 @@ export default function VenueSwitcherPopup({
           .maybeSingle();
 
         if (error) {
-          // Log error but don't show to user - will show "Select Venue"
-          console.error("[VENUE SWITCHER] Error loading venue name:", error);
+          // Silently handle - will show "Select Venue"
           return;
         }
 
@@ -98,9 +96,8 @@ export default function VenueSwitcherPopup({
             sessionStorage.setItem(`venue_name_${currentVenueId}`, data.venue_name);
           }
         }
-      } catch (error) {
+      } catch {
         // Silently handle - will show "Select Venue"
-        console.error("[VENUE SWITCHER] Exception loading venue name:", error);
       }
     };
 
@@ -137,7 +134,7 @@ export default function VenueSwitcherPopup({
 
       if (error) throw error;
       setVenues(venuesData || []);
-    } catch (_error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load venues",

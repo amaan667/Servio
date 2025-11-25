@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { getAuthUserForAPI } from "@/lib/auth/server";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
     
     if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
       if (!venueAccessResult.success) {
         return venueAccessResult.response;
       }
@@ -180,7 +179,7 @@ export async function POST(req: NextRequest) {
         if (uploadError) {
           logger.warn(`[MENU IMPORT ${requestId}] Failed to save PDF upload:`, uploadError);
         }
-      } catch (e) {
+      } catch {
         logger.warn(`[MENU IMPORT ${requestId}] Non-critical: PDF upload storage failed`);
       }
     }

@@ -47,7 +47,7 @@ export const runtime = "nodejs";
  *               $ref: '#/components/schemas/Error'
  */
 // GET handler for orders
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     // CRITICAL: Add authentication
     const { requireAuthForAPI } = await import("@/lib/auth/api");
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
 
     // CRITICAL: Add rate limiting
     const { rateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
-    const rateLimitResult = await rateLimit(req as unknown as NextRequest, RATE_LIMITS.GENERAL);
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
@@ -83,7 +83,7 @@ export async function GET(req: Request) {
 
     // CRITICAL: Verify venue access
     const { requireVenueAccessForAPI } = await import("@/lib/auth/api");
-    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
     if (!venueAccessResult.success) {
       return venueAccessResult.response;
     }
@@ -543,7 +543,7 @@ export async function POST(req: Request) {
           if (groupSession && groupSession.total_group_size) {
             seatCount = groupSession.total_group_size;
           }
-        } catch (e) {
+        } catch {
           // Error handled
         }
 

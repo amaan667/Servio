@@ -52,32 +52,11 @@ export function SimpleChatInterface({
     setError(null);
 
     try {
-      // Get session token from client-side Supabase
-      const { supabaseBrowser } = await import("@/lib/supabase");
-      const supabase = supabaseBrowser();
-
-      // First try to get session
-      let {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      // If no session or token, try to refresh
-      if (!session?.access_token) {
-        // Session refresh attempted - no logging needed in production
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        session = refreshData.session;
-      }
-
-      // If still no session, user needs to sign in
-      if (!session?.access_token) {
-        throw new Error("Session expired. Please refresh the page and sign in again.");
-      }
-
+      // Auth is handled by middleware - no need to send token
       const response = await fetch("/api/ai/simple-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           message: userMessage,
@@ -89,10 +68,6 @@ export function SimpleChatInterface({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        console.error("[AI CHAT] API Error:", {
-          status: response.status,
-          error: errorData.error,
-        });
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 

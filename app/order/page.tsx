@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 
 // Hooks
@@ -52,7 +51,7 @@ export default function CustomerOrderPage() {
           const data = await response.json();
           setSubscriptionTier(data.tier || "starter");
         }
-      } catch (_error) {
+      } catch {
         setSubscriptionTier("starter");
       } finally {
         setLoadingTier(false);
@@ -80,9 +79,9 @@ export default function CustomerOrderPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(logData),
-    }).catch((err) => {
-      // Fallback to client log if server fails
-      console.error("Failed to log QR scan:", err instanceof Error ? err.message : String(err));
+    }).catch(() => {
+      // Silently handle - error logging failed
+      // Error is already handled server-side
     });
 
     // Also log client-side for development
@@ -117,7 +116,7 @@ export default function CustomerOrderPage() {
 
   const { isSubmitting, submitOrder } = useOrderSubmission();
 
-  const { session, customerInfo, showCheckout, setShowCheckout, updateCustomerInfo } =
+  const { customerInfo, showCheckout, setShowCheckout, updateCustomerInfo } =
     useOrderSession(orderParams);
 
   const {
@@ -138,8 +137,9 @@ export default function CustomerOrderPage() {
 
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [showBillSplit, setShowBillSplit] = useState(false);
-  const [subscriptionTier, setSubscriptionTier] = useState<"starter" | "pro" | "enterprise">("starter");
-  const [loadingTier, setLoadingTier] = useState(true);
+  // Tier state - kept for future use
+  const [, setSubscriptionTier] = useState<"starter" | "pro" | "enterprise">("starter");
+  const [, setLoadingTier] = useState(true);
   const shouldSplitBill = searchParams?.get("splitBill") === "true";
 
   // Log menu loading for debugging
@@ -209,7 +209,7 @@ export default function CustomerOrderPage() {
       if (data.checkoutSessions && data.checkoutSessions.length > 0) {
         window.location.href = data.checkoutSessions[0].url || "/payment";
       }
-    } catch (error) {
+    } catch {
       alert("Failed to create split orders. Please try again.");
     }
   };
