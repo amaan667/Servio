@@ -108,12 +108,21 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
     [venueId, tz, liveWindowMins]
   );
 
-  // Only fetch on mount if cache is not fresh
+  // Always fetch on mount to ensure counts are visible, regardless of cache freshness
   useEffect(() => {
-    if (!isCacheFresh(venueId)) {
-      fetchCounts(false);
-    }
+    fetchCounts(false);
   }, [venueId]); // Only depend on venueId, not fetchCounts
+
+  // Set up periodic refresh to keep counts updated even when tab is not active
+  useEffect(() => {
+    if (!venueId) return;
+
+    const interval = setInterval(() => {
+      fetchCounts(false);
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [venueId, fetchCounts]);
 
   return { data, isLoading, error, refetch: () => fetchCounts(true) };
 }

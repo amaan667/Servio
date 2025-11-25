@@ -98,8 +98,11 @@ export default function LiveOrdersClient({
     }
   }, [venueId, venueNameProp]);
 
-  // Auto-refresh effect
+  // Auto-refresh effect - always keep counts updated regardless of active tab
   useEffect(() => {
+    // Always fetch counts on mount to ensure they're visible
+    refetchCounts();
+
     if (!autoRefreshEnabled) {
       if (autoRefreshRef.current) {
         clearInterval(autoRefreshRef.current);

@@ -145,11 +145,12 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     }
   }, [venueId]);
 
+  // Always load receipts on mount to ensure counts are visible
   useEffect(() => {
     loadReceipts();
   }, [loadReceipts]);
 
-  // Set up real-time subscription
+  // Set up real-time subscription - always active regardless of active tab
   useEffect(() => {
     if (!venueId) return;
 
@@ -170,8 +171,14 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       )
       .subscribe();
 
+    // Also set up periodic refresh to ensure counts stay updated
+    const refreshInterval = setInterval(() => {
+      loadReceipts();
+    }, 30000); // Refresh every 30 seconds
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(refreshInterval);
     };
   }, [venueId, loadReceipts]);
 
@@ -322,15 +329,15 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                   }
                 `}
               >
-                <span className="flex items-center justify-between">
+                <span className="flex items-center justify-between w-full">
                   <span className="font-medium">{tab.label}</span>
                   <span
                     className={`
-                    ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs font-medium transition-all duration-200
+                    ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-200
                     ${
                       activeTab === tab.key
-                        ? "bg-white text-servio-purple"
-                        : "bg-servio-purple text-white group-hover:bg-white group-hover:text-servio-purple"
+                        ? "bg-white text-servio-purple shadow-sm"
+                        : "bg-white/20 text-white group-hover:bg-white group-hover:text-servio-purple"
                     }
                   `}
                   >
