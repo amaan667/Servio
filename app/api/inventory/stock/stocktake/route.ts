@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 // POST /api/inventory/stock/stocktake
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
