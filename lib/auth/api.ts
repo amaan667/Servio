@@ -15,9 +15,10 @@ import type { AuthContext } from "@/lib/auth/unified-auth";
 import { NextResponse } from "next/server";
 
 // Backward-compatible wrapper for requireVenueAccessForAPI
-// This maintains the old signature: requireVenueAccessForAPI(venueId)
+// This maintains the old signature: requireVenueAccessForAPI(venueId, request?)
 // But internally uses the new unified system
 // NOTE: This is a temporary compatibility layer. Routes should migrate to withUnifiedAuth
+// IMPORTANT: Always pass the request object for proper cookie reading
 export async function requireVenueAccessForAPI(
   venueId: string | null | undefined,
   request?: NextRequest
@@ -26,7 +27,7 @@ export async function requireVenueAccessForAPI(
   | { success: false; response: NextResponse }
 > {
   // Use provided request or create a minimal one
-  // Routes should pass the actual request object
+  // Routes should ALWAYS pass the actual request object for proper cookie reading
   const req = request || new NextRequest("http://localhost", {
     method: "GET",
     headers: new Headers(),
@@ -39,7 +40,15 @@ export async function requireVenueAccessForAPI(
 export type { AuthContext as AuthorizedContext } from "@/lib/auth/unified-auth";
 
 // Legacy requireAuthForAPI - use withUnifiedAuth wrapper instead
-export async function requireAuthForAPI(): Promise<{ user: User | null; error: string | null }> {
+// Now accepts optional request to read cookies from request (more reliable)
+export async function requireAuthForAPI(request?: NextRequest): Promise<{ user: User | null; error: string | null }> {
+  // If request is provided, use request-based auth (more reliable in API routes)
+  if (request) {
+    const { getAuthUserFromRequest } = await import("@/lib/auth/unified-auth");
+    return await getAuthUserFromRequest(request);
+  }
+  
+  // Fallback to cookie-based auth for backward compatibility
   const { user, error } = await getAuthenticatedUser();
   return { user, error };
 }

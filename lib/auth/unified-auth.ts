@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/supabase";
+import { getAuthenticatedUser, supabaseServer } from "@/lib/supabase";
 import { verifyVenueAccess, type AuthorizedContext } from "@/lib/middleware/authorization";
 import { checkFeatureAccess, checkLimit, getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
@@ -46,24 +46,82 @@ export interface TierCheckResult {
 export async function getAuthUserFromRequest(
   request: NextRequest
 ): Promise<{ user: User | null; error: string | null }> {
-  // First try to get from middleware-set header (if middleware already authenticated)
-  const userId = request.headers.get("x-user-id");
+  // Read cookies directly from the request (more reliable in API routes)
+  const requestCookies = request.cookies;
   
-  if (userId) {
-    // User authenticated by middleware - verify it matches current session
-    const { user, error } = await getAuthenticatedUser();
-    if (error) {
-      return { user: null, error };
+  // Create supabase client using request cookies directly
+  const supabase = supabaseServer({
+    get: (name: string) => {
+      try {
+        return requestCookies.get(name)?.value;
+      } catch {
+        return undefined;
+      }
+    },
+    set: () => {
+      /* Empty - read-only mode */
+    },
+  });
+
+  // Try to get session from request cookies
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      // Handle refresh token errors silently
+      if (
+        sessionError.message?.includes("refresh_token_not_found") ||
+        sessionError.message?.includes("Invalid Refresh Token")
+      ) {
+        return { user: null, error: null };
+      }
+      logger.debug("[UNIFIED AUTH] Session error:", { error: sessionError.message });
+      return { user: null, error: sessionError.message };
     }
-    if (user && user.id === userId) {
-      return { user, error: null };
+
+    if (session?.user) {
+      // Verify middleware header matches if it exists
+      const middlewareUserId = request.headers.get("x-user-id");
+      if (middlewareUserId && session.user.id !== middlewareUserId) {
+        logger.warn("[UNIFIED AUTH] Middleware header doesn't match session user", {
+          middlewareUserId,
+          sessionUserId: session.user.id,
+        });
+      }
+      return { user: session.user, error: null };
     }
-    // Header exists but user doesn't match - fall through to session check
+  } catch (error) {
+    logger.warn("[UNIFIED AUTH] Error reading session from request cookies", {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 
-  // Fallback to session check from cookies (works in API routes via next/headers)
-  const { user, error } = await getAuthenticatedUser();
-  return { user, error };
+  // Fallback: Check middleware header if session read failed
+  const middlewareUserId = request.headers.get("x-user-id");
+  if (middlewareUserId) {
+    logger.debug("[UNIFIED AUTH] Using middleware header as fallback", { userId: middlewareUserId });
+    // Middleware already authenticated, but we need full user object
+    // Try to get user using getUser() which might work even if getSession() failed
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (user && user.id === middlewareUserId) {
+        return { user, error: null };
+      }
+      if (userError) {
+        logger.debug("[UNIFIED AUTH] getUser() also failed", { error: userError.message });
+      }
+    } catch (error) {
+      logger.debug("[UNIFIED AUTH] Error calling getUser()", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  // No session found
+  return { user: null, error: "No authentication found" };
 }
 
 /**

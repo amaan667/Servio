@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAuthForAPI } from "@/lib/auth/api";
 import { logger } from "@/lib/logger";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // STANDARDIZED: Use requireAuthForAPI for consistent authentication
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(req);
 
     if (authResult.error || !authResult.user) {
       return NextResponse.json(
@@ -37,10 +37,10 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
     // STANDARDIZED: Use requireAuthForAPI for consistent authentication
-    const authResult = await requireAuthForAPI();
+    const authResult = await requireAuthForAPI(req);
 
     if (authResult.error || !authResult.user) {
       return NextResponse.json(
