@@ -1,9 +1,11 @@
 // Stripe Billing Portal - Let customers manage their subscription
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { authenticateRequest } from "@/lib/api-auth";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
+import { requireAuthForAPI, requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase";
 
 interface Organization {
   id: string;
@@ -11,18 +13,34 @@ interface Organization {
   owner_user_id: string;
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // Authenticate using Authorization header
-    const auth = await authenticateRequest(_request);
-    if (!auth.success || !auth.user || !auth.supabase) {
-      return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
+    // CRITICAL: Authentication check
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    const { user, supabase } = auth;
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
 
-    const body = await _request.json();
-    const { organizationId, venueId } = body;
+    const body = await req.json();
+    const { organizationId, venueId: venueIdFromBody } = body;
+
+    const user = authResult.user;
+    const supabase = await createClient();
 
     // Get organization
     const { data: org } = await supabase
@@ -44,8 +62,9 @@ export async function POST(_request: NextRequest) {
 
     // Create billing portal session
     // Return to settings page - use venueId from request if provided
-    const returnUrl = venueId
-      ? `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard/${venueId}/settings`
+    const finalVenueId = venueIdFromBody || organizationId;
+    const returnUrl = finalVenueId
+      ? `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard/${finalVenueId}/settings`
       : `${process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app"}/dashboard`;
 
 

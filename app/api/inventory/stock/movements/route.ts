@@ -1,23 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 // GET /api/inventory/stock/movements?venue_id=xxx&limit=50&offset=0
-export async function GET(_request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(_request.url);
-    const venue_id = searchParams.get('venue_id');
+    const { searchParams } = new URL(req.url);
+    const venueId = searchParams.get('venue_id') || searchParams.get('venueId');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
     const reason = searchParams.get('reason');
 
-    if (!venue_id) {
+    if (!venueId) {
       return NextResponse.json(
         { error: 'venue_id is required' },
         { status: 400 }
       );
     }
+
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
 
     let query = supabase
       .from('stock_ledgers')
@@ -26,7 +47,7 @@ export async function GET(_request: NextRequest) {
         ingredient:ingredients(name, unit),
         user:created_by(email)
       `)
-      .eq('venue_id', venue_id)
+      .eq('venue_id', venueId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

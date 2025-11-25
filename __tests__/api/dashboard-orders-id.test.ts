@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { DELETE as deleteDELETE } from "@/app/apidashboard/orders/[id]/route";
-import { PATCH as patchPATCH } from "@/app/apidashboard/orders/[id]/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { DELETE as deleteDELETE } from "@/app/api/dashboard/orders/[id]/route";
+import { PATCH as patchPATCH } from "@/app/api/dashboard/orders/[id]/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -44,7 +44,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Dashboard Orders Id API", () => {
   describe("DELETE dashboard/orders/[id]", () => {
     it("should handle delete request", async () => {
-      const request = createMockRequest("DELETE", "http://localhost:3000/apidashboard/orders/[id]");
+      const request = createMockRequest("DELETE", "http://localhost:3000/api//dashboard/orders/[id]");
       // TODO: Import and test actual route handler
       const response = await deleteDELETE(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -57,7 +57,7 @@ describe("Dashboard Orders Id API", () => {
 
   describe("PATCH dashboard/orders/[id]", () => {
     it("should handle patch request", async () => {
-      const request = createMockRequest("PATCH", "http://localhost:3000/apidashboard/orders/[id]");
+      const request = createMockRequest("PATCH", "http://localhost:3000/api//dashboard/orders/[id]");
       // TODO: Import and test actual route handler
       const response = await patchPATCH(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

@@ -82,11 +82,16 @@ export async function GET(_request: NextRequest) {
 
 export async function PUT(_request: NextRequest) {
   try {
-    const { venueId, categories } = await _request.json();
+    const req = _request;
+    const { searchParams } = new URL(req.url);
+    const venueId = searchParams.get("venueId");
+    const body = await req.json();
+    const { categories  } = body;
+    const finalVenueId = venueId || body.venueId;
 
-    if (!venueId || !Array.isArray(categories)) {
+    if (!finalVenueId || !Array.isArray(categories)) {
       return NextResponse.json(
-        { error: "venueId and categories array are required" },
+        { error: "finalVenueId and categories array are required" },
         { status: 400 }
       );
     }
@@ -97,7 +102,7 @@ export async function PUT(_request: NextRequest) {
     const { data: existingUpload, error: fetchError } = await supabase
       .from("menu_uploads")
       .select("id")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -124,7 +129,7 @@ export async function PUT(_request: NextRequest) {
     } else {
       // Create new menu upload record if none exists
       const { error: insertError } = await supabase.from("menu_uploads").insert({
-        venue_id: venueId,
+        venue_id: finalVenueId,
         category_order: categories,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -151,10 +156,10 @@ export async function PUT(_request: NextRequest) {
 
 export async function POST(_request: NextRequest) {
   try {
-    const { venueId, categoryName } = await _request.json();
+    const { finalVenueId, categoryName } = await _request.json();
 
-    if (!venueId || !categoryName) {
-      return NextResponse.json({ error: "venueId and categoryName are required" }, { status: 400 });
+    if (!finalVenueId || !categoryName) {
+      return NextResponse.json({ error: "finalVenueId and categoryName are required" }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -163,7 +168,7 @@ export async function POST(_request: NextRequest) {
     const { data: uploadData, error: fetchError } = await supabase
       .from("menu_uploads")
       .select("category_order")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -181,7 +186,7 @@ export async function POST(_request: NextRequest) {
     const { data: existingUpload } = await supabase
       .from("menu_uploads")
       .select("id")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

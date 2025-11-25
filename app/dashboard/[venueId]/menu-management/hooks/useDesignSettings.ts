@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
 import { DesignSettings } from "../types";
 
@@ -107,7 +108,7 @@ export function useDesignSettings(venueId: string) {
       });
 
       if (error) {
-        console.error("Save design error:", error);
+        logger.error("Save design error:", error);
         throw error;
       }
 
@@ -116,7 +117,7 @@ export function useDesignSettings(venueId: string) {
         description: "Your design settings have been saved.",
       });
     } catch (_error) {
-      console.error("Save design catch error:", _error);
+      logger.error("Save design catch error:", _error);
       toast({
         title: "Save failed",
         description: _error instanceof Error ? _error.message : "Failed to save design settings.",

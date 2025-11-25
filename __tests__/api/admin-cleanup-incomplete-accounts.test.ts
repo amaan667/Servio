@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apiadmin/cleanup-incomplete-accounts/route";
-import { DELETE as deleteDELETE } from "@/app/apiadmin/cleanup-incomplete-accounts/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/admin/cleanup-incomplete-accounts/route";
+import { DELETE as deleteDELETE } from "@/app/api/admin/cleanup-incomplete-accounts/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -44,7 +44,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Admin Cleanup Incomplete Accounts API", () => {
   describe("GET admin/cleanup-incomplete-accounts", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apiadmin/cleanup-incomplete-accounts");
+      const request = createMockRequest("GET", "http://localhost:3000/api//admin/cleanup-incomplete-accounts");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -57,7 +57,7 @@ describe("Admin Cleanup Incomplete Accounts API", () => {
 
   describe("DELETE admin/cleanup-incomplete-accounts", () => {
     it("should handle delete request", async () => {
-      const request = createMockRequest("DELETE", "http://localhost:3000/apiadmin/cleanup-incomplete-accounts");
+      const request = createMockRequest("DELETE", "http://localhost:3000/api//admin/cleanup-incomplete-accounts");
       // TODO: Import and test actual route handler
       const response = await deleteDELETE(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

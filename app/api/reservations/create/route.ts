@@ -1,15 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { venueId, tableId, startAt, endAt, partySize, name, phone } = await req.json();
+
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
+    if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      // Fallback to basic auth if no venueId
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const body = await req.json();
+    const { tableId, startAt, endAt, partySize, name, phone } = body;
+    const finalVenueId = venueId || body.venueId;
 
     // Validate inputs
-    if (!venueId) {
+    if (!finalVenueId) {
       return NextResponse.json(
         {
           ok: false,
@@ -50,7 +97,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Use admin client - no auth needed
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // If tableId is provided, check if table exists
     if (tableId) {
@@ -58,7 +105,7 @@ export async function POST(req: NextRequest) {
         .from("tables")
         .select("id")
         .eq("id", tableId)
-        .eq("venue_id", venueId)
+        .eq("venue_id", finalVenueId)
         .maybeSingle();
 
       if (!table) {
@@ -78,7 +125,7 @@ export async function POST(req: NextRequest) {
         .from("reservations")
         .select("id")
         .eq("table_id", tableId)
-        .eq("venue_id", venueId)
+        .eq("venue_id", finalVenueId)
         .in("status", ["BOOKED", "CHECKED_IN"])
         .or(`and(start_at.lt.${endAt},end_at.gt.${startAt})`);
 
@@ -97,7 +144,7 @@ export async function POST(req: NextRequest) {
     const { data: reservation, error: createError } = await supabase
       .from("reservations")
       .insert({
-        venue_id: venueId,
+        venue_id: finalVenueId,
         table_id: tableId,
         start_at: startAt,
         end_at: endAt,

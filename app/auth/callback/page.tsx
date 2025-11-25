@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 function CallbackContent() {
   const router = useRouter();
@@ -15,11 +14,6 @@ function CallbackContent() {
       try {
         const code = searchParams?.get("code");
         const errorParam = searchParams?.get("error");
-
-        logger.info("[AUTH CALLBACK CLIENT] Starting callback", {
-          hasCode: !!code,
-          hasError: !!errorParam,
-        });
 
         if (errorParam) {
           setError(`OAuth error: ${errorParam}`);
@@ -42,11 +36,6 @@ function CallbackContent() {
           data: { session: autoSession },
         } = await supabase.auth.getSession();
         if (autoSession) {
-          logger.info("[AUTH CALLBACK CLIENT] Session auto-detected", {
-            userId: autoSession.user.id,
-            email: autoSession.user.email,
-          });
-
           // Session is already set - proceed to redirect
           const { data: venues } = await supabase
             .from("venues")
@@ -77,12 +66,7 @@ function CallbackContent() {
           allStorageItems[key] = value ? `${value.substring(0, 30)}...` : "null";
         });
 
-        logger.info("[AUTH CALLBACK CLIENT] PKCE verifier check:", {
-          hasVerifier: !!verifierValue,
-          verifierKey,
-          verifierLength: verifierValue?.length,
-          isEmpty: verifierValue === "",
-        });
+          // Verifier check complete
 
         // Try to explicitly use the verifier if found
         let exchangeOptions = {};
@@ -94,22 +78,6 @@ function CallbackContent() {
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
-          console.error("[AUTH CALLBACK CLIENT] ❌ Exchange error:", {
-            error: exchangeError,
-            errorMessage: exchangeError.message,
-            errorCode: exchangeError.code,
-            errorStatus: exchangeError.status,
-            hadVerifierInStorage: !!verifierValue,
-            verifierLength: verifierValue?.length,
-            verifierWasEmpty: verifierValue === "",
-          });
-
-          logger.error("[AUTH CALLBACK CLIENT] Exchange error:", {
-            error: exchangeError,
-            errorMessage: exchangeError.message,
-            hadVerifier: !!verifierValue,
-            verifierLength: verifierValue?.length,
-          });
 
           // If verifier was missing or empty, give user a helpful error
           if (!verifierValue || verifierValue === "") {
@@ -127,10 +95,7 @@ function CallbackContent() {
           return;
         }
 
-        logger.info("[AUTH CALLBACK CLIENT] ✅ Session created in browser", {
-          userId: data.session.user.id,
-          email: data.session.user.email,
-        });
+          // Session created successfully
 
         // Now call server endpoint to SET COOKIES from the session using setSession
         const response = await fetch("/api/auth/set-session", {
@@ -148,8 +113,6 @@ function CallbackContent() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error("[AUTH CALLBACK CLIENT] Sync failed:", errorData);
-          logger.error("[AUTH CALLBACK CLIENT] Failed to sync session to server");
           setError("Failed to sync session. Please try again.");
           return;
         }
@@ -183,16 +146,7 @@ function CallbackContent() {
           .eq("user_id", data.session.user.id)
           .limit(1);
 
-        logger.info("[AUTH CALLBACK CLIENT] Staff roles check:", {
-          roleCount: staffRoles?.length,
-          firstVenue: staffRoles?.[0]?.venue_id,
-        });
-
         if (staffRoles && staffRoles.length > 0 && staffRoles[0]?.venue_id) {
-          logger.info(
-            "[AUTH CALLBACK CLIENT] ✅ Redirecting to staff venue:",
-            staffRoles[0].venue_id
-          );
           router.push(`/dashboard/${staffRoles[0].venue_id}`);
           return;
         }
@@ -200,7 +154,6 @@ function CallbackContent() {
         // New user - redirect to select plan
         router.push("/select-plan");
       } catch (err) {
-        logger.error("[AUTH CALLBACK CLIENT] Unexpected error:", { error: err });
         setError("An unexpected error occurred");
       }
     };

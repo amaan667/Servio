@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { POST as postPOST } from "@/app/apiadmin/force-sync-subscription/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { POST as postPOST } from "@/app/api/admin/force-sync-subscription/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Admin Force Sync Subscription API", () => {
   describe("POST admin/force-sync-subscription", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apiadmin/force-sync-subscription");
+      const request = createMockRequest("POST", "http://localhost:3000/api//admin/force-sync-subscription");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

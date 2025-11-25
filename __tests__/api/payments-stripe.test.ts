@@ -44,7 +44,7 @@ describe("POST /api/payments/create-intent", () => {
   });
 
   it("creates payment intent with valid amount", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/payments/create-intent", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//payments/create-intent", {
       method: "POST",
       body: JSON.stringify({
         amount: 1000, // $10.00
@@ -75,7 +75,7 @@ describe("POST /api/payments/create-intent", () => {
   });
 
   it("includes order metadata", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/payments/create-intent", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//payments/create-intent", {
       method: "POST",
       body: JSON.stringify({
         amount: 1000,
@@ -96,7 +96,7 @@ describe("POST /api/payments/create-intent", () => {
 
 describe("POST /api/payments/webhooks", () => {
   it("handles payment_intent.succeeded event", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/payments/webhooks", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//payments/webhooks", {
       method: "POST",
       headers: {
         "stripe-signature": "sig_test_123",
@@ -116,7 +116,7 @@ describe("POST /api/payments/webhooks", () => {
   });
 
   it("validates webhook signature", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/payments/webhooks", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//payments/webhooks", {
       method: "POST",
       body: JSON.stringify({ type: "test.event" }),
     });

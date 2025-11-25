@@ -1,66 +1,137 @@
 /**
- * Centralized error tracking for production
- * Integrates with Sentry or similar error tracking services
+ * Error Tracking and Monitoring Utilities
+ * Provides consistent error logging and tracking for launch readiness
  */
 
-interface ErrorContext {
-  user_id?: string;
-  venue_id?: string;
-  route?: string;
-  [key: string]: unknown;
+import { logger } from "@/lib/logger";
+import { getErrorDetails } from "@/lib/utils/errors";
+import { captureException, captureMessage } from "./sentry";
+
+export interface ErrorContext {
+  userId?: string;
+  venueId?: string;
+  orderId?: string;
+  action?: string;
+  [key: string]: unknown; // Allow additional properties
 }
 
-export function trackError(error: Error, context?: ErrorContext) {
-  if (typeof window === 'undefined') return;
-  
-  // In development, log to console
-  if (process.env.NODE_ENV === 'development') {
-    return;
-  }
-  
-  // In production, send to error tracking service
-  // Example: Sentry.captureException(error, { extra: context });
-  
-  // For now, send to our API
-  fetch('/api/errors', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: error.message,
-      stack: error.stack,
-      context,
-      timestamp: new Date().toISOString(),
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-    }),
-    keepalive: true,
-  }).catch(() => {
-    // Silent fail - don't break the app if error tracking fails
-  });
-}
+/**
+ * Track critical errors with context
+ */
+export function trackError(
+  error: unknown,
+  context: ErrorContext = {},
+  severity: "low" | "medium" | "high" | "critical" = "medium"
+): void {
+  const errorDetails = getErrorDetails(error);
+  const errorMessage = errorDetails.message || "Unknown error";
 
-export function setupGlobalErrorHandling() {
-  if (typeof window === 'undefined') return;
-  
-  // Catch unhandled promise rejections
-  window.addEventListener('unhandledrejection', (event) => {
-    trackError(
-      new Error(`Unhandled promise rejection: ${event.reason}`),
-      { type: 'unhandled_rejection' }
-    );
-  });
-  
-  // Catch global errors
-  window.addEventListener('error', (event) => {
-    trackError(
-      event.error || new Error(event.message),
-      { 
-        type: 'global_error',
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
+  const logData = {
+    severity,
+    error: errorDetails,
+    context,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Log based on severity
+      switch (severity) {
+        case "critical":
+          logger.error("[CRITICAL ERROR]", logData);
+          captureException(error, { ...context, severity });
+          break;
+        case "high":
+          logger.error("[HIGH SEVERITY ERROR]", logData);
+          captureException(error, { ...context, severity });
+          break;
+        case "medium":
+          logger.warn("[MEDIUM SEVERITY ERROR]", logData);
+          captureMessage(errorMessage, "warning", { ...context, severity });
+          break;
+        case "low":
+          logger.debug("[LOW SEVERITY ERROR]", logData);
+          break;
       }
-    );
-  });
 }
 
+/**
+ * Track payment-related errors (critical for launch)
+ */
+export function trackPaymentError(
+  error: unknown,
+  context: {
+    orderId?: string;
+    venueId?: string;
+    paymentMethod?: string;
+    amount?: number;
+    stripeSessionId?: string;
+  }
+): void {
+  trackError(error, { ...context, action: "payment" }, "critical");
+}
+
+/**
+ * Track order-related errors
+ */
+export function trackOrderError(
+  error: unknown,
+  context: {
+    orderId?: string;
+    venueId?: string;
+    action?: string;
+    orderStatus?: string;
+  }
+): void {
+  trackError(error, { ...context, action: context.action || "order_operation" }, "high");
+}
+
+/**
+ * Track authentication errors
+ */
+export function trackAuthError(
+  error: unknown,
+  context: {
+    userId?: string;
+    venueId?: string;
+    action?: string;
+  }
+): void {
+  trackError(error, { ...context, action: context.action || "authentication" }, "high");
+}
+
+/**
+ * Track database errors
+ */
+export function trackDatabaseError(
+  error: unknown,
+  context: {
+    operation?: string;
+    table?: string;
+    venueId?: string;
+  }
+): void {
+  trackError(error, { ...context, action: "database_operation" }, "high");
+}
+
+/**
+ * Create a safe error response for API routes
+ */
+export function createErrorResponse(
+  error: unknown,
+  context: ErrorContext = {},
+  defaultMessage = "An error occurred"
+): { error: string; details?: string; code?: string } {
+  const errorDetails = getErrorDetails(error);
+  
+  // Track the error
+  trackError(error, context);
+
+  // Return user-friendly error message
+  return {
+    error: errorDetails.message || defaultMessage,
+    ...(errorDetails.code && { code: errorDetails.code }),
+    // Don't expose stack traces in production
+    ...(process.env.NODE_ENV === "development" && errorDetails.stack && {
+      details: errorDetails.stack,
+    }),
+  };
+}

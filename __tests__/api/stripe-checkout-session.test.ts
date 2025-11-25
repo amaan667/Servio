@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apistripe/checkout-session/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/stripe/checkout-session/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Stripe Checkout Session API", () => {
   describe("GET stripe/checkout-session", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apistripe/checkout-session");
+      const request = createMockRequest("GET", "http://localhost:3000/api//stripe/checkout-session");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

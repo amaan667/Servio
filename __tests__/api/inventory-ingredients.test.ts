@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apiinventory/ingredients/route";
-import { POST as postPOST } from "@/app/apiinventory/ingredients/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/inventory/ingredients/route";
+import { POST as postPOST } from "@/app/api/inventory/ingredients/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -44,7 +44,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Inventory Ingredients API", () => {
   describe("GET inventory/ingredients", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apiinventory/ingredients");
+      const request = createMockRequest("GET", "http://localhost:3000/api//inventory/ingredients");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -57,7 +57,7 @@ describe("Inventory Ingredients API", () => {
 
   describe("POST inventory/ingredients", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apiinventory/ingredients");
+      const request = createMockRequest("POST", "http://localhost:3000/api//inventory/ingredients");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

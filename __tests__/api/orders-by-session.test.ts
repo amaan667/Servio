@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
+import { createMockRequest } from "../helpers/api-test-helpers";
 import { GET as getGET } from "@/app/api/orders/by-session/route";
 
 // Mock dependencies
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Orders By Session API", () => {
   describe("GET orders/by-session", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apiorders/by-session");
+      const request = createMockRequest("GET", "http://localhost:3000/api//orders/by-session");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

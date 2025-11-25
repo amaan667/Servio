@@ -33,7 +33,7 @@ describe("POST /api/orders", () => {
   });
 
   it("creates order successfully with valid data", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/orders", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//orders", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -52,7 +52,7 @@ describe("POST /api/orders", () => {
   });
 
   it("validates required venue_id field", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/orders", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//orders", {
       method: "POST",
       body: JSON.stringify({
         items: [],
@@ -64,7 +64,7 @@ describe("POST /api/orders", () => {
   });
 
   it("validates items array is not empty", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/orders", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//orders", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -87,7 +87,7 @@ describe("POST /api/orders", () => {
   });
 
   it("handles dine-in orders with table_id", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/orders", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//orders", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -103,7 +103,7 @@ describe("POST /api/orders", () => {
   });
 
   it("handles takeout orders without table_id", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/orders", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//orders", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",

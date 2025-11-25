@@ -3,17 +3,10 @@
  * @module __tests__/lib/monitoring/performance-wrapper
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { performanceMonitor } from "@/lib/monitoring/performance-wrapper";
 
 describe("Performance Monitor", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
 
   describe("measure", () => {
     it("should execute function and return result", async () => {
@@ -70,57 +63,51 @@ describe("Performance Monitor", () => {
     });
   });
 
-  describe("mark", () => {
-    it("should create performance marks", () => {
-      performanceMonitor.mark("test-mark-start");
-      performanceMonitor.mark("test-mark-end");
+  describe("getStats", () => {
+    it("should return stats for an operation", async () => {
+      await performanceMonitor.measure("test-stats", async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return "result";
+      });
 
-      // Performance API should have the marks
-      const marks = performance.getEntriesByType("mark");
-      expect(marks.some((m) => m.name === "test-mark-start")).toBe(true);
-      expect(marks.some((m) => m.name === "test-mark-end")).toBe(true);
+      const stats = performanceMonitor.getStats("test-stats");
+
+      expect(stats).toBeDefined();
+      expect(stats?.count).toBe(1);
+      expect(stats?.avgDuration).toBeGreaterThan(0);
+      expect(stats?.successRate).toBe(100);
+    });
+
+    it("should return null for non-existent operation", () => {
+      const stats = performanceMonitor.getStats("non-existent");
+      expect(stats).toBeNull();
     });
   });
 
-  describe("measureBetween", () => {
-    it("should measure time between marks", () => {
-      performanceMonitor.mark("start-mark");
+  describe("getAllStats", () => {
+    it("should return all operation stats", async () => {
+      await performanceMonitor.measure("op1", async () => "result1");
+      await performanceMonitor.measure("op2", async () => "result2");
 
-      // Simulate some work
-      const now = Date.now();
-      while (Date.now() - now < 5) {
-        // Busy wait for 5ms
-      }
+      const allStats = performanceMonitor.getAllStats();
 
-      performanceMonitor.mark("end-mark");
-      performanceMonitor.measureBetween("test-measure", "start-mark", "end-mark");
-
-      const measures = performance.getEntriesByType("measure");
-      const testMeasure = measures.find((m) => m.name === "test-measure");
-
-      expect(testMeasure).toBeDefined();
-      expect(testMeasure?.duration).toBeGreaterThan(0);
+      expect(allStats).toBeDefined();
+      expect(allStats.op1).toBeDefined();
+      expect(allStats.op2).toBeDefined();
     });
   });
 
-  describe("getMetrics", () => {
-    it("should return performance metrics", () => {
-      performanceMonitor.mark("metric-test");
+  describe("clear", () => {
+    it("should clear all metrics", async () => {
+      await performanceMonitor.measure("test-clear", async () => "result");
 
-      const metrics = performanceMonitor.getMetrics();
+      let stats = performanceMonitor.getStats("test-clear");
+      expect(stats).toBeDefined();
 
-      expect(Array.isArray(metrics)).toBe(true);
-      expect(metrics.some((m: { name: string }) => m.name === "metric-test")).toBe(true);
-    });
-  });
+      performanceMonitor.clear();
 
-  describe("clearMetrics", () => {
-    it("should clear all performance entries", () => {
-      performanceMonitor.mark("clear-test");
-      performanceMonitor.clearMetrics();
-
-      const entries = performance.getEntries();
-      expect(entries.length).toBe(0);
+      stats = performanceMonitor.getStats("test-clear");
+      expect(stats).toBeNull();
     });
   });
 });

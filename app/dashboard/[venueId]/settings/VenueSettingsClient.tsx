@@ -52,9 +52,7 @@ export default function VenueSettingsClient({
   isOwner = true,
 }: VenueSettingsClientProps) {
   if (!organization) {
-    console.error(
-      "[VENUE SETTINGS CLIENT] ❌ ORGANIZATION IS NULL/UNDEFINED - This will cause PlanCard to show error!"
-    );
+    // Organization is null/undefined - PlanCard will handle this
   }
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);

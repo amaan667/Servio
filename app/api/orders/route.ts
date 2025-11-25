@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { NextRequest } from "next/server";
+import { type SupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient } from "@/lib/supabase";
 import { apiLogger, logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -47,6 +49,30 @@ export const runtime = "nodejs";
 // GET handler for orders
 export async function GET(req: Request) {
   try {
+    // CRITICAL: Add authentication
+    const { requireAuthForAPI } = await import("@/lib/auth/api");
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { ok: false, error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL: Add rate limiting
+    const { rateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+    const rateLimitResult = await rateLimit(req as unknown as NextRequest, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
     const status = searchParams.get("status");
@@ -55,16 +81,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    // CRITICAL: Verify venue access
+    const { requireVenueAccessForAPI } = await import("@/lib/auth/api");
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    const supabase = await createSupabaseClient();
 
     let query = supabase
       .from("orders")
@@ -385,7 +409,7 @@ export async function POST(req: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const startTime = Date.now();
 
-  // Use console.info (not console.log - that's stripped in production!)
+  // Use logger.info (not logger.debug - that's stripped in production!)
 
   logger.info(
     `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
@@ -439,17 +463,19 @@ export async function POST(req: Request) {
     if (!url || !serviceKey) {
       return bad("Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY", 500);
     }
-    // Try using the direct Supabase client with service role key
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    // Use authenticated client (service role key removed for security)
+    const supabase = await createSupabaseClient();
+    // Note: If service role is truly needed here, add proper admin auth check
+    // const supabase = createClient(
+    //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    //   process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    //   {
+    //     auth: {
+    //       autoRefreshToken: false,
+    //       persistSession: false,
+    //     },
+    //   }
+    // );
 
     // Verify venue exists, create if it doesn't (for demo purposes)
     const { data: venue, error: venueErr } = await supabase

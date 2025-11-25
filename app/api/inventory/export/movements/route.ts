@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getUserTier, hasAnalyticsExports } from "@/lib/tier-restrictions";
 import { authenticateRequest } from "@/lib/api-auth";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 interface StockMovement {
   created_at: string;
@@ -19,25 +21,45 @@ interface StockMovement {
   };
 }
 
-// GET /api/inventory/export/movements?venue_id=xxx&from=&to=&reason=
+// GET /api/inventory/export/movements?venueId=xxx&from=&to=&reason=
 // CSV exports require Enterprise tier
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const auth = await authenticateRequest(request);
+    const { searchParams } = new URL(req.url);
+    const venueId = searchParams.get("venue_id") || searchParams.get("venueId");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const reason = searchParams.get("reason");
+
+    if (!venueId) {
+      return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
+    }
+
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    // Get authenticated user for tier check
+    const auth = await authenticateRequest(req);
     if (!auth.success || !auth.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    const venue_id = searchParams.get("venue_id");
-    const from = searchParams.get("from");
-    const to = searchParams.get("to");
-    const reason = searchParams.get("reason");
-
-    if (!venue_id) {
-      return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
-    }
 
     // Check tier - CSV exports require Enterprise tier
     const canExport = await hasAnalyticsExports(auth.user.id);
@@ -62,7 +84,7 @@ export async function GET(request: NextRequest) {
         user:created_by(email)
       `
       )
-      .eq("venue_id", venue_id)
+      .eq("venue_id", venueId)
       .order("created_at", { ascending: false });
 
     if (reason && reason !== "all") {
@@ -107,7 +129,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="movements-${venue_id}-${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Disposition": `attachment; filename="movements-${venueId}-${new Date().toISOString().split("T")[0]}.csv"`,
       },
     });
   } catch (_error) {

@@ -1,58 +1,41 @@
-import { NextResponse } from "next/server";
-import { createClient, getAuthenticatedUser, createAdminClient } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-
-function getServiceClient() {
-  return createAdminClient();
-}
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // GET - List questions for venue
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get("venueId");
+    const venueId = searchParams.get('venueId') || searchParams.get('venue_id');
 
     if (!venueId) {
       return NextResponse.json({ error: "venueId required" }, { status: 400 });
     }
 
-    // Auth check with detailed logging
-    console.log("[AUTH DEBUG] Getting authenticated user for feedback questions...");
-    const { user, error: authError } = await getAuthenticatedUser();
-    console.log("[AUTH DEBUG] Auth result:", {
-      hasUser: !!user,
-      userId: user?.id,
-      authError,
-      venueId,
-    });
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
 
-    if (!user) {
-      console.log("[AUTH DEBUG] No user found - returning 401");
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Authentication required",
-          debug: authError || "No user session found",
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
-        { status: 401 }
+        { status: 429 }
       );
     }
 
-    const supa = await createClient();
-
-    const { data: venue } = await supa
-      .from("venues")
-      .select("venue_id")
-      .eq("venue_id", venueId)
-      .eq("owner_user_id", user.id)
-      .maybeSingle();
-
-    if (!venue) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
+    const supabase = await createClient();
 
     // Get questions (all questions since we don't have soft delete yet)
-    const serviceClient = getServiceClient();
-    const { data: questions, error } = await serviceClient
+    const { data: questions, error } = await supabase
       .from("feedback_questions")
       .select("*")
       .eq("venue_id", venueId)
@@ -157,8 +140,8 @@ export async function POST(req: Request) {
     }
 
     // Get max sort_index for this venue
-    const serviceClient = getServiceClient();
-    const { data: maxSort, error: maxSortError } = await serviceClient
+    const supabase = await createClient();
+    const { data: maxSort, error: maxSortError } = await supabase
       .from("feedback_questions")
       .select("sort_index")
       .eq("venue_id", venue_id)
@@ -189,7 +172,7 @@ export async function POST(req: Request) {
       sort_index,
     };
 
-    const { data: question, error } = await serviceClient
+    const { data: question, error } = await supabase
       .from("feedback_questions")
       .insert(questionData)
       .select()
@@ -237,7 +220,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const serviceClient = getServiceClient();
+    const supabase = await createClient();
     const updateData: Record<string, unknown> = {
       /* Empty */
     };
@@ -284,7 +267,7 @@ export async function PATCH(req: Request) {
       updateData.sort_index = sort_index;
     }
 
-    const { data: question, error } = await serviceClient
+    const { data: question, error } = await supabase
       .from("feedback_questions")
       .update(updateData)
       .eq("id", id)
@@ -333,8 +316,8 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const serviceClient = getServiceClient();
-    const { error } = await serviceClient.from("feedback_questions").delete().eq("id", id);
+    const supabase = await createClient();
+    const { error } = await supabase.from("feedback_questions").delete().eq("id", id);
 
     if (error) {
       logger.error("[FEEDBACK:Q] delete error:", { error: error.message });

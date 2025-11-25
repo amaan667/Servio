@@ -1,14 +1,37 @@
 // API endpoint to ensure a user has a real organization
-import { NextResponse } from "next/server";
-import { createServerSupabase, createAdminClient } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireAuthForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Disable caching to always get fresh data
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
+    // CRITICAL: Authentication check
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createServerSupabase();
 
     // Get the current user with better error handling
@@ -49,6 +72,7 @@ export async function POST() {
     // Use admin client to bypass RLS for organization operations
     let adminClient;
     try {
+      const { createAdminClient } = await import("@/lib/supabase");
       adminClient = createAdminClient();
     } catch (adminError) {
       logger.error("[ORG ENSURE] Failed to create admin client:", { error: adminError });
@@ -172,7 +196,7 @@ export async function POST() {
       .eq("owner_user_id", user.id);
 
     if (userVenues && userVenues.length > 0) {
-      const venueRoles = userVenues.map((venue) => ({
+      const venueRoles = userVenues.map((venue: { venue_id: string }) => ({
         user_id: user.id,
         venue_id: venue.venue_id,
         role: "owner",

@@ -5,6 +5,8 @@ import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for processing
@@ -22,6 +24,49 @@ export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(7);
 
   try {
+
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
+    if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      // Fallback to basic auth if no venueId
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     // Get user from middleware (auth already validated)
     const { getUserFromMiddleware } = await import("@/lib/auth/middleware-auth");
     logger.info(`[MENU IMPORT ${requestId}] Getting user from middleware...`);
@@ -36,7 +81,6 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const venueId = formData.get("venue_id") as string;
     const menuUrl = formData.get("menu_url") as string | null;
     const replaceMode = formData.get("replace_mode") !== "false"; // Default to true
 

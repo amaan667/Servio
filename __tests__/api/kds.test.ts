@@ -35,7 +35,7 @@ describe("GET /api/kds/tickets", () => {
 
   it("retrieves KDS tickets for venue", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/kds/tickets?venue_id=venue_123",
+      "http://localhost:3000/api//kds/tickets?venue_id=venue_123",
       { method: "GET" }
     );
 
@@ -44,7 +44,7 @@ describe("GET /api/kds/tickets", () => {
 
   it("filters by station", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/kds/tickets?venue_id=venue_123&station=Grill",
+      "http://localhost:3000/api//kds/tickets?venue_id=venue_123&station=Grill",
       { method: "GET" }
     );
 
@@ -53,7 +53,7 @@ describe("GET /api/kds/tickets", () => {
 
   it("filters by status", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/kds/tickets?venue_id=venue_123&status=pending",
+      "http://localhost:3000/api//kds/tickets?venue_id=venue_123&status=pending",
       { method: "GET" }
     );
 
@@ -63,7 +63,7 @@ describe("GET /api/kds/tickets", () => {
 
 describe("PATCH /api/kds/tickets/[id]", () => {
   it("updates ticket status to in_progress", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/kds/tickets/ticket_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//kds/tickets/ticket_123", {
       method: "PATCH",
       body: JSON.stringify({
         status: "in_progress",
@@ -75,7 +75,7 @@ describe("PATCH /api/kds/tickets/[id]", () => {
   });
 
   it("updates ticket status to completed", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/kds/tickets/ticket_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//kds/tickets/ticket_123", {
       method: "PATCH",
       body: JSON.stringify({
         status: "completed",
@@ -89,7 +89,7 @@ describe("PATCH /api/kds/tickets/[id]", () => {
 
 describe("POST /api/kds/tickets/bulk-update", () => {
   it("updates multiple tickets", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/kds/tickets/bulk-update", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//kds/tickets/bulk-update", {
       method: "POST",
       body: JSON.stringify({
         ticket_ids: ["ticket_1", "ticket_2", "ticket_3"],
@@ -106,7 +106,7 @@ describe("POST /api/kds/tickets/bulk-update", () => {
 describe("GET /api/kds/stations", () => {
   it("retrieves KDS stations", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/kds/stations?venue_id=venue_123",
+      "http://localhost:3000/api//kds/stations?venue_id=venue_123",
       { method: "GET" }
     );
 
@@ -116,7 +116,7 @@ describe("GET /api/kds/stations", () => {
 
 describe("POST /api/kds/stations", () => {
   it("creates KDS station", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/kds/stations", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//kds/stations", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",

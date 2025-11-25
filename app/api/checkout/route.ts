@@ -3,14 +3,60 @@ import Stripe from "stripe";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { getStripeClient } from "@/lib/stripe-client";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { NextRequest } from 'next/server';
 
 const stripe = getStripeClient();
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
+    if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      // Fallback to basic auth if no venueId
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const body = await req.json();
     const {
       amount,
-      venueId,
       tableNumber,
       customerName,
       customerPhone,
@@ -19,7 +65,14 @@ export async function POST(req: Request) {
       source,
       venueName,
       customerEmail,
-    } = await req.json();
+    } = body;
+
+    // Use venueId from auth check or body
+    const finalVenueId = venueId || body.venueId;
+
+    if (!finalVenueId) {
+      return NextResponse.json({ error: "venueId is required" }, { status: 400 });
+    }
 
     if (!amount || amount < 0.5) {
       return NextResponse.json({ error: "Amount must be at least £0.50" }, { status: 400 });
@@ -52,7 +105,7 @@ export async function POST(req: Request) {
       mode: "payment",
       metadata: {
         orderId: orderId || "unknown",
-        venueId: venueId || "default-venue",
+        venueId: finalVenueId,
         tableNumber: tableNumber?.toString() || "1",
         customerName: customerName || "Customer",
         customerPhone: customerPhone || "+1234567890",
@@ -60,7 +113,7 @@ export async function POST(req: Request) {
         items: JSON.stringify(items || []).substring(0, 200),
       },
       success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
-      cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || "default-venue"}&tableNumber=${tableNumber || "1"}`,
+      cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${finalVenueId}&tableNumber=${tableNumber || "1"}`,
     };
 
     // Add customer email if provided - Stripe will automatically send digital receipts
@@ -77,7 +130,7 @@ export async function POST(req: Request) {
       sessionId: session.id,
       orderId,
       amount: amountInPence,
-      venue: venueId,
+      venue: finalVenueId,
     });
 
     return NextResponse.json({ id: session.id, url: session.url });

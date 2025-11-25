@@ -1,9 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, getAuthenticatedUser } from "@/lib/supabase";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireAuthForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function POST(_req: NextRequest) {
   try {
+
+    // CRITICAL: Authentication check
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(_req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     // Check authentication
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError || !user) {
@@ -11,7 +35,7 @@ export async function POST(_req: NextRequest) {
     }
 
     // Use admin client for maintenance operations
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Run the table maintenance function
     const { error } = await supabase.rpc("run_table_maintenance");
@@ -45,7 +69,7 @@ export async function GET(_req: NextRequest) {
     }
 
     // Use admin client for maintenance operations
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Check for expired reservations
     const { data: expiredReservations, error: expiredError } = await supabase

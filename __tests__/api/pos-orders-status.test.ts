@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { PATCH as patchPATCH } from "@/app/apipos/orders/status/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { PATCH as patchPATCH } from "@/app/api/pos/orders/status/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Pos Orders Status API", () => {
   describe("PATCH pos/orders/status", () => {
     it("should handle patch request", async () => {
-      const request = createMockRequest("PATCH", "http://localhost:3000/apipos/orders/status");
+      const request = createMockRequest("PATCH", "http://localhost:3000/api//pos/orders/status");
       // TODO: Import and test actual route handler
       const response = await patchPATCH(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

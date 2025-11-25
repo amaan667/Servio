@@ -103,7 +103,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (fetchError) {
-        console.error("[RECEIPTS] Error fetching receipts:", fetchError);
         setLoading(false);
         return;
       }
@@ -142,7 +141,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
 
       setLoading(false);
     } catch (error) {
-      console.error("[RECEIPTS] Error loading receipts:", error);
       setLoading(false);
     }
   }, [venueId]);
@@ -197,7 +195,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error("[RECEIPTS] Error downloading PDF:", error);
     }
   };
 

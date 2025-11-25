@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apistaff/shifts/list/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/staff/shifts/list/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Staff Shifts List API", () => {
   describe("GET staff/shifts/list", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apistaff/shifts/list");
+      const request = createMockRequest("GET", "http://localhost:3000/api//staff/shifts/list");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

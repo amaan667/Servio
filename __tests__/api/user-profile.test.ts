@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apiuser/profile/route";
-import { PUT as putPUT } from "@/app/apiuser/profile/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/user/profile/route";
+import { PUT as putPUT } from "@/app/api/user/profile/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -44,7 +44,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("User Profile API", () => {
   describe("GET user/profile", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apiuser/profile");
+      const request = createMockRequest("GET", "http://localhost:3000/api//user/profile");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -57,7 +57,7 @@ describe("User Profile API", () => {
 
   describe("PUT user/profile", () => {
     it("should handle put request", async () => {
-      const request = createMockRequest("PUT", "http://localhost:3000/apiuser/profile");
+      const request = createMockRequest("PUT", "http://localhost:3000/api//user/profile");
       // TODO: Import and test actual route handler
       const response = await putPUT(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

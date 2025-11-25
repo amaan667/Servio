@@ -40,7 +40,7 @@ describe("Orders API", () => {
         customer_name: "John Doe",
       };
 
-      const request = new NextRequest("http://localhost:3000/api/orders", {
+      const request = new NextRequest("http://localhost:3000/api//orders", {
         method: "POST",
         body: JSON.stringify(requestBody),
         headers: {
@@ -63,7 +63,7 @@ describe("Orders API", () => {
         items: [],
       };
 
-      const request = new NextRequest("http://localhost:3000/api/orders", {
+      const request = new NextRequest("http://localhost:3000/api//orders", {
         method: "POST",
         body: JSON.stringify(requestBody),
         headers: {
@@ -82,7 +82,7 @@ describe("Orders API", () => {
         error: { message: "Unauthorized" },
       });
 
-      const request = new NextRequest("http://localhost:3000/api/orders", {
+      const request = new NextRequest("http://localhost:3000/api//orders", {
         method: "POST",
         body: JSON.stringify({ venue_id: "venue-123" }),
         headers: {
@@ -112,7 +112,7 @@ describe("Orders API", () => {
         error: null,
       });
 
-      const request = new NextRequest("http://localhost:3000/api/orders?venue_id=venue-123", {
+      const request = new NextRequest("http://localhost:3000/api//orders?venue_id=venue-123", {
         method: "GET",
         headers: {
           Authorization: "Bearer valid-token",
@@ -137,7 +137,7 @@ describe("Orders API", () => {
           error: { message: "Database connection failed" },
         });
 
-      const request = new NextRequest("http://localhost:3000/api/orders?venue_id=venue-123", {
+      const request = new NextRequest("http://localhost:3000/api//orders?venue_id=venue-123", {
         method: "GET",
         headers: {
           Authorization: "Bearer valid-token",

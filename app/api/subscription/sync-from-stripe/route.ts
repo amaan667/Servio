@@ -9,15 +9,42 @@ import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+
+    // CRITICAL: Authentication check
+    const { requireAuthForAPI } = await import('@/lib/auth/api');
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL: Rate limiting
+    const { rateLimit, RATE_LIMITS } = await import('@/lib/rate-limit');
+    const rateLimitResult = await rateLimit(req as unknown as NextRequest, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const { organizationId } = await req.json();
 
     if (!organizationId) {
       return NextResponse.json({ error: "organizationId required" }, { status: 400 });
     }
 
+    const { createAdminClient } = await import("@/lib/supabase");
     const supabase = createAdminClient();
 
     // Get organization with Stripe customer ID

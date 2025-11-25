@@ -39,7 +39,7 @@ describe("POST /api/auth/sign-in-password", () => {
   });
 
   it("signs in with valid credentials", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/auth/sign-in-password", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//auth/sign-in-password", {
       method: "POST",
       body: JSON.stringify({
         email: "test@example.com",
@@ -55,7 +55,7 @@ describe("POST /api/auth/sign-in-password", () => {
   });
 
   it("rejects invalid credentials", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/auth/sign-in-password", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//auth/sign-in-password", {
       method: "POST",
       body: JSON.stringify({
         email: "test@example.com",
@@ -67,7 +67,7 @@ describe("POST /api/auth/sign-in-password", () => {
   });
 
   it("validates email format", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/auth/sign-in-password", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//auth/sign-in-password", {
       method: "POST",
       body: JSON.stringify({
         email: "invalid-email",
@@ -80,7 +80,7 @@ describe("POST /api/auth/sign-in-password", () => {
   });
 
   it("requires password field", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/auth/sign-in-password", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//auth/sign-in-password", {
       method: "POST",
       body: JSON.stringify({
         email: "test@example.com",
@@ -97,7 +97,7 @@ describe("POST /api/auth/sign-in-password", () => {
       .fill(null)
       .map(
         () =>
-          new NextRequest("http://localhost:3000/api/auth/sign-in-password", {
+          new NextRequest("http://localhost:3000/api//auth/sign-in-password", {
             method: "POST",
             body: JSON.stringify({
               email: "test@example.com",
@@ -112,7 +112,7 @@ describe("POST /api/auth/sign-in-password", () => {
 
 describe("Google OAuth", () => {
   it("initiates OAuth flow", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/auth/google", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//auth/google", {
       method: "GET",
     });
 
@@ -121,7 +121,7 @@ describe("Google OAuth", () => {
 
   it("handles OAuth callback", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/auth/callback?code=oauth_code_123",
+      "http://localhost:3000/api//auth/callback?code=oauth_code_123",
       { method: "GET" }
     );
 

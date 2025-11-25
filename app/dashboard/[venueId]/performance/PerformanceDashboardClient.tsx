@@ -32,7 +32,6 @@ export function PerformanceDashboardClient({ venueId: _venueId }: { venueId: str
         const data = await response.json();
         setMetrics(data);
       } catch (_error) {
-        console.error("Failed to fetch performance metrics");
       } finally {
         setLoading(false);
       }

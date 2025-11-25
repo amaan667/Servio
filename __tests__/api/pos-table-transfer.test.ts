@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { POST as postPOST } from "@/app/apipos/table-transfer/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { POST as postPOST } from "@/app/api/pos/table-transfer/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Pos Table Transfer API", () => {
   describe("POST pos/table-transfer", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apipos/table-transfer");
+      const request = createMockRequest("POST", "http://localhost:3000/api//pos/table-transfer");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient } from "@/lib/supabase";
+import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export interface Venue {
@@ -99,22 +100,10 @@ export async function verifyVenueAccess(
 
 /**
  * Get authenticated user from request
+ * STANDARDIZED: Uses getAuthenticatedUser from @/lib/supabase for consistency
  */
 export async function getAuthenticatedUser() {
-  try {
-    const supabase = await createSupabaseClient();
-    const { data, error } = await supabase.auth.getSession();
-    const user = data?.session?.user;
-
-    if (error || !user) {
-      return { user: null, error: error?.message || "Not authenticated" };
-    }
-
-    return { user, error: null };
-  } catch (_error) {
-    logger.error("Error getting authenticated user", { error: _error });
-    return { user: null, error: "Authentication failed" };
-  }
+  return getAuthUser();
 }
 
 /**

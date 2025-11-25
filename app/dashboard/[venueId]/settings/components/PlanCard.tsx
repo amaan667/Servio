@@ -69,7 +69,7 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
         setCurrentTier(data.tier);
       }
     } catch (error) {
-      console.error("[PLAN CARD] ❌ Sync failed:", error);
+      logger.error("[PLAN CARD] ❌ Sync failed:", error);
       logger.error("[PLAN CARD] Sync failed", { error });
     } finally {
       setSyncing(false);

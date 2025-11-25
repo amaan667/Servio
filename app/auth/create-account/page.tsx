@@ -68,12 +68,7 @@ export default function CreateAccountPage() {
           sessionStorage.removeItem("signup_data");
         }
 
-        // Log for debugging
-        console.log("[CREATE-ACCOUNT] Stripe session data:", {
-          customer_email: data.customer_email,
-          metadata: data.metadata,
-          sessionId: sessionId,
-        });
+        // Session data received
 
         setFormData({
           email: stripeEmail,
@@ -150,13 +145,6 @@ export default function CreateAccountPage() {
           : data.error || "Failed to create account. Please try again.";
         setError(errorMessage);
         setLoading(false);
-
-        // Log error for debugging
-        console.error("[CREATE-ACCOUNT] Signup error:", {
-          error: data.error,
-          details: data.details,
-          response: data,
-        });
         return;
       }
 
@@ -165,7 +153,6 @@ export default function CreateAccountPage() {
         await fetch("/api/auth/send-verification", { method: "POST" });
       } catch (_verificationError) {
         // Don't block onboarding if verification email fails
-        console.error("Failed to send verification email:", _verificationError);
       }
 
       setStatus("success");

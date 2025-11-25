@@ -2,17 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import type { CreateIngredientRequest } from "@/types/inventory";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // GET /api/inventory/ingredients?venue_id=xxx
 export async function GET(_request: NextRequest) {
   try {
-    const supabase = await createClient();
     const { searchParams } = new URL(_request.url);
     const venue_id = searchParams.get("venue_id");
 
     if (!venue_id) {
       return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
     }
+
+    // CRITICAL: Add authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venue_id);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Add rate limiting
+    const rateLimitResult = await rateLimit(_request, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
 
     // Fetch ingredients with current stock levels from view
     const { data, error } = await supabase
@@ -40,7 +61,6 @@ export async function GET(_request: NextRequest) {
 // POST /api/inventory/ingredients
 export async function POST(_request: NextRequest) {
   try {
-    const supabase = await createClient();
     const body: CreateIngredientRequest = await _request.json();
 
     const {
@@ -59,6 +79,26 @@ export async function POST(_request: NextRequest) {
     if (!venue_id || !name || !unit) {
       return NextResponse.json({ error: "venue_id, name, and unit are required" }, { status: 400 });
     }
+
+    // CRITICAL: Add authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venue_id);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Add rate limiting
+    const rateLimitResult = await rateLimit(_request, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
 
     // Create ingredient
     const { data: ingredient, error: ingredientError } = await supabase

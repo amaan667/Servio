@@ -1,14 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireAuthForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * API endpoint to create the get_invitation_by_token database function
  * This fixes the "invited_by_email" column error by properly joining with auth.users
+ * Note: This is an admin function that requires authentication but doesn't need venue access
  */
-export async function POST(_request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
+    // CRITICAL: Authentication check (admin function)
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
+    }
 
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase");
     const supabase = createAdminClient();
 
     // SQL to create the function
@@ -74,12 +98,18 @@ export async function POST(_request: NextRequest) {
     `;
 
     // Execute the SQL using the raw query method
-    // @ts-expect-error - Using internal Supabase method for raw SQL
-    const { error } = await supabase.rpc("exec_sql", { sql: functionSQL }).catch(() => ({
-      error: "exec_sql not available",
-    }));
+    // Note: This requires admin access - using admin client is appropriate here
+    // For production, consider moving this to a migration script instead
+    let error: { message: string } | null = null;
+    try {
+      // Attempt to execute via RPC if available
+      const result = await (supabase as unknown as { rpc: (name: string, params: Record<string, unknown>) => Promise<{ error: unknown }> }).rpc("exec_sql", { sql: functionSQL });
+      error = result.error as { message: string } | null;
+    } catch {
+      error = { message: "exec_sql not available" };
+    }
 
-    if (error && error !== "exec_sql not available") {
+    if (error && (typeof error === "object" && error !== null && "message" in error && error.message !== "exec_sql not available")) {
       logger.error("[CREATE INVITATION FUNCTION] Error creating function", { error });
       return NextResponse.json(
         {

@@ -53,7 +53,7 @@ export default function QuestionsClient({
   // Log venueId on mount for debugging
   useEffect(() => {
     if (!venueId) {
-      console.error("[FEEDBACK DEBUG] WARNING: venueId is missing!");
+      // Venue ID not provided
     }
   }, [venueId]);
 
@@ -231,7 +231,6 @@ export default function QuestionsClient({
         try {
           const error = await response.json();
           errorMessage = error.error || errorMessage;
-          console.error("[FEEDBACK DEBUG] Error response:", error);
         } catch {
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }

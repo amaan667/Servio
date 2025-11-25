@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apipos/table-sessions/route";
-import { POST as postPOST } from "@/app/apipos/table-sessions/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/pos/table-sessions/route";
+import { POST as postPOST } from "@/app/api/pos/table-sessions/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -44,7 +44,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Pos Table Sessions API", () => {
   describe("GET pos/table-sessions", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apipos/table-sessions");
+      const request = createMockRequest("GET", "http://localhost:3000/api//pos/table-sessions");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -57,7 +57,7 @@ describe("Pos Table Sessions API", () => {
 
   describe("POST pos/table-sessions", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apipos/table-sessions");
+      const request = createMockRequest("POST", "http://localhost:3000/api//pos/table-sessions");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

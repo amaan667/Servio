@@ -35,7 +35,7 @@ describe("GET /api/menu/[venueId]", () => {
   });
 
   it("retrieves menu items for valid venue", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/venue_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/venue_123", {
       method: "GET",
     });
 
@@ -44,7 +44,7 @@ describe("GET /api/menu/[venueId]", () => {
   });
 
   it("returns 404 for non-existent venue", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/invalid_venue", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/invalid_venue", {
       method: "GET",
     });
 
@@ -52,7 +52,7 @@ describe("GET /api/menu/[venueId]", () => {
   });
 
   it("filters by is_available flag", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/venue_123?available=true", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/venue_123?available=true", {
       method: "GET",
     });
 
@@ -73,7 +73,7 @@ describe("GET /api/menu/[venueId]", () => {
 
 describe("POST /api/menu/items", () => {
   it("creates menu item with valid data", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/items", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -91,7 +91,7 @@ describe("POST /api/menu/items", () => {
   });
 
   it("validates required fields", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/items", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -114,7 +114,7 @@ describe("POST /api/menu/items", () => {
 
 describe("PATCH /api/menu/items/[id]", () => {
   it("updates menu item", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/items/item_123", {
       method: "PATCH",
       body: JSON.stringify({
         price: 12.0,
@@ -129,7 +129,7 @@ describe("PATCH /api/menu/items/[id]", () => {
 
   it("prevents unauthorized updates", async () => {
     // Test structure - would check venue ownership
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/items/item_123", {
       method: "PATCH",
       body: JSON.stringify({ price: 100.0 }),
     });
@@ -140,7 +140,7 @@ describe("PATCH /api/menu/items/[id]", () => {
 
 describe("DELETE /api/menu/items/[id]", () => {
   it("deletes menu item", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/items/item_123", {
       method: "DELETE",
     });
 
@@ -149,7 +149,7 @@ describe("DELETE /api/menu/items/[id]", () => {
 
   it("prevents deletion by non-owners", async () => {
     // Test structure - would check venue ownership
-    const mockRequest = new NextRequest("http://localhost:3000/api/menu/items/item_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//menu/items/item_123", {
       method: "DELETE",
     });
 

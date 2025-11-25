@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apidaily-reset/route";
-import { POST as postPOST } from "@/app/apidaily-reset/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/daily-reset/route";
+import { POST as postPOST } from "@/app/api/daily-reset/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({

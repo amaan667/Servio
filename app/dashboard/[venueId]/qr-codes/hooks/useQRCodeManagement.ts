@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
 
 export interface GeneratedQR {
@@ -87,11 +88,11 @@ export function useQRCodeManagement(venueId: string) {
 
   const generateQRForName = useCallback(
     (name: string, type: "table" | "counter" = "table") => {
-      console.log("[useQRCodeManagement] generateQRForName called:", { name, type, venueId });
+      logger.debug("[useQRCodeManagement] generateQRForName called:", { name, type, venueId });
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
       const url = `${baseUrl}/order?venue=${venueId}&${type}=${encodeURIComponent(name)}`;
 
-      console.log("[useQRCodeManagement] Generated URL:", url);
+      logger.debug("[useQRCodeManagement] Generated URL:", url);
 
       const newQR: GeneratedQR = {
         name,
@@ -102,11 +103,11 @@ export function useQRCodeManagement(venueId: string) {
       setGeneratedQRs((prev) => {
         const exists = prev.find((qr) => qr.name === name && qr.type === type);
         if (exists) {
-          console.log("[useQRCodeManagement] QR already exists, skipping");
+          logger.debug("[useQRCodeManagement] QR already exists, skipping");
           // Silently ignore duplicates
           return prev;
         }
-        console.log("[useQRCodeManagement] Adding new QR:", newQR);
+        logger.debug("[useQRCodeManagement] Adding new QR:", newQR);
         return [...prev, newQR];
       });
 

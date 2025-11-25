@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from "@/lib/dates";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get("venueId");
   const status = searchParams.get("status") || "all";
@@ -17,6 +20,25 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "venueId required" }, { status: 400 });
   }
 
+  // CRITICAL: Add authentication and venue access verification
+  const venueAccessResult = await requireVenueAccessForAPI(venueId);
+  if (!venueAccessResult.success) {
+    return venueAccessResult.response;
+  }
+
+  // CRITICAL: Add rate limiting
+  const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Too many requests",
+        message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+      },
+      { status: 429 }
+    );
+  }
+
   // Try to get from cache first (1 minute TTL for dashboard orders)
   const cacheKey = `dashboard_orders:${venueId}:${status}:${scope}:${limit}`;
   const cachedOrders = await cache.get(cacheKey);
@@ -25,9 +47,8 @@ export async function GET(req: Request) {
     return NextResponse.json(cachedOrders);
   }
 
-
-  // Use admin client - no auth needed (venueId is sufficient)
-  const supabase = createAdminClient();
+  // Use authenticated client instead of admin client
+  const supabase = await createClient();
 
   let query = supabase
     .from("orders")

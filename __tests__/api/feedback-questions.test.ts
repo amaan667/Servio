@@ -4,11 +4,11 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apifeedback/questions/route";
-import { POST as postPOST } from "@/app/apifeedback/questions/route";
-import { DELETE as deleteDELETE } from "@/app/apifeedback/questions/route";
-import { PATCH as patchPATCH } from "@/app/apifeedback/questions/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/feedback/questions/route";
+import { POST as postPOST } from "@/app/api/feedback/questions/route";
+import { DELETE as deleteDELETE } from "@/app/api/feedback/questions/route";
+import { PATCH as patchPATCH } from "@/app/api/feedback/questions/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -46,7 +46,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Feedback Questions API", () => {
   describe("GET feedback/questions", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apifeedback/questions");
+      const request = createMockRequest("GET", "http://localhost:3000/api//feedback/questions");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -59,7 +59,7 @@ describe("Feedback Questions API", () => {
 
   describe("POST feedback/questions", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apifeedback/questions");
+      const request = createMockRequest("POST", "http://localhost:3000/api//feedback/questions");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -72,7 +72,7 @@ describe("Feedback Questions API", () => {
 
   describe("DELETE feedback/questions", () => {
     it("should handle delete request", async () => {
-      const request = createMockRequest("DELETE", "http://localhost:3000/apifeedback/questions");
+      const request = createMockRequest("DELETE", "http://localhost:3000/api//feedback/questions");
       // TODO: Import and test actual route handler
       const response = await deleteDELETE(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -85,7 +85,7 @@ describe("Feedback Questions API", () => {
 
   describe("PATCH feedback/questions", () => {
     it("should handle patch request", async () => {
-      const request = createMockRequest("PATCH", "http://localhost:3000/apifeedback/questions");
+      const request = createMockRequest("PATCH", "http://localhost:3000/api//feedback/questions");
       // TODO: Import and test actual route handler
       const response = await patchPATCH(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

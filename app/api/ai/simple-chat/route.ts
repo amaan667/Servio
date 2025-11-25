@@ -4,19 +4,32 @@ import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
 import { executeTool } from "@/lib/ai/tool-executors";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Set max duration to 60 seconds to handle complex operations like translation
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
-  let requestBody: {
-    message?: string;
-    venueId?: string;
-    currentPage?: string;
-    conversationHistory?: Array<{ role: string; content: string }>;
-  } = {};
-
   try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(request, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    let requestBody: {
+      message?: string;
+      venueId?: string;
+      currentPage?: string;
+      conversationHistory?: Array<{ role: string; content: string }>;
+    } = {};
     logger.info("[AI SIMPLE CHAT] 1. Request received");
 
     // Get auth token from header
@@ -92,6 +105,12 @@ export async function POST(request: NextRequest) {
 
     if (!message || !venueId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
     }
 
     logger.info("[AI SIMPLE CHAT] 7. Getting context and summaries");

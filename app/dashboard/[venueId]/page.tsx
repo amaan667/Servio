@@ -1,6 +1,7 @@
 import React from "react";
 import DashboardClient from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import { todayWindowForTZ } from "@/lib/time";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
@@ -114,7 +115,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .eq("is_available", true);
 
     if (menuError) {
-      console.error(`[DASHBOARD] Error fetching menu items for venue ${venueId}:`, menuError);
+      logger.error(`[DASHBOARD] Error fetching menu items for venue ${venueId}:`, menuError);
     }
 
     const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;

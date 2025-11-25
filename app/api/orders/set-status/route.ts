@@ -2,9 +2,20 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { apiLogger as logger } from "@/lib/logger";
+import { validateOrderCompletion } from "@/lib/orders/payment-validation";
+import { requireAuthForAPI } from "@/lib/auth/api";
 
 export async function POST(req: Request) {
   try {
+    // STANDARDIZED: Use requireAuthForAPI for consistent authentication
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const { orderId, status } = await req.json();
 
     if (!orderId || !status) {
@@ -29,6 +40,25 @@ export async function POST(req: Request) {
     if (fetchError) {
       logger.error("Failed to fetch order:", { value: fetchError });
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
+    }
+
+    // CRITICAL: Validate payment before allowing COMPLETED status
+    if (status === "COMPLETED") {
+      const validation = await validateOrderCompletion(supabase, orderId);
+      if (!validation.isValid) {
+        logger.warn("[SET STATUS] Payment validation failed", {
+          orderId,
+          error: validation.error,
+          paymentStatus: validation.paymentStatus,
+        });
+        return NextResponse.json(
+          {
+            error: validation.error || "Cannot complete unpaid order",
+            payment_status: validation.paymentStatus,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Update the order status

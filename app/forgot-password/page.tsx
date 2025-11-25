@@ -24,32 +24,21 @@ export default function ForgotPasswordPage() {
     setError(null);
     setSuccess(false);
 
-    // Using console.error so logs show in production (console.log is removed by Next.js)
-    console.error("[FORGOT PASSWORD PAGE] ════════════════════════════════════════");
-    console.error("[FORGOT PASSWORD PAGE] Form submitted:", {
-      email: email.trim(),
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent.substring(0, 100),
-      currentUrl: window.location.href,
-    });
-    console.error("[FORGOT PASSWORD PAGE] ════════════════════════════════════════");
-
-    if (!email.trim()) {
+    try {
+      if (!email.trim()) {
       setError("Email address is required");
       setLoading(false);
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email address");
-      setLoading(false);
-      return;
-    }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        setError("Please enter a valid email address");
+        setLoading(false);
+        return;
+      }
 
-    try {
-      console.error("[FORGOT PASSWORD PAGE] Calling API to send reset email...");
       const startTime = Date.now();
 
       const response = await fetch("/api/auth/forgot-password", {
@@ -61,25 +50,15 @@ export default function ForgotPasswordPage() {
       const data = await response.json();
       const duration = Date.now() - startTime;
 
-      console.error("[FORGOT PASSWORD PAGE] API response:", {
-        status: response.status,
-        ok: response.ok,
-        data,
-        duration: `${duration}ms`,
-        timestamp: new Date().toISOString(),
-      });
-
       if (!response.ok) {
         setError(data.error || "Failed to send reset email. Please try again.");
         setLoading(false);
         return;
       }
 
-      console.error("[FORGOT PASSWORD PAGE] ✅ Reset email sent successfully");
       setSuccess(true);
       setLoading(false);
     } catch (err) {
-      console.error("[FORGOT PASSWORD PAGE] Exception:", err);
       setError("An error occurred. Please try again.");
       setLoading(false);
     }

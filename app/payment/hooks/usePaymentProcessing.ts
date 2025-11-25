@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { toast } from "@/hooks/use-toast";
 import { PaymentAction } from "./usePaymentState";
 import { CheckoutData } from "@/types/payment";
@@ -140,7 +141,7 @@ export function usePaymentProcessing() {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("[PAYMENT] ❌ Pay till failed:", {
+          logger.error("[PAYMENT] ❌ Pay till failed:", {
             status: response.status,
             statusText: response.statusText,
             errorText,
@@ -179,7 +180,7 @@ export function usePaymentProcessing() {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("[PAYMENT] ❌ Pay later failed:", {
+          logger.error("[PAYMENT] ❌ Pay later failed:", {
             status: response.status,
             statusText: response.statusText,
             errorText,

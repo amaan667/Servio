@@ -1,19 +1,41 @@
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 
-function getServiceClient() {
-  return createAdminClient();
-}
-
 // POST - Submit feedback responses
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { venue_id, order_id, answers } = await req.json();
+    const body = await req.json();
+    const venueId = body?.venue_id || body?.venueId;
+    const { order_id, answers } = body;
 
-    if (!venue_id || !answers || !Array.isArray(answers) || answers.length === 0) {
+    if (!venueId) {
+      return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
+    }
+
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    if (!venueId || !answers || !Array.isArray(answers) || answers.length === 0) {
       return NextResponse.json({ 
         error: 'venue_id and answers array required' 
       }, { status: 400 });
@@ -63,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     // Verify questions exist and are active (skip validation for generic questions)
-    const serviceClient = getServiceClient();
+    const supabase = await createClient();
     const questionIds = answers.map(a => a.question_id);
     
     // Filter out generic questions (they start with 'generic-')
@@ -71,11 +93,11 @@ export async function POST(req: Request) {
     
     let questions: Array<Record<string, unknown>> = [];
     if (nonGenericQuestionIds.length > 0) {
-      const { data: dbQuestions, error: questionsError } = await serviceClient
+      const { data: dbQuestions, error: questionsError } = await supabase
         .from('feedback_questions')
         .select('id, type, choices')
         .in('id', nonGenericQuestionIds)
-        .eq('venue_id', venue_id)
+        .eq('venue_id', venueId)
         .eq('is_active', true);
 
       if (questionsError) {
@@ -151,7 +173,7 @@ export async function POST(req: Request) {
     let customerName = 'Customer';
     if (order_id) {
       try {
-        const { data: orderData } = await serviceClient
+        const { data: orderData } = await supabase
           .from('orders')
           .select('customer_name')
           .eq('id', order_id)
@@ -167,7 +189,7 @@ export async function POST(req: Request) {
 
     // Create single feedback entry
     const feedbackData = {
-      venue_id,
+      venue_id: venueId,
       order_id: order_id || null,
       customer_name: customerName,
       customer_email: null,
@@ -182,7 +204,7 @@ export async function POST(req: Request) {
     };
 
     // Insert feedback
-    const { data, error } = await serviceClient
+    const { data, error } = await supabase
       .from('feedback')
       .insert(feedbackData)
       .select('id');

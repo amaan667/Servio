@@ -21,7 +21,9 @@ export async function POST(
     }
 
     const { orderId } = await context.params;
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => {
+      return {};
+    });
     const { amount, reason } = body as { amount?: number; reason?: string };
 
     if (!orderId) {

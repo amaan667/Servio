@@ -120,10 +120,17 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
             .eq("menu_item_id", item.id);
 
           if (recipeData) {
-            const totalCost = recipeData.reduce((sum, recipe: any) => {
-              const ingredientCost = recipe.ingredient?.cost_per_unit || 0;
-              return sum + ingredientCost * (recipe.qty_per_item || 0);
-            }, 0);
+            const totalCost = recipeData.reduce(
+              (sum: number, recipe: unknown) => {
+                const recipeTyped = recipe as {
+                  qty_per_item: number;
+                  ingredient?: { cost_per_unit: number } | null;
+                };
+                const ingredientCost = recipeTyped.ingredient?.cost_per_unit || 0;
+                return sum + ingredientCost * (recipeTyped.qty_per_item || 0);
+              },
+              0
+            );
             recipeCosts.set(item.id, totalCost);
           }
         } catch (err) {
@@ -137,9 +144,16 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
 
       // Process orders to calculate revenue and quantities
       (orders || []).forEach((order) => {
-        const items = order.items || [];
-        items.forEach((item: any) => {
-          const menuItemId = item.menu_item_id || item.id;
+        const items = (order.items as Array<{
+          menu_item_id?: string;
+          id?: string;
+          item_name?: string;
+          name?: string;
+          quantity?: number;
+          price?: number;
+        }>) || [];
+        items.forEach((item) => {
+          const menuItemId = (item.menu_item_id || item.id) as string;
           const itemName = item.item_name || item.name || "Unknown";
           const quantity = item.quantity || 1;
           const price = item.price || 0;
@@ -232,7 +246,6 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
         highMarginItems,
       });
     } catch (err) {
-      console.error("[COST INSIGHTS] Error:", err);
       setError(err instanceof Error ? err.message : "Failed to load cost insights");
     } finally {
       setLoading(false);

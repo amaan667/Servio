@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { POST as postPOST } from "@/app/apicatalog/reprocess-with-url/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { POST as postPOST } from "@/app/api/catalog/reprocess-with-url/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Catalog Reprocess With Url API", () => {
   describe("POST catalog/reprocess-with-url", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apicatalog/reprocess-with-url");
+      const request = createMockRequest("POST", "http://localhost:3000/api//catalog/reprocess-with-url");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

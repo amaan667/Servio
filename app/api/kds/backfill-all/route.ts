@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 interface KDSStation {
   id: string;
@@ -10,14 +12,55 @@ interface KDSStation {
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const supabaseAdmin = createAdminClient();
 
-
-    const { venueId } = await req.json();
-
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
     if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      // Fallback to basic auth if no venueId
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const body = await req.json();
+    const venueIdFromBody = body?.venueId || body?.venue_id;
+
+    if (!venueIdFromBody) {
       return NextResponse.json(
         {
           ok: false,
@@ -26,6 +69,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // Use venueId from auth check or body
+    const finalVenueId = venueId || venueIdFromBody;
+
+    const supabase = await createClient();
 
     let totalOrdersProcessed = 0;
     let totalTicketsCreated = 0;
@@ -37,10 +85,10 @@ export async function POST(req: Request) {
     for (const scope of scopes) {
 
       // First, ensure KDS stations exist for this venue
-      const { data: existingStations } = await supabaseAdmin
+      const { data: existingStations } = await supabase
         .from("kds_stations")
         .select("id, station_type")
-        .eq("venue_id", venueId)
+        .eq("venue_id", finalVenueId)
         .eq("is_active", true);
 
       if (!existingStations || existingStations.length === 0) {
@@ -58,7 +106,7 @@ export async function POST(req: Request) {
         ];
 
         for (const station of defaultStations) {
-          await supabaseAdmin.from("kds_stations").upsert(
+          await supabase.from("kds_stations").upsert(
             {
               venue_id: venueId,
               station_name: station.name,
@@ -74,10 +122,10 @@ export async function POST(req: Request) {
         }
 
         // Fetch stations again
-        const { data: stations } = await supabaseAdmin
+        const { data: stations } = await supabase
           .from("kds_stations")
           .select("id, station_type")
-          .eq("venue_id", venueId)
+          .eq("venue_id", finalVenueId)
           .eq("is_active", true);
 
         if (!stations || stations.length === 0) {
@@ -102,12 +150,12 @@ export async function POST(req: Request) {
       }
 
       // Build query for orders based on scope
-      let query = supabaseAdmin
+      let query = supabase
         .from("orders")
         .select(
           "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at"
         )
-        .eq("venue_id", venueId)
+        .eq("venue_id", finalVenueId)
         .in("payment_status", ["PAID", "UNPAID"]) // Only active orders
         .in("order_status", ["PLACED", "IN_PREP", "READY"]) // Only orders that need preparation
         .order("created_at", { ascending: false });
@@ -148,7 +196,7 @@ export async function POST(req: Request) {
       for (const order of orders) {
         try {
           // Check if this order already has KDS tickets
-          const { data: existingTickets } = await supabaseAdmin
+          const { data: existingTickets } = await supabase
             .from("kds_tickets")
             .select("id")
             .eq("order_id", order.id)
@@ -174,7 +222,7 @@ export async function POST(req: Request) {
               status: "new",
             };
 
-            const { error: ticketError } = await supabaseAdmin
+            const { error: ticketError } = await supabase
               .from("kds_tickets")
               .insert(ticketData);
 

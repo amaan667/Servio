@@ -2,9 +2,11 @@
 // New accounts must select a plan during signup (14-day free trial)
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
+import { requireAuthForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const PRICE_IDS = {
   starter: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
@@ -12,7 +14,7 @@ const PRICE_IDS = {
   enterprise: process.env.STRIPE_PREMIUM_PRICE_ID || "price_premium",
 };
 
-export async function POST(_request: NextRequest) {
+export async function POST(req: NextRequest) {
   let body: {
     email?: string;
     password?: string;
@@ -22,10 +24,30 @@ export async function POST(_request: NextRequest) {
     serviceType?: string;
     tier?: string;
     stripeSessionId?: string;
-  } = {};
-
+  } | null = null;
   try {
-    body = await _request.json();
+    // CRITICAL: Authentication check (signup doesn't require venue access)
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      // Allow unauthenticated for signup
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.AUTH);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    body = await req.json();
+    if (!body) {
+      return NextResponse.json({ error: "Request body is required" }, { status: 400 });
+    }
     const {
       email,
       password,
@@ -46,7 +68,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Check if email already exists as a user
     const { data: existingUsers } = await supabase.auth.admin.listUsers();

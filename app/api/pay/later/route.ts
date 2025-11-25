@@ -2,11 +2,57 @@ import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { NextRequest } from 'next/server';
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
+    if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      // Fallback to basic auth if no venueId
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();
 
@@ -28,7 +74,7 @@ export async function POST(req: Request) {
     });
 
     if (!order_id) {
-      console.error("[PAY LATER] ❌ Missing order ID in request body");
+      logger.error("[PAY LATER] ❌ Missing order ID in request body");
       logger.error("❌ [PAY LATER] Missing order ID");
       return NextResponse.json(
         {
@@ -89,7 +135,7 @@ export async function POST(req: Request) {
       .single();
 
     if (updateError || !order) {
-      console.error("[PAY LATER] ❌ Update failed:", {
+      logger.error("[PAY LATER] ❌ Update failed:", {
         orderId: order_id,
         error: updateError,
         fullError: JSON.stringify(updateError, null, 2),
@@ -130,7 +176,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(response);
   } catch (_error) {
-    console.error("[PAY LATER] 💥 EXCEPTION CAUGHT:", {
+    logger.error("[PAY LATER] 💥 EXCEPTION CAUGHT:", {
       error: _error,
       message: _error instanceof Error ? _error.message : "Unknown error",
       stack: _error instanceof Error ? _error.stack : undefined,

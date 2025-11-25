@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -49,7 +50,7 @@ export function useDashboardRealtime({
       try {
         await refreshCountsRef.current();
       } catch (_error) {
-        console.error("[Dashboard Realtime] ❌ Error refreshing counts:", _error);
+        logger.error("[Dashboard Realtime] ❌ Error refreshing counts:", _error);
       }
     }, 300); // 300ms debounce
   }, []); // No dependencies - uses ref
@@ -60,7 +61,7 @@ export function useDashboardRealtime({
     try {
       await refreshCountsRef.current();
     } catch (_error) {
-      console.error("[Dashboard Realtime] ❌ Error in immediate refresh:", _error);
+      logger.error("[Dashboard Realtime] ❌ Error in immediate refresh:", _error);
     }
   }, []); // No dependencies - uses ref
 
@@ -219,7 +220,7 @@ export function useDashboardRealtime({
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            console.error("[Dashboard Realtime] Channel error or timeout:", status);
+            logger.error("[Dashboard Realtime] Channel error or timeout:", status);
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);

@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apistaff/invitations/[token]/route";
-import { POST as postPOST } from "@/app/apistaff/invitations/[token]/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/staff/invitations/[token]/route";
+import { POST as postPOST } from "@/app/api/staff/invitations/[token]/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -44,7 +44,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Staff Invitations Token API", () => {
   describe("GET staff/invitations/[token]", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apistaff/invitations/[token]");
+      const request = createMockRequest("GET", "http://localhost:3000/api//staff/invitations/[token]");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -57,7 +57,7 @@ describe("Staff Invitations Token API", () => {
 
   describe("POST staff/invitations/[token]", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apistaff/invitations/[token]");
+      const request = createMockRequest("POST", "http://localhost:3000/api//staff/invitations/[token]");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

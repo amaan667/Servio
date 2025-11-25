@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { POST as postPOST } from "@/app/apimenu-items/upload-image/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { POST as postPOST } from "@/app/api/menu-items/upload-image/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Menu Items Upload Image API", () => {
   describe("POST menu-items/upload-image", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apimenu-items/upload-image");
+      const request = createMockRequest("POST", "http://localhost:3000/api//menu-items/upload-image");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

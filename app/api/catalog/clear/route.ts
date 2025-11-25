@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -9,14 +11,33 @@ export const runtime = "nodejs";
  */
 export async function POST(req: NextRequest) {
   try {
+
     const body = await req.json();
-    const { venueId } = body;
+    const venueId = body?.venueId || body?.venue_id;
 
     if (!venueId) {
       return NextResponse.json({ ok: false, error: "venueId required" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
 
     // Delete menu items
     const { error: deleteItemsError, count: itemsCount } = await supabase

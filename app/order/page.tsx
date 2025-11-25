@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { logger } from "@/lib/logger";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
@@ -54,7 +53,6 @@ export default function CustomerOrderPage() {
           setSubscriptionTier(data.tier || "starter");
         }
       } catch (_error) {
-        logger.error("Failed to fetch venue tier", { error: _error });
         setSubscriptionTier("starter");
       } finally {
         setLoadingTier(false);
@@ -84,9 +82,7 @@ export default function CustomerOrderPage() {
       body: JSON.stringify(logData),
     }).catch((err) => {
       // Fallback to client log if server fails
-      logger.error("Failed to log QR scan to server", {
-        error: err instanceof Error ? err.message : String(err),
-      });
+      console.error("Failed to log QR scan:", err instanceof Error ? err.message : String(err));
     });
 
     // Also log client-side for development
@@ -214,7 +210,6 @@ export default function CustomerOrderPage() {
         window.location.href = data.checkoutSessions[0].url || "/payment";
       }
     } catch (error) {
-      logger.error("[BILL SPLIT] Error creating split orders:", error);
       alert("Failed to create split orders. Please try again.");
     }
   };

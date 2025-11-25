@@ -2,16 +2,64 @@ import { NextResponse } from "next/server";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase";
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { NextRequest } from 'next/server';
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { venueId, name, business_type, address, phone, email } = await req.json();
 
-    if (!venueId || !name || !business_type) {
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
+    if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      // Fallback to basic auth if no venueId
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
       return NextResponse.json(
-        { ok: false, error: "venueId, name, and business_type required" },
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const body = await req.json();
+    const { name, business_type, address, phone, email  } = body;
+    const finalVenueId = venueId || body.venueId;
+
+    if (!finalVenueId || !name || !business_type) {
+      return NextResponse.json(
+        { ok: false, error: "finalVenueId, name, and business_type required" },
         { status: 400 }
       );
     }
@@ -27,7 +75,7 @@ export async function POST(req: Request) {
     const { data: existingVenue } = await admin
       .from("venues")
       .select("id, owner_user_id")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .maybeSingle();
 
     if (existingVenue && existingVenue.owner_user_id !== user.id) {
@@ -35,7 +83,7 @@ export async function POST(req: Request) {
     }
 
     const venueData = {
-      venue_id: venueId,
+      venue_id: finalVenueId,
       venue_name: name,
       business_type: business_type.toLowerCase(),
       address: address || null,
@@ -55,7 +103,7 @@ export async function POST(req: Request) {
         .single();
 
       // Invalidate venue cache
-      await cache.invalidate(`venue:${venueId}`);
+      await cache.invalidate(`venue:${finalVenueId}`);
 
       if (error) throw error;
       return NextResponse.json({ ok: true, venue: data });

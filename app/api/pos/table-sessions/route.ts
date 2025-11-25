@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,8 +13,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
     }
 
-    // Use admin client - no auth needed (venueId is sufficient)
-    const supabase = createAdminClient();
+    // CRITICAL: Add authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Add rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    // Use authenticated client instead of admin client
+    const supabase = await createClient();
 
     // Get table status using the function
     const { data: tableStatus, error } = await supabase.rpc("get_table_status", {
@@ -47,8 +67,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use admin client - no auth needed
-    const supabase = createAdminClient();
+    // CRITICAL: Add authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venue_id);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Add rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    // Use authenticated client instead of admin client
+    const supabase = await createClient();
 
     let result;
 
@@ -93,6 +131,32 @@ export async function POST(req: NextRequest) {
         if (closeError) {
           logger.error("[POS TABLE SESSIONS] Error closing session:", closeError);
           return NextResponse.json({ error: "Failed to close table session" }, { status: 500 });
+        }
+
+        // CRITICAL: Verify all orders are PAID before completing
+        const { data: ordersToComplete } = await supabase
+          .from("orders")
+          .select("id, payment_status")
+          .eq("venue_id", venue_id)
+          .eq("table_id", table_id)
+          .eq("is_active", true);
+
+        const unpaidOrders = ordersToComplete?.filter(
+          (order) => (order.payment_status || "").toString().toUpperCase() !== "PAID"
+        ) || [];
+
+        if (unpaidOrders.length > 0) {
+          logger.warn("[POS TABLE SESSIONS] Attempted to complete unpaid orders", {
+            unpaidCount: unpaidOrders.length,
+            orderIds: unpaidOrders.map((o) => o.id),
+          });
+          return NextResponse.json(
+            {
+              error: `Cannot close table: ${unpaidOrders.length} order(s) are unpaid. Please collect payment first.`,
+              unpaid_order_ids: unpaidOrders.map((o) => o.id),
+            },
+            { status: 400 }
+          );
         }
 
         // Mark all active orders as completed

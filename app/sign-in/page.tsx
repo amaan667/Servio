@@ -47,7 +47,6 @@ function SignInPageContent() {
             }
           });
         } catch (e) {
-          console.error("[SIGN-IN] Error clearing broken session:", e);
         }
       } else if (hasRefreshToken && !hasAccessToken && isOAuthCallback) {
         // OAuth callback detected with refresh token
@@ -98,7 +97,6 @@ function SignInPageContent() {
 
           // If query fails, don't redirect to select-plan - might be temporary error
           if (error) {
-            console.error("[SIGN-IN] Error fetching venues:", error);
             // If there's a nextParam, still redirect there
             if (nextParam) {
               router.push(nextParam);
@@ -123,7 +121,6 @@ function SignInPageContent() {
             }
           }
         } catch (error) {
-          console.error("[SIGN-IN] Exception fetching venues:", error);
           // On exception, don't redirect - stay on sign-in page
         }
       };

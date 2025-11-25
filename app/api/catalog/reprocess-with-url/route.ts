@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { extractMenuFromImage } from "@/lib/gptVisionMenuParser";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -49,7 +51,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = createAdminClient();
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
 
     // Step 1: Scrape URL for item data using centralized API
     let urlItems: ScrapedMenuItem[] = [];
@@ -71,9 +91,6 @@ export async function POST(req: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: menuUrl }),
           signal: controller.signal,
-          // @ts-expect-error - Node.js fetch specific options
-          headersTimeout: 120000,
-          bodyTimeout: 120000,
         });
         clearTimeout(timeoutId);
       } catch (fetchError) {

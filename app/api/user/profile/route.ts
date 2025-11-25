@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
-import { getAuthUserForAPI } from "@/lib/auth/server";
+import { requireAuthForAPI } from "@/lib/auth/api";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
-    // SECURE: Use getUser() for authentication check
-    const { user, error } = await getAuthUserForAPI();
+    // STANDARDIZED: Use requireAuthForAPI for consistent authentication
+    const authResult = await requireAuthForAPI();
 
-    if (error) {
-      return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    if (!user) {
-      return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
-    }
+    const user = authResult.user;
 
     // Return user profile data (excluding sensitive information)
     const profile = {
@@ -38,12 +39,17 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    // SECURE: Use getUser() for authentication check
-    const { user, error } = await getAuthUserForAPI();
+    // STANDARDIZED: Use requireAuthForAPI for consistent authentication
+    const authResult = await requireAuthForAPI();
 
-    if (error || !user) {
-      return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: authResult.error || "Authentication required" },
+        { status: 401 }
+      );
     }
+
+    const user = authResult.user;
 
     const body = await req.json();
 

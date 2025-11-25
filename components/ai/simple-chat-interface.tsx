@@ -63,18 +63,15 @@ export function SimpleChatInterface({
 
       // If no session or token, try to refresh
       if (!session?.access_token) {
-        console.log("[AI CHAT] No session found, attempting refresh...");
+        // Session refresh attempted - no logging needed in production
         const { data: refreshData } = await supabase.auth.refreshSession();
         session = refreshData.session;
       }
 
       // If still no session, user needs to sign in
       if (!session?.access_token) {
-        console.error("[AI CHAT] No valid session after refresh");
         throw new Error("Session expired. Please refresh the page and sign in again.");
       }
-
-      console.log("[AI CHAT] Session found, sending request with token");
 
       const response = await fetch("/api/ai/simple-chat", {
         method: "POST",

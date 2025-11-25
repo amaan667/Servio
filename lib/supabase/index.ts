@@ -420,7 +420,7 @@ export async function getAuthenticatedUser() {
         // This is expected when tokens expire, just return no user
         return { user: null, error: null };
       }
-      console.log("[AUTH DEBUG] Auth error:", error.message);
+      // Auth error - logging removed for production (was: [AUTH DEBUG])
       return { user: null, error: error.message };
     }
 
@@ -428,10 +428,10 @@ export async function getAuthenticatedUser() {
       // Check if we have any auth cookies to provide better error message
       const hasAuth = await hasValidAuthCookies();
       if (!hasAuth) {
-        console.log("[AUTH DEBUG] No valid auth cookies found");
+        // No valid auth cookies - logging removed for production (was: [AUTH DEBUG])
         return { user: null, error: "No authentication cookies found. Please sign in again." };
       }
-      console.log("[AUTH DEBUG] Auth cookies exist but no session");
+      // Auth cookies exist but no session - logging removed for production (was: [AUTH DEBUG])
       return { user: null, error: "Session expired. Please sign in again." };
     }
 
@@ -446,7 +446,7 @@ export async function getAuthenticatedUser() {
     ) {
       return { user: null, error: null };
     }
-    console.log("[AUTH DEBUG] Auth exception:", errorMessage);
+    // Auth exception - logging removed for production (was: [AUTH DEBUG])
     return { user: null, error: "Failed to get authenticated user" };
   }
 }

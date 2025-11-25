@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -59,12 +60,12 @@ export function usePaymentState() {
         }
       } catch (_error) {
         // Don't redirect - payment processing will handle redirect to order summary
-        console.error("[PAYMENT STATE] Failed to parse checkout data", _error);
+        logger.error("[PAYMENT STATE] Failed to parse checkout data", _error);
       }
     } else {
       // Don't redirect if no checkout data - payment flow will handle it
       // This prevents race condition where redirect to order summary is interrupted
-      console.warn("[PAYMENT STATE] No checkout data found - waiting for payment flow");
+      logger.warn("[PAYMENT STATE] No checkout data found - waiting for payment flow");
     }
   }, [router, isDemoFromUrl]);
 

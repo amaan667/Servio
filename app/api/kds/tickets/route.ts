@@ -1,18 +1,20 @@
-import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Function to automatically backfill missing KDS tickets for orders
 async function autoBackfillMissingTickets(venueId: string) {
   try {
-    const supabaseAdmin = createAdminClient();
+    const supabase = await createClient();
 
 
     // Get today's orders that should have KDS tickets but don't
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const { data: ordersWithoutTickets } = await supabaseAdmin
+    const { data: ordersWithoutTickets } = await supabase
       .from("orders")
       .select("id")
       .eq("venue_id", venueId)
@@ -30,7 +32,7 @@ async function autoBackfillMissingTickets(venueId: string) {
     );
 
     // Get expo station for this venue
-    const { data: expoStation } = await supabaseAdmin
+    const { data: expoStation } = await supabase
       .from("kds_stations")
       .select("id")
       .eq("venue_id", venueId)
@@ -45,7 +47,7 @@ async function autoBackfillMissingTickets(venueId: string) {
 
     // Create tickets for orders without them
     for (const orderRef of ordersWithoutTickets) {
-      const { data: order } = await supabaseAdmin
+      const { data: order } = await supabase
         .from("orders")
         .select("id, venue_id, table_number, table_id, items")
         .eq("id", orderRef.id)
@@ -67,7 +69,7 @@ async function autoBackfillMissingTickets(venueId: string) {
           status: "new",
         };
 
-        await supabaseAdmin.from("kds_tickets").insert(ticketData);
+        await supabase.from("kds_tickets").insert(ticketData);
       }
 
     }
@@ -84,14 +86,34 @@ async function autoBackfillMissingTickets(venueId: string) {
 }
 
 // GET - Fetch KDS tickets for a venue or station
-export async function GET(req: Request) {
-  let venueId = "unknown";
-
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    venueId = searchParams.get("venueId") || "none";
+    const venueId = searchParams.get("venueId") || searchParams.get("venue_id");
     const stationId = searchParams.get("stationId");
     const status = searchParams.get("status");
+
+    if (!venueId) {
+      return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
+    }
+
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
 
     logger.debug("[KDS TICKETS] GET Request:", {
       venueId,
@@ -100,12 +122,8 @@ export async function GET(req: Request) {
       hasAuthHeader: !!req.headers.get("authorization"),
     });
 
-    if (!venueId || venueId === "none") {
-      return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
-    }
-
     // Use admin client - no authentication required for KDS feature
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Build query
     let query = supabase
@@ -167,7 +185,6 @@ export async function GET(req: Request) {
     logger.error("[KDS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
       stack: _error instanceof Error ? _error.stack : undefined,
-      venueId,
     });
     return NextResponse.json(
       { ok: false, error: _error instanceof Error ? _error.message : "Internal server _error" },
@@ -197,9 +214,7 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // Use admin client - no authentication required for KDS feature
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Build update object with timestamp
     const updateData: {

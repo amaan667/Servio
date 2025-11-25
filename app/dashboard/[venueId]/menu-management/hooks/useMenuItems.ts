@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
 import { MenuItem } from "../types";
 
@@ -25,7 +26,7 @@ export function useMenuItems(venueId: string) {
         .order("position", { ascending: true, nullsFirst: false });
 
       if (error) {
-        console.error("[MENU ITEMS] Error loading:", error);
+        logger.error("[MENU ITEMS] Error loading:", error);
         toast({
           title: "Error",
           description: `Failed to load menu items: ${error.message}`,

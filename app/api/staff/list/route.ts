@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
+import { NextRequest } from 'next/server';
+import { createClient } from '@/lib/supabase';
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const venue_id = searchParams.get('venue_id');
@@ -12,8 +16,27 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
     }
 
-    const admin = createAdminClient();
-    const { data, error } = await admin
+    // CRITICAL: Add authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venue_id);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Add rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase");
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
       .from('staff')
       .select('*')
       .eq('venue_id', venue_id)

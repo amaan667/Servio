@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -38,7 +39,7 @@ export function useOrderSummary() {
         setOrderData(data);
       } catch (_error) {
         // Don't redirect - let the parent component handle it
-        console.error("[ORDER SUMMARY] Failed to parse pending order data", _error);
+        logger.error("[ORDER SUMMARY] Failed to parse pending order data", _error);
       }
     }
     // Don't redirect if no data - the page will show "No order data found" message

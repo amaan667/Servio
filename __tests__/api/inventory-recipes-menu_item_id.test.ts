@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/apiinventory/recipes/[menu_item_id]/route";
-import { POST as postPOST } from "@/app/apiinventory/recipes/[menu_item_id]/route";
-import { DELETE as deleteDELETE } from "@/app/apiinventory/recipes/[menu_item_id]/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { GET as getGET } from "@/app/api/inventory/recipes/[menu_item_id]/route";
+import { POST as postPOST } from "@/app/api/inventory/recipes/[menu_item_id]/route";
+import { DELETE as deleteDELETE } from "@/app/api/inventory/recipes/[menu_item_id]/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -45,7 +45,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Inventory Recipes Menu_item_id API", () => {
   describe("GET inventory/recipes/[menu_item_id]", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apiinventory/recipes/[menu_item_id]");
+      const request = createMockRequest("GET", "http://localhost:3000/api//inventory/recipes/[menu_item_id]");
       // TODO: Import and test actual route handler
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -58,7 +58,7 @@ describe("Inventory Recipes Menu_item_id API", () => {
 
   describe("POST inventory/recipes/[menu_item_id]", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apiinventory/recipes/[menu_item_id]");
+      const request = createMockRequest("POST", "http://localhost:3000/api//inventory/recipes/[menu_item_id]");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -71,7 +71,7 @@ describe("Inventory Recipes Menu_item_id API", () => {
 
   describe("DELETE inventory/recipes/[menu_item_id]", () => {
     it("should handle delete request", async () => {
-      const request = createMockRequest("DELETE", "http://localhost:3000/apiinventory/recipes/[menu_item_id]");
+      const request = createMockRequest("DELETE", "http://localhost:3000/api//inventory/recipes/[menu_item_id]");
       // TODO: Import and test actual route handler
       const response = await deleteDELETE(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

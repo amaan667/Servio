@@ -1,11 +1,36 @@
 // Admin endpoint to update old tier names to new ones
 // Updates "premium" → "enterprise", "standard" → "pro", "basic" → "starter"
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
+
+    // CRITICAL: Authentication check
+    const { requireAuthForAPI } = await import('@/lib/auth/api');
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const supabase = createAdminClient();
 
     // Update all organizations with old tier names

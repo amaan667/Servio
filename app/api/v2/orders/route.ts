@@ -55,7 +55,12 @@ const querySchema = z.object({
 });
 
 export const GET = createGetHandler(
-  async ({ req, venueId }) => {
+  async (context) => {
+    const { req, venueId } = context;
+    if (!venueId) {
+      throw new Error("venueId is required");
+    }
+
     const url = new URL(req.url);
     const status = url.searchParams.get("status");
     const page = parseInt(url.searchParams.get("page") || "1");

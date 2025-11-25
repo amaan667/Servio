@@ -35,7 +35,7 @@ describe("GET /api/inventory/ingredients", () => {
 
   it("retrieves ingredients for venue", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/inventory/ingredients?venue_id=venue_123",
+      "http://localhost:3000/api//inventory/ingredients?venue_id=venue_123",
       { method: "GET" }
     );
 
@@ -55,7 +55,7 @@ describe("GET /api/inventory/ingredients", () => {
 
 describe("POST /api/inventory/ingredients", () => {
   it("creates ingredient with valid data", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/inventory/ingredients", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//inventory/ingredients", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -82,7 +82,7 @@ describe("POST /api/inventory/ingredients", () => {
 
 describe("POST /api/inventory/stock/adjust", () => {
   it("adjusts stock levels", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/inventory/stock/adjust", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//inventory/stock/adjust", {
       method: "POST",
       body: JSON.stringify({
         ingredient_id: "ing_123",
@@ -98,7 +98,7 @@ describe("POST /api/inventory/stock/adjust", () => {
   });
 
   it("handles stock deduction", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/inventory/stock/adjust", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//inventory/stock/adjust", {
       method: "POST",
       body: JSON.stringify({
         ingredient_id: "ing_123",
@@ -116,7 +116,7 @@ describe("POST /api/inventory/stock/adjust", () => {
 describe("GET /api/inventory/low-stock", () => {
   it("returns low stock items", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/inventory/low-stock?venue_id=venue_123",
+      "http://localhost:3000/api//inventory/low-stock?venue_id=venue_123",
       { method: "GET" }
     );
 

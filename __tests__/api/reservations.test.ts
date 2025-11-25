@@ -35,7 +35,7 @@ describe("POST /api/reservations/create", () => {
   });
 
   it("creates reservation with valid data", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/reservations/create", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//reservations/create", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -73,7 +73,7 @@ describe("POST /api/reservations/create", () => {
 
 describe("POST /api/reservations/checkin", () => {
   it("checks in reservation", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/reservations/checkin", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//reservations/checkin", {
       method: "POST",
       body: JSON.stringify({
         reservation_id: "res_123",
@@ -88,7 +88,7 @@ describe("POST /api/reservations/checkin", () => {
 
 describe("POST /api/reservations/[reservationId]/cancel", () => {
   it("cancels reservation", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/reservations/res_123/cancel", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//reservations/res_123/cancel", {
       method: "POST",
       body: JSON.stringify({
         reason: "Customer requested",
@@ -101,7 +101,7 @@ describe("POST /api/reservations/[reservationId]/cancel", () => {
 
 describe("POST /api/reservations/[reservationId]/modify", () => {
   it("modifies reservation time", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/reservations/res_123/modify", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//reservations/res_123/modify", {
       method: "POST",
       body: JSON.stringify({
         start_at: "2025-11-05T20:00:00Z",
@@ -117,7 +117,7 @@ describe("POST /api/reservations/[reservationId]/modify", () => {
 describe("GET /api/reservations", () => {
   it("retrieves reservations for venue", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/reservations?venue_id=venue_123",
+      "http://localhost:3000/api//reservations?venue_id=venue_123",
       { method: "GET" }
     );
 
@@ -126,7 +126,7 @@ describe("GET /api/reservations", () => {
 
   it("filters by date range", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/reservations?venue_id=venue_123&start=2025-11-05&end=2025-11-06",
+      "http://localhost:3000/api//reservations?venue_id=venue_123&start=2025-11-05&end=2025-11-06",
       { method: "GET" }
     );
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import { withSupabaseRetry } from "@/lib/retry";
 import { todayWindowForTZ } from "@/lib/time";
 import {
@@ -172,7 +173,7 @@ export function useDashboardData(
       );
 
       if (error) {
-        console.error("[Dashboard] Error fetching counts:", error);
+        logger.error("[Dashboard] Error fetching counts:", error);
         setError("Failed to refresh dashboard data");
         return;
       }
@@ -221,10 +222,10 @@ export function useDashboardData(
         // Cache the counts using shared cache utility
         setCachedCounts(venueId, finalCounts);
       } else {
-        console.warn("[Dashboard] No counts data received from RPC");
+        logger.warn("[Dashboard] No counts data received from RPC");
       }
     } catch (_err) {
-      console.error("[Dashboard] Error refreshing counts:", _err);
+      logger.error("[Dashboard] Error refreshing counts:", _err);
       setError("Failed to refresh dashboard data");
     }
   }, [venueId, venueTz]);

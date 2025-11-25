@@ -2,11 +2,38 @@ import { NextResponse } from "next/server";
 import { createServerClient } from '@supabase/ssr';
 import { stripe } from "@/lib/stripe-client";
 import { logger } from '@/lib/logger';
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
+
+    // CRITICAL: Authentication check
+    const { requireAuthForAPI } = await import('@/lib/auth/api');
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL: Rate limiting
+    const { rateLimit, RATE_LIMITS } = await import('@/lib/rate-limit');
+    const rateLimitResult = await rateLimit(req as unknown as NextRequest, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const orderId = searchParams.get("orderId")!;
     const sessionId = searchParams.get("sessionId")!;

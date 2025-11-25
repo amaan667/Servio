@@ -1,11 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function GET(_request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(_request.url);
-    const venueId = searchParams.get("venueId");
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
+    if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      // Fallback to basic auth if no venueId
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    
     const tableNumber = searchParams.get("tableNumber");
 
     if (!venueId || !tableNumber) {
@@ -18,7 +61,7 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    const supabase = await createAdminClient();
+    const supabase = await createClient();
 
     try {
       // Check for existing group session for this table
@@ -87,28 +130,71 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { venueId, tableNumber, groupSize } = await _request.json();
+    // CRITICAL: Authentication and venue access verification
+    const { searchParams } = new URL(req.url);
+    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
+    
+    if (!venueId) {
+      try {
+        const body = await req.clone().json();
+        venueId = body?.venueId || body?.venue_id;
+      } catch {
+        // Body parsing failed
+      }
+    }
+    
+    if (venueId) {
+      const venueAccessResult = await requireVenueAccessForAPI(venueId);
+      if (!venueAccessResult.success) {
+        return venueAccessResult.response;
+      }
+    } else {
+      const { requireAuthForAPI } = await import('@/lib/auth/api');
+      const authResult = await requireAuthForAPI();
+      if (authResult.error || !authResult.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+          { status: 401 }
+        );
+      }
+    }
 
-    if (!venueId || !tableNumber || !groupSize) {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const body = await req.json();
+    const { tableNumber, groupSize } = body;
+    const finalVenueId = venueId || body.venueId;
+
+    if (!finalVenueId || !tableNumber || !groupSize) {
       return NextResponse.json(
         {
           ok: false,
-          error: "venueId, tableNumber, and groupSize are required",
+          error: "finalVenueId, tableNumber, and groupSize are required",
         },
         { status: 400 }
       );
     }
 
-    const supabase = await createAdminClient();
+    const supabase = await createClient();
 
     try {
       // Check for existing group session for this table
       const { data: existingSession, error: fetchError } = await supabase
         .from("table_group_sessions")
         .select("*")
-        .eq("venue_id", venueId)
+        .eq("venue_id", finalVenueId)
         .eq("table_number", parseInt(tableNumber))
         .eq("is_active", true)
         .order("created_at", { ascending: false })
@@ -119,7 +205,7 @@ export async function POST(_request: NextRequest) {
         if (fetchError.message.includes("does not exist")) {
           return NextResponse.json({
             ok: true,
-            groupSessionId: `fallback_${venueId}_${tableNumber}`,
+            groupSessionId: `fallback_${finalVenueId}_${tableNumber}`,
             totalGroupSize: groupSize,
             currentGroupSize: groupSize,
             message: "Table not created yet - using fallback mode",
@@ -169,7 +255,7 @@ export async function POST(_request: NextRequest) {
             seat_count: newTotalGroupSize,
             updated_at: new Date().toISOString(),
           })
-          .eq("venue_id", venueId)
+          .eq("venue_id", finalVenueId)
           .eq("label", tableNumber.toString());
 
         return NextResponse.json({
@@ -184,7 +270,7 @@ export async function POST(_request: NextRequest) {
         const { data: newSession, error: createError } = await supabase
           .from("table_group_sessions")
           .insert({
-            venue_id: venueId,
+            venue_id: finalVenueId,
             table_number: parseInt(tableNumber),
             total_group_size: groupSize,
             current_group_size: groupSize,
@@ -213,7 +299,7 @@ export async function POST(_request: NextRequest) {
             seat_count: groupSize,
             updated_at: new Date().toISOString(),
           })
-          .eq("venue_id", venueId)
+          .eq("venue_id", finalVenueId)
           .eq("label", tableNumber.toString());
 
         return NextResponse.json({
@@ -227,7 +313,7 @@ export async function POST(_request: NextRequest) {
     } catch (tableError) {
       return NextResponse.json({
         ok: true,
-        groupSessionId: `fallback_${venueId}_${tableNumber}`,
+        groupSessionId: `fallback_${finalVenueId}_${tableNumber}`,
         totalGroupSize: groupSize,
         currentGroupSize: groupSize,
         message: "Table not available - using fallback mode",

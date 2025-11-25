@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
-import { PUT as putPUT } from "@/app/apitable-sessions/[id]/route";
-import { DELETE as deleteDELETE } from "@/app/apitable-sessions/[id]/route";
+import { createMockRequest } from "../helpers/api-test-helpers";
+import { PUT as putPUT } from "@/app/api/table-sessions/[id]/route";
+import { DELETE as deleteDELETE } from "@/app/api/table-sessions/[id]/route";
 
 // Mock dependencies
 vi.mock("@/lib/supabase", () => ({
@@ -44,7 +44,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Table Sessions Id API", () => {
   describe("PUT table-sessions/[id]", () => {
     it("should handle put request", async () => {
-      const request = createMockRequest("PUT", "http://localhost:3000/apitable-sessions/[id]");
+      const request = createMockRequest("PUT", "http://localhost:3000/api//table-sessions/[id]");
       // TODO: Import and test actual route handler
       const response = await putPUT(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
@@ -57,7 +57,7 @@ describe("Table Sessions Id API", () => {
 
   describe("DELETE table-sessions/[id]", () => {
     it("should handle delete request", async () => {
-      const request = createMockRequest("DELETE", "http://localhost:3000/apitable-sessions/[id]");
+      const request = createMockRequest("DELETE", "http://localhost:3000/api//table-sessions/[id]");
       // TODO: Import and test actual route handler
       const response = await deleteDELETE(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

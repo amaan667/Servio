@@ -1,16 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function POST(_request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { venueId, force = false } = await _request.json();
+    const body = await req.json();
+    const venueId = body?.venueId || body?.venue_id;
+    const force = body?.force || false;
 
     if (!venueId) {
       return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
 
     // Check if venue exists
     const { data: venue, error: venueError } = await supabase
@@ -182,16 +204,34 @@ export async function POST(_request: NextRequest) {
 }
 
 // GET endpoint to check if daily reset is needed
-export async function GET(_request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(_request.url);
-    const venueId = searchParams.get("venueId");
+    const { searchParams } = new URL(req.url);
+    const venueId = searchParams.get("venueId") || searchParams.get("venue_id");
 
     if (!venueId) {
       return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    // CRITICAL: Authentication and venue access verification
+    const venueAccessResult = await requireVenueAccessForAPI(venueId);
+    if (!venueAccessResult.success) {
+      return venueAccessResult.response;
+    }
+
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
 
     // Check for active orders
     const { data: activeOrders } = await supabase

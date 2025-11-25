@@ -46,13 +46,8 @@ export default function SelectPlanPage() {
           .order("created_at", { ascending: true })
           .limit(1);
 
-        console.log("[SELECT-PLAN] Checking owner venues", {
-          hasOwnerVenues: !!ownerVenuesData?.length,
-          venueId: ownerVenuesData?.[0]?.venue_id,
-          organizationId: ownerVenuesData?.[0]?.organization_id,
-          error: venueError?.message,
-          focus: focus,
-        });
+        // Store result for potential use
+        const hasOwnerVenues = !!ownerVenuesData?.length;
 
         if (ownerVenuesData && ownerVenuesData.length > 0 && ownerVenuesData[0]?.venue_id) {
           // User has owner venues - redirect based on focus param
@@ -66,11 +61,6 @@ export default function SelectPlanPage() {
             redirectPath = `/dashboard/${mainVenueId}/kds`;
           }
 
-          console.log("[SELECT-PLAN] User has owner venues, redirecting", {
-            venueId: mainVenueId,
-            focus: focus,
-            redirectPath: redirectPath,
-          });
           router.push(redirectPath);
           return;
         }
@@ -85,20 +75,13 @@ export default function SelectPlanPage() {
           .limit(1)
           .maybeSingle();
 
-        console.log("[SELECT-PLAN] Checking staff roles", {
-          hasStaffRoles: !!staffRoles,
-          venueId: staffRoles?.venue_id,
-          role: staffRoles?.role,
-          error: staffError?.message,
-        });
+        const hasStaffRoles = !!staffRoles;
+        const staffVenueId = staffRoles?.venue_id;
+        const staffRole = staffRoles?.role;
 
         if (staffRoles && staffRoles.venue_id && !ownerVenues) {
           // User has staff roles but no owner venues - they're a staff member only
           // Redirect them to their staff dashboard instead of allowing owner account creation
-          console.log("[SELECT-PLAN] User is staff-only, redirecting to staff dashboard", {
-            venueId: staffRoles.venue_id,
-            role: staffRoles.role,
-          });
           router.push(`/dashboard/${staffRoles.venue_id}`);
           return;
         }
@@ -111,11 +94,8 @@ export default function SelectPlanPage() {
             .eq("id", ownerVenues.organization_id)
             .maybeSingle();
 
-          console.log("[SELECT-PLAN] Organization query", {
-            hasOrg: !!organization,
-            tier: organization?.subscription_tier,
-            error: orgError?.message,
-          });
+          const hasOrg = !!organization;
+          const tier = organization?.subscription_tier;
 
           if (organization?.subscription_tier) {
             // Normalize tier name
@@ -138,11 +118,8 @@ export default function SelectPlanPage() {
             .eq("owner_user_id", session.user.id)
             .maybeSingle();
 
-          console.log("[SELECT-PLAN] Direct organization query", {
-            hasOrg: !!org,
-            tier: org?.subscription_tier,
-            error: orgError?.message,
-          });
+          const hasOrg2 = !!org;
+          const tier2 = org?.subscription_tier;
 
           if (org?.subscription_tier) {
             const tier = org.subscription_tier.toLowerCase();
@@ -161,7 +138,6 @@ export default function SelectPlanPage() {
         // User is signed in - show plan selection with current plan highlighted
         setIsChecking(false);
       } catch (error) {
-        console.error("[SELECT-PLAN] Error checking venues:", error);
         setIsChecking(false);
       }
     };

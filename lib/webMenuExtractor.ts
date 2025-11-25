@@ -506,23 +506,14 @@ async function extractFromDOM(page: import('puppeteer-core').Page): Promise<WebM
           });
         }
       } catch (err) {
-        console.error("[DOM] Error extracting item:", err);
+        // Error extracting item - logging removed for production
       }
     });
 
-    console.log(`[DOM] Successfully extracted ${items.length} items`);
-
+    // Successfully extracted items - logging removed for production
     // Log categories for debugging
     const categories = Array.from(new Set(items.map((item) => item.category).filter(Boolean)));
-    console.log(`[DOM URL] Categories extracted:`, {
-      count: categories.length,
-      categories: categories,
-      sampleItems: items.slice(0, 3).map((item) => ({
-        name: item.name,
-        category: item.category,
-        price: item.price,
-      })),
-    });
+    // Categories extracted - logging removed for production
 
     return items as unknown as WebMenuItem[];
   });

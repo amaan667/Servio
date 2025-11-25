@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helpers";
+import { createMockRequest } from "../helpers/api-test-helpers";
 import { POST as postPOST } from "@/app/api/orders/[orderId]/collect-payment/route";
 
 // Mock dependencies
@@ -43,7 +43,7 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Orders OrderId Collect Payment API", () => {
   describe("POST orders/[orderId]/collect-payment", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apiorders/[orderId]/collect-payment");
+      const request = createMockRequest("POST", "http://localhost:3000/api//orders/[orderId]/collect-payment");
       // TODO: Import and test actual route handler
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);

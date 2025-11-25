@@ -33,7 +33,7 @@ describe("GET /api/tables", () => {
   });
 
   it("retrieves tables for venue", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/tables?venue_id=venue_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//tables?venue_id=venue_123", {
       method: "GET",
     });
 
@@ -42,7 +42,7 @@ describe("GET /api/tables", () => {
 
   it("filters by status", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/tables?venue_id=venue_123&status=available",
+      "http://localhost:3000/api//tables?venue_id=venue_123&status=available",
       { method: "GET" }
     );
 
@@ -52,7 +52,7 @@ describe("GET /api/tables", () => {
 
 describe("POST /api/tables", () => {
   it("creates table with valid data", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/tables", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//tables", {
       method: "POST",
       body: JSON.stringify({
         venue_id: "venue_123",
@@ -78,7 +78,7 @@ describe("POST /api/tables", () => {
 
 describe("PATCH /api/tables/[tableId]", () => {
   it("updates table status", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/tables/table_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//tables/table_123", {
       method: "PATCH",
       body: JSON.stringify({
         status: "occupied",
@@ -90,7 +90,7 @@ describe("PATCH /api/tables/[tableId]", () => {
   });
 
   it("updates table seat count", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/tables/table_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//tables/table_123", {
       method: "PATCH",
       body: JSON.stringify({
         seats: 6,
@@ -104,7 +104,7 @@ describe("PATCH /api/tables/[tableId]", () => {
 
 describe("DELETE /api/tables/[tableId]", () => {
   it("deletes table", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api/tables/table_123", {
+    const mockRequest = new NextRequest("http://localhost:3000/api//tables/table_123", {
       method: "DELETE",
     });
 

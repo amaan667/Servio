@@ -29,7 +29,7 @@ describe("Staff API Routes", () => {
     it("should require authentication", async () => {
       const request = createMockRequest(
         "GET",
-        `http://localhost:3000/api/staff/list?venueId=${testContext.venueId}`
+        `http://localhost:3000/api//staff/list?venueId=${testContext.venueId}`
       );
       const response = await listGet(request);
 
@@ -39,7 +39,7 @@ describe("Staff API Routes", () => {
     it("should return staff list for authenticated user", async () => {
       const request = createAuthenticatedRequest(
         "GET",
-        `http://localhost:3000/api/staff/list?venueId=${testContext.venueId}`,
+        `http://localhost:3000/api//staff/list?venueId=${testContext.venueId}`,
         testContext.userId
       );
 
@@ -52,7 +52,7 @@ describe("Staff API Routes", () => {
     it("should require venueId parameter", async () => {
       const request = createAuthenticatedRequest(
         "GET",
-        "http://localhost:3000/api/staff/list",
+        "http://localhost:3000/api//staff/list",
         testContext.userId
       );
 
@@ -63,7 +63,7 @@ describe("Staff API Routes", () => {
 
   describe("POST /api/staff/add", () => {
     it("should require authentication", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/api/staff/add", {
+      const request = createMockRequest("POST", "http://localhost:3000/api//staff/add", {
         body: {
           venueId: testContext.venueId,
           name: "Test Staff",
@@ -78,7 +78,7 @@ describe("Staff API Routes", () => {
     it("should validate required fields", async () => {
       const request = createAuthenticatedRequest(
         "POST",
-        "http://localhost:3000/api/staff/add",
+        "http://localhost:3000/api//staff/add",
         testContext.userId,
         {
           body: {
@@ -95,7 +95,7 @@ describe("Staff API Routes", () => {
 
   describe("DELETE /api/staff/delete", () => {
     it("should require authentication", async () => {
-      const request = createMockRequest("DELETE", "http://localhost:3000/api/staff/delete", {
+      const request = createMockRequest("DELETE", "http://localhost:3000/api//staff/delete", {
         body: {
           venueId: testContext.venueId,
           staffId: "test-id",
@@ -109,7 +109,7 @@ describe("Staff API Routes", () => {
     it("should validate required fields", async () => {
       const request = createAuthenticatedRequest(
         "DELETE",
-        "http://localhost:3000/api/staff/delete",
+        "http://localhost:3000/api//staff/delete",
         testContext.userId,
         {
           body: {

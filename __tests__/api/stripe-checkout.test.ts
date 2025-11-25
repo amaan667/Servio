@@ -55,7 +55,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
 
   it("creates checkout session successfully", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/stripe/create-checkout-session",
+      "http://localhost:3000/api//stripe/create-checkout-session",
       {
         method: "POST",
         body: JSON.stringify({
@@ -72,7 +72,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
 
   it("requires authentication", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/stripe/create-checkout-session",
+      "http://localhost:3000/api//stripe/create-checkout-session",
       {
         method: "POST",
         body: JSON.stringify({
@@ -87,7 +87,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
 
   it("validates required fields", async () => {
     const mockRequest = new NextRequest(
-      "http://localhost:3000/api/stripe/create-checkout-session",
+      "http://localhost:3000/api//stripe/create-checkout-session",
       {
         method: "POST",
         body: JSON.stringify({}),

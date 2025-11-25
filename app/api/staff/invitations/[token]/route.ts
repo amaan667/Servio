@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
+import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+
 
 // GET /api/staff/invitations/[token] - Get invitation details by token
 export async function GET(
@@ -7,13 +10,37 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const req = _request;
+    // CRITICAL: Authentication check
+    const { requireAuthForAPI } = await import('@/lib/auth/api');
+    const authResult = await requireAuthForAPI();
+    if (authResult.error || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL: Rate limiting
+    const { rateLimit, RATE_LIMITS } = await import('@/lib/rate-limit');
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const { token } = await params;
 
     if (!token) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get invitation details using the database function
     const { data, error } = await supabase.rpc("get_invitation_by_token", { p_token: token });
@@ -67,7 +94,7 @@ export async function POST(
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get invitation details
     const { data: invitationData, error: fetchError } = await supabase.rpc(
