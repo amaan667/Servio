@@ -3,12 +3,31 @@
  * 
  * This is the SINGLE SOURCE OF TRUTH for all auth/role/tier checks.
  * 
- * Architecture:
- * 1. Middleware handles authentication (sets x-user-id header)
- * 2. This module handles authorization (venue access) and tier/role checks
- * 3. API routes use requireAuthAndVenueAccess() wrapper
- * 4. Pages handle tier checks server-side and pass to components
- * 5. Components NEVER do auth/tier checks - they just render based on props
+ * Architecture (NO DUPLICATE CHECKS):
+ * 1. Middleware (middleware.ts): 
+ *    - SINGLE SOURCE OF TRUTH for authentication
+ *    - Checks session with getSession()
+ *    - Sets x-user-id and x-user-email headers if authenticated
+ *    - NO duplicate checks in routes
+ * 
+ * 2. getAuthUserFromRequest():
+ *    - Just reads x-user-id header (middleware already verified auth)
+ *    - NO cookie reading, NO session checking, NO duplicate auth
+ *    - Trusts middleware completely
+ * 
+ * 3. verifyVenueAccess():
+ *    - Authorization check (venue access) - NOT duplicate auth
+ *    - Checks if user can access venue (owner/staff)
+ * 
+ * 4. withUnifiedAuth wrapper:
+ *    - Uses getAuthUserFromRequest (trusts middleware)
+ *    - Checks venue access (authorization)
+ *    - Checks tier/role if needed
+ *    - NO duplicate authentication
+ * 
+ * 5. Pages/Components:
+ *    - NEVER do auth checks - middleware already did it
+ *    - Just render based on props
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -46,83 +65,12 @@ export interface TierCheckResult {
 export async function getAuthUserFromRequest(
   request: NextRequest
 ): Promise<{ user: User | null; error: string | null }> {
-  // Read cookies directly from the request (more reliable in API routes)
-  const requestCookies = request.cookies;
-  
-  // Create supabase client using request cookies directly
-  const supabase = supabaseServer({
-    get: (name: string) => {
-      try {
-        return requestCookies.get(name)?.value;
-      } catch {
-        return undefined;
-      }
-    },
-    set: () => {
-      /* Empty - read-only mode */
-    },
-  });
-
-  // Try to get session from request cookies
-  try {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError) {
-      // Handle refresh token errors silently
-      if (
-        sessionError.message?.includes("refresh_token_not_found") ||
-        sessionError.message?.includes("Invalid Refresh Token")
-      ) {
-        return { user: null, error: null };
-      }
-      logger.debug("[UNIFIED AUTH] Session error:", { error: sessionError.message });
-      return { user: null, error: sessionError.message };
-    }
-
-    if (session?.user) {
-      // Verify middleware header matches if it exists
-      const middlewareUserId = request.headers.get("x-user-id");
-      if (middlewareUserId && session.user.id !== middlewareUserId) {
-        logger.warn("[UNIFIED AUTH] Middleware header doesn't match session user", {
-          middlewareUserId,
-          sessionUserId: session.user.id,
-        });
-      }
-      return { user: session.user, error: null };
-    }
-  } catch (error) {
-    logger.warn("[UNIFIED AUTH] Error reading session from request cookies", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-
-  // Fallback: Check middleware header if session read failed
+  // SINGLE SOURCE OF TRUTH: Trust middleware header (middleware already verified auth)
+  // Middleware checks session and sets x-user-id header - no duplicate checks needed
   const middlewareUserId = request.headers.get("x-user-id");
   if (middlewareUserId) {
-    logger.debug("[UNIFIED AUTH] Using middleware header as fallback", { userId: middlewareUserId });
-    // Middleware already authenticated, but we need full user object
-    // Try to get user using getUser() which might work even if getSession() failed
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (user && user.id === middlewareUserId) {
-        logger.debug("[UNIFIED AUTH] Successfully got user from getUser() fallback", { userId: user.id });
-        return { user, error: null };
-      }
-      if (userError) {
-        logger.warn("[UNIFIED AUTH] getUser() also failed", { error: userError.message });
-      }
-    } catch (error) {
-      logger.warn("[UNIFIED AUTH] Error calling getUser()", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-    
-    // If middleware says user is authenticated but we can't get full user object,
-    // construct minimal user object (middleware already verified auth)
-    logger.debug("[UNIFIED AUTH] Constructing minimal user from middleware header", { userId: middlewareUserId });
+    // Middleware already verified auth - just trust the header
+    // No need to re-check cookies or session - that's duplicate work
     return {
       user: {
         id: middlewareUserId,
@@ -136,11 +84,7 @@ export async function getAuthUserFromRequest(
     };
   }
 
-  // No session found and no middleware header
-  logger.warn("[UNIFIED AUTH] No authentication found", {
-    hasMiddlewareHeader: !!middlewareUserId,
-    url: request.url,
-  });
+  // No middleware header = not authenticated (middleware handles all auth checks)
   return { user: null, error: "No authentication found" };
 }
 
