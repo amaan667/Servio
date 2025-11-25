@@ -3,6 +3,8 @@ builder = "nixpacks"
 buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build"
 watchPatterns = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.css", "**/*.json", "**/*.toml", "**/*.md"]
 
+# Ensure Railway detects changes and triggers deployment
+
 [deploy]
 startCommand = "pnpm start"
 healthcheckPath = "/api/health"
