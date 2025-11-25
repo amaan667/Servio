@@ -6,10 +6,9 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Force fresh build - cache bust for Railway
-  generateBuildId: async () => {
-    // Force new build ID to clear CSS/JS cache after fixing React hooks and config
-    return `mime-fix-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Generate build ID - removed async to prevent blocking
+  generateBuildId: () => {
+    return `build-${Date.now()}`;
   },
   // Railway-specific configuration
   // Note: standalone mode temporarily disabled due to Next.js 15 build issue with 500.html
