@@ -69,6 +69,7 @@ export async function middleware(request: NextRequest) {
   // Get session
   const {
     data: { session },
+    error: sessionError,
   } = await supabase.auth.getSession();
 
   // For API routes, inject user info into headers if session exists
@@ -76,10 +77,28 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/")) {
     const requestHeaders = new Headers(request.headers);
     
+    // Log middleware auth check
+    console.log("[MIDDLEWARE] API route:", pathname, {
+      hasSession: !!session,
+      hasSessionError: !!sessionError,
+      sessionError: sessionError?.message,
+      userId: session?.user?.id?.substring(0, 8) + "...",
+      cookieCount: request.cookies.getAll().length,
+      authCookies: request.cookies.getAll()
+        .filter(c => c.name.includes("auth") || c.name.startsWith("sb-"))
+        .map(c => c.name),
+    });
+    
     // If session exists, inject user info for withUnifiedAuth to use
     if (session) {
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
+      console.log("[MIDDLEWARE] ✅ Set headers:", {
+        "x-user-id": session.user.id.substring(0, 8) + "...",
+        "x-user-email": session.user.email?.substring(0, 20) + "...",
+      });
+    } else {
+      console.log("[MIDDLEWARE] ❌ No session - headers NOT set");
     }
     // If no session, still pass through - let withUnifiedAuth handle the 401
 

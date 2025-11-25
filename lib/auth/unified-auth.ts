@@ -68,13 +68,27 @@ export async function getAuthUserFromRequest(
   // SINGLE SOURCE OF TRUTH: Trust middleware header (middleware already verified auth)
   // Middleware checks session and sets x-user-id header - no duplicate checks needed
   const middlewareUserId = request.headers.get("x-user-id");
+  const middlewareEmail = request.headers.get("x-user-email");
+  
+  console.log("[AUTH] getAuthUserFromRequest:", {
+    url: request.url,
+    method: request.method,
+    hasXUserIdHeader: !!middlewareUserId,
+    xUserIdValue: middlewareUserId?.substring(0, 8) + "...",
+    hasXUserEmailHeader: !!middlewareEmail,
+    allHeaders: Array.from(request.headers.entries())
+      .filter(([key]) => key.startsWith("x-"))
+      .map(([key, value]) => [key, value?.substring(0, 20) + "..."]),
+  });
+  
   if (middlewareUserId) {
     // Middleware already verified auth - just trust the header
     // No need to re-check cookies or session - that's duplicate work
+    console.log("[AUTH] ✅ Using middleware header (auth already verified)");
     return {
       user: {
         id: middlewareUserId,
-        email: request.headers.get("x-user-email") || undefined,
+        email: middlewareEmail || undefined,
         app_metadata: {},
         user_metadata: {},
         aud: "authenticated",
@@ -85,6 +99,7 @@ export async function getAuthUserFromRequest(
   }
 
   // No middleware header = not authenticated (middleware handles all auth checks)
+  console.log("[AUTH] ❌ No middleware header found - not authenticated");
   return { user: null, error: "No authentication found" };
 }
 
@@ -380,6 +395,13 @@ export function withUnifiedAuth(
 ) {
   return async (req: NextRequest, routeParams?: { params?: Promise<Record<string, string>> }) => {
     try {
+      console.log("[WITH_UNIFIED_AUTH] Route called:", {
+        url: req.url,
+        method: req.method,
+        hasRouteParams: !!routeParams,
+        hasXUserIdHeader: !!req.headers.get("x-user-id"),
+      });
+      
       // Extract venueId from params, query, or body
       let venueId: string | null = null;
       let parsedBody: unknown = null;
@@ -434,7 +456,14 @@ export function withUnifiedAuth(
 
       // Auth + venue access
       // VenueId is required for withUnifiedAuth - routes without venue should use basic auth
+      console.log("[WITH_UNIFIED_AUTH] VenueId extraction:", {
+        venueId,
+        method: req.method,
+        url: req.url,
+      });
+      
       if (!venueId) {
+        console.log("[WITH_UNIFIED_AUTH] ❌ venueId not found");
         logger.warn("[UNIFIED AUTH] venueId not found in request", {
           url: req.url,
           method: req.method,
@@ -446,9 +475,18 @@ export function withUnifiedAuth(
         );
       }
 
+      console.log("[WITH_UNIFIED_AUTH] Calling requireAuthAndVenueAccess:", {
+        venueId,
+        hasXUserIdHeader: !!req.headers.get("x-user-id"),
+      });
+      
       const authResult = await requireAuthAndVenueAccess(req, venueId);
 
       if (!authResult.success) {
+        console.log("[WITH_UNIFIED_AUTH] ❌ Auth failed:", {
+          status: authResult.response.status,
+          venueId,
+        });
         logger.warn("[UNIFIED AUTH] Authentication or venue access failed", {
           url: req.url,
           venueId,
@@ -456,6 +494,12 @@ export function withUnifiedAuth(
         });
         return authResult.response;
       }
+      
+      console.log("[WITH_UNIFIED_AUTH] ✅ Auth successful:", {
+        userId: authResult.context.user.id.substring(0, 8) + "...",
+        venueId: authResult.context.venueId,
+        role: authResult.context.role,
+      });
 
       const context = authResult.context;
 

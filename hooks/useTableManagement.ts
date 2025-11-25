@@ -24,14 +24,24 @@ export function useTableManagement() {
 
   const createTable = async (params: CreateTableParams) => {
     try {
+      console.log("[TABLE HOOK] 🎯 createTable called:", params);
       setLoading(true);
       setError(null);
 
       const { apiClient } = await import("@/lib/api-client");
+      console.log("[TABLE HOOK] 📤 POST /api/tables:", params);
       const response = await apiClient.post("/api/tables", params);
+      console.log("[TABLE HOOK] 📥 Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+      
       const data = await response.json();
+      console.log("[TABLE HOOK] Response data:", data);
 
       if (!response.ok) {
+        console.log("[TABLE HOOK] ❌ Response not OK:", data);
         const errorMessage = data.error || "Failed to create table";
         const errorDetails = data.details || "";
         const errorCode = data.code || "";
@@ -44,6 +54,7 @@ export function useTableManagement() {
         throw error;
       }
 
+      console.log("[TABLE HOOK] ✅ Table created successfully:", data.table);
       return data.table;
     } catch (_err) {
       logger.error("[TABLE MANAGEMENT HOOK] Error creating table:", errorToContext(_err));

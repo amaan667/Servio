@@ -15,6 +15,12 @@ export const maxDuration = 60;
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
+      console.log("[AI SIMPLE CHAT] 🚀 Handler called:", {
+        userId: context.user.id.substring(0, 8) + "...",
+        venueId: context.venueId,
+        hasXUserIdHeader: !!req.headers.get("x-user-id"),
+      });
+      
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
@@ -29,6 +35,14 @@ export const POST = withUnifiedAuth(
 
       const body = await req.json();
       const { message, currentPage, conversationHistory } = body;
+
+      console.log("[AI SIMPLE CHAT] Request body parsed:", {
+        hasMessage: !!message,
+        venueId: context.venueId,
+        bodyVenueId: body.venueId,
+        currentPage,
+        historyLength: conversationHistory?.length || 0,
+      });
 
       logger.info("[AI SIMPLE CHAT] Request received:", {
         hasMessage: !!message,
