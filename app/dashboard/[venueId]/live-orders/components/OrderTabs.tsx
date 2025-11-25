@@ -27,7 +27,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
               ${
                 activeTab === "live"
                   ? "bg-white text-servio-purple"
-                  : "bg-white/20 text-white"
+                  : "bg-white/30 text-white"
               }
             `}
           >
@@ -43,7 +43,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
               ${
                 activeTab === "all"
                   ? "bg-white text-servio-purple"
-                  : "bg-white/20 text-white"
+                  : "bg-white/30 text-white"
               }
             `}
           >
@@ -59,7 +59,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
               ${
                 activeTab === "history"
                   ? "bg-white text-servio-purple"
-                  : "bg-white/20 text-white"
+                  : "bg-white/30 text-white"
               }
             `}
           >

@@ -337,7 +337,7 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                     ${
                       activeTab === tab.key
                         ? "bg-white text-servio-purple shadow-sm"
-                        : "bg-white/20 text-white group-hover:bg-white group-hover:text-servio-purple"
+                        : "bg-white/30 text-white group-hover:bg-white group-hover:text-servio-purple"
                     }
                   `}
                   >
