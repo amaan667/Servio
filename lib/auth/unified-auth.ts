@@ -555,13 +555,26 @@ export function withUnifiedAuth(
       // This ensures handlers can still call req.json() normally
       let requestToUse = req;
       if (bodyConsumed && parsedBody !== null) {
-        // Create a new request with the parsed body re-stringified
+        // Create a new request with the parsed body re-stringified as a ReadableStream
         // This allows handlers to read the body normally via req.json()
         const bodyString = JSON.stringify(parsedBody);
+        const bodyBytes = new TextEncoder().encode(bodyString);
+        const bodyStream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(bodyBytes);
+            controller.close();
+          },
+        });
+        
+        // Create headers with correct Content-Length
+        const headers = new Headers(req.headers);
+        headers.set("Content-Length", bodyBytes.length.toString());
+        headers.set("Content-Type", "application/json");
+        
         requestToUse = new NextRequest(req.url, {
           method: req.method,
-          headers: new Headers(req.headers),
-          body: bodyString,
+          headers,
+          body: bodyStream,
         }) as NextRequest;
         
         // Preserve cookies from original request

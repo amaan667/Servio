@@ -1,57 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function POST(_request: NextRequest) {
-  try {
-    const req = _request;
+export const runtime = "nodejs";
 
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const body = await _request.json();
-    const finalVenueId = venueId || body.venueId;
+      const body = await req.json();
+      const finalVenueId = context.venueId || body.venueId;
     const force = body.force || false;
 
     if (!finalVenueId) {
@@ -71,7 +42,7 @@ export async function POST(_request: NextRequest) {
     const { data: venue, error: venueError } = await supabase
       .from("venues")
       .select("venue_id, venue_name")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .single();
 
     if (venueError) {
@@ -115,7 +86,7 @@ export async function POST(_request: NextRequest) {
     const { data: resetRecord, error: resetError } = await supabase
       .from("daily_reset_log")
       .select("*")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .eq("reset_date", todayString)
       .maybeSingle();
 
@@ -144,7 +115,7 @@ export async function POST(_request: NextRequest) {
     const { data: recentOrders, error: recentOrdersError } = await supabase
       .from("orders")
       .select("id, created_at")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .gte("created_at", twoHoursAgo)
       .limit(1);
 
@@ -175,7 +146,7 @@ export async function POST(_request: NextRequest) {
     const { data: activeOrders, error: activeOrdersError } = await supabase
       .from("orders")
       .select("id, order_status, table_number")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
     if (activeOrdersError) {
@@ -209,7 +180,7 @@ export async function POST(_request: NextRequest) {
     const { data: activeReservations, error: activeReservationsError } = await supabase
       .from("reservations")
       .select("id, status")
-      .eq("venue_id", venueId)
+      .eq("venue_id", finalVenueId)
       .eq("status", "BOOKED");
 
     if (activeReservationsError) {
@@ -246,7 +217,7 @@ export async function POST(_request: NextRequest) {
     const { data: tables, error: tablesError } = await supabase
       .from("tables")
       .select("id, label")
-      .eq("venue_id", venueId);
+      .eq("venue_id", finalVenueId);
 
     if (tablesError) {
       logger.error("🔄 [DAILY RESET CHECK] Error fetching tables:", {
@@ -305,7 +276,7 @@ export async function POST(_request: NextRequest) {
     const { error: clearRuntimeError } = await supabase
       .from("table_runtime_state")
       .delete()
-      .eq("venue_id", venueId);
+      .eq("venue_id", finalVenueId);
 
     if (clearRuntimeError) {
       logger.error("🔄 [DAILY RESET CHECK] Error clearing runtime state:", {
@@ -346,10 +317,11 @@ export async function POST(_request: NextRequest) {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (_error) {
-    logger.error("🔄 [DAILY RESET CHECK] Error in daily reset check:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    } catch (_error) {
+      logger.error("🔄 [DAILY RESET CHECK] Error in daily reset check:", {
+        error: _error instanceof Error ? _error.message : "Unknown _error",
+      });
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
   }
-}
+);
