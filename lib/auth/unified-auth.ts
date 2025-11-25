@@ -456,25 +456,39 @@ export function withUnifiedAuth(
         }
 
         // Try body (clone request to avoid consuming it)
+        // IMPORTANT: We clone the request so the original body stream remains available for the handler
         if (!venueId && req.method !== "GET") {
           try {
-            const clonedReq = req.clone();
-            const body = await clonedReq.json().catch(() => null);
-            if (body) {
-              venueId = body?.venueId || body?.venue_id || null;
-              if (venueId) {
-                logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
+            // Check if body exists and is readable
+            const contentType = req.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              try {
+                // Clone the request to read body without consuming original stream
+                const clonedReq = req.clone();
+                const body = await clonedReq.json().catch(() => null) as unknown;
+                if (body && typeof body === "object" && body !== null) {
+                  venueId = (body as Record<string, unknown>)?.venueId as string || 
+                           (body as Record<string, unknown>)?.venue_id as string || 
+                           null;
+                  if (venueId) {
+                    logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
+                  }
+                }
+              } catch (parseError) {
+                // Body parsing failed - this is OK, we'll continue without venueId from body
+                // The original request body is still available for the handler
+                logger.debug("[UNIFIED AUTH] Body parsing failed (non-critical):", {
+                  method: req.method,
+                  error: parseError instanceof Error ? parseError.message : String(parseError),
+                });
               }
             }
           } catch (error) {
-            // Body parsing failed - log for POST/PUT/PATCH requests
-            if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
-              logger.warn("[UNIFIED AUTH] Body parsing failed for non-GET request:", {
-                method: req.method,
-                url: req.url,
-                error: error instanceof Error ? error.message : String(error),
-              });
-            }
+            // Outer catch - log but don't fail
+            logger.debug("[UNIFIED AUTH] Error attempting body read (non-critical):", {
+              method: req.method,
+              error: error instanceof Error ? error.message : String(error),
+            });
           }
         }
       }
@@ -543,13 +557,27 @@ export function withUnifiedAuth(
       }
 
       // Call handler with authorized context and route params
+      // Note: If body was read for venueId extraction, the handler can still read it
+      // because we cloned the request, not the original
       return await handler(req, context, routeParams);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
       logger.error("[UNIFIED AUTH] Error in route handler", {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
+        stack: errorStack,
+        url: req.url,
+        method: req.method,
       });
+      
+      // Return detailed error in development, generic in production
       return NextResponse.json(
-        { error: "Internal Server Error", message: "Request processing failed" },
+        { 
+          error: "Internal Server Error", 
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
         { status: 500 }
       );
     }
