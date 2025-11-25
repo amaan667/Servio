@@ -170,12 +170,6 @@ export const GET = withUnifiedAuth(
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      console.log("[TABLES POST] 🚀 Create table handler called:", {
-        userId: context.user.id.substring(0, 8) + "...",
-        venueId: context.venueId,
-        hasXUserIdHeader: !!req.headers.get("x-user-id"),
-      });
-      
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
@@ -190,14 +184,6 @@ export const POST = withUnifiedAuth(
 
       const body = await req.json();
       const { label, seat_count, area } = body;
-      
-      console.log("[TABLES POST] Request body parsed:", {
-        label,
-        seat_count,
-        area,
-        bodyVenueId: body.venueId,
-        contextVenueId: context.venueId,
-      });
 
       if (!label) {
         return NextResponse.json(

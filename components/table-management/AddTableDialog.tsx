@@ -35,13 +35,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
 
     if (!label.trim()) return;
 
-    console.log("[TABLE CLIENT] 🎯 Create table clicked:", {
-      venueId,
-      label: label.trim(),
-      seatCount,
-    });
-
-    setError(null); // Clear unknown previous errors
+    setError(null);
 
     const tableData = {
       venue_id: venueId,
@@ -50,9 +44,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
     };
 
     try {
-      console.log("[TABLE CLIENT] 📤 Calling createTable:", tableData);
       const result = await createTable(tableData);
-      console.log("[TABLE CLIENT] ✅ Table created:", result);
 
       // Show success toast
       toast({

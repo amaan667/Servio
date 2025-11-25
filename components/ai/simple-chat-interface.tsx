@@ -41,13 +41,6 @@ export function SimpleChatInterface({
     const userMessage = input.trim();
     if (!userMessage || loading) return;
 
-    console.log("[AI CLIENT] 🎯 Send message clicked:", {
-      message: userMessage.substring(0, 50) + "...",
-      venueId,
-      currentPage,
-      messageCount: messages.length,
-    });
-
     const newUserMessage: Message = {
       role: "user",
       content: userMessage,
@@ -59,33 +52,18 @@ export function SimpleChatInterface({
     setError(null);
 
     try {
-      const requestBody = {
-        message: userMessage,
-        venueId,
-        currentPage,
-        conversationHistory: messages, // Send previous messages for context
-      };
-      
-      console.log("[AI CLIENT] 📤 Sending request:", {
-        url: "/api/ai/simple-chat",
-        method: "POST",
-        body: { ...requestBody, conversationHistory: `[${requestBody.conversationHistory.length} messages]` },
-        credentials: "include",
-      });
-      
       const response = await fetch("/api/ai/simple-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Include cookies for authentication
-        body: JSON.stringify(requestBody),
-      });
-      
-      console.log("[AI CLIENT] 📥 Response received:", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
+        credentials: "include",
+        body: JSON.stringify({
+          message: userMessage,
+          venueId,
+          currentPage,
+          conversationHistory: messages,
+        }),
       });
 
       if (!response.ok) {
