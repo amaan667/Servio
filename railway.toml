@@ -9,9 +9,9 @@ watchPatterns = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.css", "**/*
 # Use PORT environment variable that Railway provides automatically
 startCommand = "pnpm start"
 healthcheckPath = "/api/health"
-# Reduced timeout for faster failure detection - health endpoint must respond quickly
-healthcheckTimeout = 30
-healthcheckInterval = 5
+# Health check must respond instantly (edge runtime)
+healthcheckTimeout = 5
+healthcheckInterval = 10
 restartPolicyType = "on_failure"
 
 # Cron job for daily reset at midnight

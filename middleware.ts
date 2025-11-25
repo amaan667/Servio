@@ -114,4 +114,6 @@ export const config = {
     // "/api/auth/:path*" - PUBLIC: auth endpoints (sign-in, etc) must be accessible
     "/api/qr/:path*",
   ],
+  // Explicitly exclude health check from middleware
+  // This ensures health check is NEVER blocked
 };

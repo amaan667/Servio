@@ -150,18 +150,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       const supabase = await createServerSupabaseReadOnly();
 
       // Use getSession() to get the full session with tokens
+      // Add timeout to prevent hanging
       try {
-        // Log all cookies for debugging
-        logger.info("[ROOT LAYOUT] 🍪 Auth cookies details", {
-          authCookies: allCookies
-            .filter((c) => c.name.includes("auth-token"))
-            .map((c) => ({ name: c.name, hasValue: !!c.value, valueLength: c.value?.length || 0 })),
-        });
-
         const {
           data: { session: authSession },
           error,
-        } = await supabase.auth.getSession();
+        } = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<{ data: { session: null }; error: null }>((resolve) => 
+            setTimeout(() => resolve({ data: { session: null }, error: null }), 2000)
+          ),
+        ]);
 
         logger.info("[ROOT LAYOUT] 📋 getSession() result", {
           hasSession: !!authSession,

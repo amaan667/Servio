@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 
-// Ultra-simple health check for Railway - no dependencies, no blocking operations
-// This must respond quickly (< 1 second) for Railway to detect the app is ready
+// Ultra-minimal health check for Railway - instant response, zero overhead
+// MUST respond immediately for Railway initialization
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
+// Edge runtime = fastest possible response, no Node.js overhead
 export async function GET() {
-  // Return immediately without any async operations that could block
-  return NextResponse.json(
-    {
-      status: "ok",
-      timestamp: new Date().toISOString(),
+  // Return plain text "ok" - fastest possible response
+  return new NextResponse("ok", { 
+    status: 200,
+    headers: {
+      "Content-Type": "text/plain",
+      "Cache-Control": "no-store",
     },
-    { status: 200 }
-  );
+  });
 }
