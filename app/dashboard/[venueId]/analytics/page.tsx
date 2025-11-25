@@ -1,18 +1,13 @@
 /**
  * Analytics Dashboard
  * Provides business insights and performance metrics
- *
- * ARCHITECTURE NOTE:
- * Like the main dashboard, this page fetches data on the SERVER using
- * admin privileges (no auth required) and passes it to a CLIENT component
- * that handles auth checking in the browser where cookies work properly.
- *
- * This avoids the "Auth session missing!" error that happens when trying
- * to read user session cookies in server components.
  */
 
 import { createAdminClient } from "@/lib/supabase";
 import AnalyticsClientPage from "./page.client";
+import { getAuthenticatedUser } from "@/lib/supabase";
+import { getPageAuthContext } from "@/lib/auth/unified-auth";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Analytics | Servio",
@@ -22,8 +17,22 @@ export const metadata = {
 export default async function AnalyticsPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
-  // Fetch analytics data on server WITHOUT auth (use admin client like dashboard does)
-  // The AnalyticsClientPage component will handle auth checking in the browser
+  // Server-side auth check
+  const { user, error } = await getAuthenticatedUser();
+  if (error || !user) {
+    redirect("/sign-in");
+  }
+
+  // Get tier and access info
+  const authContext = await getPageAuthContext(user.id, venueId);
+  if (!authContext || !authContext.venueAccess) {
+    redirect("/dashboard");
+  }
+
+  // Check feature access server-side - analytics is available to all tiers but with different levels
+  const hasAnalyticsAccess = true; // All tiers have analytics, just different levels
+
+  // Fetch analytics data on server
   const [ordersData, menuData, revenueData] = await Promise.all([
     fetchOrderAnalytics(venueId),
     fetchMenuAnalytics(venueId),
@@ -36,6 +45,9 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
       ordersData={ordersData}
       menuData={menuData}
       revenueData={revenueData}
+      tier={authContext.tier}
+      role={authContext.role}
+      hasAccess={hasAnalyticsAccess}
     />
   );
 }

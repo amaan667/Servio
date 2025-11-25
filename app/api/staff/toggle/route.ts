@@ -1,42 +1,49 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: NextRequest) {
-  const { id, active } = await req.json().catch(()=>({ /* Empty */ }));
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    // CRITICAL: Authentication check
-    const { requireAuthForAPI } = await import('@/lib/auth/api');
-    const authResult = await requireAuthForAPI();
-    if (authResult.error || !authResult.user) {
+      const { id, active } = await req.json().catch(() => ({}));
+
+      if (!id || typeof active !== 'boolean') {
+        return NextResponse.json({ error: 'id and active required' }, { status: 400 });
+      }
+
+      const admin = createAdminClient();
+      const { error } = await admin
+        .from('staff')
+        .update({ active })
+        .eq('id', id)
+        .eq('venue_id', context.venueId);
+        
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      
+      return NextResponse.json({ ok: true });
+    } catch (_error) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-        { status: 401 }
+        { error: _error instanceof Error ? _error.message : "Unknown error" },
+        { status: 500 }
       );
     }
-
-    // CRITICAL: Rate limiting
-    const { rateLimit, RATE_LIMITS } = await import('@/lib/rate-limit');
-    const rateLimitResult = await rateLimit(req as unknown as NextRequest, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-  if (!id || typeof active !== 'boolean') return NextResponse.json({ error:'id and active required' }, { status:400 });
-  const { createAdminClient } = await import("@/lib/supabase");
-  const admin = createAdminClient();
-  const { error } = await admin.from('staff').update({ active }).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status:400 });
-  return NextResponse.json({ ok:true });
-}
-
+  }
+);

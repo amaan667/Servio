@@ -1,16 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabaseBrowser } from "@/lib/supabase";
 import AnalyticsClient from "./AnalyticsClient";
 import { PredictiveInsights } from "./components/PredictiveInsights";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
-import { isValidUserRole } from "@/lib/utils/userRole";
-import { useAuthRedirect } from "../hooks/useAuthRedirect";
-import { checkAnalyticsAccess } from "@/lib/access-control";
-import { getUserTier, hasAdvancedAnalytics } from "@/lib/tier-restrictions";
 import Link from "next/link";
+import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
 interface TopSellingItem {
   name: string;
@@ -45,6 +40,9 @@ interface AnalyticsClientPageProps {
     revenueByHour: Array<{ hour: string; revenue: number }>;
     revenueByDay: Record<string, number>;
   };
+  tier: string;
+  role: string;
+  hasAccess: boolean;
 }
 
 export default function AnalyticsClientPage({
@@ -52,112 +50,23 @@ export default function AnalyticsClientPage({
   ordersData,
   menuData,
   revenueData,
+  tier,
+  role,
+  hasAccess,
 }: AnalyticsClientPageProps) {
-  const { user, isLoading: authLoading } = useAuthRedirect();
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [hasAdvanced, setHasAdvanced] = useState(false);
-  const [currentTier, setCurrentTier] = useState<string>("starter");
-  const [accessCheck, setAccessCheck] = useState<{ allowed: boolean; reason?: string } | null>(
-    null
-  );
+  // Check if user has advanced analytics (Pro+ tier)
+  const hasAdvanced = tier !== "starter" && TIER_LIMITS[tier]?.features.analytics !== "basic";
 
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.id) return;
-
-      const supabase = supabaseBrowser();
-
-      // Check cached role first
-      const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole && isValidUserRole(cachedRole)) {
-        setUserRole(cachedRole);
-        // Check tier access
-        const tier = await getUserTier(user.id);
-        setCurrentTier(tier);
-        const advanced = await hasAdvancedAnalytics(user.id);
-        setHasAdvanced(advanced);
-
-        const access = await checkAnalyticsAccess(user.id, cachedRole as UserRole, false, false);
-        setAccessCheck(access);
-        return;
-      }
-
-      // Check if owner
-      const { data: ownerVenue } = await supabase
-        .from("venues")
-        .select("venue_id")
-        .eq("owner_user_id", user.id)
-        .eq("venue_id", venueId)
-        .single();
-
-      if (ownerVenue) {
-        setUserRole("owner");
-        sessionStorage.setItem(`user_role_${user.id}`, "owner");
-        const tier = await getUserTier(user.id);
-        setCurrentTier(tier);
-        const advanced = await hasAdvancedAnalytics(user.id);
-        setHasAdvanced(advanced);
-        const access = await checkAnalyticsAccess(user.id, "owner", false, false);
-        setAccessCheck(access);
-      } else {
-        // Check staff role
-        const { data: staffRole } = await supabase
-          .from("user_venue_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("venue_id", venueId)
-          .single();
-
-        if (staffRole && isValidUserRole(staffRole.role)) {
-          setUserRole(staffRole.role);
-          sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
-          const tier = await getUserTier(user.id);
-          setCurrentTier(tier);
-          const advanced = await hasAdvancedAnalytics(user.id);
-          setHasAdvanced(advanced);
-          const access = await checkAnalyticsAccess(
-            user.id,
-            staffRole.role as UserRole,
-            false,
-            false
-          );
-          setAccessCheck(access);
-        }
-      }
-    };
-
-    fetchUserRole();
-  }, [user, venueId]);
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if no user (will redirect)
-  if (!user) {
-    return null;
-  }
-
-  // Check access - show error if denied
-  if (accessCheck && !accessCheck.allowed) {
+  // Show access denied if no access (shouldn't happen due to server-side check, but safety check)
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-          {user && userRole && (
-            <RoleBasedNavigation
-              venueId={venueId}
-              userRole={userRole}
-              userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
-            />
-          )}
+          <RoleBasedNavigation
+            venueId={venueId}
+            userRole={role as UserRole}
+            userName="User"
+          />
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mt-8">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -171,7 +80,7 @@ export default function AnalyticsClientPage({
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  {accessCheck.reason || "You don't have permission to access analytics"}
+                  You don't have permission to access analytics
                 </p>
                 <div className="mt-2">
                   <Link
@@ -192,13 +101,11 @@ export default function AnalyticsClientPage({
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-        {user && userRole && (
-          <RoleBasedNavigation
-            venueId={venueId}
-            userRole={userRole}
-            userName={user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
-          />
-        )}
+        <RoleBasedNavigation
+          venueId={venueId}
+          userRole={role as UserRole}
+          userName="User"
+        />
 
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics Dashboard</h1>
@@ -207,7 +114,7 @@ export default function AnalyticsClientPage({
               ? "Track your business performance with advanced insights"
               : "Track your business performance and insights"}
           </p>
-          {!hasAdvanced && currentTier === "starter" && (
+          {!hasAdvanced && tier === "starter" && (
             <div className="mt-2 text-sm text-gray-600">
               <Link
                 href={`/dashboard/${venueId}/select-plan`}
@@ -235,7 +142,7 @@ export default function AnalyticsClientPage({
           menuData={menuData}
           revenueData={revenueData}
           hasAdvancedAnalytics={hasAdvanced}
-          currentTier={currentTier}
+          currentTier={tier}
           venueId={venueId}
         />
       </div>

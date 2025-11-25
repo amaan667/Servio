@@ -1,81 +1,49 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI();
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
+      const body = await req.json().catch(() => ({}));
+      const { name, role } = body || {};
+
+      if (!name) {
+        return NextResponse.json({ error: "name is required" }, { status: 400 });
+      }
+
+      const admin = createAdminClient();
+      const { data, error } = await admin
+        .from("staff")
+        .insert([{ venue_id: context.venueId, name, role: role || "Server" }])
+        .select("*");
+      
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      
+      return NextResponse.json({ success: true, data: data ?? [] });
+    } catch (_e) {
       return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
+        { error: _e instanceof Error ? _e.message : "Unknown error" },
+        { status: 500 }
       );
     }
-
-    const body = await req.json().catch(() => ({
-      /* Empty */
-    }));
-    const { venue_id, name, role } =
-      body ||
-      {
-        /* Empty */
-      };
-
-    if (!venue_id || !name) {
-      return NextResponse.json({ error: "venue_id and name are required" }, { status: 400 });
-    }
-
-    const { createAdminClient } = await import("@/lib/supabase");
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("staff")
-      .insert([{ venue_id, name, role: role || "Server" }])
-      .select("*");
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ success: true, data: data ?? [] });
-  } catch (_e) {
-    return NextResponse.json(
-      { error: _e instanceof Error ? _e.message : "Unknown error" },
-      { status: 500 }
-    );
   }
-}
+);
