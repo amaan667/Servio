@@ -41,23 +41,27 @@ export interface TierCheckResult {
 
 /**
  * Get authenticated user from request
- * Uses middleware-set header or falls back to session
+ * Uses middleware-set header or falls back to session from cookies
  */
 export async function getAuthUserFromRequest(
   request: NextRequest
 ): Promise<{ user: User | null; error: string | null }> {
-  // First try to get from middleware-set header
+  // First try to get from middleware-set header (if middleware already authenticated)
   const userId = request.headers.get("x-user-id");
   
   if (userId) {
-    // User authenticated by middleware
-    const { user } = await getAuthenticatedUser();
+    // User authenticated by middleware - verify it matches current session
+    const { user, error } = await getAuthenticatedUser();
+    if (error) {
+      return { user: null, error };
+    }
     if (user && user.id === userId) {
       return { user, error: null };
     }
+    // Header exists but user doesn't match - fall through to session check
   }
 
-  // Fallback to session check (for routes not in middleware matcher)
+  // Fallback to session check from cookies (works in API routes via next/headers)
   const { user, error } = await getAuthenticatedUser();
   return { user, error };
 }

@@ -71,16 +71,17 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // For API routes, return 401 if no session
+  // For API routes, inject user info into headers if session exists
+  // Let withUnifiedAuth handle auth checks for routes that use it
   if (pathname.startsWith("/api/")) {
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Inject user into headers for API routes to access
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", session.user.id);
-    requestHeaders.set("x-user-email", session.user.email || "");
+    
+    // If session exists, inject user info for withUnifiedAuth to use
+    if (session) {
+      requestHeaders.set("x-user-id", session.user.id);
+      requestHeaders.set("x-user-email", session.user.email || "");
+    }
+    // If no session, still pass through - let withUnifiedAuth handle the 401
 
     return NextResponse.next({
       request: {
