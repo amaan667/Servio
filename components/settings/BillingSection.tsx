@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { UpgradeModal } from "@/components/upgrade-modal";
-import { PRICING_TIERS } from "@/lib/pricing-tiers";
 import { useToast } from "@/hooks/use-toast";
 
 interface BillingSectionProps {
@@ -38,7 +37,6 @@ interface BillingSectionProps {
 export default function BillingSection({ organization, venueId }: BillingSectionProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const { toast } = useToast();
 
   // Use tier directly from database - no normalization
@@ -96,54 +94,6 @@ export default function BillingSection({ organization, venueId }: BillingSection
     // Use the same portal redirect as manage billing
     // Stripe portal will allow the user to change their plan
     await handleManageBilling();
-  };
-
-  // Sync subscription tier from Stripe
-  const handleSyncFromStripe = async () => {
-    if (!organization?.id) {
-      toast({
-        title: "Error",
-        description: "Organization ID not found",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSyncing(true);
-    try {
-      const response = await fetch("/api/subscription/sync-from-stripe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: organization.id }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        toast({
-          title: "Error",
-          description: data.error || "Failed to sync from Stripe",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Success",
-        description: `Subscription synced. Current tier: ${data.tier}`,
-      });
-
-      // Refresh the page to show updated tier
-      window.location.reload();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to sync from Stripe",
-        variant: "destructive",
-      });
-    } finally {
-      setSyncing(false);
-    }
   };
 
   const getTierInfo = () => {
@@ -317,49 +267,28 @@ export default function BillingSection({ organization, venueId }: BillingSection
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleManageBilling}
-                  disabled={loadingPortal}
-                >
-                  {loadingPortal ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Open Billing Portal
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleSyncFromStripe}
-                  disabled={syncing}
-                >
-                  {syncing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Syncing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Sync from Stripe
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleManageBilling}
+                disabled={loadingPortal}
+              >
+                {loadingPortal ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Open Billing Portal
+                  </>
+                )}
+              </Button>
 
               <p className="text-xs text-gray-600 text-center">
                 Manage your subscription, update payment methods, and view billing history.
-                Use "Sync from Stripe" to refresh your tier after plan changes.
+                Your tier is automatically synced from Stripe when you make changes.
               </p>
             </div>
           </CardContent>

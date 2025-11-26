@@ -76,6 +76,69 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
     });
 
     organization = orgData;
+
+    // AUTOMATIC: Sync tier from Stripe if organization has Stripe customer
+    // This ensures tier is always up-to-date, even if webhooks haven't fired yet
+    if (orgData?.stripe_customer_id) {
+      try {
+        const { stripe } = await import("@/lib/stripe-client");
+        const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
+
+        // Get active subscription from Stripe
+        const subscriptions = await stripe.subscriptions.list({
+          customer: orgData.stripe_customer_id,
+          status: "active",
+          limit: 1,
+        });
+
+        if (subscriptions.data.length > 0) {
+          const subscription = subscriptions.data[0];
+          const stripeTier = await getTierFromStripeSubscription(subscription, stripe);
+
+          // Only update if tier differs from database
+          if (stripeTier !== orgData.subscription_tier) {
+            logger.info("[SETTINGS PAGE] Auto-syncing tier from Stripe", {
+              organizationId: orgData.id,
+              databaseTier: orgData.subscription_tier,
+              stripeTier,
+            });
+
+            const { error: updateError } = await supabase
+              .from("organizations")
+              .update({
+                subscription_tier: stripeTier,
+                subscription_status: subscription.status,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", orgData.id);
+
+            if (!updateError) {
+              // Update organization object with new tier
+              organization = {
+                ...orgData,
+                subscription_tier: stripeTier,
+                subscription_status: subscription.status,
+              };
+              logger.info("[SETTINGS PAGE] Tier auto-synced successfully", {
+                organizationId: orgData.id,
+                newTier: stripeTier,
+              });
+            } else {
+              logger.error("[SETTINGS PAGE] Failed to auto-sync tier", {
+                error: updateError,
+                organizationId: orgData.id,
+              });
+            }
+          }
+        }
+      } catch (syncError) {
+        // Log but don't fail - webhooks will handle sync eventually
+        logger.warn("[SETTINGS PAGE] Auto-sync tier failed (non-critical)", {
+          error: syncError instanceof Error ? syncError.message : String(syncError),
+          organizationId: orgData.id,
+        });
+      }
+    }
   } else {
     logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: auth.user.id });
   }
