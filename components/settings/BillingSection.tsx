@@ -327,8 +327,8 @@ export default function BillingSection({ organization, venueId }: BillingSection
             <FeatureItem name="QR Ordering" enabled={true} tier="all" />
             <FeatureItem
               name="Kitchen Display System"
-              enabled={tier === "pro" || tier === "enterprise" || isGrandfathered}
-              tier="pro"
+              enabled={tier === "enterprise" || isGrandfathered}
+              tier="enterprise"
             />
             <FeatureItem
               name="Inventory Management"
