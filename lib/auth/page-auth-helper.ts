@@ -8,7 +8,7 @@
  */
 
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
 import { verifyVenueAccess } from "@/lib/middleware/authorization";
 import { getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
 import type { User } from "@supabase/supabase-js";
@@ -67,7 +67,13 @@ export async function requirePageAuth(
   options: RequirePageAuthOptions = {}
 ): Promise<PageAuthContext> {
   // STEP 1: Get user from Supabase session (cookie-aware)
-  const { user, error } = await getAuthenticatedUser();
+  // Use createServerSupabase directly for better cookie handling in production
+  const supabase = await createServerSupabase();
+  
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
   if (error || !user) {
     // Not logged in → redirect to sign in
@@ -164,7 +170,12 @@ export async function getOptionalPageAuth(
   venueId?: string
 ): Promise<PageAuthContext | null> {
   try {
-    const { user, error } = await getAuthenticatedUser();
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    
     if (error || !user) {
       return null;
     }
