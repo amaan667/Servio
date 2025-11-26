@@ -107,7 +107,7 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract token from URL params
-    extractVenueId: async (_req, routeParams) => {
+    extractVenueId: async (_req, _routeParams) => {
       // Invitations don't require venue access - token is in URL
       return null;
     },
