@@ -1,66 +1,109 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { requireAuthForAPI, requireVenueAccessForAPI } from "@/lib/auth/api";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { userId, venueId } = body;
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.STRICT);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
+      // STEP 2: Get user from context (already verified)
+      const user = context.user;
 
-    // CRITICAL: Authentication check
-    const { requireAuthForAPI } = await import("@/lib/auth/api");
-    const authResult = await requireAuthForAPI(req);
-    if (authResult.error || !authResult.user || authResult.user.id !== userId) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "You can only delete your own account" },
-        { status: 403 }
-      );
-    }
+      // STEP 3: Parse request
+      const body = await req.json();
+      const { userId, venueId } = body;
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.STRICT);
-    if (!rateLimitResult.success) {
+      // STEP 4: Validate inputs
+      if (!userId) {
+        return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+      }
+
+      // STEP 5: Security - Verify user can only delete their own account
+      if (user.id !== userId) {
+        return NextResponse.json(
+          { error: "Unauthorized", message: "You can only delete your own account" },
+          { status: 403 }
+        );
+      }
+
+      // STEP 6: Business logic
+      const supabase = createAdminClient();
+
+      // Delete venue and related data if venueId provided
+      if (venueId) {
+        // Verify venue belongs to user
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_id, owner_user_id")
+          .eq("venue_id", venueId)
+          .eq("owner_user_id", user.id)
+          .single();
+
+        if (venue) {
+          await supabase.from("venues").delete().eq("venue_id", venueId);
+          // Optionally: delete related menu_items, orders, etc.
+        }
+      }
+
+      // Delete user from Auth
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      if (error) {
+        logger.error("[DELETE ACCOUNT] Error deleting user:", {
+          error: error.message,
+          userId,
+        });
+        throw error;
+      }
+
+      // STEP 7: Return success response
+      return NextResponse.json({ success: true });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[DELETE ACCOUNT] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          success: false,
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
-        { status: 429 }
+        { status: 500 }
       );
     }
-
-    // If venueId provided, verify access
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    }
-
-    const supabase = createAdminClient();
-
-    // Delete venue and related data
-    if (venueId) {
-      await supabase.from("venues").delete().eq("venue_id", venueId);
-      // Optionally: delete related menu_items, orders, etc.
-    }
-    // Delete user from Auth
-    const { error } = await supabase.auth.admin.deleteUser(userId);
-    if (error) throw error;
-
-    return NextResponse.json({ success: true });
-  } catch (_error) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: _error instanceof Error ? _error.message : "Failed to delete account",
-      },
-      { status: 500 }
-    );
+  },
+  {
+    // System route - no venue required
+    extractVenueId: async () => null,
   }
-}
+);
