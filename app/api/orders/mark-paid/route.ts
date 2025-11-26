@@ -26,7 +26,7 @@ export const POST = withUnifiedAuth(
         return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
       }
 
-            const supabase = createClient();
+            const supabase = await createClient();
 
       // Verify order belongs to authenticated venue (withUnifiedAuth already verified venue access)
       const { data: order, error: orderError } = await supabase
@@ -154,7 +154,7 @@ export const POST = withUnifiedAuth(
         const orderId = body?.orderId;
         if (orderId) {
           const { createClient } = await import("@/lib/supabase");
-          const supabase = createClient();
+          const supabase = await createClient();
           const { data: order } = await supabase
             .from("orders")
             .select("venue_id")

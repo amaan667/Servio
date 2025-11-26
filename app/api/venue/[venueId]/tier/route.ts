@@ -23,10 +23,10 @@ export const GET = withUnifiedAuth(
       const venueId = context.venueId;
       
       // Also try to get from route params if not in context
-      let finalVenueId = venueId;
+      let finalVenueId: string | null = venueId;
       if (!finalVenueId && routeParams?.params) {
         const params = await routeParams.params;
-        finalVenueId = params?.venueId as string | undefined;
+        finalVenueId = (params?.venueId as string) || null;
       }
 
       // STEP 3: Parse request
@@ -115,7 +115,7 @@ export const GET = withUnifiedAuth(
   },
     {
     // Extract venueId from URL params
-    extractVenueId: async (req, routeParams) => {
+    extractVenueId: async (_req, routeParams) => {
       try {
         if (routeParams?.params) {
           const params = await routeParams.params;

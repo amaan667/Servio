@@ -38,7 +38,7 @@ export const POST = withUnifiedAuth(
         );
       }
 
-      const supabase = createClient();
+      const supabase = await createClient();
 
       // Call the seat party function
       const { data, error } = await supabase.rpc("api_seat_party", {

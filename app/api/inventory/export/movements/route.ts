@@ -177,6 +177,6 @@ export const GET = withUnifiedAuth(
       }
     },
     // CSV exports require Enterprise tier
-    requireFeature: "analyticsExports",
+        requireFeature: "analytics",
   }
 );
