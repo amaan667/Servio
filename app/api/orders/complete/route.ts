@@ -1,38 +1,54 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 export const runtime = "nodejs";
 import { createAdminClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function POST(req: Request) {
-  try {
-    const startedAt = new Date().toISOString();
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    const { orderId } = await req.json();
+      const { orderId } = await req.json();
 
-    if (!orderId) {
-      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
-    }
+      if (!orderId) {
+        return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
+      }
 
-    // Use admin client - no authentication required for customer-facing flow
-    const admin = createAdminClient();
+      // Use admin client
+      const admin = createAdminClient();
 
-    // Get the order details
+    // Get the order details - verify it belongs to authenticated venue
     const { data: orderData, error: fetchError } = await admin
       .from("orders")
       .select("*")
       .eq("id", orderId)
+      .eq("venue_id", context.venueId) // Security: ensure order belongs to authenticated venue
       .single();
 
-    if (fetchError) {
-      logger.error("[ORDERS COMPLETE] Failed to fetch order", {
-        error: { orderId, context: fetchError },
+    if (fetchError || !orderData) {
+      logger.error("[ORDERS COMPLETE] Order not found or venue mismatch:", {
+        orderId,
+        venueId: context.venueId,
+        error: fetchError,
       });
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
-    }
-    if (!orderData) {
-      logger.error("[ORDERS COMPLETE] Order not found", { orderId });
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Order not found or access denied" },
+        { status: 404 }
+      );
     }
     logger.debug("[ORDERS COMPLETE] Loaded order", {
       data: {
@@ -72,12 +88,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const venueId = orderData.venue_id as string;
-    if (!venueId) {
-      return NextResponse.json({ error: "Order missing venue_id" }, { status: 400 });
-    }
-
-
     // Update the order status to COMPLETED
     const { error } = await admin
       .from("orders")
@@ -87,7 +97,7 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId)
-      .eq("venue_id", venueId);
+      .eq("venue_id", context.venueId); // Security: ensure venue matches
 
     if (error) {
       logger.error("[ORDERS COMPLETE] Failed to update order status", {
@@ -113,7 +123,7 @@ export async function POST(req: Request) {
 
       // Use centralized cleanup function that handles both table_sessions and table_runtime_state
       const cleanupResult = await cleanupTableOnOrderCompletion({
-        venueId,
+        venueId: context.venueId,
         tableId: orderData.table_id || undefined,
         tableNumber: orderData.table_number?.toString() || undefined,
         orderId,
@@ -122,13 +132,13 @@ export async function POST(req: Request) {
       if (!cleanupResult.success) {
         logger.warn("[ORDERS COMPLETE] Table cleanup failed", {
           orderId,
-          venueId,
+          venueId: context.venueId,
           error: cleanupResult.error,
         });
       } else {
         logger.debug("[ORDERS COMPLETE] Table cleanup successful", {
           orderId,
-          venueId,
+          venueId: context.venueId,
           details: cleanupResult.details,
         });
       }
@@ -138,17 +148,59 @@ export async function POST(req: Request) {
       success: true,
       message: "Order marked as completed and table freed",
     });
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.error("[ORDERS COMPLETE][UNCAUGHT]", {
-      error: { error: err.message, stack: err.stack },
-    });
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: err.message,
-      },
-      { status: 500 }
-    );
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[ORDERS COMPLETE] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+      });
+      
+      // Check if it's an authentication/authorization error
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to complete order",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from order lookup
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        const orderId = body?.orderId;
+        if (orderId) {
+          const { createAdminClient } = await import("@/lib/supabase");
+          const admin = createAdminClient();
+          const { data: order } = await admin
+            .from("orders")
+            .select("venue_id")
+            .eq("id", orderId)
+            .single();
+          if (order?.venue_id) {
+            return order.venue_id;
+          }
+        }
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);

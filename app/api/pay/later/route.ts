@@ -47,37 +47,27 @@ export const POST = withUnifiedAuth(
       );
     }
 
-    // Step 2: Create authenticated Supabase client
+    // Create authenticated Supabase client
     const supabase = await createServerSupabase();
 
-    // Verify order access
-    const { data: orderCheck } = await supabase
+    // Verify order belongs to authenticated venue (withUnifiedAuth already verified venue access)
+    const { data: orderCheck, error: checkError } = await supabase
       .from("orders")
       .select("venue_id")
       .eq("id", order_id)
+      .eq("venue_id", context.venueId) // Security: ensure order belongs to authenticated venue
       .single();
 
-    if (!orderCheck) {
-      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
-    }
-
-    // Verify venue access
-    const { data: venueAccess } = await supabase
-      .from("venues")
-      .select("venue_id")
-      .eq("venue_id", orderCheck.venue_id)
-      .eq("owner_user_id", user.id)
-      .maybeSingle();
-
-    const { data: staffAccess } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("venue_id", orderCheck.venue_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!venueAccess && !staffAccess) {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    if (checkError || !orderCheck) {
+      logger.error("[PAY LATER] Order not found or venue mismatch:", {
+        order_id,
+        venueId: context.venueId,
+        error: checkError,
+      });
+      return NextResponse.json(
+        { success: false, error: "Order not found or access denied" },
+        { status: 404 }
+      );
     }
 
     // Step 3: Attempt to update order
@@ -93,6 +83,7 @@ export const POST = withUnifiedAuth(
       .from("orders")
       .update(updateData)
       .eq("id", order_id)
+      .eq("venue_id", context.venueId) // Security: ensure venue matches
       .select()
       .single();
 
@@ -138,25 +129,48 @@ export const POST = withUnifiedAuth(
 
       return NextResponse.json(response);
     } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
       logger.error("[PAY LATER] 💥 EXCEPTION CAUGHT:", {
-        error: _error,
-        message: _error instanceof Error ? _error.message : "Unknown error",
-        stack: _error instanceof Error ? _error.stack : undefined,
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
       });
 
-      logger.error("[PAY LATER] Error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-        fullError: _error,
-      });
-
+      // Check if it's an authentication/authorization error
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
           success: false,
-          error: "Internal server error",
-          details: _error instanceof Error ? _error.message : "Unknown error",
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Payment processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );
     }
+  },
+  {
+    // Extract venueId from order lookup or body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        // If venue_id provided, use it; otherwise we'll verify via order lookup in handler
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
 );

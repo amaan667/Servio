@@ -2,56 +2,48 @@ import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireAuthForAPI } from "@/lib/auth/api";
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function POST(req: NextRequest) {
-  try {
-    // CRITICAL: Add authentication
-    const authResult = await requireAuthForAPI(req);
-    if (authResult.error || !authResult.user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: authResult.error || "Authentication required" },
-        { status: 401 }
-      );
-    }
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.PAYMENT);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    // CRITICAL: Add rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.PAYMENT);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      const { orderId } = await req.json();
 
-    const { orderId } = await req.json();
+      if (!orderId) {
+        return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
+      }
 
-    if (!orderId) {
-      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
-    }
+      const supabase = await createClient();
 
-    const supabase = await createClient();
+      // Verify order belongs to authenticated venue (withUnifiedAuth already verified venue access)
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select("venue_id")
+        .eq("id", orderId)
+        .eq("venue_id", context.venueId) // Security: ensure order belongs to authenticated venue
+        .single();
 
-    // CRITICAL: Verify user has access to this order's venue
-    const { data: order } = await supabase
-      .from("orders")
-      .select("venue_id")
-      .eq("id", orderId)
-      .single();
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    const { requireVenueAccessForAPI } = await import("@/lib/auth/api");
-    const venueAccessResult = await requireVenueAccessForAPI(order.venue_id);
-    if (!venueAccessResult.success) {
-      return venueAccessResult.response;
-    }
+      if (orderError || !order) {
+        logger.error("[MARK PAID] Order not found or venue mismatch:", {
+          orderId,
+          venueId: context.venueId,
+          error: orderError,
+        });
+        return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
+      }
 
     // Get the order details to find table_id (venue_id already fetched above)
     const { data: orderData, error: fetchError } = await supabase
@@ -72,13 +64,22 @@ export async function POST(req: NextRequest) {
         payment_status: "PAID",
         updated_at: new Date().toISOString(),
       })
-      .eq("id", orderId);
+      .eq("id", orderId)
+      .eq("venue_id", context.venueId); // Security: ensure venue matches
 
     if (error) {
-      logger.error("Failed to mark order as paid:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error("[MARK PAID] Failed to update order:", {
+        orderId,
+        venueId: context.venueId,
+        error: error.message,
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to mark order as paid",
+          message: process.env.NODE_ENV === "development" ? error.message : "Database update failed",
+        },
+        { status: 500 }
+      );
     }
 
     // If this is a table order, check if reservations should be auto-completed
@@ -114,13 +115,59 @@ export async function POST(req: NextRequest) {
       payment_status: "PAID",
       updated_at: new Date().toISOString(),
     });
-  } catch (_error) {
-    logger.error("[MARK PAID] Error marking order as paid:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json(
-      { error: _error instanceof Error ? _error.message : "Unknown _error" },
-      { status: 500 }
-    );
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[MARK PAID] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+      });
+      
+      // Check if it's an authentication/authorization error
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to mark order as paid",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from order lookup
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        const orderId = body?.orderId;
+        if (orderId) {
+          const { createClient } = await import("@/lib/supabase");
+          const supabase = createClient();
+          const { data: order } = await supabase
+            .from("orders")
+            .select("venue_id")
+            .eq("id", orderId)
+            .single();
+          if (order?.venue_id) {
+            return order.venue_id;
+          }
+        }
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);
