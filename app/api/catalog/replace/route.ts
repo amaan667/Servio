@@ -4,7 +4,7 @@ import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = "nodejs";
@@ -18,65 +18,29 @@ export const maxDuration = 300; // 5 minutes for processing
  *
  * Replace/Append toggle applies to ALL modes
  */
-export async function POST(req: NextRequest) {
-  const startTime = Date.now();
-  const requestId = Math.random().toString(36).substring(7);
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    const startTime = Date.now();
+    const requestId = Math.random().toString(36).substring(7);
 
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
+      const user = context.user;
 
-    // Get user from middleware (auth already validated)
-    const { getUserFromMiddleware } = await import("@/lib/auth/middleware-auth");
-    logger.info(`[MENU IMPORT ${requestId}] Getting user from middleware...`);
-    const { user, error: authError } = await getUserFromMiddleware();
-
-    if (authError || !user) {
-      logger.error(`[MENU IMPORT ${requestId}] No user in request:`, authError);
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-    }
-
-    logger.info(`[MENU IMPORT ${requestId}] User authenticated:`, { userId: user.id });
+      logger.info(`[MENU IMPORT ${requestId}] User authenticated:`, { userId: user.id });
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -98,48 +62,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "venue_id required" }, { status: 400 });
     }
 
-    // Create authenticated Supabase client
-    const supabase = await createServerSupabase();
+      // STEP 3: Parse request
+      // STEP 4: Validate inputs
+      if (!venueId) {
+        return NextResponse.json({ ok: false, error: "venue_id required" }, { status: 400 });
+      }
 
-    // Verify venue access with detailed logging
-    logger.info(`[MENU IMPORT ${requestId}] Checking venue access...`, {
-      venueId,
-      userId: user.id,
-    });
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
-    const { data: venueAccess, error: venueError } = await supabase
-      .from("venues")
-      .select("venue_id")
-      .eq("venue_id", venueId)
-      .eq("owner_user_id", user.id)
-      .maybeSingle();
-
-    if (venueError) {
-      logger.error(`[MENU IMPORT ${requestId}] Venue query error:`, venueError);
-    }
-
-    const { data: staffAccess, error: staffError } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("venue_id", venueId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (staffError) {
-      logger.error(`[MENU IMPORT ${requestId}] Staff query error:`, staffError);
-    }
-
-    logger.info(`[MENU IMPORT ${requestId}] Access check result:`, {
-      hasVenueAccess: !!venueAccess,
-      hasStaffAccess: !!staffAccess,
-    });
-
-    if (!venueAccess && !staffAccess) {
-      return NextResponse.json(
-        { ok: false, error: "Forbidden - No access to this venue" },
-        { status: 403 }
-      );
-    }
+      // STEP 6: Business logic
+      // Create authenticated Supabase client
+      const supabase = await createServerSupabase();
 
     logger.info(`[MENU IMPORT ${requestId}] Starting menu import`, {
       venueId,
@@ -413,26 +346,64 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      ok: true,
-      message: "Menu imported successfully",
-      items: menuItems.length,
-      mode: extractionResult.mode,
-      duration: `${duration}ms`,
-    });
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    logger.error(`[MENU IMPORT ${requestId}] Failed:`, {
-      error,
-      duration: `${duration}ms`,
-    });
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "Menu import failed",
-      },
-      { status: 500 }
-    );
+      // STEP 7: Return success response
+      return NextResponse.json({
+        ok: true,
+        message: "Menu imported successfully",
+        items: menuItems.length,
+        mode: extractionResult.mode,
+        duration: `${duration}ms`,
+      });
+    } catch (_error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error(`[MENU IMPORT ${requestId}] Failed:`, {
+        error: errorMessage,
+        stack: errorStack,
+        duration: `${duration}ms`,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Menu import failed",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to import menu",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from form data or query
+    extractVenueId: async (req) => {
+      try {
+        const { searchParams } = new URL(req.url);
+        let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
+        if (!venueId) {
+          // Try to get from form data (for file uploads)
+          const formData = await req.formData();
+          venueId = formData.get("venue_id") as string || formData.get("venueId") as string || null;
+        }
+        return venueId;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);

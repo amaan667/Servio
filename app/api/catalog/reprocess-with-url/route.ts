@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase";
 import { extractMenuFromImage } from "@/lib/gptVisionMenuParser";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -32,44 +32,46 @@ interface PDFMenuItem {
  * Re-process existing PDF images with new URL
  * Uses PDF images already in database - no re-upload needed
  */
-export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).substring(7);
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    const requestId = Math.random().toString(36).substring(7);
 
-  try {
-    const body = await req.json();
-    const {
-      venue_id: venueId,
-      menu_url: menuUrl,
-      pdf_images: pdfImages,
-      replace_mode: replaceMode,
-    } = body;
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    if (!venueId || !menuUrl || !pdfImages || pdfImages.length === 0) {
-      return NextResponse.json(
-        { ok: false, error: "venue_id, menu_url, and pdf_images required" },
-        { status: 400 }
-      );
-    }
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
 
-    // CRITICAL: Authentication and venue access verification
-    const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-    if (!venueAccessResult.success) {
-      return venueAccessResult.response;
-    }
+      // STEP 3: Parse request
+      const body = await req.json();
+      const {
+        menu_url: menuUrl,
+        pdf_images: pdfImages,
+        replace_mode: replaceMode,
+      } = body;
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      // STEP 4: Validate inputs
+      if (!venueId || !menuUrl || !pdfImages || pdfImages.length === 0) {
+        return NextResponse.json(
+          { ok: false, error: "venue_id, menu_url, and pdf_images required" },
+          { status: 400 }
+        );
+      }
 
-    const supabase = await createClient();
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+
+      // STEP 6: Business logic
+      const supabase = await createClient();
 
     // Step 1: Scrape URL for item data using centralized API
     let urlItems: ScrapedMenuItem[] = [];
@@ -200,12 +202,51 @@ export async function POST(req: NextRequest) {
         categories_created: new Set(menuItems.map((i) => i.category)).size,
       },
     });
-  } catch (_err) {
-    const errorMessage = _err instanceof Error ? _err.message : "Processing failed";
-    logger.error(`[REPROCESS ${requestId}] Error:`, { error: errorMessage });
-    return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error(`[REPROCESS ${requestId}] Error:`, {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Processing failed",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to reprocess menu",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);
 
 function calculateSimilarity(str1: string, str2: string): number {
   const s1 = str1.toLowerCase().trim();

@@ -1,58 +1,95 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkFeatureAccess, PREMIUM_FEATURES } from '@/lib/feature-gates';
 import { logger } from '@/lib/logger';
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 // GET /api/features/check?venue_id=xxx&feature=INVENTORY
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    const feature = searchParams.get('feature') as keyof typeof PREMIUM_FEATURES;
+export const GET = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    if (!venueId || !feature) {
-      return NextResponse.json(
-        { error: 'venue_id and feature are required' },
-        { status: 400 }
-      );
-    }
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
 
-    // CRITICAL: Authentication and venue access verification
-    const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-    if (!venueAccessResult.success) {
-      return venueAccessResult.response;
-    }
+      // STEP 3: Parse request
+      const { searchParams } = new URL(req.url);
+      const feature = searchParams.get('feature') as keyof typeof PREMIUM_FEATURES;
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
+      // STEP 4: Validate inputs
+      if (!venueId || !feature) {
+        return NextResponse.json(
+          { error: 'venue_id and feature are required' },
+          { status: 400 }
+        );
+      }
+
+      if (!(feature in PREMIUM_FEATURES)) {
+        return NextResponse.json(
+          { error: 'Invalid feature' },
+          { status: 400 }
+        );
+      }
+
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+
+      // STEP 6: Business logic
+      const requiredTier = PREMIUM_FEATURES[feature];
+      const access = await checkFeatureAccess(venueId, requiredTier);
+
+      // STEP 7: Return success response
+      return NextResponse.json(access);
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error('[FEATURE CHECK] Unexpected error:', {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
-        { status: 429 }
+        { status: 500 }
       );
     }
-
-    if (!(feature in PREMIUM_FEATURES)) {
-      return NextResponse.json(
-        { error: 'Invalid feature' },
-        { status: 400 }
-      );
-    }
-
-    const requiredTier = PREMIUM_FEATURES[feature];
-    const access = await checkFeatureAccess(venueId, requiredTier);
-
-    return NextResponse.json(access);
-  } catch (_error) {
-    logger.error('[FEATURE CHECK API] Error:', { error: _error instanceof Error ? _error.message : 'Unknown error' });
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  },
+  {
+    // Extract venueId from query params
+    extractVenueId: async (req) => {
+      try {
+        const { searchParams } = new URL(req.url);
+        return searchParams.get("venueId") || searchParams.get("venue_id");
+      } catch {
+        return null;
+      }
+    },
   }
-}
-
+);

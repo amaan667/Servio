@@ -1,156 +1,144 @@
 import { NextResponse } from "next/server";
-import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
+import { createClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
 
-    const { venue_id } = await req.json();
+      // STEP 3: Parse request
+      // STEP 4: Validate inputs
+      if (!venueId) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "venue_id is required",
+          },
+          { status: 400 }
+        );
+      }
 
-    if (!venue_id) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "venue_id is required",
-        },
-        { status: 400 }
-      );
-    }
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
-    // Authenticate using Authorization header
-    const auth = await authenticateRequest(req);
-    if (!auth.success || !auth.user || !auth.supabase) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: auth.error || "Authentication required",
-        },
-        { status: 401 }
-      );
-    }
+      // STEP 6: Business logic
+      const supabase = await createClient();
 
-    const { user, supabase: supa } = auth;
-
-    // Verify venue access
-    const access = await verifyVenueAccess(supa, user.id, venue_id);
-    if (!access.hasAccess) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Access denied to this venue",
-        },
-        { status: 403 }
-      );
-    }
-
-    // Fetch feedback for orders from this venue
-    const { data: feedback, error } = await supa
-      .from("order_feedback")
-      .select(
+      // Fetch feedback for orders from this venue
+      const { data: feedback, error } = await supabase
+        .from("order_feedback")
+        .select(
+          `
+          id,
+          created_at,
+          rating,
+          comment,
+          order_id,
+          orders!inner(venue_id)
         `
-        id,
-        created_at,
-        rating,
-        comment,
-        order_id,
-        orders!inner(venue_id)
-      `
-      )
-      .eq("orders.venue_id", venue_id)
-      .order("created_at", { ascending: false });
+        )
+        .eq("orders.venue_id", venueId)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      logger.error("[AUTH DEBUG] Error fetching feedback:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      if (error) {
+        logger.error("[FEEDBACK LIST] Error fetching feedback:", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          venueId,
+          userId: context.user.id,
+        });
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Failed to fetch feedback",
+            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
+          },
+          { status: 500 }
+        );
+      }
+
+      // Transform the data to match the expected format
+      interface FeedbackRow {
+        id: string;
+        created_at: string;
+        rating: number;
+        comment: string | null;
+        order_id: string;
+        orders: { venue_id: string };
+      }
+      const transformedFeedback =
+        (feedback as unknown as FeedbackRow[])?.map((f) => ({
+          id: f.id,
+          created_at: f.created_at,
+          rating: f.rating,
+          comment: f.comment,
+          order_id: f.order_id,
+        })) || [];
+
+      // STEP 7: Return success response
+      return NextResponse.json({
+        ok: true,
+        feedback: transformedFeedback,
       });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[FEEDBACK LIST] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
           ok: false,
-          error: "Failed to fetch feedback",
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );
     }
-
-    // Transform the data to match the expected format
-    interface FeedbackRow {
-      id: string;
-      created_at: string;
-      rating: number;
-      comment: string | null;
-      order_id: string;
-      orders: { venue_id: string };
-    }
-    const transformedFeedback =
-      (feedback as unknown as FeedbackRow[])?.map((f) => ({
-        id: f.id,
-        created_at: f.created_at,
-        rating: f.rating,
-        comment: f.comment,
-        order_id: f.order_id,
-      })) || [];
-
-    return NextResponse.json({
-      ok: true,
-      feedback: transformedFeedback,
-    });
-  } catch (_error) {
-    logger.error("[AUTH DEBUG] Error in feedback list:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json(
-      {
-        ok: false,
-        error: `Failed to fetch feedback: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
-      },
-      { status: 500 }
-    );
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);
