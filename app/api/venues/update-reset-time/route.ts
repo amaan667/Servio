@@ -52,16 +52,52 @@ export const POST = withUnifiedAuth(
       return NextResponse.json({ error: "Failed to update reset time" }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Reset time updated successfully",
-      resetTime,
-    });
-    } catch (_error) {
-      logger.error("Error in update reset time API:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+      // STEP 7: Return success response
+      return NextResponse.json({
+        success: true,
+        message: "Reset time updated successfully",
+        resetTime,
       });
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[UPDATE RESET TIME] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
     }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venueId || body?.venue_id || null;
+      } catch {
+        return null;
+      }
+    },
   }
 );
