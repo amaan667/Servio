@@ -1,11 +1,11 @@
 // Sign Up with Required Subscription
 // New accounts must select a plan during signup (14-day free trial)
+// Note: This route allows unauthenticated access for signup
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
-import { requireAuthForAPI } from "@/lib/auth/api";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const PRICE_IDS = {
@@ -25,14 +25,9 @@ export async function POST(req: NextRequest) {
     tier?: string;
     stripeSessionId?: string;
   } | null = null;
+  
   try {
-    // CRITICAL: Authentication check (signup doesn't require venue access)
-    const authResult = await requireAuthForAPI(req);
-    if (authResult.error || !authResult.user) {
-      // Allow unauthenticated for signup
-    }
-
-    // CRITICAL: Rate limiting
+    // STEP 1: Rate limiting (ALWAYS FIRST)
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.AUTH);
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -44,10 +39,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // STEP 2: Parse request
     body = await req.json();
     if (!body) {
       return NextResponse.json({ error: "Request body is required" }, { status: 400 });
     }
+    
     const {
       email,
       password,
@@ -59,7 +56,7 @@ export async function POST(req: NextRequest) {
       stripeSessionId,
     } = body;
 
-    // Validate required fields
+    // STEP 3: Validate inputs
     if (!email || !password || !fullName || !venueName || !tier) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -68,6 +65,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
+    // STEP 4: Security - Signup route allows unauthenticated access
+    // STEP 5: Business logic
     const supabase = await createClient();
 
     // Check if email already exists as a user
@@ -151,8 +150,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError || !authData.user) {
+      logger.error("[SIGNUP] Error creating user:", {
+        error: authError?.message,
+        email,
+      });
       return NextResponse.json(
-        { error: authError?.message || "Failed to create account" },
+        {
+          error: authError?.message || "Failed to create account",
+          message: process.env.NODE_ENV === "development" ? authError?.message : "Account creation failed",
+        },
         { status: 400 }
       );
     }
@@ -206,27 +212,39 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Return success - organization and venue will be created after onboarding
+    // STEP 6: Return success response
     return NextResponse.json({
       success: true,
       userId,
       message: "Account created successfully! Please complete onboarding to finish setup.",
     });
   } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-    logger.error("[SIGNUP WITH SUBSCRIPTION] Error:", {
+    logger.error("[SIGNUP WITH SUBSCRIPTION] Unexpected error:", {
       error: errorMessage,
       stack: errorStack,
       email: body?.email,
       tier: body?.tier,
     });
 
+    if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+      return NextResponse.json(
+        {
+          error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+          message: errorMessage,
+        },
+        { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: "Signup failed",
         details: errorMessage,
+        message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+        ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }
     );

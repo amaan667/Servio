@@ -1,51 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
 //
-// NOTE: Uses await createClient() - This is CORRECT for cron jobs:
+// NOTE: Uses CRON_SECRET authentication instead of user auth
 // - System-initiated task (not user request)
 // - Authenticates via CRON_SECRET
 // - Needs system-level access to reset all venues
-export async function POST(_request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const req = _request;
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
-        return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
-        );
-      }
-    }
-
-    // CRITICAL: Rate limiting
+    // STEP 1: Rate limiting (ALWAYS FIRST)
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -57,14 +24,24 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    // Verify this is a legitimate cron request (you can add authentication here)
-    const authHeader = _request.headers.get("authorization");
+    // STEP 2: CRON_SECRET authentication (special auth for cron jobs)
+    const authHeader = req.headers.get("authorization");
     const expectedAuth = process.env.CRON_SECRET || "default-cron-secret";
 
     if (authHeader !== `Bearer ${expectedAuth}`) {
+      logger.warn("[CRON DAILY RESET] Unauthorized cron request", {
+        hasHeader: !!authHeader,
+        expectedPrefix: "Bearer",
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // STEP 3: Parse request
+    // STEP 4: Validate inputs (none required)
+
+    // STEP 5: Security - CRON_SECRET verified above
+
+    // STEP 6: Business logic
     // Check if it's time for unknown venue's daily reset
     const now = new Date();
     const currentTime = now.toTimeString().split(" ")[0]; // HH:MM:SS format
@@ -80,10 +57,16 @@ export async function POST(_request: NextRequest) {
       .not("daily_reset_time", "is", null);
 
     if (venuesError) {
-      logger.error("🕛 [CRON DAILY RESET] Error fetching venues:", {
+      logger.error("[CRON DAILY RESET] Error fetching venues:", {
         error: venuesError.message || "Unknown error",
       });
-      return NextResponse.json({ error: "Failed to fetch venues" }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to fetch venues",
+          message: process.env.NODE_ENV === "development" ? venuesError.message : "Database query failed",
+        },
+        { status: 500 }
+      );
     }
 
     if (!venues || venues.length === 0) {
@@ -193,9 +176,10 @@ export async function POST(_request: NextRequest) {
             .eq("venue_id", venue.venue_id);
 
           if (sessionDeleteError) {
-            /* Empty */
-          } else {
-            // Intentionally empty
+            logger.warn("[CRON DAILY RESET] Error deleting sessions:", {
+              error: sessionDeleteError.message,
+              venueId: venue.venue_id,
+            });
           }
 
           // Delete all tables
@@ -205,12 +189,11 @@ export async function POST(_request: NextRequest) {
             .eq("venue_id", venue.venue_id);
 
           if (tableDeleteError) {
-            /* Empty */
-          } else {
-            // Intentionally empty
+            logger.warn("[CRON DAILY RESET] Error deleting tables:", {
+              error: tableDeleteError.message,
+              venueId: venue.venue_id,
+            });
           }
-        } else {
-          // Intentionally empty
         }
 
         // Clear table runtime state
@@ -220,9 +203,10 @@ export async function POST(_request: NextRequest) {
           .eq("venue_id", venue.venue_id);
 
         if (runtimeDeleteError) {
-          /* Empty */
-        } else {
-          // Intentionally empty
+          logger.warn("[CRON DAILY RESET] Error clearing runtime state:", {
+            error: runtimeDeleteError.message,
+            venueId: venue.venue_id,
+          });
         }
 
         resetResults.push({
@@ -234,8 +218,9 @@ export async function POST(_request: NextRequest) {
           deletedTables: venueTables?.length || 0,
         });
       } catch (_error) {
-        logger.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, {
+        logger.error(`[CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, {
           error: _error instanceof Error ? _error.message : "Unknown _error",
+          venueId: venue.venue_id,
         });
         resetResults.push({
           venueId: venue.venue_id,
@@ -249,6 +234,7 @@ export async function POST(_request: NextRequest) {
     const successfulResets = resetResults.filter((r) => r.reset).length;
     const totalVenues = venuesToReset.length;
 
+    // STEP 7: Return success response
     return NextResponse.json({
       success: true,
       message: `Daily reset completed for ${successfulResets}/${totalVenues} venues`,
@@ -256,10 +242,22 @@ export async function POST(_request: NextRequest) {
       resetResults,
     });
   } catch (_error) {
-    logger.error("🕛 [CRON DAILY RESET] Error in automatic daily reset:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+    const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+    const errorStack = _error instanceof Error ? _error.stack : undefined;
+    
+    logger.error("[CRON DAILY RESET] Unexpected error:", {
+      error: errorMessage,
+      stack: errorStack,
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    
+    return NextResponse.json(
+      {
+        error: "Internal Server Error",
+        message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+        ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+      },
+      { status: 500 }
+    );
   }
 }
 
