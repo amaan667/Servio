@@ -420,30 +420,58 @@ async function createKDSTickets(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-export async function POST(req: Request) {
-  const requestId = Math.random().toString(36).substring(7);
-  const startTime = Date.now();
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    const requestId = Math.random().toString(36).substring(7);
+    const startTime = Date.now();
 
-  // Use logger.info (not logger.debug - that's stripped in production!)
+    // Use logger.info (not logger.debug - that's stripped in production!)
 
-  logger.info(
-    `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
-  );
+    logger.info(
+      `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
+    );
 
-  try {
-    const body = (await req.json()) as Partial<OrderPayload>;
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    logger.info("📥📥📥 REQUEST RECEIVED 📥📥📥", {
+      const body = (await req.json()) as Partial<OrderPayload>;
+      
+      // Verify venue_id matches authenticated context (security check)
+      if (body.venue_id && body.venue_id !== context.venueId) {
+        logger.warn("[ORDERS POST] Venue ID mismatch", {
+          provided: body.venue_id,
+          authenticated: context.venueId,
+          userId: context.user.id,
+        });
+        return bad("Venue ID mismatch", 403);
+      }
+      
+      // Use venueId from context (already verified by withUnifiedAuth)
+      const venueId = context.venueId;
+
+      logger.info("📥📥📥 REQUEST RECEIVED 📥📥📥", {
       customer: body.customer_name,
-      venue: body.venue_id,
+      venue: venueId,
       table: body.table_number,
       items: body.items?.length,
       total: body.total_amount,
       requestId,
     });
 
-    if (!body.venue_id || typeof body.venue_id !== "string") {
-      return bad("venue_id is required");
+    // venue_id is now validated by withUnifiedAuth, but we still need it in the body for the payload
+    if (!venueId) {
+      return bad("venue_id is required", 400);
     }
 
     if (!body.customer_name || !body.customer_name.trim()) {
@@ -464,7 +492,7 @@ export async function POST(req: Request) {
 
     logger.info("✅✅✅ ALL VALIDATIONS PASSED ✅✅✅", {
       customer: body.customer_name,
-      venue: body.venue_id,
+      venue: venueId,
       items: body.items?.length,
       total: body.total_amount,
       requestId,
@@ -473,30 +501,14 @@ export async function POST(req: Request) {
     const tn = body.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceKey) {
-      return bad("Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY", 500);
-    }
-    // Use authenticated client (service role key removed for security)
-    const supabase = await createSupabaseClient();
-    // Note: If service role is truly needed here, add proper admin auth check
-    // const supabase = createClient(
-    //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    //   process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    //   {
-    //     auth: {
-    //       autoRefreshToken: false,
-    //       persistSession: false,
-    //     },
-    //   }
-    // );
+    // Use authenticated client
+    const supabase = createSupabaseClient();
 
-    // Verify venue exists, create if it doesn't (for demo purposes)
+    // Verify venue exists (venue access already verified by withUnifiedAuth)
     const { data: venue, error: venueErr } = await supabase
       .from("venues")
       .select("venue_id")
-      .eq("venue_id", body.venue_id)
+      .eq("venue_id", venueId)
       .maybeSingle();
 
     if (venueErr) {
@@ -504,23 +516,12 @@ export async function POST(req: Request) {
     }
 
     if (!venue) {
-      // Create a default venue for demo purposes
-      const { error: createErr } = await supabase
-        .from("venues")
-        .insert({
-          venue_id: body.venue_id,
-          name: "Demo Restaurant",
-          business_type: "restaurant",
-          owner_user_id: null, // No owner for demo venue
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select("venue_id")
-        .single();
-
-      if (createErr) {
-        return bad(`Failed to create demo venue: ${createErr.message}`, 500);
-      }
+      // Venue should exist (verified by withUnifiedAuth), but if it doesn't, return error
+      logger.error("[ORDERS POST] Venue not found despite auth check", {
+        venueId,
+        userId: context.user.id,
+      });
+      return bad("Venue not found", 404);
     }
 
     // Auto-create table if it doesn't exist (for QR code scenarios)
@@ -530,7 +531,7 @@ export async function POST(req: Request) {
       const { data: existingTable, error: lookupError } = await supabase
         .from("tables")
         .select("id, label")
-        .eq("venue_id", body.venue_id)
+        .eq("venue_id", venueId)
         .eq("label", body.table_number.toString())
         .eq("is_active", true)
         .maybeSingle();
@@ -548,7 +549,7 @@ export async function POST(req: Request) {
           const { data: groupSession } = await supabase
             .from("table_group_sessions")
             .select("total_group_size")
-            .eq("venue_id", body.venue_id)
+            .eq("venue_id", venueId)
             .eq("table_number", body.table_number)
             .eq("is_active", true)
             .order("created_at", { ascending: false })
@@ -567,7 +568,7 @@ export async function POST(req: Request) {
         const { data: newTable, error: tableCreateErr } = await supabase
           .from("tables")
           .insert({
-            venue_id: body.venue_id,
+            venue_id: venueId,
             label: body.table_number.toString(),
             seat_count: seatCount,
             area: null,
@@ -582,7 +583,7 @@ export async function POST(req: Request) {
             const { data: existingTableAfterError } = await supabase
               .from("tables")
               .select("id, label")
-              .eq("venue_id", body.venue_id)
+              .eq("venue_id", venueId)
               .eq("label", body.table_number.toString())
               .eq("is_active", true)
               .single();
@@ -605,14 +606,14 @@ export async function POST(req: Request) {
           const { data: existingSession } = await supabase
             .from("table_sessions")
             .select("id")
-            .eq("venue_id", body.venue_id)
+            .eq("venue_id", venueId)
             .eq("table_id", tableId)
             .is("closed_at", null)
             .maybeSingle();
 
           if (!existingSession) {
             const { error: sessionErr } = await supabase.from("table_sessions").insert({
-              venue_id: body.venue_id,
+              venue_id: venueId,
               table_id: tableId,
               status: "FREE",
               opened_at: new Date().toISOString(),
@@ -656,7 +657,7 @@ export async function POST(req: Request) {
     const orderSource = body.source || "qr"; // Default to 'qr' if not provided
 
     const payload: OrderPayload = {
-      venue_id: body.venue_id,
+      venue_id: venueId,
       table_number,
       table_id: tableId, // Add table_id to the payload
       customer_name: body.customer_name.trim(),
@@ -678,7 +679,7 @@ export async function POST(req: Request) {
     const { data: existingOrder, error: duplicateCheckError } = await supabase
       .from("orders")
       .select("id, created_at, order_status, payment_status")
-      .eq("venue_id", payload.venue_id)
+      .eq("venue_id", venueId)
       .eq("customer_name", payload.customer_name)
       .eq("customer_phone", payload.customer_phone)
       .eq("table_number", payload.table_number)
@@ -803,7 +804,7 @@ export async function POST(req: Request) {
         // Create new session with ORDERING status
         const { error: sessionCreateError } = await supabase.from("table_sessions").insert({
           table_id: tableId,
-          venue_id: body.venue_id,
+          venue_id: venueId,
           status: "ORDERING",
           order_id: inserted[0].id,
           opened_at: new Date().toISOString(),
@@ -823,7 +824,7 @@ export async function POST(req: Request) {
       const { data: fetchedOrder, error: fetchError } = await supabase
         .from("orders")
         .select("*")
-        .eq("venue_id", payload.venue_id)
+        .eq("venue_id", venueId)
         .eq("customer_name", payload.customer_name)
         .eq("total_amount", payload.total_amount)
         .order("created_at", { ascending: false })
@@ -876,23 +877,53 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(response);
-  } catch (e: unknown) {
-    const error = e as Error;
-    const duration = Date.now() - startTime;
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      const duration = Date.now() - startTime;
 
-    logger.error("❌❌❌ ORDER CREATION FAILED ❌❌❌", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : "No stack",
-      duration: `${duration}ms`,
-      requestId,
-    });
+      logger.error("❌❌❌ ORDER CREATION FAILED ❌❌❌", {
+        error: errorMessage,
+        stack: errorStack,
+        duration: `${duration}ms`,
+        requestId,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
 
-    const msg =
-      error instanceof Error
-        ? error.message
-        : typeof error === "string"
-          ? error
-          : "Unknown server error";
-    return bad(`Server error: ${msg}`, 500);
+      // Check if it's an authentication/authorization error
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+
+      // Return generic error in production, detailed in development
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to create order",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);
