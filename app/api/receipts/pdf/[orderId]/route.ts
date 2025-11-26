@@ -2,178 +2,220 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { generateReceiptPDF, generateReceiptHTMLForPrint } from "@/lib/pdf/generateReceiptPDF";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
+export async function GET(
+  req: NextRequest,
+  routeContext: { params: Promise<{ orderId: string }> }
+) {
+  const handler = withUnifiedAuth(
+    async (req: NextRequest, authContext) => {
       try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+        // STEP 1: Rate limiting (ALWAYS FIRST)
+        const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+        if (!rateLimitResult.success) {
+          return NextResponse.json(
+            {
+              error: 'Too many requests',
+              message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+            },
+            { status: 429 }
+          );
+        }
+
+        // STEP 2: Get venueId from context (already verified)
+        const venueId = authContext.venueId;
+
+        // STEP 3: Parse request
+        const { orderId } = await routeContext.params;
+
+        // STEP 4: Validate inputs
+        if (!orderId) {
+          return NextResponse.json({ error: "orderId is required" }, { status: 400 });
+        }
+
+        // STEP 5: Security - Verify order belongs to venue
+        // Check if HTML format is requested (for fallback/print)
+        const format = req.nextUrl.searchParams.get("format");
+        const preferHTML = format === "html";
+
+        const supabase = createAdminClient();
+
+        // Get order details - verify it belongs to authenticated venue
+        const { data: order, error: orderError } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("id", orderId)
+          .eq("venue_id", venueId) // Security: ensure order belongs to authenticated venue
+          .single();
+
+        if (orderError || !order) {
+          logger.error("[RECEIPTS PDF] Order not found or venue mismatch:", {
+            orderId,
+            venueId,
+            error: orderError,
+          });
+          return NextResponse.json(
+            { error: "Order not found or access denied" },
+            { status: 404 }
+          );
+        }
+
+        // Get logo and detected colors from menu design settings
+        const { data: designSettings } = await supabase
+          .from("menu_design_settings")
+          .select("logo_url, detected_primary_color, primary_color")
+          .eq("venue_id", venueId) // Use context.venueId
+          .single();
+
+        // Get venue contact info
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_name, venue_email, venue_address")
+          .eq("venue_id", venueId) // Use context.venueId
+          .single();
+
+        const venueName = venue?.venue_name || "Restaurant";
+        const venueAddress = venue?.venue_address || "";
+        const venueEmail = venue?.venue_email || "";
+        const logoUrl = designSettings?.logo_url || undefined;
+        
+        // Use detected primary color from logo (stored when logo was uploaded), fallback to default
+        const primaryColor = designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
+
+        // Calculate VAT (20% UK standard rate)
+        const totalAmount = order.total_amount || 0;
+        const vatRate = 0.2;
+        const vatAmount = totalAmount * (vatRate / (1 + vatRate));
+        const subtotal = totalAmount - vatAmount;
+
+        // Prepare receipt data
+        const receiptData = {
+          venueName,
+          venueAddress,
+          venueEmail,
+          logoUrl,
+          primaryColor,
+          orderId: order.id,
+          orderNumber: orderId.slice(-6).toUpperCase(),
+          tableNumber: order.table_number,
+          customerName: order.customer_name || undefined,
+          items: (order.items || []).map(
+            (item: {
+              item_name?: string;
+              quantity?: number;
+              price?: number;
+              special_instructions?: string;
+            }) => ({
+              item_name: item.item_name || "Item",
+              quantity: item.quantity || 1,
+              price: item.price || 0,
+              special_instructions: item.special_instructions,
+            })
+          ),
+          subtotal,
+          vatAmount,
+          totalAmount,
+          paymentMethod: order.payment_method || undefined,
+          createdAt: order.created_at,
+        };
+
+        // Generate PDF or HTML based on request
+        if (preferHTML) {
+          // Return HTML for browser printing
+          const html = generateReceiptHTMLForPrint(receiptData);
+          return new NextResponse(html, {
+            headers: {
+              "Content-Type": "text/html",
+              "Content-Disposition": `inline; filename="receipt-${receiptData.orderNumber}.html"`,
+            },
+          });
+        }
+
+        // Try to generate actual PDF
+        try {
+          const pdfBuffer = await generateReceiptPDF(receiptData);
+
+          return new NextResponse(pdfBuffer as unknown as BodyInit, {
+            headers: {
+              "Content-Type": "application/pdf",
+              "Content-Disposition": `attachment; filename="receipt-${receiptData.orderNumber}.pdf"`,
+              "Cache-Control": "private, max-age=3600",
+            },
+          });
+        } catch (pdfError) {
+          // Fallback to HTML if PDF generation fails
+          logger.warn("[RECEIPTS PDF] PDF generation failed, falling back to HTML:", pdfError);
+
+          const html = generateReceiptHTMLForPrint(receiptData);
+          return new NextResponse(html, {
+            headers: {
+              "Content-Type": "text/html",
+              "Content-Disposition": `attachment; filename="receipt-${receiptData.orderNumber}.html"`,
+              "X-PDF-Generation": "failed",
+            },
+          });
+        }
+      } catch (_error) {
+        const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+        const errorStack = _error instanceof Error ? _error.stack : undefined;
+        
+        logger.error("[RECEIPTS PDF] Unexpected error:", {
+          error: errorMessage,
+          stack: errorStack,
+          venueId: authContext.venueId,
+          userId: authContext.user.id,
+        });
+        
+        if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+          return NextResponse.json(
+            {
+              error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+              message: errorMessage,
+            },
+            { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+          );
+        }
+        
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: "Internal Server Error",
+            message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+            ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          },
+          { status: 500 }
         );
       }
+    },
+    {
+      // Extract venueId from order lookup
+      extractVenueId: async (req) => {
+        try {
+          // Get orderId from URL path
+          const url = new URL(req.url);
+          const pathParts = url.pathname.split('/');
+          const orderIdIndex = pathParts.indexOf('pdf');
+          if (orderIdIndex !== -1 && pathParts[orderIdIndex + 1]) {
+            const orderId = pathParts[orderIdIndex + 1];
+            const { createAdminClient } = await import("@/lib/supabase");
+            const admin = createAdminClient();
+            const { data: order } = await admin
+              .from("orders")
+              .select("venue_id")
+              .eq("id", orderId)
+              .single();
+            if (order?.venue_id) {
+              return order.venue_id;
+            }
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      },
     }
-
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const { orderId } = await params;
-
-    if (!orderId) {
-      return NextResponse.json({ error: "orderId is required" }, { status: 400 });
-    }
-
-    // Check if HTML format is requested (for fallback/print)
-    const format = req.nextUrl.searchParams.get("format");
-    const preferHTML = format === "html";
-
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
-
-    // Get order details
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .single();
-
-    if (orderError || !order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    // Get logo and detected colors from menu design settings
-    const { data: designSettings } = await supabase
-      .from("menu_design_settings")
-      .select("logo_url, detected_primary_color, primary_color")
-      .eq("venue_id", order.venue_id)
-      .single();
-
-    // Get venue contact info
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("venue_name, venue_email, venue_address")
-      .eq("venue_id", order.venue_id)
-      .single();
-
-    const venueName = venue?.venue_name || "Restaurant";
-    const venueAddress = venue?.venue_address || "";
-    const venueEmail = venue?.venue_email || "";
-    const logoUrl = designSettings?.logo_url || undefined;
-    
-    // Use detected primary color from logo (stored when logo was uploaded), fallback to default
-    const primaryColor = designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
-
-    // Calculate VAT (20% UK standard rate)
-    const totalAmount = order.total_amount || 0;
-    const vatRate = 0.2;
-    const vatAmount = totalAmount * (vatRate / (1 + vatRate));
-    const subtotal = totalAmount - vatAmount;
-
-    // Prepare receipt data
-    const receiptData = {
-      venueName,
-      venueAddress,
-      venueEmail,
-      logoUrl,
-      primaryColor,
-      orderId: order.id,
-      orderNumber: orderId.slice(-6).toUpperCase(),
-      tableNumber: order.table_number,
-      customerName: order.customer_name || undefined,
-      items: (order.items || []).map(
-        (item: {
-          item_name?: string;
-          quantity?: number;
-          price?: number;
-          special_instructions?: string;
-        }) => ({
-          item_name: item.item_name || "Item",
-          quantity: item.quantity || 1,
-          price: item.price || 0,
-          special_instructions: item.special_instructions,
-        })
-      ),
-      subtotal,
-      vatAmount,
-      totalAmount,
-      paymentMethod: order.payment_method || undefined,
-      createdAt: order.created_at,
-    };
-
-    // Generate PDF or HTML based on request
-    if (preferHTML) {
-      // Return HTML for browser printing
-      const html = generateReceiptHTMLForPrint(receiptData);
-      return new NextResponse(html, {
-        headers: {
-          "Content-Type": "text/html",
-          "Content-Disposition": `inline; filename="receipt-${receiptData.orderNumber}.html"`,
-        },
-      });
-    }
-
-    // Try to generate actual PDF
-    try {
-      const pdfBuffer = await generateReceiptPDF(receiptData);
-
-      return new NextResponse(pdfBuffer as unknown as BodyInit, {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="receipt-${receiptData.orderNumber}.pdf"`,
-          "Cache-Control": "private, max-age=3600",
-        },
-      });
-    } catch (pdfError) {
-      // Fallback to HTML if PDF generation fails
-      logger.warn("[RECEIPTS PDF] PDF generation failed, falling back to HTML:", pdfError);
-
-      const html = generateReceiptHTMLForPrint(receiptData);
-      return new NextResponse(html, {
-        headers: {
-          "Content-Type": "text/html",
-          "Content-Disposition": `attachment; filename="receipt-${receiptData.orderNumber}.html"`,
-          "X-PDF-Generation": "failed",
-        },
-      });
-    }
-  } catch (error) {
-    logger.error("[RECEIPTS PDF] Error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
-    );
-  }
+  );
+  
+  return handler(req, routeContext);
 }
