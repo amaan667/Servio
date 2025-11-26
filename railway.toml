@@ -1,6 +1,8 @@
 [build]
 builder = "nixpacks"
 buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build"
+# Watch entire root directory - ensures all changes trigger deployments
+watchPaths = ["."]
 
 [deploy]
 startCommand = "pnpm start"
