@@ -68,12 +68,21 @@ export async function POST(_request: NextRequest) {
         trialEndsAt = new Date(stripeSubscription.trial_end * 1000).toISOString();
       }
 
-      // Get tier from Stripe metadata or fallback to existing
-      const stripeTier = stripeSubscription.metadata?.tier;
-      const currentTier = org.subscription_tier;
-
-      // Use Stripe tier if available, otherwise keep current tier
-      const finalTier = stripeTier || currentTier || "starter";
+      // Get tier from Stripe subscription (price/product metadata) - most reliable
+      const { getTierFromStripeSubscription, normalizeTier } = await import("@/lib/stripe-tier-helper");
+      const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
+      
+      // Try to get tier from Stripe subscription first
+      let finalTier: string;
+      try {
+        const tierFromStripe = await getTierFromStripeSubscription(stripeSubscription, stripe);
+        finalTier = normalizeTier(tierFromStripe);
+      } catch {
+        // Fallback to metadata or existing tier
+        const stripeTier = stripeSubscription.metadata?.tier;
+        const currentTier = org.subscription_tier;
+        finalTier = normalizeTier(stripeTier || currentTier || "starter");
+      }
 
       logger.debug("[SUBSCRIPTION REFRESH] Tier detection:", {
         stripeTier,

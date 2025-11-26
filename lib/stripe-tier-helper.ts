@@ -92,10 +92,14 @@ export async function getTierFromStripeSubscription(
 
 /**
  * Normalize tier string to valid tier type
- * Only validates and normalizes to valid values - does NOT change tier values
- * Stripe metadata should have the correct tier already
+ * Ensures ONLY starter/pro/enterprise are returned - normalizes all legacy names
+ * This is the single source of truth for tier normalization
  */
-function normalizeTier(tierString: string): SubscriptionTier {
+export function normalizeTier(tierString: string | null | undefined): SubscriptionTier {
+  if (!tierString || typeof tierString !== "string") {
+    return "starter";
+  }
+
   const normalized = tierString.toLowerCase().trim();
 
   // Direct matches - use as-is
@@ -109,8 +113,7 @@ function normalizeTier(tierString: string): SubscriptionTier {
     return "starter";
   }
 
-  // Legacy/alternative names - only map if Stripe metadata is unclear
-  // These should ideally be fixed in Stripe metadata, but we handle them for backwards compatibility
+  // Legacy/alternative names - normalize to new names
   if (normalized === "premium") {
     return "enterprise";
   }
@@ -125,34 +128,35 @@ function normalizeTier(tierString: string): SubscriptionTier {
   return "starter";
 }
 
+
 /**
  * Parse tier from product name
- * Handles: "Premium Plan", "Standard Subscription", "Basic - Monthly", etc.
+ * Handles: "Premium Plan" → enterprise, "Standard Plan" → pro, "Basic Plan" → starter
  */
 function parseTierFromName(name: string): SubscriptionTier {
   const nameLower = name.toLowerCase();
 
-  // Check for premium indicators
+  // Check for enterprise indicators (premium → enterprise)
   if (
     nameLower.includes("premium") ||
     nameLower.includes("enterprise") ||
-    nameLower.includes("pro plan") ||
     nameLower.includes("unlimited")
   ) {
     return "enterprise";
   }
 
-  // Check for standard indicators
+  // Check for pro indicators (standard → pro)
   if (
     nameLower.includes("standard") ||
     nameLower.includes("professional") ||
-    nameLower.includes("plus") ||
+    nameLower.includes("pro") ||
+    (nameLower.includes("plus") && !nameLower.includes("premium")) ||
     nameLower.includes("growth")
   ) {
     return "pro";
   }
 
-  // Check for basic indicators (or default)
+  // Check for starter indicators (basic → starter)
   if (
     nameLower.includes("basic") ||
     nameLower.includes("starter") ||

@@ -176,10 +176,14 @@ async function handleCheckoutWithOrg(
     trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
   }
 
+  // Normalize tier to ensure only starter/pro/enterprise
+  const { normalizeTier } = await import("@/lib/stripe-tier-helper");
+  const normalizedTier = normalizeTier(tier);
+
   const updateData = {
     stripe_subscription_id: session.subscription as string,
     stripe_customer_id: session.customer as string,
-    subscription_tier: tier,
+    subscription_tier: normalizedTier,
     subscription_status: "trialing",
     trial_ends_at: trialEndsAt,
     updated_at: new Date().toISOString(),
@@ -211,7 +215,7 @@ async function handleCheckoutWithOrg(
       organization_id: organizationId,
       event_type: "checkout_completed",
       old_tier: existingOrg.subscription_tier,
-      new_tier: tier,
+      new_tier: normalizedTier,
       stripe_event_id: session.id,
       metadata: { session_id: session.id },
     });
@@ -266,10 +270,15 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   // CRITICAL: Pull tier directly from Stripe subscription (price/product metadata)
   // This ensures tier matches what's actually in Stripe, not just metadata
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
-  const tier = await getTierFromStripeSubscription(subscription, stripe);
+  const tierRaw = await getTierFromStripeSubscription(subscription, stripe);
   
-  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
-    tier,
+  // Normalize tier: basic→starter, standard→pro, premium→enterprise
+  const { normalizeTier } = await import("@/lib/stripe-tier-helper");
+  const tier = normalizeTier(tierRaw);
+  
+  apiLogger.info("[STRIPE WEBHOOK] Tier extracted and normalized:", {
+    rawTier: tierRaw,
+    normalizedTier: tier,
     subscriptionId: subscription.id,
     organizationId,
   });
@@ -362,10 +371,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // CRITICAL: Pull tier directly from Stripe subscription (price/product metadata)
   // This ensures tier matches what's actually in Stripe, not just metadata
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
-  const tier = await getTierFromStripeSubscription(subscription, stripe);
+  const tierRaw = await getTierFromStripeSubscription(subscription, stripe);
   
-  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
-    tier,
+  // Normalize tier: basic→starter, standard→pro, premium→enterprise
+  const { normalizeTier } = await import("@/lib/stripe-tier-helper");
+  const tier = normalizeTier(tierRaw);
+  
+  apiLogger.info("[STRIPE WEBHOOK] Tier extracted and normalized:", {
+    rawTier: tierRaw,
+    normalizedTier: tier,
     subscriptionId: subscription.id,
     organizationId: org.id,
   });
