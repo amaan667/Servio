@@ -1,8 +1,8 @@
 [build]
 builder = "nixpacks"
 buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build"
-# Watch entire root directory - ensures all changes trigger deployments
-watchPaths = ["."]
+# Removed watchPaths - let Railway use defaults (watches entire repo)
+# If watchPaths is set in Railway dashboard UI, it will override this file
 
 [deploy]
 startCommand = "pnpm start"

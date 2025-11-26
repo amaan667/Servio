@@ -1,4 +1,5 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
+// Railway deployment trigger - ensures changes are detected
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
