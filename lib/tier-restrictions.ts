@@ -107,6 +107,30 @@ export async function checkFeatureAccess(
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
 
+  // Safety check: if tier doesn't exist in TIER_LIMITS, default to starter
+  if (!limits) {
+    console.error("[TIER RESTRICTIONS] Invalid tier:", tier, "defaulting to starter");
+    const defaultLimits = TIER_LIMITS.starter;
+    
+    // Special handling for analytics tier
+    if (feature === "analytics") {
+      return { allowed: true, currentTier: "starter" };
+    }
+    
+    // Special handling for support level
+    if (feature === "supportLevel") {
+      return { allowed: true, currentTier: "starter" };
+    }
+    
+    // Boolean features - check if starter has it
+    const featureValue = defaultLimits.features[feature];
+    if (typeof featureValue === "boolean" && featureValue) {
+      return { allowed: true, currentTier: "starter" };
+    }
+    
+    return { allowed: false, currentTier: "starter", requiredTier: "pro" };
+  }
+
   // Special handling for analytics tier
   if (feature === "analytics") {
     const currentAnalytics = limits.features.analytics;
@@ -172,6 +196,25 @@ export async function checkLimit(
 ): Promise<{ allowed: boolean; limit: number; currentTier: string }> {
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
+  
+  // Safety check: if tier doesn't exist, default to starter
+  if (!limits) {
+    console.error("[TIER RESTRICTIONS] Invalid tier:", tier, "defaulting to starter");
+    const defaultLimits = TIER_LIMITS.starter;
+    const limit = defaultLimits[limitType];
+    
+    // -1 means unlimited
+    if (limit === -1) {
+      return { allowed: true, limit, currentTier: "starter" };
+    }
+    
+    return {
+      allowed: currentCount < limit,
+      limit,
+      currentTier: "starter",
+    };
+  }
+  
   const limit = limits[limitType];
 
   // -1 means unlimited

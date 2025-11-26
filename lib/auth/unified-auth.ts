@@ -586,10 +586,13 @@ export function withUnifiedAuth(
         headers.set("Content-Length", bodyBytes.length.toString());
         headers.set("Content-Type", "application/json");
         
+        // Node.js 18+ requires 'duplex: half' when creating Request with ReadableStream body
         requestToUse = new NextRequest(req.url, {
           method: req.method,
           headers,
           body: bodyStream,
+          // @ts-expect-error - duplex is required for ReadableStream body in Node.js 18+
+          duplex: "half",
         }) as NextRequest;
         
         // Preserve cookies from original request
