@@ -117,6 +117,7 @@ export const GET = withUnifiedAuth(
 // POST /api/staff/invitations/[token] - Accept invitation and create account
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context, routeParams?: { params?: Promise<Record<string, string>> }) => {
+    // Note: routeParams is used below to extract token
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.AUTH);

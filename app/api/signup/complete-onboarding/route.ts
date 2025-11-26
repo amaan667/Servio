@@ -30,8 +30,14 @@ export const POST = withUnifiedAuth(
 
       // STEP 3: Parse request
       // STEP 4: Validate inputs
-      const userMetadata = user.user_metadata;
-      const pendingSignup = userMetadata?.pending_signup;
+      const userMetadata = user.user_metadata as Record<string, unknown> | undefined;
+      const pendingSignup = userMetadata?.pending_signup as {
+        venueName?: string;
+        venueType?: string;
+        serviceType?: string;
+        tier?: string;
+        stripeCustomerId?: string;
+      } | undefined;
 
       if (!pendingSignup) {
         // Check if user already has organization/venue (already completed onboarding)
@@ -153,7 +159,7 @@ export const POST = withUnifiedAuth(
       const adminSupabase = createAdminClient();
       await adminSupabase.auth.admin.updateUserById(userId, {
         user_metadata: {
-          full_name: userMetadata.full_name,
+          full_name: (userMetadata?.full_name as string) || undefined,
           onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString(),
         },
