@@ -31,7 +31,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser, supabaseServer } from "@/lib/supabase";
 import { verifyVenueAccess, type AuthorizedContext } from "@/lib/middleware/authorization";
 import { checkFeatureAccess, checkLimit, getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";

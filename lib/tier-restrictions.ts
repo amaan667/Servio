@@ -109,6 +109,7 @@ export async function checkFeatureAccess(
 
   // Safety check: if tier doesn't exist in TIER_LIMITS, default to starter
   if (!limits) {
+    // eslint-disable-next-line no-console
     console.error("[TIER RESTRICTIONS] Invalid tier:", tier, "defaulting to starter");
     const defaultLimits = TIER_LIMITS.starter;
     
@@ -199,6 +200,7 @@ export async function checkLimit(
   
   // Safety check: if tier doesn't exist, default to starter
   if (!limits) {
+    // eslint-disable-next-line no-console
     console.error("[TIER RESTRICTIONS] Invalid tier:", tier, "defaulting to starter");
     const defaultLimits = TIER_LIMITS.starter;
     const limit = defaultLimits[limitType];
