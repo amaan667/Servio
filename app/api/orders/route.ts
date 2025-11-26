@@ -3,6 +3,8 @@ import { NextRequest } from "next/server";
 import { type SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createSupabaseClient } from "@/lib/supabase";
 import { apiLogger, logger } from "@/lib/logger";
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = "nodejs";
 
@@ -46,74 +48,87 @@ export const runtime = "nodejs";
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// GET handler for orders
-export async function GET(req: NextRequest) {
-  try {
-    // CRITICAL: Add authentication
-    const { requireAuthForAPI } = await import("@/lib/auth/api");
-    const authResult = await requireAuthForAPI(req);
-    if (authResult.error || !authResult.user) {
-      return NextResponse.json(
-        { ok: false, error: "Unauthorized", message: authResult.error || "Authentication required" },
-        { status: 401 }
-      );
-    }
+// GET handler for orders - Migrated to withUnifiedAuth
+export const GET = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // CRITICAL: Rate limiting
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    // CRITICAL: Add rate limiting
-    const { rateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
+      const { searchParams } = new URL(req.url);
+      const status = searchParams.get("status");
+
+      // venueId comes from context (already verified by withUnifiedAuth)
+      const venueId = context.venueId;
+
+      const supabase = createSupabaseClient();
+
+      let query = supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("created_at", { ascending: false });
+
+      if (status) {
+        query = query.eq("order_status", status);
+      }
+
+      const { data: orders, error } = await query;
+
+      if (error) {
+        apiLogger.error("[ORDERS GET] Database error:", {
+          error: error.message,
+          venueId,
+        });
+        return NextResponse.json(
+          { 
+            ok: false, 
+            error: "Failed to fetch orders",
+            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
+          },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ ok: true, orders: orders || [] });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      apiLogger.error("[ORDERS GET] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+      });
+      
       return NextResponse.json(
         {
           ok: false,
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to fetch orders",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
-        { status: 429 }
+        { status: 500 }
       );
     }
-
-    const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get("venueId");
-    const status = searchParams.get("status");
-
-    if (!venueId) {
-      return NextResponse.json({ ok: false, error: "venueId is required" }, { status: 400 });
-    }
-
-    // CRITICAL: Verify venue access
-    const { requireVenueAccessForAPI } = await import("@/lib/auth/api");
-    const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-    if (!venueAccessResult.success) {
-      return venueAccessResult.response;
-    }
-
-    const supabase = await createSupabaseClient();
-
-    let query = supabase
-      .from("orders")
-      .select("*")
-      .eq("venue_id", venueId)
-      .order("created_at", { ascending: false });
-
-    if (status) {
-      query = query.eq("order_status", status);
-    }
-
-    const { data: orders, error } = await query;
-
-    if (error) {
-      apiLogger.error("Error fetching orders:", error);
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ ok: true, orders: orders || [] });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown server error";
-    apiLogger.error("GET orders error:", { error: e });
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  },
+  {
+    // Extract venueId from query string
+    extractVenueId: async (req) => {
+      const { searchParams } = new URL(req.url);
+      return searchParams.get("venueId");
+    },
   }
-}
+);
 
 type OrderItem = {
   menu_item_id: string | null;
