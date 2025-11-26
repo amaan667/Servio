@@ -109,7 +109,11 @@ export const POST = withUnifiedAuth(
       }
 
       const subscription = subscriptions.data[0];
-      const tier = await getTierFromStripeSubscription(subscription, stripe);
+      const tierRaw = await getTierFromStripeSubscription(subscription, stripe);
+      
+      // Normalize tier: basic→starter, standard→pro, premium→enterprise
+      const { normalizeTier } = await import("@/lib/stripe-tier-helper");
+      const tier = normalizeTier(tierRaw);
 
       // Update organization
       const { error: updateError } = await supabase

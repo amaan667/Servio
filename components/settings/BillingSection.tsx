@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { UpgradeModal } from "@/components/upgrade-modal";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeTier } from "@/lib/stripe-tier-helper";
 
 interface BillingSectionProps {
   user?: {
@@ -39,9 +40,9 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const [loadingPortal, setLoadingPortal] = useState(false);
   const { toast } = useToast();
 
-  // Use tier directly from database - no normalization
-  // Database should be synced from Stripe via webhooks
-  const tier = organization?.subscription_tier?.toLowerCase();
+  // Normalize tier: basic→starter, standard→pro, premium→enterprise
+  const tierRaw = organization?.subscription_tier?.toLowerCase() || "starter";
+  const tier = normalizeTier(tierRaw);
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 
