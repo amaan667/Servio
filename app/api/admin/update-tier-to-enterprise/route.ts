@@ -3,86 +3,121 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function POST(req: NextRequest) {
-  try {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    // CRITICAL: Authentication check
-    const { requireAuthForAPI } = await import('@/lib/auth/api');
-    const authResult = await requireAuthForAPI(req);
-    if (authResult.error || !authResult.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-        { status: 401 }
-      );
-    }
+      // STEP 2: Get user from context (already verified)
+      // STEP 3: Parse request
+      // STEP 4: Validate inputs (none required)
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
+      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
+      // Note: This is an admin route - consider adding admin role check
+
+      // STEP 6: Business logic
+      const supabase = createAdminClient();
+
+      // Update all organizations with old tier names
+      const { data: premiumOrgs, error: premiumError } = await supabase
+        .from("organizations")
+        .update({ subscription_tier: "enterprise" })
+        .eq("subscription_tier", "premium")
+        .select("id");
+
+      if (premiumError) {
+        logger.error("[UPDATE TIER] Error updating premium tiers:", {
+          error: premiumError,
+          userId: context.user.id,
+        });
+      } else {
+        logger.info(`[UPDATE TIER] Updated ${premiumOrgs?.length || 0} premium tiers to enterprise`);
+      }
+
+      const { data: standardOrgs, error: standardError } = await supabase
+        .from("organizations")
+        .update({ subscription_tier: "pro" })
+        .eq("subscription_tier", "standard")
+        .select("id");
+
+      if (standardError) {
+        logger.error("[UPDATE TIER] Error updating standard tiers:", {
+          error: standardError,
+          userId: context.user.id,
+        });
+      } else {
+        logger.info(`[UPDATE TIER] Updated ${standardOrgs?.length || 0} standard tiers to pro`);
+      }
+
+      const { data: basicOrgs, error: basicError } = await supabase
+        .from("organizations")
+        .update({ subscription_tier: "starter" })
+        .eq("subscription_tier", "basic")
+        .select("id");
+
+      if (basicError) {
+        logger.error("[UPDATE TIER] Error updating basic tiers:", {
+          error: basicError,
+          userId: context.user.id,
+        });
+      } else {
+        logger.info(`[UPDATE TIER] Updated ${basicOrgs?.length || 0} basic tiers to starter`);
+      }
+
+      // STEP 7: Return success response
+      return NextResponse.json({
+        success: true,
+        updated: {
+          premium: premiumOrgs?.length || 0,
+          standard: standardOrgs?.length || 0,
+          basic: basicOrgs?.length || 0,
+        },
+      });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[UPDATE TIER] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
-        { status: 429 }
+        { status: 500 }
       );
     }
-
-    const supabase = createAdminClient();
-
-    // Update all organizations with old tier names
-    const { data: premiumOrgs, error: premiumError } = await supabase
-      .from("organizations")
-      .update({ subscription_tier: "enterprise" })
-      .eq("subscription_tier", "premium")
-      .select("id");
-
-    if (premiumError) {
-      logger.error("[UPDATE TIER] Error updating premium tiers:", { error: premiumError });
-    } else {
-      logger.info(`[UPDATE TIER] Updated ${premiumOrgs?.length || 0} premium tiers to enterprise`);
-    }
-
-    const { data: standardOrgs, error: standardError } = await supabase
-      .from("organizations")
-      .update({ subscription_tier: "pro" })
-      .eq("subscription_tier", "standard")
-      .select("id");
-
-    if (standardError) {
-      logger.error("[UPDATE TIER] Error updating standard tiers:", { error: standardError });
-    } else {
-      logger.info(`[UPDATE TIER] Updated ${standardOrgs?.length || 0} standard tiers to pro`);
-    }
-
-    const { data: basicOrgs, error: basicError } = await supabase
-      .from("organizations")
-      .update({ subscription_tier: "starter" })
-      .eq("subscription_tier", "basic")
-      .select("id");
-
-    if (basicError) {
-      logger.error("[UPDATE TIER] Error updating basic tiers:", { error: basicError });
-    } else {
-      logger.info(`[UPDATE TIER] Updated ${basicOrgs?.length || 0} basic tiers to starter`);
-    }
-
-    return NextResponse.json({
-      success: true,
-      updated: {
-        premium: premiumOrgs?.length || 0,
-        standard: standardOrgs?.length || 0,
-        basic: basicOrgs?.length || 0,
-      },
-    });
-  } catch (error) {
-    logger.error("[UPDATE TIER] Unexpected error:", { error });
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update tiers" },
-      { status: 500 }
-    );
+  },
+  {
+    // System route - no venue required
+    extractVenueId: async () => null,
   }
-}
+);
