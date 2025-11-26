@@ -211,4 +211,4 @@ const nextConfig = {
 };
 
 export default withBundleAnalyzer(nextConfig);
-/* Deployment timestamp: 2025-11-26T10:15:00Z - Build ID: 1764152100 */
+/* Deployment timestamp: 2025-11-26T10:26:04Z - Build ID: 1764152764 */
