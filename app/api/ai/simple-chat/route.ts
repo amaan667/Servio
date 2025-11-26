@@ -203,12 +203,13 @@ export const POST = withUnifiedAuth(
       }
       
       // Log server errors for debugging (use structured logger, no console.log)
-      logger.error("[AI SIMPLE CHAT] Error", {
+      const errorPayload = {
         venueId: context.venueId,
         userId: context.user?.id,
         message: errorMessage,
         stack: errorStack,
-      });
+      };
+      logger.error("[AI SIMPLE CHAT] Error", errorPayload);
       
       // Return generic error in production, detailed in development
       return NextResponse.json(

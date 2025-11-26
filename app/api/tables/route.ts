@@ -276,12 +276,13 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (tableError) {
-        logger.error("[TABLES POST] Table creation error", {
+        const errorPayload = {
           venueId: context.venueId,
           userId: context.user?.id,
           label,
           error: tableError instanceof Error ? tableError.message : "Unknown error",
-        });
+        };
+        logger.error("[TABLES POST] Table creation error", errorPayload);
         return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
       }
 
@@ -304,12 +305,13 @@ export const POST = withUnifiedAuth(
         });
 
         if (sessionError) {
-          logger.error("[TABLES POST] Session creation error", {
+          const sessionErrorPayload = {
             venueId: context.venueId,
             userId: context.user?.id,
             tableId: table.id,
             error: sessionError.message,
-          });
+          };
+          logger.error("[TABLES POST] Session creation error", sessionErrorPayload);
           return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
         }
       }
@@ -330,9 +332,13 @@ export const POST = withUnifiedAuth(
         message: `Table "${label}" created successfully!`,
       });
     } catch (_error) {
-      logger.error("[TABLES POST] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
+      const unexpectedPayload = {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        message: _error instanceof Error ? _error.message : "Unknown _error",
+        stack: _error instanceof Error ? _error.stack : undefined,
+      };
+      logger.error("[TABLES POST] Unexpected error", unexpectedPayload);
       return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
     }
   }
