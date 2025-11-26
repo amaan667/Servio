@@ -169,6 +169,23 @@ export const GET = withUnifiedAuth(
 // POST /api/tables - Create a new table
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    // CRITICAL: Log immediately when route is hit - before anything else
+    // eslint-disable-next-line no-console
+    console.log("=".repeat(80));
+    // eslint-disable-next-line no-console
+    console.log("[TABLES POST] ===== ROUTE HIT ===== ", new Date().toISOString());
+    // eslint-disable-next-line no-console
+    console.log("[TABLES POST] URL:", req.url);
+    // eslint-disable-next-line no-console
+    console.log("[TABLES POST] Method:", req.method);
+    // eslint-disable-next-line no-console
+    console.log("[TABLES POST] Context:", {
+      venueId: context?.venueId,
+      userId: context?.user?.id,
+    });
+    // eslint-disable-next-line no-console
+    console.log("=".repeat(80));
+    
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
