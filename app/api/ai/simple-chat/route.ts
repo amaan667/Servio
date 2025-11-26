@@ -5,6 +5,7 @@ import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders"
 import { executeTool } from "@/lib/ai/tool-executors";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,15 @@ export const POST = withUnifiedAuth(
 
       const body = await req.json();
       const { message, currentPage, conversationHistory } = body;
+
+      // Structured audit log for AI assistant command entry
+      logger.info("[AI SIMPLE CHAT] Command received", {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        currentPage,
+        messagePreview: typeof message === "string" ? message.slice(0, 200) : null,
+        hasHistory: Array.isArray(conversationHistory) && conversationHistory.length > 0,
+      });
 
       if (!message) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -192,8 +202,10 @@ export const POST = withUnifiedAuth(
         );
       }
       
-      // Log server errors for debugging
-      console.error("[AI SIMPLE CHAT] Error:", {
+      // Log server errors for debugging (use structured logger, no console.log)
+      logger.error("[AI SIMPLE CHAT] Error", {
+        venueId: context.venueId,
+        userId: context.user?.id,
         message: errorMessage,
         stack: errorStack,
       });

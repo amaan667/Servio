@@ -185,6 +185,15 @@ export const POST = withUnifiedAuth(
       const body = await req.json();
       const { label, seat_count, area } = body;
 
+      // Structured audit log for table creation attempts
+      logger.info("[TABLES POST] Table creation requested", {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        label,
+        seat_count,
+        area,
+      });
+
       if (!label) {
         return NextResponse.json(
           { ok: false, error: "label is required" },
@@ -267,7 +276,10 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (tableError) {
-        logger.error("[TABLES POST] Table creation error:", {
+        logger.error("[TABLES POST] Table creation error", {
+          venueId: context.venueId,
+          userId: context.user?.id,
+          label,
           error: tableError instanceof Error ? tableError.message : "Unknown error",
         });
         return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
@@ -292,10 +304,25 @@ export const POST = withUnifiedAuth(
         });
 
         if (sessionError) {
-          logger.error("[TABLES POST] Session creation error:", { value: sessionError });
+          logger.error("[TABLES POST] Session creation error", {
+            venueId: context.venueId,
+            userId: context.user?.id,
+            tableId: table.id,
+            error: sessionError.message,
+          });
           return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
         }
       }
+
+      // Success audit log
+      logger.info("[TABLES POST] Table created successfully", {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        tableId: table.id,
+        label: table.label,
+        seat_count: table.seat_count,
+        area: table.area,
+      });
 
       return NextResponse.json({
         ok: true,
