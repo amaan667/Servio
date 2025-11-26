@@ -27,10 +27,23 @@ if ! git diff --cached --quiet; then
   echo "📝 Committed deployment trigger file"
 fi
 
+# Update next.config.mjs with deployment timestamp to force Railway to detect changes
+DEPLOY_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+BUILD_ID=$(date +%s)
+sed -i.bak "s|/\* Deployment timestamp:.*Build ID:.*\*/|/* Deployment timestamp: $DEPLOY_TIMESTAMP - Build ID: $BUILD_ID */|" next.config.mjs 2>/dev/null || true
+rm -f next.config.mjs.bak 2>/dev/null || true
+
+# Stage the config change
+git add next.config.mjs 2>/dev/null || true
+
 # Deploy using Railway CLI with detach to prevent blocking
 # Note: railway up bypasses "Wait for CI" setting and forces a deployment
 echo "📦 Uploading to Railway (this bypasses 'Wait for CI' setting)..."
 railway up --detach
+
+# Also try redeploy as a fallback to force deployment
+echo "🔄 Also triggering redeploy to ensure deployment happens..."
+railway redeploy --yes 2>/dev/null || echo "⚠️  Redeploy command not available, continuing with up command..."
 
 echo ""
 echo "✅ Deployment initiated successfully!"

@@ -211,4 +211,4 @@ const nextConfig = {
 };
 
 export default withBundleAnalyzer(nextConfig);
-/* MIME type fix - CSS/JS headers updated - ${new Date().toISOString()} */
+/* Deployment timestamp: 2025-11-26T10:15:00Z - Build ID: 1764152100 */
