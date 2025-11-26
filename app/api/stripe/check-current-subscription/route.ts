@@ -161,8 +161,9 @@ export async function GET() {
               result.stripe.tierFromMetadata = tierFromMetadata;
               result.stripe.tierFromProductName = tierFromProductName;
 
-              // Check if tier matches
-              result.match.tierMatches = org.subscription_tier === tierFromStripe;
+              // Check if tier matches (normalize "standard" to "pro" for comparison)
+              const normalizedDbTier = org.subscription_tier === "standard" ? "pro" : org.subscription_tier;
+              result.match.tierMatches = normalizedDbTier === tierFromStripe;
               result.match.statusMatches = org.subscription_status === subscription.status;
             } catch (subError) {
               logger.error("[STRIPE CHECK] Error fetching subscription:", {
@@ -181,11 +182,88 @@ export async function GET() {
             });
 
             if (subscriptions.data.length > 0 && result.stripe) {
-              result.stripe.subscriptionsFound = subscriptions.data.map((sub) => ({
-                id: sub.id,
-                status: sub.status,
-                metadata: sub.metadata || {},
-              }));
+              // Get the most recent active subscription
+              const activeSubscription = subscriptions.data.find((s) => s.status === "active") || subscriptions.data[0];
+
+              if (activeSubscription) {
+                try {
+                  // Fetch full subscription details with expanded product info
+                  const subscription = await stripe.subscriptions.retrieve(activeSubscription.id, {
+                    expand: ["data.items.data.price.product"],
+                  });
+
+                  const items = subscription.items.data.map((item) => {
+                    const price = item.price;
+                    const product =
+                      typeof price.product === "string" ? null : (price.product as Stripe.Product | null);
+
+                    return {
+                      priceId: price.id,
+                      productId: product?.id || "unknown",
+                      productName: product?.name || null,
+                      productMetadata: product?.metadata || {},
+                      priceMetadata: price.metadata || {},
+                    };
+                  });
+
+                  // Get tier using the helper function
+                  const tierFromStripe = await getTierFromStripeSubscription(subscription, stripe);
+
+                  // Also check metadata directly
+                  const tierFromMetadata =
+                    subscription.metadata?.tier ||
+                    items[0]?.priceMetadata?.tier ||
+                    items[0]?.productMetadata?.tier ||
+                    null;
+
+                  // Parse from product name
+                  const tierFromProductName = items[0]?.productName
+                    ? items[0].productName.toLowerCase().includes("enterprise")
+                      ? "enterprise"
+                      : items[0].productName.toLowerCase().includes("pro")
+                        ? "pro"
+                        : items[0].productName.toLowerCase().includes("starter") ||
+                            items[0].productName.toLowerCase().includes("basic")
+                          ? "starter"
+                          : null
+                    : null;
+
+                  result.stripe.subscription = {
+                    id: subscription.id,
+                    status: subscription.status,
+                    metadata: subscription.metadata || {},
+                    items,
+                  };
+
+                  result.stripe.tierFromStripe = tierFromStripe;
+                  result.stripe.tierFromMetadata = tierFromMetadata;
+                  result.stripe.tierFromProductName = tierFromProductName;
+
+                  // Check if tier matches (normalize "standard" to "pro")
+                  const normalizedDbTier = org.subscription_tier === "standard" ? "pro" : org.subscription_tier;
+                  result.match.tierMatches = normalizedDbTier === tierFromStripe;
+                  result.match.statusMatches = org.subscription_status === subscription.status;
+
+                  // Also list all subscriptions found
+                  result.stripe.subscriptionsFound = subscriptions.data.map((sub) => ({
+                    id: sub.id,
+                    status: sub.status,
+                    metadata: sub.metadata || {},
+                  }));
+                } catch (subError) {
+                  logger.error("[STRIPE CHECK] Error fetching subscription from list:", {
+                    error: subError instanceof Error ? subError.message : String(subError),
+                  });
+                  if (result.stripe) {
+                    result.stripe.subscriptionError = subError instanceof Error ? subError.message : String(subError);
+                  }
+                  result.stripe.subscriptionsFound = subscriptions.data.map((sub) => ({
+                    id: sub.id,
+                    status: sub.status,
+                    metadata: sub.metadata || {},
+                  }));
+                }
+              }
             }
           }
         }
