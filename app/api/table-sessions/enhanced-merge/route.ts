@@ -39,31 +39,8 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-      // Verify both tables belong to venue
+      // Get both tables with their current state
       const supabase = createAdminClient();
-      
-      const { data: sourceTable } = await supabase
-        .from("tables")
-        .select("venue_id")
-        .eq("id", source_table_id)
-        .eq("venue_id", venueId)
-        .single();
-      
-      const { data: targetTable } = await supabase
-        .from("tables")
-        .select("venue_id")
-        .eq("id", target_table_id)
-        .eq("venue_id", venueId)
-        .single();
-
-      if (!sourceTable || !targetTable) {
-        return NextResponse.json(
-          { error: "One or both tables not found or access denied" },
-          { status: 404 }
-        );
-      }
-
-    // Get both tables with their current state
     const { data: tables, error: tablesError } = await supabase
       .from("tables")
       .select(

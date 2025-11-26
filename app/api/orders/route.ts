@@ -71,7 +71,7 @@ export const GET = withUnifiedAuth(
       // venueId comes from context (already verified by withUnifiedAuth)
       const venueId = context.venueId;
 
-      const supabase = createSupabaseClient();
+      const supabase = await createSupabaseClient();
 
       let query = supabase
         .from("orders")
@@ -502,7 +502,7 @@ export const POST = withUnifiedAuth(
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
 
     // Use authenticated client
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
 
     // Verify venue exists (venue access already verified by withUnifiedAuth)
     const { data: venue, error: venueErr } = await supabase

@@ -5,10 +5,7 @@ import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const GET = withUnifiedAuth(
-  async (
-    req: NextRequest,
-    context: { params: Promise<{ venueId: string }>; venueId: string; user: { id: string } }
-  ) => {
+  async (req: NextRequest, context, routeParams?: { params?: Promise<Record<string, string>> }) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -23,11 +20,18 @@ export const GET = withUnifiedAuth(
       }
 
       // STEP 2: Get venueId from context (already verified)
-      const { venueId } = await context.params;
+      const venueId = context.venueId;
+      
+      // Also try to get from route params if not in context
+      let finalVenueId = venueId;
+      if (!finalVenueId && routeParams?.params) {
+        const params = await routeParams.params;
+        finalVenueId = params?.venueId as string | undefined;
+      }
 
       // STEP 3: Parse request
       // STEP 4: Validate inputs
-      if (!venueId) {
+      if (!finalVenueId) {
         return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
       }
 
@@ -51,12 +55,12 @@ export const GET = withUnifiedAuth(
           )
         `
         )
-        .eq("venue_id", venueId)
+        .eq("venue_id", finalVenueId)
         .single();
 
       if (venueError || !venue) {
         logger.error("[VENUE TIER GET] Venue not found:", {
-          venueId,
+          venueId: finalVenueId,
           error: venueError,
           userId: context.user.id,
         });
@@ -109,13 +113,13 @@ export const GET = withUnifiedAuth(
       );
     }
   },
-  {
+    {
     // Extract venueId from URL params
-    extractVenueId: async (req, context) => {
+    extractVenueId: async (req, routeParams) => {
       try {
-        if (context?.params) {
-          const { venueId } = await context.params;
-          return venueId;
+        if (routeParams?.params) {
+          const params = await routeParams.params;
+          return params?.venueId || null;
         }
         return null;
       } catch {

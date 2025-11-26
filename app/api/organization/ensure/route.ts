@@ -106,7 +106,7 @@ export const POST = withUnifiedAuth(
 
       // Create organization for the user using admin client to bypass RLS
       // Use the user's actual creation date as trial start date for accurate trial calculation
-      const userCreatedAt = new Date(user.created_at);
+      const userCreatedAt = new Date(user.created_at as string);
       const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
 
       const { data: newOrg, error: createError } = await adminClient

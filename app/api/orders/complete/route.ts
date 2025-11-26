@@ -101,12 +101,12 @@ export const POST = withUnifiedAuth(
 
     if (error) {
       logger.error("[ORDERS COMPLETE] Failed to update order status", {
-        error: { orderId, context: venueId, error },
+        error: { orderId, context: context.venueId, error },
       });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     logger.debug("[ORDERS COMPLETE] Order updated to COMPLETED", {
-      data: { orderId, extra: venueId },
+      data: { orderId, extra: context.venueId },
     });
 
     // Clear table session and runtime state for ALL orders with tables - free up the table

@@ -108,7 +108,7 @@ export const POST = withUnifiedAuth(
       }
 
       const subscription = subscriptions.data[0];
-      const tier = getTierFromStripeSubscription(subscription);
+      const tier = await getTierFromStripeSubscription(subscription, stripe);
 
       // Update organization
       const { error: updateError } = await supabase
