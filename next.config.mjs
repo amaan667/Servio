@@ -6,10 +6,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Generate build ID - removed async to prevent blocking
-  generateBuildId: () => {
-    return `build-${Date.now()}`;
-  },
   // Railway-specific configuration
   // Note: standalone mode temporarily disabled due to Next.js 15 build issue with 500.html
   // output: 'standalone',

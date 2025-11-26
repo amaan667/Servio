@@ -5,8 +5,8 @@ buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run bu
 [deploy]
 startCommand = "pnpm start"
 healthcheckPath = "/api/health"
-healthcheckTimeout = 10
-healthcheckInterval = 10
+healthcheckTimeout = 5
+healthcheckInterval = 5
 restartPolicyType = "on_failure"
 
 # Cron job for daily reset at midnight

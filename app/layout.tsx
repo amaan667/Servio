@@ -152,7 +152,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         } = await Promise.race([
           supabase.auth.getSession(),
           new Promise<{ data: { session: null }; error: null }>((resolve) => 
-            setTimeout(() => resolve({ data: { session: null }, error: null }), 2000)
+            setTimeout(() => resolve({ data: { session: null }, error: null }), 1000)
           ),
         ]);
 
