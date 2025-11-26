@@ -92,18 +92,36 @@ export async function getTierFromStripeSubscription(
 
 /**
  * Normalize tier string to valid tier type
+ * Only validates and normalizes to valid values - does NOT change tier values
+ * Stripe metadata should have the correct tier already
  */
 function normalizeTier(tierString: string): SubscriptionTier {
   const normalized = tierString.toLowerCase().trim();
 
-  if (normalized === "premium" || normalized === "pro" || normalized === "enterprise") {
+  // Direct matches - use as-is
+  if (normalized === "enterprise") {
     return "enterprise";
   }
+  if (normalized === "pro") {
+    return "pro";
+  }
+  if (normalized === "starter") {
+    return "starter";
+  }
 
+  // Legacy/alternative names - only map if Stripe metadata is unclear
+  // These should ideally be fixed in Stripe metadata, but we handle them for backwards compatibility
+  if (normalized === "premium") {
+    return "enterprise";
+  }
   if (normalized === "standard" || normalized === "professional" || normalized === "plus") {
     return "pro";
   }
+  if (normalized === "basic") {
+    return "starter";
+  }
 
+  // Default to starter if unclear
   return "starter";
 }
 

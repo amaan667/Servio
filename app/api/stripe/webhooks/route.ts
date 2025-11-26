@@ -230,14 +230,13 @@ async function handleCheckoutWithOrg(
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const supabase = await createClient();
+  const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
 
   const organizationId = subscription.metadata?.organization_id;
-  const tier = subscription.metadata?.tier;
 
   apiLogger.debug("[STRIPE WEBHOOK] handleSubscriptionCreated called with:", {
     subscriptionId: subscription.id,
     organizationId,
-    tier,
     status: subscription.status,
   });
 
@@ -264,11 +263,22 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     return;
   }
 
+  // CRITICAL: Pull tier directly from Stripe subscription (price/product metadata)
+  // This ensures tier matches what's actually in Stripe, not just metadata
+  const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
+  const tier = await getTierFromStripeSubscription(subscription, stripe);
+  
+  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
+    tier,
+    subscriptionId: subscription.id,
+    organizationId,
+  });
+
   const { error: updateError } = await supabase
     .from("organizations")
     .update({
       stripe_subscription_id: subscription.id,
-      subscription_tier: tier || "starter",
+      subscription_tier: tier,
       subscription_status: subscription.status,
       updated_at: new Date().toISOString(),
     })
@@ -298,14 +308,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   });
 
   const supabase = await createClient();
+  const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
 
   const organizationId = subscription.metadata?.organization_id;
-  const tier = subscription.metadata?.tier;
   const userId = subscription.metadata?.user_id;
 
   apiLogger.debug("[STRIPE WEBHOOK] Extracted subscription data:", {
     organizationId,
-    tier,
     userId,
   });
 
@@ -320,7 +329,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Verify the organization exists
   let { data: org, error: orgCheckError } = await supabase
     .from("organizations")
-    .select("id, subscription_tier, owner_user_id")
+    .select("id, subscription_tier, owner_user_id, stripe_customer_id")
     .eq("id", organizationId)
     .maybeSingle();
 
@@ -334,7 +343,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
-        .select("id, subscription_tier, owner_user_id")
+        .select("id, subscription_tier, owner_user_id, stripe_customer_id")
         .eq("owner_user_id", userId)
         .maybeSingle();
 
@@ -350,8 +359,19 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     }
   }
 
+  // CRITICAL: Pull tier directly from Stripe subscription (price/product metadata)
+  // This ensures tier matches what's actually in Stripe, not just metadata
+  const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
+  const tier = await getTierFromStripeSubscription(subscription, stripe);
+  
+  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
+    tier,
+    subscriptionId: subscription.id,
+    organizationId: org.id,
+  });
+
   const updateData = {
-    subscription_tier: tier || org.subscription_tier || "starter",
+    subscription_tier: tier,
     subscription_status: subscription.status,
     updated_at: new Date().toISOString(),
   };

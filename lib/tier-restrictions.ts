@@ -97,25 +97,16 @@ export async function getUserTier(userId: string): Promise<string> {
     return "starter";
   }
 
-  const rawTier = org.subscription_tier || "starter";
+  const tier = org.subscription_tier || "starter";
   
-  // Normalize tier values - map legacy/alternative names to standard tiers
-  const tierMap: Record<string, string> = {
-    "standard": "pro", // Map "standard" to "pro"
-    "basic": "starter",
-    "premium": "enterprise",
-  };
-  
-  const normalizedTier = tierMap[rawTier.toLowerCase()] || rawTier.toLowerCase();
-  
-  // Validate tier is one of the expected values
-  if (!["starter", "pro", "enterprise"].includes(normalizedTier)) {
+  // Validate tier is one of the expected values - no normalization, use what's in database
+  if (!["starter", "pro", "enterprise"].includes(tier.toLowerCase())) {
     // eslint-disable-next-line no-console
-    console.warn("[TIER RESTRICTIONS] Unknown tier value:", rawTier, "defaulting to starter");
+    console.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
     return "starter";
   }
   
-  return normalizedTier;
+  return tier.toLowerCase() as "starter" | "pro" | "enterprise";
 }
 
 export async function checkFeatureAccess(
