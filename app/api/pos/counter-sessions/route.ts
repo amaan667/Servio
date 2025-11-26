@@ -1,92 +1,138 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get("venue_id");
+export const GET = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    if (!venueId) {
-      return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
-    }
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
 
-    // CRITICAL: Authentication and venue access verification
-    const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-    if (!venueAccessResult.success) {
-      return venueAccessResult.response;
-    }
+      // STEP 3: Parse request
+      // STEP 4: Validate inputs
+      if (!venueId) {
+        return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
+      }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
-    // Create authenticated supabase client
-    const supabase = await createServerSupabase();
+      // STEP 6: Business logic
+      const supabase = await createServerSupabase();
 
-    // Get counter status using the function
-    const { data: counterStatus, error } = await supabase.rpc("get_counter_status", {
-      p_venue_id: venueId,
-    });
-
-    if (error) {
-      logger.error("[POS COUNTER SESSIONS] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      // Get counter status using the function
+      const { data: counterStatus, error } = await supabase.rpc("get_counter_status", {
+        p_venue_id: venueId,
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
 
-    return NextResponse.json({ counters: counterStatus });
-  } catch (_error) {
-    logger.error("[POS COUNTER SESSIONS] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+      if (error) {
+        logger.error("[POS COUNTER SESSIONS GET] Error:", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          venueId,
+          userId: context.user.id,
+        });
+        return NextResponse.json(
+          {
+            error: "Failed to fetch counter status",
+            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
+          },
+          { status: 500 }
+        );
+      }
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { venue_id, counter_id, action, server_id, notes } = body;
-
-    if (!venue_id || !counter_id || !action) {
-      return NextResponse.json(
-        { error: "venue_id, counter_id, and action are required" },
-        { status: 400 }
-      );
-    }
-
-    // CRITICAL: Authentication and venue access verification
-    const venueAccessResult = await requireVenueAccessForAPI(venue_id);
-    if (!venueAccessResult.success) {
-      return venueAccessResult.response;
-    }
-
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
+      // STEP 7: Return success response
+      return NextResponse.json({ counters: counterStatus });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[POS COUNTER SESSIONS GET] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
-        { status: 429 }
+        { status: 500 }
       );
     }
+  },
+  {
+    // Extract venueId from query params
+    extractVenueId: async (req) => {
+      try {
+        const { searchParams } = new URL(req.url);
+        return searchParams.get("venue_id") || searchParams.get("venueId");
+      } catch {
+        return null;
+      }
+    },
+  }
+);
 
-    // Create authenticated supabase client
-    const supabase = await createServerSupabase();
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
+
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
+
+      // STEP 3: Parse request
+      const body = await req.json();
+      const { counter_id, action, server_id, notes } = body;
+
+      // STEP 4: Validate inputs
+      if (!venueId || !counter_id || !action) {
+        return NextResponse.json(
+          { error: "venue_id, counter_id, and action are required" },
+          { status: 400 }
+        );
+      }
+
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+
+      // STEP 6: Business logic
+      const supabase = await createServerSupabase();
 
     let result;
 
@@ -96,7 +142,7 @@ export async function POST(req: NextRequest) {
         const { data: session, error: sessionError } = await supabase
           .from("counter_sessions")
           .insert({
-            venue_id,
+            venue_id: venueId, // Use context.venueId
             counter_id,
             server_id: server_id || null,
             notes,
@@ -121,7 +167,7 @@ export async function POST(req: NextRequest) {
             closed_at: new Date().toISOString(),
             status: "CLOSED",
           })
-          .eq("venue_id", venue_id)
+          .eq("venue_id", venueId) // Security: ensure venue matches
           .eq("counter_id", counter_id)
           .eq("closed_at", null)
           .select()
@@ -144,7 +190,7 @@ export async function POST(req: NextRequest) {
           const { data: ordersToComplete } = await supabase
             .from("orders")
             .select("id, payment_status")
-            .eq("venue_id", venue_id)
+            .eq("venue_id", venueId) // Security: ensure venue matches
             .eq("table_number", counter.label)
             .eq("source", "counter")
             .eq("is_active", true);
@@ -170,7 +216,7 @@ export async function POST(req: NextRequest) {
           const { error: ordersError } = await supabase
             .from("orders")
             .update({ order_status: "COMPLETED" })
-            .eq("venue_id", venue_id)
+            .eq("venue_id", venueId) // Security: ensure venue matches
             .eq("table_number", counter.label)
             .eq("source", "counter")
             .eq("is_active", true);
@@ -187,11 +233,47 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    return NextResponse.json(result);
-  } catch (_error) {
-    logger.error("[POS COUNTER SESSIONS] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      return NextResponse.json(result);
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[POS COUNTER SESSIONS POST] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);
