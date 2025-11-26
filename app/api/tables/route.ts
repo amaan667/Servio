@@ -204,15 +204,21 @@ export const POST = withUnifiedAuth(
       });
 
       if (!label) {
+        // eslint-disable-next-line no-console
+        console.error("[TABLES POST] Step 1: Validation failed - label is required");
         return NextResponse.json(
           { ok: false, error: "label is required" },
           { status: 400 }
         );
       }
 
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 1: Validation passed, creating admin client");
       const adminSupabase = createAdminClient();
 
       // Check if a table with the same label already exists
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 2: Checking for existing table with label:", label);
       const { data: existingTable } = await adminSupabase
         .from("tables")
         .select("id, label")
@@ -222,6 +228,8 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (existingTable) {
+        // eslint-disable-next-line no-console
+        console.error("[TABLES POST] Step 2a: Table already exists", { tableId: existingTable.id });
         return NextResponse.json(
           {
             ok: false,
@@ -233,6 +241,8 @@ export const POST = withUnifiedAuth(
 
       // Check if there are unknown active orders for a table with the same label
       // This handles cases where the table might have been deleted but orders still exist
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 3: Checking for active orders with matching table number");
       const { data: activeOrders } = await adminSupabase
         .from("orders")
         .select("id, table_number, customer_name, order_status")
@@ -248,6 +258,11 @@ export const POST = withUnifiedAuth(
       });
 
       if (hasActiveOrders) {
+        // eslint-disable-next-line no-console
+        console.error("[TABLES POST] Step 3a: Active orders found for table number", {
+          tableNumber,
+          activeOrdersCount: activeOrders?.length || 0,
+        });
         return NextResponse.json(
           {
             ok: false,
@@ -258,6 +273,8 @@ export const POST = withUnifiedAuth(
       }
 
       // Check tier limits before creating table
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 4: Checking tier limits");
       const { data: currentTables } = await adminSupabase
         .from("tables")
         .select("id", { count: "exact" })
@@ -265,13 +282,25 @@ export const POST = withUnifiedAuth(
         .eq("is_active", true);
 
       const currentCount = currentTables?.length || 0;
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 4a: Current table count", { currentCount });
       const tierCheck = await enforceResourceLimit(context.user.id, "maxTables", currentCount + 1);
 
       if (!tierCheck.allowed) {
+        // eslint-disable-next-line no-console
+        console.error("[TABLES POST] Step 4b: Tier limit exceeded");
         return tierCheck.response;
       }
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 4b: Tier check passed");
 
       // Create table using admin client to bypass RLS
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 5: Creating table in database", {
+        label,
+        seat_count: seat_count || 2,
+        area: area || null,
+      });
       const { data: table, error: tableError } = await adminSupabase
         .from("tables")
         .insert({
@@ -294,11 +323,18 @@ export const POST = withUnifiedAuth(
         logger.error("[TABLES POST] Table creation error", errorPayload);
         // CRITICAL: Also log to console.error so it appears in Railway logs
         // eslint-disable-next-line no-console
-        console.error("[TABLES POST] Table creation error:", JSON.stringify(errorPayload, null, 2));
+        console.error("[TABLES POST] Step 5a: Table creation error:", JSON.stringify(errorPayload, null, 2));
         return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
       }
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 5a: Table created successfully", {
+        tableId: table.id,
+        label: table.label,
+      });
 
       // Check if session already exists for this table
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 6: Checking for existing session", { tableId: table.id });
       const { data: existingSession } = await adminSupabase
         .from("table_sessions")
         .select("id")
@@ -308,6 +344,8 @@ export const POST = withUnifiedAuth(
 
       // Only create session if one doesn't already exist
       if (!existingSession) {
+        // eslint-disable-next-line no-console
+        console.log("[TABLES POST] Step 7: Creating table session", { tableId: table.id });
         const { error: sessionError } = await adminSupabase.from("table_sessions").insert({
           venue_id: context.venueId,
           table_id: table.id,
@@ -326,12 +364,24 @@ export const POST = withUnifiedAuth(
           logger.error("[TABLES POST] Session creation error", sessionErrorPayload);
           // CRITICAL: Also log to console.error so it appears in Railway logs
           // eslint-disable-next-line no-console
-          console.error("[TABLES POST] Session creation error:", JSON.stringify(sessionErrorPayload, null, 2));
+          console.error("[TABLES POST] Step 7a: Session creation error:", JSON.stringify(sessionErrorPayload, null, 2));
           return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
         }
+        // eslint-disable-next-line no-console
+        console.log("[TABLES POST] Step 7a: Session created successfully");
+      } else {
+        // eslint-disable-next-line no-console
+        console.log("[TABLES POST] Step 7: Session already exists, skipping creation");
       }
 
       // Success audit log
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Step 8: Table creation completed successfully", {
+        tableId: table.id,
+        label: table.label,
+        seat_count: table.seat_count,
+        area: table.area,
+      });
       logger.info("[TABLES POST] Table created successfully", {
         venueId: context.venueId,
         userId: context.user?.id,
