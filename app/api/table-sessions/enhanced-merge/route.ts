@@ -3,69 +3,65 @@ import { createAdminClient } from "@/lib/supabase";
 import { getTableState, getMergeScenario } from "@/lib/table-states";
 import { logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { requireVenueAccessForAPI } from '@/lib/auth/api';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function POST(req: NextRequest) {
-  try {
-
-    // CRITICAL: Authentication and venue access verification
-    const { searchParams } = new URL(req.url);
-    let venueId = searchParams.get('venueId') || searchParams.get('venue_id');
-    
-    if (!venueId) {
-      try {
-        const body = await req.clone().json();
-        venueId = body?.venueId || body?.venue_id;
-      } catch {
-        // Body parsing failed
-      }
-    }
-    
-    if (venueId) {
-      const venueAccessResult = await requireVenueAccessForAPI(venueId, req);
-      if (!venueAccessResult.success) {
-        return venueAccessResult.response;
-      }
-    } else {
-      // Fallback to basic auth if no venueId
-      const { requireAuthForAPI } = await import('@/lib/auth/api');
-      const authResult = await requireAuthForAPI(req);
-      if (authResult.error || !authResult.user) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-          { status: 401 }
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
       }
-    }
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
 
-    const body = await req.json();
-    const { source_table_id, target_table_id, venue_id, confirmed = false } = body;
+      // STEP 3: Parse request
+      const body = await req.json();
+      const { source_table_id, target_table_id, confirmed = false } = body;
 
-    if (!source_table_id || !target_table_id || !venue_id) {
-      return NextResponse.json(
-        {
-          error: "source_table_id, target_table_id, and venue_id are required",
-        },
-        { status: 400 }
-      );
-    }
+      // STEP 4: Validate inputs
+      if (!source_table_id || !target_table_id || !venueId) {
+        return NextResponse.json(
+          {
+            error: "source_table_id, target_table_id, and venue_id are required",
+          },
+          { status: 400 }
+        );
+      }
 
-    // Use admin client - no auth needed
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+      // Verify both tables belong to venue
+      const supabase = createAdminClient();
+      
+      const { data: sourceTable } = await supabase
+        .from("tables")
+        .select("venue_id")
+        .eq("id", source_table_id)
+        .eq("venue_id", venueId)
+        .single();
+      
+      const { data: targetTable } = await supabase
+        .from("tables")
+        .select("venue_id")
+        .eq("id", target_table_id)
+        .eq("venue_id", venueId)
+        .single();
+
+      if (!sourceTable || !targetTable) {
+        return NextResponse.json(
+          { error: "One or both tables not found or access denied" },
+          { status: 404 }
+        );
+      }
 
     // Get both tables with their current state
     const { data: tables, error: tablesError } = await supabase
@@ -86,7 +82,7 @@ export async function POST(req: NextRequest) {
       `
       )
       .in("id", [source_table_id, target_table_id])
-      .eq("venue_id", venue_id);
+      .eq("venue_id", venueId);
 
     if (tablesError || !tables || tables.length !== 2) {
       return NextResponse.json({ error: "Tables not found" }, { status: 404 });
@@ -160,23 +156,71 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unsupported merge scenario" }, { status: 400 });
     }
 
-    if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
-    }
+      if (result.error) {
+        logger.error("[ENHANCED MERGE] Merge operation failed:", {
+          error: result.error,
+          venueId,
+          userId: context.user.id,
+        });
+        return NextResponse.json(
+          {
+            error: "Merge operation failed",
+            message: process.env.NODE_ENV === "development" ? result.error : "Failed to merge tables",
+          },
+          { status: 500 }
+        );
+      }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-      scenario: mergeScenario.type,
-      description: mergeScenario.description,
-    });
-  } catch (_error) {
-    logger.error("[ENHANCED MERGE] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      // STEP 7: Return success response
+      return NextResponse.json({
+        success: true,
+        data: result.data,
+        scenario: mergeScenario.type,
+        description: mergeScenario.description,
+      });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[ENHANCED MERGE] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);
 
 /**
  * Merge two free tables

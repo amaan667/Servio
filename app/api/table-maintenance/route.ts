@@ -1,112 +1,183 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { requireAuthForAPI } from "@/lib/auth/api";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function POST(_req: NextRequest) {
-  try {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    // CRITICAL: Authentication check
-    const authResult = await requireAuthForAPI(_req);
-    if (authResult.error || !authResult.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: authResult.error || 'Authentication required' },
-        { status: 401 }
-      );
-    }
+      // STEP 2: Get venueId from context (already verified)
+      // Note: This is a system route, venueId may be null
+      const venueId = context.venueId;
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(_req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
+      // STEP 3: Parse request
+      // STEP 4: Validate inputs (none required for maintenance)
+
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+
+      // STEP 6: Business logic
+      const supabase = await createClient();
+
+      // Run the table maintenance function
+      const { error } = await supabase.rpc("run_table_maintenance");
+
+      if (error) {
+        logger.error("[TABLE MAINTENANCE POST] Error running maintenance:", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          venueId,
+          userId: context.user.id,
+        });
+        return NextResponse.json(
+          {
+            error: "Failed to run table maintenance",
+            message: process.env.NODE_ENV === "development" ? error.message : "Database operation failed",
+          },
+          { status: 500 }
+        );
+      }
+
+      // STEP 7: Return success response
+      return NextResponse.json({
+        success: true,
+        message: "Table maintenance completed successfully",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[TABLE MAINTENANCE POST] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
-        { status: 429 }
+        { status: 500 }
       );
     }
-
-    // Check authentication
-    const { user, error: authError } = await getAuthenticatedUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    // Use admin client for maintenance operations
-    const supabase = await createClient();
-
-    // Run the table maintenance function
-    const { error } = await supabase.rpc("run_table_maintenance");
-
-    if (error) {
-      logger.error("[TABLE MAINTENANCE] Error running maintenance:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      return NextResponse.json({ error: "Failed to run table maintenance" }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Table maintenance completed successfully",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (_error) {
-    logger.error("[TABLE MAINTENANCE] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  },
+  {
+    // System route - no venue required
+    extractVenueId: async () => null,
   }
-}
+);
 
-export async function GET(_req: NextRequest) {
-  try {
-    // Check authentication
-    const { user, error: authError } = await getAuthenticatedUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    // Use admin client for maintenance operations
-    const supabase = await createClient();
-
-    // Check for expired reservations
-    const { data: expiredReservations, error: expiredError } = await supabase
-      .from("table_sessions")
-      .select("id, table_id, customer_name, reservation_time, reservation_duration_minutes")
-      .eq("status", "RESERVED")
-      .not("reservation_time", "is", null)
-      .not("reservation_duration_minutes", "is", null);
-
-    if (expiredError) {
-      logger.error("[TABLE MAINTENANCE] Error checking expired reservations:", expiredError);
-      return NextResponse.json({ error: "Failed to check expired reservations" }, { status: 500 });
-    }
-
-    // Calculate which reservations are expired
-    const now = new Date();
-    const expired =
-      expiredReservations?.filter((reservation) => {
-        if (!reservation.reservation_time || !reservation.reservation_duration_minutes)
-          return false;
-        const endTime = new Date(
-          new Date(reservation.reservation_time).getTime() +
-            reservation.reservation_duration_minutes * 60 * 1000
+export const GET = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
         );
-        return now > endTime;
-      }) || [];
+      }
 
-    return NextResponse.json({
-      success: true,
-      expiredReservations: expired.length,
-      totalReservations: expiredReservations?.length || 0,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (_error) {
-    logger.error("[TABLE MAINTENANCE] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      // STEP 2: Get venueId from context (already verified)
+      // Note: This is a system route, venueId may be null
+
+      // STEP 3: Parse request
+      // STEP 4: Validate inputs (none required)
+
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+
+      // STEP 6: Business logic
+      const supabase = await createClient();
+
+      // Check for expired reservations
+      const { data: expiredReservations, error: expiredError } = await supabase
+        .from("table_sessions")
+        .select("id, table_id, customer_name, reservation_time, reservation_duration_minutes")
+        .eq("status", "RESERVED")
+        .not("reservation_time", "is", null)
+        .not("reservation_duration_minutes", "is", null);
+
+      if (expiredError) {
+        logger.error("[TABLE MAINTENANCE GET] Error fetching expired reservations:", {
+          error: expiredError instanceof Error ? expiredError.message : "Unknown error",
+          userId: context.user.id,
+        });
+        return NextResponse.json(
+          {
+            error: "Failed to fetch expired reservations",
+            message: process.env.NODE_ENV === "development" ? expiredError.message : "Database query failed",
+          },
+          { status: 500 }
+        );
+      }
+
+      // STEP 7: Return success response
+      return NextResponse.json({
+        expiredReservations: expiredReservations || [],
+        count: expiredReservations?.length || 0,
+      });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[TABLE MAINTENANCE GET] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // System route - no venue required
+    extractVenueId: async () => null,
   }
-}
+);
