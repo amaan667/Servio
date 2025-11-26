@@ -1,64 +1,52 @@
 import SettingsClientPage from "./page.client";
 import { logger } from "@/lib/logger";
-import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import { createAdminClient } from "@/lib/supabase";
+import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
-export default async function SettingsPage({ params }: { params: Promise<{ venueId: string }> }) {
-  const { venueId } = await params;
+export default async function SettingsPage({ params }: { params: { venueId: string } }) {
+  const { venueId } = params;
 
+  // STEP 1: Server-side auth check - settings requires owner or manager
+  const auth = await requirePageAuth(venueId, {
+    requireRole: ["owner", "manager"],
+  });
 
-  // Fetch ALL data on server-side using ADMIN client (no auth required!)
+  // STEP 2: Now safe to fetch data using admin client
   const supabase = createAdminClient();
-
-  // Get user from read-only auth client
-  const authClient = await createServerSupabaseReadOnly();
-  const {
-    data: { session },
-    error: sessionError,
-  } = await authClient.auth.getSession();
-
-  const user = session?.user;
-
-  // If no user, pass undefined to client - it will handle gracefully
-  if (!user) {
-    logger.warn("[SETTINGS PAGE] No user session - rendering with empty data", {
-      hasError: !!sessionError,
-    });
-    return <SettingsClientPage venueId={venueId} />;
-  }
 
 
   // Fetch all settings data on server using admin client (bypasses RLS)
+  // Auth already verified above, so safe to use admin client
   const [venueResult, userRoleResult, allVenuesResult, firstVenueResult] = await Promise.all([
     supabase
       .from("venues")
       .select("*")
       .eq("venue_id", venueId)
-      .eq("owner_user_id", user.id)
+      .eq("owner_user_id", auth.user.id)
       .maybeSingle(),
     supabase
       .from("user_venue_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", auth.user.id)
       .eq("venue_id", venueId)
       .maybeSingle(),
     supabase
       .from("venues")
       .select("*")
-      .eq("owner_user_id", user.id)
+      .eq("owner_user_id", auth.user.id)
       .order("created_at", { ascending: true }),
     // FIXED: Fetch first venue with organization_id by owner (same as home page and debug endpoint)
     supabase
       .from("venues")
       .select("organization_id")
-      .eq("owner_user_id", user.id)
+      .eq("owner_user_id", auth.user.id)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
   ]);
 
   logger.info("[SETTINGS PAGE] First venue fetch result", {
-    userId: user.id,
+    userId: auth.user.id,
     hasData: !!firstVenueResult.data,
     organizationId: firstVenueResult.data?.organization_id,
     error: firstVenueResult.error?.message,
@@ -89,7 +77,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
 
     organization = orgData;
   } else {
-    logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: user.id });
+    logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: auth.user.id });
   }
 
   const venue = venueResult.data;
@@ -116,17 +104,22 @@ export default async function SettingsPage({ params }: { params: Promise<{ venue
     finalVenue = managerVenue;
   }
 
-  // If still no venue, pass undefined to client
+  // Venue access already verified by requirePageAuth, so finalVenue should exist
   if (!finalVenue) {
-    logger.warn("[SETTINGS PAGE] User has no access to venue - rendering anyway", {
-      userId: user.id,
+    logger.error("[SETTINGS PAGE] Venue not found after auth verification", {
+      userId: auth.user.id,
       venueId,
     });
+    // This shouldn't happen, but handle gracefully
     return <SettingsClientPage venueId={venueId} />;
   }
 
   const initialData = {
-    user,
+    user: {
+      id: auth.user.id,
+      email: auth.user.email ?? undefined,
+      user_metadata: {},
+    },
     venue: finalVenue,
     venues: allVenues,
     organization,

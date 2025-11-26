@@ -8,9 +8,9 @@ export default async function VenueDashboardLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ venueId: string }>;
+  params: { venueId: string };
 }) {
-  const { venueId } = await params;
+  const { venueId } = params;
 
   return (
     <>

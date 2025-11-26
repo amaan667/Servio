@@ -1,31 +1,21 @@
 import AichatClientPage from "./page.client";
-import { getAuthenticatedUser } from "@/lib/supabase";
-import { getPageAuthContext } from "@/lib/auth/unified-auth";
-import { redirect } from "next/navigation";
+import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
-export default async function AichatPage({ params }: { params: Promise<{ venueId: string }> }) {
-  const { venueId } = await params;
+export default async function AichatPage({ params }: { params: { venueId: string } }) {
+  const { venueId } = params;
 
-  // Server-side auth check
-  const { user, error } = await getAuthenticatedUser();
-  if (error || !user) {
-    redirect("/sign-in");
-  }
+  // Server-side auth check - AI Assistant requires Enterprise tier
+  const auth = await requirePageAuth(venueId, {
+    requireFeature: "aiAssistant",
+  });
 
-  // Get tier and access info
-  const authContext = await getPageAuthContext(user.id, venueId);
-  if (!authContext || !authContext.venueAccess) {
-    redirect("/dashboard");
-  }
-
-  // Check feature access server-side - AI Assistant requires Enterprise tier
-  const hasAIAccess = authContext.hasFeatureAccess("aiAssistant");
+  const hasAIAccess = auth.hasFeatureAccess("aiAssistant");
 
   return (
     <AichatClientPage
       venueId={venueId}
-      tier={authContext.tier}
-      role={authContext.role}
+      tier={auth.tier}
+      role={auth.role}
       hasAccess={hasAIAccess}
     />
   );

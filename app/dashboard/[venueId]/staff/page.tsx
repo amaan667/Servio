@@ -1,7 +1,13 @@
 import StaffClientPage from "./page.client";
+import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
-export default async function StaffPage({ params }: { params: Promise<{ venueId: string }> }) {
-  const { venueId } = await params;
+export default async function StaffPage({ params }: { params: { venueId: string } }) {
+  const { venueId } = params;
+
+  // Server-side auth check - staff management requires owner or manager
+  const auth = await requirePageAuth(venueId, {
+    requireRole: ["owner", "manager"],
+  });
 
   return <StaffClientPage venueId={venueId} />;
 }

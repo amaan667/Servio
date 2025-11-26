@@ -1,26 +1,16 @@
 import KDSClientPage from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
-import { getAuthenticatedUser } from "@/lib/supabase";
-import { getPageAuthContext } from "@/lib/auth/unified-auth";
-import { redirect } from "next/navigation";
+import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
-export default async function KDSPage({ params }: { params: Promise<{ venueId: string }> }) {
-  const { venueId } = await params;
+export default async function KDSPage({ params }: { params: { venueId: string } }) {
+  const { venueId } = params;
 
-  // Server-side auth check
-  const { user, error } = await getAuthenticatedUser();
-  if (error || !user) {
-    redirect("/sign-in");
-  }
+  // Server-side auth check - KDS requires Enterprise tier
+  const auth = await requirePageAuth(venueId, {
+    requireFeature: "kds",
+  });
 
-  // Get tier and access info
-  const authContext = await getPageAuthContext(user.id, venueId);
-  if (!authContext || !authContext.venueAccess) {
-    redirect("/dashboard");
-  }
-
-  // Check feature access server-side - KDS requires Enterprise tier
-  const hasKDSAccess = authContext.hasFeatureAccess("kds");
+  const hasKDSAccess = auth.hasFeatureAccess("kds");
 
   // Fetch initial KDS data on server to show accurate counts on first visit
   let initialTickets = null;
@@ -75,8 +65,8 @@ export default async function KDSPage({ params }: { params: Promise<{ venueId: s
       venueId={venueId}
       initialTickets={initialTickets}
       initialStations={initialStations}
-      tier={authContext.tier}
-      role={authContext.role}
+      tier={auth.tier}
+      role={auth.role}
       hasAccess={hasKDSAccess}
     />
   );

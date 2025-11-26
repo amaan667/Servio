@@ -5,32 +5,21 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import AnalyticsClientPage from "./page.client";
-import { getAuthenticatedUser } from "@/lib/supabase";
-import { getPageAuthContext } from "@/lib/auth/unified-auth";
-import { redirect } from "next/navigation";
+import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
 export const metadata = {
   title: "Analytics | Servio",
   description: "Business analytics and insights for your venue",
 };
 
-export default async function AnalyticsPage({ params }: { params: Promise<{ venueId: string }> }) {
-  const { venueId } = await params;
+export default async function AnalyticsPage({ params }: { params: { venueId: string } }) {
+  const { venueId } = params;
 
-  // Server-side auth check
-  const { user, error } = await getAuthenticatedUser();
-  if (error || !user) {
-    redirect("/sign-in");
-  }
+  // Server-side auth check - analytics is available to all tiers but with different levels
+  const auth = await requirePageAuth(venueId);
 
-  // Get tier and access info
-  const authContext = await getPageAuthContext(user.id, venueId);
-  if (!authContext || !authContext.venueAccess) {
-    redirect("/dashboard");
-  }
-
-  // Check feature access server-side - analytics is available to all tiers but with different levels
-  const hasAnalyticsAccess = true; // All tiers have analytics, just different levels
+  // All tiers have analytics, just different levels
+  const hasAnalyticsAccess = true;
 
   // Fetch analytics data on server
   const [ordersData, menuData, revenueData] = await Promise.all([
@@ -45,8 +34,8 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ venu
       ordersData={ordersData}
       menuData={menuData}
       revenueData={revenueData}
-      tier={authContext.tier}
-      role={authContext.role}
+      tier={auth.tier}
+      role={auth.role}
       hasAccess={hasAnalyticsAccess}
     />
   );

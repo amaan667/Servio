@@ -3,18 +3,21 @@ import DashboardClient from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { todayWindowForTZ } from "@/lib/time";
+import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
 // Force dynamic rendering to prevent stale cached menu counts
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
-  const { venueId } = await params;
+export default async function VenuePage({ params }: { params: { venueId: string } }) {
+  const { venueId } = params;
 
-  // Fetch initial dashboard data on server WITHOUT auth (use admin client)
-  // NOTE: Auth is handled client-side by DashboardClient component
-  // Server component only provides initial data for faster page load
+  // STEP 1: Server-side auth check (CRITICAL - must be first)
+  const auth = await requirePageAuth(venueId);
+
+  // STEP 2: Now safe to fetch initial dashboard data on server
+  // Use admin client only after auth verification
   let initialCounts: DashboardCounts | undefined = undefined;
   let initialStats: DashboardStats | undefined = undefined;
 
@@ -131,6 +134,10 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
   }
 
   return (
-    <DashboardClient venueId={venueId} initialCounts={initialCounts} initialStats={initialStats} />
+    <DashboardClient
+      venueId={venueId}
+      initialCounts={initialCounts}
+      initialStats={initialStats}
+    />
   );
 }
