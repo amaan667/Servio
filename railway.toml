@@ -8,6 +8,8 @@ healthcheckPath = "/api/health"
 healthcheckTimeout = 5
 healthcheckInterval = 5
 restartPolicyType = "on_failure"
+# Force deployment by ensuring changes are detected
+# Note: Railway CLI 'railway up' bypasses "Wait for CI" setting
 
 # Cron job for daily reset at midnight
 [[cron]]
