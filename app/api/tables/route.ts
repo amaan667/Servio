@@ -414,16 +414,33 @@ export const POST = withUnifiedAuth(
         message: `Table "${label}" created successfully!`,
       });
     } catch (_error) {
+      // CRITICAL: Log the full error immediately
+      // eslint-disable-next-line no-console
+      console.error("=".repeat(80));
+      // eslint-disable-next-line no-console
+      console.error("[TABLES POST] ===== UNCAUGHT ERROR ===== ", new Date().toISOString());
+      // eslint-disable-next-line no-console
+      console.error("[TABLES POST] Error type:", _error?.constructor?.name || typeof _error);
+      
       const unexpectedPayload = {
         venueId: context.venueId,
         userId: context.user?.id,
         message: _error instanceof Error ? _error.message : "Unknown _error",
         stack: _error instanceof Error ? _error.stack : undefined,
       };
-      logger.error("[TABLES POST] Unexpected error", unexpectedPayload);
-      // CRITICAL: Also log to console.error so it appears in Railway logs
+      
       // eslint-disable-next-line no-console
-      console.error("[TABLES POST] Unexpected error:", JSON.stringify(unexpectedPayload, null, 2));
+      console.error("[TABLES POST] Error message:", unexpectedPayload.message);
+      // eslint-disable-next-line no-console
+      console.error("[TABLES POST] Error stack:", unexpectedPayload.stack);
+      // eslint-disable-next-line no-console
+      console.error("[TABLES POST] Full error object:", JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2));
+      // eslint-disable-next-line no-console
+      console.error("[TABLES POST] Context:", unexpectedPayload);
+      // eslint-disable-next-line no-console
+      console.error("=".repeat(80));
+      
+      logger.error("[TABLES POST] Unexpected error", unexpectedPayload);
       return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
     }
   }

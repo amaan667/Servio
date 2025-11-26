@@ -289,9 +289,26 @@ export const POST = withUnifiedAuth(
       navigation: navigationInfo,
     });
     } catch (_error) {
+      // CRITICAL: Log the full error immediately
+      // eslint-disable-next-line no-console
+      console.error("=".repeat(80));
+      // eslint-disable-next-line no-console
+      console.error("[AI SIMPLE CHAT] ===== UNCAUGHT ERROR ===== ", new Date().toISOString());
+      // eslint-disable-next-line no-console
+      console.error("[AI SIMPLE CHAT] Error type:", _error?.constructor?.name || typeof _error);
+      
       // Log the full error for debugging
       const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      // eslint-disable-next-line no-console
+      console.error("[AI SIMPLE CHAT] Error message:", errorMessage);
+      // eslint-disable-next-line no-console
+      console.error("[AI SIMPLE CHAT] Error stack:", errorStack);
+      // eslint-disable-next-line no-console
+      console.error("[AI SIMPLE CHAT] Full error object:", JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2));
+      // eslint-disable-next-line no-console
+      console.error("=".repeat(80));
       
       // Check if it's a feature access error (should be handled by withUnifiedAuth, but just in case)
       if (errorMessage.includes("Feature not available") || errorMessage.includes("tier")) {
