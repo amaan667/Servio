@@ -56,7 +56,7 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       customerFeedback: true,
       customBranding: false,
       apiAccess: false,
-      aiAssistant: false, // AI Assistant chat is Enterprise only
+      aiAssistant: true, // AI Assistant now available for Pro tier
       multiVenue: false,
       customIntegrations: false,
       supportLevel: "priority", // Priority email support
@@ -97,7 +97,25 @@ export async function getUserTier(userId: string): Promise<string> {
     return "starter";
   }
 
-  return org.subscription_tier || "starter";
+  const rawTier = org.subscription_tier || "starter";
+  
+  // Normalize tier values - map legacy/alternative names to standard tiers
+  const tierMap: Record<string, string> = {
+    "standard": "pro", // Map "standard" to "pro"
+    "basic": "starter",
+    "premium": "enterprise",
+  };
+  
+  const normalizedTier = tierMap[rawTier.toLowerCase()] || rawTier.toLowerCase();
+  
+  // Validate tier is one of the expected values
+  if (!["starter", "pro", "enterprise"].includes(normalizedTier)) {
+    // eslint-disable-next-line no-console
+    console.warn("[TIER RESTRICTIONS] Unknown tier value:", rawTier, "defaulting to starter");
+    return "starter";
+  }
+  
+  return normalizedTier;
 }
 
 export async function checkFeatureAccess(

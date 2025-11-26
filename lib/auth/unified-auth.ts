@@ -443,8 +443,9 @@ export function withUnifiedAuth(
               
               // Extract venueId from parsed body
               if (parsedBody && typeof parsedBody === "object" && parsedBody !== null) {
-                venueId = (parsedBody as Record<string, unknown>)?.venueId as string || 
-                         (parsedBody as Record<string, unknown>)?.venue_id as string || 
+                const bodyObj = parsedBody as Record<string, unknown>;
+                venueId = (bodyObj.venueId as string) || 
+                         (bodyObj.venue_id as string) || 
                          null;
                 if (venueId) {
                   // eslint-disable-next-line no-console
@@ -452,8 +453,11 @@ export function withUnifiedAuth(
                   logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
                 } else {
                   // eslint-disable-next-line no-console
-                  console.log("[UNIFIED AUTH] No venueId found in body");
+                  console.log("[UNIFIED AUTH] No venueId found in body, body keys:", Object.keys(bodyObj));
                 }
+              } else {
+                // eslint-disable-next-line no-console
+                console.log("[UNIFIED AUTH] Body is not an object:", typeof parsedBody);
               }
             } catch (parseError) {
               // Body parsing failed - log but continue
