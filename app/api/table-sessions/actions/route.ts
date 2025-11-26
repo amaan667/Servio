@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { requireVenueAccessForAPI } from "@/lib/auth/api";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { logger } from "@/lib/logger";
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import {
   handleStartPreparing,
   handleMarkReady,
@@ -24,36 +25,61 @@ import {
  * Original: 771 lines → Now: ~110 lines
  */
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const {
-      action,
-      table_id,
-      venue_id,
-      order_id,
-      destination_table_id,
-      customer_name,
-      reservation_time,
-      reservation_duration,
-      reservation_id,
-    } = body;
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    try {
+      // STEP 1: Rate limiting (ALWAYS FIRST)
+      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+          },
+          { status: 429 }
+        );
+      }
 
-    if (!action || !table_id || !venue_id) {
-      return NextResponse.json(
-        { error: "action, table_id, and venue_id are required" },
-        { status: 400 }
-      );
-    }
+      // STEP 2: Get venueId from context (already verified)
+      const venueId = context.venueId;
 
-    // STANDARDIZED: Use requireVenueAccessForAPI for consistent auth + venue access
-    const accessResult = await requireVenueAccessForAPI(venue_id);
-    if (!accessResult.success) {
-      return accessResult.response;
-    }
+      // STEP 3: Parse request
+      const body = await req.json();
+      const {
+        action,
+        table_id,
+        order_id,
+        destination_table_id,
+        customer_name,
+        reservation_time,
+        reservation_duration,
+        reservation_id,
+      } = body;
 
-    const { context } = accessResult;
-    const supabase = await createServerSupabase();
+      // STEP 4: Validate inputs
+      if (!action || !table_id || !venueId) {
+        return NextResponse.json(
+          { error: "action, table_id, and venue_id are required" },
+          { status: 400 }
+        );
+      }
+
+      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+      // Verify table belongs to venue
+      const supabase = await createServerSupabase();
+      const { data: table } = await supabase
+        .from("tables")
+        .select("venue_id")
+        .eq("id", table_id)
+        .eq("venue_id", venueId)
+        .single();
+
+      if (!table) {
+        return NextResponse.json(
+          { error: "Table not found or access denied" },
+          { status: 404 }
+        );
+      }
 
     // Note: Venue access is already verified by requireVenueAccessForAPI above
 
@@ -108,7 +134,7 @@ export async function POST(req: NextRequest) {
             { status: 400 }
           );
         }
-        return await handleMergeTable(supabase, venue_id, table_id, destination_table_id);
+        return await handleMergeTable(supabase, venueId, table_id, destination_table_id);
 
       case "unmerge_table":
         return await handleUnmergeTable(supabase, table_id);
@@ -125,10 +151,46 @@ export async function POST(req: NextRequest) {
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
-  } catch (_error) {
-    logger.error("[TABLE SESSIONS ACTIONS API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      logger.error("[TABLE SESSIONS ACTIONS] Unexpected error:", {
+        error: errorMessage,
+        stack: errorStack,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+      
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-}
+);
