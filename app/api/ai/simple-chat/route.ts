@@ -166,9 +166,44 @@ export const POST = withUnifiedAuth(
       navigation: navigationInfo,
     });
     } catch (_error) {
+      // Log the full error for debugging
+      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorStack = _error instanceof Error ? _error.stack : undefined;
+      
+      // Check if it's a feature access error (should be handled by withUnifiedAuth, but just in case)
+      if (errorMessage.includes("Feature not available") || errorMessage.includes("tier")) {
+        return NextResponse.json(
+          {
+            error: "Feature not available",
+            message: errorMessage,
+          },
+          { status: 403 }
+        );
+      }
+      
+      // Check if it's an authentication/authorization error
+      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
+        return NextResponse.json(
+          {
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
+          },
+          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      // Log server errors for debugging
+      console.error("[AI SIMPLE CHAT] Error:", {
+        message: errorMessage,
+        stack: errorStack,
+      });
+      
+      // Return generic error in production, detailed in development
       return NextResponse.json(
         {
-          error: _error instanceof Error ? _error.message : "An unexpected error occurred",
+          error: "Internal Server Error",
+          message: process.env.NODE_ENV === "development" ? errorMessage : "An unexpected error occurred while processing your request",
+          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

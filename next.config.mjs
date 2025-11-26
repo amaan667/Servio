@@ -50,10 +50,8 @@ const nextConfig = {
       {
         source: '/_next/static/css/:path*',
         headers: [
-          {
-            key: 'Content-Type',
-            value: 'text/css; charset=utf-8',
-          },
+          // Removed explicit Content-Type - Next.js handles MIME types correctly
+          // Explicit headers can conflict with Next.js's automatic MIME type detection
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
@@ -67,10 +65,7 @@ const nextConfig = {
       {
         source: '/_next/static/chunks/:path*',
         headers: [
-          {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8',
-          },
+          // Removed explicit Content-Type - Next.js handles MIME types correctly
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
@@ -84,10 +79,7 @@ const nextConfig = {
       {
         source: '/_next/static/media/:path*',
         headers: [
-          {
-            key: 'Content-Type',
-            value: 'font/woff2',
-          },
+          // Removed explicit Content-Type - Next.js handles MIME types correctly
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
