@@ -193,6 +193,15 @@ export const POST = withUnifiedAuth(
         seat_count,
         area,
       });
+      // CRITICAL: Also log to console so it appears in Railway logs
+      // eslint-disable-next-line no-console
+      console.log("[TABLES POST] Table creation requested:", {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        label,
+        seat_count,
+        area,
+      });
 
       if (!label) {
         return NextResponse.json(
@@ -283,6 +292,9 @@ export const POST = withUnifiedAuth(
           error: tableError instanceof Error ? tableError.message : "Unknown error",
         };
         logger.error("[TABLES POST] Table creation error", errorPayload);
+        // CRITICAL: Also log to console.error so it appears in Railway logs
+        // eslint-disable-next-line no-console
+        console.error("[TABLES POST] Table creation error:", JSON.stringify(errorPayload, null, 2));
         return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
       }
 
@@ -312,6 +324,9 @@ export const POST = withUnifiedAuth(
             error: sessionError.message,
           };
           logger.error("[TABLES POST] Session creation error", sessionErrorPayload);
+          // CRITICAL: Also log to console.error so it appears in Railway logs
+          // eslint-disable-next-line no-console
+          console.error("[TABLES POST] Session creation error:", JSON.stringify(sessionErrorPayload, null, 2));
           return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
         }
       }
@@ -339,6 +354,9 @@ export const POST = withUnifiedAuth(
         stack: _error instanceof Error ? _error.stack : undefined,
       };
       logger.error("[TABLES POST] Unexpected error", unexpectedPayload);
+      // CRITICAL: Also log to console.error so it appears in Railway logs
+      // eslint-disable-next-line no-console
+      console.error("[TABLES POST] Unexpected error:", JSON.stringify(unexpectedPayload, null, 2));
       return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
     }
   }

@@ -38,6 +38,14 @@ export const POST = withUnifiedAuth(
         messagePreview: typeof message === "string" ? message.slice(0, 200) : null,
         hasHistory: Array.isArray(conversationHistory) && conversationHistory.length > 0,
       });
+      // CRITICAL: Also log to console so it appears in Railway logs
+      // eslint-disable-next-line no-console
+      console.log("[AI SIMPLE CHAT] Command received:", {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        currentPage,
+        messagePreview: typeof message === "string" ? message.slice(0, 200) : null,
+      });
 
       if (!message) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -51,6 +59,14 @@ export const POST = withUnifiedAuth(
       summaries = await getAllSummaries(context.venueId, assistantContext.features);
     } catch (contextError) {
       logger.error("[AI SIMPLE CHAT] Failed to get context", {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        error: contextError instanceof Error ? contextError.message : String(contextError),
+        stack: contextError instanceof Error ? contextError.stack : undefined,
+      });
+      // CRITICAL: Also log to console.error so it appears in Railway logs
+      // eslint-disable-next-line no-console
+      console.error("[AI SIMPLE CHAT] Failed to get context:", {
         venueId: context.venueId,
         userId: context.user?.id,
         error: contextError instanceof Error ? contextError.message : String(contextError),
@@ -217,7 +233,7 @@ export const POST = withUnifiedAuth(
         );
       }
       
-      // Log server errors for debugging (use structured logger, no console.log)
+      // Log server errors for debugging - use console.error so errors appear in Railway logs
       const errorPayload = {
         venueId: context.venueId,
         userId: context.user?.id,
@@ -225,6 +241,9 @@ export const POST = withUnifiedAuth(
         stack: errorStack,
       };
       logger.error("[AI SIMPLE CHAT] Error", errorPayload);
+      // CRITICAL: Also log to console.error so it appears in Railway logs
+      // eslint-disable-next-line no-console
+      console.error("[AI SIMPLE CHAT] Error:", JSON.stringify(errorPayload, null, 2));
       
       // Return generic error in production, detailed in development
       return NextResponse.json(
