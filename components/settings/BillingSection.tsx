@@ -337,8 +337,8 @@ export default function BillingSection({ organization, venueId }: BillingSection
             />
             <FeatureItem
               name="AI Assistant"
-              enabled={tier === "pro" || tier === "enterprise" || isGrandfathered}
-              tier="pro"
+              enabled={tier === "enterprise" || isGrandfathered}
+              tier="enterprise"
             />
             <FeatureItem
               name="Multi-Venue Management"

@@ -50,14 +50,14 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     maxStaff: 10,
     maxVenues: 1,
     features: {
-      kds: false,
-      inventory: true,
-      analytics: "advanced", // Advanced & AI insights (PredictiveInsights component)
-      customerFeedback: true,
-      customBranding: false,
-      apiAccess: false,
-      aiAssistant: true, // AI Assistant now available for Pro tier
-      multiVenue: false,
+      kds: false, // KDS is Enterprise only
+      inventory: true, // Inventory management
+      analytics: "advanced", // Advanced analytics & AI insights
+      customerFeedback: true, // Customer feedback system
+      customBranding: false, // Custom branding is Enterprise only
+      apiAccess: false, // API access is Enterprise only
+      aiAssistant: false, // AI Assistant is Enterprise only (Pro has AI insights in analytics, not full AI Assistant)
+      multiVenue: false, // Multi-venue is Enterprise only
       customIntegrations: false,
       supportLevel: "priority", // Priority email support
     },
