@@ -1,5 +1,6 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
 // Railway deployment trigger - ensures changes are detected
+// Force deployment: 2025-11-26 14:10:00 UTC
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -204,4 +205,4 @@ const nextConfig = {
 };
 
 export default withBundleAnalyzer(nextConfig);
-/* Deployment timestamp: 2025-11-26T12:33:27Z - Build ID: 1764160407 */
+/* Deployment timestamp: 2025-11-26T14:03:15Z - Build ID: 1764165795 */
