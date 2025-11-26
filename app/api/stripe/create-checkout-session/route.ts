@@ -12,65 +12,86 @@ const PRICE_IDS = {
   enterprise: process.env.STRIPE_PREMIUM_PRICE_ID,
 };
 
-// Create Stripe products and prices if they don't exist
-const ensureStripeProducts = async () => {
-  const products = [
-    {
-      tier: "starter",
-      name: "Starter Plan",
-      description: "Perfect for small cafes and restaurants",
-      amount: 9900, // £99.00 in pence
-    },
-    {
-      tier: "pro",
-      name: "Pro Plan",
-      description: "Most popular for growing businesses",
-      amount: 24900, // £249.00 in pence
-    },
-    {
-      tier: "enterprise",
-      name: "Enterprise Plan",
-      description: "Unlimited power for enterprises",
-      amount: 44900, // £449.00 in pence
-    },
-  ];
-
+// Get Stripe products and prices - reads only, never creates
+const getStripePriceIds = async (): Promise<Record<string, string>> => {
   const priceIds: Record<string, string> = {
-    /* Empty */
+    starter: "",
+    pro: "",
+    enterprise: "",
   };
 
-  for (const product of products) {
-    try {
-      // Check if we already have a price ID for this tier
-      const existingPriceId = PRICE_IDS[product.tier as keyof typeof PRICE_IDS];
-      if (existingPriceId) {
-        priceIds[product.tier] = existingPriceId;
+  // First, check if env vars are set (takes priority)
+  for (const tier of ["starter", "pro", "enterprise"] as const) {
+    const envPriceId = PRICE_IDS[tier];
+    if (envPriceId) {
+      priceIds[tier] = envPriceId;
+    }
+  }
+
+  // If all price IDs are found via env vars, return early
+  if (priceIds.starter && priceIds.pro && priceIds.enterprise) {
+    return priceIds;
+  }
+
+  // Otherwise, search for existing products by tier metadata in Stripe
+  const existingProducts = await stripe.products.list({ limit: 100, active: true });
+  const productsByTier = new Map<string, { productId: string; priceId?: string }>();
+
+  // Find products with tier metadata
+  for (const product of existingProducts.data) {
+    const tier = product.metadata?.tier;
+    if (tier && ["starter", "pro", "enterprise"].includes(tier)) {
+      // Skip if we already found one for this tier (avoid duplicates)
+      if (productsByTier.has(tier)) {
         continue;
       }
 
-      // Create product first
-      const stripeProduct = await stripe.products.create({
-        name: product.name,
-        description: product.description,
-        metadata: { tier: product.tier },
+      // Get the most recent active price for this product
+      const prices = await stripe.prices.list({
+        product: product.id,
+        active: true,
       });
 
-      // Create price for the product
-      const price = await stripe.prices.create({
-        unit_amount: product.amount,
-        currency: "gbp",
-        recurring: { interval: "month" },
-        product: stripeProduct.id,
-        nickname: `${product.name} - £${product.amount / 100}/month`,
-      });
+      // Sort by created date, most recent first
+      const sortedPrices = prices.data.sort((a, b) => b.created - a.created);
+      const latestPrice = sortedPrices[0];
 
-      priceIds[product.tier] = price.id;
-    } catch (_error) {
-      logger.error(`[STRIPE ERROR] Failed to create ${product.tier} product/price:`, {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
-      throw _error;
+      if (latestPrice) {
+        productsByTier.set(tier, {
+          productId: product.id,
+          priceId: latestPrice.id,
+        });
+      }
     }
+  }
+
+  // Use existing products/prices from Stripe (fill in any missing from env vars)
+  for (const tier of ["starter", "pro", "enterprise"] as const) {
+    if (!priceIds[tier]) {
+      const existing = productsByTier.get(tier);
+      if (existing?.priceId) {
+        priceIds[tier] = existing.priceId;
+        logger.debug(
+          `[STRIPE] Found ${tier} product by metadata: ${existing.productId}, price: ${existing.priceId}`
+        );
+      }
+    }
+  }
+
+  // Validate all tiers are found
+  const missingTiers: string[] = [];
+  for (const tier of ["starter", "pro", "enterprise"] as const) {
+    if (!priceIds[tier]) {
+      missingTiers.push(tier);
+    }
+  }
+
+  if (missingTiers.length > 0) {
+    throw new Error(
+      `Missing Stripe products/prices for tiers: ${missingTiers.join(", ")}. ` +
+        `Please create them in Stripe Dashboard with metadata tier=${missingTiers.join(" or tier=")} ` +
+        `or set environment variables: STRIPE_BASIC_PRICE_ID, STRIPE_STANDARD_PRICE_ID, STRIPE_PREMIUM_PRICE_ID`
+    );
   }
 
   return priceIds;
@@ -78,8 +99,8 @@ const ensureStripeProducts = async () => {
 
 export async function POST(_request: NextRequest) {
   try {
-    // Ensure Stripe products and prices exist
-    const priceIds = await ensureStripeProducts();
+    // Get Stripe products and prices (read-only, never creates)
+    const priceIds = await getStripePriceIds();
 
     const body = await _request.json();
     const { tier, organizationId, isSignup, email, fullName, venueName } = body;
