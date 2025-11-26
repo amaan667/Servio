@@ -40,5 +40,5 @@
       "module": "commonjs"
     }
   },
-  "exclude": ["node_modules", ".next", "__tests__/**/*"]
+  "exclude": ["node_modules", ".next", "__tests__/**/*", "scripts/**/*"]
 }
