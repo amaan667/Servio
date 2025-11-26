@@ -70,22 +70,23 @@ export async function POST(_request: NextRequest) {
 
       // Get tier from Stripe subscription (price/product metadata) - most reliable
       const { getTierFromStripeSubscription, normalizeTier } = await import("@/lib/stripe-tier-helper");
-      const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
+      const stripeClient = await import("@/lib/stripe-client").then((m) => m.stripe);
       
       // Try to get tier from Stripe subscription first
       let finalTier: string;
+      const currentTier = org.subscription_tier;
+      const stripeTierFromMetadata = stripeSubscription.metadata?.tier;
+      
       try {
-        const tierFromStripe = await getTierFromStripeSubscription(stripeSubscription, stripe);
+        const tierFromStripe = await getTierFromStripeSubscription(stripeSubscription, stripeClient);
         finalTier = normalizeTier(tierFromStripe);
       } catch {
         // Fallback to metadata or existing tier
-        const stripeTier = stripeSubscription.metadata?.tier;
-        const currentTier = org.subscription_tier;
-        finalTier = normalizeTier(stripeTier || currentTier || "starter");
+        finalTier = normalizeTier(stripeTierFromMetadata || currentTier || "starter");
       }
 
       logger.debug("[SUBSCRIPTION REFRESH] Tier detection:", {
-        stripeTier,
+        stripeTierFromMetadata,
         currentTier,
         finalTier,
       });
