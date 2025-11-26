@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
@@ -8,7 +9,7 @@ import { apiLogger as logger } from "@/lib/logger";
  * Check current subscription status and tier detection
  * Helps verify what Stripe has vs what the platform is reading
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     const {
@@ -61,9 +62,16 @@ export async function GET(request: NextRequest) {
             priceMetadata: Record<string, string>;
           }>;
         };
-        tierFromStripe: string;
-        tierFromMetadata: string | null;
-        tierFromProductName: string | null;
+        subscriptionsFound?: Array<{
+          id: string;
+          status: string;
+          metadata: Record<string, string>;
+        }>;
+        subscriptionError?: string;
+        customerError?: string;
+        tierFromStripe?: string;
+        tierFromMetadata?: string | null;
+        tierFromProductName?: string | null;
       };
       match: {
         tierMatches: boolean;
@@ -94,6 +102,9 @@ export async function GET(request: NextRequest) {
               id: customer.id,
               email: customer.email,
             },
+            tierFromStripe: "",
+            tierFromMetadata: null,
+            tierFromProductName: null,
           };
 
           // If we have a subscription ID, fetch it
@@ -157,7 +168,9 @@ export async function GET(request: NextRequest) {
               logger.error("[STRIPE CHECK] Error fetching subscription:", {
                 error: subError instanceof Error ? subError.message : String(subError),
               });
-              result.stripe.subscriptionError = subError instanceof Error ? subError.message : String(subError);
+              if (result.stripe) {
+                result.stripe.subscriptionError = subError instanceof Error ? subError.message : String(subError);
+              }
             }
           } else {
             // No subscription ID, check for any active subscriptions
@@ -168,12 +181,11 @@ export async function GET(request: NextRequest) {
             });
 
             if (subscriptions.data.length > 0 && result.stripe) {
-              (result.stripe as unknown as { subscriptionsFound?: unknown }).subscriptionsFound =
-                subscriptions.data.map((sub) => ({
-                  id: sub.id,
-                  status: sub.status,
-                  metadata: sub.metadata,
-                }));
+              result.stripe.subscriptionsFound = subscriptions.data.map((sub) => ({
+                id: sub.id,
+                status: sub.status,
+                metadata: sub.metadata || {},
+              }));
             }
           }
         }
@@ -183,7 +195,10 @@ export async function GET(request: NextRequest) {
         });
         result.stripe = {
           customerError: customerError instanceof Error ? customerError.message : String(customerError),
-        } as unknown as typeof result.stripe;
+          tierFromStripe: "",
+          tierFromMetadata: null,
+          tierFromProductName: null,
+        };
       }
     }
 
