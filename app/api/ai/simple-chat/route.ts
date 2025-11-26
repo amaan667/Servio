@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders";
 import { executeTool } from "@/lib/ai/tool-executors";
-import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 
@@ -34,14 +33,9 @@ export const POST = withUnifiedAuth(
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
       }
 
-    logger.info("[AI SIMPLE CHAT] 7. Getting context and summaries");
-
     // Get context and data summaries
     const assistantContext = await getAssistantContext(context.venueId, context.user.id);
-    logger.info("[AI SIMPLE CHAT] 8. Context retrieved");
-
     const summaries = await getAllSummaries(context.venueId, assistantContext.features);
-    logger.info("[AI SIMPLE CHAT] 9. Summaries retrieved");
 
     // Build conversation context from history
     let conversationContext = "";
@@ -54,15 +48,7 @@ export const POST = withUnifiedAuth(
 
     // Plan the action with conversation context
     const enhancedMessage = conversationContext ? `${message}${conversationContext}` : message;
-
-    logger.info("[AI SIMPLE CHAT] 10. Planning action with conversation context");
     const plan = await planAssistantAction(enhancedMessage, assistantContext, summaries);
-    logger.info("[AI SIMPLE CHAT] 11. Plan created:", {
-      hasDirectAnswer: !!plan.directAnswer,
-      toolCount: plan.tools?.length || 0,
-      tools: plan.tools?.map((t) => ({ name: t.name, preview: t.preview })) || [],
-      reasoning: plan.reasoning,
-    });
 
     let response = "";
     let navigationInfo = null;
@@ -77,12 +63,6 @@ export const POST = withUnifiedAuth(
       const messages: string[] = [];
 
       for (const tool of plan.tools) {
-        logger.info("[AI SIMPLE CHAT] Executing tool:", {
-          toolName: tool.name,
-          params: tool.params,
-          preview: tool.preview,
-        });
-
         const result = await executeTool(
           tool.name,
           tool.params,
@@ -90,12 +70,6 @@ export const POST = withUnifiedAuth(
           context.user.id,
           tool.preview // use the preview flag from the plan
         );
-
-        logger.info("[AI SIMPLE CHAT] Tool result:", {
-          toolName: tool.name,
-          success: "success" in result ? result.success : "N/A",
-          hasResult: "result" in result,
-        });
 
         toolResults.push({
           tool: tool.name,
@@ -192,9 +166,6 @@ export const POST = withUnifiedAuth(
       navigation: navigationInfo,
     });
     } catch (_error) {
-      logger.error("[AI SIMPLE CHAT] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
       return NextResponse.json(
         {
           error: _error instanceof Error ? _error.message : "An unexpected error occurred",

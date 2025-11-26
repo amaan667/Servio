@@ -8,7 +8,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { createServerSupabaseReadOnly } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import AuthProvider from "@/app/auth/AuthProvider";
 import Providers from "./providers";
 import ConditionalHeader from "@/components/ConditionalHeader";
@@ -134,11 +133,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
 
-    logger.info("[ROOT LAYOUT] 🚀 Root layout rendering", {
-      totalCookies: allCookies.length,
-      cookieNames: allCookies.map((c) => c.name).join(", "),
-    });
-
     // Check if auth cookies exist before attempting to get session
     // This prevents unnecessary API calls for logged-out users
     const hasAuthCookies = allCookies.some(
@@ -162,52 +156,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           ),
         ]);
 
-        logger.info("[ROOT LAYOUT] 📋 getSession() result", {
-          hasSession: !!authSession,
-          hasUser: !!authSession?.user,
-          userId: authSession?.user?.id,
-          email: authSession?.user?.email,
-          hasAccessToken: !!authSession?.access_token,
-          accessTokenPreview: authSession?.access_token?.substring(0, 20),
-          hasError: !!error,
-          errorMsg: error?.message,
-        });
-
         if (!error && authSession) {
-          // Use the actual session from Supabase with real tokens
           session = authSession;
-          logger.info("[ROOT LAYOUT] ✅ Session obtained from server", {
-            userId: authSession.user?.id,
-            hasAccessToken: !!session.access_token,
-            accessTokenLength: session.access_token?.length,
-          });
-        } else {
-          logger.warn("[ROOT LAYOUT] ⚠️ No session or error from getSession()", {
-            error: error?.message,
-            hadCookies: hasAuthCookies,
-            cookieCount: allCookies.filter((c) => c.name.includes("auth-token")).length,
-          });
         }
       } catch (err) {
-        logger.error("[ROOT LAYOUT] ❌ Error calling getSession()", {
-          error: err instanceof Error ? err.message : String(err),
-        });
+        // Error handled
       }
-    } else {
-      // Block handled
     }
   } catch (err) {
-    logger.error("[ROOT LAYOUT] ❌ Error in root layout", {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    // Error handled
   }
-
-  logger.info("[ROOT LAYOUT] 🎯 Final session state", {
-    hasSession: !!session,
-    hasUser: !!session?.user,
-    hasAccessToken: !!session?.access_token,
-    userId: session?.user?.id,
-  });
 
   return (
     <html lang="en" suppressHydrationWarning>
