@@ -43,9 +43,24 @@ export const POST = withUnifiedAuth(
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
       }
 
-    // Get context and data summaries
-    const assistantContext = await getAssistantContext(context.venueId, context.user.id);
-    const summaries = await getAllSummaries(context.venueId, assistantContext.features);
+    // Get context and data summaries with error handling
+    let assistantContext;
+    let summaries;
+    try {
+      assistantContext = await getAssistantContext(context.venueId, context.user.id);
+      summaries = await getAllSummaries(context.venueId, assistantContext.features);
+    } catch (contextError) {
+      logger.error("[AI SIMPLE CHAT] Failed to get context", {
+        venueId: context.venueId,
+        userId: context.user?.id,
+        error: contextError instanceof Error ? contextError.message : String(contextError),
+        stack: contextError instanceof Error ? contextError.stack : undefined,
+      });
+      return NextResponse.json(
+        { error: "Failed to load assistant context", message: "Please try again" },
+        { status: 500 }
+      );
+    }
 
     // Build conversation context from history
     let conversationContext = "";
