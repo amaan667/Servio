@@ -40,6 +40,18 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const [loadingPortal, setLoadingPortal] = useState(false);
   const { toast } = useToast();
 
+  // Debug: Log organization data
+  if (typeof window !== "undefined" && organization) {
+    console.log("[BILLING DEBUG] Organization data:", {
+      id: organization.id,
+      subscription_tier: organization.subscription_tier,
+      stripe_customer_id: organization.stripe_customer_id,
+      subscription_status: organization.subscription_status,
+      hasId: !!organization.id,
+      fullOrg: organization,
+    });
+  }
+
   // Normalize tier: basic→starter, standard→pro, premium→enterprise
   const tierRaw = organization?.subscription_tier?.toLowerCase() || "starter";
   const tier = normalizeTier(tierRaw);
@@ -47,10 +59,22 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const isGrandfathered = false; // Grandfathered accounts removed
 
   const handleManageBilling = async () => {
+    // Debug logging
+    console.log("[BILLING DEBUG] handleManageBilling called", {
+      hasOrganization: !!organization,
+      organizationId: organization?.id,
+      organizationData: organization,
+      venueId,
+    });
+
     if (!organization?.id) {
+      console.error("[BILLING DEBUG] Missing organization ID", {
+        organization,
+        organizationId: organization?.id,
+      });
       toast({
         title: "Error",
-        description: "Organization not found. Please refresh the page.",
+        description: `Organization not found. Organization ID: ${organization?.id || "missing"}. Please refresh the page.`,
         variant: "destructive",
       });
       return;
@@ -58,10 +82,20 @@ export default function BillingSection({ organization, venueId }: BillingSection
 
     setLoadingPortal(true);
     try {
+      console.log("[BILLING DEBUG] Calling create-portal-session", {
+        organizationId: organization.id,
+        venueId,
+      });
+      
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
         organizationId: organization.id,
         venueId: venueId,
+      });
+
+      console.log("[BILLING DEBUG] Portal session response", {
+        ok: response.ok,
+        status: response.status,
       });
 
       if (!response.ok) {
@@ -179,11 +213,26 @@ export default function BillingSection({ organization, venueId }: BillingSection
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Tier received: <strong>{tier || "none"}</strong>
-                <br />
-                Organization ID: <strong>{organization?.id || "none"}</strong>
-                <br />
-                Please contact support or refresh the page.
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <strong>Tier received:</strong> {tier || "none"} (raw: {tierRaw || "none"})
+                  </div>
+                  <div>
+                    <strong>Organization ID:</strong> {organization?.id || "none"}
+                  </div>
+                  <div>
+                    <strong>Has Organization:</strong> {organization ? "yes" : "no"}
+                  </div>
+                  <div>
+                    <strong>Organization Data:</strong>{" "}
+                    <pre className="text-xs mt-1 p-2 bg-gray-100 rounded overflow-auto">
+                      {JSON.stringify(organization, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="mt-2">
+                    Please contact support or refresh the page.
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
           </CardContent>
