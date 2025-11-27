@@ -5,6 +5,9 @@ import { createClient as createSupabaseClient } from "@/lib/supabase";
 import { apiLogger, logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { validateBody, createOrderSchema } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
 
@@ -90,17 +93,13 @@ export const GET = withUnifiedAuth(
           error: error.message,
           venueId,
         });
-        return NextResponse.json(
-          { 
-            ok: false, 
-            error: "Failed to fetch orders",
-            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
-          },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to fetch orders",
+          isDevelopment() ? error.message : undefined
         );
       }
 
-      return NextResponse.json({ ok: true, orders: orders || [] });
+      return success({ orders: orders || [] });
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
@@ -110,14 +109,9 @@ export const GET = withUnifiedAuth(
         stack: errorStack,
       });
       
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to fetch orders",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+      return apiErrors.internal(
+        "Failed to fetch orders",
+        isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
       );
     }
   },
@@ -167,8 +161,12 @@ type OrderPayload = {
   prep_lead_minutes?: number;
 };
 
+// Legacy helper - use apiErrors instead
 function bad(msg: string, status = 400) {
-  return NextResponse.json({ ok: false, error: msg }, { status });
+  if (status === 403) return apiErrors.forbidden(msg);
+  if (status === 404) return apiErrors.notFound(msg);
+  if (status === 500) return apiErrors.internal(msg);
+  return apiErrors.badRequest(msg);
 }
 
 // Function to create KDS tickets for an order
@@ -454,7 +452,7 @@ export const POST = withUnifiedAuth(
           authenticated: context.venueId,
           userId: context.user.id,
         });
-        return bad("Venue ID mismatch", 403);
+        return apiErrors.forbidden("Venue ID mismatch");
       }
       
       // Use venueId from context (already verified by withUnifiedAuth)
@@ -469,25 +467,20 @@ export const POST = withUnifiedAuth(
       requestId,
     });
 
-    // venue_id is now validated by withUnifiedAuth, but we still need it in the body for the payload
-    if (!venueId) {
-      return bad("venue_id is required", 400);
-    }
-
-    if (!body.customer_name || !body.customer_name.trim()) {
-      return bad("customer_name is required");
-    }
-
-    if (!body.customer_phone || !body.customer_phone.trim()) {
-      return bad("customer_phone is required");
-    }
-
-    if (!Array.isArray(body.items) || body.items.length === 0) {
-      return bad("items must be a non-empty array");
-    }
-
-    if (typeof body.total_amount !== "number" || isNaN(body.total_amount)) {
-      return bad("total_amount must be a number");
+    // STEP 3: Validate input with Zod
+    try {
+      const validatedBody = await validateBody(createOrderSchema, {
+        ...body,
+        venue_id: venueId, // Use venueId from context
+      });
+      
+      // Use validated body for rest of function
+      body = validatedBody as OrderPayload;
+    } catch (validationError) {
+      if (isZodError(validationError)) {
+        return handleZodError(validationError);
+      }
+      return apiErrors.validation("Invalid order data");
     }
 
     logger.info("✅✅✅ ALL VALIDATIONS PASSED ✅✅✅", {
@@ -904,14 +897,9 @@ export const POST = withUnifiedAuth(
       }
 
       // Return generic error in production, detailed in development
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to create order",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+      return apiErrors.internal(
+        "Failed to create order",
+        isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
       );
     }
   },

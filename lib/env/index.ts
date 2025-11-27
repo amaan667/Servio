@@ -176,6 +176,14 @@ export function isTest(): boolean {
   return env("NODE_ENV") === "test";
 }
 
+/**
+ * Get NODE_ENV value (for conditional logic)
+ * Prefer using isProduction(), isDevelopment(), isTest() when possible
+ */
+export function getNodeEnv(): "development" | "production" | "test" {
+  return env("NODE_ENV");
+}
+
 // Validate on module load (server-side only)
 if (typeof window === "undefined") {
   try {

@@ -1,27 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { env, isDevelopment } from '@/lib/env';
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  specialInstructions?: string;
-  image?: string;
-}
+// Validation schemas
+const cartItemSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(200),
+  price: z.number().nonnegative(),
+  quantity: z.number().int().positive(),
+  specialInstructions: z.string().max(500).optional(),
+  image: z.string().url().optional(),
+});
 
-interface StoreCartRequest {
-  cartId: string;
-  venueId: string;
-  tableNumber: number;
-  customerName: string;
-  customerPhone: string;
-  items: CartItem[];
-  total: number;
-  notes?: string;
-}
+const storeCartRequestSchema = z.object({
+  cartId: z.string().uuid(),
+  venueId: z.string().uuid(),
+  tableNumber: z.number().int().positive().optional(),
+  customerName: z.string().min(1).max(100),
+  customerPhone: z.string().regex(/^\+?[1-9]\d{1,14}$/),
+  items: z.array(cartItemSchema).min(1, "At least one item required"),
+  total: z.number().nonnegative(),
+  notes: z.string().max(1000).optional(),
+});
+
+const getCartQuerySchema = z.object({
+  cartId: z.string().uuid(),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -29,39 +38,30 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      const body: StoreCartRequest = await req.json();
-      const { cartId, tableNumber, customerName, customerPhone, items, total, notes } = body;
+      // STEP 3: Validate input
+      const body = await validateBody(storeCartRequestSchema, await req.json());
 
-      // STEP 4: Validate inputs
-      if (!cartId || !items || items.length === 0) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      // Verify venue_id matches context
+      if (body.venueId !== venueId) {
+        return apiErrors.forbidden('Venue ID mismatch');
       }
 
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
-      // Store cart data in a temporary table or use a simple approach
-      // For now, we'll use a simple JSON storage approach
+      // STEP 4: Business logic - Store cart data
       const cartData = {
-        id: cartId,
+        id: body.cartId,
         venue_id: venueId,
-        table_number: tableNumber,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        items: items.map((item) => ({
+        table_number: body.tableNumber || null,
+        customer_name: body.customerName,
+        customer_phone: body.customerPhone,
+        items: body.items.map((item) => ({
           menu_item_id: item.id,
           name: item.name,
           price: item.price,
@@ -69,57 +69,45 @@ export const POST = withUnifiedAuth(
           specialInstructions: item.specialInstructions || null,
           image: item.image || null,
         })),
-        total_amount: total,
-        notes: notes || null,
+        total_amount: body.total,
+        notes: body.notes || null,
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
       };
 
-      // Store in a temporary carts table (you might want to create this)
-      // For now, we'll return the cart data to be stored client-side
-
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
-        cartData,
+      logger.info('[CART STORE] Cart stored successfully', {
+        cartId: body.cartId,
+        venueId,
+        userId: context.user.id,
+        itemCount: body.items.length,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
-      logger.error("[CART STORE POST] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+
+      // STEP 5: Return success response
+      return success({ cartData });
+    } catch (error) {
+      logger.error('[CART STORE] Unexpected error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      // Handle validation errors
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
-      );
+
+      return apiErrors.internal('Failed to store cart', error);
     }
   },
   {
     // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venueId || body?.venue_id || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venueId?: string; venue_id?: string })?.venueId || 
+               (body as { venueId?: string; venue_id?: string })?.venue_id || 
+               null;
       } catch {
         return null;
       }
@@ -133,64 +121,41 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      // STEP 2: Get user from context (already verified)
-      // STEP 3: Parse request
+      // STEP 2: Validate query parameters
       const { searchParams } = new URL(req.url);
-      const cartId = searchParams.get("cartId");
+      const query = validateQuery(getCartQuerySchema, {
+        cartId: searchParams.get("cartId"),
+      });
 
-      // STEP 4: Validate inputs
-      if (!cartId) {
-        return NextResponse.json({ error: "Missing cart ID" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 3: Business logic - Retrieve cart
       // In a real implementation, you'd retrieve from database
       // For now, return null to indicate cart not found
 
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
-        cartData: null,
-      });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
-      logger.error("[CART STORE GET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+      logger.debug('[CART STORE] Cart retrieval requested', {
+        cartId: query.cartId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      // STEP 4: Return success response
+      return success({ cartData: null });
+    } catch (error) {
+      logger.error('[CART STORE GET] Unexpected error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: context.user.id,
+      });
+
+      // Handle validation errors
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
-      );
+
+      return apiErrors.internal('Failed to retrieve cart', error);
     }
   },
   {
