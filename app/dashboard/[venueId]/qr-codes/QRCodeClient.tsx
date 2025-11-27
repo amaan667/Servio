@@ -46,6 +46,11 @@ export default function QRCodeClient({
     const tableParam = searchParams.get("table");
     const counterParam = searchParams.get("counter");
 
+    // Only proceed if qrManagement is initialized
+    if (!qrManagement || !qrManagement.generateQRForName) {
+      return;
+    }
+
     // Auto-generate QR code for a specific table
     if (tableParam) {
       let tableName = decodeURIComponent(tableParam).trim();
@@ -60,7 +65,10 @@ export default function QRCodeClient({
       setSingleName(tableName);
       setQrType("table");
       // Generate QR code immediately - no database table needed
-      qrManagement.generateQRForName(tableName, "table");
+      // Use setTimeout to ensure state is ready
+      setTimeout(() => {
+        qrManagement.generateQRForName(tableName, "table");
+      }, 100);
     }
 
     // Auto-generate QR code for a specific counter
@@ -77,10 +85,12 @@ export default function QRCodeClient({
       setSingleName(counterName);
       setQrType("counter");
       // Generate QR code immediately - no database counter needed
-      qrManagement.generateQRForName(counterName, "counter");
+      // Use setTimeout to ensure state is ready
+      setTimeout(() => {
+        qrManagement.generateQRForName(counterName, "counter");
+      }, 100);
     }
-     
-  }, [searchParams]);
+  }, [searchParams, qrManagement]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
