@@ -289,9 +289,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
       return NextResponse.json(
         {
           data: result.data,
-          errors: result.errors.map((e: { message: string; locations?: unknown }) => ({
+          errors: result.errors.map((e: { message: string; locations?: unknown; path?: unknown }) => ({
             message: e.message,
             locations: e.locations,
+            path: e.path,
             path: e.path,
           })),
         },
