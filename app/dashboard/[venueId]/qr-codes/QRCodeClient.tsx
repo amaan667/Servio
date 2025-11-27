@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,14 +40,18 @@ export default function QRCodeClient({
   const [showBulkDialog, setShowBulkDialog] = useState(false);
 
   const qrManagement = useQRCodeManagement(venueId);
+  const hasProcessedParams = useRef<string | null>(null);
 
   // Handle URL parameter for pre-selected table and AI generation
   useEffect(() => {
     const tableParam = searchParams.get("table");
     const counterParam = searchParams.get("counter");
-
-    // Only proceed if qrManagement is initialized
-    if (!qrManagement || !qrManagement.generateQRForName) {
+    
+    // Create a unique key for this set of parameters
+    const paramKey = tableParam ? `table:${tableParam}` : counterParam ? `counter:${counterParam}` : null;
+    
+    // Skip if we've already processed these exact parameters
+    if (!paramKey || hasProcessedParams.current === paramKey) {
       return;
     }
 
@@ -64,11 +68,10 @@ export default function QRCodeClient({
       }
       setSingleName(tableName);
       setQrType("table");
+      // Mark as processed
+      hasProcessedParams.current = paramKey;
       // Generate QR code immediately - no database table needed
-      // Use setTimeout to ensure state is ready
-      setTimeout(() => {
-        qrManagement.generateQRForName(tableName, "table");
-      }, 100);
+      qrManagement.generateQRForName(tableName, "table");
     }
 
     // Auto-generate QR code for a specific counter
@@ -84,13 +87,12 @@ export default function QRCodeClient({
       }
       setSingleName(counterName);
       setQrType("counter");
+      // Mark as processed
+      hasProcessedParams.current = paramKey;
       // Generate QR code immediately - no database counter needed
-      // Use setTimeout to ensure state is ready
-      setTimeout(() => {
-        qrManagement.generateQRForName(counterName, "counter");
-      }, 100);
+      qrManagement.generateQRForName(counterName, "counter");
     }
-  }, [searchParams, qrManagement]);
+  }, [searchParams, qrManagement.generateQRForName]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
