@@ -185,7 +185,46 @@ export default function SelectPlanPage() {
     setSelectedTier(tier);
 
     try {
-      // Get pending email from sessionStorage (from Google OAuth)
+      // Check if user is logged in (existing user changing plan)
+      if (session?.user) {
+        // Get organization ID for existing user
+        const supabase = supabaseBrowser();
+        const { data: venues } = await supabase
+          .from("venues")
+          .select("organization_id")
+          .eq("owner_user_id", session.user.id)
+          .limit(1);
+
+        const organizationId = venues?.[0]?.organization_id;
+
+        if (organizationId) {
+          // Existing user - create checkout session with organization ID
+          const response = await fetch("/api/stripe/create-checkout-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tier,
+              organizationId,
+              isSignup: false,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.error || !data.url) {
+            alert(data.error || "Failed to create checkout session. Please try again.");
+            setLoading(false);
+            setSelectedTier(null);
+            return;
+          }
+
+          // Redirect to Stripe checkout
+          window.location.href = data.url;
+          return;
+        }
+      }
+
+      // New signup flow
       const pendingEmail =
         typeof window !== "undefined" ? sessionStorage.getItem("pending_signup_email") : null;
 

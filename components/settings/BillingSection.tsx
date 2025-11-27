@@ -14,9 +14,9 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { UpgradeModal } from "@/components/upgrade-modal";
 import { useToast } from "@/hooks/use-toast";
 import { normalizeTier } from "@/lib/stripe-tier-helper";
+import { useRouter } from "next/navigation";
 
 interface BillingSectionProps {
   user?: {
@@ -36,9 +36,9 @@ interface BillingSectionProps {
 }
 
 export default function BillingSection({ organization, venueId }: BillingSectionProps) {
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   // Debug: Log organization data
   if (typeof window !== "undefined" && organization) {
@@ -90,7 +90,6 @@ export default function BillingSection({ organization, venueId }: BillingSection
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
         organizationId: organization.id,
-        venueId: venueId,
       });
 
       console.log("[BILLING DEBUG] Portal session response", {
@@ -142,13 +141,6 @@ export default function BillingSection({ organization, venueId }: BillingSection
     }
   };
 
-  // Downgrade through Stripe portal (same as manage billing)
-  // This allows Stripe to handle the downgrade with proper confirmation
-  const handleDowngrade = async () => {
-    // Use the same portal redirect as manage billing
-    // Stripe portal will allow the user to change their plan
-    await handleManageBilling();
-  };
 
   const getTierInfo = () => {
     if (isGrandfathered) {
@@ -260,34 +252,15 @@ export default function BillingSection({ organization, venueId }: BillingSection
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              {!isGrandfathered && tier !== "enterprise" && (
+              {!isGrandfathered && (
                 <Button
                   onClick={() => {
-                    setShowUpgradeModal(true);
+                    window.location.href = "/select-plan";
                   }}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Upgrade Plan
-                </Button>
-              )}
-              {!isGrandfathered && tier === "pro" && (
-                <Button
-                  variant="outline"
-                  onClick={handleDowngrade}
-                  disabled={loadingPortal}
-                  className="text-gray-600 hover:text-gray-800 border-gray-300"
-                >
-                  {loadingPortal ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Opening Portal...
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-gray-900 font-medium">Change Plan</span>
-                    </>
-                  )}
+                  Change Plan
                 </Button>
               )}
             </div>
@@ -423,13 +396,6 @@ export default function BillingSection({ organization, venueId }: BillingSection
         </CardContent>
       </Card>
 
-      {/* Upgrade Modal */}
-      <UpgradeModal
-        open={showUpgradeModal}
-        onOpenChange={setShowUpgradeModal}
-        currentTier={tier}
-        organizationId={organization?.id || ""}
-      />
     </div>
   );
 }
