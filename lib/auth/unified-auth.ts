@@ -86,6 +86,31 @@ export async function getAuthUserFromRequest(
 }
 
 /**
+ * Simple auth check (no venue required)
+ * For system routes that don't need venue access
+ */
+export async function requireAuth(
+  request: NextRequest
+): Promise<
+  | { success: true; user: User }
+  | { success: false; response: NextResponse }
+> {
+  const { user, error: authError } = await getAuthUserFromRequest(request);
+
+  if (authError || !user) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Unauthorized", message: authError || "Authentication required" },
+        { status: 401 }
+      ),
+    };
+  }
+
+  return { success: true, user };
+}
+
+/**
  * Unified auth + venue access check for API routes
  * This is the ONLY function API routes should use for auth
  */
@@ -399,11 +424,16 @@ export function withUnifiedAuth(
       let parsedBody: unknown = null;
       let bodyConsumed = false;
 
+      // Track if we used custom extractor (to know if null is intentional)
+      const usedCustomExtractor = !!options?.extractVenueId;
+      
       // Use custom extractor if provided
       if (options?.extractVenueId) {
         // eslint-disable-next-line no-console
         console.log("[UNIFIED AUTH] Using custom venueId extractor");
         venueId = await options.extractVenueId(req, routeParams);
+        // eslint-disable-next-line no-console
+        console.log("[UNIFIED AUTH] Custom extractor returned:", venueId);
       } else {
         // Try params first (await if it's a Promise)
         if (routeParams?.params) {
@@ -481,9 +511,29 @@ export function withUnifiedAuth(
       }
       
       // eslint-disable-next-line no-console
-      console.log("[UNIFIED AUTH] Final venueId:", venueId);
+      console.log("[UNIFIED AUTH] Final venueId:", venueId, "usedCustomExtractor:", usedCustomExtractor);
 
-      // Auth + venue access
+      // If custom extractor returned null, this route doesn't need venueId - skip venue check
+      if (!venueId && usedCustomExtractor) {
+        // eslint-disable-next-line no-console
+        console.log("[UNIFIED AUTH] Custom extractor returned null - skipping venue check (system route)");
+        
+        // Just check auth, no venue access needed
+        const authResult = await requireAuth(req);
+        if (!authResult.success) {
+          return authResult.response;
+        }
+
+        // Call handler without venue context
+        return await handler(req, {
+          user: authResult.user,
+          venue: null,
+          venueId: null,
+          role: null,
+        }, routeParams);
+      }
+
+      // Auth + venue access (venueId is required)
       if (!venueId) {
         // eslint-disable-next-line no-console
         console.error("[UNIFIED AUTH] ERROR: venueId is required but not found");
