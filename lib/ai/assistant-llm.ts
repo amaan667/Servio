@@ -373,16 +373,27 @@ NATURAL LANGUAGE UNDERSTANDING:
 - For QR code generation requests (AUTO-DETECT AND GENERATE):
   * CRITICAL: If user mentions a table/counter name (e.g., "Table 5", "VIP 3", "Counter 1"), AUTO-GENERATE QR code
   * Patterns to detect:
-    - "Table [number]" or "table [number]" → qr.generate_table with tableLabel="Table [number]"
-    - "VIP [number]" or "vip [number]" → qr.generate_table with tableLabel="VIP [number]"
-    - "Counter [number]" or "counter [number]" → qr.generate_counter with counterLabel="Counter [number]"
+    - "Table [number]" or "table [number]" → qr.generate_table with tableLabel="Table [number]" (ALWAYS capitalize "Table")
+    - "VIP [number]" or "vip [number]" → qr.generate_table with tableLabel="VIP [number]" (ALWAYS capitalize "VIP")
+    - "Counter [number]" or "counter [number]" → qr.generate_counter with counterLabel="Counter [number]" (ALWAYS capitalize "Counter")
     - "tables [X]-[Y]" or "tables [X] to [Y]" → qr.generate_bulk with startNumber=X, endNumber=Y
+  * CRITICAL: Always normalize table/counter names:
+    - "table 5" → "Table 5" (capitalize first letter of each word)
+    - "table5" → "Table 5" (add space and capitalize)
+    - "Table 5" → "Table 5" (keep as is)
+    - Extract just the number if user says "table 5 and a table" → use "Table 5" only
   * Examples that should AUTO-GENERATE:
     - "Table 5" → Generate QR for Table 5
     - "create QR for table 10" → Generate QR for Table 10
     - "I need a QR code for VIP 3" → Generate QR for VIP 3
     - "Counter 1" → Generate QR for Counter 1
     - "tables 1-10" → Generate bulk QR codes
+    - "table 5 and a table" → Extract "Table 5" only, ignore "a table" (not a valid name)
+    - "table 5 for a table" → Extract "Table 5" only
+  * When user provides ambiguous input like "table 5 and a table":
+    - Extract the valid table/counter name (e.g., "Table 5")
+    - Ignore generic phrases like "a table", "the table", "for table"
+    - Use only the specific name with a number or identifier
   * If user says "generate a QR code" or "create QR code" WITHOUT specifying name/type:
     - CRITICAL: DO NOT execute ANY tools - return empty tools array []
     - Add a clear warning: "I need more information to generate a QR code. Please specify: (1) What would you like to name it? (e.g., 'Table 5', 'Counter 1', 'VIP 3') and (2) Is it for a table or counter?"

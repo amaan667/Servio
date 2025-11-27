@@ -26,19 +26,33 @@ export async function executeQRGenerateTable(
     );
   }
 
+  // Normalize table label: ensure proper capitalization
+  let normalizedLabel = params.tableLabel.trim();
+  // If it starts with "table" (case-insensitive), capitalize it properly
+  if (normalizedLabel.toLowerCase().startsWith("table ")) {
+    const number = normalizedLabel.substring(6).trim();
+    normalizedLabel = `Table ${number}`;
+  } else if (normalizedLabel.toLowerCase().startsWith("vip ")) {
+    const number = normalizedLabel.substring(4).trim();
+    normalizedLabel = `VIP ${number}`;
+  } else if (!normalizedLabel.match(/^[A-Z]/)) {
+    // If it doesn't start with capital, capitalize first letter
+    normalizedLabel = normalizedLabel.charAt(0).toUpperCase() + normalizedLabel.slice(1);
+  }
+
   if (preview) {
     return {
       toolName: "qr.generate_table",
       before: [],
-      after: [{ label: params.tableLabel, type: "table" }],
+      after: [{ label: normalizedLabel, type: "table" }],
       impact: {
         itemsAffected: 1,
-        description: `Will generate QR code for ${params.tableLabel}`,
+        description: `Will generate QR code for ${normalizedLabel}`,
       },
     };
   }
 
-  const result = await generateTableQRCode(venueId, params.tableLabel);
+  const result = await generateTableQRCode(venueId, normalizedLabel);
 
   return {
     success: true,
@@ -46,8 +60,8 @@ export async function executeQRGenerateTable(
     result: {
       qrCode: result.qrCodes[0],
       message: result.message,
-      tableLabel: params.tableLabel, // Pass table label for navigation
-      navigateTo: `/dashboard/${venueId}/qr-codes?table=${encodeURIComponent(params.tableLabel)}`,
+      tableLabel: normalizedLabel, // Pass normalized table label for navigation
+      navigateTo: `/dashboard/${venueId}/qr-codes?table=${encodeURIComponent(normalizedLabel)}`,
     },
     auditId: "",
   };

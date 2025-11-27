@@ -46,10 +46,17 @@ export default function QRCodeClient({
     const tableParam = searchParams.get("table");
     const counterParam = searchParams.get("counter");
 
-
     // Auto-generate QR code for a specific table
     if (tableParam) {
-      const tableName = decodeURIComponent(tableParam);
+      let tableName = decodeURIComponent(tableParam).trim();
+      // Normalize table name: ensure "Table" is capitalized if it starts with "table"
+      if (tableName.toLowerCase().startsWith("table ")) {
+        const number = tableName.substring(6).trim();
+        tableName = `Table ${number}`;
+      } else if (!tableName.match(/^[A-Z]/)) {
+        // If it doesn't start with capital, capitalize first letter
+        tableName = tableName.charAt(0).toUpperCase() + tableName.slice(1);
+      }
       setSingleName(tableName);
       setQrType("table");
       // Generate QR code immediately - no database table needed
@@ -58,13 +65,22 @@ export default function QRCodeClient({
 
     // Auto-generate QR code for a specific counter
     if (counterParam) {
-      const counterName = decodeURIComponent(counterParam);
+      let counterName = decodeURIComponent(counterParam).trim();
+      // Normalize counter name: ensure "Counter" is capitalized if it starts with "counter"
+      if (counterName.toLowerCase().startsWith("counter ")) {
+        const number = counterName.substring(8).trim();
+        counterName = `Counter ${number}`;
+      } else if (!counterName.match(/^[A-Z]/)) {
+        // If it doesn't start with capital, capitalize first letter
+        counterName = counterName.charAt(0).toUpperCase() + counterName.slice(1);
+      }
       setSingleName(counterName);
       setQrType("counter");
       // Generate QR code immediately - no database counter needed
       qrManagement.generateQRForName(counterName, "counter");
     }
-  }, [searchParams, qrManagement.generateQRForName]);
+     
+  }, [searchParams]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
