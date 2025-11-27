@@ -524,13 +524,16 @@ export function withUnifiedAuth(
           return authResult.response;
         }
 
-        // Call handler without venue context
-        return await handler(req, {
+        // Call handler without venue context (system route)
+        // Create minimal context for system routes
+        const systemContext: AuthContext = {
           user: authResult.user,
-          venue: null,
-          venueId: null,
-          role: null,
-        }, routeParams);
+          venue: null as unknown as AuthorizedContext["venue"], // Type assertion for system routes
+          venueId: null as unknown as string, // Type assertion for system routes
+          role: null as unknown as string, // Type assertion for system routes
+          tier: "starter", // Default tier for system routes
+        };
+        return await handler(req, systemContext, routeParams);
       }
 
       // Auth + venue access (venueId is required)
