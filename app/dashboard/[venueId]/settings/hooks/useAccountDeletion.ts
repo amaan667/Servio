@@ -21,23 +21,26 @@ export function useAccountDeletion(user: User) {
     setError(null);
 
     try {
-      const { error: venueError } = await createClient()
-        .from("venues")
-        .delete()
-        .eq("owner_user_id", user.id);
+      // Use the API route for account deletion
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post("/api/delete-account", {
+        userId: user.id,
+        venueId: null, // Delete all venues for the user
+      });
 
-      if (venueError) {
-        // Empty block
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Failed to delete account");
       }
 
-      const { error } = await createClient().auth.admin.deleteUser(user.id);
-
-      if (error) {
-        throw new Error(error.message);
+      if (!data.success) {
+        throw new Error(data.message || data.error || "Failed to delete account");
       }
 
+      // Sign out and clear storage
       try {
-        const response = await fetch("/api/auth/signout", {
+        await fetch("/api/auth/signout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -54,17 +57,19 @@ export function useAccountDeletion(user: User) {
         // Error silently handled
       }
 
-      router.push("/");
-
       toast({
         title: "Account Deleted",
         description: "Your account has been permanently deleted.",
       });
+
+      // Redirect to home page
+      router.push("/");
     } catch (_err) {
-      setError(_err instanceof Error ? _err.message : "Failed to delete account");
+      const errorMessage = _err instanceof Error ? _err.message : "Failed to delete account";
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: _err instanceof Error ? _err.message : "Failed to delete account",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

@@ -49,7 +49,16 @@ export default function SelectPlanPage() {
         // Store result for potential use
         const hasOwnerVenues = !!ownerVenuesData?.length;
 
+        // Check if user is coming from billing/settings to change plan
+        const isChangingPlan = searchParams.get("change") === "true";
+        
         if (ownerVenuesData && ownerVenuesData.length > 0 && ownerVenuesData[0]?.venue_id) {
+          // If user is changing plan, don't redirect - let them view plans
+          if (isChangingPlan) {
+            setIsChecking(false);
+            return;
+          }
+          
           // User has owner venues - redirect based on focus param
           const mainVenueId = ownerVenuesData[0].venue_id;
           let redirectPath = `/dashboard/${mainVenueId}`;

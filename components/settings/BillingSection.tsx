@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { normalizeTier } from "@/lib/stripe-tier-helper";
-import { useRouter } from "next/navigation";
 
 interface BillingSectionProps {
   user?: {
@@ -35,10 +34,9 @@ interface BillingSectionProps {
   venueId?: string;
 }
 
-export default function BillingSection({ organization, venueId }: BillingSectionProps) {
-  const [loadingPortal, setLoadingPortal] = useState(false);
+export default function BillingSection({ organization }: BillingSectionProps) {
+  const [loadingChangePlan, setLoadingChangePlan] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   // Debug: Log organization data
   if (typeof window !== "undefined" && organization) {
@@ -58,56 +56,34 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 
-  const handleManageBilling = async () => {
-    // Debug logging
-    console.log("[BILLING DEBUG] handleManageBilling called", {
-      hasOrganization: !!organization,
-      organizationId: organization?.id,
-      organizationData: organization,
-      venueId,
-    });
-
+  const handleChangePlan = async () => {
     if (!organization?.id) {
-      console.error("[BILLING DEBUG] Missing organization ID", {
-        organization,
-        organizationId: organization?.id,
-      });
       toast({
         title: "Error",
-        description: `Organization not found. Organization ID: ${organization?.id || "missing"}. Please refresh the page.`,
+        description: "Organization not found. Please refresh the page.",
         variant: "destructive",
       });
       return;
     }
 
-    setLoadingPortal(true);
+    setLoadingChangePlan(true);
     try {
-      console.log("[BILLING DEBUG] Calling create-portal-session", {
-        organizationId: organization.id,
-        venueId,
-      });
-      
+      // Open Stripe billing portal where users can upgrade/downgrade
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
         organizationId: organization.id,
       });
 
-      console.log("[BILLING DEBUG] Portal session response", {
-        ok: response.ok,
-        status: response.status,
-      });
+      const data = await response.json();
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
         toast({
           title: "Error",
-          description: errorData.message || errorData.error || `Failed to open billing portal (${response.status})`,
+          description: data.message || data.error || `Failed to open billing portal (${response.status})`,
           variant: "destructive",
         });
         return;
       }
-
-      const data = await response.json();
 
       if (data.error) {
         toast({
@@ -137,7 +113,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
         variant: "destructive",
       });
     } finally {
-      setLoadingPortal(false);
+      setLoadingChangePlan(false);
     }
   };
 
@@ -240,7 +216,7 @@ export default function BillingSection({ organization, venueId }: BillingSection
       {/* Current Plan Status */}
       <Card className={`border-2 ${tierInfo.borderColor} ${tierInfo.bgColor}`}>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-full ${tierInfo.bgColor}`}>
                 <TierIcon className={`h-6 w-6 ${tierInfo.color}`} />
@@ -251,112 +227,70 @@ export default function BillingSection({ organization, venueId }: BillingSection
               </div>
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              {!isGrandfathered && (
-                <Button
-                  onClick={() => {
-                    window.location.href = "/select-plan";
-                  }}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                >
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Change Plan
-                </Button>
-              )}
-            </div>
+            {organization?.subscription_status && (
+              <Badge
+                variant={
+                  organization.subscription_status === "active" ? "default" : "secondary"
+                }
+                className={organization.subscription_status === "active" ? "bg-green-600" : ""}
+              >
+                {organization.subscription_status}
+              </Badge>
+            )}
           </div>
         </CardHeader>
-      </Card>
+        <CardContent>
+          <div className="space-y-4">
+            {organization?.trial_ends_at && (
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">
+                  {new Date(organization.trial_ends_at) > new Date()
+                    ? "Trial Ends"
+                    : "Trial Ended"}
+                </span>
+                <span className="text-sm text-gray-600">
+                  {new Date(organization.trial_ends_at).toLocaleDateString()}
+                </span>
+              </div>
+            )}
 
-      {/* Billing Management */}
-      {hasStripeCustomer && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Billing Management
-            </CardTitle>
-            <CardDescription>
-              Manage your subscription, payment methods, and billing history
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {organization?.subscription_status && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Subscription Status</span>
-                  <Badge
-                    variant={
-                      organization.subscription_status === "active" ? "default" : "secondary"
-                    }
-                    className={organization.subscription_status === "active" ? "bg-green-600" : ""}
-                  >
-                    {organization.subscription_status}
-                  </Badge>
-                </div>
-              )}
-
-              {organization?.trial_ends_at && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    {new Date(organization.trial_ends_at) > new Date()
-                      ? "Trial Ends"
-                      : "Trial Ended"}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {new Date(organization.trial_ends_at).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-
+            {!isGrandfathered && (
               <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleManageBilling}
-                disabled={loadingPortal}
+                onClick={handleChangePlan}
+                disabled={loadingChangePlan}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
               >
-                {loadingPortal ? (
+                {loadingChangePlan ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading...
                   </>
                 ) : (
                   <>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Open Billing Portal
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Change Plan
                   </>
                 )}
               </Button>
+            )}
 
+            {hasStripeCustomer && (
               <p className="text-xs text-gray-600 text-center">
-                Manage your subscription, update payment methods, and view billing history.
-                Your tier is automatically synced from Stripe when you make changes.
+                Click "Change Plan" to upgrade, downgrade, or manage your subscription, payment methods, and billing history.
               </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            )}
 
-      {/* No Billing Account */}
-      {!isGrandfathered && !hasStripeCustomer && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              Billing Account
-            </CardTitle>
-            <CardDescription>Set up billing to manage your subscription</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert className="bg-yellow-50 border-yellow-200">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                No billing account found. Contact support to set up billing management.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      )}
+            {!hasStripeCustomer && !isGrandfathered && (
+              <Alert className="bg-yellow-50 border-yellow-200">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800">
+                  No billing account found. Contact support to set up billing management.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Feature Access Summary */}
       <Card>
@@ -395,7 +329,6 @@ export default function BillingSection({ organization, venueId }: BillingSection
           </div>
         </CardContent>
       </Card>
-
     </div>
   );
 }

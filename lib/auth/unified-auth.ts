@@ -82,7 +82,58 @@ export async function getAuthUserFromRequest(
     };
   }
 
-  return { user: null, error: "No authentication found" };
+  // Fallback: Read session from cookies if middleware didn't process this route
+  // This is needed for routes like /api/stripe that aren't in protectedPaths
+  try {
+    const { createServerClient } = await import("@supabase/ssr");
+    const supabaseModule = await import("@/lib/supabase");
+    
+    // Create Supabase client with request cookies (similar to middleware)
+    const supabase = createServerClient(
+      supabaseModule.getSupabaseUrl(),
+      supabaseModule.getSupabaseAnonKey(),
+      {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set() {
+          // Read-only mode - we're just reading the session
+        },
+        remove() {
+          // Read-only mode
+        },
+      },
+    });
+    
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+      // Silently handle refresh token errors
+      if (
+        error.message?.includes("refresh_token_not_found") ||
+        error.message?.includes("Invalid Refresh Token")
+      ) {
+        return { user: null, error: null };
+      }
+      return { user: null, error: error.message };
+    }
+
+    if (session?.user) {
+      return { user: session.user, error: null };
+    }
+
+    return { user: null, error: "No authentication found" };
+  } catch (error) {
+    // If cookie reading fails, return no auth
+    logger.debug("[UNIFIED AUTH] Fallback cookie read failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { user: null, error: "No authentication found" };
+  }
 }
 
 /**

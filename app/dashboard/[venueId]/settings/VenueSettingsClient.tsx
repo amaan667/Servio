@@ -15,7 +15,6 @@ import { useAccountDeletion } from "./hooks/useAccountDeletion";
 
 // Components
 import { AccountInformationCard } from "./components/AccountInformationCard";
-import { PlanCard } from "./components/PlanCard";
 import { SecuritySettingsCard } from "./components/SecuritySettingsCard";
 import { VenueSettingsCard } from "./components/VenueSettingsCard";
 import { OperatingHoursCard } from "./components/OperatingHoursCard";
@@ -96,8 +95,6 @@ export default function VenueSettingsClient({
           {/* LEFT COLUMN */}
           <div className="space-y-6">
             <AccountInformationCard user={user} />
-
-            <PlanCard organization={organization} venueId={venue.venue_id} />
 
             <SecuritySettingsCard
               shouldShowSetPassword={passwordManagement.shouldShowSetPassword}
