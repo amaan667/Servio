@@ -293,7 +293,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
             message: e.message,
             locations: e.locations,
             path: e.path,
-            path: e.path,
           })),
         },
         { status: 200 } // GraphQL returns 200 even with errors
