@@ -206,6 +206,7 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
   const maxPrice = Math.max(...prices);
 
   // Create list of all items for AI to reference
+  // For large menus (>100 items), limit to top sellers + recent items to avoid context window issues
   const allItems = items.map((item: Record<string, unknown>) => ({
     id: item.id as string,
     name: item.name as string,
@@ -214,11 +215,65 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     categoryName: (item.category as string) || "Uncategorized",
   }));
 
+  // If menu is very large (>200 items), optimize for context window
+  // Keep top sellers, items without images, and sample from each category
+  let optimizedItems = allItems;
+  if (allItems.length > 200) {
+    const itemsWithoutImages = allItems.filter((item) => {
+      const menuItem = items.find((i) => i.id === item.id);
+      return !menuItem?.image_url || (menuItem.image_url as string).trim() === "";
+    });
+
+    // Get sample from each category (max 10 per category)
+    const categorySamples = new Map<string, typeof allItems>();
+    allItems.forEach((item) => {
+      const category = item.categoryName;
+      if (!categorySamples.has(category)) {
+        categorySamples.set(category, []);
+      }
+      const samples = categorySamples.get(category)!;
+      if (samples.length < 10) {
+        samples.push(item);
+      }
+    });
+
+    // Combine: top sellers + items without images + category samples
+    const combined = new Map<string, typeof allItems[0]>();
+    const topSellerIds = new Set(topSellers.map((s) => s.id));
+    
+    // Add top sellers
+    topSellers.forEach((seller) => {
+      const item = allItems.find((i) => i.id === seller.id);
+      if (item) combined.set(item.id, item);
+    });
+
+    // Add items without images
+    itemsWithoutImages.forEach((item) => {
+      combined.set(item.id, item);
+    });
+
+    // Add category samples
+    categorySamples.forEach((samples) => {
+      samples.forEach((item) => {
+        combined.set(item.id, item);
+      });
+    });
+
+    optimizedItems = Array.from(combined.values());
+    
+    aiLogger.info("[AI CONTEXT] Optimized large menu for context window", {
+      originalCount: allItems.length,
+      optimizedCount: optimizedItems.length,
+      topSellersCount: topSellers.length,
+      itemsWithoutImagesCount: itemsWithoutImages.length,
+    });
+  }
+
   const summary: MenuSummary = {
     totalItems: items.length,
     categories,
     topSellers,
-    allItems, // Added: full list of all menu items for AI to reference
+    allItems: optimizedItems, // Optimized list for context window (top sellers + items without images + category samples)
     avgPrice: Number(avgPrice.toFixed(2)),
     priceRange: { min: minPrice, max: maxPrice },
     itemsWithImages,

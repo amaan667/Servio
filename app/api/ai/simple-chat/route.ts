@@ -169,90 +169,119 @@ export const POST = withUnifiedAuth(
           params: tool.params,
           preview: tool.preview,
         });
-        const result = await executeTool(
-          tool.name,
-          tool.params,
-          context.venueId,
-          context.user.id,
-          tool.preview // use the preview flag from the plan
-        );
-        // eslint-disable-next-line no-console
-        console.log(`[AI SIMPLE CHAT] Step 8.${i + 1}a: Tool "${tool.name}" completed`, {
-          success: "success" in result ? result.success : "unknown",
-          hasResult: "result" in result,
-        });
+        
+        try {
+          const result = await executeTool(
+            tool.name,
+            tool.params,
+            context.venueId,
+            context.user.id,
+            tool.preview // use the preview flag from the plan
+          );
+          // eslint-disable-next-line no-console
+          console.log(`[AI SIMPLE CHAT] Step 8.${i + 1}a: Tool "${tool.name}" completed`, {
+            success: "success" in result ? result.success : "unknown",
+            hasResult: "result" in result,
+          });
 
-        toolResults.push({
-          tool: tool.name,
-          result,
-        });
+          toolResults.push({
+            tool: tool.name,
+            result,
+          });
 
-        // Build response from tool results
-        if ("success" in result && result.success && "result" in result) {
-          const resultData = result.result as Record<string, unknown>;
+          // Build response from tool results
+          if ("success" in result && result.success && "result" in result) {
+            const resultData = result.result as Record<string, unknown>;
 
-          // Handle navigation (set navigationInfo but don't overwrite messages)
-          if (tool.name === "navigation.go_to_page") {
-            navigationInfo = {
-              route: resultData.route as string,
-              page: resultData.page as string,
-            };
-            // Add navigation message if there are no other messages
-            if (messages.length === 0) {
-              messages.push((resultData.message as string) || plan.reasoning || "Navigating...");
+            // Handle navigation (set navigationInfo but don't overwrite messages)
+            if (tool.name === "navigation.go_to_page") {
+              navigationInfo = {
+                route: resultData.route as string,
+                page: resultData.page as string,
+              };
+              // Add navigation message if there are no other messages
+              if (messages.length === 0) {
+                messages.push((resultData.message as string) || plan.reasoning || "Navigating...");
+              }
             }
-          }
-          // Handle QR code generation
-          else if (tool.name.startsWith("qr.")) {
-            if (resultData.message) {
+            // Handle QR code generation
+            else if (tool.name.startsWith("qr.")) {
+              if (resultData.message) {
+                messages.push(resultData.message as string);
+              } else if (resultData.qrCode) {
+                const qr = resultData.qrCode as Record<string, unknown>;
+                messages.push(`QR code generated for ${qr.label}`);
+              } else if (resultData.summary) {
+                messages.push(resultData.summary as string);
+              }
+
+              // Check if there's a navigateTo field for automatic navigation
+              if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
+                navigationInfo = {
+                  route: resultData.navigateTo,
+                  page: "qr-codes",
+                };
+              }
+            }
+            // Handle menu operations
+            else if (tool.name.startsWith("menu.")) {
+              if (resultData.message) {
+                messages.push(resultData.message as string);
+              }
+
+              // Check if there's a navigateTo field for automatic navigation
+              if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
+                navigationInfo = {
+                  route: resultData.navigateTo,
+                  page: "menu",
+                };
+              }
+            }
+            // Handle other tools with message or summary
+            else if (resultData.message) {
               messages.push(resultData.message as string);
-            } else if (resultData.qrCode) {
-              const qr = resultData.qrCode as Record<string, unknown>;
-              messages.push(`QR code generated for ${qr.label}`);
             } else if (resultData.summary) {
               messages.push(resultData.summary as string);
             }
 
-            // Check if there's a navigateTo field for automatic navigation
-            if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
+            // Check for navigateTo on any tool (fallback)
+            if (
+              !navigationInfo &&
+              resultData.navigateTo &&
+              typeof resultData.navigateTo === "string"
+            ) {
               navigationInfo = {
                 route: resultData.navigateTo,
-                page: "qr-codes",
+                page: "unknown",
               };
             }
           }
-          // Handle menu operations
-          else if (tool.name.startsWith("menu.")) {
-            if (resultData.message) {
-              messages.push(resultData.message as string);
-            }
-
-            // Check if there's a navigateTo field for automatic navigation
-            if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
-              navigationInfo = {
-                route: resultData.navigateTo,
-                page: "menu",
-              };
-            }
+        } catch (toolError) {
+          // Graceful error handling - log but continue with other tools
+          const errorMessage = toolError instanceof Error ? toolError.message : String(toolError);
+          logger.error(`[AI SIMPLE CHAT] Tool "${tool.name}" failed:`, {
+            toolName: tool.name,
+            error: errorMessage,
+            venueId: context.venueId,
+          });
+          
+          // Add error message to response but don't fail entire request
+          messages.push(`Failed to execute ${tool.name}: ${errorMessage}`);
+          
+          // For critical tools (create/delete), we might want to stop execution
+          // But for now, continue with remaining tools
+          if (tool.name.startsWith("menu.create_item") || tool.name.startsWith("menu.delete_item")) {
+            // Menu operations are critical - add warning but continue
+            messages.push("Note: Some menu operations may have failed. Please check the menu page.");
           }
-          // Handle other tools with message or summary
-          else if (resultData.message) {
-            messages.push(resultData.message as string);
-          } else if (resultData.summary) {
-            messages.push(resultData.summary as string);
-          }
-
-          // Check for navigateTo on any tool (fallback)
-          if (
-            !navigationInfo &&
-            resultData.navigateTo &&
-            typeof resultData.navigateTo === "string"
-          ) {
-            navigationInfo = {
-              route: resultData.navigateTo,
-              page: "unknown",
-            };
-          }
+          
+          toolResults.push({
+            tool: tool.name,
+            result: {
+              success: false,
+              error: errorMessage,
+            },
+          });
         }
       }
 
@@ -310,12 +339,14 @@ export const POST = withUnifiedAuth(
       // eslint-disable-next-line no-console
       console.error("=".repeat(80));
       
+      // Graceful error handling - provide user-friendly messages
       // Check if it's a feature access error (should be handled by withUnifiedAuth, but just in case)
       if (errorMessage.includes("Feature not available") || errorMessage.includes("tier")) {
         return NextResponse.json(
           {
             error: "Feature not available",
-            message: errorMessage,
+            message: "This feature requires a higher subscription tier. Please upgrade to access this functionality.",
+            response: "I'm sorry, but this feature isn't available with your current plan. Please upgrade to access it.",
           },
           { status: 403 }
         );
@@ -326,9 +357,34 @@ export const POST = withUnifiedAuth(
         return NextResponse.json(
           {
             error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
+            message: "You don't have permission to perform this action. Please contact your manager if you believe this is an error.",
+            response: "I'm sorry, but I don't have permission to perform that action. Please check with your manager.",
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+        );
+      }
+      
+      // Check if it's a validation/guardrail error
+      if (errorMessage.includes("GUARDRAIL") || errorMessage.includes("exceeds limit") || errorMessage.includes("violation")) {
+        return NextResponse.json(
+          {
+            error: "Request exceeds safety limits",
+            message: errorMessage,
+            response: `I can't perform that action because it exceeds safety limits: ${errorMessage}. Please try a smaller change.`,
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Check if it's a context/data error
+      if (errorMessage.includes("context") || errorMessage.includes("Failed to load")) {
+        return NextResponse.json(
+          {
+            error: "Context loading failed",
+            message: "Unable to load necessary data. Please try again in a moment.",
+            response: "I'm having trouble loading the necessary information. Please try again in a moment.",
+          },
+          { status: 503 }
         );
       }
       
@@ -344,11 +400,14 @@ export const POST = withUnifiedAuth(
       // eslint-disable-next-line no-console
       console.error("[AI SIMPLE CHAT] Error:", JSON.stringify(errorPayload, null, 2));
       
-      // Return generic error in production, detailed in development
+      // Return user-friendly error in production, detailed in development
       return NextResponse.json(
         {
           error: "Internal Server Error",
           message: process.env.NODE_ENV === "development" ? errorMessage : "An unexpected error occurred while processing your request",
+          response: process.env.NODE_ENV === "development" 
+            ? `I encountered an error: ${errorMessage}. Please try again or contact support if the issue persists.`
+            : "I'm sorry, but I encountered an unexpected error. Please try again in a moment. If the problem persists, please contact support.",
           ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }

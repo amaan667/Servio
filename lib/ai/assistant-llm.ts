@@ -222,7 +222,13 @@ CONTEXT:
 - Features Enabled: ${JSON.stringify(features)}
 
 CURRENT DATA SUMMARIES:
-${dataSummaries.menu ? `\nMENU:\n${JSON.stringify(dataSummaries.menu, null, 2)}` : ""}
+${dataSummaries.menu ? `\nMENU:
+Total Items: ${dataSummaries.menu.totalItems}
+Categories: ${dataSummaries.menu.categories.length} (${dataSummaries.menu.categories.map((c: { name: string }) => c.name).join(", ")})
+Top Sellers: ${dataSummaries.menu.topSellers?.slice(0, 5).map((item: { name: string }) => item.name).join(", ") || "None"}
+Items Without Images: ${dataSummaries.menu.itemsWithoutImages}
+All Items (for reference - use IDs from here): ${JSON.stringify(dataSummaries.menu.allItems?.slice(0, 100) || [], null, 2)}
+${dataSummaries.menu.allItems && dataSummaries.menu.allItems.length > 100 ? `\nNote: Showing first 100 of ${dataSummaries.menu.allItems.length} items. Use allItems array to find item IDs by name.` : ""}` : ""}
 ${dataSummaries.inventory ? `\nINVENTORY:\n${JSON.stringify(dataSummaries.inventory, null, 2)}` : ""}
 ${dataSummaries.orders ? `\nORDERS:\n${JSON.stringify(dataSummaries.orders, null, 2)}` : ""}
 ${dataSummaries.analytics ? `\nANALYTICS:\n${JSON.stringify(dataSummaries.analytics, null, 2)}` : ""}
@@ -322,26 +328,32 @@ TIER RESTRICTIONS:
 - ${venueTier === "enterprise" ? "Enterprise tier: all features enabled" : ""}
 
 RULES:
-1. ALWAYS set preview=false for: QR generation, navigation, analytics queries, inventory queries, staff listing, table creation
-2. ALWAYS set preview=true for: price changes, deletions, bulk updates that modify data
-3. CRITICAL: For QR code requests, you MUST call BOTH tools in order:
-   - First: qr.generate_table (or qr.generate_bulk) with preview=false
+1. ALWAYS set preview=false for: QR generation, navigation, analytics queries, inventory queries, staff listing, table creation, menu create/delete
+2. ALWAYS set preview=true for: price changes, bulk updates that modify data (but NOT create/delete)
+3. CRITICAL: For QR code requests (including auto-detected table/counter names), you MUST call BOTH tools in order:
+   - First: qr.generate_table/qr.generate_counter/qr.generate_bulk with preview=false
    - Second: navigation.go_to_page with page="qr" and preview=false
-4. NEVER skip tool execution - if user says "generate", you MUST call the generate tool
-5. NEVER exceed guardrail limits (price changes, discounts)
-6. RESPECT role and tier restrictions
-7. Provide clear reasoning for your plan
-8. Warn about potential impacts (revenue, operations)
-9. If the request is unclear, ask for clarification in the warnings
-10. If the request violates guardrails, explain why in warnings
-11. Use ONLY the tools available; never hallucinate capabilities
-12. When updating prices, preserve significant figures and round appropriately
-13. For inventory, always validate units and quantities
-14. IMPORTANT: Use the allItems array from MENU data to find item IDs when updating prices or availability
+4. CRITICAL: For menu create/delete operations, you MUST call BOTH tools in order:
+   - First: menu.create_item or menu.delete_item with preview=false
+   - Second: navigation.go_to_page with page="menu" and appropriate params (itemId, categoryId, action)
+5. AUTO-DETECT QR requests: If user mentions "Table X", "VIP X", "Counter X", or table ranges, automatically generate QR codes
+6. NEVER skip tool execution - if user says "generate", "create", "delete", you MUST call the tool
+7. NEVER exceed guardrail limits (price changes, discounts)
+8. RESPECT role and tier restrictions
+9. Provide clear reasoning for your plan
+10. Warn about potential impacts (revenue, operations)
+11. If the request is unclear, ask for clarification in the warnings
+12. If the request violates guardrails, explain why in warnings
+13. Use ONLY the tools available; never hallucinate capabilities
+14. When updating prices, preserve significant figures and round appropriately
+15. For inventory, always validate units and quantities
+16. IMPORTANT: Use the allItems array from MENU data to find item IDs when updating prices or availability
     - Search by item name (case-insensitive, partial matches OK for common items like "coffee", "latte", etc.)
     - Always include the exact UUID from allItems in your params
     - Calculate new prices based on current prices from allItems
-15. EXECUTE ACTIONS, DON'T JUST EXPLAIN: When user says "generate", "create", "show", "list" - actually call the tool!
+    - If menu has >100 items, search efficiently - use first 100 items shown, or search by category
+17. EXECUTE ACTIONS, DON'T JUST EXPLAIN: When user says "generate", "create", "delete", "show", "list" - actually call the tool!
+18. MULTI-STEP QUERIES: Break complex requests into sequential tool calls. Execute each step and use results to inform next step.
 
 NATURAL LANGUAGE UNDERSTANDING:
 - Be flexible with user queries - understand context and intent
@@ -351,23 +363,26 @@ NATURAL LANGUAGE UNDERSTANDING:
   * "what categories do I have" → provide direct answer listing menu.categories
   * "total revenue today" → provide direct answer from analytics data if available
   * "how many orders today" → provide direct answer from orders data if available
-- For QR code generation requests (ALWAYS EXECUTE BOTH TOOLS, NEVER SKIP):
-  * "generate QR code for Table 5":
-    TOOL 1: { "name": "qr.generate_table", "params": { "tableLabel": "Table 5" }, "preview": false }
-    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
-  * "create QR code for table 10":
-    TOOL 1: { "name": "qr.generate_table", "params": { "tableLabel": "Table 10" }, "preview": false }
-    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
-  * "generate QR codes for tables 1-10":
-    TOOL 1: { "name": "qr.generate_bulk", "params": { "startNumber": 1, "endNumber": 10 }, "preview": false }
-    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
-  * "create QR for counter":
-    TOOL 1: { "name": "qr.generate_counter", "params": { "counterLabel": "Counter 1" }, "preview": false }
-    TOOL 2: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
+- For QR code generation requests (AUTO-DETECT AND GENERATE):
+  * CRITICAL: If user mentions a table/counter name (e.g., "Table 5", "VIP 3", "Counter 1"), AUTO-GENERATE QR code
+  * Patterns to detect:
+    - "Table [number]" or "table [number]" → qr.generate_table with tableLabel="Table [number]"
+    - "VIP [number]" or "vip [number]" → qr.generate_table with tableLabel="VIP [number]"
+    - "Counter [number]" or "counter [number]" → qr.generate_counter with counterLabel="Counter [number]"
+    - "tables [X]-[Y]" or "tables [X] to [Y]" → qr.generate_bulk with startNumber=X, endNumber=Y
+  * Examples that should AUTO-GENERATE:
+    - "Table 5" → Generate QR for Table 5
+    - "create QR for table 10" → Generate QR for Table 10
+    - "I need a QR code for VIP 3" → Generate QR for VIP 3
+    - "Counter 1" → Generate QR for Counter 1
+    - "tables 1-10" → Generate bulk QR codes
+  * ALWAYS EXECUTE BOTH TOOLS for generation:
+    TOOL 1: qr.generate_table/qr.generate_counter/qr.generate_bulk with preview=false
+    TOOL 2: navigation.go_to_page with page="qr" and preview=false
   * "show me all QR codes" → ONLY navigation: { "name": "navigation.go_to_page", "params": { "page": "qr" }, "preview": false }
   * CRITICAL: You MUST include BOTH tools in the tools array for generation requests
   * CRITICAL: preview must be false for QR tools to actually execute
-  * NEVER just explain - ALWAYS call the tools
+  * NEVER just explain - ALWAYS call the tools when user mentions table/counter names
 - For complex analytics queries (revenue, sales, stats):
   * "what's the revenue for X" → use analytics.get_stats with metric="revenue", itemId from allItems
   * "how much did X sell" → use analytics.get_stats with metric="revenue", itemId from allItems
@@ -378,6 +393,15 @@ NATURAL LANGUAGE UNDERSTANDING:
   * "increase X by Y%" → find items matching X in allItems, calculate new prices
   * "all coffee items" → match items with "coffee", "espresso", "latte", "cappuccino" etc.
   * "make X cost Y" → find item X, set price to Y
+- For menu create/delete operations (ALWAYS NAVIGATE AFTER):
+  * "create menu item X" or "add menu item X":
+    TOOL 1: menu.create_item with preview=false
+    TOOL 2: navigation.go_to_page with page="menu", itemId from result, action="created"
+  * "delete menu item X" or "remove menu item X":
+    TOOL 1: menu.delete_item with preview=false
+    TOOL 2: navigation.go_to_page with page="menu", categoryId from result, action="deleted"
+  * CRITICAL: After creating/deleting menu items, ALWAYS navigate to menu page to show changes
+  * CRITICAL: Include both tools in sequence - never skip navigation
 - For navigation:
   * "take me to", "show me", "go to", "open" → use navigation.go_to_page
   * "add image to X", "upload image for X", "edit image for X" → use navigation.go_to_page with page="menu", itemId from allItems, action="upload_image"

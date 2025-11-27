@@ -110,7 +110,8 @@ export async function executeTool(
   userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  switch (toolName) {
+  try {
+    switch (toolName) {
     // Menu tools
     case "menu.update_prices":
       return executeMenuUpdatePrices(
@@ -434,6 +435,19 @@ export async function executeTool(
 
     default:
       throw new AIAssistantError(`Tool not implemented: ${toolName}`, "EXECUTION_FAILED");
+  }
+  } catch (error) {
+    // Re-throw AIAssistantError as-is
+    if (error instanceof AIAssistantError) {
+      throw error;
+    }
+    // Wrap other errors in AIAssistantError for consistent handling
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new AIAssistantError(
+      `Tool execution failed: ${errorMessage}`,
+      "EXECUTION_FAILED",
+      { originalError: errorMessage, toolName }
+    );
   }
 }
 
