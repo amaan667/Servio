@@ -57,8 +57,45 @@ export const POST = withUnifiedAuth(
         return NextResponse.json({ error: "Organization not found" }, { status: 404 });
       }
 
-      if (!typedOrg.stripe_customer_id) {
-        return NextResponse.json({ error: "No billing account found" }, { status: 400 });
+      // If no Stripe customer ID, try to find it from subscriptions
+      let stripeCustomerId = typedOrg.stripe_customer_id;
+      
+      if (!stripeCustomerId) {
+        // Try to find customer from active subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+          limit: 10,
+        });
+        
+        // Find subscription with matching organization_id in metadata
+        const matchingSub = subscriptions.data.find(
+          (sub) => sub.metadata?.organization_id === organizationId
+        );
+        
+        if (matchingSub?.customer) {
+          stripeCustomerId = typeof matchingSub.customer === "string" 
+            ? matchingSub.customer 
+            : matchingSub.customer.id;
+          
+          // Update organization with customer ID
+          await supabase
+            .from("organizations")
+            .update({ stripe_customer_id: stripeCustomerId })
+            .eq("id", organizationId);
+        }
+      }
+      
+      if (!stripeCustomerId) {
+        logger.error("[STRIPE PORTAL] No Stripe customer found", {
+          organizationId,
+          userId: user.id,
+        });
+        return NextResponse.json(
+          { 
+            error: "No billing account found",
+            message: "Please contact support to set up your billing account."
+          }, 
+          { status: 400 }
+        );
       }
 
       // STEP 6: Business logic
@@ -69,7 +106,7 @@ export const POST = withUnifiedAuth(
         "https://servio-production.up.railway.app";
 
       const session = await stripe.billingPortal.sessions.create({
-        customer: typedOrg.stripe_customer_id,
+        customer: stripeCustomerId,
         return_url: `${baseUrl}/dashboard`,
       });
 

@@ -47,20 +47,39 @@ export default function BillingSection({ organization, venueId }: BillingSection
   const isGrandfathered = false; // Grandfathered accounts removed
 
   const handleManageBilling = async () => {
+    if (!organization?.id) {
+      toast({
+        title: "Error",
+        description: "Organization not found. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoadingPortal(true);
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
-        organizationId: organization?.id,
+        organizationId: organization.id,
         venueId: venueId,
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        toast({
+          title: "Error",
+          description: errorData.message || errorData.error || `Failed to open billing portal (${response.status})`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       const data = await response.json();
 
       if (data.error) {
         toast({
           title: "Error",
-          description: `Failed to open billing portal: ${data.error}`,
+          description: data.message || data.error || "Failed to open billing portal",
           variant: "destructive",
         });
         return;
