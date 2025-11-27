@@ -95,7 +95,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
           const subscription = subscriptions.data[0];
           const stripeTier = await getTierFromStripeSubscription(subscription, stripe);
 
-          // Only update if tier differs from database
+          // Only update if tier differs from database (use Stripe as source of truth)
           if (stripeTier !== orgData.subscription_tier) {
             logger.info("[SETTINGS PAGE] Auto-syncing tier from Stripe", {
               organizationId: orgData.id,

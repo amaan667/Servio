@@ -23,20 +23,8 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
 
   const hasStripeCustomer = !!organization?.stripe_customer_id;
 
-  // Normalize tier from old names to new names for backwards compatibility
-  const normalizeTier = (tierString?: string): string | undefined => {
-    if (!tierString) return undefined;
-    const normalized = tierString.toLowerCase().trim();
-    // Map old tier names to new ones
-    if (normalized === "premium") return "enterprise";
-    if (normalized === "standard" || normalized === "professional") return "pro";
-    if (normalized === "basic") return "starter";
-    // Return as-is if already in new format
-    return normalized;
-  };
-
-  // Get tier info from shared configuration - NO DEFAULTS
-  const normalizedTier = normalizeTier(currentTier);
+  // Use tier directly from database (should match Stripe exactly)
+  const normalizedTier = currentTier?.toLowerCase().trim() as "starter" | "pro" | "enterprise" | undefined;
   const tierInfo = normalizedTier ? PRICING_TIERS[normalizedTier] : null;
   const planName = tierInfo?.name;
   const features = tierInfo?.features;

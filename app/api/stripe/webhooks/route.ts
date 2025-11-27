@@ -163,12 +163,23 @@ async function handleCheckoutWithOrg(
     current_status: existingOrg.subscription_status,
   });
 
-  // Update organization with subscription details
-  // Use the existing trial_ends_at if available, otherwise calculate from user creation
-  let trialEndsAt = existingOrg.trial_ends_at;
-
-  if (!trialEndsAt) {
-    // If no existing trial end date, use the user's creation date + 14 days
+  // Determine trial status - only set to trialing if trial hasn't ended yet
+  const existingTrialEndsAt = existingOrg.trial_ends_at 
+    ? new Date(existingOrg.trial_ends_at as string)
+    : null;
+  const now = new Date();
+  const trialHasEnded = existingTrialEndsAt && existingTrialEndsAt < now;
+  const currentStatus = existingOrg.subscription_status as string;
+  
+  // If trial has already ended or subscription is already active, don't restart trial
+  const shouldBeTrialing = !trialHasEnded && currentStatus !== "active";
+  
+  // Use existing trial_ends_at if available and trial hasn't ended
+  // Otherwise, if this is a new subscription and trial hasn't ended, calculate from user creation
+  let trialEndsAt = existingTrialEndsAt?.toISOString() || null;
+  
+  if (!trialEndsAt && shouldBeTrialing) {
+    // If no existing trial end date and we should be trialing, use the user's creation date + 14 days
     const createdAt = existingOrg.created_at;
     const userCreatedAt = new Date(
       typeof createdAt === "string" || typeof createdAt === "number" ? createdAt : Date.now()
@@ -176,15 +187,21 @@ async function handleCheckoutWithOrg(
     trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
   }
 
-  // Normalize tier to ensure only starter/pro/enterprise
-  const { normalizeTier } = await import("@/lib/stripe-tier-helper");
-  const normalizedTier = normalizeTier(tier);
+  // Determine subscription status
+  // If trial has ended or subscription is already active, use active status
+  // Otherwise, use trialing if we should be trialing
+  const subscriptionStatus = (trialHasEnded || currentStatus === "active") 
+    ? "active" 
+    : (shouldBeTrialing ? "trialing" : currentStatus || "active");
+
+  // Use tier directly from Stripe metadata (no normalization)
+  // Tier should already be correct from Stripe product/price metadata
 
   const updateData = {
     stripe_subscription_id: session.subscription as string,
     stripe_customer_id: session.customer as string,
-    subscription_tier: normalizedTier,
-    subscription_status: "trialing",
+    subscription_tier: tier,
+    subscription_status: subscriptionStatus,
     trial_ends_at: trialEndsAt,
     updated_at: new Date().toISOString(),
   };
@@ -215,7 +232,7 @@ async function handleCheckoutWithOrg(
       organization_id: organizationId,
       event_type: "checkout_completed",
       old_tier: existingOrg.subscription_tier,
-      new_tier: normalizedTier,
+      new_tier: tier,
       stripe_event_id: session.id,
       metadata: { session_id: session.id },
     });
@@ -268,17 +285,12 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   }
 
   // CRITICAL: Pull tier directly from Stripe subscription (price/product metadata)
-  // This ensures tier matches what's actually in Stripe, not just metadata
+  // This ensures tier matches what's actually in Stripe - no normalization
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
-  const tierRaw = await getTierFromStripeSubscription(subscription, stripe);
+  const tier = await getTierFromStripeSubscription(subscription, stripe);
   
-  // Normalize tier: basic→starter, standard→pro, premium→enterprise
-  const { normalizeTier } = await import("@/lib/stripe-tier-helper");
-  const tier = normalizeTier(tierRaw);
-  
-  apiLogger.info("[STRIPE WEBHOOK] Tier extracted and normalized:", {
-    rawTier: tierRaw,
-    normalizedTier: tier,
+  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
+    tier,
     subscriptionId: subscription.id,
     organizationId,
   });
@@ -369,26 +381,49 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   // CRITICAL: Pull tier directly from Stripe subscription (price/product metadata)
-  // This ensures tier matches what's actually in Stripe, not just metadata
+  // This ensures tier matches what's actually in Stripe - no normalization
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
-  const tierRaw = await getTierFromStripeSubscription(subscription, stripe);
+  const tier = await getTierFromStripeSubscription(subscription, stripe);
   
-  // Normalize tier: basic→starter, standard→pro, premium→enterprise
-  const { normalizeTier } = await import("@/lib/stripe-tier-helper");
-  const tier = normalizeTier(tierRaw);
-  
-  apiLogger.info("[STRIPE WEBHOOK] Tier extracted and normalized:", {
-    rawTier: tierRaw,
-    normalizedTier: tier,
+  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
+    tier,
     subscriptionId: subscription.id,
     organizationId: org.id,
   });
 
-  const updateData = {
+  // Get existing organization data to preserve trial_ends_at if trial has already ended
+  const { data: existingOrg } = await supabase
+    .from("organizations")
+    .select("trial_ends_at, subscription_status")
+    .eq("id", organizationId)
+    .single();
+
+  // Preserve trial_ends_at if it exists and trial has ended
+  // Don't restart trial for existing customers who already used it
+  const updateData: {
+    subscription_tier: string;
+    subscription_status: string;
+    updated_at: string;
+    trial_ends_at?: string | null;
+  } = {
     subscription_tier: tier,
     subscription_status: subscription.status,
     updated_at: new Date().toISOString(),
   };
+
+  // If subscription is active and trial_ends_at exists, preserve it
+  // If subscription is trialing, update trial_ends_at from Stripe
+  if (subscription.status === "active" && existingOrg?.trial_ends_at) {
+    // Preserve existing trial_ends_at - don't overwrite it
+    const trialEndsAt = new Date(existingOrg.trial_ends_at);
+    if (trialEndsAt < new Date()) {
+      // Trial has ended, preserve the date
+      updateData.trial_ends_at = existingOrg.trial_ends_at;
+    }
+  } else if (subscription.trial_end) {
+    // Update trial_ends_at from Stripe if subscription is trialing
+    updateData.trial_ends_at = new Date(subscription.trial_end * 1000).toISOString();
+  }
 
   apiLogger.debug("[STRIPE WEBHOOK] Updating organization subscription with data:", updateData);
 

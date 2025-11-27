@@ -68,27 +68,25 @@ export async function POST(_request: NextRequest) {
         trialEndsAt = new Date(stripeSubscription.trial_end * 1000).toISOString();
       }
 
-      // Get tier from Stripe subscription (price/product metadata) - most reliable
-      const { getTierFromStripeSubscription, normalizeTier } = await import("@/lib/stripe-tier-helper");
+      // Get tier from Stripe subscription (price/product metadata) - most reliable, no normalization
+      const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
       const stripeClient = await import("@/lib/stripe-client").then((m) => m.stripe);
       
-      // Try to get tier from Stripe subscription first
+      // Get tier directly from Stripe - this is the source of truth
       let finalTier: string;
-      const currentTier = org.subscription_tier;
-      const stripeTierFromMetadata = stripeSubscription.metadata?.tier;
-      
       try {
-        const tierFromStripe = await getTierFromStripeSubscription(stripeSubscription, stripeClient);
-        finalTier = normalizeTier(tierFromStripe);
-      } catch {
-        // Fallback to metadata or existing tier
-        finalTier = normalizeTier(stripeTierFromMetadata || currentTier || "starter");
+        finalTier = await getTierFromStripeSubscription(stripeSubscription, stripeClient);
+      } catch (error) {
+        logger.error("[SUBSCRIPTION REFRESH] Error getting tier from Stripe, using existing", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Fallback to existing tier if Stripe fetch fails
+        finalTier = org.subscription_tier || "starter";
       }
 
-      logger.debug("[SUBSCRIPTION REFRESH] Tier detection:", {
-        stripeTierFromMetadata,
-        currentTier,
+      logger.debug("[SUBSCRIPTION REFRESH] Tier from Stripe:", {
         finalTier,
+        subscriptionId: stripeSubscription.id,
       });
 
       // Update organization with latest Stripe data

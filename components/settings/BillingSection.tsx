@@ -15,7 +15,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { normalizeTier } from "@/lib/stripe-tier-helper";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
 interface BillingSectionProps {
@@ -51,9 +50,8 @@ export default function BillingSection({ organization }: BillingSectionProps) {
     });
   }
 
-  // Normalize tier: basic→starter, standard→pro, premium→enterprise
-  const tierRaw = organization?.subscription_tier?.toLowerCase() || "starter";
-  const tier = normalizeTier(tierRaw);
+  // Get tier from organization - should match Stripe exactly (no normalization)
+  const tier = (organization?.subscription_tier?.toLowerCase() || "starter") as "starter" | "pro" | "enterprise";
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 
@@ -229,7 +227,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
               <AlertDescription>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <strong>Tier received:</strong> {tier || "none"} (raw: {tierRaw || "none"})
+                    <strong>Tier received:</strong> {tier || "none"}
                   </div>
                   <div>
                     <strong>Organization ID:</strong> {organization?.id || "none"}

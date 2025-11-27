@@ -42,27 +42,41 @@ export async function getTierFromStripeSubscription(
       productId: typeof price.product === "string" ? price.product : price.product.id,
     });
 
-    // 1. Check price metadata first
+    // 1. Check price metadata first - use raw value from Stripe
     if (price.metadata?.tier) {
-      const tier = normalizeTier(price.metadata.tier);
+      const tier = price.metadata.tier.toLowerCase().trim() as SubscriptionTier;
       logger.info("[STRIPE TIER] Found tier in price metadata", {
         tier,
         rawValue: price.metadata.tier,
       });
-      return tier;
+      // Validate it's a valid tier
+      if (["starter", "pro", "enterprise"].includes(tier)) {
+        return tier;
+      }
+      logger.warn("[STRIPE TIER] Invalid tier in price metadata, falling back", {
+        tier,
+        rawValue: price.metadata.tier,
+      });
     }
 
-    // 2. Check product metadata
+    // 2. Check product metadata - use raw value from Stripe
     const product = typeof price.product === "string" ? null : price.product;
 
     // Type guard: Check if product is not deleted and has metadata
     if (product && !product.deleted && "metadata" in product && product.metadata?.tier) {
-      const tier = normalizeTier(product.metadata.tier);
+      const tier = product.metadata.tier.toLowerCase().trim() as SubscriptionTier;
       logger.info("[STRIPE TIER] Found tier in product metadata", {
         tier,
         rawValue: product.metadata.tier,
       });
-      return tier;
+      // Validate it's a valid tier
+      if (["starter", "pro", "enterprise"].includes(tier)) {
+        return tier;
+      }
+      logger.warn("[STRIPE TIER] Invalid tier in product metadata, falling back", {
+        tier,
+        rawValue: product.metadata.tier,
+      });
     }
 
     // 3. Parse from product name
@@ -91,11 +105,12 @@ export async function getTierFromStripeSubscription(
 }
 
 /**
- * Normalize tier string to valid tier type
- * Ensures ONLY starter/pro/enterprise are returned - normalizes all legacy names
- * This is the single source of truth for tier normalization
+ * @deprecated - No longer used. Tiers are pulled directly from Stripe without normalization.
+ * Stripe product/price metadata.tier should be set to exactly "starter", "pro", or "enterprise".
  */
 export function normalizeTier(tierString: string | null | undefined): SubscriptionTier {
+  // Deprecated - kept for backwards compatibility but should not be used
+  // All code should use getTierFromStripeSubscription() which returns raw Stripe tier
   if (!tierString || typeof tierString !== "string") {
     return "starter";
   }
@@ -103,25 +118,8 @@ export function normalizeTier(tierString: string | null | undefined): Subscripti
   const normalized = tierString.toLowerCase().trim();
 
   // Direct matches - use as-is
-  if (normalized === "enterprise") {
-    return "enterprise";
-  }
-  if (normalized === "pro") {
-    return "pro";
-  }
-  if (normalized === "starter") {
-    return "starter";
-  }
-
-  // Legacy/alternative names - normalize to new names
-  if (normalized === "premium") {
-    return "enterprise";
-  }
-  if (normalized === "standard" || normalized === "professional" || normalized === "plus") {
-    return "pro";
-  }
-  if (normalized === "basic") {
-    return "starter";
+  if (normalized === "enterprise" || normalized === "pro" || normalized === "starter") {
+    return normalized as SubscriptionTier;
   }
 
   // Default to starter if unclear

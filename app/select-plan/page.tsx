@@ -107,17 +107,8 @@ export default function SelectPlanPage() {
           const tier = organization?.subscription_tier;
 
           if (organization?.subscription_tier) {
-            // Normalize tier name
-            const tier = organization.subscription_tier.toLowerCase();
-            const normalizedTier =
-              tier === "premium"
-                ? "enterprise"
-                : tier === "standard" || tier === "professional"
-                  ? "pro"
-                  : tier === "basic"
-                    ? "starter"
-                    : tier;
-            setCurrentTier(normalizedTier);
+            // Use tier directly from database (should match Stripe)
+            setCurrentTier(organization.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise");
           }
         } else {
           // Try to get organization directly
@@ -131,16 +122,8 @@ export default function SelectPlanPage() {
           const tier2 = org?.subscription_tier;
 
           if (org?.subscription_tier) {
-            const tier = org.subscription_tier.toLowerCase();
-            const normalizedTier =
-              tier === "premium"
-                ? "enterprise"
-                : tier === "standard" || tier === "professional"
-                  ? "pro"
-                  : tier === "basic"
-                    ? "starter"
-                    : tier;
-            setCurrentTier(normalizedTier);
+            // Use tier directly from database (should match Stripe)
+            setCurrentTier(org.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise");
           }
         }
 

@@ -103,7 +103,18 @@ export async function POST(_request: NextRequest) {
     const priceIds = await getStripePriceIds();
 
     const body = await _request.json();
-    const { tier, organizationId, isSignup, email, fullName, venueName } = body;
+    let { tier, organizationId, isSignup, email, fullName, venueName } = body;
+
+    // Normalize tier to ensure only starter/pro/enterprise
+    if (tier) {
+      // Validate tier is one of the expected values (should already be correct from Stripe)
+      const tierLower = tier.toLowerCase().trim();
+      if (!["starter", "pro", "enterprise"].includes(tierLower)) {
+        logger.error("[STRIPE CHECKOUT] Invalid tier value:", tier);
+        return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
+      }
+      tier = tierLower as "starter" | "pro" | "enterprise";
+    }
 
     if (!tier || !["starter", "pro", "enterprise"].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
@@ -332,7 +343,12 @@ export async function POST(_request: NextRequest) {
           tier,
           user_id: user.id,
         },
-        // Trial period managed by our organization logic, not Stripe
+        // Only start trial if customer hasn't already used their trial
+        // Check if trial has ended or if subscription is already active
+        ...(org.trial_ends_at && new Date(org.trial_ends_at) < new Date() || org.subscription_status === "active"
+          ? {} // No trial - customer already used it or is active
+          : { trial_period_days: 14 } // Start 14-day trial for new customers
+        ),
       },
     };
 

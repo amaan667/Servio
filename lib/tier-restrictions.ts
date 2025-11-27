@@ -99,14 +99,17 @@ export async function getUserTier(userId: string): Promise<string> {
 
   const tier = org.subscription_tier || "starter";
   
-  // Validate tier is one of the expected values - no normalization, use what's in database
-  if (!["starter", "pro", "enterprise"].includes(tier.toLowerCase())) {
-    // eslint-disable-next-line no-console
-    console.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
-    return "starter";
+  // Use tier directly from database (should match Stripe exactly)
+  // Validate it's a valid tier
+  const tierLower = tier.toLowerCase().trim();
+  if (["starter", "pro", "enterprise"].includes(tierLower)) {
+    return tierLower as "starter" | "pro" | "enterprise";
   }
   
-  return tier.toLowerCase() as "starter" | "pro" | "enterprise";
+  // If invalid, default to starter
+  // eslint-disable-next-line no-console
+  console.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
+  return "starter";
 }
 
 export async function checkFeatureAccess(
