@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { normalizeTier } from "@/lib/stripe-tier-helper";
+import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
 interface BillingSectionProps {
   user?: {
@@ -56,6 +57,40 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 
+  // Helper to get feature enabled status from TIER_LIMITS
+  const getFeatureEnabled = (feature: string, currentTier: string): boolean => {
+    const tierLimits = TIER_LIMITS[currentTier as keyof typeof TIER_LIMITS];
+    if (!tierLimits) return false;
+    
+    // Map feature names to TIER_LIMITS keys
+    const featureMap: Record<string, keyof typeof tierLimits.features> = {
+      kds: "kds",
+      inventory: "inventory",
+      aiAssistant: "aiAssistant",
+      multiVenue: "multiVenue",
+      analytics: "analytics",
+      customerFeedback: "customerFeedback",
+      customBranding: "customBranding",
+    };
+    
+    const featureKey = featureMap[feature];
+    if (!featureKey) return false;
+    
+    const featureValue = tierLimits.features[featureKey];
+    
+    // For boolean features, return the value directly
+    if (typeof featureValue === "boolean") {
+      return featureValue;
+    }
+    
+    // For analytics, any non-basic value means enabled (advanced, advanced+exports)
+    if (feature === "analytics" && typeof featureValue === "string") {
+      return featureValue !== "basic";
+    }
+    
+    return false;
+  };
+
   const handleChangePlan = async () => {
     if (!organization?.id) {
       toast({
@@ -68,6 +103,17 @@ export default function BillingSection({ organization }: BillingSectionProps) {
 
     setLoadingChangePlan(true);
     try {
+      // Sync tier from Stripe before opening portal to ensure consistency
+      try {
+        const { apiClient } = await import("@/lib/api-client");
+        await apiClient.post("/api/subscription/refresh-status", {
+          organizationId: organization.id,
+        });
+      } catch (syncError) {
+        // Non-critical - continue even if sync fails
+        console.warn("[BILLING] Failed to sync tier before opening portal:", syncError);
+      }
+
       // Open Stripe billing portal where users can upgrade/downgrade
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
@@ -303,28 +349,38 @@ export default function BillingSection({ organization }: BillingSectionProps) {
             <FeatureItem name="QR Ordering" enabled={true} tier="all" />
             <FeatureItem
               name="Kitchen Display System"
-              enabled={tier === "enterprise" || isGrandfathered}
+              enabled={getFeatureEnabled("kds", tier)}
               tier="enterprise"
             />
             <FeatureItem
               name="Inventory Management"
-              enabled={tier === "pro" || tier === "enterprise" || isGrandfathered}
+              enabled={getFeatureEnabled("inventory", tier)}
               tier="pro"
             />
             <FeatureItem
               name="AI Assistant"
-              enabled={tier === "enterprise" || isGrandfathered}
+              enabled={getFeatureEnabled("aiAssistant", tier)}
               tier="enterprise"
             />
             <FeatureItem
               name="Multi-Venue Management"
-              enabled={tier === "enterprise" || isGrandfathered}
+              enabled={getFeatureEnabled("multiVenue", tier)}
               tier="enterprise"
             />
             <FeatureItem
               name="Advanced Analytics"
-              enabled={tier === "pro" || tier === "enterprise" || isGrandfathered}
+              enabled={getFeatureEnabled("analytics", tier)}
               tier="pro"
+            />
+            <FeatureItem
+              name="Customer Feedback"
+              enabled={getFeatureEnabled("customerFeedback", tier)}
+              tier="pro"
+            />
+            <FeatureItem
+              name="Custom Branding"
+              enabled={getFeatureEnabled("customBranding", tier)}
+              tier="enterprise"
             />
           </div>
         </CardContent>
