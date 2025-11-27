@@ -1,6 +1,6 @@
 // Servio AI Assistant - QR Code Tool Executors
 
-import { AIExecutionResult, AIPreviewDiff } from "@/types/ai-assistant";
+import { AIExecutionResult, AIPreviewDiff, AIAssistantError } from "@/types/ai-assistant";
 import {
   generateTableQRCode,
   generateBulkTableQRCodes,
@@ -18,6 +18,14 @@ export async function executeQRGenerateTable(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  // Validate required parameters
+  if (!params.tableLabel || params.tableLabel.trim() === "") {
+    throw new AIAssistantError(
+      "Table label is required. Please specify a name for the table (e.g., 'Table 5' or 'VIP 3').",
+      "INVALID_PARAMS"
+    );
+  }
+
   if (preview) {
     return {
       toolName: "qr.generate_table",
@@ -92,6 +100,14 @@ export async function executeQRGenerateCounter(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  // Validate required parameters
+  if (!params.counterLabel || params.counterLabel.trim() === "") {
+    throw new AIAssistantError(
+      "Counter label is required. Please specify a name for the counter (e.g., 'Counter 1' or 'Takeaway Counter').",
+      "INVALID_PARAMS"
+    );
+  }
+
   if (preview) {
     return {
       toolName: "qr.generate_counter",

@@ -152,6 +152,16 @@ export const POST = withUnifiedAuth(
       console.log("[AI SIMPLE CHAT] Step 8: Using direct answer (no tools needed)");
       response = plan.directAnswer;
     }
+    // Check if we have warnings asking for clarification (should not execute tools)
+    else if (plan.warnings && plan.warnings.length > 0 && plan.tools && plan.tools.length === 0) {
+      // User needs to provide more information - don't execute anything
+      // eslint-disable-next-line no-console
+      console.log("[AI SIMPLE CHAT] Step 8: Request needs clarification, no tools to execute");
+      response = plan.reasoning || plan.warnings.join(". ");
+      if (plan.warnings.length > 0) {
+        response += `\n\n${plan.warnings.join("\n")}`;
+      }
+    }
     // Execute tools if present
     else if (plan.tools && plan.tools.length > 0) {
       // eslint-disable-next-line no-console
@@ -215,8 +225,14 @@ export const POST = withUnifiedAuth(
                 messages.push(resultData.summary as string);
               }
 
-              // Check if there's a navigateTo field for automatic navigation
-              if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
+              // Only navigate if QR code was actually generated (has qrCode or successful message)
+              // Don't navigate if generation failed or params were missing
+              const messageStr = typeof resultData.message === "string" ? resultData.message : "";
+              if (
+                resultData.navigateTo &&
+                typeof resultData.navigateTo === "string" &&
+                (resultData.qrCode || (messageStr && !messageStr.toLowerCase().includes("required") && !messageStr.toLowerCase().includes("error")))
+              ) {
                 navigationInfo = {
                   route: resultData.navigateTo,
                   page: "qr-codes",
