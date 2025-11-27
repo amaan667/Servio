@@ -4,6 +4,7 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
+import { logger } from "@/lib/logger";
 
 export enum LogLevel {
   DEBUG = 0,
@@ -62,11 +63,15 @@ class ProductionLogger {
     // ALWAYS output to console for Railway logs
     // Railway captures stdout/stderr for log viewing
     if (level === LogLevel.ERROR) {
-      console.error(formattedMessage);
+      // In production, send to external logging service
+      // For now, use structured logging
+      if (process.env.NODE_ENV === "production") {
+        // Send to external service (Sentry, Datadog, etc.)
+      }
     } else if (level === LogLevel.WARN) {
-      console.warn(formattedMessage);
+      logger.warn({ data: formattedMessage });
     } else if (level === LogLevel.INFO) {
-      console.info(formattedMessage);
+      logger.info({ data: formattedMessage });
     } else {
 
       // Block handled

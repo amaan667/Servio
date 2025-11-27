@@ -78,7 +78,9 @@ export function MenuItemList({
         onSetEditItemDraft({ ...editItemDraft, image_url: data.imageUrl });
       }
     } catch (error) {
-      console.error("Image upload error:", error);
+      logger.error("[MENU ITEM] Image upload error:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       alert("Failed to upload image");
     } finally {
       setUploadingImage(null);

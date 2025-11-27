@@ -155,7 +155,7 @@ export async function POST(_request: NextRequest) {
 
     if (venue?.auto_email_receipts && customerEmail) {
       // For table payments, send receipt for the first order
-      // TODO: Could implement combined receipt in future
+      // Future enhancement: Combined receipt for multiple orders
       const receiptOrderId =
         paymentType === "table_payment" ? updatedOrders[0]?.id : updatedOrders[0]?.id;
 

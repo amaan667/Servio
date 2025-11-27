@@ -17,7 +17,9 @@ export async function saveOnboardingProgress(
     });
   } catch (_error) {
     // Silently fail - progress tracking is not critical
-    console.error("Failed to save onboarding progress:", _error);
+    logger.error("Failed to save onboarding progress:", {
+      error: _error instanceof Error ? _error.message : String(_error),
+    });
   }
 }
 
@@ -37,7 +39,7 @@ export async function getOnboardingProgress(): Promise<{
       };
     }
     return null;
-  } catch (_error) {
+  } catch {
     return null;
   }
 }

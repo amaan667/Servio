@@ -371,7 +371,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         throw new Error(result.error || "URL import failed");
       }
     } catch (error) {
-      console.error("URL import error:", error);
+      logger.error("[MENU UPLOAD] URL import error:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast({
         title: "URL import failed",
         description: error instanceof Error ? error.message : "Failed to import from URL",

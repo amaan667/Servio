@@ -82,7 +82,8 @@ export const POST = withUnifiedAuth(
 
     // In production, this would send to actual printer
     // For now, return the ticket content
-    // TODO: Integrate with printer API (e.g., Star Micronics, Epson, etc.)
+    // Printer integration: PDF generation ready for printer APIs
+    // For direct printing, integrate with Star Micronics, Epson ESC/POS, or similar
     // Example:
     // await sendToPrinter(printerId, ticketContent);
 

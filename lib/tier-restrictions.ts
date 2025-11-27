@@ -1,6 +1,7 @@
 // Tier-based feature restrictions
 // Based on pricing table: Starter (£99), Pro (£249), Enterprise (£449+)
 import { createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export type AnalyticsTier = "basic" | "advanced" | "advanced+exports";
 export type SupportLevel = "email" | "priority" | "24/7";
@@ -107,8 +108,8 @@ export async function getUserTier(userId: string): Promise<string> {
   }
   
   // If invalid, default to starter
-  // eslint-disable-next-line no-console
-  console.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
+   
+  logger.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
   return "starter";
 }
 
@@ -121,8 +122,8 @@ export async function checkFeatureAccess(
 
   // Safety check: if tier doesn't exist in TIER_LIMITS, default to starter
   if (!limits) {
-    // eslint-disable-next-line no-console
-    console.error("[TIER RESTRICTIONS] Invalid tier:", tier, "defaulting to starter");
+     
+    logger.warn("[TIER RESTRICTIONS] Invalid tier, defaulting to starter:", { tier });
     const defaultLimits = TIER_LIMITS.starter;
     
     // Special handling for analytics tier
@@ -212,8 +213,8 @@ export async function checkLimit(
   
   // Safety check: if tier doesn't exist, default to starter
   if (!limits) {
-    // eslint-disable-next-line no-console
-    console.error("[TIER RESTRICTIONS] Invalid tier:", tier, "defaulting to starter");
+     
+    logger.warn("[TIER RESTRICTIONS] Invalid tier, defaulting to starter:", { tier });
     const defaultLimits = TIER_LIMITS.starter;
     const limit = defaultLimits[limitType];
     

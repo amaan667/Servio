@@ -9,13 +9,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface Metric {
-  name: string;
-  value: number;
-  unit: string;
-  trend?: "up" | "down" | "stable";
-}
-
 interface PerformanceData {
   apiRequests: {
     total: number;
@@ -45,7 +38,9 @@ export function PerformanceDashboard() {
         const metrics = await response.json();
         setData(metrics.data);
       } catch (error) {
-        console.error("Failed to fetch metrics", error);
+        logger.error("[MONITORING] Failed to fetch metrics:", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       } finally {
         setLoading(false);
       }

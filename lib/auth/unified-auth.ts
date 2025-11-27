@@ -452,25 +452,18 @@ export function withUnifiedAuth(
   }
 ) {
   return async (req: NextRequest, routeParams?: { params?: Promise<Record<string, string>> }) => {
-    // CRITICAL: Log wrapper entry immediately
-    // eslint-disable-next-line no-console
-    console.log("=".repeat(80));
-    // eslint-disable-next-line no-console
-    console.log("[UNIFIED AUTH] ===== WRAPPER ENTRY ===== ", new Date().toISOString());
-    // eslint-disable-next-line no-console
-    console.log("[UNIFIED AUTH] URL:", req.url);
-    // eslint-disable-next-line no-console
-    console.log("[UNIFIED AUTH] Method:", req.method);
-    // eslint-disable-next-line no-console
-    console.log("[UNIFIED AUTH] Options:", {
-      requireFeature: options?.requireFeature,
-      requireRole: options?.requireRole,
-    });
+    // Log auth wrapper entry (only in development)
+    if (process.env.NODE_ENV === "development") {
+      logger.debug("[UNIFIED AUTH] Wrapper entry", {
+        url: req.url,
+        method: req.method,
+      });
+    }
     
     try {
       // Extract venueId from params, query, or body
-      // eslint-disable-next-line no-console
-      console.log("[UNIFIED AUTH] Step 1: Extracting venueId...");
+       
+      logger.debug("[UNIFIED AUTH] Step 1: Extracting venueId...");
       let venueId: string | null = null;
       let parsedBody: unknown = null;
       let bodyConsumed = false;
@@ -480,47 +473,47 @@ export function withUnifiedAuth(
       
       // Use custom extractor if provided
       if (options?.extractVenueId) {
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Using custom venueId extractor");
+         
+        logger.debug("[UNIFIED AUTH] Using custom venueId extractor");
         venueId = await options.extractVenueId(req, routeParams);
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Custom extractor returned:", venueId);
+         
+        logger.debug("[UNIFIED AUTH] Custom extractor returned:", venueId);
       } else {
         // Try params first (await if it's a Promise)
         if (routeParams?.params) {
-          // eslint-disable-next-line no-console
-          console.log("[UNIFIED AUTH] Trying venueId from route params...");
+           
+          logger.debug("[UNIFIED AUTH] Trying venueId from route params...");
           const params = await routeParams.params;
           venueId = params?.venueId || null;
-          // eslint-disable-next-line no-console
-          console.log("[UNIFIED AUTH] Params venueId:", venueId);
+           
+          logger.debug("[UNIFIED AUTH] Params venueId:", venueId);
         }
 
         // Try query string
         if (!venueId) {
-          // eslint-disable-next-line no-console
-          console.log("[UNIFIED AUTH] Trying venueId from query string...");
+           
+          logger.debug("[UNIFIED AUTH] Trying venueId from query string...");
           const url = new URL(req.url);
           venueId = url.searchParams.get("venueId") || url.searchParams.get("venue_id");
-          // eslint-disable-next-line no-console
-          console.log("[UNIFIED AUTH] Query venueId:", venueId);
+           
+          logger.debug("[UNIFIED AUTH] Query venueId:", venueId);
         }
 
         // Try body - read it ONCE and parse it
         // This is the permanent solution: read body once, parse once, use everywhere
         if (!venueId && req.method !== "GET") {
-          // eslint-disable-next-line no-console
-          console.log("[UNIFIED AUTH] Trying venueId from request body...");
+           
+          logger.debug("[UNIFIED AUTH] Trying venueId from request body...");
           const contentType = req.headers.get("content-type");
-          // eslint-disable-next-line no-console
-          console.log("[UNIFIED AUTH] Content-Type:", contentType);
+           
+          logger.debug("[UNIFIED AUTH] Content-Type:", contentType);
           if (contentType && contentType.includes("application/json")) {
             try {
               // Read body once and parse it
               parsedBody = await req.json();
               bodyConsumed = true;
-              // eslint-disable-next-line no-console
-              console.log("[UNIFIED AUTH] Body parsed successfully");
+               
+              logger.debug("[UNIFIED AUTH] Body parsed successfully");
               
               // Extract venueId from parsed body
               if (parsedBody && typeof parsedBody === "object" && parsedBody !== null) {
@@ -529,21 +522,20 @@ export function withUnifiedAuth(
                          (bodyObj.venue_id as string) || 
                          null;
                 if (venueId) {
-                  // eslint-disable-next-line no-console
-                  console.log("[UNIFIED AUTH] Extracted venueId from body:", venueId);
+                   
+                  logger.debug("[UNIFIED AUTH] Extracted venueId from body:", venueId);
                   logger.debug("[UNIFIED AUTH] Extracted venueId from body", { venueId });
                 } else {
-                  // eslint-disable-next-line no-console
-                  console.log("[UNIFIED AUTH] No venueId found in body, body keys:", Object.keys(bodyObj));
+                   
+                  logger.debug("[UNIFIED AUTH] No venueId found in body, body keys:", Object.keys(bodyObj));
                 }
               } else {
-                // eslint-disable-next-line no-console
-                console.log("[UNIFIED AUTH] Body is not an object:", typeof parsedBody);
+                 
+                logger.debug("[UNIFIED AUTH] Body is not an object:", typeof parsedBody);
               }
             } catch (parseError) {
               // Body parsing failed - log but continue
-              // eslint-disable-next-line no-console
-              console.error("[UNIFIED AUTH] Body parsing failed:", {
+              logger.warn("[UNIFIED AUTH] Body parsing failed:", {
                 method: req.method,
                 error: parseError instanceof Error ? parseError.message : String(parseError),
                 stack: parseError instanceof Error ? parseError.stack : undefined,
@@ -555,19 +547,19 @@ export function withUnifiedAuth(
               parsedBody = null;
             }
           } else {
-            // eslint-disable-next-line no-console
-            console.log("[UNIFIED AUTH] Content-Type not JSON, skipping body parse");
+             
+            logger.debug("[UNIFIED AUTH] Content-Type not JSON, skipping body parse");
           }
         }
       }
       
-      // eslint-disable-next-line no-console
-      console.log("[UNIFIED AUTH] Final venueId:", venueId, "usedCustomExtractor:", usedCustomExtractor);
+       
+      logger.debug("[UNIFIED AUTH] Final venueId:", venueId, "usedCustomExtractor:", usedCustomExtractor);
 
       // If custom extractor returned null, this route doesn't need venueId - skip venue check
       if (!venueId && usedCustomExtractor) {
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Custom extractor returned null - skipping venue check (system route)");
+         
+        logger.debug("[UNIFIED AUTH] Custom extractor returned null - skipping venue check (system route)");
         
         // Just check auth, no venue access needed
         const authResult = await requireAuth(req);
@@ -598,26 +590,26 @@ export function withUnifiedAuth(
 
       // Auth + venue access (venueId is required)
       if (!venueId) {
-        // eslint-disable-next-line no-console
-        console.error("[UNIFIED AUTH] ERROR: venueId is required but not found");
+         
+        logger.error("[UNIFIED AUTH] venueId is required but not found");
         return NextResponse.json(
           { error: "Bad Request", message: "venueId is required" },
           { status: 400 }
         );
       }
 
-      // eslint-disable-next-line no-console
-      console.log("[UNIFIED AUTH] Step 2: Checking authentication and venue access...");
+       
+      logger.debug("[UNIFIED AUTH] Step 2: Checking authentication and venue access...");
       const authResult = await requireAuthAndVenueAccess(req, venueId);
 
       if (!authResult.success) {
-        // eslint-disable-next-line no-console
-        console.error("[UNIFIED AUTH] ERROR: Auth/venue access check failed");
+         
+        logger.error("[UNIFIED AUTH] Auth/venue access check failed");
         return authResult.response;
       }
 
-      // eslint-disable-next-line no-console
-      console.log("[UNIFIED AUTH] Step 2a: Auth successful", {
+      // Auth successful
+      logger.debug({
         userId: authResult.context.user.id,
         venueId: authResult.context.venueId,
         role: authResult.context.role,
@@ -627,25 +619,25 @@ export function withUnifiedAuth(
 
       // Feature check
       if (options?.requireFeature) {
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Step 3: Checking feature access:", options.requireFeature);
+         
+        logger.debug("[UNIFIED AUTH] Step 3: Checking feature access:", options.requireFeature);
         const featureCheck = await enforceFeatureAccess(context.user.id, options.requireFeature);
         if (!featureCheck.allowed) {
-          // eslint-disable-next-line no-console
-          console.error("[UNIFIED AUTH] ERROR: Feature access denied:", options.requireFeature);
+           
+          logger.error("[UNIFIED AUTH] Feature access denied:", { feature: options.requireFeature });
           return featureCheck.response;
         }
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Step 3a: Feature access granted");
+         
+        logger.debug("[UNIFIED AUTH] Step 3a: Feature access granted");
       }
 
       // Role check
       if (options?.requireRole) {
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Step 4: Checking role:", options.requireRole);
+         
+        logger.debug("[UNIFIED AUTH] Step 4: Checking role:", options.requireRole);
         if (!hasRole(context, options.requireRole)) {
-          // eslint-disable-next-line no-console
-          console.error("[UNIFIED AUTH] ERROR: Role check failed", {
+           
+          logger.error("[UNIFIED AUTH] Role check failed", {
             required: options.requireRole,
             current: context.role,
           });
@@ -658,17 +650,17 @@ export function withUnifiedAuth(
             { status: 403 }
           );
         }
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Step 4a: Role check passed");
+         
+        logger.debug("[UNIFIED AUTH] Step 4a: Role check passed");
       }
 
       // Owner check
       if (options?.requireOwner) {
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Step 5: Checking owner role");
+         
+        logger.debug("[UNIFIED AUTH] Step 5: Checking owner role");
         if (!isOwner(context)) {
-          // eslint-disable-next-line no-console
-          console.error("[UNIFIED AUTH] ERROR: Owner check failed", { currentRole: context.role });
+           
+          logger.error("[UNIFIED AUTH] Owner check failed", { currentRole: context.role });
           return NextResponse.json(
             {
               error: "Forbidden",
@@ -678,8 +670,8 @@ export function withUnifiedAuth(
             { status: 403 }
           );
         }
-        // eslint-disable-next-line no-console
-        console.log("[UNIFIED AUTH] Step 5a: Owner check passed");
+         
+        logger.debug("[UNIFIED AUTH] Step 5a: Owner check passed");
       }
 
       // Reconstruct request with body if it was consumed
@@ -719,13 +711,13 @@ export function withUnifiedAuth(
 
       // Call handler with authorized context and route params
       // The request body is available for the handler to read normally
-      // eslint-disable-next-line no-console
-      console.log("[UNIFIED AUTH] Step 6: Calling route handler...");
-      // eslint-disable-next-line no-console
-      console.log("=".repeat(80));
+       
+      logger.debug("[UNIFIED AUTH] Step 6: Calling route handler...");
+       
+      logger.debug("=".repeat(80));
       const response = await handler(requestToUse, context, routeParams);
-      // eslint-disable-next-line no-console
-      console.log("[UNIFIED AUTH] Step 7: Handler completed", {
+      // Handler completed successfully
+      logger.debug({
         status: response.status,
         statusText: response.statusText,
       });
@@ -734,24 +726,9 @@ export function withUnifiedAuth(
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
       
-      // CRITICAL: Log to console.error so it appears in Railway logs
-      // eslint-disable-next-line no-console
-      console.error("=".repeat(80));
-      // eslint-disable-next-line no-console
-      console.error("[UNIFIED AUTH] ===== ERROR IN WRAPPER ===== ", new Date().toISOString());
-      // eslint-disable-next-line no-console
-      console.error("[UNIFIED AUTH] Error message:", errorMessage);
-      // eslint-disable-next-line no-console
-      console.error("[UNIFIED AUTH] Error stack:", errorStack);
-      // eslint-disable-next-line no-console
-      console.error("[UNIFIED AUTH] URL:", req.url);
-      // eslint-disable-next-line no-console
-      console.error("[UNIFIED AUTH] Method:", req.method);
-      // eslint-disable-next-line no-console
-      console.error("=".repeat(80));
-      
-      logger.error("[UNIFIED AUTH] Error in route handler", {
-        error: errorMessage,
+      logger.error("[UNIFIED AUTH] Error in wrapper:", {
+        timestamp: new Date().toISOString(),
+        errorMessage,
         stack: errorStack,
         url: req.url,
         method: req.method,

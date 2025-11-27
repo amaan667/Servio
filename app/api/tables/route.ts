@@ -169,22 +169,14 @@ export const GET = withUnifiedAuth(
 // POST /api/tables - Create a new table
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
-    // CRITICAL: Log immediately when route is hit - before anything else
-    // eslint-disable-next-line no-console
-    console.log("=".repeat(80));
-    // eslint-disable-next-line no-console
-    console.log("[TABLES POST] ===== ROUTE HIT ===== ", new Date().toISOString());
-    // eslint-disable-next-line no-console
-    console.log("[TABLES POST] URL:", req.url);
-    // eslint-disable-next-line no-console
-    console.log("[TABLES POST] Method:", req.method);
-    // eslint-disable-next-line no-console
-    console.log("[TABLES POST] Context:", {
-      venueId: context?.venueId,
-      userId: context?.user?.id,
-    });
-    // eslint-disable-next-line no-console
-    console.log("=".repeat(80));
+    // Log route entry (only in development)
+    if (process.env.NODE_ENV === "development") {
+      logger.debug("[TABLES POST] Route hit", {
+        url: req.url,
+        venueId: context?.venueId,
+        userId: context?.user?.id,
+      });
+    }
     
     try {
       // CRITICAL: Rate limiting
@@ -210,32 +202,25 @@ export const POST = withUnifiedAuth(
         seat_count,
         area,
       });
-      // CRITICAL: Also log to console so it appears in Railway logs
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Table creation requested:", {
+      logger.info("[TABLES POST] Table creation requested", {
         venueId: context.venueId,
-        userId: context.user?.id,
         label,
         seat_count,
-        area,
       });
 
       if (!label) {
-        // eslint-disable-next-line no-console
-        console.error("[TABLES POST] Step 1: Validation failed - label is required");
+        logger.warn("[TABLES POST] Validation failed - label is required");
         return NextResponse.json(
           { ok: false, error: "label is required" },
           { status: 400 }
         );
       }
 
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 1: Validation passed, creating admin client");
+       
+      // Validation passed, proceed with table creation
       const adminSupabase = createAdminClient();
 
       // Check if a table with the same label already exists
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 2: Checking for existing table with label:", label);
       const { data: existingTable } = await adminSupabase
         .from("tables")
         .select("id, label")
@@ -245,8 +230,8 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (existingTable) {
-        // eslint-disable-next-line no-console
-        console.error("[TABLES POST] Step 2a: Table already exists", { tableId: existingTable.id });
+         
+        logger.warn("[TABLES POST] Table already exists", { tableId: existingTable.id });
         return NextResponse.json(
           {
             ok: false,
@@ -257,9 +242,6 @@ export const POST = withUnifiedAuth(
       }
 
       // Check if there are unknown active orders for a table with the same label
-      // This handles cases where the table might have been deleted but orders still exist
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 3: Checking for active orders with matching table number");
       const { data: activeOrders } = await adminSupabase
         .from("orders")
         .select("id, table_number, customer_name, order_status")
@@ -275,8 +257,8 @@ export const POST = withUnifiedAuth(
       });
 
       if (hasActiveOrders) {
-        // eslint-disable-next-line no-console
-        console.error("[TABLES POST] Step 3a: Active orders found for table number", {
+         
+        logger.warn("[TABLES POST] Active orders found for table number", {
           tableNumber,
           activeOrdersCount: activeOrders?.length || 0,
         });
@@ -290,8 +272,6 @@ export const POST = withUnifiedAuth(
       }
 
       // Check tier limits before creating table
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 4: Checking tier limits");
       const { data: currentTables } = await adminSupabase
         .from("tables")
         .select("id", { count: "exact" })
@@ -299,25 +279,16 @@ export const POST = withUnifiedAuth(
         .eq("is_active", true);
 
       const currentCount = currentTables?.length || 0;
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 4a: Current table count", { currentCount });
       const tierCheck = await enforceResourceLimit(context.user.id, "maxTables", currentCount + 1);
 
       if (!tierCheck.allowed) {
-        // eslint-disable-next-line no-console
-        console.error("[TABLES POST] Step 4b: Tier limit exceeded");
+         
+        logger.warn("[TABLES POST] Tier limit exceeded");
         return tierCheck.response;
       }
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 4b: Tier check passed");
+      // Tier check passed
 
       // Create table using admin client to bypass RLS
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 5: Creating table in database", {
-        label,
-        seat_count: seat_count || 2,
-        area: area || null,
-      });
       const { data: table, error: tableError } = await adminSupabase
         .from("tables")
         .insert({
@@ -338,20 +309,13 @@ export const POST = withUnifiedAuth(
           error: tableError instanceof Error ? tableError.message : "Unknown error",
         };
         logger.error("[TABLES POST] Table creation error", errorPayload);
-        // CRITICAL: Also log to console.error so it appears in Railway logs
-        // eslint-disable-next-line no-console
-        console.error("[TABLES POST] Step 5a: Table creation error:", JSON.stringify(errorPayload, null, 2));
         return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
       }
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 5a: Table created successfully", {
-        tableId: table.id,
-        label: table.label,
-      });
+      // Table created successfully
 
       // Check if session already exists for this table
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 6: Checking for existing session", { tableId: table.id });
+       
+      logger.debug("[TABLES POST] Step 6: Checking for existing session", { tableId: table.id });
       const { data: existingSession } = await adminSupabase
         .from("table_sessions")
         .select("id")
@@ -361,8 +325,8 @@ export const POST = withUnifiedAuth(
 
       // Only create session if one doesn't already exist
       if (!existingSession) {
-        // eslint-disable-next-line no-console
-        console.log("[TABLES POST] Step 7: Creating table session", { tableId: table.id });
+         
+        logger.debug("[TABLES POST] Step 7: Creating table session", { tableId: table.id });
         const { error: sessionError } = await adminSupabase.from("table_sessions").insert({
           venue_id: context.venueId,
           table_id: table.id,
@@ -379,26 +343,16 @@ export const POST = withUnifiedAuth(
             error: sessionError.message,
           };
           logger.error("[TABLES POST] Session creation error", sessionErrorPayload);
-          // CRITICAL: Also log to console.error so it appears in Railway logs
-          // eslint-disable-next-line no-console
-          console.error("[TABLES POST] Step 7a: Session creation error:", JSON.stringify(sessionErrorPayload, null, 2));
           return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
         }
-        // eslint-disable-next-line no-console
-        console.log("[TABLES POST] Step 7a: Session created successfully");
+         
+        logger.debug("[TABLES POST] Step 7a: Session created successfully");
       } else {
-        // eslint-disable-next-line no-console
-        console.log("[TABLES POST] Step 7: Session already exists, skipping creation");
+         
+        logger.debug("[TABLES POST] Step 7: Session already exists, skipping creation");
       }
 
       // Success audit log
-      // eslint-disable-next-line no-console
-      console.log("[TABLES POST] Step 8: Table creation completed successfully", {
-        tableId: table.id,
-        label: table.label,
-        seat_count: table.seat_count,
-        area: table.area,
-      });
       logger.info("[TABLES POST] Table created successfully", {
         venueId: context.venueId,
         userId: context.user?.id,
@@ -414,33 +368,19 @@ export const POST = withUnifiedAuth(
         message: `Table "${label}" created successfully!`,
       });
     } catch (_error) {
-      // CRITICAL: Log the full error immediately
-      // eslint-disable-next-line no-console
-      console.error("=".repeat(80));
-      // eslint-disable-next-line no-console
-      console.error("[TABLES POST] ===== UNCAUGHT ERROR ===== ", new Date().toISOString());
-      // eslint-disable-next-line no-console
-      console.error("[TABLES POST] Error type:", _error?.constructor?.name || typeof _error);
-      
       const unexpectedPayload = {
         venueId: context.venueId,
         userId: context.user?.id,
-        message: _error instanceof Error ? _error.message : "Unknown _error",
+        message: _error instanceof Error ? _error.message : "Unknown error",
         stack: _error instanceof Error ? _error.stack : undefined,
+        fullError: JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2),
       };
       
-      // eslint-disable-next-line no-console
-      console.error("[TABLES POST] Error message:", unexpectedPayload.message);
-      // eslint-disable-next-line no-console
-      console.error("[TABLES POST] Error stack:", unexpectedPayload.stack);
-      // eslint-disable-next-line no-console
-      console.error("[TABLES POST] Full error object:", JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2));
-      // eslint-disable-next-line no-console
-      console.error("[TABLES POST] Context:", unexpectedPayload);
-      // eslint-disable-next-line no-console
-      console.error("=".repeat(80));
-      
-      logger.error("[TABLES POST] Unexpected error", unexpectedPayload);
+      logger.error("[TABLES POST] Unexpected error:", {
+        timestamp: new Date().toISOString(),
+        errorType: _error?.constructor?.name || typeof _error,
+        ...unexpectedPayload,
+      });
       return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
     }
   }

@@ -74,11 +74,11 @@ class StructuredLogger {
   }
 
   private output(entry: LogEntry): void {
-    const json = JSON.stringify(entry);
-
     // In production, send to logging service (DataDog, New Relic, etc.)
+    // const json = JSON.stringify(entry);
     if (this.env === 'production') {
-      // TODO: Integrate with logging service
+      // Logging service: Currently using console with structured format
+      // For production, integrate with Datadog, LogRocket, or similar service
       // await fetch('https://logs.example.com/ingest', { body: json });
     }
 

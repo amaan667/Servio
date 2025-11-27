@@ -31,7 +31,11 @@ function sendToAnalytics(metric: Metric) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       keepalive: true,
-    }).catch(console.error);
+    }).catch((error) => {
+      logger.error("[VITALS] Failed to send metrics:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
   }
 }
 

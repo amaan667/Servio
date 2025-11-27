@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CreditCard,
-  ExternalLink,
   Crown,
   Sparkles,
   CheckCircle,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
+import { logger } from "@/lib/logger";
 
 interface BillingSectionProps {
   user?: {
@@ -40,7 +40,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
 
   // Debug: Log organization data
   if (typeof window !== "undefined" && organization) {
-    console.log("[BILLING DEBUG] Organization data:", {
+    logger.debug("[BILLING DEBUG] Organization data:", {
       id: organization.id,
       subscription_tier: organization.subscription_tier,
       stripe_customer_id: organization.stripe_customer_id,
@@ -109,7 +109,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
         });
       } catch (syncError) {
         // Non-critical - continue even if sync fails
-        console.warn("[BILLING] Failed to sync tier before opening portal:", syncError);
+        logger.warn("[BILLING] Failed to sync tier before opening portal:", syncError);
       }
 
       // Open Stripe billing portal where users can upgrade/downgrade

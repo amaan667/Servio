@@ -25,8 +25,13 @@ export const POST = withUnifiedAuth(
       // STEP 3: Parse request
       // STEP 4: Validate inputs (none required)
 
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
-      // Note: This is an admin route - consider adding admin role check
+      // STEP 5: Security - Verify admin role
+      if (context.role !== "admin" && context.role !== "owner") {
+        return NextResponse.json(
+          { ok: false, error: "Admin access required" },
+          { status: 403 }
+        );
+      }
 
       // STEP 6: Business logic
       const supabase = createAdminClient();

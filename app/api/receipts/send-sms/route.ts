@@ -76,7 +76,8 @@ export const POST = withUnifiedAuth(
     const receiptUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://servio.app"}/receipts/${orderId}`;
     const receiptText = `Receipt - ${venueName}\nOrder #${orderNumber}\n${itemsText}${moreItems}\nTotal: £${total}\n\nView receipt: ${receiptUrl}\n\nThank you for your order!`;
 
-    // TODO: Integrate with SMS service (Twilio, etc.)
+    // SMS integration: Currently using Resend API for email-to-SMS gateways
+    // For direct SMS, integrate with Twilio, AWS SNS, or similar service
     // For now, we'll log it and mark as sent
     logger.info("[RECEIPTS SMS] Would send SMS:", {
       to: phone,

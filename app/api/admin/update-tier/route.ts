@@ -23,7 +23,18 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Admin role check
+    const { data: userRole } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (userRole?.role !== "admin" && userRole?.role !== "owner") {
+      return NextResponse.json({ ok: false, error: "Admin access required" }, { status: 403 });
     }
 
     logger.info("[ADMIN UPDATE TIER] Request to update tier", {
@@ -31,11 +42,6 @@ export async function POST(request: NextRequest) {
       tier,
       requestedBy: user.email,
     });
-
-    // Only allow user to update their own tier (or add admin check here)
-    if (user.email !== email) {
-      return NextResponse.json({ error: "Can only update your own subscription" }, { status: 403 });
-    }
 
     // Find organization for this user
     const { data: venues } = await supabase

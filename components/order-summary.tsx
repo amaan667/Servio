@@ -167,7 +167,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             throw new Error(`Order not found after ${maxRetries} attempts`);
           }
         }
-      } catch (_error) {
+      } catch {
         setError("Failed to load order details");
       } finally {
         setLoading(false);
@@ -210,7 +210,9 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
           primaryColor,
         });
       } catch (error) {
-        console.error("[ORDER SUMMARY] Error fetching venue info:", error);
+        logger.error("[ORDER SUMMARY] Error fetching venue info:", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     };
 

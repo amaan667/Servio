@@ -3,9 +3,11 @@
  * Runs pending Supabase migrations automatically on deployment
  */
 
+/* eslint-disable no-console */
 import { createClient } from "@supabase/supabase-js";
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "@/lib/logger";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -39,7 +41,7 @@ async function ensureMigrationsTable() {
     throw error;
   }
 
-  console.log("✅ Migrations table ready");
+  logger.debug("✅ Migrations table ready");
 }
 
 /**
@@ -106,7 +108,7 @@ async function executeMigration(filename: string): Promise<boolean> {
       return false;
     }
 
-    console.log(`✅ Migration successful: ${filename}`);
+    logger.debug({ data: `✅ Migration successful: ${filename}` });
     return true;
   } catch (error) {
     console.error(`❌ Migration error: ${filename}`, error);
@@ -146,7 +148,7 @@ async function runMigrations() {
       return;
     }
 
-    pending.forEach((file) => console.log(`  - ${file}`));
+    logger.debug({ data: `  - ${file}` });
 
     // Step 4: Execute pending migrations
     let successCount = 0;
@@ -166,9 +168,9 @@ async function runMigrations() {
     }
 
     // Step 5: Summary
-    console.log("📊 Migration Summary:");
-    console.log(`  ✅ Successful: ${successCount}`);
-    console.log(`  ❌ Failed: ${failCount}`);
+    logger.debug("📊 Migration Summary:");
+    logger.debug({ data: `  ✅ Successful: ${successCount}` });
+    logger.debug({ data: `  ❌ Failed: ${failCount}` });
 
     if (failCount > 0) {
       process.exit(1);

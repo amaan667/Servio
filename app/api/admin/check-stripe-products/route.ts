@@ -8,6 +8,28 @@ import { logger } from "@/lib/logger";
  */
 export async function GET() {
   try {
+    const { createClient } = await import("@/lib/supabase");
+    const supabase = await createClient();
+    
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Admin role check
+    const { data: userRole } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (userRole?.role !== "admin" && userRole?.role !== "owner") {
+      return NextResponse.json({ ok: false, error: "Admin access required" }, { status: 403 });
+    }
     // Get all products
     const products = await stripe.products.list({ limit: 100, active: true });
     

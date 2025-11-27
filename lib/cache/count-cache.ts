@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /**
  * Shared count cache utility
  * Ensures counts persist across navigation and prevents unnecessary refreshes
@@ -77,7 +78,7 @@ export function setCachedCounts(
     sessionStorage.setItem(`${CACHE_TIME_KEY_PREFIX}${venueId}`, Date.now().toString());
   } catch (error) {
     // SessionStorage might be full or unavailable
-    console.warn("[COUNT_CACHE] Failed to cache counts:", error);
+    logger.warn("[COUNT_CACHE] Failed to cache counts:", error);
   }
 }
 

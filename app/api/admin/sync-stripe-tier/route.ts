@@ -18,7 +18,18 @@ export async function POST() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Admin role check
+    const { data: userRole } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (userRole?.role !== "admin" && userRole?.role !== "owner") {
+      return NextResponse.json({ ok: false, error: "Admin access required" }, { status: 403 });
     }
 
     logger.info("[SYNC STRIPE TIER] Request to sync tier from Stripe", {

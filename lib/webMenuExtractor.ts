@@ -45,6 +45,7 @@ async function getChromiumPath() {
     // Return first existing path, or undefined to use bundled Chromium
     return possiblePaths.find((path) => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const fs = require("fs");
         return fs.existsSync(path);
       } catch {
@@ -470,8 +471,8 @@ async function extractFromDOM(page: import('puppeteer-core').Page): Promise<WebM
           if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
             try {
               imageUrl = new URL(imageUrl, window.location.origin).href;
-            } catch (e) {
-              console.error("[DOM] Failed to convert image URL:", imageUrl);
+            } catch {
+              logger.warn("[DOM] Failed to convert image URL:", { imageUrl });
               imageUrl = undefined;
             }
           }
@@ -505,15 +506,12 @@ async function extractFromDOM(page: import('puppeteer-core').Page): Promise<WebM
             index: index,
           });
         }
-      } catch (err) {
+      } catch {
         // Error extracting item - logging removed for production
       }
     });
 
     // Successfully extracted items - logging removed for production
-    // Log categories for debugging
-    const categories = Array.from(new Set(items.map((item) => item.category).filter(Boolean)));
-    // Categories extracted - logging removed for production
 
     return items as unknown as WebMenuItem[];
   });

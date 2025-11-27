@@ -38,7 +38,14 @@ export const POST = withUnifiedAuth(
         return NextResponse.json({ error: "organizationId required" }, { status: 400 });
       }
 
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
+      // STEP 5: Security - Verify admin role
+      if (context.role !== "admin" && context.role !== "owner") {
+        return NextResponse.json(
+          { ok: false, error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+
       // Verify user owns organization
       const supabase = createAdminClient();
       const { data: org } = await supabase

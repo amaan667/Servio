@@ -109,7 +109,9 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
         }
       } catch (bucketError) {
         // Bucket might already exist or creation failed - continue anyway
-        console.error("Bucket check/create error:", bucketError);
+        logger.error("[EDIT ITEM] Bucket check/create error:", {
+          error: bucketError instanceof Error ? bucketError.message : String(bucketError),
+        });
       }
 
       const fileExt = imageFile.name.split(".").pop();
@@ -134,7 +136,9 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
 
       return publicUrl;
     } catch (error) {
-      console.error("Image upload error:", error);
+      logger.error("[EDIT ITEM] Image upload error:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to upload image");
       return null;
     } finally {
@@ -182,7 +186,9 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Save error:", error);
+      logger.error("[EDIT ITEM] Save error:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to update item");
     } finally {
       setSaving(false);
