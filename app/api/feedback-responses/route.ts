@@ -1,190 +1,122 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { validateBody, submitFeedbackSchema } from '@/lib/api/validation-schemas';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = 'nodejs';
 
-// POST - Submit feedback responses
+/**
+ * POST /api/feedback-responses
+ * Submit feedback responses for an order
+ */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      const body = await req.json();
-      const { order_id, answers } = body;
+      // STEP 3: Validate input
+      const body = await validateBody(submitFeedbackSchema, await req.json());
 
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
+      // Verify venue_id matches context
+      if (body.venue_id !== venueId) {
+        return apiErrors.forbidden('Venue ID mismatch');
       }
 
-      if (!answers || !Array.isArray(answers) || answers.length === 0) {
-        return NextResponse.json({ 
-          error: 'answers array required' 
-        }, { status: 400 });
-      }
-
-      // Validate answers structure
-      for (const answer of answers) {
-        if (!answer.question_id || !answer.type) {
-          return NextResponse.json({ 
-            error: 'Each answer must have question_id and type' 
-          }, { status: 400 });
-        }
-
-        // Validate answer content based on type
-        switch (answer.type) {
-          case 'stars':
-            if (typeof answer.answer_stars !== 'number' || answer.answer_stars < 1 || answer.answer_stars > 5) {
-              return NextResponse.json({ 
-                error: 'Stars answers must be 1-5' 
-              }, { status: 400 });
-            }
-            break;
-          case 'multiple_choice':
-            if (!answer.answer_choice || typeof answer.answer_choice !== 'string') {
-              return NextResponse.json({ 
-                error: 'Multiple choice answers must have answer_choice' 
-              }, { status: 400 });
-            }
-            break;
-          case 'paragraph':
-            if (!answer.answer_text || typeof answer.answer_text !== 'string') {
-              return NextResponse.json({ 
-                error: 'Paragraph answers must have answer_text' 
-              }, { status: 400 });
-            }
-            if (answer.answer_text.length > 600) {
-              return NextResponse.json({ 
-                error: 'Paragraph answers must be 600 characters or less' 
-              }, { status: 400 });
-            }
-            break;
-          default:
-            return NextResponse.json({ 
-              error: `Invalid answer type: ${answer.type}` 
-            }, { status: 400 });
-        }
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-      // Verify order belongs to venue if order_id provided
-      if (order_id) {
+      // STEP 4: Security - Verify order belongs to venue if order_id provided
+      if (body.order_id) {
         const supabase = await createClient();
-        const { data: order } = await supabase
+        const { data: order, error: orderError } = await supabase
           .from("orders")
           .select("venue_id")
-          .eq("id", order_id)
+          .eq("id", body.order_id)
           .eq("venue_id", venueId)
           .single();
 
-        if (!order) {
-          return NextResponse.json(
-            { error: "Order not found or access denied" },
-            { status: 404 }
-          );
+        if (orderError || !order) {
+          logger.warn('[FEEDBACK RESPONSES] Order not found or access denied', {
+            orderId: body.order_id,
+            venueId,
+            userId: context.user.id,
+          });
+          return apiErrors.notFound('Order not found or access denied');
         }
       }
 
-      // STEP 6: Business logic
+      // STEP 5: Business logic - Insert feedback responses
       const supabase = await createClient();
 
-      // Insert feedback responses
-      const responsesToInsert = answers.map((answer: {
-        question_id: string;
-        type: string;
-        answer_stars?: number;
-        answer_choice?: string;
-        answer_text?: string;
-      }) => ({
+      const responsesToInsert = body.answers.map((answer) => ({
         venue_id: venueId,
         question_id: answer.question_id,
-        order_id: order_id || null,
-        answer_type: answer.type,
+        order_id: body.order_id || null,
+        answer_type: answer.answer_type,
         answer_stars: answer.answer_stars || null,
         answer_choice: answer.answer_choice || null,
         answer_text: answer.answer_text || null,
-        created_at: new Date().toISOString(),
       }));
 
       const { data: insertedResponses, error: insertError } = await supabase
-        .from('feedback_responses')
+        .from("feedback_responses")
         .insert(responsesToInsert)
         .select();
 
-      if (insertError) {
-        logger.error('[FEEDBACK RESPONSES] Error inserting responses:', {
-          error: insertError instanceof Error ? insertError.message : 'Unknown error',
+      if (insertError || !insertedResponses) {
+        logger.error('[FEEDBACK RESPONSES] Database insert failed', {
+          error: insertError,
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: 'Failed to save feedback responses',
-            message: process.env.NODE_ENV === "development" ? insertError.message : "Database insert failed",
-          },
-          { status: 500 }
-        );
+        return apiErrors.database('Failed to save feedback responses', insertError);
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
+      // STEP 6: Return success response
+      logger.info('[FEEDBACK RESPONSES] Feedback submitted successfully', {
+        venueId,
+        userId: context.user.id,
+        responseCount: insertedResponses.length,
+        orderId: body.order_id,
+      });
+
+      return success({
         responses: insertedResponses,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
-      logger.error('[FEEDBACK RESPONSES] Unexpected error:', {
-        error: errorMessage,
-        stack: errorStack,
+    } catch (error) {
+      logger.error('[FEEDBACK RESPONSES] Unexpected error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      // Handle validation errors
+      const { isZodError, handleZodError } = await import('@/lib/api/standard-response');
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
-      );
+
+      return apiErrors.internal('Failed to process feedback submission', error);
     }
   },
   {
-    // Extract venueId from body
+    // Extract venueId from body for withUnifiedAuth
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
         return null;
       }

@@ -19,16 +19,19 @@ import {
   AssistantPlanSchema,
 } from "@/types/ai-assistant";
 
+import { env } from "@/lib/env";
+
 // Lazy initialize OpenAI client
 let openai: OpenAI | null = null;
 
 function getOpenAI() {
   if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = env("OPENAI_API_KEY");
+    if (!apiKey) {
       throw new Error("OPENAI_API_KEY environment variable is not set");
     }
     openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey,
     });
   }
   return openai;

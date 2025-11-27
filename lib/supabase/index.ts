@@ -11,19 +11,15 @@
 import { createServerClient as createSSRServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient as createBrowserClient } from "@supabase/supabase-js";
 
+import { env } from "@/lib/env";
+
 /**
  * Gets the Supabase URL from environment variables
  * @returns {string} The Supabase project URL
  * @throws {Error} If NEXT_PUBLIC_SUPABASE_URL is not set
  */
-export function getSupabaseUrl() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
-  if (!url) {
-    throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL is missing. Please set this environment variable in your deployment."
-    );
-  }
-  return url;
+export function getSupabaseUrl(): string {
+  return env("NEXT_PUBLIC_SUPABASE_URL");
 }
 
 /**
@@ -31,14 +27,8 @@ export function getSupabaseUrl() {
  * @returns {string} The Supabase anonymous API key
  * @throws {Error} If NEXT_PUBLIC_SUPABASE_ANON_KEY is not set
  */
-export function getSupabaseAnonKey() {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
-  if (!key) {
-    throw new Error(
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Please set this environment variable in your deployment."
-    );
-  }
-  return key;
+export function getSupabaseAnonKey(): string {
+  return env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
 // Singleton browser client to prevent multiple instances
