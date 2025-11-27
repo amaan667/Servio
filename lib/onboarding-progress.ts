@@ -1,4 +1,5 @@
 // Helper functions for onboarding progress tracking
+import { logger } from "@/lib/logger";
 
 export async function saveOnboardingProgress(
   currentStep: number,

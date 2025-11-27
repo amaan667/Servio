@@ -18,6 +18,7 @@ import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Order, OrderStatus } from "@/types/order";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
+import { logger } from "@/lib/logger";
 
 interface OrderSummaryProps {
   orderId?: string;

@@ -4,7 +4,6 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
-import { logger } from "@/lib/logger";
 
 export enum LogLevel {
   DEBUG = 0,
@@ -69,10 +68,11 @@ class ProductionLogger {
         // Send to external service (Sentry, Datadog, etc.)
       }
     } else if (level === LogLevel.WARN) {
-      logger.warn({ data: formattedMessage });
+      console.warn(formattedMessage);
     } else if (level === LogLevel.INFO) {
-      logger.info({ data: formattedMessage });
+      console.info(formattedMessage);
     } else {
+      console.debug(formattedMessage);
 
       // Block handled
 

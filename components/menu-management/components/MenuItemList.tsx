@@ -17,6 +17,7 @@ import {
 import { MenuItem } from "../types";
 import { useState } from "react";
 import Image from "next/image";
+import { logger } from "@/lib/logger";
 
 interface MenuItemListProps {
   menuItems: MenuItem[];

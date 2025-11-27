@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabaseBrowser } from "@/lib/supabase";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface MenuItem {
   id: string;

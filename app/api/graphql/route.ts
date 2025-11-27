@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { graphql, buildSchema } from "graphql";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase";
-import { withUnifiedAuth } from "@/lib/middleware/authorization";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 
 interface CreateOrderInput {
   venueId: string;
@@ -289,7 +289,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
       return NextResponse.json(
         {
           data: result.data,
-          errors: result.errors.map((e) => ({
+          errors: result.errors.map((e: { message: string; locations?: unknown }) => ({
             message: e.message,
             locations: e.locations,
             path: e.path,

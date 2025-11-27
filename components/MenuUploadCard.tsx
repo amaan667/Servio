@@ -11,6 +11,7 @@ import { FileText, Upload, Info, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface MenuUploadCardProps {
   venueId: string;
