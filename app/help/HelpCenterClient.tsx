@@ -414,8 +414,7 @@ export function HelpCenterClient() {
                       {linkContent}
                     </Link>
                   );
-                });
-              })()}
+              })}
             </div>
           )}
         </div>
