@@ -15,14 +15,13 @@ export function useMenuItems(venueId: string) {
       setLoading(true);
       const supabase = createClient();
 
-      // CACHE BUSTING: Add timestamp to query to force fresh data
-      // This prevents Supabase PostgREST from returning cached results
-      const cacheBuster = Date.now();
+      // Normalize venueId format - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       const { data: items, error } = await supabase
         .from("menu_items")
         .select("*")
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .order("position", { ascending: true, nullsFirst: false });
 
       if (error) {
@@ -38,10 +37,11 @@ export function useMenuItems(venueId: string) {
       setMenuItems(items || []);
 
       if (items && items.length > 0) {
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
         const { data: uploadData } = await supabase
           .from("menu_uploads")
           .select("category_order")
-          .eq("venue_id", venueId)
+          .eq("venue_id", normalizedVenueId)
           .order("created_at", { ascending: false })
           .limit(1);
 

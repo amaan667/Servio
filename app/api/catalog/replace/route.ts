@@ -103,8 +103,10 @@ export const POST = withUnifiedAuth(
 
       // Store PDF images in database
       try {
+        // Normalize venueId format
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
         const { error: uploadError } = await supabase.from("menu_uploads").insert({
-          venue_id: venueId,
+          venue_id: normalizedVenueId,
           filename: file.name,
           pdf_images: pdfImages,
           status: "processed",
@@ -241,11 +243,14 @@ export const POST = withUnifiedAuth(
 
     // Step 3: Replace or Append mode
     if (replaceMode) {
+      // Normalize venueId format - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      
       // Delete all existing items
       const { error: deleteItemsError } = await supabase
         .from("menu_items")
         .delete()
-        .eq("venue_id", venueId);
+        .eq("venue_id", normalizedVenueId);
 
       if (deleteItemsError) {
         logger.error(`[MENU IMPORT ${requestId}] Failed to delete items:`, deleteItemsError);
@@ -256,6 +261,8 @@ export const POST = withUnifiedAuth(
     }
 
     // Step 4: Prepare items for database
+    // Normalize venueId format once for all items
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
     const menuItems = [];
 
     for (let i = 0; i < extractionResult.items.length; i++) {
@@ -268,10 +275,10 @@ export const POST = withUnifiedAuth(
       if (item.spiceLevel === "mild") spiceLevelInt = 1;
       else if (item.spiceLevel === "medium") spiceLevelInt = 2;
       else if (item.spiceLevel === "hot") spiceLevelInt = 3;
-
+      
       menuItems.push({
         id: itemId,
-        venue_id: venueId,
+        venue_id: normalizedVenueId,
         name: item.name,
         description: item.description || "",
         price: item.price || 0,

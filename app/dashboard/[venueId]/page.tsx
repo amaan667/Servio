@@ -30,10 +30,13 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const venueTz = "Europe/London";
     const window = todayWindowForTZ(venueTz);
 
+    // Normalize venueId format - database stores with venue- prefix
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
     // Fetch dashboard counts using RPC
     const { data: countsData, error: countsError } = await supabase
       .rpc("dashboard_counts", {
-        p_venue_id: venueId,
+        p_venue_id: normalizedVenueId,
         p_tz: venueTz,
         p_live_window_mins: 30,
       })
@@ -51,7 +54,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const { data: allTables, error: tablesError } = await supabase
       .from("tables")
       .select("id, is_active")
-      .eq("venue_id", venueId);
+      .eq("venue_id", normalizedVenueId);
 
     if (tablesError) {
       /* Empty */
@@ -60,7 +63,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       const { data: activeSessions, error: sessionsError } = await supabase
         .from("table_sessions")
         .select("id, status, table_id")
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .eq("status", "OCCUPIED")
         .is("closed_at", null);
 
@@ -75,7 +78,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       const { data: currentReservations, error: reservationsError } = await supabase
         .from("reservations")
         .select("id")
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .eq("status", "BOOKED")
         .lte("start_at", now.toISOString())
         .gte("end_at", now.toISOString());
@@ -103,7 +106,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
       .select("total_amount, order_status, payment_status")
-      .eq("venue_id", venueId)
+      .eq("venue_id", normalizedVenueId)
       .gte("created_at", window.startUtcISO)
       .lt("created_at", window.endUtcISO)
       .neq("order_status", "CANCELLED")
@@ -118,7 +121,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const { data: menuItems, error: menuError } = await supabase
       .from("menu_items")
       .select("id")
-      .eq("venue_id", venueId)
+      .eq("venue_id", normalizedVenueId)
       .eq("is_available", true);
 
     if (menuError) {
