@@ -18,13 +18,34 @@ export function useMenuItems(venueId: string) {
       // Normalize venueId format - database stores with venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
+      console.log("[MENU BUILDER] Loading menu items:", {
+        originalVenueId: venueId,
+        normalizedVenueId,
+        timestamp: new Date().toISOString(),
+      });
+
       const { data: items, error } = await supabase
         .from("menu_items")
         .select("*")
         .eq("venue_id", normalizedVenueId)
         .order("position", { ascending: true, nullsFirst: false });
 
+      console.log("[MENU BUILDER] Query result:", {
+        itemCount: items?.length || 0,
+        error: error?.message || null,
+        errorCode: error?.code || null,
+        errorDetails: error?.details || null,
+        sampleItem: items?.[0] || null,
+      });
+
       if (error) {
+        console.error("[MENU BUILDER] Error loading menu items:", {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          normalizedVenueId,
+        });
         logger.error("[MENU ITEMS] Error loading:", error);
         toast({
           title: "Error",
@@ -34,7 +55,21 @@ export function useMenuItems(venueId: string) {
         return;
       }
 
+      const itemCount = items?.length || 0;
+      console.log("[MENU BUILDER] Successfully loaded menu items:", {
+        count: itemCount,
+        firstFewItems: items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name })) || [],
+      });
+
       setMenuItems(items || []);
+      
+      // Log summary for comparison
+      console.log("[MENU BUILDER] SUMMARY:", {
+        venueId,
+        normalizedVenueId,
+        totalMenuItems: itemCount,
+        timestamp: new Date().toISOString(),
+      });
 
       if (items && items.length > 0) {
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;

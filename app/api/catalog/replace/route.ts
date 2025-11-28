@@ -42,12 +42,31 @@ export const POST = withUnifiedAuth(
       const venueId = context.venueId;
       const user = context.user;
 
+      // Normalize venueId format immediately
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
+      console.log("[CATALOG REPLACE] Starting menu import:", {
+        requestId,
+        originalVenueId: venueId,
+        normalizedVenueId,
+        userId: user.id,
+        timestamp: new Date().toISOString(),
+      });
+
       logger.info(`[MENU IMPORT ${requestId}] User authenticated:`, { userId: user.id });
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const menuUrl = formData.get("menu_url") as string | null;
     const replaceMode = formData.get("replace_mode") !== "false"; // Default to true
+
+    console.log("[CATALOG REPLACE] Request details:", {
+      hasFile: !!file,
+      fileName: file?.name || null,
+      hasUrl: !!menuUrl,
+      menuUrl: menuUrl || null,
+      replaceMode,
+    });
 
     // VALIDATION: Must have at least one source (PDF or URL)
     if (!file && !menuUrl) {
@@ -60,15 +79,10 @@ export const POST = withUnifiedAuth(
       );
     }
 
-    if (!venueId) {
+    if (!venueId || !normalizedVenueId) {
+      console.error("[CATALOG REPLACE] Missing venueId:", { venueId, normalizedVenueId });
       return apiErrors.badRequest('venue_id required');
     }
-
-      // STEP 3: Parse request
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        return apiErrors.badRequest('venue_id required');
-      }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
@@ -77,7 +91,8 @@ export const POST = withUnifiedAuth(
       const supabase = await createServerSupabase();
 
     logger.info(`[MENU IMPORT ${requestId}] Starting menu import`, {
-      venueId,
+      venueId: normalizedVenueId,
+      originalVenueId: venueId,
       userId: user.id,
       hasFile: !!file,
       hasUrl: !!menuUrl,
@@ -103,8 +118,6 @@ export const POST = withUnifiedAuth(
 
       // Store PDF images in database
       try {
-        // Normalize venueId format
-        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
         const { error: uploadError } = await supabase.from("menu_uploads").insert({
           venue_id: normalizedVenueId,
           filename: file.name,
@@ -125,10 +138,23 @@ export const POST = withUnifiedAuth(
 
     let extractionResult;
     try {
+      console.log("[CATALOG REPLACE] Starting hybrid extraction:", {
+        hasPdfImages: !!pdfImages,
+        pdfImageCount: pdfImages?.length || 0,
+        hasUrl: !!menuUrl,
+        normalizedVenueId,
+      });
+
       extractionResult = await extractMenuHybrid({
         pdfImages,
         websiteUrl: menuUrl || undefined,
-        venueId,
+        venueId: normalizedVenueId,
+      });
+
+      console.log("[CATALOG REPLACE] Extraction complete:", {
+        mode: extractionResult.mode,
+        itemCount: extractionResult.itemCount,
+        extractedItems: extractionResult.items?.length || 0,
       });
 
       logger.info(`[MENU IMPORT ${requestId}] Extraction complete`, {
@@ -243,14 +269,21 @@ export const POST = withUnifiedAuth(
 
     // Step 3: Replace or Append mode
     if (replaceMode) {
-      // Normalize venueId format - database stores with venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      console.log("[CATALOG REPLACE] Replace mode - deleting existing items:", {
+        normalizedVenueId,
+        timestamp: new Date().toISOString(),
+      });
       
       // Delete all existing items
       const { error: deleteItemsError } = await supabase
         .from("menu_items")
         .delete()
         .eq("venue_id", normalizedVenueId);
+
+      console.log("[CATALOG REPLACE] Delete result:", {
+        error: deleteItemsError?.message || null,
+        errorCode: deleteItemsError?.code || null,
+      });
 
       if (deleteItemsError) {
         logger.error(`[MENU IMPORT ${requestId}] Failed to delete items:`, deleteItemsError);
@@ -261,9 +294,12 @@ export const POST = withUnifiedAuth(
     }
 
     // Step 4: Prepare items for database
-    // Normalize venueId format once for all items
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
     const menuItems = [];
+    
+    console.log("[CATALOG REPLACE] Preparing items for database:", {
+      extractionResultItemCount: extractionResult.items.length,
+      normalizedVenueId,
+    });
 
     for (let i = 0; i < extractionResult.items.length; i++) {
       const item = extractionResult.items[i];
@@ -294,6 +330,12 @@ export const POST = withUnifiedAuth(
     }
 
     // Step 5: Insert into database
+    console.log("[CATALOG REPLACE] Ready to insert items:", {
+      itemCount: menuItems.length,
+      normalizedVenueId,
+      sampleItem: menuItems[0] || null,
+    });
+
     if (menuItems.length > 0) {
       logger.info(
         `[MENU IMPORT ${requestId}] Inserting ${menuItems.length} items into database...`
@@ -306,6 +348,14 @@ export const POST = withUnifiedAuth(
         .from("menu_items")
         .insert(menuItems)
         .select();
+
+      console.log("[CATALOG REPLACE] Insert result:", {
+        insertedCount: data?.length || 0,
+        error: insertItemsError?.message || null,
+        errorCode: insertItemsError?.code || null,
+        errorDetails: insertItemsError?.details || null,
+        errorHint: insertItemsError?.hint || null,
+      });
 
       if (insertItemsError) {
         logger.error(`[MENU IMPORT ${requestId}] Database insert failed`, {
@@ -336,17 +386,17 @@ export const POST = withUnifiedAuth(
     // Revalidate all pages that display menu data - AGGRESSIVE CACHE BUSTING
     try {
       // Revalidate the entire dashboard layout and all nested routes
-      revalidatePath(`/dashboard/${venueId}`, "layout");
-      revalidatePath(`/dashboard/${venueId}`, "page");
-      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
-      revalidatePath(`/dashboard/${venueId}/menu-management`, "layout");
+      revalidatePath(`/dashboard/${normalizedVenueId}`, "layout");
+      revalidatePath(`/dashboard/${normalizedVenueId}`, "page");
+      revalidatePath(`/dashboard/${normalizedVenueId}/menu-management`, "page");
+      revalidatePath(`/dashboard/${normalizedVenueId}/menu-management`, "layout");
 
       // Revalidate menu pages
-      revalidatePath(`/menu/${venueId}`, "page");
-      revalidatePath(`/order/${venueId}`, "page");
+      revalidatePath(`/menu/${normalizedVenueId}`, "page");
+      revalidatePath(`/order/${normalizedVenueId}`, "page");
 
       logger.info(
-        `[MENU IMPORT ${requestId}] ✅ Cache revalidated aggressively for venue ${venueId}`
+        `[MENU IMPORT ${requestId}] ✅ Cache revalidated aggressively for venue ${normalizedVenueId}`
       );
     } catch (revalidateError) {
       logger.warn(
@@ -354,6 +404,14 @@ export const POST = withUnifiedAuth(
         revalidateError
       );
     }
+
+    console.log("[CATALOG REPLACE] Import complete:", {
+      requestId,
+      itemCount: menuItems.length,
+      mode: extractionResult.mode,
+      duration: `${duration}ms`,
+      normalizedVenueId,
+    });
 
       // STEP 7: Return success response
       return NextResponse.json({

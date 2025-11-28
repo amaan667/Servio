@@ -124,7 +124,33 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .eq("venue_id", normalizedVenueId)
       .eq("is_available", true);
 
+    const menuItemCount = menuItems?.length || 0;
+
+    console.log("[DASHBOARD] Menu items count:", {
+      venueId,
+      normalizedVenueId,
+      count: menuItemCount,
+      error: menuError?.message || null,
+      errorCode: menuError?.code || null,
+      sampleIds: menuItems?.slice(0, 5).map((m) => m.id) || [],
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log summary for comparison
+    console.log("[DASHBOARD] SUMMARY:", {
+      venueId,
+      normalizedVenueId,
+      totalMenuItems: menuItemCount,
+      timestamp: new Date().toISOString(),
+    });
+
     if (menuError) {
+      console.error("[DASHBOARD] Error fetching menu items:", {
+        error: menuError.message,
+        code: menuError.code,
+        details: menuError.details,
+        normalizedVenueId,
+      });
       logger.error(`[DASHBOARD] Error fetching menu items for venue ${venueId}:`, menuError);
     }
 
@@ -133,7 +159,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
     initialStats = {
       revenue,
-      menuItems: menuItems?.length || 0,
+      menuItems: menuItemCount,
       unpaid,
     };
   } catch (_error) {

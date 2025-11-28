@@ -79,15 +79,28 @@ export async function GET(
       .eq("is_available", true)
       .order("created_at", { ascending: true });
 
+    const menuItemCount = menuItems?.length || 0;
+
+    console.log("[CUSTOMER UI API] Menu items query:", {
+      rawVenueId,
+      transformedVenueId: venueId,
+      actualVenueId: venue.venue_id,
+      count: menuItemCount,
+      error: menuError?.message || null,
+      errorCode: menuError?.code || null,
+      sampleItems: menuItems?.slice(0, 3).map((m) => ({ id: m.id, name: m.name })) || [],
+      timestamp: new Date().toISOString(),
+    });
+
     if (menuError) {
+      console.error("[CUSTOMER UI API] Error fetching menu items:", {
+        error: menuError.message,
+        code: menuError.code,
+        details: menuError.details,
+        venueId: venue.venue_id,
+      });
       logger.error("[MENU API] Error fetching menu items:", { value: menuError });
       return apiErrors.internal('Failed to load menu items');
-    }
-
-    if (menuItems && menuItems.length > 0) {
-      /* Empty */
-    } else {
-      // Intentionally empty
     }
 
     // Return menu items with venue info
@@ -97,8 +110,23 @@ export async function GET(
         name: venue.venue_name,
       },
       menuItems: menuItems || [],
-      totalItems: menuItems?.length || 0,
+      totalItems: menuItemCount,
     };
+
+    console.log("[CUSTOMER UI API] Returning response:", {
+      venueId: venue.venue_id,
+      totalItems: menuItemCount,
+      hasItems: menuItemCount > 0,
+    });
+
+    // Log summary for comparison
+    console.log("[CUSTOMER UI API] SUMMARY:", {
+      rawVenueId,
+      transformedVenueId: venueId,
+      actualVenueId: venue.venue_id,
+      totalMenuItems: menuItemCount,
+      timestamp: new Date().toISOString(),
+    });
 
     // Cache the response for 5 minutes
     await cache.set(cacheKey, response, { ttl: cacheTTL.medium });

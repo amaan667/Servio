@@ -32,17 +32,34 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   useEffect(() => {
     const checkExistingItems = async () => {
       try {
+        // Normalize venueId format
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        
+        console.log("[MENU UPLOAD CARD] Checking for existing items:", {
+          originalVenueId: venueId,
+          normalizedVenueId,
+        });
+
         const { data, error } = await supabase
           .from("menu_items")
           .select("id")
-          .eq("venue_id", venueId)
+          .eq("venue_id", normalizedVenueId)
           .limit(1)
-          .single();
+          .maybeSingle();
+
+        console.log("[MENU UPLOAD CARD] Existing items check result:", {
+          hasData: !!data,
+          error: error?.message || null,
+          hasExistingUpload: !!(data && !error),
+        });
 
         if (data && !error) {
           setHasExistingUpload(true);
+        } else {
+          setHasExistingUpload(false);
         }
-      } catch {
+      } catch (err) {
+        console.error("[MENU UPLOAD CARD] Error checking existing items:", err);
         // No existing items
         setHasExistingUpload(false);
       }

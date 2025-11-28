@@ -90,6 +90,16 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       const data = await response.json();
 
+      const itemCount = data.menuItems?.length || 0;
+      console.log("[CUSTOMER UI] Menu loaded from API:", {
+        venueSlug,
+        totalItems: data.totalItems || itemCount,
+        menuItemsCount: itemCount,
+        hasItems: itemCount > 0,
+        venueName: data.venue?.venue_name || data.venueName,
+        timestamp: new Date().toISOString(),
+      });
+
       const normalized = (data.menuItems || []).map((mi: Record<string, unknown>) => ({
         ...mi,
         venue_name: data.venue?.venue_name || "",
@@ -99,10 +109,17 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       const venueNameValue = data.venue?.venue_name || data.venueName || "";
       setVenueName(venueNameValue);
 
-      // Cache menu data
+      // Clear cache if no items to prevent stale data
       if (typeof window !== "undefined") {
-        sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(normalized));
-        sessionStorage.setItem(`venue_name_${venueSlug}`, venueNameValue);
+        if (itemCount > 0) {
+          sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(normalized));
+          sessionStorage.setItem(`venue_name_${venueSlug}`, venueNameValue);
+        } else {
+          // Clear cache when no items
+          sessionStorage.removeItem(`menu_${venueSlug}`);
+          sessionStorage.removeItem(`venue_name_${venueSlug}`);
+          sessionStorage.removeItem(`categories_${venueSlug}`);
+        }
       }
 
       // Fetch category order
@@ -115,7 +132,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
             setCategoryOrder(categoryOrderData.categories);
             // Cache categories
-            if (typeof window !== "undefined") {
+            if (typeof window !== "undefined" && itemCount > 0) {
               sessionStorage.setItem(
                 `categories_${venueSlug}`,
                 JSON.stringify(categoryOrderData.categories)
@@ -127,8 +144,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         setCategoryOrder(null);
       }
 
-      if (!data.menuItems || data.menuItems.length === 0) {
+      if (itemCount === 0) {
+        console.log("[CUSTOMER UI] No menu items found - setting error message");
         setMenuError("This venue has no available menu items yet.");
+      } else {
+        setMenuError(null);
       }
 
       setLoadingMenu(false);
