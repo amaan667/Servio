@@ -414,8 +414,17 @@ export default function MenuManagementClient({
           sessionStorage.removeItem(`dashboard_stats_${venueId}`);
           sessionStorage.removeItem(`dashboard_counts_${venueId}`);
           console.log("✅ Cleared dashboard cache");
+          
+          // Dispatch custom event to trigger dashboard refresh
+          window.dispatchEvent(
+            new CustomEvent("menuChanged", {
+              detail: { venueId, action: "cleared" },
+            })
+          );
+          console.log("✅ Dispatched menuChanged event to refresh dashboard");
         }
         
+        // Force router refresh to update server-rendered data
         router.refresh();
         
         // CRITICAL LOG: Clear menu success
@@ -425,6 +434,7 @@ export default function MenuManagementClient({
         console.log("Venue ID:", venueId);
         console.log("⚠️  Dashboard count should now update to: 0");
         console.log("⚠️  Menu builder count should now be: 0");
+        console.log("⚠️  Router refresh triggered - dashboard should auto-update");
         console.log("Timestamp:", new Date().toISOString());
         console.log("═══════════════════════════════════════════════════════════");
       } else {
@@ -472,9 +482,25 @@ export default function MenuManagementClient({
             {/* Unified Menu Upload - Handles PDF + Optional URL */}
             <MenuUploadCard
               venueId={venueId}
-              onSuccess={() => {
+              menuItemCount={menuItems.length}
+              onSuccess={async () => {
                 // Refresh menu items list (client-side)
-                loadMenuItems();
+                await loadMenuItems();
+                
+                // Clear dashboard cache to force fresh count
+                if (typeof window !== "undefined") {
+                  sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+                  sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+                  
+                  // Dispatch custom event to trigger dashboard refresh
+                  window.dispatchEvent(
+                    new CustomEvent("menuChanged", {
+                      detail: { venueId, action: "uploaded" },
+                    })
+                  );
+                  console.log("✅ Dispatched menuChanged event to refresh dashboard");
+                }
+                
                 // Force router refresh to update server-rendered dashboard stats
                 router.refresh();
               }}

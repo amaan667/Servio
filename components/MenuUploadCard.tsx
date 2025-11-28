@@ -16,9 +16,10 @@ import { logger } from "@/lib/logger";
 interface MenuUploadCardProps {
   venueId: string;
   onSuccess?: () => void;
+  menuItemCount?: number; // Pass current menu item count to determine if toggle should show
 }
 
-export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
+export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUploadCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isReplacing, setIsReplacing] = useState(true); // Default to replace mode
   const [isDragOver, setIsDragOver] = useState(false);
@@ -302,6 +303,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             sessionStorage.removeItem(`dashboard_stats_${venueId}`);
             sessionStorage.removeItem(`dashboard_counts_${venueId}`);
             console.log("[PDF UPLOAD] Cleared dashboard cache after successful upload");
+            
+            // Dispatch custom event to trigger dashboard refresh
+            window.dispatchEvent(
+              new CustomEvent("menuChanged", {
+                detail: { venueId, action: "uploaded", itemCount: result.items || 0 },
+              })
+            );
+            console.log("[PDF UPLOAD] Dispatched menuChanged event to refresh dashboard");
           }
           
           onSuccess?.();
@@ -574,8 +583,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           </div>
         </div>
 
-        {/* Replace vs Append Toggle - Only shows AFTER first upload */}
-        {hasExistingUpload && (
+        {/* Replace vs Append Toggle - Only shows if there are existing menu items */}
+        {menuItemCount > 0 && (
           <div className="flex items-center space-x-2 p-3 bg-muted rounded-md">
             <Switch
               id="replace-mode"

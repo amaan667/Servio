@@ -370,6 +370,46 @@ export function useDashboardData(
     fetchData();
   }, [venue]);
 
+  // Listen for menu changes to auto-refresh stats
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleMenuChange = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; action: string; itemCount?: number }>;
+      const changedVenueId = customEvent.detail?.venueId;
+      if (changedVenueId === venueId && todayWindow) {
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("🔄 [DASHBOARD] Menu change detected - refreshing stats...");
+        console.log("═══════════════════════════════════════════════════════════");
+        
+        // Clear cache first
+        sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+        sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+        
+        // Refresh counts and stats
+        await refreshCounts();
+        const venue_id =
+          venue && typeof venue === "object" && "venue_id" in venue
+            ? (venue as { venue_id?: string }).venue_id
+            : venueId;
+        if (venue_id && todayWindow.startUtcISO && todayWindow.endUtcISO) {
+          await loadStats(venue_id, {
+            startUtcISO: todayWindow.startUtcISO,
+            endUtcISO: todayWindow.endUtcISO,
+          });
+        }
+        
+        console.log("✅ [DASHBOARD] Stats refreshed after menu change");
+        console.log("═══════════════════════════════════════════════════════════");
+      }
+    };
+
+    window.addEventListener("menuChanged", handleMenuChange);
+    return () => {
+      window.removeEventListener("menuChanged", handleMenuChange);
+    };
+  }, [venueId, venue, todayWindow, refreshCounts, loadStats]);
+
   return {
     venue,
     setVenue,
