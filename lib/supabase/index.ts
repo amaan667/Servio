@@ -26,7 +26,9 @@ export function getSupabaseUrl(): string {
     if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
     return url;
   }
-  return env("NEXT_PUBLIC_SUPABASE_URL");
+  const url = env("NEXT_PUBLIC_SUPABASE_URL");
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
+  return url;
 }
 
 /**
@@ -42,7 +44,9 @@ export function getSupabaseAnonKey(): string {
     if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
     return key;
   }
-  return env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
+  return key;
 }
 
 // Singleton browser client to prevent multiple instances
