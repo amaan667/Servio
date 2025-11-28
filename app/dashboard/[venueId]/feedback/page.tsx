@@ -7,15 +7,15 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   // Server-side auth check - Customer Feedback requires Pro+ tier
   const auth = await requirePageAuth(venueId, {
     requireFeature: "customerFeedback",
-  });
+  }).catch(() => null);
 
-  const hasFeedbackAccess = auth.hasFeatureAccess("customerFeedback");
+  const hasFeedbackAccess = (auth?.hasFeatureAccess("customerFeedback") ?? false);
 
   return (
     <FeedbackClientPage
       venueId={venueId}
-      tier={auth.tier}
-      role={auth.role}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
       hasAccess={hasFeedbackAccess}
     />
   );

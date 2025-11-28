@@ -16,7 +16,7 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
   const { venueId } = params;
 
   // Server-side auth check - analytics is available to all tiers but with different levels
-  const auth = await requirePageAuth(venueId);
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
   // All tiers have analytics, just different levels
   const hasAnalyticsAccess = true;
@@ -34,8 +34,8 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
       ordersData={ordersData}
       menuData={menuData}
       revenueData={revenueData}
-      tier={auth.tier}
-      role={auth.role}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
       hasAccess={hasAnalyticsAccess}
     />
   );

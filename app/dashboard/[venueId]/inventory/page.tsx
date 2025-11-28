@@ -7,15 +7,15 @@ export default async function InventoryPage({ params }: { params: { venueId: str
   // Server-side auth check - Inventory requires Pro+ tier
   const auth = await requirePageAuth(venueId, {
     requireFeature: "inventory",
-  });
+  }).catch(() => null);
 
-  const hasInventoryAccess = auth.hasFeatureAccess("inventory");
+  const hasInventoryAccess = (auth?.hasFeatureAccess("inventory") ?? false);
 
   return (
     <InventoryClientPage
       venueId={venueId}
-      tier={auth.tier}
-      role={auth.role}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
       hasAccess={hasInventoryAccess}
     />
   );

@@ -263,8 +263,8 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           data: { session },
         } = await supabase.auth.getSession();
         if (!session?.access_token) {
+          // NO REDIRECTS - User requested ZERO sign-in redirects
           alert("Session expired. Please sign in again.");
-          router.push("/sign-in");
           setLoadingPlan(false);
           return;
         }

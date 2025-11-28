@@ -5,7 +5,7 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await requirePageAuth(venueId);
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
   return <LiveOrdersClientPage venueId={venueId} />;
 }

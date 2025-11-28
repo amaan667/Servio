@@ -7,7 +7,7 @@ export default async function StaffPage({ params }: { params: { venueId: string 
   // Server-side auth check - staff management requires owner or manager
   const auth = await requirePageAuth(venueId, {
     requireRole: ["owner", "manager"],
-  });
+  }).catch(() => null);
 
   return <StaffClientPage venueId={venueId} />;
 }

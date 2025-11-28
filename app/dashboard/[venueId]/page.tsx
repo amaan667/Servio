@@ -13,10 +13,14 @@ export const revalidate = 0;
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // STEP 1: Server-side auth check (CRITICAL - must be first)
-  const auth = await requirePageAuth(venueId);
+  // STEP 1: Server-side auth check (optional - no redirects)
+  // NO REDIRECTS - User requested ZERO sign-in redirects
+  // Auth check is optional - client will handle auth display
+  // Dashboard ALWAYS loads - client handles authentication
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
-  // STEP 2: Now safe to fetch initial dashboard data on server
+  // STEP 2: Fetch initial dashboard data on server (even without auth)
+  // Always fetch data - don't block on auth
   // Use admin client only after auth verification
   let initialCounts: DashboardCounts | undefined = undefined;
   let initialStats: DashboardStats | undefined = undefined;

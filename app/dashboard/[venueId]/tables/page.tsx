@@ -5,7 +5,7 @@ export default async function TablesPage({ params }: { params: { venueId: string
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await requirePageAuth(venueId);
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
   return <TablesClientPage venueId={venueId} />;
 }

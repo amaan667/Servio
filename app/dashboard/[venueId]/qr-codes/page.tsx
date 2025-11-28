@@ -10,7 +10,7 @@ export default async function QRCodePage({ params }: { params: { venueId: string
   const { venueId } = params;
 
   // Server-side auth check (even though client is SSR disabled)
-  const auth = await requirePageAuth(venueId);
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
   // Render fully client-side with no SSR to prevent hydration issues
   return <QRCodeClientPage venueId={venueId} />;

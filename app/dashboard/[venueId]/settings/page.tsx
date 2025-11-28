@@ -9,7 +9,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   // STEP 1: Server-side auth check - settings requires owner or manager
   const auth = await requirePageAuth(venueId, {
     requireRole: ["owner", "manager"],
-  });
+  }).catch(() => null);
 
   // STEP 2: Now safe to fetch data using admin client
   const supabase = createAdminClient();
@@ -21,31 +21,31 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
       .from("venues")
       .select("*")
       .eq("venue_id", venueId)
-      .eq("owner_user_id", auth.user.id)
+      .eq("owner_user_id", auth?.user.id)
       .maybeSingle(),
     supabase
       .from("user_venue_roles")
       .select("role")
-      .eq("user_id", auth.user.id)
+      .eq("user_id", auth?.user.id)
       .eq("venue_id", venueId)
       .maybeSingle(),
     supabase
       .from("venues")
       .select("*")
-      .eq("owner_user_id", auth.user.id)
+      .eq("owner_user_id", auth?.user.id)
       .order("created_at", { ascending: true }),
     // Fetch first venue with organization_id by owner (same as home page and debug endpoint)
     supabase
       .from("venues")
       .select("organization_id")
-      .eq("owner_user_id", auth.user.id)
+      .eq("owner_user_id", auth?.user.id)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
   ]);
 
   logger.info("[SETTINGS PAGE] First venue fetch result", {
-    userId: auth.user.id,
+    userId: auth?.user.id,
     hasData: !!firstVenueResult.data,
     organizationId: firstVenueResult.data?.organization_id,
     error: firstVenueResult.error?.message,
@@ -139,7 +139,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
       }
     }
   } else {
-    logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: auth.user.id });
+    logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: auth?.user.id });
   }
 
   const venue = venueResult.data;
@@ -169,7 +169,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   // Venue access already verified by requirePageAuth, so finalVenue should exist
   if (!finalVenue) {
     logger.error("[SETTINGS PAGE] Venue not found after auth verification", {
-      userId: auth.user.id,
+      userId: auth?.user.id,
       venueId,
     });
     // This shouldn't happen, but handle gracefully
@@ -178,8 +178,8 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
 
   const initialData = {
     user: {
-      id: auth.user.id,
-      email: auth.user.email ?? undefined,
+      id: auth?.user.id,
+      email: auth?.user.email ?? undefined,
       user_metadata: {},
     },
     venue: finalVenue,

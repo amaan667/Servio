@@ -10,7 +10,7 @@ export default async function PerformancePage({ params }: { params: { venueId: s
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await requirePageAuth(venueId);
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
   return <PerformanceDashboardClient venueId={venueId} />;
 }

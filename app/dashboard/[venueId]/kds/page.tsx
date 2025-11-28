@@ -6,11 +6,12 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
   const { venueId } = params;
 
   // Server-side auth check - KDS requires Enterprise tier
+  // NO REDIRECTS - Dashboard always loads
   const auth = await requirePageAuth(venueId, {
     requireFeature: "kds",
-  });
+  }).catch(() => null);
 
-  const hasKDSAccess = auth.hasFeatureAccess("kds");
+  const hasKDSAccess = auth?.hasFeatureAccess("kds") ?? false;
 
   // Fetch initial KDS data on server to show accurate counts on first visit
   let initialTickets = null;
@@ -65,8 +66,8 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       venueId={venueId}
       initialTickets={initialTickets}
       initialStations={initialStations}
-      tier={auth.tier}
-      role={auth.role}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
       hasAccess={hasKDSAccess}
     />
   );

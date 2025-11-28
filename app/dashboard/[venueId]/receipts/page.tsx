@@ -5,7 +5,7 @@ export default async function ReceiptsPage({ params }: { params: { venueId: stri
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await requirePageAuth(venueId);
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
   return <ReceiptsClientPage venueId={venueId} />;
 }

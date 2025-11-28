@@ -3,11 +3,11 @@
  * 
  * Use this in all dashboard page.tsx files for consistent auth checking
  * 
- * CRITICAL: This function NEVER throws - it always redirects on auth failures
- * to prevent 500 errors from expected auth failures.
+ * CRITICAL: NO REDIRECTS - User requested ZERO sign-in redirects
+ * Returns null on auth failures instead of redirecting
  */
 
-import { redirect } from "next/navigation";
+// redirect import removed - NO REDIRECTS
 import { createServerSupabase } from "@/lib/supabase";
 import { verifyVenueAccess } from "@/lib/middleware/authorization";
 import { getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
@@ -65,7 +65,7 @@ export interface RequirePageAuthOptions {
 export async function requirePageAuth(
   venueIdFromPage?: string,
   options: RequirePageAuthOptions = {}
-): Promise<PageAuthContext> {
+): Promise<PageAuthContext | null> {
   // STEP 1: Get user from Supabase session (cookie-aware)
   // Use createServerSupabase directly for better cookie handling in production
   const supabase = await createServerSupabase();
@@ -76,16 +76,18 @@ export async function requirePageAuth(
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    // Not logged in → redirect to sign in
-    redirect("/sign-in");
+    // NO REDIRECTS - User requested ZERO sign-in redirects
+    // Return null instead of redirecting - let client handle auth
+    return null;
   }
 
   // STEP 2: Resolve venueId
   let venueId = venueIdFromPage;
 
   if (!venueId && !options.allowNoVenue) {
-    // If page requires a venue but none provided, redirect
-    redirect("/dashboard");
+    // NO REDIRECTS - User requested ZERO sign-in redirects
+    // Return null instead of redirecting
+    return null;
   }
 
   // Pages like /dashboard (no venue) can skip membership check
@@ -105,8 +107,9 @@ export async function requirePageAuth(
   const access = await verifyVenueAccess(venueId, user.id);
 
   if (!access) {
-    // User has no access to this venue → redirect
-    redirect("/dashboard");
+    // NO REDIRECTS - User requested ZERO sign-in redirects
+    // Return null instead of redirecting - but user IS authenticated
+    return null;
   }
 
   const role = access.role as UserRole;
@@ -116,22 +119,27 @@ export async function requirePageAuth(
 
   // STEP 5: Role check (if specified)
   if (options.requireRole && !options.requireRole.includes(role)) {
-    redirect("/dashboard?error=forbidden");
+    // NO REDIRECTS - User requested ZERO sign-in redirects
+    // Return null instead of redirecting
+    return null;
   }
 
   // STEP 6: Feature check (if specified)
   if (options.requireFeature) {
     const tierLimits = TIER_LIMITS[tier];
     if (!tierLimits) {
-      // Unknown tier → redirect
-      redirect("/dashboard?error=invalid_tier");
+      // NO REDIRECTS - User requested ZERO sign-in redirects
+      // Return null instead of redirecting
+      return null;
     }
 
     const featureValue = tierLimits.features[options.requireFeature];
     
     // For boolean features, check the value directly
     if (typeof featureValue === "boolean" && !featureValue) {
-      redirect("/dashboard?error=feature_not_enabled");
+      // NO REDIRECTS - User requested ZERO sign-in redirects
+      // Return null instead of redirecting
+      return null;
     }
     
     // For analytics and supportLevel, they're always allowed (just different levels)
