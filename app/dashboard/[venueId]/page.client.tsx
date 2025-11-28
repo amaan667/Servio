@@ -52,6 +52,11 @@ const DashboardClient = React.memo(function DashboardClient({
   initialCounts?: DashboardCounts;
   initialStats?: DashboardStats;
 }) {
+  // IMMEDIATE LOG - runs on every render, before any hooks
+  const serverCount = initialStats?.menuItems || 0;
+  console.warn("🚨 DASHBOARD RENDER - Menu Items Count:", serverCount);
+  console.log("DASHBOARD RENDER COUNT:", serverCount);
+  
   const router = useRouter();
 
   // Get cached user/venue data to prevent flicker
