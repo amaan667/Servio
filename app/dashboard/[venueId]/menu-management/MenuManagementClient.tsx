@@ -393,6 +393,14 @@ export default function MenuManagementClient({
         
         console.log("[MENU BUILDER] Reloading menu items after clear...");
         await loadMenuItems();
+        
+        // Clear dashboard cache to force fresh count
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+          sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+          console.log("[MENU BUILDER] Cleared dashboard cache");
+        }
+        
         router.refresh();
         console.log("[MENU BUILDER] Menu cleared successfully");
       } else {

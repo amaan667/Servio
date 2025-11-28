@@ -283,6 +283,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           }
 
           console.log("[PDF UPLOAD] Calling onSuccess callback...");
+          
+          // Clear dashboard cache to force fresh count after upload
+          if (typeof window !== "undefined" && venueId) {
+            sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+            sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+            console.log("[PDF UPLOAD] Cleared dashboard cache after successful upload");
+          }
+          
           onSuccess?.();
         } else {
           console.error("[PDF UPLOAD] Upload failed:", {

@@ -83,16 +83,31 @@ export function useDashboardData(
     };
   });
 
-  // Priority: initialStats from server → cached → default 0
-  // IMPORTANT: Server data (initialStats) takes priority over cache for freshness
+  // Priority: Always use initialStats from server (fresh data)
+  // Don't use cached stats on initial load - server data is always fresher
   const [stats, setStats] = useState<DashboardStats>(() => {
+    // Always prefer server data - it's guaranteed fresh
     if (initialStats) {
+      console.log("[DASHBOARD DATA] Using initialStats from server:", {
+        menuItems: initialStats.menuItems,
+        revenue: initialStats.revenue,
+        unpaid: initialStats.unpaid,
+        timestamp: new Date().toISOString(),
+      });
       return initialStats;
     }
+    // Only use cache if server didn't provide data (shouldn't happen with force-dynamic)
     const cached = getCachedStats();
     if (cached) {
+      console.log("[DASHBOARD DATA] Using cached stats (no server data):", {
+        menuItems: cached.menuItems,
+        timestamp: new Date().toISOString(),
+      });
       return cached;
     }
+    console.log("[DASHBOARD DATA] Using default stats (no server or cache):", {
+      timestamp: new Date().toISOString(),
+    });
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
@@ -115,10 +130,20 @@ export function useDashboardData(
       try {
         const supabase = createClient();
 
+        // Normalize venueId format
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
+        console.log("[DASHBOARD DATA] loadStats called:", {
+          venueId,
+          normalizedVenueId,
+          window,
+          timestamp: new Date().toISOString(),
+        });
+
         const { data: orders } = await supabase
           .from("orders")
           .select("total_amount, order_status, payment_status")
-          .eq("venue_id", venueId)
+          .eq("venue_id", normalizedVenueId)
           .gte("created_at", window.startUtcISO)
           .lt("created_at", window.endUtcISO)
           .neq("order_status", "CANCELLED")
@@ -127,8 +152,15 @@ export function useDashboardData(
         const { data: menuItems, error: menuError } = await supabase
           .from("menu_items")
           .select("id")
-          .eq("venue_id", venueId)
+          .eq("venue_id", normalizedVenueId)
           .eq("is_available", true);
+
+        console.log("[DASHBOARD DATA] loadStats query results:", {
+          menuItemCount: menuItems?.length || 0,
+          menuError: menuError?.message || null,
+          orderCount: orders?.length || 0,
+          timestamp: new Date().toISOString(),
+        });
 
         // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
