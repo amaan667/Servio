@@ -169,6 +169,63 @@ const faqs = [
   },
 ];
 
+// Separate component to prevent duplicate renders
+function QuickLinksGrid({ links }: { links: QuickLink[] }) {
+  // Force unique links - use Set to deduplicate by title
+  const uniqueLinks = useMemo(() => {
+    const seen = new Set<string>();
+    const unique: QuickLink[] = [];
+    for (const link of links) {
+      if (!seen.has(link.title)) {
+        seen.add(link.title);
+        unique.push(link);
+      }
+    }
+    console.error("[HELP CENTER] QuickLinksGrid - Input:", links.length, "Unique:", unique.length);
+    if (links.length !== unique.length) {
+      console.error("[HELP CENTER] DUPLICATES REMOVED:", links.length - unique.length);
+    }
+    return unique;
+  }, [links]);
+
+  console.error("[HELP CENTER] QuickLinksGrid rendering", uniqueLinks.length, "links");
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {uniqueLinks.map((link, index) => {
+        const Icon = link.icon;
+        const linkContent = (
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <CardContent className="p-6 text-center">
+              <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+              <h3 className="font-semibold text-gray-900">{link.title}</h3>
+            </CardContent>
+          </Card>
+        );
+
+        if (link.external) {
+          return (
+            <a
+              key={`${link.title}-${index}-${link.href}`}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {linkContent}
+            </a>
+          );
+        }
+
+        return (
+          <Link key={`${link.title}-${index}-${link.href}`} href={link.href}>
+            {linkContent}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export function HelpCenterClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [venueId, setVenueId] = useState<string | null>(null);
