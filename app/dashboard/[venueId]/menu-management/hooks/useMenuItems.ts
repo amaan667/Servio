@@ -67,11 +67,18 @@ export function useMenuItems(venueId: string) {
         timestamp: new Date().toISOString(),
       });
 
-      const { data: items, error } = await supabase
+      // Query ALL menu items (not filtered by is_available) to match dashboard count
+      const { data: items, error, count: itemsCount } = await supabase
         .from("menu_items")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("venue_id", normalizedVenueId)
         .order("position", { ascending: true, nullsFirst: false });
+      
+      console.log("[MENU BUILDER] Query with count:", {
+        itemsArrayLength: items?.length || 0,
+        itemsCountFromCount: itemsCount || 0,
+        normalizedVenueId,
+      });
 
       console.log("[MENU BUILDER] Query result:", {
         itemCount: items?.length || 0,

@@ -183,7 +183,7 @@ export function useDashboardData(
 
         const newStats = {
           revenue,
-          menuItems: menuItems?.length || 0,
+          menuItems: menuItemCount, // Use the count from count query
           unpaid,
         };
 
@@ -447,18 +447,27 @@ export function useDashboardData(
           const supabase = createClient();
           const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
           // Count ALL menu items (not just available) to match menu management count
-          const { count, error: menuError } = await supabase
+          const { data: menuItemsData, count, error: menuError } = await supabase
             .from("menu_items")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact" })
             .eq("venue_id", normalizedVenueId);
             // Removed .eq("is_available", true) to match menu management count
           
-          if (!menuError && count !== null) {
+          const finalCount = menuItemsData?.length || count || 0;
+          
+          console.log("[DASHBOARD DATA] Fallback query results:", {
+            menuItemsArrayLength: menuItemsData?.length || 0,
+            countFromCount: count || 0,
+            finalCount,
+            error: menuError?.message || null,
+          });
+          
+          if (!menuError) {
             setStats((prev) => ({
               ...prev,
-              menuItems: count || 0,
+              menuItems: finalCount,
             }));
-            console.log("✅ [DASHBOARD DATA] Menu items count updated directly:", count || 0);
+            console.log("✅ [DASHBOARD DATA] Menu items count updated directly:", finalCount);
           }
         }
         

@@ -128,25 +128,25 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
     const menuItemCount = menuItems?.length || menuItemCountFromCount || 0;
 
-    // CRITICAL LOG: Dashboard count on page load - Use logger for Railway logs
-    logger.info("═══════════════════════════════════════════════════════════");
-    logger.info("📊 [DASHBOARD SERVER LOAD] Menu Items Count");
-    logger.info("═══════════════════════════════════════════════════════════");
-    logger.info("Venue ID:", venueId);
-    logger.info("Normalized Venue ID:", normalizedVenueId);
-    logger.info("Menu Items Array Length:", menuItems?.length || 0);
-    logger.info("Menu Items Count (from count):", menuItemCountFromCount || 0);
-    logger.info("Final Menu Item Count:", menuItemCount);
-    logger.info("Error:", menuError?.message || "None");
-    logger.info("Error Code:", menuError?.code || "None");
-    logger.info("Sample Item IDs:", menuItems?.slice(0, 5).map((m) => m.id) || []);
-    logger.info("All Item IDs Count:", menuItems?.length || 0);
-    logger.info("⚠️  THIS COUNT WILL BE PASSED TO CLIENT AS initialStats.menuItems");
-    logger.info("Timestamp:", new Date().toISOString());
-    logger.info("═══════════════════════════════════════════════════════════");
+    // CRITICAL LOG: Dashboard count on page load - Use console.log for Railway logs (logger is no-op)
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📊 [DASHBOARD SERVER LOAD] Menu Items Count");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Venue ID:", venueId);
+    console.log("Normalized Venue ID:", normalizedVenueId);
+    console.log("Menu Items Array Length:", menuItems?.length || 0);
+    console.log("Menu Items Count (from count):", menuItemCountFromCount || 0);
+    console.log("Final Menu Item Count:", menuItemCount);
+    console.log("Error:", menuError?.message || "None");
+    console.log("Error Code:", menuError?.code || "None");
+    console.log("Sample Item IDs:", menuItems?.slice(0, 5).map((m) => m.id) || []);
+    console.log("All Item IDs Count:", menuItems?.length || 0);
+    console.log("⚠️  THIS COUNT WILL BE PASSED TO CLIENT AS initialStats.menuItems");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
     
     // Also log as structured data for easier parsing
-    logger.info("[DASHBOARD SERVER] Menu items count", {
+    console.log("[DASHBOARD SERVER] Menu items count", JSON.stringify({
       venueId,
       normalizedVenueId,
       menuItemsArrayLength: menuItems?.length || 0,
@@ -156,7 +156,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       errorCode: menuError?.code || null,
       sampleItemIds: menuItems?.slice(0, 5).map((m) => m.id) || [],
       timestamp: new Date().toISOString(),
-    });
+    }, null, 2));
 
     if (menuError) {
       logger.error("[DASHBOARD] Error fetching menu items:", {
