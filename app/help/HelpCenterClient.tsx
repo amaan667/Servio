@@ -448,53 +448,7 @@ export function HelpCenterClient() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {(() => {
-                // Filter duplicates using Set - final safety check
-                const seen = new Set<string>();
-                const uniqueLinks = quickLinks.filter(link => {
-                  if (seen.has(link.title)) {
-                    console.error("[HELP CENTER] DUPLICATE FILTERED:", link.title);
-                    return false;
-                  }
-                  seen.add(link.title);
-                  return true;
-                });
-
-                console.error("[HELP CENTER] RENDERING", uniqueLinks.length, "links:", uniqueLinks.map(l => l.title).join(", "));
-
-                return uniqueLinks.map((link, index) => {
-                  const Icon = link.icon;
-                  const linkContent = (
-                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                      <CardContent className="p-6 text-center">
-                        <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                        <h3 className="font-semibold text-gray-900">{link.title}</h3>
-                      </CardContent>
-                    </Card>
-                  );
-
-                  if (link.external) {
-                    return (
-                      <a
-                        key={`${link.title}-${index}-${Date.now()}`}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {linkContent}
-                      </a>
-                    );
-                  }
-
-                  return (
-                    <Link key={`${link.title}-${index}-${Date.now()}`} href={link.href}>
-                      {linkContent}
-                    </Link>
-                  );
-                });
-              })()}
-            </div>
+            <QuickLinksGrid links={quickLinks} />
           )}
         </div>
 
