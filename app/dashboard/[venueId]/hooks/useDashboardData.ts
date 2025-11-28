@@ -95,12 +95,18 @@ export function useDashboardData(
         unpaid: initialStats.unpaid,
         timestamp: new Date().toISOString(),
       };
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("[DASHBOARD DATA] Using initialStats from server");
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("initialStats:", JSON.stringify(logData, null, 2));
-      console.log("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
-      console.log("═══════════════════════════════════════════════════════════");
+      // Use console.warn for maximum visibility
+      console.warn("═══════════════════════════════════════════════════════════");
+      console.warn("[DASHBOARD DATA] Using initialStats from server");
+      console.warn("═══════════════════════════════════════════════════════════");
+      console.warn("Menu Items Count:", initialStats.menuItems);
+      console.warn("Revenue:", initialStats.revenue);
+      console.warn("Unpaid:", initialStats.unpaid);
+      console.warn("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
+      console.warn("═══════════════════════════════════════════════════════════");
+      
+      // Also log as plain console.log
+      console.log("DASHBOARD initialStats COUNT:", initialStats.menuItems, "items");
       return initialStats;
     }
     // If no server data, use defaults - NEVER use cache for stats
@@ -115,18 +121,19 @@ export function useDashboardData(
       const oldCount = stats.menuItems;
       const newCount = initialStats.menuItems;
       
-      console.log("[DASHBOARD DATA] initialStats changed, updating stats:", {
-        oldMenuItems: oldCount,
-        newMenuItems: newCount,
+      // Use console.warn for maximum visibility
+      console.warn("[DASHBOARD DATA] initialStats changed:", {
+        old: oldCount,
+        new: newCount,
         changed: oldCount !== newCount,
-        timestamp: new Date().toISOString(),
       });
       
       // Always update to ensure fresh data
       setStats(initialStats);
       
       if (oldCount !== newCount) {
-        console.log("✅ [DASHBOARD DATA] Menu items count updated from", oldCount, "to", newCount);
+        console.warn("✅ [DASHBOARD DATA] Count updated:", oldCount, "→", newCount);
+        console.log("DASHBOARD COUNT UPDATE:", oldCount, "→", newCount);
       }
     }
   }, [initialStats]); // Depend on the whole object to catch any changes

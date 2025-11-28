@@ -97,37 +97,37 @@ const DashboardClient = React.memo(function DashboardClient({
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
 
   // CRITICAL LOG: Dashboard page loaded with initial stats
+  // Log immediately on component mount
   useEffect(() => {
+    // Force immediate log - this will definitely show
     const serverCount = initialStats?.menuItems || 0;
     const clientCount = dashboardData.stats.menuItems;
     const matches = serverCount === clientCount;
     
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("📊 [DASHBOARD CLIENT LOADED]");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("Venue ID:", venueId);
-    console.log("Initial Stats (from server):", JSON.stringify({
-      menuItems: serverCount,
-      revenue: initialStats?.revenue || 0,
-      unpaid: initialStats?.unpaid || 0,
-    }, null, 2));
-    console.log("Current Stats (from hook):", JSON.stringify({
-      menuItems: clientCount,
-      revenue: dashboardData.stats.revenue,
-      unpaid: dashboardData.stats.unpaid,
-    }, null, 2));
-    console.log("⚠️  COMPARISON:");
-    console.log("  - Server initialStats.menuItems:", serverCount);
-    console.log("  - Client dashboardData.stats.menuItems:", clientCount);
-    console.log("  - Match:", matches ? "✅ YES" : "❌ NO");
+    // Use console.warn and console.error for maximum visibility
+    console.warn("═══════════════════════════════════════════════════════════");
+    console.warn("📊 [DASHBOARD CLIENT LOADED] - MENU ITEMS COUNT");
+    console.warn("═══════════════════════════════════════════════════════════");
+    console.warn("Venue ID:", venueId);
+    console.warn("Server Count (initialStats.menuItems):", serverCount);
+    console.warn("Client Count (dashboardData.stats.menuItems):", clientCount);
+    console.warn("Match:", matches ? "✅ YES" : "❌ NO");
+    console.warn("Displayed Value:", dashboardData.stats.menuItems);
+    console.warn("Timestamp:", new Date().toISOString());
+    console.warn("═══════════════════════════════════════════════════════════");
+    
     if (!matches) {
-      console.error("❌ MISMATCH DETECTED! Server says", serverCount, "but client shows", clientCount);
+      console.error("❌ MISMATCH! Server:", serverCount, "Client:", clientCount);
     }
-    console.log("⚠️  This count should match the menu builder count (181)!");
-    console.log("⚠️  Displayed value on dashboard:", dashboardData.stats.menuItems);
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("═══════════════════════════════════════════════════════════");
-  }, [venueId, initialStats, dashboardData.stats.menuItems]);
+    
+    // Also log as plain console.log
+    console.log("DASHBOARD COUNT:", {
+      server: serverCount,
+      client: clientCount,
+      displayed: dashboardData.stats.menuItems,
+      venueId,
+    });
+  }, [venueId, initialStats?.menuItems, dashboardData.stats.menuItems]);
 
   useDashboardRealtime({
     venueId,

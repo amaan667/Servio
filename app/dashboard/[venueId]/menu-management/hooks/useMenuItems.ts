@@ -77,17 +77,21 @@ export function useMenuItems(venueId: string) {
       
       const actualItemCount = items?.length || 0;
       
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("📊 [MENU BUILDER] Menu Items Loaded");
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("Venue ID:", venueId);
-      console.log("Normalized Venue ID:", normalizedVenueId);
-      console.log("Items Array Length:", actualItemCount);
-      console.log("Error:", error?.message || "None");
-      console.log("Sample Item IDs:", items?.slice(0, 5).map((m) => m.id) || []);
-      console.log("⚠️  THIS COUNT SHOULD MATCH DASHBOARD COUNT");
-      console.log("Timestamp:", new Date().toISOString());
-      console.log("═══════════════════════════════════════════════════════════");
+      // Use console.warn for maximum visibility
+      console.warn("═══════════════════════════════════════════════════════════");
+      console.warn("📊 [MENU BUILDER] Menu Items Loaded");
+      console.warn("═══════════════════════════════════════════════════════════");
+      console.warn("Venue ID:", venueId);
+      console.warn("Normalized Venue ID:", normalizedVenueId);
+      console.warn("Items Array Length:", actualItemCount);
+      console.warn("Error:", error?.message || "None");
+      console.warn("Sample Item IDs:", items?.slice(0, 5).map((m) => m.id) || []);
+      console.warn("⚠️  THIS COUNT SHOULD MATCH DASHBOARD COUNT");
+      console.warn("Timestamp:", new Date().toISOString());
+      console.warn("═══════════════════════════════════════════════════════════");
+      
+      // Also log as plain console.log
+      console.log("MENU BUILDER COUNT:", actualItemCount, "items");
       
       console.log("[MENU BUILDER] Query result:", {
         itemsArrayLength: actualItemCount,
