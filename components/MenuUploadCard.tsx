@@ -128,7 +128,18 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   };
 
   const processFile = async (file: File) => {
+    console.log("[PDF UPLOAD] processFile called:", {
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type,
+      venueId,
+      isReplacing,
+      hasMenuUrl: !!menuUrl,
+      timestamp: new Date().toISOString(),
+    });
+
     if (!file) {
+      console.error("[PDF UPLOAD] No file provided");
       return;
     }
 
@@ -136,7 +147,14 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     const validTypes = [".txt", ".md", ".json", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".heic"];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
 
+    console.log("[PDF UPLOAD] File validation:", {
+      fileExtension,
+      isValidType: validTypes.includes(fileExtension),
+      fileSize: file.size,
+    });
+
     if (!validTypes.includes(fileExtension)) {
+      console.error("[PDF UPLOAD] Invalid file type:", fileExtension);
       toast({
         title: "Invalid file type",
         description: "Please upload a .txt, .md, .json, or .pdf file",
@@ -152,6 +170,11 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         ? 10 * 1024 * 1024
         : 1024 * 1024;
     if (file.size > maxSize) {
+      console.error("[PDF UPLOAD] File too large:", {
+        fileSize: file.size,
+        maxSize,
+        fileExtension,
+      });
       toast({
         title: "File too large",
         description: `Please upload a file smaller than ${fileExtension === ".pdf" ? "10MB" : "1MB"}`,
@@ -160,10 +183,12 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       return;
     }
 
+    console.log("[PDF UPLOAD] File validation passed, starting processing...");
     setIsProcessing(true);
 
     try {
       if (fileExtension === ".pdf") {
+        console.log("[PDF UPLOAD] Processing PDF file...");
         // Use catalog replace endpoint
         const formData = new FormData();
         formData.append("file", file);
@@ -174,11 +199,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         const hasUrl = menuUrl && menuUrl.trim();
         if (hasUrl) {
           formData.append("menu_url", menuUrl.trim());
+          console.log("[PDF UPLOAD] Hybrid mode enabled with URL:", menuUrl.trim());
           toast({
             title: "Hybrid extraction starting...",
             description: "Combining PDF structure with website images and data",
           });
         }
+
+        console.log("[PDF UPLOAD] Sending request to /api/catalog/replace:", {
+          venueId,
+          isReplacing,
+          hasUrl,
+          fileSize: file.size,
+          fileName: file.name,
+          timestamp: new Date().toISOString(),
+        });
 
         const response = await fetch("/api/catalog/replace", {
           method: "POST",
@@ -186,12 +221,35 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           credentials: "include", // Ensure cookies are sent
         });
 
+        console.log("[PDF UPLOAD] API response received:", {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          headers: Object.fromEntries(response.headers.entries()),
+          timestamp: new Date().toISOString(),
+        });
+
         if (!response.ok) {
           const errorText = await response.text();
+          console.error("[PDF UPLOAD] API error response:", {
+            status: response.status,
+            statusText: response.statusText,
+            errorText,
+            timestamp: new Date().toISOString(),
+          });
           throw new Error(`Catalog replacement failed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
+        console.log("[PDF UPLOAD] API result:", {
+          ok: result.ok,
+          mode: result.mode,
+          items: result.items,
+          duration: result.duration,
+          error: result.error,
+          fullResult: result,
+          timestamp: new Date().toISOString(),
+        });
 
         if (result.ok) {
           const mode = result.mode || "unknown";
@@ -201,6 +259,13 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             "url-only": "🌐 URL Only",
           };
 
+          console.log("[PDF UPLOAD] Upload successful:", {
+            mode,
+            itemCount: result.items || 0,
+            duration: result.duration,
+            timestamp: new Date().toISOString(),
+          });
+
           toast({
             title: isReplacing ? "Menu replaced successfully" : "Menu items added successfully",
             description: `${modeLabels[mode] || mode} • ${result.items || 0} items${result.mode === "hybrid" ? " • Images from URL added" : ""}`,
@@ -208,11 +273,18 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
           // Save extracted style to database if available
           if (result.result?.extracted_text) {
+            console.log("[PDF UPLOAD] Saving extracted style...");
             await saveExtractedStyle(result.result.extracted_text);
           }
 
+          console.log("[PDF UPLOAD] Calling onSuccess callback...");
           onSuccess?.();
         } else {
+          console.error("[PDF UPLOAD] Upload failed:", {
+            error: result.error,
+            result,
+            timestamp: new Date().toISOString(),
+          });
           throw new Error(`Catalog replacement failed: ${result.error}`);
         }
       } else {

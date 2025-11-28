@@ -58,16 +58,29 @@ let browserClient: ReturnType<typeof createBrowserClient> | null = null;
  * @returns {SupabaseClient} Supabase client instance
  */
 export function supabaseBrowser() {
+  // Validate environment variables first
+  let url: string;
+  let anonKey: string;
+  
+  try {
+    url = getSupabaseUrl();
+    anonKey = getSupabaseAnonKey();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[SUPABASE] Failed to get Supabase credentials:", errorMessage);
+    throw new Error(`Supabase configuration error: ${errorMessage}. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.`);
+  }
+
   if (typeof window === "undefined") {
     // Server-side: return a new instance (can't use singleton on server)
-    return createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    return createBrowserClient(url, anonKey, {
       auth: { persistSession: false },
     });
   }
 
   // Client-side: use singleton
   if (!browserClient) {
-    const projectRef = getSupabaseUrl().match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "default";
+    const projectRef = url.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "default";
 
     // Detect mobile Safari - it has stricter cookie/storage policies
     const isMobileSafari =
@@ -133,7 +146,14 @@ export function supabaseBrowser() {
       };
     };
 
-    browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    // Validate that we have both URL and key before creating client
+    if (!url || !anonKey) {
+      throw new Error(
+        `Supabase configuration incomplete. URL: ${url ? "✓" : "✗"}, Key: ${anonKey ? "✓" : "✗"}. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.`
+      );
+    }
+
+    browserClient = createBrowserClient(url, anonKey, {
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
@@ -149,6 +169,8 @@ export function supabaseBrowser() {
           Accept: "application/json",
           "Content-Type": "application/json",
           Prefer: "return=representation",
+          // Explicitly set apikey header to ensure it's always sent
+          apikey: anonKey,
         },
       },
     });

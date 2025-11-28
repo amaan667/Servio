@@ -71,6 +71,11 @@ export default function MenuManagementClient({
   venueId: string;
   canEdit?: boolean;
 }) {
+  console.log("[MENU BUILDER] Component mounting:", {
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
+
   const searchParams = useSearchParams();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -93,6 +98,29 @@ export default function MenuManagementClient({
 
   const { menuItems, loading, categoryOrder, setCategoryOrder, setMenuItems, loadMenuItems } =
     useMenuItems(venueId);
+
+  // Log component state changes
+  useEffect(() => {
+    console.log("[MENU BUILDER] Component state update:", {
+      venueId,
+      activeTab,
+      menuItemsCount: menuItems.length,
+      loading,
+      isClearing,
+      hasCategoryOrder: !!categoryOrder,
+      timestamp: new Date().toISOString(),
+    });
+  }, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);
+
+  // Log tab changes
+  useEffect(() => {
+    console.log("[MENU BUILDER] Tab changed:", {
+      venueId,
+      newTab: activeTab,
+      menuItemsCount: menuItems.length,
+      timestamp: new Date().toISOString(),
+    });
+  }, [activeTab, venueId, menuItems.length]);
   const { designSettings, setDesignSettings, isSavingDesign, saveDesignSettings } =
     useDesignSettings(venueId);
   const { handleItemDragEnd, handleCategoryDragEnd } = useDragAndDrop(
@@ -126,6 +154,15 @@ export default function MenuManagementClient({
     await saveDesignSettings();
     setDesignRefreshKey((prev) => prev + 1); // Force preview to refresh
   };
+
+  useEffect(() => {
+    console.log("[MENU BUILDER] Component mounted, initializing...", {
+      venueId,
+      menuItemsCount: menuItems.length,
+      loading,
+      timestamp: new Date().toISOString(),
+    });
+  }, []); // Run once on mount
 
   useEffect(() => {
     loadFontForFamily(designSettings.font_family);
@@ -293,39 +330,80 @@ export default function MenuManagementClient({
   };
 
   const clearAllMenu = async () => {
+    console.log("[MENU BUILDER] clearAllMenu called:", {
+      venueId,
+      currentItemCount: menuItems.length,
+      timestamp: new Date().toISOString(),
+    });
+
     if (!confirm("Are you sure you want to clear the entire menu? This action cannot be undone.")) {
+      console.log("[MENU BUILDER] clearAllMenu cancelled by user");
       return;
     }
 
     try {
+      console.log("[MENU BUILDER] Starting clear menu process...");
       setIsClearing(true);
       
+      const requestBody = { venue_id: venueId };
+      console.log("[MENU BUILDER] Clear menu API request:", {
+        url: "/api/menu/clear",
+        method: "POST",
+        body: requestBody,
+        timestamp: new Date().toISOString(),
+      });
+
       const response = await fetch("/api/menu/clear", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ venue_id: venueId }),
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("[MENU BUILDER] Clear menu API response:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        timestamp: new Date().toISOString(),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("[MENU BUILDER] Clear menu API error:", {
+          status: response.status,
+          error: errorData,
+          timestamp: new Date().toISOString(),
+        });
         throw new Error(errorData.error || "Failed to clear menu");
       }
 
       const result = await response.json();
+      console.log("[MENU BUILDER] Clear menu API result:", {
+        ok: result.ok,
+        result,
+        timestamp: new Date().toISOString(),
+      });
 
       if (result.ok) {
         toast({
           title: "Menu cleared",
           description: `All menu items, categories, and options have been cleared successfully.`,
         });
+        
+        console.log("[MENU BUILDER] Reloading menu items after clear...");
         await loadMenuItems();
         router.refresh();
+        console.log("[MENU BUILDER] Menu cleared successfully");
       } else {
         throw new Error(result.error || "Failed to clear menu");
       }
     } catch (_error) {
+      console.error("[MENU BUILDER] Clear menu error:", {
+        error: _error instanceof Error ? _error.message : String(_error),
+        stack: _error instanceof Error ? _error.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
       toast({
         title: "Error",
         description: _error instanceof Error ? _error.message : "Failed to clear menu",
@@ -333,6 +411,7 @@ export default function MenuManagementClient({
       });
     } finally {
       setIsClearing(false);
+      console.log("[MENU BUILDER] Clear menu process completed");
     }
   };
 
