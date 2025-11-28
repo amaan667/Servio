@@ -3,6 +3,7 @@ import { initErrorSuppression } from "@/lib/error-suppression";
 initErrorSuppression();
 
 import type { Metadata } from "next";
+import * as Sentry from '@sentry/nextjs';
 // Railway deployment trigger - premium gates removed
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -29,49 +30,51 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://servio.app"),
-  title: {
-    default: "Servio - QR Code Ordering Made Simple",
-    template: "%s | Servio",
-  },
-  description:
-    "Complete POS and QR ordering platform for restaurants, cafes, food trucks, and market stalls. Manage orders, payments, inventory, and kitchen operations in one system. 14-day free trial.",
-  keywords: [
-    "QR code ordering",
-    "food business POS",
-    "cafe POS system",
-    "food truck ordering",
-    "contactless ordering",
-    "digital menu",
-    "QR menu",
-    "hospitality technology",
-    "mobile ordering",
-    "kitchen display system",
-    "inventory management",
-  ],
-  authors: [{ name: "Servio" }],
-  creator: "Servio",
-  publisher: "Servio",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Servio",
-    startupImage: [
-      {
-        url: "/placeholder-logo.png",
-        media: "(prefers-color-scheme: light)",
-      },
+export function generateMetadata(): Metadata {
+  return {
+    metadataBase: new URL("https://servio.app"),
+    title: {
+      default: "Servio - QR Code Ordering Made Simple",
+      template: "%s | Servio",
+    },
+    description:
+      "Complete POS and QR ordering platform for restaurants, cafes, food trucks, and market stalls. Manage orders, payments, inventory, and kitchen operations in one system. 14-day free trial.",
+    keywords: [
+      "QR code ordering",
+      "food business POS",
+      "cafe POS system",
+      "food truck ordering",
+      "contactless ordering",
+      "digital menu",
+      "QR menu",
+      "hospitality technology",
+      "mobile ordering",
+      "kitchen display system",
+      "inventory management",
     ],
-  },
-  applicationName: "Servio",
-  other: {
-    "mobile-web-app-capable": "yes",
-  },
-  formatDetection: {
-    telephone: false,
-  },
+    authors: [{ name: "Servio" }],
+    creator: "Servio",
+    publisher: "Servio",
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "Servio",
+      startupImage: [
+        {
+          url: "/placeholder-logo.png",
+          media: "(prefers-color-scheme: light)",
+        },
+      ],
+    },
+    applicationName: "Servio",
+    other: {
+      "mobile-web-app-capable": "yes",
+      ...Sentry.getTraceData(),
+    },
+    formatDetection: {
+      telephone: false,
+    },
   openGraph: {
     type: "website",
     locale: "en_GB",
@@ -112,7 +115,8 @@ export const metadata: Metadata = {
     shortcut: "/assets/servio-s-logo.png",
     apple: "/assets/servio-s-logo.png",
   },
-};
+  };
+}
 
 // Viewport configuration (moved out of metadata for Next.js 15+)
 export const viewport = {
