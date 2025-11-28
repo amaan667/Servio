@@ -415,43 +415,13 @@ export function HelpCenterClient() {
                 });
 
                 // Safety check: if we somehow have more than 7 links, log and limit
+                const linksToRender = uniqueLinks.length > 7 ? uniqueLinks.slice(0, 7) : uniqueLinks;
+                
                 if (uniqueLinks.length > 7) {
                   console.warn(`[Help Center] Found ${uniqueLinks.length} links, expected max 7. Limiting to first 7.`);
-                  return uniqueLinks.slice(0, 7).map((link) => {
-                const Icon = link.icon;
-                // Use title as key since it's guaranteed unique (we filter duplicates)
-                const uniqueKey = link.title;
-                const linkContent = (
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                    <CardContent className="p-6 text-center">
-                      <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                      <h3 className="font-semibold text-gray-900">{link.title}</h3>
-                    </CardContent>
-                  </Card>
-                );
-
-                if (link.external) {
-                  return (
-                    <a
-                      key={uniqueKey}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {linkContent}
-                    </a>
-                  );
                 }
 
-                return (
-                  <Link key={uniqueKey} href={link.href}>
-                    {linkContent}
-                  </Link>
-                );
-                  });
-                }
-
-                return uniqueLinks.map((link) => {
+                return linksToRender.map((link) => {
                   const Icon = link.icon;
                   const uniqueKey = link.title;
                   const linkContent = (
