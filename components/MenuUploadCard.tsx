@@ -41,12 +41,11 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           normalizedVenueId,
         });
 
-        // Use a simpler query without maybeSingle to avoid 406 errors
+        // Use a simple query to check if any items exist - avoid limit(1) with count to prevent 406 errors
         const { data, error, count } = await supabase
           .from("menu_items")
-          .select("id", { count: "exact" })
-          .eq("venue_id", normalizedVenueId)
-          .limit(1);
+          .select("id", { count: "exact", head: true }) // head: true means we only get count, not data
+          .eq("venue_id", normalizedVenueId);
 
         console.log("[MENU UPLOAD CARD] Existing items check result:", {
           hasData: !!data && data.length > 0,
@@ -54,10 +53,11 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           totalCount: count || 0,
           error: error?.message || null,
           errorCode: error?.code || null,
-          hasExistingUpload: !!(data && data.length > 0 && !error),
+          hasExistingUpload: !!(count && count > 0 && !error),
         });
 
-        if (data && data.length > 0 && !error) {
+        // Use count to determine if items exist (more reliable than data.length)
+        if (count && count > 0 && !error) {
           setHasExistingUpload(true);
         } else {
           setHasExistingUpload(false);
