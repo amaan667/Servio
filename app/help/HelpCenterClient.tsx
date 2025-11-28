@@ -173,9 +173,18 @@ export function HelpCenterClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [venueId, setVenueId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Mark component as mounted to prevent hydration mismatches
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fetch venueId from user's session and venues
   useEffect(() => {
+    // Only run on client side after mount
+    if (!isMounted) return;
+
     const fetchVenueId = async () => {
       try {
         const supabase = await createClient();
@@ -260,7 +269,7 @@ export function HelpCenterClient() {
     };
 
     fetchVenueId();
-  }, []);
+  }, [isMounted]);
 
   // Build quick links - only the exact links we need, no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
@@ -370,7 +379,7 @@ export function HelpCenterClient() {
         {/* Quick Links */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Links</h2>
-          {isLoading ? (
+          {!isMounted || isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Show skeleton/loading state while fetching venueId */}
               {[1, 2, 3, 4, 5, 6, 7].map((i) => (
@@ -383,10 +392,11 @@ export function HelpCenterClient() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickLinks.map((link) => {
-                  const Icon = link.icon;
-                  const uniqueKey = link.title;
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" key={`quick-links-${venueId || 'no-venue'}`}>
+              {quickLinks.map((link, index) => {
+                const Icon = link.icon;
+                // Use index + title for unique key to prevent React from reusing components
+                const uniqueKey = `link-${index}-${link.title}`;
                   const linkContent = (
                     <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                       <CardContent className="p-6 text-center">
