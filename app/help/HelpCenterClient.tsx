@@ -266,8 +266,13 @@ export function HelpCenterClient() {
   // Getting Started Guide links to website support page
   // Use useMemo to ensure links update when venueId changes
   const quickLinks: QuickLink[] = useMemo(() => {
-    // Only show links when venueId is available (authenticated users)
-    // Don't show fallback links to avoid confusion
+    // Don't build links until we know if venueId exists (after loading)
+    // This prevents showing fallback links that get replaced
+    if (isLoading) {
+      return [];
+    }
+
+    // If no venueId after loading, only show Getting Started Guide
     if (!venueId) {
       return [
         {
@@ -280,10 +285,8 @@ export function HelpCenterClient() {
     }
 
     // All dashboard links with venueId - each link appears only once
-    // Use Set to ensure uniqueness by title
-    const linksMap = new Map<string, QuickLink>();
-    
-    const allLinks: QuickLink[] = [
+    // Build array directly (no need for Map since we control the source)
+    return [
       {
         title: "Getting Started Guide",
         href: "https://servio.uk/support",
@@ -327,16 +330,7 @@ export function HelpCenterClient() {
         external: false,
       },
     ];
-
-    // Ensure uniqueness by title (first occurrence wins)
-    allLinks.forEach((link) => {
-      if (!linksMap.has(link.title)) {
-        linksMap.set(link.title, link);
-      }
-    });
-
-    return Array.from(linksMap.values());
-  }, [venueId]);
+  }, [venueId, isLoading]);
 
   const filteredFAQs = faqs.map((category) => ({
     ...category,
@@ -380,43 +374,57 @@ export function HelpCenterClient() {
         {/* Quick Links */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Links</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Ensure uniqueness one more time before rendering */}
-            {Array.from(
-              new Map(quickLinks.map((link) => [link.title, link])).values()
-            ).map((link) => {
-              const Icon = link.icon;
-              // Use title as key since it's guaranteed unique (we filter duplicates)
-              const uniqueKey = link.title;
-              const linkContent = (
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Show skeleton/loading state while fetching venueId */}
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <Card key={`skeleton-${i}`} className="h-full animate-pulse">
                   <CardContent className="p-6 text-center">
-                    <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                    <h3 className="font-semibold text-gray-900">{link.title}</h3>
+                    <div className="h-8 w-8 bg-gray-200 rounded mx-auto mb-3" />
+                    <div className="h-4 w-24 bg-gray-200 rounded mx-auto" />
                   </CardContent>
                 </Card>
-              );
-
-              if (link.external) {
-                return (
-                  <a
-                    key={uniqueKey}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {linkContent}
-                  </a>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Ensure uniqueness one more time before rendering */}
+              {Array.from(
+                new Map(quickLinks.map((link) => [link.title, link])).values()
+              ).map((link) => {
+                const Icon = link.icon;
+                // Use title as key since it's guaranteed unique (we filter duplicates)
+                const uniqueKey = link.title;
+                const linkContent = (
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                    <CardContent className="p-6 text-center">
+                      <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                      <h3 className="font-semibold text-gray-900">{link.title}</h3>
+                    </CardContent>
+                  </Card>
                 );
-              }
 
-              return (
-                <Link key={uniqueKey} href={link.href}>
-                  {linkContent}
-                </Link>
-              );
-            })}
-          </div>
+                if (link.external) {
+                  return (
+                    <a
+                      key={uniqueKey}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {linkContent}
+                    </a>
+                  );
+                }
+
+                return (
+                  <Link key={uniqueKey} href={link.href}>
+                    {linkContent}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* FAQs */}
