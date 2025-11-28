@@ -88,7 +88,7 @@ export function useDashboardData(
   const [stats, setStats] = useState<DashboardStats>(() => {
     // Always prefer server data - it's guaranteed fresh
     if (initialStats) {
-      // Log to both console (for browser) and logger (for Railway)
+      // Log to console (logger is no-op, so console.log is needed for Railway)
       const logData = {
         menuItems: initialStats.menuItems,
         revenue: initialStats.revenue,
@@ -98,9 +98,9 @@ export function useDashboardData(
       console.log("═══════════════════════════════════════════════════════════");
       console.log("[DASHBOARD DATA] Using initialStats from server");
       console.log("═══════════════════════════════════════════════════════════");
-      console.log("initialStats:", logData);
+      console.log("initialStats:", JSON.stringify(logData, null, 2));
+      console.log("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
       console.log("═══════════════════════════════════════════════════════════");
-      logger.info("[DASHBOARD DATA] Using initialStats from server", logData);
       return initialStats;
     }
     // Only use cache if server didn't provide data (shouldn't happen with force-dynamic)
@@ -146,8 +146,7 @@ export function useDashboardData(
           window,
           timestamp: new Date().toISOString(),
         };
-        console.log("[DASHBOARD DATA] loadStats called:", loadStatsLogData);
-        logger.info("[DASHBOARD DATA] loadStats called", loadStatsLogData);
+        console.log("[DASHBOARD DATA] loadStats called:", JSON.stringify(loadStatsLogData, null, 2));
 
         const { data: orders } = await supabase
           .from("orders")
@@ -175,8 +174,8 @@ export function useDashboardData(
           orderCount: orders?.length || 0,
           timestamp: new Date().toISOString(),
         };
-        console.log("[DASHBOARD DATA] loadStats query results:", loadStatsResults);
-        logger.info("[DASHBOARD DATA] loadStats query results", loadStatsResults);
+        console.log("[DASHBOARD DATA] loadStats query results:", JSON.stringify(loadStatsResults, null, 2));
+        console.log("⚠️  Final menu items count that will update stats:", finalMenuItemCount);
 
         // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
