@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -264,91 +264,101 @@ export function HelpCenterClient() {
 
   // Build quick links with proper dashboard routes
   // Getting Started Guide links to website support page
-  const quickLinks: QuickLink[] = [
-    {
-      title: "Getting Started Guide",
-      href: "https://servio.uk/support",
-      icon: BookOpen,
-      external: true,
-    },
-    ...(venueId
-      ? [
-          {
-            title: "Menu Setup",
-            href: `/dashboard/${venueId}/menu-management`,
-            icon: ShoppingBag,
-            external: false,
-          },
-          {
-            title: "QR Code Setup",
-            href: `/dashboard/${venueId}/qr-codes`,
-            icon: QrCode,
-            external: false,
-          },
-          {
-            title: "Order Management",
-            href: `/dashboard/${venueId}/live-orders`,
-            icon: MessageSquare,
-            external: false,
-          },
-          {
-            title: "Analytics",
-            href: `/dashboard/${venueId}/analytics`,
-            icon: BarChart,
-            external: false,
-          },
-          {
-            title: "Staff Management",
-            href: `/dashboard/${venueId}/staff`,
-            icon: Users,
-            external: false,
-          },
-          {
-            title: "Settings",
-            href: `/dashboard/${venueId}/settings`,
-            icon: Settings,
-            external: false,
-          },
-        ]
-      : [
-          {
-            title: "Menu Setup",
-            href: "/",
-            icon: ShoppingBag,
-            external: false,
-          },
-          {
-            title: "QR Code Setup",
-            href: "/",
-            icon: QrCode,
-            external: false,
-          },
-          {
-            title: "Order Management",
-            href: "/",
-            icon: MessageSquare,
-            external: false,
-          },
-          {
-            title: "Analytics",
-            href: "/",
-            icon: BarChart,
-            external: false,
-          },
-          {
-            title: "Staff Management",
-            href: "/",
-            icon: Users,
-            external: false,
-          },
-          {
-            title: "Settings",
-            href: "/",
-            icon: Settings,
-            external: false,
-          },
-        ]),
-  ];
+  // Use useMemo to ensure links update when venueId changes
+  const quickLinks: QuickLink[] = useMemo(() => {
+    const baseLinks: QuickLink[] = [
+      {
+        title: "Getting Started Guide",
+        href: "https://servio.uk/support",
+        icon: BookOpen,
+        external: true,
+      },
+    ];
+
+    if (venueId) {
+      // All dashboard links with venueId
+      baseLinks.push(
+        {
+          title: "Menu Setup",
+          href: `/dashboard/${venueId}/menu-management`,
+          icon: ShoppingBag,
+          external: false,
+        },
+        {
+          title: "QR Code Setup",
+          href: `/dashboard/${venueId}/qr-codes`,
+          icon: QrCode,
+          external: false,
+        },
+        {
+          title: "Order Management",
+          href: `/dashboard/${venueId}/live-orders`,
+          icon: MessageSquare,
+          external: false,
+        },
+        {
+          title: "Analytics",
+          href: `/dashboard/${venueId}/analytics`,
+          icon: BarChart,
+          external: false,
+        },
+        {
+          title: "Staff Management",
+          href: `/dashboard/${venueId}/staff`,
+          icon: Users,
+          external: false,
+        },
+        {
+          title: "Settings",
+          href: `/dashboard/${venueId}/settings`,
+          icon: Settings,
+          external: false,
+        }
+      );
+    } else {
+      // Fallback links when no venueId (shouldn't happen for authenticated users)
+      baseLinks.push(
+        {
+          title: "Menu Setup",
+          href: "/",
+          icon: ShoppingBag,
+          external: false,
+        },
+        {
+          title: "QR Code Setup",
+          href: "/",
+          icon: QrCode,
+          external: false,
+        },
+        {
+          title: "Order Management",
+          href: "/",
+          icon: MessageSquare,
+          external: false,
+        },
+        {
+          title: "Analytics",
+          href: "/",
+          icon: BarChart,
+          external: false,
+        },
+        {
+          title: "Staff Management",
+          href: "/",
+          icon: Users,
+          external: false,
+        },
+        {
+          title: "Settings",
+          href: "/",
+          icon: Settings,
+          external: false,
+        }
+      );
+    }
+
+    return baseLinks;
+  }, [venueId]);
 
   const filteredFAQs = faqs.map((category) => ({
     ...category,
