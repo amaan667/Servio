@@ -159,14 +159,18 @@ export function useDashboardData(
           .neq("order_status", "REFUNDED");
 
         // Count ALL menu items (not just available) to match menu management count
-        const { data: menuItems, error: menuError } = await supabase
+        const { data: menuItems, error: menuError, count: menuItemCountFromCount } = await supabase
           .from("menu_items")
-          .select("id")
+          .select("id", { count: "exact" })
           .eq("venue_id", normalizedVenueId);
           // Removed .eq("is_available", true) to match menu management count
 
+        const finalMenuItemCount = menuItems?.length || menuItemCountFromCount || 0;
+
         const loadStatsResults = {
-          menuItemCount: menuItems?.length || 0,
+          menuItemsArrayLength: menuItems?.length || 0,
+          menuItemCountFromCount: menuItemCountFromCount || 0,
+          finalMenuItemCount,
           menuError: menuError?.message || null,
           orderCount: orders?.length || 0,
           timestamp: new Date().toISOString(),
@@ -183,7 +187,7 @@ export function useDashboardData(
 
         const newStats = {
           revenue,
-          menuItems: menuItemCount, // Use the count from count query
+          menuItems: finalMenuItemCount, // Use the count from count query
           unpaid,
         };
 
