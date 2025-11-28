@@ -81,7 +81,7 @@
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
     "@sendgrid/mail": "^8.1.6",
-    "@sentry/nextjs": "^8.55.0",
+    "@sentry/nextjs": "^10.27.0",
     "@sparticuz/chromium": "^141.0.0",
     "@storybook/addon-themes": "^8.0.0",
     "@storybook/nextjs": "^8.0.0",

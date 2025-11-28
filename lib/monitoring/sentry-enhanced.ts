@@ -162,7 +162,7 @@ export class EnhancedErrorTracker {
     interface ScopeWithTransaction {
       getTransaction?(): SentryTransaction | undefined;
     }
-    const scope = Sentry.getCurrentHub().getScope() as unknown as ScopeWithTransaction;
+    const scope = Sentry.getCurrentScope() as unknown as ScopeWithTransaction;
     const transaction = scope?.getTransaction?.();
     const span = transaction?.startChild({
       op: "db.query",
