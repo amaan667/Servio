@@ -912,7 +912,8 @@ export default function MenuManagementClient({
                         </h2>
                         <div className="space-y-3">
                           {menuItems
-                            .filter((item) => item.category === category && item.is_available)
+                            // Show ALL items (not filtered by is_available) to match dashboard count
+                            .filter((item) => item.category === category)
                             .map((item) => (
                               <div
                                 key={item.id}

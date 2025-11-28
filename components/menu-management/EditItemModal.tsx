@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
     price: 0,
     category: "",
     image_url: "",
+    is_available: true,
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,6 +60,7 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
         price: item.price,
         category: item.category,
         image_url: item.image_url || "",
+        is_available: item.is_available ?? true, // Default to true if not set
       });
       setImagePreview(item.image_url || null);
       setImageFile(null);
@@ -175,6 +178,7 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
           price: formData.price,
           category: formData.category,
           image_url: imageUrl,
+          is_available: formData.is_available ?? true, // Include availability toggle
         })
         .eq("id", item.id)
         .eq("venue_id", venueId);
@@ -304,6 +308,21 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
                 placeholder="e.g., Breakfast"
               />
             </div>
+          </div>
+
+          {/* Availability Toggle */}
+          <div className="flex items-center space-x-2 p-3 bg-muted rounded-md">
+            <Switch
+              id="is_available"
+              checked={formData.is_available ?? true}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
+            />
+            <Label htmlFor="is_available" className="text-sm font-medium cursor-pointer">
+              {formData.is_available ? "✅ Available" : "❌ Unavailable"}
+            </Label>
+            <p className="text-xs text-muted-foreground ml-auto">
+              {formData.is_available ? "Item is visible to customers" : "Item is hidden from customers"}
+            </p>
           </div>
         </div>
 
