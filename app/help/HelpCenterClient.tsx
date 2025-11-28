@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,7 +173,6 @@ export function HelpCenterClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [venueId, setVenueId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const renderedLinksRef = useRef<Set<string>>(new Set());
 
   // Fetch venueId from user's session
   useEffect(() => {
@@ -393,44 +392,51 @@ export function HelpCenterClient() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickLinks.map((link, index) => {
-                // Track rendered links to detect duplicates
-                const linkKey = `${link.title}-${index}`;
-                if (renderedLinksRef.current.has(link.title)) {
-                  console.error("[HELP CENTER] DUPLICATE RENDER DETECTED:", link.title, "at index", index);
-                } else {
-                  renderedLinksRef.current.add(link.title);
-                }
+              {(() => {
+                // Filter duplicates using Set - final safety check
+                const seen = new Set<string>();
+                const uniqueLinks = quickLinks.filter(link => {
+                  if (seen.has(link.title)) {
+                    console.error("[HELP CENTER] DUPLICATE FILTERED:", link.title);
+                    return false;
+                  }
+                  seen.add(link.title);
+                  return true;
+                });
 
-                const Icon = link.icon;
-                const linkContent = (
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                    <CardContent className="p-6 text-center">
-                      <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                      <h3 className="font-semibold text-gray-900">{link.title}</h3>
-                    </CardContent>
-                  </Card>
-                );
+                console.error("[HELP CENTER] RENDERING", uniqueLinks.length, "links:", uniqueLinks.map(l => l.title).join(", "));
 
-                if (link.external) {
-                  return (
-                    <a
-                      key={linkKey}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {linkContent}
-                    </a>
+                return uniqueLinks.map((link, index) => {
+                  const Icon = link.icon;
+                  const linkContent = (
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                      <CardContent className="p-6 text-center">
+                        <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                        <h3 className="font-semibold text-gray-900">{link.title}</h3>
+                      </CardContent>
+                    </Card>
                   );
-                }
 
-                return (
-                  <Link key={linkKey} href={link.href}>
-                    {linkContent}
-                  </Link>
-                );
-              })}
+                  if (link.external) {
+                    return (
+                      <a
+                        key={`${link.title}-${index}-${Date.now()}`}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {linkContent}
+                      </a>
+                    );
+                  }
+
+                  return (
+                    <Link key={`${link.title}-${index}-${Date.now()}`} href={link.href}>
+                      {linkContent}
+                    </Link>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
