@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiErrors } from '@/lib/api/standard-response';
 import { logger } from "@/lib/logger";
 import OpenAI from "openai";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { env } from '@/lib/env';
 
 const openai = new OpenAI({ apiKey: env('OPENAI_API_KEY') });
 

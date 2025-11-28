@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 

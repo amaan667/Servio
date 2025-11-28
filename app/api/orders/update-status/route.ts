@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { env } from '@/lib/env';
 
 export const runtime = "nodejs";
 

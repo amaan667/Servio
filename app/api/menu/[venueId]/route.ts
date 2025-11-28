@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache/index";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { apiErrors } from '@/lib/api/standard-response';
 
 export async function GET(
   _request: NextRequest,

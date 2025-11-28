@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { apiErrors } from '@/lib/api/standard-response';
 
 // GET - List active questions for venue (public endpoint for customers)
 export async function GET(req: Request) {

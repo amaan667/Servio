@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { apiErrors } from '@/lib/api/standard-response';
 
 /**
  * Set session from client-side auth
