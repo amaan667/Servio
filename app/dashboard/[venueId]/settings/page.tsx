@@ -34,7 +34,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
       .select("*")
       .eq("owner_user_id", auth.user.id)
       .order("created_at", { ascending: true }),
-    // FIXED: Fetch first venue with organization_id by owner (same as home page and debug endpoint)
+    // Fetch first venue with organization_id by owner (same as home page and debug endpoint)
     supabase
       .from("venues")
       .select("organization_id")

@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { isDevelopment } from '@/lib/env';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {

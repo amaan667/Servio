@@ -144,7 +144,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
               setUserPlan(plan);
             }
           }
-        } catch (error) {
+        } catch {
           // Error fetching plan - ignore silently
         }
       }

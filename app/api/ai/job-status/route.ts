@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJobStatus } from "@/lib/ai/job-processor";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { apiErrors } from '@/lib/api/standard-response';
 
 export async function GET(request: NextRequest) {
   try {
