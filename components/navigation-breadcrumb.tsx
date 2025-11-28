@@ -4,7 +4,7 @@ import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 interface NavigationBreadcrumbProps {
   customBackPath?: string;
@@ -31,10 +31,22 @@ export default function NavigationBreadcrumb({
   const pathname = pathnameRaw || "";
   const params = useParams() as { venueId?: string };
 
-  // [NAV] Extract venueId from params or pathname, fallback to prop
+  // [NAV] Get venueId from localStorage for help page
+  const [storedVenueId, setStoredVenueId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && pathname.includes("/help")) {
+      const stored = localStorage.getItem("currentVenueId") || localStorage.getItem("venueId");
+      if (stored) {
+        setStoredVenueId(stored);
+      }
+    }
+  }, [pathname]);
+
+  // [NAV] Extract venueId from params or pathname, fallback to prop or stored
   const venueId = useMemo(
-    () => params?.venueId ?? extractVenueId(pathname) ?? propVenueId,
-    [params?.venueId, pathname, propVenueId]
+    () => params?.venueId ?? extractVenueId(pathname) ?? propVenueId ?? storedVenueId ?? undefined,
+    [params?.venueId, pathname, propVenueId, storedVenueId]
   );
 
   // [NAV] Determine home link - always route to actual home page
@@ -60,6 +72,7 @@ export default function NavigationBreadcrumb({
       if (pathname.includes("/inventory")) return "Inventory";
       return "Dashboard";
     }
+    if (pathname.includes("/help")) return "Support";
     if (pathname.includes("/sign-in")) return "Sign In";
     if (pathname.includes("/sign-up")) return "Sign Up";
     if (pathname.includes("/forgot-password")) return "Reset Your Password";
@@ -72,6 +85,7 @@ export default function NavigationBreadcrumb({
 
   const pageTitle = getPageTitle();
   const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
+  const isHelpPage = pathname.includes("/help");
   const isSignInPage = pathname.includes("/sign-in");
   const isSignUpPage = pathname.includes("/sign-up");
   const isForgotPasswordPage = pathname.includes("/forgot-password");
@@ -222,6 +236,54 @@ export default function NavigationBreadcrumb({
           <li className="text-foreground/60">←</li>
           <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
             {pageTitle}
+          </li>
+        </ol>
+      </nav>
+    );
+  }
+
+  // Help page: Home ← Dashboard ← Support
+  if (isHelpPage) {
+    // For help page, try to get venueId from localStorage or use a default dashboard link
+    const helpDashboardLink = venueId ? `/dashboard/${venueId}` : "/";
+    
+    return (
+      <nav aria-label="Breadcrumb" className="mb-4">
+        <ol className="flex items-center gap-2 text-sm">
+          <li>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-gray-700 dark:text-foreground/80 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors duration-200"
+            >
+              <Link href={homeLink}>
+                <>
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </>
+              </Link>
+            </Button>
+          </li>
+          <li className="text-foreground/60 dark:text-foreground/60">←</li>
+          <li>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-gray-700 dark:text-foreground/80 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors duration-200"
+            >
+              <Link href={helpDashboardLink}>
+                <>
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden md:inline">Dashboard</span>
+                </>
+              </Link>
+            </Button>
+          </li>
+          <li className="text-foreground/60 dark:text-foreground/60">←</li>
+          <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
+            Support
           </li>
         </ol>
       </nav>
