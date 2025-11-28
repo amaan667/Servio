@@ -1,58 +1,62 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const { searchParams } = new URL(req.url);
-      const venue_id = context.venueId || searchParams.get('venue_id');
-
-      const { createAdminClient } = await import("@/lib/supabase");
+      // STEP 2: Business logic
       const admin = createAdminClient();
       
-      // If venue_id is provided, return staff for that venue (excluding deleted staff)
-      if (venue_id) {
-        const { data, error } = await admin
-          .from('staff')
-          .select('*')
-          .eq('venue_id', venue_id)
-          .is('deleted_at', null)  // Only return non-deleted staff
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+      // Check if staff table exists
+      try {
+        const { error } = await admin.from("staff").select("id").limit(1);
+        if (error && error.code === "PGRST116") {
+          return success({ exists: false, message: "Staff table does not exist" });
         }
-
-        return NextResponse.json({ ok: true, exists: true, staff: data || [] });
+      } catch {
+        return success({ exists: false, message: "Staff table does not exist" });
       }
 
-      // Otherwise, just check if table exists
-      const { error } = await admin.from('staff').select('id').limit(1);
-      if (error) {
-        const missing = /Could not find the table 'public\.staff'/.test(error.message) || error.code === '42P01';
-        return NextResponse.json({ ok:true, exists: !missing, error: error.message });
+      logger.info("[STAFF CHECK] Staff table exists", {
+        userId: context.user.id,
+      });
+
+      // STEP 3: Return success response
+      return success({ exists: true, message: "Staff table exists" });
+    } catch (error) {
+      logger.error("[STAFF CHECK] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: context.user.id,
+      });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      return NextResponse.json({ ok:true, exists:true });
-    } catch (e:unknown) {
-      return NextResponse.json({ ok:false, error: e instanceof Error ? e.message : 'Unknown error' }, { status:500 });
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
+  },
+  {
+    // System route - no venue required
+    extractVenueId: async () => null,
   }
 );
-

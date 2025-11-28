@@ -1,8 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
+
+const resetTablesSchema = z.object({
+  venueId: z.string().uuid().optional(),
+  venue_id: z.string().uuid().optional(),
+  resetType: z.enum(["all", "venue"]).default("all"),
+});
+
+const getResetLogsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -10,35 +24,20 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      // STEP 2: Get venueId from context (already verified, may be null)
-      const venueId = context.venueId;
+      // STEP 2: Validate input
+      const body = await validateBody(resetTablesSchema, await req.json());
+      const finalVenueId = context.venueId || body.venueId || body.venue_id;
 
-      // STEP 3: Parse request
-      const body = await req.json();
-      const venueIdFromBody = body?.venueId || body?.venue_id;
-      const resetType = body?.resetType || "all";
-      
-      // Use venueId from context or body
-      const finalVenueId = venueId || venueIdFromBody;
-
-      // STEP 4: Validate inputs
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 3: Business logic
       const supabase = await createClient();
-
       let result;
 
-      if (resetType === "venue" && finalVenueId) {
+      if (body.resetType === "venue" && finalVenueId) {
         // Delete specific venue tables
         const { data, error } = await supabase.rpc("delete_venue_tables", {
           p_venue_id: finalVenueId,
@@ -46,16 +45,13 @@ export const POST = withUnifiedAuth(
 
         if (error) {
           logger.error("[RESET TABLES POST] Venue deletion error:", {
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: error.message,
             venueId: finalVenueId,
             userId: context.user.id,
           });
-          return NextResponse.json(
-            {
-              error: error.message,
-              message: process.env.NODE_ENV === "development" ? error.message : "Database operation failed",
-            },
-            { status: 500 }
+          return apiErrors.database(
+            "Failed to delete venue tables",
+            isDevelopment() ? error.message : undefined
           );
         }
 
@@ -68,54 +64,41 @@ export const POST = withUnifiedAuth(
 
         if (error) {
           logger.error("[RESET TABLES POST] Manual deletion error:", {
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: error.message,
             userId: context.user.id,
           });
-          return NextResponse.json(
-            {
-              error: error.message,
-              message: process.env.NODE_ENV === "development" ? error.message : "Database operation failed",
-            },
-            { status: 500 }
+          return apiErrors.database(
+            "Failed to delete tables",
+            isDevelopment() ? error.message : undefined
           );
         }
 
         result = data;
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
-        data: result,
+      logger.info("[RESET TABLES POST] Tables reset successfully", {
+        resetType: body.resetType,
+        venueId: finalVenueId,
+        userId: context.user.id,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
+      // STEP 4: Return success response
+      return success({ data: result });
+    } catch (error) {
       logger.error("[RESET TABLES POST] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
@@ -126,8 +109,10 @@ export const POST = withUnifiedAuth(
         const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
         if (!venueId) {
-          const body = await req.json();
-          venueId = body?.venueId || body?.venue_id;
+          const body = await req.json().catch(() => ({}));
+          venueId = (body as { venueId?: string; venue_id?: string })?.venueId || 
+                   (body as { venueId?: string; venue_id?: string })?.venue_id || 
+                   null;
         }
         return venueId;
       } catch {
@@ -144,24 +129,18 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      // STEP 2: Get user from context (already verified)
-      // STEP 3: Parse request
+      // STEP 2: Validate query parameters
       const { searchParams } = new URL(req.url);
-      const limit = parseInt(searchParams.get("limit") || "10");
+      const query = validateQuery(getResetLogsQuerySchema, {
+        limit: searchParams.get("limit") || "10",
+      });
 
-      // STEP 4: Validate inputs
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 3: Business logic
       const supabase = await createClient();
 
       // Get recent deletion logs
@@ -169,54 +148,35 @@ export const GET = withUnifiedAuth(
         .from("table_deletion_logs")
         .select("*")
         .order("deletion_timestamp", { ascending: false })
-        .limit(limit);
+        .limit(query.limit);
 
       if (error) {
         logger.error("[RESET TABLES GET] Reset logs error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error.message,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: error.message,
-            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
-          },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to fetch reset logs",
+          isDevelopment() ? error.message : undefined
         );
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
-        data: data || [],
-      });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      // STEP 4: Return success response
+      return success({ data: data || [] });
+    } catch (error) {
       logger.error("[RESET TABLES GET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },

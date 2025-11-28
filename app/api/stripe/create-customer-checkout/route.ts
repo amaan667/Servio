@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import Stripe from "stripe";
+import { env } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(env('STRIPE_SECRET_KEY')!, {
   apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion,
+});
+
+const createCustomerCheckoutSchema = z.object({
+  amount: z.number().positive("Amount must be positive"),
+  customerEmail: z.string().email("Invalid email address").optional(),
+  customerName: z.string().min(1).max(100).optional(),
+  venueName: z.string().min(1).max(100).optional(),
+  orderId: z.string().uuid("Invalid order ID"),
 });
 
 /**
@@ -14,22 +26,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(req: Request) {
   try {
-    const { amount, customerEmail, customerName, venueName, orderId } = await req.json();
+    const body = await validateBody(createCustomerCheckoutSchema, await req.json());
 
     logger.info("💳 Creating Stripe customer checkout session", {
-      amount,
-      customerName,
-      venueName,
-      orderId,
+      amount: body.amount,
+      customerName: body.customerName,
+      venueName: body.venueName,
+      orderId: body.orderId,
     });
-
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-    }
-
-    if (!orderId) {
-      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
-    }
 
     // Create Stripe checkout session for order payment
     // Store ONLY order ID in metadata (avoids 500 char limit)
@@ -40,38 +44,46 @@ export async function POST(req: Request) {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: `Order at ${venueName || "Restaurant"}`,
-              description: customerName,
+              name: `Order at ${body.venueName || "Restaurant"}`,
+              description: body.customerName || "Customer order",
             },
-            unit_amount: Math.round(amount * 100), // Convert to pence
+            unit_amount: Math.round(body.amount * 100), // Convert to pence
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`,
-      customer_email: customerEmail,
+      success_url: `${env("NEXT_PUBLIC_SITE_URL") || env("NEXT_PUBLIC_APP_URL") || "http://localhost:3000"}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${env("NEXT_PUBLIC_SITE_URL") || env("NEXT_PUBLIC_APP_URL") || "http://localhost:3000"}/payment/cancel`,
       metadata: {
-        orderId: orderId, // Just the order ID - webhook will update it
+        orderId: body.orderId,
+        paymentType: "order_payment",
       },
+      customer_email: body.customerEmail,
     });
 
     logger.info("✅ Stripe checkout session created", {
       sessionId: session.id,
-      amount,
-      venueName,
+      orderId: body.orderId,
     });
 
-    return NextResponse.json({
-      url: session.url,
+    return success({
       sessionId: session.id,
+      url: session.url,
     });
-  } catch (_error) {
-    logger.error("[STRIPE CUSTOMER CHECKOUT] Error creating session", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+  } catch (error) {
+    logger.error("❌ Error creating Stripe checkout session:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
+    if (isZodError(error)) {
+      return handleZodError(error);
+    }
+
+    return apiErrors.internal(
+      "Failed to create checkout session",
+      error
+    );
   }
 }

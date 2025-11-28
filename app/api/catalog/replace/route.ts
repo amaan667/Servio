@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { createServerSupabase } from "@/lib/supabase";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { v4 as uuidv4 } from "uuid";
@@ -6,6 +7,7 @@ import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for processing
@@ -59,13 +61,13 @@ export const POST = withUnifiedAuth(
     }
 
     if (!venueId) {
-      return NextResponse.json({ ok: false, error: "venue_id required" }, { status: 400 });
+      return apiErrors.badRequest('venue_id required');
     }
 
       // STEP 3: Parse request
       // STEP 4: Validate inputs
       if (!venueId) {
-        return NextResponse.json({ ok: false, error: "venue_id required" }, { status: 400 });
+        return apiErrors.badRequest('venue_id required');
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -382,8 +384,8 @@ export const POST = withUnifiedAuth(
         {
           ok: false,
           error: "Menu import failed",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to import menu",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Failed to import menu",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

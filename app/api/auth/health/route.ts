@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export async function GET() {
   try {
@@ -39,7 +40,7 @@ export async function GET() {
     return NextResponse.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV,
+      environment: getNodeEnv(),
       auth: {
         sessionStatus,
         hasUser: !!userId,
@@ -49,13 +50,13 @@ export async function GET() {
         authCookies: authCookies.map((c) => ({ name: c.name, hasValue: !!c.value })),
       },
       supabase: {
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? "configured" : "missing",
-        key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "configured" : "missing",
-        serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "configured" : "missing",
+        url: env('NEXT_PUBLIC_SUPABASE_URL') ? "configured" : "missing",
+        key: env('NEXT_PUBLIC_SUPABASE_ANON_KEY') ? "configured" : "missing",
+        serviceKey: env('SUPABASE_SERVICE_ROLE_KEY') ? "configured" : "missing",
       },
       urls: {
-        siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-        appUrl: process.env.NEXT_PUBLIC_APP_URL,
+        siteUrl: env('NEXT_PUBLIC_SITE_URL'),
+        appUrl: env('NEXT_PUBLIC_APP_URL'),
       },
     });
   } catch (_error) {

@@ -3,33 +3,15 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
-
-      const adminSupabase = createAdminClient();
-
-      // Clear all table sessions for this venue
-      const { error: clearError } = await adminSupabase
-        .from("table_sessions")
-        .delete()
-        .eq("venue_id", context.venueId);
-
-      if (clearError) {
-        logger.error("[TABLES CLEAR] Error clearing sessions:", { value: clearError });
-        return NextResponse.json({ ok: false, error: clearError.message }, { status: 500 });
+        return apiErrors.rateLimit();
       }
 
       return NextResponse.json({ ok: true, message: "All table sessions cleared" });
@@ -37,7 +19,7 @@ export const POST = withUnifiedAuth(
       logger.error("[TABLES CLEAR] Unexpected error:", {
         error: _error instanceof Error ? _error.message : "Unknown _error",
       });
-      return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+      return apiErrors.internal('Internal server error');
     }
   }
 );

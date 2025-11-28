@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (orderError) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Update order status
@@ -43,7 +44,7 @@ export async function PATCH(req: NextRequest) {
 
     if (updateError) {
       logger.error("[POS ORDERS STATUS] Error:", updateError);
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return apiErrors.internal('Internal server error');
     }
 
     return NextResponse.json({ order: updatedOrder });
@@ -51,6 +52,6 @@ export async function PATCH(req: NextRequest) {
     logger.error("[POS ORDERS STATUS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

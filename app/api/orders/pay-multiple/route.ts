@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!venue_id) {
-      return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
+      return apiErrors.badRequest('venue_id is required');
     }
 
     const admin = createAdminClient();
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
       logger.error("[PAY MULTIPLE] Orders not found", {
         data: { order_ids, venue_id, error: fetchError },
       });
-      return NextResponse.json({ error: "Orders not found" }, { status: 404 });
+      return apiErrors.notFound('Orders not found');
     }
 
     // Validate all orders are unpaid
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
       logger.error("[PAY MULTIPLE] Failed to update orders", {
         data: { order_ids, error: updateError },
       });
-      return NextResponse.json({ error: "Failed to mark orders as paid" }, { status: 500 });
+      return apiErrors.internal('Failed to mark orders as paid');
     }
 
     // Calculate total
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
         error: _error instanceof Error ? _error.message : String(_error),
       },
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 

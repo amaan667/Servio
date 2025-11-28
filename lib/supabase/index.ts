@@ -15,19 +15,33 @@ import { env } from "@/lib/env";
 
 /**
  * Gets the Supabase URL from environment variables
+ * Safe for both client and server use
  * @returns {string} The Supabase project URL
  * @throws {Error} If NEXT_PUBLIC_SUPABASE_URL is not set
  */
 export function getSupabaseUrl(): string {
+  // Use process.env directly for client-side, env() for server-side
+  if (typeof window !== "undefined") {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
+    return url;
+  }
   return env("NEXT_PUBLIC_SUPABASE_URL");
 }
 
 /**
  * Gets the Supabase anonymous key from environment variables
+ * Safe for both client and server use
  * @returns {string} The Supabase anonymous API key
  * @throws {Error} If NEXT_PUBLIC_SUPABASE_ANON_KEY is not set
  */
 export function getSupabaseAnonKey(): string {
+  // Use process.env directly for client-side, env() for server-side
+  if (typeof window !== "undefined") {
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
+    return key;
+  }
   return env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 

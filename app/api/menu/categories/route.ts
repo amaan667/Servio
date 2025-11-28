@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function GET(_request: NextRequest) {
     const venueId = searchParams.get("venueId");
 
     if (!venueId) {
-      return NextResponse.json({ error: "venueId is required" }, { status: 400 });
+      return apiErrors.badRequest('venueId is required');
     }
 
     // Try to get from cache first
@@ -34,7 +35,7 @@ export async function GET(_request: NextRequest) {
 
     if (uploadError) {
       logger.error("[CATEGORIES API] Error fetching category order:", { value: uploadError });
-      return NextResponse.json({ error: "Failed to fetch category order" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch category order');
     }
 
     // Get all unique categories from menu items
@@ -45,7 +46,7 @@ export async function GET(_request: NextRequest) {
 
     if (menuError) {
       logger.error("[CATEGORIES API] Error fetching menu items:", { value: menuError });
-      return NextResponse.json({ error: "Failed to fetch menu items" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch menu items');
     }
 
     // Extract unique categories
@@ -76,7 +77,7 @@ export async function GET(_request: NextRequest) {
     logger.error("[CATEGORIES API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 
@@ -109,7 +110,7 @@ export async function PUT(_request: NextRequest) {
 
     if (fetchError) {
       logger.error("[CATEGORIES API] Error fetching existing upload:", { value: fetchError });
-      return NextResponse.json({ error: "Failed to fetch existing upload" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch existing upload');
     }
 
     // Update or create menu upload record with new category order
@@ -124,7 +125,7 @@ export async function PUT(_request: NextRequest) {
 
       if (updateError) {
         logger.error("[CATEGORIES API] Error updating category order:", { value: updateError });
-        return NextResponse.json({ error: "Failed to update category order" }, { status: 500 });
+        return apiErrors.internal('Failed to update category order');
       }
     } else {
       // Create new menu upload record if none exists
@@ -137,7 +138,7 @@ export async function PUT(_request: NextRequest) {
 
       if (insertError) {
         logger.error("[CATEGORIES API] Error creating category order:", { value: insertError });
-        return NextResponse.json({ error: "Failed to create category order" }, { status: 500 });
+        return apiErrors.internal('Failed to create category order');
       }
     }
 
@@ -150,7 +151,7 @@ export async function PUT(_request: NextRequest) {
     logger.error("[CATEGORIES API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 
@@ -159,7 +160,7 @@ export async function POST(_request: NextRequest) {
     const { finalVenueId, categoryName } = await _request.json();
 
     if (!finalVenueId || !categoryName) {
-      return NextResponse.json({ error: "finalVenueId and categoryName are required" }, { status: 400 });
+      return apiErrors.badRequest('finalVenueId and categoryName are required');
     }
 
     const supabase = await createClient();
@@ -175,7 +176,7 @@ export async function POST(_request: NextRequest) {
 
     if (fetchError) {
       logger.error("[CATEGORIES API] Error fetching category order:", { value: fetchError });
-      return NextResponse.json({ error: "Failed to fetch category order" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch category order');
     }
 
     // Add new category to the end of the list
@@ -202,7 +203,7 @@ export async function POST(_request: NextRequest) {
 
       if (updateError) {
         logger.error("[CATEGORIES API] Error updating category order:", { value: updateError });
-        return NextResponse.json({ error: "Failed to update category order" }, { status: 500 });
+        return apiErrors.internal('Failed to update category order');
       }
     } else {
       // For now, just return success without persisting to database
@@ -218,6 +219,6 @@ export async function POST(_request: NextRequest) {
     logger.error("[CATEGORIES API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

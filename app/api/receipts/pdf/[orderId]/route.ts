@@ -4,6 +4,8 @@ import { logger } from "@/lib/logger";
 import { generateReceiptPDF, generateReceiptHTMLForPrint } from "@/lib/pdf/generateReceiptPDF";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function GET(
   req: NextRequest,
@@ -32,7 +34,7 @@ export async function GET(
 
         // STEP 4: Validate inputs
         if (!orderId) {
-          return NextResponse.json({ error: "orderId is required" }, { status: 400 });
+          return apiErrors.badRequest('orderId is required');
         }
 
         // STEP 5: Security - Verify order belongs to venue
@@ -181,8 +183,8 @@ export async function GET(
         return NextResponse.json(
           {
             error: "Internal Server Error",
-            message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-            ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+            message: isDevelopment() ? errorMessage : "Request processing failed",
+            ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
           },
           { status: 500 }
         );

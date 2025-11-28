@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -12,48 +14,38 @@ export const POST = withUnifiedAuth(
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
+        return apiErrors.rateLimit();
       }
 
       const body = await req.json();
       const finalVenueId = context.venueId || body.venueId;
-    const force = body.force || false;
+      const force = body.force || false;
 
-    if (!finalVenueId) {
-      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
-    }
+      if (!finalVenueId) {
+        return apiErrors.badRequest("Venue ID is required");
+      }
 
+      const supabase = createAdminClient();
 
-    // Check if service role key is available
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      logger.error("🔄 [DAILY RESET CHECK] SUPABASE_SERVICE_ROLE_KEY not found");
-      return NextResponse.json({ error: "Service role key not configured" }, { status: 500 });
-    }
-
-    const supabase = createAdminClient();
-
-    // Check if venue exists
-    const { data: venue, error: venueError } = await supabase
-      .from("venues")
-      .select("venue_id, venue_name")
-      .eq("venue_id", finalVenueId)
-      .single();
+      // Check if venue exists
+      const { data: venue, error: venueError } = await supabase
+        .from("venues")
+        .select("venue_id, venue_name")
+        .eq("venue_id", finalVenueId)
+        .single();
 
     if (venueError) {
       logger.error("🔄 [DAILY RESET CHECK] Error fetching venue:", {
         error: venueError.message || "Unknown error",
       });
-      return NextResponse.json({ error: `Database error: ${venueError.message}` }, { status: 500 });
+      return apiErrors.database(
+        "Failed to fetch venue",
+        isDevelopment() ? venueError.message : undefined
+      );
     }
 
     if (!venue) {
-      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+      return apiErrors.notFound('Venue not found');
     }
 
     // Check if we need to reset based on date
@@ -96,7 +88,7 @@ export const POST = withUnifiedAuth(
 
     // If we already reset today, return success (unless force=true)
     if (resetRecord && !force) {
-      return NextResponse.json({
+      return success({
         success: true,
         message: "Already reset today",
         resetDate: todayString,
@@ -125,7 +117,7 @@ export const POST = withUnifiedAuth(
       });
       // Continue with reset if we can't check
     } else if (recentOrders && recentOrders.length > 0) {
-      return NextResponse.json({
+      return success({
         success: true,
         message: "Skipping reset due to recent orders",
         resetDate: todayString,
@@ -153,7 +145,7 @@ export const POST = withUnifiedAuth(
       logger.error("🔄 [DAILY RESET CHECK] Error fetching active orders:", {
         error: activeOrdersError.message || "Unknown error",
       });
-      return NextResponse.json({ error: "Failed to fetch active orders" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch active orders');
     }
 
     if (activeOrders && activeOrders.length > 0) {
@@ -170,7 +162,7 @@ export const POST = withUnifiedAuth(
         logger.error("🔄 [DAILY RESET CHECK] Error completing orders:", {
           error: completeOrdersError.message || "Unknown error",
         });
-        return NextResponse.json({ error: "Failed to complete active orders" }, { status: 500 });
+        return apiErrors.internal('Failed to complete active orders');
       }
 
       resetSummary.completedOrders = activeOrders.length;
@@ -187,7 +179,7 @@ export const POST = withUnifiedAuth(
       logger.error("🔄 [DAILY RESET CHECK] Error fetching active reservations:", {
         error: activeReservationsError.message || "Unknown error",
       });
-      return NextResponse.json({ error: "Failed to fetch active reservations" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch active reservations');
     }
 
     if (activeReservations && activeReservations.length > 0) {
@@ -204,10 +196,7 @@ export const POST = withUnifiedAuth(
         logger.error("🔄 [DAILY RESET CHECK] Error canceling reservations:", {
           error: cancelReservationsError.message || "Unknown error",
         });
-        return NextResponse.json(
-          { error: "Failed to cancel active reservations" },
-          { status: 500 }
-        );
+        return apiErrors.internal("Failed to cancel active reservations");
       }
 
       resetSummary.canceledReservations = activeReservations.length;
@@ -223,7 +212,7 @@ export const POST = withUnifiedAuth(
       logger.error("🔄 [DAILY RESET CHECK] Error fetching tables:", {
         error: tablesError.message || "Unknown error",
       });
-      return NextResponse.json({ error: "Failed to fetch tables" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch tables');
     }
 
     if (tables && tables.length > 0) {
@@ -237,10 +226,7 @@ export const POST = withUnifiedAuth(
         logger.error("🔄 [DAILY RESET CHECK] Error clearing table references:", {
           error: clearTableRefsError.message || "Unknown error",
         });
-        return NextResponse.json(
-          { error: "Failed to clear table references from orders" },
-          { status: 500 }
-        );
+        return apiErrors.internal("Failed to clear table references from orders");
       }
 
       // Step 3b: Delete all table sessions first (if they exist)
@@ -266,7 +252,7 @@ export const POST = withUnifiedAuth(
         logger.error("🔄 [DAILY RESET CHECK] Error deleting tables:", {
           error: deleteTablesError.message || "Unknown error",
         });
-        return NextResponse.json({ error: "Failed to delete tables" }, { status: 500 });
+        return apiErrors.internal('Failed to delete tables');
       }
 
       resetSummary.resetTables = tables.length;
@@ -304,7 +290,7 @@ export const POST = withUnifiedAuth(
       logger.warn("🔄 [DAILY RESET CHECK] Continuing despite log error");
     }
 
-    return NextResponse.json({
+    return success({
       success: true,
       message: "Daily reset completed successfully",
       resetDate: todayString,
@@ -317,11 +303,22 @@ export const POST = withUnifiedAuth(
         timestamp: new Date().toISOString(),
       },
     });
-    } catch (_error) {
+    } catch (error) {
       logger.error("🔄 [DAILY RESET CHECK] Error in daily reset check:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user?.id,
       });
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
   }
 );

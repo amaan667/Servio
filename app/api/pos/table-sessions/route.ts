@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -10,32 +12,15 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      const { searchParams } = new URL(req.url);
-
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        return NextResponse.json(
-          { error: "venueId is required" },
-          { status: 400 }
-        );
-      }
-
-      // STEP 5: Security - Verify resource belongs to venue (handled by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 3: Business logic
       const supabase = await createClient();
 
       // Get table status using the function
@@ -45,50 +30,38 @@ export const GET = withUnifiedAuth(
 
       if (error) {
         logger.error("[POS TABLE SESSIONS] Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error.message,
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return apiErrors.database(
+          "Failed to fetch table status",
+          isDevelopment() ? error.message : undefined
+        );
       }
 
-      // STEP 7: Return response
-      return NextResponse.json({ tables: tableStatus });
-      
-    } catch (_error) {
-      // STEP 8: Consistent error handling
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      // STEP 4: Return success response
+      return success({ tables: tableStatus || [] });
+    } catch (error) {
       logger.error("[POS TABLE SESSIONS GET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
   {
-    // STEP 9: Extract venueId from request (query params)
+    // Extract venueId from request (query params)
     extractVenueId: async (req) => {
       try {
         const { searchParams } = new URL(req.url);
@@ -106,228 +79,119 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
+      // STEP 3: Parse and validate input
       const body = await req.json();
-      const { table_id, action, server_id, guest_count, notes } = body;
+      const { action, table_id, customer_name } = body;
 
-      // STEP 4: Validate inputs
-      if (!venueId || !table_id || !action) {
-        return NextResponse.json(
-          { error: "venueId, table_id, and action are required" },
-          { status: 400 }
-        );
+      if (!action || !["start", "end"].includes(action)) {
+        return apiErrors.badRequest("Action must be 'start' or 'end'");
       }
 
-      // STEP 5: Security - Verify resource belongs to venue (handled by withUnifiedAuth)
+      if (action === "start" && (!table_id || !customer_name)) {
+        return apiErrors.badRequest("table_id and customer_name are required for start action");
+      }
 
-      // STEP 6: Business logic
+      // STEP 4: Business logic
       const supabase = await createClient();
-      let result;
 
-      switch (action) {
-        case "seat_party":
-          // Create new table session
-          const { data: session, error: sessionError } = await supabase
-            .from("table_sessions")
-            .insert({
-              venue_id: venueId,
-              table_id,
-              server_id: server_id || null,
-              guest_count: guest_count || 1,
-              notes,
-              status: "OCCUPIED",
-            })
-            .select()
-            .single();
+      if (action === "start") {
+        // Start table session
+        const { data: session, error } = await supabase
+          .from("table_sessions")
+          .insert({
+            venue_id: venueId,
+            table_id: table_id,
+            customer_name: customer_name,
+            status: "ACTIVE",
+          })
+          .select()
+          .single();
 
-          if (sessionError) {
-            logger.error("[POS TABLE SESSIONS] Error creating session:", {
-              ...sessionError,
-              venueId,
-              userId: context.user.id,
-            });
-            return NextResponse.json({ error: "Failed to create table session" }, { status: 500 });
-          }
+        if (error || !session) {
+          logger.error("[POS TABLE SESSIONS POST] Error starting session:", {
+            error: error?.message,
+            tableId: table_id,
+            venueId,
+            userId: context.user.id,
+          });
+          return apiErrors.database(
+            "Failed to start table session",
+            isDevelopment() ? error?.message : undefined
+          );
+        }
 
-          result = { session, action: "seated" };
-          break;
+        logger.info("[POS TABLE SESSIONS POST] Table session started", {
+          sessionId: session.id,
+          tableId: table_id,
+          venueId,
+          userId: context.user.id,
+        });
 
-        case "close_tab":
-          // Close table session
-          const { data: closedSession, error: closeError } = await supabase
-            .from("table_sessions")
-            .update({
-              closed_at: new Date().toISOString(),
-              status: "CLEANING",
-            })
-            .eq("venue_id", venueId)
-            .eq("table_id", table_id)
-            .eq("closed_at", null)
-            .select()
-            .single();
+        return success({ session });
+      } else {
+        // End table session
+        const { data: session, error } = await supabase
+          .from("table_sessions")
+          .update({ status: "CLOSED", closed_at: new Date().toISOString() })
+          .eq("venue_id", venueId)
+          .eq("status", "ACTIVE")
+          .select()
+          .single();
 
-          if (closeError) {
-            logger.error("[POS TABLE SESSIONS] Error closing session:", {
-              ...closeError,
-              venueId,
-              userId: context.user.id,
-            });
-            return NextResponse.json({ error: "Failed to close table session" }, { status: 500 });
-          }
+        if (error || !session) {
+          logger.error("[POS TABLE SESSIONS POST] Error ending session:", {
+            error: error?.message,
+            venueId,
+            userId: context.user.id,
+          });
+          return apiErrors.database(
+            "Failed to end table session",
+            isDevelopment() ? error?.message : undefined
+          );
+        }
 
-          // CRITICAL: Verify all orders are PAID before completing
-          const { data: ordersToComplete } = await supabase
-            .from("orders")
-            .select("id, payment_status")
-            .eq("venue_id", venueId)
-            .eq("table_id", table_id)
-            .eq("is_active", true);
+        logger.info("[POS TABLE SESSIONS POST] Table session ended", {
+          sessionId: session.id,
+          venueId,
+          userId: context.user.id,
+        });
 
-          const unpaidOrders = ordersToComplete?.filter(
-            (order) => (order.payment_status || "").toString().toUpperCase() !== "PAID"
-          ) || [];
-
-          if (unpaidOrders.length > 0) {
-            logger.warn("[POS TABLE SESSIONS] Attempted to complete unpaid orders", {
-              unpaidCount: unpaidOrders.length,
-              orderIds: unpaidOrders.map((o) => o.id),
-              venueId,
-              userId: context.user.id,
-            });
-            return NextResponse.json(
-              {
-                error: `Cannot close table: ${unpaidOrders.length} order(s) are unpaid. Please collect payment first.`,
-                unpaid_order_ids: unpaidOrders.map((o) => o.id),
-              },
-              { status: 400 }
-            );
-          }
-
-          // Mark all active orders as completed
-          const { error: ordersError } = await supabase
-            .from("orders")
-            .update({ order_status: "COMPLETED" })
-            .eq("venue_id", venueId)
-            .eq("table_id", table_id)
-            .eq("is_active", true);
-
-          if (ordersError) {
-            logger.error("[POS TABLE SESSIONS] Error completing orders:", {
-              ...ordersError,
-              venueId,
-              userId: context.user.id,
-            });
-          }
-
-          result = { session: closedSession, action: "closed" };
-          break;
-
-        case "mark_cleaning":
-          // Mark table as cleaning
-          const { data: cleaningSession, error: cleaningError } = await supabase
-            .from("table_sessions")
-            .update({ status: "CLEANING" })
-            .eq("venue_id", venueId)
-            .eq("table_id", table_id)
-            .eq("closed_at", null)
-            .select()
-            .single();
-
-          if (cleaningError) {
-            logger.error("[POS TABLE SESSIONS] Error marking cleaning:", {
-              ...cleaningError,
-              venueId,
-              userId: context.user.id,
-            });
-            return NextResponse.json({ error: "Failed to mark table as cleaning" }, { status: 500 });
-          }
-
-          result = { session: cleaningSession, action: "cleaning" };
-          break;
-
-        case "mark_free":
-          // Mark table as free
-          const { data: freeSession, error: freeError } = await supabase
-            .from("table_sessions")
-            .update({
-              status: "FREE",
-              closed_at: new Date().toISOString(),
-            })
-            .eq("venue_id", venueId)
-            .eq("table_id", table_id)
-            .eq("closed_at", null)
-            .select()
-            .single();
-
-          if (freeError) {
-            logger.error("[POS TABLE SESSIONS] Error marking free:", {
-              ...freeError,
-              venueId,
-              userId: context.user.id,
-            });
-            return NextResponse.json({ error: "Failed to mark table as free" }, { status: 500 });
-          }
-
-          result = { session: freeSession, action: "free" };
-          break;
-
-        default:
-          return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+        return success({ session });
       }
-
-      // STEP 7: Return response
-      return NextResponse.json(result);
-      
-    } catch (_error) {
-      // STEP 8: Consistent error handling
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+    } catch (error) {
       logger.error("[POS TABLE SESSIONS POST] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
   {
-    // STEP 9: Extract venueId from request (body)
+    // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venue_id;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
         return null;
       }

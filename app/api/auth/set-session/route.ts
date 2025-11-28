@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 /**
  * Set session from client-side auth
@@ -11,10 +12,7 @@ export async function POST(request: NextRequest) {
     const { access_token, refresh_token } = await request.json();
 
     if (!access_token || !refresh_token) {
-      return NextResponse.json(
-        { error: "access_token and refresh_token are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("access_token and refresh_token are required");
     }
 
 
@@ -29,12 +27,12 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       logger.error("[AUTH SET-SESSION] Error setting session:", { error: error.message });
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return apiErrors.badRequest(error.message);
     }
 
     if (!data.session) {
       logger.error("[AUTH SET-SESSION] No session returned");
-      return NextResponse.json({ error: "Failed to set session" }, { status: 500 });
+      return apiErrors.internal('Failed to set session');
     }
 
     logger.info("[AUTH SET-SESSION] ✅ Session set successfully", {
@@ -50,6 +48,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err) {
     logger.error("[AUTH SET-SESSION] Unexpected error:", { error: err });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

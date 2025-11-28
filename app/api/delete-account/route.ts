@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -28,7 +30,7 @@ export const POST = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!userId) {
-        return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        return apiErrors.badRequest('User ID is required');
       }
 
       // STEP 5: Security - Verify user can only delete their own account
@@ -95,8 +97,8 @@ export const POST = withUnifiedAuth(
         {
           success: false,
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

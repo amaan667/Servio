@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { performanceMonitor } from "@/lib/monitoring/performance";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function GET() {
   try {
@@ -36,6 +37,6 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     });
   } catch (_error) {
-    return NextResponse.json({ error: "Failed to fetch performance metrics" }, { status: 500 });
+    return apiErrors.internal('Failed to fetch performance metrics');
   }
 }

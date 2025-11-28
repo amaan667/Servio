@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -23,7 +25,7 @@ export const POST = withUnifiedAuth(
       const { orderId } = await req.json();
 
       if (!orderId) {
-        return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
+        return apiErrors.badRequest('Order ID is required');
       }
 
             const supabase = await createClient();
@@ -42,7 +44,7 @@ export const POST = withUnifiedAuth(
           venueId: context.venueId,
           error: orderError,
         });
-        return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
+        return apiErrors.notFound('Order not found or access denied');
       }
 
     // Get the order details to find table_id (venue_id already fetched above)
@@ -54,7 +56,7 @@ export const POST = withUnifiedAuth(
 
     if (fetchError) {
       logger.error("Failed to fetch order:", { value: fetchError });
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Update payment status
@@ -76,7 +78,7 @@ export const POST = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Failed to mark order as paid",
-          message: process.env.NODE_ENV === "development" ? error.message : "Database update failed",
+          message: isDevelopment() ? error.message : "Database update failed",
         },
         { status: 500 }
       );
@@ -86,7 +88,7 @@ export const POST = withUnifiedAuth(
     if (orderData?.table_id) {
       try {
         const baseUrl =
-          process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+          env('NEXT_PUBLIC_SITE_URL') || "https://servio-production.up.railway.app";
         const completionResponse = await fetch(`${baseUrl}/api/reservations/check-completion`, {
           method: "POST",
           headers: {
@@ -139,8 +141,8 @@ export const POST = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to mark order as paid",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Failed to mark order as paid",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -26,7 +28,7 @@ export const POST = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!description || !type) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        return apiErrors.badRequest('Missing required fields');
       }
 
       // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
@@ -88,8 +90,8 @@ export const POST = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Failed to submit feedback",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

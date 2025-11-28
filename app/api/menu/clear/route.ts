@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
@@ -7,7 +8,7 @@ export async function POST(_request: NextRequest) {
     const { venue_id } = await _request.json();
 
     if (!venue_id) {
-      return NextResponse.json({ ok: false, error: "venue_id is required" }, { status: 400 });
+      return apiErrors.badRequest('venue_id is required');
     }
 
     const supabase = await createAdminClient();

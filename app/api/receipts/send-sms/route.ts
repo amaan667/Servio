@@ -1,122 +1,150 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { env } from '@/lib/env';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
+
+const sendSmsSchema = z.object({
+  orderId: z.string().uuid(),
+  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+  venueId: z.string().uuid().optional(),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const body = await req.json();
-      const { orderId, phone } = body;
+      // STEP 2: Validate input
+      const body = await validateBody(sendSmsSchema, await req.json());
       const finalVenueId = context.venueId || body.venueId;
 
-    if (!orderId || !phone || !finalVenueId) {
-      return NextResponse.json(
-        { error: "orderId, phone, and venueId are required" },
-        { status: 400 }
-      );
-    }
+      if (!finalVenueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
 
-    // Validate phone format (basic check)
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
-      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
-    }
+      // STEP 3: Business logic
+      const supabase = await createClient();
 
-    const supabase = await createClient();
-
-    // Get order details
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
+      // Get order details
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", body.orderId)
         .eq("venue_id", finalVenueId)
-      .single();
+        .single();
 
-    if (orderError || !order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
+      if (orderError || !order) {
+        return apiErrors.notFound("Order not found");
+      }
 
-    // Get venue info
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("venue_name")
+      // Get venue info
+      const { data: venue } = await supabase
+        .from("venues")
+        .select("venue_name")
         .eq("venue_id", finalVenueId)
-      .single();
+        .single();
 
-    const venueName = venue?.venue_name || "Restaurant";
+      const venueName = venue?.venue_name || "Restaurant";
 
-    // Generate receipt text message
-    const orderNumber = orderId.slice(-6).toUpperCase();
-    const total = order.total_amount?.toFixed(2) || "0.00";
-    const itemsText = (order.items || [])
-      .slice(0, 3)
-      .map(
-        (item: { item_name?: string; quantity?: number }) =>
-          `${item.quantity || 1}x ${item.item_name || "Item"}`
-      )
-      .join(", ");
-    const moreItems = (order.items || []).length > 3 ? ` +${(order.items || []).length - 3} more` : "";
+      // Generate receipt text message
+      const orderNumber = body.orderId.slice(-6).toUpperCase();
+      const total = order.total_amount?.toFixed(2) || "0.00";
+      const itemsText = (order.items || [])
+        .slice(0, 3)
+        .map(
+          (item: { item_name?: string; quantity?: number }) =>
+            `${item.quantity || 1}x ${item.item_name || "Item"}`
+        )
+        .join(", ");
+      const moreItems = (order.items || []).length > 3 ? ` +${(order.items || []).length - 3} more` : "";
 
-    const receiptUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://servio.app"}/receipts/${orderId}`;
-    const receiptText = `Receipt - ${venueName}\nOrder #${orderNumber}\n${itemsText}${moreItems}\nTotal: £${total}\n\nView receipt: ${receiptUrl}\n\nThank you for your order!`;
+      const receiptUrl = `${env("NEXT_PUBLIC_BASE_URL") || "https://servio.app"}/receipts/${body.orderId}`;
+      const receiptText = `Receipt - ${venueName}\nOrder #${orderNumber}\n${itemsText}${moreItems}\nTotal: £${total}\n\nView receipt: ${receiptUrl}\n\nThank you for your order!`;
 
-    // SMS integration: Currently using Resend API for email-to-SMS gateways
-    // For direct SMS, integrate with Twilio, AWS SNS, or similar service
-    // For now, we'll log it and mark as sent
-    logger.info("[RECEIPTS SMS] Would send SMS:", {
-      to: phone,
-      message: receiptText,
-      orderId,
-    });
+      // SMS integration: Currently using Resend API for email-to-SMS gateways
+      // For direct SMS, integrate with Twilio, AWS SNS, or similar service
+      // For now, we'll log it and mark as sent
+      logger.info("[RECEIPTS SMS] Would send SMS:", {
+        to: body.phone,
+        message: receiptText,
+        orderId: body.orderId,
+        venueId: finalVenueId,
+        userId: context.user.id,
+      });
 
-    // Update order with receipt sent info
-    await supabase
-      .from("orders")
-      .update({
-        receipt_sent_at: new Date().toISOString(),
-        receipt_channel: "sms",
-        receipt_phone: phone,
-      })
-      .eq("id", orderId);
+      // Update order with receipt sent info
+      await supabase
+        .from("orders")
+        .update({
+          receipt_sent_at: new Date().toISOString(),
+          receipt_channel: "sms",
+          receipt_phone: body.phone,
+        })
+        .eq("id", body.orderId);
 
-    // In a real implementation, you would send the SMS here using Twilio or similar
-    // Example:
-    // const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    // await twilioClient.messages.create({
-    //   body: receiptText,
-    //   to: phone,
-    //   from: process.env.TWILIO_PHONE_NUMBER
-    // });
+      // In a real implementation, you would send the SMS here using Twilio or similar
+      // Example:
+      // const twilioClient = require('twilio')(env('TWILIO_ACCOUNT_SID'), env('TWILIO_AUTH_TOKEN'));
+      // await twilioClient.messages.create({
+      //   body: receiptText,
+      //   to: body.phone,
+      //   from: env('TWILIO_PHONE_NUMBER')
+      // });
 
-    return NextResponse.json({
-      success: true,
-      message: "Receipt SMS sent successfully",
-      note: "SMS sending is currently logged. Integrate with Twilio or similar service for production.",
-    });
+      logger.info("[RECEIPTS SMS] SMS receipt sent successfully", {
+        orderId: body.orderId,
+        phone: body.phone,
+        venueId: finalVenueId,
+        userId: context.user.id,
+      });
+
+      // STEP 4: Return success response
+      return success({
+        message: "Receipt SMS sent successfully",
+        note: "SMS sending is currently logged. Integrate with Twilio or similar service for production.",
+      });
     } catch (error) {
-      logger.error("[RECEIPTS SMS] Error:", error);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Internal server error" },
-        { status: 500 }
+      logger.error("[RECEIPTS SMS] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Failed to send SMS receipt",
+        error
       );
     }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json().catch(() => ({}));
+        return (body as { venueId?: string; venue_id?: string })?.venueId || 
+               (body as { venueId?: string; venue_id?: string })?.venue_id || 
+               null;
+      } catch {
+        return null;
+      }
+    },
   }
 );
-
-

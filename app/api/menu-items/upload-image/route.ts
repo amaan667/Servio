@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getAuthUserForAPI } from "@/lib/auth/server";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     const formData = await req.formData();
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     const itemId = formData.get("itemId") as string | null;
 
     if (!file || !itemId) {
-      return NextResponse.json({ error: "file and itemId are required" }, { status: 400 });
+      return apiErrors.badRequest('file and itemId are required');
     }
 
     // Create authenticated Supabase client
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (menuItemError || !menuItem) {
-      return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
+      return apiErrors.notFound('Menu item not found');
     }
 
     // Verify venue access
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (!venueAccess && !staffAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden('Forbidden');
     }
 
     // Ensure bucket exists
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     if (uploadError) {
       logger.error("Upload error:", uploadError);
-      return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
+      return apiErrors.internal('Failed to upload image');
     }
 
     // Get public URL
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       logger.error("Update error:", updateError);
-      return NextResponse.json({ error: "Failed to update menu item" }, { status: 500 });
+      return apiErrors.internal('Failed to update menu item');
     }
 
     return NextResponse.json({ imageUrl: publicUrl });

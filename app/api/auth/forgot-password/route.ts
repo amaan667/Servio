@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(request: NextRequest) {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -26,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     if (!email || typeof email !== "string") {
       logger.warn(`[FORGOT PASSWORD API] ${requestId} - Missing email`);
-      return NextResponse.json({ error: "Email address is required" }, { status: 400 });
+      return apiErrors.badRequest('Email address is required');
     }
 
     // Basic email validation
@@ -35,7 +37,7 @@ export async function POST(request: NextRequest) {
       logger.warn(`[FORGOT PASSWORD API] ${requestId} - Invalid email format`, {
         email: email.trim(),
       });
-      return NextResponse.json({ error: "Invalid email address format" }, { status: 400 });
+      return apiErrors.badRequest('Invalid email address format');
     }
 
     const supabase = await createClient();
@@ -53,8 +55,8 @@ export async function POST(request: NextRequest) {
 
     const appUrl =
       origin ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
+      env('NEXT_PUBLIC_APP_URL') ||
+      env('NEXT_PUBLIC_SITE_URL') ||
       "https://servio-production.up.railway.app";
     const redirectUrl = `${appUrl.replace(/\/$/, "")}/reset-password`;
 
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
       email: email.trim(),
       redirectUrl,
       origin,
-      envUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL,
+      envUrl: env('NEXT_PUBLIC_APP_URL') || env('NEXT_PUBLIC_SITE_URL'),
       headers: {
         origin: request.headers.get("origin"),
         host: request.headers.get("host"),

@@ -3,6 +3,8 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -33,7 +35,7 @@ export async function POST(
 
         // STEP 4: Validate inputs
         if (!tableId) {
-          return NextResponse.json({ error: "tableId is required" }, { status: 400 });
+          return apiErrors.badRequest('tableId is required');
         }
 
         // STEP 5: Security - Verify table belongs to venue
@@ -81,7 +83,7 @@ export async function POST(
           return NextResponse.json(
             {
               error: "Failed to reissue QR",
-              message: process.env.NODE_ENV === "development" ? error.message : "Database update failed",
+              message: isDevelopment() ? error.message : "Database update failed",
             },
             { status: 500 }
           );
@@ -113,8 +115,8 @@ export async function POST(
         return NextResponse.json(
           {
             error: "Internal Server Error",
-            message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-            ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+            message: isDevelopment() ? errorMessage : "Request processing failed",
+            ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
           },
           { status: 500 }
         );

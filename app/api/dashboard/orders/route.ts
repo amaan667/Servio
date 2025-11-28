@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from "@/lib/dates";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
@@ -202,8 +203,8 @@ export const GET = withUnifiedAuth(
         {
           ok: false,
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

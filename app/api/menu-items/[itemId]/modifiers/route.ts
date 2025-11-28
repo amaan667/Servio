@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -41,7 +42,7 @@ export async function GET(
     const venueId = searchParams.get("venueId");
 
     if (!itemId) {
-      return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Item ID is required');
     }
 
     const supabase = createAdminClient();
@@ -54,11 +55,11 @@ export async function GET(
       .single();
 
     if (itemError || !menuItem) {
-      return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
+      return apiErrors.notFound('Menu item not found');
     }
 
     if (venueId && menuItem.venue_id !== venueId) {
-      return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
+      return apiErrors.notFound('Menu item not found');
     }
 
     // Fetch modifiers (stored as JSON in menu_items table or separate table)
@@ -71,7 +72,7 @@ export async function GET(
 
     if (fetchError) {
       logger.error("[MODIFIERS GET] Error fetching modifiers:", { error: fetchError });
-      return NextResponse.json({ error: "Failed to fetch modifiers" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch modifiers');
     }
 
     const modifiers = (itemWithModifiers?.modifiers as MenuItemModifier[]) || [];
@@ -81,7 +82,7 @@ export async function GET(
     logger.error("[MODIFIERS GET] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 
@@ -102,7 +103,7 @@ export async function POST(
     const { modifiers } = body as { modifiers: MenuItemModifier[] };
 
     if (!itemId) {
-      return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Item ID is required');
     }
 
     const supabase = createAdminClient();
@@ -115,7 +116,7 @@ export async function POST(
       .single();
 
     if (itemError || !menuItem) {
-      return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
+      return apiErrors.notFound('Menu item not found');
     }
 
     // Verify venue access
@@ -139,7 +140,7 @@ export async function POST(
 
     // Validate modifiers structure
     if (!Array.isArray(modifiers)) {
-      return NextResponse.json({ error: "Modifiers must be an array" }, { status: 400 });
+      return apiErrors.badRequest('Modifiers must be an array');
     }
 
     for (const modifier of modifiers) {
@@ -178,7 +179,7 @@ export async function POST(
 
     if (updateError) {
       logger.error("[MODIFIERS POST] Error updating modifiers:", { error: updateError });
-      return NextResponse.json({ error: "Failed to update modifiers" }, { status: 500 });
+      return apiErrors.internal('Failed to update modifiers');
     }
 
     logger.info("[MODIFIERS POST] Modifiers updated successfully", {
@@ -191,7 +192,7 @@ export async function POST(
     logger.error("[MODIFIERS POST] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 
@@ -210,7 +211,7 @@ export async function DELETE(
     const { itemId } = await context.params;
 
     if (!itemId) {
-      return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Item ID is required');
     }
 
     const supabase = createAdminClient();
@@ -223,7 +224,7 @@ export async function DELETE(
       .single();
 
     if (itemError || !menuItem) {
-      return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
+      return apiErrors.notFound('Menu item not found');
     }
 
     // Verify venue access
@@ -256,7 +257,7 @@ export async function DELETE(
 
     if (updateError) {
       logger.error("[MODIFIERS DELETE] Error removing modifiers:", { error: updateError });
-      return NextResponse.json({ error: "Failed to remove modifiers" }, { status: 500 });
+      return apiErrors.internal('Failed to remove modifiers');
     }
 
     return NextResponse.json({ success: true });
@@ -264,7 +265,7 @@ export async function DELETE(
     logger.error("[MODIFIERS DELETE] Unexpected error:", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 

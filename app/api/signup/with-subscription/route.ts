@@ -7,11 +7,13 @@ import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 const PRICE_IDS = {
-  starter: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
-  pro: process.env.STRIPE_STANDARD_PRICE_ID || "price_standard",
-  enterprise: process.env.STRIPE_PREMIUM_PRICE_ID || "price_premium",
+  starter: env('STRIPE_BASIC_PRICE_ID') || "price_basic",
+  pro: env('STRIPE_STANDARD_PRICE_ID') || "price_standard",
+  enterprise: env('STRIPE_PREMIUM_PRICE_ID') || "price_premium",
 };
 
 export async function POST(req: NextRequest) {
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     // STEP 2: Parse request
     body = await req.json();
     if (!body) {
-      return NextResponse.json({ error: "Request body is required" }, { status: 400 });
+      return apiErrors.badRequest('Request body is required');
     }
     
     const {
@@ -58,11 +60,11 @@ export async function POST(req: NextRequest) {
 
     // STEP 3: Validate inputs
     if (!email || !password || !fullName || !venueName || !tier) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return apiErrors.badRequest('Missing required fields');
     }
 
     if (!["starter", "pro", "enterprise"].includes(tier)) {
-      return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
+      return apiErrors.badRequest('Invalid tier');
     }
 
     // STEP 4: Security - Signup route allows unauthenticated access
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: authError?.message || "Failed to create account",
-          message: process.env.NODE_ENV === "development" ? authError?.message : "Account creation failed",
+          message: isDevelopment() ? authError?.message : "Account creation failed",
         },
         { status: 400 }
       );
@@ -243,8 +245,8 @@ export async function POST(req: NextRequest) {
       {
         error: "Signup failed",
         details: errorMessage,
-        message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-        ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        message: isDevelopment() ? errorMessage : "Request processing failed",
+        ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }
     );

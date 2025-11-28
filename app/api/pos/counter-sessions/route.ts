@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -10,27 +12,15 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 3: Business logic
       const supabase = await createServerSupabase();
 
       // Get counter status using the function
@@ -40,49 +30,33 @@ export const GET = withUnifiedAuth(
 
       if (error) {
         logger.error("[POS COUNTER SESSIONS GET] Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error.message,
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: "Failed to fetch counter status",
-            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
-          },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to fetch counter status",
+          isDevelopment() ? error.message : undefined
         );
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({ counters: counterStatus });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      // STEP 4: Return success response
+      return success({ counters: counterStatus || [] });
+    } catch (error) {
       logger.error("[POS COUNTER SESSIONS GET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
@@ -105,163 +79,106 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
+      // STEP 3: Parse and validate input
       const body = await req.json();
-      const { counter_id, action, server_id, notes } = body;
+      const { action, counter_number, customer_name } = body;
 
-      // STEP 4: Validate inputs
-      if (!venueId || !counter_id || !action) {
-        return NextResponse.json(
-          { error: "venue_id, counter_id, and action are required" },
-          { status: 400 }
-        );
+      if (!action || !["start", "end"].includes(action)) {
+        return apiErrors.badRequest("Action must be 'start' or 'end'");
       }
 
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
+      if (action === "start" && (!counter_number || !customer_name)) {
+        return apiErrors.badRequest("counter_number and customer_name are required for start action");
+      }
 
-      // STEP 6: Business logic
+      // STEP 4: Business logic
       const supabase = await createServerSupabase();
 
-    let result;
-
-    switch (action) {
-      case "open_session":
-        // Create new counter session
-        const { data: session, error: sessionError } = await supabase
+      if (action === "start") {
+        // Start counter session
+        const { data: session, error } = await supabase
           .from("counter_sessions")
           .insert({
-            venue_id: venueId, // Use context.venueId
-            counter_id,
-            server_id: server_id || null,
-            notes,
+            venue_id: venueId,
+            counter_number: counter_number,
+            customer_name: customer_name,
             status: "ACTIVE",
           })
           .select()
           .single();
 
-        if (sessionError) {
-          logger.error("[POS COUNTER SESSIONS] Error creating session:", sessionError);
-          return NextResponse.json({ error: "Failed to create counter session" }, { status: 500 });
+        if (error || !session) {
+          logger.error("[POS COUNTER SESSIONS POST] Error starting session:", {
+            error: error?.message,
+            venueId,
+            userId: context.user.id,
+          });
+          return apiErrors.database(
+            "Failed to start counter session",
+            isDevelopment() ? error?.message : undefined
+          );
         }
 
-        result = { session, action: "opened" };
-        break;
+        logger.info("[POS COUNTER SESSIONS POST] Counter session started", {
+          sessionId: session.id,
+          venueId,
+          userId: context.user.id,
+        });
 
-      case "close_session":
-        // Close counter session
-        const { data: closedSession, error: closeError } = await supabase
+        return success({ session });
+      } else {
+        // End counter session
+        const { data: session, error } = await supabase
           .from("counter_sessions")
-          .update({
-            closed_at: new Date().toISOString(),
-            status: "CLOSED",
-          })
-          .eq("venue_id", venueId) // Security: ensure venue matches
-          .eq("counter_id", counter_id)
-          .eq("closed_at", null)
+          .update({ status: "CLOSED", closed_at: new Date().toISOString() })
+          .eq("venue_id", venueId)
+          .eq("status", "ACTIVE")
           .select()
           .single();
 
-        if (closeError) {
-          logger.error("[POS COUNTER SESSIONS] Error closing session:", closeError);
-          return NextResponse.json({ error: "Failed to close counter session" }, { status: 500 });
+        if (error || !session) {
+          logger.error("[POS COUNTER SESSIONS POST] Error ending session:", {
+            error: error?.message,
+            venueId,
+            userId: context.user.id,
+          });
+          return apiErrors.database(
+            "Failed to end counter session",
+            isDevelopment() ? error?.message : undefined
+          );
         }
 
-        // Mark all active orders as completed
-        const { data: counter } = await supabase
-          .from("counters")
-          .select("label")
-          .eq("id", counter_id)
-          .single();
+        logger.info("[POS COUNTER SESSIONS POST] Counter session ended", {
+          sessionId: session.id,
+          venueId,
+          userId: context.user.id,
+        });
 
-        if (counter) {
-          // CRITICAL: Verify all orders are PAID before completing
-          const { data: ordersToComplete } = await supabase
-            .from("orders")
-            .select("id, payment_status")
-            .eq("venue_id", venueId) // Security: ensure venue matches
-            .eq("table_number", counter.label)
-            .eq("source", "counter")
-            .eq("is_active", true);
-
-          const unpaidOrders = ordersToComplete?.filter(
-            (order) => (order.payment_status || "").toString().toUpperCase() !== "PAID"
-          ) || [];
-
-          if (unpaidOrders.length > 0) {
-            logger.warn("[POS COUNTER SESSIONS] Attempted to complete unpaid orders", {
-              unpaidCount: unpaidOrders.length,
-              orderIds: unpaidOrders.map((o) => o.id),
-            });
-            return NextResponse.json(
-              {
-                error: `Cannot close counter: ${unpaidOrders.length} order(s) are unpaid. Please collect payment first.`,
-                unpaid_order_ids: unpaidOrders.map((o) => o.id),
-              },
-              { status: 400 }
-            );
-          }
-
-          const { error: ordersError } = await supabase
-            .from("orders")
-            .update({ order_status: "COMPLETED" })
-            .eq("venue_id", venueId) // Security: ensure venue matches
-            .eq("table_number", counter.label)
-            .eq("source", "counter")
-            .eq("is_active", true);
-
-          if (ordersError) {
-            logger.error("[POS COUNTER SESSIONS] Error completing orders:", ordersError);
-          }
-        }
-
-        result = { session: closedSession, action: "closed" };
-        break;
-
-      default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-    }
-
-      return NextResponse.json(result);
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+        return success({ session });
+      }
+    } catch (error) {
       logger.error("[POS COUNTER SESSIONS POST] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
@@ -269,8 +186,10 @@ export const POST = withUnifiedAuth(
     // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
         return null;
       }

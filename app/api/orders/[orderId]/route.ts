@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ orderId
     const { orderId } = await params;
 
     if (!orderId) {
-      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Order ID is required');
     }
 
 

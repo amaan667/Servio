@@ -5,6 +5,8 @@ import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restri
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -32,7 +34,7 @@ export const POST = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!finalVenueId) {
-        return NextResponse.json({ error: "venueId is required" }, { status: 400 });
+        return apiErrors.badRequest('venueId is required');
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -47,7 +49,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (!venue) {
-        return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+        return apiErrors.notFound('Venue not found');
       }
 
       // STEP 6: Business logic
@@ -134,8 +136,8 @@ export const POST = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Tier check failed",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

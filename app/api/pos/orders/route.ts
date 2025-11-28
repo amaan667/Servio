@@ -1,121 +1,111 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const { searchParams } = new URL(req.url);
-      const isActive = searchParams.get("is_active") === "true";
-      const status = searchParams.get("status");
-      const station = searchParams.get("station");
+      // STEP 2: Get venueId from context
       const venueId = context.venueId;
 
-    // Try to get from cache first (1 minute TTL for POS orders)
-    const cacheKey = `pos_orders:${venueId}:${isActive}:${status}:${station}`;
-    const cachedOrders = await cache.get(cacheKey);
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
 
-    if (cachedOrders) {
-      return NextResponse.json(cachedOrders);
-    }
+      // STEP 3: Check cache
+      const cacheKey = `pos_orders:${venueId}`;
+      const cachedOrders = await cache.get(cacheKey);
 
-    // Use authenticated client instead of admin client
-    const supabase = await createClient();
+      if (cachedOrders) {
+        return success(cachedOrders);
+      }
 
-    let query = supabase
-      .from("orders")
-      .select(
-        `
-        *,
-        tables!left (
-          id,
-          label,
-          area
-        )
-      `
-      )
-      .eq("venue_id", venueId)
-      .order("created_at", { ascending: false });
+      // STEP 4: Business logic - Fetch orders
+      const supabase = await createClient();
 
-    // Apply filters
-    if (isActive) {
-      query = query.eq("is_active", true);
-    }
+      const { data: orders, error: fetchError } = await supabase
+        .from("orders")
+        .select(`
+          id, venue_id, table_number, table_id, customer_name, customer_phone, 
+          total_amount, order_status, payment_status, notes, created_at, items, source,
+          tables!left (
+            id,
+            label,
+            area
+          )
+        `)
+        .eq("venue_id", venueId)
+        .in("payment_status", ["PAID", "UNPAID"])
+        .in("order_status", ["PLACED", "IN_PREP", "READY", "SERVING"])
+        .order("created_at", { ascending: false });
 
-    if (status) {
-      query = query.eq("order_status", status);
-    }
-
-    if (station) {
-      // Filter by items that have the specified station
-      query = query.contains("items", [{ station }]);
-    }
-
-    const { data: orders, error } = await query;
-
-    if (error) {
-      logger.error("[POS ORDERS] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    // Transform orders to include table_label
-    const transformedOrders =
-      orders?.map((order) => ({
-        ...order,
-        table_label: order.tables?.label || `Table ${order.table_number}`,
-      })) || [];
-
-    const response = { orders: transformedOrders };
-
-    // Cache the response for 1 minute (POS orders change frequently)
-    await cache.set(cacheKey, response, { ttl: 60 });
-
-    return NextResponse.json(response);
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
-      logger.error("[POS ORDERS] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
-        venueId: context.venueId,
-      });
-      
-      // Check if it's an authentication/authorization error
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
+      if (fetchError) {
+        logger.error("[POS ORDERS] Error fetching orders:", {
+          error: fetchError.message,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to fetch POS orders",
+          isDevelopment() ? fetchError.message : undefined
         );
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to fetch POS orders",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      // STEP 5: Transform orders to include table_label
+      const transformedOrders = (orders || []).map((order: {
+        table_number?: number;
+        tables?: Array<{ label?: string }> | { label?: string };
+        [key: string]: unknown;
+      }) => {
+        const tablesArray = Array.isArray(order.tables) ? order.tables : (order.tables ? [order.tables] : []);
+        const tableLabel = tablesArray[0]?.label || `Table ${order.table_number || ""}`;
+        return {
+          ...order,
+          table_label: tableLabel,
+        };
+      });
+
+      const response = { orders: transformedOrders };
+
+      // STEP 6: Cache the response for 1 minute
+      await cache.set(cacheKey, response, { ttl: 60 });
+
+      logger.info("[POS ORDERS] Orders fetched successfully", {
+        venueId,
+        orderCount: transformedOrders.length,
+        userId: context.user.id,
+      });
+
+      // STEP 7: Return success response
+      return success(response);
+    } catch (error) {
+      logger.error("[POS ORDERS] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   }

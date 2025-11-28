@@ -6,6 +6,8 @@ import { executeTool } from "@/lib/ai/tool-executors";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -15,7 +17,7 @@ export const maxDuration = 60;
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     // Log route entry (only in development)
-    if (process.env.NODE_ENV === "development") {
+    if (isDevelopment()) {
       logger.debug("[AI SIMPLE CHAT] Route hit", {
         venueId: context?.venueId,
         userId: context?.user?.id,
@@ -53,7 +55,7 @@ export const POST = withUnifiedAuth(
       });
 
       if (!message) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        return apiErrors.badRequest('Missing required fields');
       }
 
     // Get context and data summaries with error handling
@@ -395,11 +397,11 @@ export const POST = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "An unexpected error occurred while processing your request",
-          response: process.env.NODE_ENV === "development" 
+          message: isDevelopment() ? errorMessage : "An unexpected error occurred while processing your request",
+          response: isDevelopment() 
             ? `I encountered an error: ${errorMessage}. Please try again or contact support if the issue persists.`
             : "I'm sorry, but I encountered an unexpected error. Please try again in a moment. If the problem persists, please contact support.",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,19 +20,19 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
 
     // Get Supabase project ID from URL for cookie names
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseUrl = env('NEXT_PUBLIC_SUPABASE_URL') || "";
     const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
 
     if (!projectRef) {
       logger.error("[AUTH SYNC] Could not extract project ref from Supabase URL");
-      return NextResponse.json({ error: "Configuration error" }, { status: 500 });
+      return apiErrors.internal('Configuration error');
     }
 
     // Set cookies manually with correct names
     const cookieOptions = {
       path: "/",
       sameSite: "lax" as const,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction(),
       httpOnly: false, // Must be false for Supabase client to read
       maxAge: 60 * 60 * 24 * 7, // 7 days
     };
@@ -47,6 +49,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err) {
     logger.error("[AUTH SYNC] Unexpected error:", { error: err });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

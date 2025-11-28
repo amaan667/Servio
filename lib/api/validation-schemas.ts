@@ -213,7 +213,14 @@ export async function validateBody<T extends z.ZodType>(
   schema: T,
   body: unknown
 ): Promise<z.infer<T>> {
-  return schema.parse(body);
+  try {
+    return schema.parse(body);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw error;
+    }
+    throw new Error("Validation failed");
+  }
 }
 
 /**

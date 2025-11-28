@@ -50,18 +50,22 @@ export function error(
   details?: unknown,
   meta?: ApiResponse["meta"]
 ): NextResponse<ApiResponse> {
-  return NextResponse.json<ApiResponse>(
-    {
-      success: false,
-      error: {
-        code,
-        message,
-        ...(details && { details }),
-      },
-      ...(meta && { meta }),
+  const response: Partial<ApiResponse> = {
+    success: false,
+    error: {
+      code,
+      message,
     },
-    { status }
-  );
+  };
+  if (details) {
+    if (response.error) {
+      response.error.details = details;
+    }
+  }
+  if (meta) {
+    response.meta = meta;
+  }
+  return NextResponse.json<ApiResponse>(response as ApiResponse, { status });
 }
 
 /**
@@ -93,8 +97,8 @@ export const apiErrors = {
   unauthorized: (message: string = "Authentication required") =>
     error(ErrorCodes.UNAUTHORIZED, message, 401),
   
-  forbidden: (message: string = "Access denied") =>
-    error(ErrorCodes.FORBIDDEN, message, 403),
+  forbidden: (message: string = "Access denied", details?: unknown) =>
+    error(ErrorCodes.FORBIDDEN, message, 403, details),
   
   notFound: (message: string = "Resource not found") =>
     error(ErrorCodes.NOT_FOUND, message, 404),
@@ -122,6 +126,13 @@ export const apiErrors = {
   database: (message: string, details?: unknown) =>
     error(ErrorCodes.DATABASE_ERROR, message, 500, details),
 };
+
+/**
+ * Check if error is a ZodError
+ */
+export function isZodError(error: unknown): error is ZodError {
+  return error instanceof ZodError;
+}
 
 /**
  * Handle Zod validation errors

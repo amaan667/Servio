@@ -1,65 +1,115 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
 
+const createTableSessionSchema = z.object({
+  table_id: z.string().uuid("Invalid table ID"),
+  customer_name: z.string().min(1, "Customer name is required").optional(),
+  party_size: z.number().int().positive("Party size must be positive").optional(),
+});
+
+// POST /api/table-sessions - Create a new table session
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const body = await req.json();
-      const { table_id, status, order_id } = body;
-      const venue_id = context.venueId || body.venue_id;
+      // STEP 2: Validate input
+      const body = await validateBody(createTableSessionSchema, await req.json());
 
-    if (!venue_id || !table_id || !status) {
-      return NextResponse.json(
-        { error: "venue_id, table_id, and status are required" },
-        { status: 400 }
+      // STEP 3: Get venueId from context
+      const venueId = context.venueId;
+
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
+
+      // STEP 4: Business logic - Create table session
+      const supabase = await createClient();
+
+      // Verify table belongs to venue
+      const { data: table, error: tableError } = await supabase
+        .from("tables")
+        .select("venue_id")
+        .eq("id", body.table_id)
+        .eq("venue_id", venueId)
+        .single();
+
+      if (tableError || !table) {
+        logger.error("[TABLE SESSIONS POST] Table not found:", {
+          error: tableError?.message,
+          tableId: body.table_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.notFound("Table not found");
+      }
+
+      const { data: session, error: createError } = await supabase
+        .from("table_sessions")
+        .insert({
+          table_id: body.table_id,
+          venue_id: venueId,
+          customer_name: body.customer_name || null,
+          party_size: body.party_size || null,
+          status: "ORDERING",
+          opened_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (createError || !session) {
+        logger.error("[TABLE SESSIONS POST] Error creating session:", {
+          error: createError?.message,
+          tableId: body.table_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to create table session",
+          isDevelopment() ? createError?.message : undefined
+        );
+      }
+
+      logger.info("[TABLE SESSIONS POST] Table session created successfully", {
+        sessionId: session.id,
+        tableId: body.table_id,
+        venueId,
+        userId: context.user.id,
+      });
+
+      // STEP 5: Return success response
+      return success({ session });
+    } catch (error) {
+      logger.error("[TABLE SESSIONS POST] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
-    }
-
-    const supabase = await createClient();
-
-    // Create new table session
-    const { data: session, error } = await supabase
-      .from("table_sessions")
-      .insert({
-        venue_id,
-        table_id,
-        status,
-        order_id: order_id || null,
-        opened_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) {
-      logger.error("[TABLE SESSIONS API] Error creating session:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      return NextResponse.json({ error: "Failed to create table session" }, { status: 500 });
-    }
-
-      return NextResponse.json({ session });
-    } catch (_error) {
-      logger.error("[TABLE SESSIONS API] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
   }
 );

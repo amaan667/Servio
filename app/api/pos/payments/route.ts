@@ -1,97 +1,123 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
 
+const updatePaymentSchema = z.object({
+  order_id: z.string().uuid("Invalid order ID"),
+  payment_status: z.enum(["PAID", "UNPAID", "REFUNDED"]),
+  payment_mode: z.enum(["online", "pay_later", "pay_at_till"]).optional(),
+});
+
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
+  async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const body = await req.json();
-    const {
-      order_id,
-      payment_method,
-      payment_status,
-      stripe_session_id,
-      stripe_payment_intent_id,
-    } = body;
+      // STEP 2: Validate input
+      const body = await validateBody(updatePaymentSchema, await req.json());
 
-    if (!order_id || !payment_method || !payment_status) {
-      return NextResponse.json(
-        { error: "order_id, payment_method, and payment_status are required" },
-        { status: 400 }
-      );
-    }
+      // STEP 3: Get venueId from context
+      const venueId = context.venueId;
 
-    // Use admin client - no auth needed
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
 
-    // Get the order
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("venue_id, payment_mode, total_amount")
-      .eq("id", order_id)
-      .single();
+      // STEP 4: Business logic - Update payment status
+      const supabase = createAdminClient();
 
-    if (orderError) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
+      // Verify order exists and belongs to venue
+      const { data: orderCheck, error: checkError } = await supabase
+        .from("orders")
+        .select("venue_id")
+        .eq("id", body.order_id)
+        .eq("venue_id", venueId)
+        .single();
 
-    // Validate payment based on payment mode
-    if (order.payment_mode === "online" && payment_status === "PAID" && !stripe_session_id) {
-      return NextResponse.json(
-        { error: "Online payments require stripe_session_id" },
-        { status: 400 }
-      );
-    }
+      if (checkError || !orderCheck) {
+        logger.error("[POS PAYMENTS POST] Order not found:", {
+          error: checkError?.message,
+          orderId: body.order_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.notFound("Order not found");
+      }
 
-    // Update order payment status
-    const updateData: Record<string, unknown> = {
-      payment_status,
-      payment_method,
-    };
+      // Update order payment status
+      const updateData: {
+        payment_status: string;
+        payment_mode?: string;
+        updated_at: string;
+      } = {
+        payment_status: body.payment_status,
+        updated_at: new Date().toISOString(),
+      };
 
-    if (stripe_session_id) {
-      updateData.stripe_session_id = stripe_session_id;
-    }
+      if (body.payment_mode) {
+        updateData.payment_mode = body.payment_mode;
+      }
 
-    if (stripe_payment_intent_id) {
-      updateData.stripe_payment_intent_id = stripe_payment_intent_id;
-    }
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from("orders")
+        .update(updateData)
+        .eq("id", body.order_id)
+        .eq("venue_id", venueId)
+        .select()
+        .single();
 
-    const { data: updatedOrder, error: updateError } = await supabase
-      .from("orders")
-      .update(updateData)
-      .eq("id", order_id)
-      .select()
-      .single();
+      if (updateError || !updatedOrder) {
+        logger.error("[POS PAYMENTS POST] Error updating payment status:", {
+          error: updateError?.message,
+          orderId: body.order_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to update payment status",
+          isDevelopment() ? updateError?.message : undefined
+        );
+      }
 
-    if (updateError) {
-      logger.error("[POS PAYMENTS] Error:", updateError);
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
-    }
-
-      return NextResponse.json({ order: updatedOrder });
-    } catch (_error) {
-      logger.error("[POS PAYMENTS] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+      logger.info("[POS PAYMENTS POST] Payment status updated successfully", {
+        orderId: body.order_id,
+        paymentStatus: body.payment_status,
+        venueId,
+        userId: context.user.id,
       });
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+      // STEP 5: Return success response
+      return success({ order: updatedOrder });
+    } catch (error) {
+      logger.error("[POS PAYMENTS POST] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
   }
 );
@@ -104,7 +130,7 @@ export async function GET(req: NextRequest) {
     const paymentMode = searchParams.get("payment_mode");
 
     if (!venueId) {
-      return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
+      return apiErrors.badRequest('venue_id is required');
     }
 
     // Use admin client - no auth needed (venueId is sufficient)
@@ -144,17 +170,19 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await query;
 
     if (error) {
-      logger.error("[POS PAYMENTS] Error:", {
+      logger.error("[POS PAYMENTS GET] Error:", {
         error: error instanceof Error ? error.message : "Unknown error",
+        venueId,
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrors.database(error.message || 'Internal server error');
     }
 
-    return NextResponse.json({ orders });
-  } catch (_error) {
-    logger.error("[POS PAYMENTS] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+    return success({ orders: orders || [] });
+  } catch (error) {
+    logger.error("[POS PAYMENTS GET] Unexpected error:", {
+      error: error instanceof Error ? error.message : String(error),
+      venueId: null,
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

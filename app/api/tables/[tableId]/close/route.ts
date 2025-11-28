@@ -1,72 +1,83 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateParams } from '@/lib/api/validation-schemas';
+import { handleCloseTable } from '@/app/api/table-sessions/handlers/table-action-handlers';
 
 export const runtime = "nodejs";
+
+const tableIdParamSchema = z.object({
+  tableId: z.string().uuid("Invalid table ID"),
+});
 
 // POST /api/tables/[tableId]/close - Close a table
 export async function POST(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext, routeParams) => {
       try {
-        // CRITICAL: Rate limiting
+        // STEP 1: Rate limiting (ALWAYS FIRST)
         const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
         if (!rateLimitResult.success) {
-          return NextResponse.json(
-            {
-              error: 'Too many requests',
-              message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-            },
-            { status: 429 }
+          return apiErrors.rateLimit(
+            Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
           );
         }
 
-        const { tableId } = await routeParams!.params!;
+        // STEP 2: Validate params
+        const params = await routeParams!.params!;
+        const validatedParams = validateParams(tableIdParamSchema, params);
 
-    if (!tableId) {
-      return NextResponse.json({ ok: false, error: "tableId is required" }, { status: 400 });
-    }
+        // STEP 3: Business logic
+        const supabase = createAdminClient();
 
-    // Use admin client - no auth needed
-    const supabase = createAdminClient();
+        // Verify table belongs to venue
+        const { data: table, error: tableError } = await supabase
+          .from("tables")
+          .select("venue_id")
+          .eq("id", validatedParams.tableId)
+          .eq("venue_id", authContext.venueId)
+          .single();
 
-    // Get table info
-    const { data: table, error: tableError } = await supabase
-      .from("tables")
-      .select("venue_id")
-      .eq("id", tableId)
-      .eq("venue_id", authContext.venueId)
-      .single();
+        if (tableError || !table) {
+          logger.warn("[TABLES CLOSE] Table not found", {
+            tableId: validatedParams.tableId,
+            venueId: authContext.venueId,
+            userId: authContext.user.id,
+          });
+          return apiErrors.notFound("Table not found or access denied");
+        }
 
-    if (tableError || !table) {
-      return NextResponse.json({ ok: false, error: "Table not found" }, { status: 404 });
-    }
+        // Use the handler function
+        const result = await handleCloseTable(supabase, validatedParams.tableId);
 
-    // Call the database function to close the table
-    const { error } = await supabase.rpc("api_close_table", {
-      p_table_id: tableId,
-      p_venue_id: authContext.venueId,
-    });
-
-    if (error) {
-      logger.error("[TABLES CLOSE] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({
-      ok: true,
-      message: "Table closed successfully",
-    });
-      } catch (_error) {
-        logger.error("[TABLES CLOSE] Unexpected error:", {
-          error: _error instanceof Error ? _error.message : "Unknown _error",
+        logger.info("[TABLES CLOSE] Table closed successfully", {
+          tableId: validatedParams.tableId,
+          venueId: authContext.venueId,
+          userId: authContext.user.id,
         });
-        return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+
+        // STEP 4: Return success response
+        return success(result);
+      } catch (error) {
+        logger.error("[TABLES CLOSE] Unexpected error:", {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          userId: authContext.user.id,
+        });
+
+        if (isZodError(error)) {
+          return handleZodError(error);
+        }
+
+        return apiErrors.internal(
+          "Request processing failed",
+          isDevelopment() ? error : undefined
+        );
       }
     },
     {

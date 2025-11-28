@@ -4,6 +4,7 @@ import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 // Disable caching to always get fresh data
 export const dynamic = "force-dynamic";
@@ -49,7 +50,7 @@ export const POST = withUnifiedAuth(
       }
 
       // Verify SERVICE_ROLE_KEY is set
-      if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      if (!env('SUPABASE_SERVICE_ROLE_KEY')) {
         logger.error("[ORG ENSURE] SUPABASE_SERVICE_ROLE_KEY is not set!");
         return NextResponse.json(
           { error: "Server configuration error: Missing SERVICE_ROLE_KEY" },
@@ -211,8 +212,8 @@ export const POST = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

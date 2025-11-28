@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiErrors } from '@/lib/api/standard-response';
 import { createClient } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 import { logger } from '@/lib/logger';
@@ -14,10 +15,10 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   const body = await req.json().catch(() => ({ /* Empty */ }));
   const { order_status, payment_status } = body as { order_status?: 'PLACED'|'IN_PREP'|'READY'|'SERVING'|'SERVED'|'COMPLETED'|'CANCELLED'|'REFUNDED'|'EXPIRED', payment_status?: 'UNPAID'|'PAID'|'REFUNDED' };
   if (!id) {
-    return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
+    return apiErrors.badRequest('Invalid payload');
   }
   if (order_status && !['PLACED','IN_PREP','READY','SERVING','SERVED','COMPLETED','CANCELLED','REFUNDED','EXPIRED'].includes(order_status)) {
-    return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
+    return apiErrors.badRequest('Invalid payload');
   }
   const supa = await admin();
   
@@ -30,7 +31,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       .maybeSingle();
 
     if (!currentOrder) {
-      return NextResponse.json({ ok: false, error: 'Order not found' }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     if (currentOrder.payment_status !== 'PAID') {
@@ -109,7 +110,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
 
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  if (!id) return NextResponse.json({ ok: false, error: 'id required' }, { status: 400 });
+  if (!id) return apiErrors.badRequest('id required');
   const supa = await admin();
   const { error } = await supa.from('orders').delete().eq('id', id);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });

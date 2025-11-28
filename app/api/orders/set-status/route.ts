@@ -5,6 +5,7 @@ import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { apiLogger as logger } from "@/lib/logger";
 import { validateOrderCompletion } from "@/lib/orders/payment-validation";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -12,13 +13,13 @@ export const POST = withUnifiedAuth(
       const { orderId, status } = await req.json();
 
       if (!orderId || !status) {
-        return NextResponse.json({ error: "Order ID and status are required" }, { status: 400 });
+        return apiErrors.badRequest('Order ID and status are required');
       }
 
       // Validate status
       const validStatuses = ["IN_PREP", "READY", "SERVING", "SERVED", "COMPLETED", "CANCELLED"];
       if (!validStatuses.includes(status)) {
-        return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+        return apiErrors.badRequest('Invalid status');
       }
 
       const adminSupabase = createAdminClient();
@@ -33,7 +34,7 @@ export const POST = withUnifiedAuth(
 
       if (fetchError) {
         logger.error("Failed to fetch order:", { value: fetchError });
-        return NextResponse.json({ error: fetchError.message }, { status: 500 });
+        return apiErrors.internal('Internal server error');
       }
 
       // CRITICAL: Validate payment before allowing COMPLETED status
@@ -66,7 +67,7 @@ export const POST = withUnifiedAuth(
         logger.error("Failed to set order status:", {
           error: error instanceof Error ? error.message : "Unknown error",
         });
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return apiErrors.internal(error.message || 'Internal server error');
       }
 
       // Handle table clearing when order is completed or cancelled

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/auth";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -18,10 +19,10 @@ export async function GET(_request: NextRequest) {
     const testResults = {
       timestamp: new Date().toISOString(),
       environment: {
-        NODE_ENV: process.env.NODE_ENV,
-        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + "...",
-        hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        NODE_ENV: getNodeEnv(),
+        NEXT_PUBLIC_SUPABASE_URL: env('NEXT_PUBLIC_SUPABASE_URL')?.substring(0, 20) + "...",
+        hasAnonKey: !!env('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+        hasServiceRoleKey: !!env('SUPABASE_SERVICE_ROLE_KEY'),
       },
       oauth: {
         redirectUrl,

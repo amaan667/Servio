@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -64,8 +65,8 @@ export const GET = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );
@@ -138,8 +139,8 @@ export const PUT = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

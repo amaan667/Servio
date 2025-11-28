@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
@@ -25,7 +26,7 @@ export const POST = withUnifiedAuth(
       const venue_id = context.venueId || body.venue_id;
 
       if (!venue_id) {
-        return NextResponse.json({ ok: false, error: "venue_id is required" }, { status: 400 });
+        return apiErrors.badRequest('venue_id is required');
       }
 
     const supabase = createAdminClient();

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 
@@ -17,7 +18,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     // Admin role check
@@ -28,7 +29,7 @@ export async function GET() {
       .single();
 
     if (userRole?.role !== "admin" && userRole?.role !== "owner") {
-      return NextResponse.json({ ok: false, error: "Admin access required" }, { status: 403 });
+      return apiErrors.forbidden('Admin access required');
     }
     // Get all products
     const products = await stripe.products.list({ limit: 100, active: true });

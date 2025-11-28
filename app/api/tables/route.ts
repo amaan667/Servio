@@ -4,6 +4,8 @@ import { logger } from "@/lib/logger";
 import { withUnifiedAuth, enforceResourceLimit } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -22,30 +24,25 @@ export const GET = withUnifiedAuth(
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
+        return apiErrors.rateLimit();
       }
 
       const adminSupabase = createAdminClient();
 
-      // Get tables with their current sessions using a simpler approach
-      // Only show primary tables (filter out secondary tables that are merged into others)
+      // Fetch all active tables for the venue
       const { data: tables, error: tablesError } = await adminSupabase
         .from("tables")
         .select("*")
         .eq("venue_id", context.venueId)
         .eq("is_active", true)
-        .is("merged_with_table_id", null) // Only show tables that are not merged into another table
-        .order("label");
+        .order("label", { ascending: true });
 
       if (tablesError) {
-        logger.error("[TABLES GET] Tables error:", { value: tablesError });
-        return NextResponse.json({ ok: false, error: tablesError.message }, { status: 500 });
+        logger.error("[TABLES GET] Tables error:", { error: tablesError });
+        return apiErrors.database(
+          "Failed to fetch tables",
+          isDevelopment() ? tablesError.message : undefined
+        );
       }
 
       // Get current sessions for each table (only active sessions)
@@ -57,8 +54,11 @@ export const GET = withUnifiedAuth(
         .is("closed_at", null); // Only get active sessions
 
       if (sessionsError) {
-        logger.error("[TABLES GET] Sessions error:", { value: sessionsError });
-        return NextResponse.json({ ok: false, error: sessionsError.message }, { status: 500 });
+        logger.error("[TABLES GET] Sessions error:", { error: sessionsError });
+        return apiErrors.database(
+          "Failed to fetch table sessions",
+          isDevelopment() ? sessionsError.message : undefined
+        );
       }
 
       // Combine tables with their sessions
@@ -137,7 +137,7 @@ export const GET = withUnifiedAuth(
           .is("closed_at", null);
 
         // Update the tables with the new sessions
-        tablesWithSessions.forEach((table) => {
+        tablesWithSessions.forEach((table: Record<string, unknown>) => {
           if (!table.session_id) {
             const tableWithId = table as { table_id?: string; id?: string };
             const tableId = tableWithId.table_id || tableWithId.id;
@@ -153,15 +153,23 @@ export const GET = withUnifiedAuth(
         });
       }
 
-      return NextResponse.json({
-        ok: true,
-        tables: tablesWithSessions,
-      });
-    } catch (_error) {
+      return success({ tables: tablesWithSessions });
+    } catch (error) {
       logger.error("[TABLES GET] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user?.id,
       });
-      return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
   }
 );
@@ -170,7 +178,7 @@ export const GET = withUnifiedAuth(
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     // Log route entry (only in development)
-    if (process.env.NODE_ENV === "development") {
+    if (isDevelopment()) {
       logger.debug("[TABLES POST] Route hit", {
         url: req.url,
         venueId: context?.venueId,
@@ -179,45 +187,23 @@ export const POST = withUnifiedAuth(
     }
     
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
+      // STEP 2: Validate input
       const body = await req.json();
       const { label, seat_count, area } = body;
 
-      // Structured audit log for table creation attempts
-      logger.info("[TABLES POST] Table creation requested", {
-        venueId: context.venueId,
-        userId: context.user?.id,
-        label,
-        seat_count,
-        area,
-      });
-      logger.info("[TABLES POST] Table creation requested", {
-        venueId: context.venueId,
-        label,
-        seat_count,
-      });
-
       if (!label) {
-        logger.warn("[TABLES POST] Validation failed - label is required");
-        return NextResponse.json(
-          { ok: false, error: "label is required" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("label is required");
       }
 
-       
-      // Validation passed, proceed with table creation
+      // STEP 3: Business logic
       const adminSupabase = createAdminClient();
 
       // Check if a table with the same label already exists
@@ -230,91 +216,35 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (existingTable) {
-         
         logger.warn("[TABLES POST] Table already exists", { tableId: existingTable.id });
-        return NextResponse.json(
-          {
-            ok: false,
-            error: `Table "${label}" already exists. Please choose a different label.`,
-          },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(`Table "${label}" already exists. Please choose a different label.`);
       }
 
-      // Check if there are unknown active orders for a table with the same label
-      const { data: activeOrders } = await adminSupabase
-        .from("orders")
-        .select("id, table_number, customer_name, order_status")
-        .eq("venue_id", context.venueId)
-        .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "OUT_FOR_DELIVERY", "SERVING"])
-        .not("table_number", "is", null);
-
-      // Check if unknown active orders have a table number that matches the label
-      const tableNumber = parseInt(label.replace(/\D/g, "")); // Extract number from label
-      const hasActiveOrders = activeOrders?.some((order: { table_number: number | null }) => {
-        // Check if the order's table number matches the extracted number from the label
-        return order.table_number === tableNumber;
-      });
-
-      if (hasActiveOrders) {
-         
-        logger.warn("[TABLES POST] Active orders found for table number", {
-          tableNumber,
-          activeOrdersCount: activeOrders?.length || 0,
-        });
-        return NextResponse.json(
-          {
-            ok: false,
-            error: `Cannot create table "${label}" - there are active orders for this table. Please complete or cancel the existing orders first.`,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Check tier limits before creating table
-      const { data: currentTables } = await adminSupabase
-        .from("tables")
-        .select("id", { count: "exact" })
-        .eq("venue_id", context.venueId)
-        .eq("is_active", true);
-
-      const currentCount = currentTables?.length || 0;
-      const tierCheck = await enforceResourceLimit(context.user.id, "maxTables", currentCount + 1);
-
-      if (!tierCheck.allowed) {
-         
-        logger.warn("[TABLES POST] Tier limit exceeded");
-        return tierCheck.response;
-      }
-      // Tier check passed
-
-      // Create table using admin client to bypass RLS
+      // Create table
       const { data: table, error: tableError } = await adminSupabase
         .from("tables")
         .insert({
           venue_id: context.venueId,
-          label: label,
-          seat_count: seat_count || 2,
+          label,
+          seat_count: seat_count || null,
           area: area || null,
-          is_active: true, // Explicitly set as active for counting
         })
         .select()
         .single();
 
-      if (tableError) {
-        const errorPayload = {
+      if (tableError || !table) {
+        logger.error("[TABLES POST] Error creating table:", {
+          error: tableError?.message,
           venueId: context.venueId,
           userId: context.user?.id,
-          label,
-          error: tableError instanceof Error ? tableError.message : "Unknown error",
-        };
-        logger.error("[TABLES POST] Table creation error", errorPayload);
-        return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
+        });
+        return apiErrors.database(
+          "Failed to create table",
+          isDevelopment() ? tableError?.message : undefined
+        );
       }
-      // Table created successfully
 
       // Check if session already exists for this table
-       
       logger.debug("[TABLES POST] Step 6: Checking for existing session", { tableId: table.id });
       const { data: existingSession } = await adminSupabase
         .from("table_sessions")
@@ -325,7 +255,6 @@ export const POST = withUnifiedAuth(
 
       // Only create session if one doesn't already exist
       if (!existingSession) {
-         
         logger.debug("[TABLES POST] Step 7: Creating table session", { tableId: table.id });
         const { error: sessionError } = await adminSupabase.from("table_sessions").insert({
           venue_id: context.venueId,
@@ -343,12 +272,13 @@ export const POST = withUnifiedAuth(
             error: sessionError.message,
           };
           logger.error("[TABLES POST] Session creation error", sessionErrorPayload);
-          return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
+          return apiErrors.database(
+            "Failed to create table session",
+            isDevelopment() ? sessionError.message : undefined
+          );
         }
-         
         logger.debug("[TABLES POST] Step 7a: Session created successfully");
       } else {
-         
         logger.debug("[TABLES POST] Step 7: Session already exists, skipping creation");
       }
 
@@ -362,26 +292,27 @@ export const POST = withUnifiedAuth(
         area: table.area,
       });
 
-      return NextResponse.json({
-        ok: true,
-        table: table,
-        message: `Table "${label}" created successfully!`,
+      // STEP 4: Return success response
+      return success({
+        table,
+        message: `Table "${table.label}" created successfully!`,
       });
-    } catch (_error) {
-      const unexpectedPayload = {
+    } catch (error) {
+      logger.error("[TABLES POST] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user?.id,
-        message: _error instanceof Error ? _error.message : "Unknown error",
-        stack: _error instanceof Error ? _error.stack : undefined,
-        fullError: JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2),
-      };
-      
-      logger.error("[TABLES POST] Unexpected error:", {
-        timestamp: new Date().toISOString(),
-        errorType: _error?.constructor?.name || typeof _error,
-        ...unexpectedPayload,
       });
-      return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
   }
 );

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 /**
  * Admin endpoint to identify and optionally delete incomplete accounts
@@ -54,7 +55,7 @@ export const GET = withUnifiedAuth(
         return NextResponse.json(
           {
             error: "Failed to fetch users",
-            message: process.env.NODE_ENV === "development" ? usersError.message : "Database query failed",
+            message: isDevelopment() ? usersError.message : "Database query failed",
           },
           { status: 500 }
         );
@@ -169,8 +170,8 @@ export const GET = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );
@@ -218,7 +219,7 @@ export const DELETE = withUnifiedAuth(
         return NextResponse.json(
           {
             error: "Failed to fetch users",
-            message: process.env.NODE_ENV === "development" ? usersError.message : "Database query failed",
+            message: isDevelopment() ? usersError.message : "Database query failed",
           },
           { status: 500 }
         );
@@ -332,8 +333,8 @@ export const DELETE = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { createClient } from "@/lib/supabase";
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache";
 import { logger } from "@/lib/logger";
@@ -45,7 +46,7 @@ export const POST = withUnifiedAuth(
       .maybeSingle();
 
     if (existingVenue && existingVenue.owner_user_id !== user.id) {
-      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden('Forbidden');
     }
 
     const venueData = {

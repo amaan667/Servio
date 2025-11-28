@@ -1,91 +1,90 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { createClient } from "@/lib/supabase";
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
+
+const updateResetTimeSchema = z.object({
+  venueId: z.string().uuid("Invalid venue ID").optional(),
+  venue_id: z.string().uuid("Invalid venue ID").optional(),
+  resetTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const body = await req.json();
-      const { resetTime  } = body;
-      const finalVenueId = context.venueId || body.venueId;
+      // STEP 2: Validate input
+      const body = await validateBody(updateResetTimeSchema, await req.json());
+      const venueId = context.venueId || body.venueId || body.venue_id;
 
-    if (!finalVenueId || !resetTime) {
-      return NextResponse.json({ error: "Venue ID and reset time are required" }, { status: 400 });
-    }
+      if (!venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
 
-    // Validate time format (HH:MM:SS)
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
-    if (!timeRegex.test(resetTime)) {
-      return NextResponse.json(
-        { error: "Invalid time format. Use HH:MM:SS format" },
-        { status: 400 }
-      );
-    }
+      // STEP 3: Business logic
+      const supabase = await createClient();
 
-    // Venue access already verified above via requireVenueAccessForAPI
-    const supabase = await createClient();
+      // Update venue reset time
+      const { error: updateError } = await supabase
+        .from("venues")
+        .update({
+          daily_reset_time: body.resetTime,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("venue_id", venueId);
 
-    // Update the reset time
-    const { error: updateError } = await supabase
-      .from("venues")
-      .update({ daily_reset_time: resetTime })
-      .eq("venue_id", finalVenueId);
+      if (updateError) {
+        logger.error("[UPDATE RESET TIME] Error updating reset time:", {
+          error: updateError.message,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to update reset time",
+          isDevelopment() ? updateError.message : undefined
+        );
+      }
 
-    if (updateError) {
-      logger.error("Error updating reset time:", updateError);
-      return NextResponse.json({ error: "Failed to update reset time" }, { status: 500 });
-    }
-
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
-        message: "Reset time updated successfully",
-        resetTime,
+      logger.info("[UPDATE RESET TIME] Reset time updated successfully", {
+        venueId,
+        resetTime: body.resetTime,
+        userId: context.user.id,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
+      // STEP 4: Return success response
+      return success({
+        message: "Reset time updated successfully",
+        resetTime: body.resetTime,
+      });
+    } catch (error) {
       logger.error("[UPDATE RESET TIME] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
@@ -93,8 +92,10 @@ export const POST = withUnifiedAuth(
     // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venueId || body?.venue_id || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venueId?: string; venue_id?: string })?.venueId || 
+               (body as { venueId?: string; venue_id?: string })?.venue_id || 
+               null;
       } catch {
         return null;
       }

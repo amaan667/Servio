@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 import {
   handleStartPreparing,
   handleMarkReady,
@@ -31,12 +33,8 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
@@ -58,10 +56,7 @@ export const POST = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!action || !table_id || !venueId) {
-        return NextResponse.json(
-          { error: "action, table_id, and venue_id are required" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("action, table_id, and venue_id are required");
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -75,110 +70,80 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (!table) {
-        return NextResponse.json(
-          { error: "Table not found or access denied" },
-          { status: 404 }
-        );
+        return apiErrors.notFound("Table not found or access denied");
       }
 
-    // Note: Venue access is already verified by requireVenueAccessForAPI above
+      // Route to appropriate handler based on action
+      switch (action) {
+        case "start_preparing":
+          return await handleStartPreparing(supabase, table_id, order_id);
 
-    // Route to appropriate handler based on action
-    switch (action) {
-      case "start_preparing":
-        return await handleStartPreparing(supabase, table_id, order_id);
+        case "mark_ready":
+          return await handleMarkReady(supabase, table_id, order_id);
 
-      case "mark_ready":
-        return await handleMarkReady(supabase, table_id, order_id);
+        case "mark_served":
+          return await handleMarkServed(supabase, table_id, order_id);
 
-      case "mark_served":
-        return await handleMarkServed(supabase, table_id, order_id);
+        case "mark_awaiting_bill":
+          return await handleMarkAwaitingBill(supabase, table_id);
 
-      case "mark_awaiting_bill":
-        return await handleMarkAwaitingBill(supabase, table_id);
+        case "close_table":
+          return await handleCloseTable(supabase, table_id);
 
-      case "close_table":
-        return await handleCloseTable(supabase, table_id);
-
-      case "reserve_table":
-        if (!customer_name || !reservation_time) {
-          return NextResponse.json(
-            { error: "customer_name and reservation_time are required for reserve_table action" },
-            { status: 400 }
+        case "reserve_table":
+          if (!customer_name || !reservation_time) {
+            return apiErrors.badRequest("customer_name and reservation_time are required for reserve_table action");
+          }
+          return await handleReserveTable(
+            supabase,
+            table_id,
+            customer_name,
+            reservation_time,
+            reservation_duration || 60
           );
-        }
-        return await handleReserveTable(
-          supabase,
-          table_id,
-          customer_name,
-          reservation_time,
-          reservation_duration || 60
-        );
 
-      case "occupy_table":
-        return await handleOccupyTable(supabase, table_id);
+        case "occupy_table":
+          return await handleOccupyTable(supabase, table_id);
 
-      case "move_table":
-        if (!destination_table_id) {
-          return NextResponse.json(
-            { error: "destination_table_id is required for move_table action" },
-            { status: 400 }
-          );
-        }
-        return await handleMoveTable(supabase, table_id, destination_table_id);
+        case "move_table":
+          if (!destination_table_id) {
+            return apiErrors.badRequest("destination_table_id is required for move_table action");
+          }
+          return await handleMoveTable(supabase, table_id, destination_table_id);
 
-      case "merge_table":
-        if (!destination_table_id) {
-          return NextResponse.json(
-            { error: "destination_table_id is required for merge_table action" },
-            { status: 400 }
-          );
-        }
-        return await handleMergeTable(supabase, venueId, table_id, destination_table_id);
+        case "merge_table":
+          if (!destination_table_id) {
+            return apiErrors.badRequest("destination_table_id is required for merge_table action");
+          }
+          return await handleMergeTable(supabase, venueId, table_id, destination_table_id);
 
-      case "unmerge_table":
-        return await handleUnmergeTable(supabase, table_id);
+        case "unmerge_table":
+          return await handleUnmergeTable(supabase, table_id);
 
-      case "cancel_reservation":
-        if (!reservation_id) {
-          return NextResponse.json(
-            { error: "reservation_id is required for cancel_reservation action" },
-            { status: 400 }
-          );
-        }
-        return await handleCancelReservation(supabase, table_id, reservation_id);
+        case "cancel_reservation":
+          if (!reservation_id) {
+            return apiErrors.badRequest("reservation_id is required for cancel_reservation action");
+          }
+          return await handleCancelReservation(supabase, table_id, reservation_id);
 
-      default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-    }
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+        default:
+          return apiErrors.badRequest("Invalid action");
+      }
+    } catch (error) {
       logger.error("[TABLE SESSIONS ACTIONS] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
@@ -186,8 +151,10 @@ export const POST = withUnifiedAuth(
     // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
         return null;
       }

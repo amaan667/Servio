@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { getStripeClient } from "@/lib/stripe-client";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import type Stripe from "stripe";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { venueId, tableNumber, customerName, customerPhone, splits, source = "qr" } = body;
 
     if (!venueId || !splits || splits.length === 0) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const supabase = createAdminClient();
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!venue) {
-      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+      return apiErrors.notFound('Venue not found');
     }
 
     // Get or create table
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
 
       if (tableError || !newTable) {
         logger.error("[SPLIT ORDERS] Failed to create table:", tableError);
-        return NextResponse.json({ error: "Failed to create table" }, { status: 500 });
+        return apiErrors.internal('Failed to create table');
       }
       tableId = newTable.id;
     }
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
 
       if (orderError || !order) {
         logger.error("[SPLIT ORDERS] Failed to create order:", orderError);
-        return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+        return apiErrors.internal('Failed to create order');
       }
 
       createdOrders.push(order);
@@ -206,7 +207,7 @@ export async function POST(req: NextRequest) {
       error: err.message,
       stack: err.stack,
     });
-    return NextResponse.json({ error: "Internal server error", details: err.message }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 

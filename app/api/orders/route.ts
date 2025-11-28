@@ -458,16 +458,8 @@ export const POST = withUnifiedAuth(
       // Use venueId from context (already verified by withUnifiedAuth)
       const venueId = context.venueId;
 
-      logger.info("📥📥📥 REQUEST RECEIVED 📥📥📥", {
-      customer: body.customer_name,
-      venue: venueId,
-      table: body.table_number,
-      items: body.items?.length,
-      total: body.total_amount,
-      requestId,
-    });
-
     // STEP 3: Validate input with Zod
+    let validatedOrderBody: OrderPayload;
     try {
       const validatedBody = await validateBody(createOrderSchema, {
         ...body,
@@ -475,7 +467,7 @@ export const POST = withUnifiedAuth(
       });
       
       // Use validated body for rest of function
-      body = validatedBody as OrderPayload;
+      validatedOrderBody = validatedBody as OrderPayload;
     } catch (validationError) {
       if (isZodError(validationError)) {
         return handleZodError(validationError);
@@ -483,15 +475,24 @@ export const POST = withUnifiedAuth(
       return apiErrors.validation("Invalid order data");
     }
 
-    logger.info("✅✅✅ ALL VALIDATIONS PASSED ✅✅✅", {
-      customer: body.customer_name,
+    logger.info("📥📥📥 REQUEST RECEIVED 📥📥📥", {
+      customer: validatedOrderBody.customer_name,
       venue: venueId,
-      items: body.items?.length,
-      total: body.total_amount,
+      table: validatedOrderBody.table_number,
+      items: validatedOrderBody.items?.length,
+      total: validatedOrderBody.total_amount,
       requestId,
     });
 
-    const tn = body.table_number;
+    logger.info("✅✅✅ ALL VALIDATIONS PASSED ✅✅✅", {
+      customer: validatedOrderBody.customer_name,
+      venue: venueId,
+      items: validatedOrderBody.items?.length,
+      total: validatedOrderBody.total_amount,
+      requestId,
+    });
+
+    const tn = validatedOrderBody.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
 
     // Use authenticated client
@@ -519,13 +520,13 @@ export const POST = withUnifiedAuth(
 
     // Auto-create table if it doesn't exist (for QR code scenarios)
     let tableId = null;
-    if (body.table_number) {
+    if (validatedOrderBody.table_number) {
       // Check if table exists - first try to find by table number directly
       const { data: existingTable, error: lookupError } = await supabase
         .from("tables")
         .select("id, label")
         .eq("venue_id", venueId)
-        .eq("label", body.table_number.toString())
+        .eq("label", validatedOrderBody.table_number.toString())
         .eq("is_active", true)
         .maybeSingle();
 
@@ -543,7 +544,7 @@ export const POST = withUnifiedAuth(
             .from("table_group_sessions")
             .select("total_group_size")
             .eq("venue_id", venueId)
-            .eq("table_number", body.table_number)
+            .eq("table_number", validatedOrderBody.table_number)
             .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -562,7 +563,7 @@ export const POST = withUnifiedAuth(
           .from("tables")
           .insert({
             venue_id: venueId,
-            label: body.table_number.toString(),
+            label: validatedOrderBody.table_number.toString(),
             seat_count: seatCount,
             area: null,
             is_active: true,
@@ -577,7 +578,7 @@ export const POST = withUnifiedAuth(
               .from("tables")
               .select("id, label")
               .eq("venue_id", venueId)
-              .eq("label", body.table_number.toString())
+              .eq("label", validatedOrderBody.table_number.toString())
               .eq("is_active", true)
               .single();
 
@@ -622,17 +623,17 @@ export const POST = withUnifiedAuth(
     }
 
     // Recompute total server-side for safety
-    const computedTotal = body.items.reduce((sum, it) => {
+    const computedTotal = (validatedOrderBody.items || []).reduce((sum, it) => {
       const qty = Number(it.quantity) || 0;
       const price = Number(it.price) || 0;
       return sum + qty * price;
     }, 0);
     const finalTotal =
-      Math.abs(computedTotal - (body.total_amount || 0)) < 0.01
-        ? body.total_amount!
+      Math.abs(computedTotal - (validatedOrderBody.total_amount || 0)) < 0.01
+        ? validatedOrderBody.total_amount!
         : computedTotal;
 
-    const safeItems = body.items.map((it) => ({
+    const safeItems = (validatedOrderBody.items || []).map((it) => ({
       menu_item_id: it.menu_item_id ?? null,
       quantity: Number(it.quantity) || 0,
       price: Number(it.price) || 0, // Use 'price' field directly (includes modifier price)
@@ -647,21 +648,21 @@ export const POST = withUnifiedAuth(
 
     // Use the source provided by the client (determined from URL parameters)
     // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
-    const orderSource = body.source || "qr"; // Default to 'qr' if not provided
+    const orderSource = ((body as { source?: "qr" | "counter" }).source) || "qr" as "qr" | "counter"; // Default to 'qr' if not provided
 
     const payload: OrderPayload = {
       venue_id: venueId,
       table_number,
       table_id: tableId, // Add table_id to the payload
-      customer_name: body.customer_name.trim(),
-      customer_phone: body.customer_phone!.trim(), // Required field, already validated
+      customer_name: validatedOrderBody.customer_name.trim(),
+      customer_phone: validatedOrderBody.customer_phone.trim(), // Required field, already validated
       items: safeItems,
       total_amount: finalTotal,
-      notes: body.notes ?? null,
-      order_status: body.order_status || "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
-      payment_status: body.payment_status || "UNPAID", // Use provided status or default to 'UNPAID'
-      payment_mode: body.payment_mode || "online", // New field for payment mode
-      payment_method: body.payment_method || null,
+      notes: (body as { notes?: string }).notes ?? null,
+      order_status: ((body as { order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED" }).order_status) || "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
+      payment_status: ((body as { payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED" }).payment_status) || "UNPAID", // Use provided status or default to 'UNPAID'
+      payment_mode: validatedOrderBody.payment_mode || "online", // New field for payment mode
+      payment_method: ((body as { payment_method?: "demo" | "stripe" | "till" | null }).payment_method ?? null) as "demo" | "stripe" | "till" | null,
       // NOTE: session_id is NOT a database column - don't include in payload
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
     };

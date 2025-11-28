@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(
   _request: NextRequest,
@@ -10,7 +11,7 @@ export async function POST(
     const { reservationId } = await context.params;
 
     if (!reservationId) {
-      return NextResponse.json({ error: "reservationId is required" }, { status: 400 });
+      return apiErrors.badRequest('reservationId is required');
     }
 
     const supabase = await createClient();
@@ -23,7 +24,7 @@ export async function POST(
       logger.error("Error marking reservation as no-show:", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrors.internal(error.message || 'Internal server error');
     }
 
     return NextResponse.json({ success: true });
@@ -31,6 +32,6 @@ export async function POST(
     logger.error("Error in no-show reservation API:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = 'nodejs';
 
@@ -12,19 +13,15 @@ export const GET = withUnifiedAuth(
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       const { searchParams } = new URL(req.url);
       const venue_id = context.venueId || searchParams.get('venue_id');
     const staff_id = searchParams.get('staff_id');
-  if (!venue_id) return NextResponse.json({ error: 'venue_id required' }, { status: 400 });
+  if (!venue_id) return apiErrors.badRequest('venue_id required');
 
   const { createAdminClient } = await import("@/lib/supabase");
   const supabase = createAdminClient();
@@ -44,7 +41,7 @@ export const GET = withUnifiedAuth(
   if (staff_id) q = q.eq('staff_id', staff_id);
 
   const { data, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return apiErrors.badRequest(error.message);
   
   // Transform the data to flatten the nested staff object
   const transformedShifts = data?.map(shift => {
@@ -58,11 +55,10 @@ export const GET = withUnifiedAuth(
     };
   }) || [];
   
-  return NextResponse.json({ ok: true, shifts: transformedShifts });
+  return success({ shifts: transformedShifts });
     } catch (_error) {
-      return NextResponse.json(
-        { ok: false, error: _error instanceof Error ? _error.message : "Unknown error" },
-        { status: 500 }
+      return apiErrors.internal(
+        _error instanceof Error ? _error.message : "Unknown error"
       );
     }
   }

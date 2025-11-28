@@ -1,130 +1,164 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
-import type { StocktakeRequest } from "@/types/inventory";
+import { NextRequest } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
 
+const stocktakeSchema = z.object({
+  ingredient_id: z.string().uuid("Invalid ingredient ID"),
+  actual_count: z.number().nonnegative("Actual count must be non-negative"),
+  note: z.string().max(500).optional(),
+  venue_id: z.string().uuid("Invalid venue ID").optional(),
+});
+
 // POST /api/inventory/stock/stocktake
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
+  async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const supabase = await createClient();
-      const body: StocktakeRequest = await req.json();
+      // STEP 2: Validate input
+      const body = await validateBody(stocktakeSchema, await req.json());
+      const venueId = context.venueId || body.venue_id;
 
-    const { ingredient_id, actual_count, note } = body;
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
 
-    if (!ingredient_id || actual_count === undefined) {
-      return NextResponse.json(
-        { error: "ingredient_id and actual_count are required" },
-        { status: 400 }
-      );
-    }
+      // STEP 3: Business logic
+      const adminSupabase = createAdminClient();
 
-    // Get ingredient to find venue_id
-    const { data: ingredient, error: ingredientError } = await supabase
-      .from("ingredients")
-      .select("venue_id")
-      .eq("id", ingredient_id)
-      .single();
+      // Get current stock level
+      const { data: stockLevel, error: stockError } = await adminSupabase
+        .from("v_stock_levels")
+        .select("on_hand")
+        .eq("ingredient_id", body.ingredient_id)
+        .eq("venue_id", venueId)
+        .single();
 
-    if (ingredientError || !ingredient) {
-      return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
-    }
+      if (stockError && stockError.code !== "PGRST116") {
+        logger.error("[INVENTORY STOCKTAKE] Error fetching stock level:", {
+          error: stockError.message,
+          ingredientId: body.ingredient_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to fetch current stock level",
+          isDevelopment() ? stockError.message : undefined
+        );
+      }
 
-    // Get current stock level
-    const { data: stockLevel, error: stockError } = await supabase
-      .from("v_stock_levels")
-      .select("on_hand")
-      .eq("ingredient_id", ingredient_id)
-      .single();
+      const currentStock = stockLevel?.on_hand || 0;
+      const delta = body.actual_count - currentStock;
 
-    if (stockError) {
-      logger.error("[INVENTORY API] Error fetching stock level:", { error: stockError.message });
-      return NextResponse.json({ error: stockError.message }, { status: 500 });
-    }
+      // Get ingredient to verify venue_id matches
+      const { data: ingredient, error: ingredientError } = await adminSupabase
+        .from("ingredients")
+        .select("venue_id, name")
+        .eq("id", body.ingredient_id)
+        .single();
 
-    const currentStock = stockLevel?.on_hand || 0;
-    const delta = actual_count - currentStock;
+      if (ingredientError || !ingredient) {
+        logger.error("[INVENTORY STOCKTAKE] Ingredient not found:", {
+          error: ingredientError?.message,
+          ingredientId: body.ingredient_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.notFound("Ingredient not found");
+      }
 
-    // Get current user
-    const { data: currentUser } = await supabase.auth.getSession();
+      if (ingredient.venue_id !== venueId) {
+        return apiErrors.forbidden("Ingredient does not belong to this venue");
+      }
 
-    // Create stocktake ledger entry
-    const { data, error } = await supabase
-      .from("stock_ledgers")
-      .insert({
-        ingredient_id,
-        venue_id: ingredient.venue_id,
+      // Create stocktake ledger entry
+      const { data: ledgerEntry, error: ledgerError } = await adminSupabase
+        .from("stock_ledgers")
+        .insert({
+          ingredient_id: body.ingredient_id,
+          venue_id: venueId,
+          delta,
+          reason: "stocktake",
+          ref_type: "manual",
+          note: body.note || `Stocktake: ${currentStock} → ${body.actual_count}`,
+          created_by: context.user.id,
+        })
+        .select()
+        .single();
+
+      if (ledgerError || !ledgerEntry) {
+        logger.error("[INVENTORY STOCKTAKE] Error creating stocktake:", {
+          error: ledgerError?.message,
+          ingredientId: body.ingredient_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to create stocktake entry",
+          isDevelopment() ? ledgerError?.message : undefined
+        );
+      }
+
+      logger.info("[INVENTORY STOCKTAKE] Stocktake completed successfully", {
+        ingredientId: body.ingredient_id,
+        ingredientName: ingredient.name,
+        previousStock: currentStock,
+        newStock: body.actual_count,
         delta,
-        reason: "stocktake",
-        ref_type: "manual",
-        note: note || `Stocktake: ${currentStock} → ${actual_count}`,
-        created_by: currentUser?.session?.user?.id || null,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      logger.error("[INVENTORY API] Error creating stocktake:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+        venueId,
+        userId: context.user.id,
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
 
-    return NextResponse.json(
-      {
-        data,
+      // STEP 4: Return success response
+      return success({
+        data: ledgerEntry,
         previous_stock: currentStock,
-        new_stock: actual_count,
+        new_stock: body.actual_count,
         delta,
-      },
-      { status: 201 }
-    );
-    } catch (_error) {
-      logger.error("[INVENTORY API] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
       });
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    } catch (error) {
+      logger.error("[INVENTORY STOCKTAKE] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
   },
   {
+    // Extract venueId from body
     extractVenueId: async (req) => {
-      // Get venueId from ingredient in body
       try {
-        const body = await req.json();
-        const ingredientId = body?.ingredient_id;
-        if (ingredientId) {
-          const supabase = await createClient();
-          const { data: ingredient } = await supabase
-            .from("ingredients")
-            .select("venue_id")
-            .eq("id", ingredientId)
-            .single();
-          if (ingredient?.venue_id) {
-            return ingredient.venue_id;
-          }
-        }
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
-        // Ignore errors
+        return null;
       }
-      // Fallback to query/body
-      const url = new URL(req.url);
-      return url.searchParams.get("venueId") || url.searchParams.get("venue_id");
     },
   }
 );

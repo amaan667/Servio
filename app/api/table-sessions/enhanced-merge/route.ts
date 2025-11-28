@@ -5,6 +5,8 @@ import { logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -62,14 +64,14 @@ export const POST = withUnifiedAuth(
       .eq("venue_id", venueId);
 
     if (tablesError || !tables || tables.length !== 2) {
-      return NextResponse.json({ error: "Tables not found" }, { status: 404 });
+      return apiErrors.notFound('Tables not found');
     }
 
     const sourceTable = tables.find((t: { id: string }) => t.id === source_table_id);
     const targetTable = tables.find((t: { id: string }) => t.id === target_table_id);
 
     if (!sourceTable || !targetTable) {
-      return NextResponse.json({ error: "One or both tables not found" }, { status: 404 });
+      return apiErrors.notFound('One or both tables not found');
     }
 
     // Get table states and merge scenario
@@ -130,7 +132,7 @@ export const POST = withUnifiedAuth(
         result = await mergeReservedTables(supabase, sourceTable, targetTable);
         break;
       default:
-        return NextResponse.json({ error: "Unsupported merge scenario" }, { status: 400 });
+        return apiErrors.badRequest('Unsupported merge scenario');
     }
 
       if (result.error) {
@@ -142,7 +144,7 @@ export const POST = withUnifiedAuth(
         return NextResponse.json(
           {
             error: "Merge operation failed",
-            message: process.env.NODE_ENV === "development" ? result.error : "Failed to merge tables",
+            message: isDevelopment() ? result.error : "Failed to merge tables",
           },
           { status: 500 }
         );
@@ -179,8 +181,8 @@ export const POST = withUnifiedAuth(
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

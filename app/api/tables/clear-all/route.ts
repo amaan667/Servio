@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,18 +17,20 @@ export const dynamic = "force-dynamic";
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
+      // STEP 2: Validate venueId
+      if (!context.venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
+
+      // STEP 3: Business logic
       const adminSupabase = createAdminClient();
 
       // Clear all table sessions
@@ -37,10 +40,14 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", context.venueId);
 
       if (clearSessionsError) {
-        logger.error("[TABLES CLEAR ALL] Error clearing sessions:", { value: clearSessionsError });
-        return NextResponse.json(
-          { ok: false, error: clearSessionsError.message },
-          { status: 500 }
+        logger.error("[TABLES CLEAR ALL] Error clearing sessions:", {
+          error: clearSessionsError.message,
+          venueId: context.venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to clear table sessions",
+          isDevelopment() ? clearSessionsError.message : undefined
         );
       }
 
@@ -52,25 +59,54 @@ export const POST = withUnifiedAuth(
 
       if (clearGroupSessionsError) {
         logger.error("[TABLES CLEAR ALL] Error clearing group sessions:", {
-          value: clearGroupSessionsError,
+          error: clearGroupSessionsError.message,
+          venueId: context.venueId,
+          userId: context.user.id,
         });
-        return NextResponse.json(
-          { ok: false, error: clearGroupSessionsError.message },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to clear group sessions",
+          isDevelopment() ? clearGroupSessionsError.message : undefined
         );
       }
 
-      logger.info(`[TABLES CLEAR ALL] Successfully cleared all sessions for venue ${context.venueId}`);
+      logger.info("[TABLES CLEAR ALL] Successfully cleared all sessions", {
+        venueId: context.venueId,
+        userId: context.user.id,
+      });
 
-      return NextResponse.json({
-        ok: true,
+      // STEP 4: Return success response
+      return success({
         message: "All table sessions and group sessions cleared successfully",
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error("[TABLES CLEAR ALL] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
       });
-      return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json().catch(() => ({}));
+        return (body as { venueId?: string; venue_id?: string })?.venueId || 
+               (body as { venueId?: string; venue_id?: string })?.venue_id || 
+               null;
+      } catch {
+        return null;
+      }
+    },
   }
 );

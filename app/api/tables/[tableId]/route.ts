@@ -1,70 +1,140 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
+
+const updateTableSchema = z.object({
+  label: z.string().min(1).optional(),
+  seat_count: z.number().int().positive().optional(),
+  is_active: z.boolean().optional(),
+  qr_version: z.number().int().nonnegative().optional(),
+});
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext) => {
       try {
-        // CRITICAL: Rate limiting
+        // STEP 1: Rate limiting (ALWAYS FIRST)
         const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
         if (!rateLimitResult.success) {
-          return NextResponse.json(
-            {
-              error: 'Too many requests',
-              message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-            },
-            { status: 429 }
+          return apiErrors.rateLimit(
+            Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
           );
         }
 
+        // STEP 2: Get tableId from route params
         const { tableId } = await context.params;
-        const body = await req.json();
-        const { label, seat_count, is_active, qr_version } = body;
 
+        if (!tableId) {
+          return apiErrors.badRequest("tableId is required");
+        }
+
+        // STEP 3: Validate input
+        const body = await validateBody(updateTableSchema, await req.json());
+
+        // STEP 4: Get venueId from context
+        const venueId = authContext.venueId;
+
+        if (!venueId) {
+          return apiErrors.badRequest("venue_id is required");
+        }
+
+        // STEP 5: Business logic - Update table
         const adminSupabase = createAdminClient();
 
-        // Update table
+        // Verify table exists and belongs to venue
+        const { data: existingTable, error: checkError } = await adminSupabase
+          .from("tables")
+          .select("venue_id")
+          .eq("id", tableId)
+          .eq("venue_id", venueId)
+          .single();
+
+        if (checkError || !existingTable) {
+          logger.error("[TABLES PUT] Table not found:", {
+            error: checkError?.message,
+            tableId,
+            venueId,
+            userId: authContext.user.id,
+          });
+          return apiErrors.notFound("Table not found");
+        }
+
+        // Build update data
         const updateData: {
           label?: string;
           seat_count?: number;
           is_active?: boolean;
-          updated_at: string;
           qr_version?: number;
+          updated_at: string;
         } = {
-          label: label?.trim(),
-          seat_count,
-          is_active,
           updated_at: new Date().toISOString(),
         };
 
-        if (qr_version !== undefined) {
-          updateData.qr_version = qr_version;
+        if (body.label !== undefined) {
+          updateData.label = body.label;
+        }
+        if (body.seat_count !== undefined) {
+          updateData.seat_count = body.seat_count;
+        }
+        if (body.is_active !== undefined) {
+          updateData.is_active = body.is_active;
+        }
+        if (body.qr_version !== undefined) {
+          updateData.qr_version = body.qr_version;
         }
 
-        const { data: table, error } = await adminSupabase
+        // Update table
+        const { data: table, error: updateError } = await adminSupabase
           .from("tables")
           .update(updateData)
           .eq("id", tableId)
-          .eq("venue_id", authContext.venueId)
+          .eq("venue_id", venueId)
           .select()
           .single();
 
-        if (error) {
-          logger.error("[TABLES API] Error updating table:", {
-            error: error instanceof Error ? error.message : "Unknown error",
+        if (updateError || !table) {
+          logger.error("[TABLES PUT] Error updating table:", {
+            error: updateError?.message,
+            tableId,
+            venueId,
+            userId: authContext.user.id,
           });
-          return NextResponse.json({ error: "Failed to update table" }, { status: 500 });
+          return apiErrors.database(
+            "Failed to update table",
+            isDevelopment() ? updateError?.message : undefined
+          );
         }
 
-        return NextResponse.json({ table });
-      } catch (_error) {
-        logger.error("[TABLES API] Unexpected error:", {
-          error: _error instanceof Error ? _error.message : "Unknown _error",
+        logger.info("[TABLES PUT] Table updated successfully", {
+          tableId,
+          venueId,
+          userId: authContext.user.id,
         });
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+        // STEP 6: Return success response
+        return success({ table });
+      } catch (error) {
+        logger.error("[TABLES PUT] Unexpected error:", {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          venueId: authContext.venueId,
+          userId: authContext.user.id,
+        });
+
+        if (isZodError(error)) {
+          return handleZodError(error);
+        }
+
+        return apiErrors.internal(
+          "Request processing failed",
+          isDevelopment() ? error : undefined
+        );
       }
     },
     {
@@ -117,7 +187,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
         if (checkError || !existingTable) {
           logger.error("[TABLES API] Error checking table existence:", { value: checkError });
-          return NextResponse.json({ error: "Table not found" }, { status: 404 });
+          return apiErrors.notFound('Table not found');
         }
 
         // Type assertion for TypeScript
@@ -250,23 +320,16 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         } else {
           // NORMAL REMOVE: Prevent deletion if there are active orders/reservations
           if (!ordersError && activeOrders && activeOrders.length > 0) {
-            return NextResponse.json(
-              {
-                error: "Cannot remove table with active orders. Please close all orders first.",
-                hasActiveOrders: true,
-              },
-              { status: 400 }
+            return apiErrors.badRequest(
+              "Cannot remove table with active orders. Please close all orders first.",
+              { hasActiveOrders: true }
             );
           }
 
           if (!reservationsError && activeReservations && activeReservations.length > 0) {
-            return NextResponse.json(
-              {
-                error:
-                  "Cannot remove table with active reservations. Please cancel all reservations first.",
-                hasActiveReservations: true,
-              },
-              { status: 400 }
+            return apiErrors.badRequest(
+              "Cannot remove table with active reservations. Please cancel all reservations first.",
+              { hasActiveReservations: true }
             );
           }
         }
@@ -339,15 +402,15 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
             hint: error.hint,
             code: error.code,
           });
-          return NextResponse.json({ error: "Failed to delete table" }, { status: 500 });
+          return apiErrors.internal('Failed to delete table');
         }
 
-        return NextResponse.json({ success: true, deletedTable: table });
-      } catch (_error) {
+        return success({ success: true, deletedTable: table });
+      } catch (error) {
         logger.error("[TABLES API] Unexpected error:", {
-          error: _error instanceof Error ? _error.message : "Unknown _error",
+          error: error instanceof Error ? error.message : String(error),
         });
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return apiErrors.internal('Internal server error');
       }
     },
     {

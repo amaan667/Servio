@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context, routeParams?: { params?: Promise<Record<string, string>> }) => {
@@ -32,7 +33,7 @@ export const GET = withUnifiedAuth(
       // STEP 3: Parse request
       // STEP 4: Validate inputs
       if (!finalVenueId) {
-        return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
+        return apiErrors.badRequest('Venue ID is required');
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)

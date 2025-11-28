@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
 
     if (!sessionId) {
       logger.error("[ORDER SESSION LOOKUP DEBUG] No session ID provided");
-      return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Session ID is required');
     }
 
     // Look up order by stripe_session_id with all fields including Stripe details

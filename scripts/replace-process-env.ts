@@ -155,7 +155,7 @@ function processFile(filePath: string): { changed: boolean; changes: string[] } 
   }
   
   const changed = content !== originalContent;
-  return { changed, changes };
+  return { changed, changes, content };
 }
 
 function findFiles(dir: string, extensions: string[] = [".ts", ".tsx"]): string[] {
@@ -186,11 +186,11 @@ const changedFiles: Array<{ file: string; changes: string[] }> = [];
 
 for (const file of files) {
   const result = processFile(file);
-  if (result.changed) {
+  if (result.changed && result.content) {
     totalChanged++;
     changedFiles.push({ file: file.replace(process.cwd(), ""), changes: result.changes });
-    // Uncomment to actually write changes:
-    // writeFileSync(file, result.content, "utf-8");
+    // Write changes
+    writeFileSync(file, result.content, "utf-8");
     console.log(`✅ ${file.replace(process.cwd(), "")}`);
     result.changes.forEach(change => console.log(`   - ${change}`));
   }

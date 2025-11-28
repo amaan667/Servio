@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -13,66 +15,37 @@ export const GET = withUnifiedAuth(
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
+        return apiErrors.rateLimit();
+    }
+
+      // Get venueId from context
+      const venueId = context.venueId;
+      
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
       }
 
-      const user = context.user;
-      const venueId = context.venueId;
-
-      if (!venueId) {
-      return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
-    }
-
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
-
-    // Check if user has permission to view invitations (owner or manager)
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("owner_user_id")
-      .eq("venue_id", venueId)
-      .single();
-
-    const isVenueOwner = venue?.owner_user_id === user.id;
-
-    let hasPermission = false;
-    if (!isVenueOwner) {
-      const { data: userRole } = await supabase
-        .from("user_venue_roles")
-        .select("role")
-        .eq("user_id", user.id)
+      // Fetch invitations
+      const supabase = createAdminClient();
+      const { data: invitations, error: fetchError } = await supabase
+        .from("staff_invitations")
+        .select("*")
         .eq("venue_id", venueId)
-        .single();
+        .order("created_at", { ascending: false });
 
-      hasPermission = userRole?.role === "owner" || userRole?.role === "manager";
-    }
+      if (fetchError) {
+        logger.error("[STAFF INVITATIONS] Error fetching invitations:", {
+          error: fetchError.message,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database("Failed to fetch invitations");
+      }
 
-    if (!isVenueOwner && !hasPermission) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Get all invitations for the venue
-    const { data: invitations, error } = await supabase
-      .from("staff_invitations")
-      .select("*")
-      .eq("venue_id", venueId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      logger.error("[STAFF INVITATIONS] Error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-      return NextResponse.json({ invitations });
+      return success({ invitations: invitations || [] });
     } catch (error) {
       logger.error("[STAFF INVITATIONS] Unexpected error:", error);
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      return apiErrors.internal('Internal server error');
     }
   }
 );
@@ -86,7 +59,7 @@ export async function POST(_request: NextRequest) {
 
     if (!user) {
       logger.warn("[STAFF INVITATION POST] Unauthorized - no user session");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     const body = await _request.json();
@@ -108,10 +81,7 @@ export async function POST(_request: NextRequest) {
         hasRole: !!role,
         hasVenueId: !!venue_id,
       });
-      return NextResponse.json(
-        { error: "email, role, and venue_id are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("email, role, and venue_id are required");
     }
 
     const { createAdminClient } = await import("@/lib/supabase");
@@ -127,7 +97,7 @@ export async function POST(_request: NextRequest) {
 
     if (venueError || !venue) {
       logger.error("[STAFF INVITATION POST] Venue not found", venueError);
-      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+      return apiErrors.notFound('Venue not found');
     }
 
     const isVenueOwner = venue.owner_user_id === user.id;
@@ -152,10 +122,7 @@ export async function POST(_request: NextRequest) {
         isVenueOwner,
         hasPermission,
       });
-      return NextResponse.json(
-        { error: "Forbidden - Only owners and managers can send invitations" },
-        { status: 403 }
-      );
+      return apiErrors.forbidden("Forbidden - Only owners and managers can send invitations");
     }
 
     logger.info("✅ [STAFF INVITATION POST] User has permission", {
@@ -184,15 +151,14 @@ export async function POST(_request: NextRequest) {
         limit: limitCheck.limit,
         tier: limitCheck.currentTier,
       });
-      return NextResponse.json(
+      return apiErrors.forbidden(
+        `Staff limit reached. You have ${staffCount}/${limitCheck.limit} staff members. Upgrade to ${limitCheck.limit === 3 ? "Pro" : "Enterprise"} tier for more staff.`,
         {
-          error: `Staff limit reached. You have ${staffCount}/${limitCheck.limit} staff members. Upgrade to ${limitCheck.limit === 3 ? "Pro" : "Enterprise"} tier for more staff.`,
           limitReached: true,
           currentCount: staffCount,
           limit: limitCheck.limit,
           tier: limitCheck.currentTier,
-        },
-        { status: 403 }
+        }
       );
     }
 
@@ -219,10 +185,7 @@ export async function POST(_request: NextRequest) {
 
       if (deleteError) {
         logger.error("[STAFF INVITATION POST] Error deleting old invitation:", deleteError);
-        return NextResponse.json(
-          { error: "Failed to resend invitation. Please try again." },
-          { status: 500 }
-        );
+        return apiErrors.internal("Failed to resend invitation. Please try again.");
       }
     }
 
@@ -257,23 +220,19 @@ export async function POST(_request: NextRequest) {
         invitationError.message?.includes("duplicate key") ||
         invitationError.message?.includes("unique constraint")
       ) {
-        return NextResponse.json(
-          {
-            error:
-              "An invitation for this email already exists. Please wait a moment and try again.",
-          },
-          { status: 409 }
+        return apiErrors.conflict(
+          "An invitation for this email already exists. Please wait a moment and try again."
         );
       }
 
-      return NextResponse.json({ error: invitationError.message }, { status: 500 });
+      return apiErrors.internal('Internal server error');
     }
 
     // Send invitation email via Resend
-    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/accept-invite/${token}`;
+    const inviteLink = `${env('NEXT_PUBLIC_APP_URL')}/accept-invite/${token}`;
 
     try {
-      const resendApiKey = process.env.RESEND_API_KEY;
+      const resendApiKey = env('RESEND_API_KEY');
       if (!resendApiKey) {
         logger.error("[STAFF INVITATION] RESEND_API_KEY not configured");
         throw new Error("Email service not configured");
@@ -334,7 +293,7 @@ export async function POST(_request: NextRequest) {
     }
   } catch (error) {
     logger.error("[STAFF INVITATION POST] Unexpected error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 
@@ -347,17 +306,14 @@ export async function DELETE(_request: NextRequest) {
 
     if (!user) {
       logger.warn("[STAFF INVITATIONS DELETE] Unauthorized - no user session");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     const body = await _request.json();
     const { invitation_id, venue_id } = body;
 
     if (!invitation_id || !venue_id) {
-      return NextResponse.json(
-        { error: "invitation_id and venue_id are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("invitation_id and venue_id are required");
     }
 
     const { createAdminClient } = await import("@/lib/supabase");
@@ -385,7 +341,7 @@ export async function DELETE(_request: NextRequest) {
     }
 
     if (!isVenueOwner && !hasPermission) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden('Forbidden');
     }
 
     // Delete the invitation
@@ -397,12 +353,12 @@ export async function DELETE(_request: NextRequest) {
 
     if (error) {
       logger.error("[STAFF INVITATIONS] Delete error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrors.internal(error.message || 'Internal server error');
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error("[STAFF INVITATIONS] DELETE unexpected error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

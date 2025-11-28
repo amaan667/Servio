@@ -6,6 +6,7 @@ import { getStripeClient } from "@/lib/stripe-client";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -43,11 +44,11 @@ export const POST = withUnifiedAuth(
       const finalVenueId = context.venueId || body.venueId;
 
     if (!finalVenueId) {
-      return NextResponse.json({ error: "venueId is required" }, { status: 400 });
+      return apiErrors.badRequest('venueId is required');
     }
 
     if (!amount || amount < 0.5) {
-      return NextResponse.json({ error: "Amount must be at least £0.50" }, { status: 400 });
+      return apiErrors.badRequest('Amount must be at least £0.50');
     }
 
     // Convert to pence (Stripe uses smallest currency unit)

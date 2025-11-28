@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export async function PATCH(
       logger.error("[UPDATE PAYMENT MODE] Order not found", {
         data: { orderId, venue_id, error: fetchError },
       });
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Validate order state - can only change payment mode if unpaid
@@ -84,7 +85,7 @@ export async function PATCH(
       logger.error("[UPDATE PAYMENT MODE] Failed to update order", {
         data: { orderId, error: updateError },
       });
-      return NextResponse.json({ error: "Failed to update payment mode" }, { status: 500 });
+      return apiErrors.internal('Failed to update payment mode');
     }
 
     logger.info("[UPDATE PAYMENT MODE] Payment mode updated successfully", {
@@ -106,6 +107,6 @@ export async function PATCH(
     logger.error("[UPDATE PAYMENT MODE] Unexpected error", {
       data: { orderId, error: _error instanceof Error ? _error.message : String(_error) },
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

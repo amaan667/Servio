@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
@@ -54,8 +55,8 @@ export const POST = withUnifiedAuth(
 
     const cookieStore = await cookies();
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      env('NEXT_PUBLIC_SUPABASE_URL')!,
+      env('SUPABASE_SERVICE_ROLE_KEY')!,
       {
         cookies: {
           get(name: string) {
@@ -135,7 +136,7 @@ export const POST = withUnifiedAuth(
         {
           success: false,
           error: "Failed to process payment",
-          message: process.env.NODE_ENV === "development" ? updateError?.message : "Database update failed",
+          message: isDevelopment() ? updateError?.message : "Database update failed",
         },
         { status: 500 }
       );
@@ -188,8 +189,8 @@ export const POST = withUnifiedAuth(
         {
           success: false,
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Payment processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Payment processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

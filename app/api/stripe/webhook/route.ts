@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
@@ -10,7 +11,9 @@ export const revalidate = 0;
 
 // Customer orders webhook uses its OWN signing secret from Stripe Dashboard
 // Get this from: Stripe Dashboard → Webhooks → "Servio" endpoint → Signing secret
-const webhookSecret = process.env.STRIPE_CUSTOMER_WEBHOOK_SECRET!;
+import { env } from '@/lib/env';
+
+const webhookSecret = env("STRIPE_CUSTOMER_WEBHOOK_SECRET")!;
 
 /**
  * Stripe Webhook for CUSTOMER ORDER PAYMENTS
@@ -136,7 +139,7 @@ export async function POST(_request: NextRequest) {
   }
 
   if (updatedOrders.length === 0) {
-    return NextResponse.json({ ok: false, error: "No orders updated" }, { status: 500 });
+    return apiErrors.internal('No orders updated');
   }
 
   // Use first order for venue lookup (all should be same venue)
@@ -162,7 +165,7 @@ export async function POST(_request: NextRequest) {
       if (receiptOrderId) {
         // Send receipt email asynchronously (don't wait for it)
         fetch(
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/receipts/send-email`,
+          `${env("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000"}/api/receipts/send-email`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

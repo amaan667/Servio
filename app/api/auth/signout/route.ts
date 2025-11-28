@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export async function POST() {
   try {
@@ -39,7 +40,7 @@ export async function POST() {
         maxAge: 0,
         path: "/",
         sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
+        secure: isProduction(),
         httpOnly: false,
       });
     });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 import { createAdminClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
     const { orderId } = await req.json();
 
     if (!orderId) {
-      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Order ID is required');
     }
 
     // Use admin client - no authentication required for customer-facing flow
@@ -27,11 +28,11 @@ export async function POST(req: Request) {
       logger.error("[ORDERS SERVE] Failed to fetch order", {
         error: { orderId, context: fetchError },
       });
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+      return apiErrors.internal('Internal server error');
     }
     if (!orderData) {
       logger.error("[ORDERS SERVE] Order not found", { orderId });
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
     const currentStatus = (orderData.order_status || "").toString().toUpperCase();
     logger.debug("[ORDERS SERVE] Loaded order", {
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
 
     const venueId = orderData.venue_id as string;
     if (!venueId) {
-      return NextResponse.json({ error: "Order missing venue_id" }, { status: 400 });
+      return apiErrors.badRequest('Order missing venue_id');
     }
 
 
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
       logger.error("[ORDERS SERVE] Failed to update order status", {
         error: { orderId, context: venueId, error },
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrors.internal(error.message || 'Internal server error');
     }
 
     // Also update table_sessions if present (best-effort)

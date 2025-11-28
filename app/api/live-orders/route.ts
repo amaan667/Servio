@@ -5,6 +5,7 @@ import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
@@ -109,8 +110,8 @@ export const GET = withUnifiedAuth(
         {
           ok: false,
           error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to fetch live orders",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Failed to fetch live orders",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

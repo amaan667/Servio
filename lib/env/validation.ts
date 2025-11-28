@@ -39,6 +39,10 @@ const envSchema = z.object({
 
   // Other
   RAILWAY_PUBLIC_DOMAIN: z.string().url().optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  STRIPE_BASIC_PRICE_ID: z.string().optional(),
+  STRIPE_STANDARD_PRICE_ID: z.string().optional(),
+  STRIPE_PREMIUM_PRICE_ID: z.string().optional(),
 });
 
 type Env = z.infer<typeof envSchema>;

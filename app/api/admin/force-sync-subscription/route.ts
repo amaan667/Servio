@@ -4,13 +4,21 @@
  * Uses metadata and product name - NO hardcoded Price IDs needed
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
+
+const forceSyncSchema = z.object({
+  organizationId: z.string().uuid("Invalid organization ID"),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -18,74 +26,41 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      // STEP 2: Get user from context (already verified)
-      const user = context.user;
+      // STEP 2: Validate input
+      const body = await validateBody(forceSyncSchema, await req.json());
+      const organizationId = body.organizationId;
 
-      // STEP 3: Parse request
-      const { organizationId } = await req.json();
-
-      // STEP 4: Validate inputs
-      if (!organizationId) {
-        return NextResponse.json({ error: "organizationId required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify admin role
-      if (context.role !== "admin" && context.role !== "owner") {
-        return NextResponse.json(
-          { ok: false, error: "Admin access required" },
-          { status: 403 }
-        );
-      }
-
-      // Verify user owns organization
+      // STEP 3: Business logic
       const supabase = createAdminClient();
-      const { data: org } = await supabase
+
+      // Get organization's Stripe customer ID
+      const { data: org, error: orgError } = await supabase
         .from("organizations")
-        .select("id, owner_user_id")
+        .select("stripe_customer_id")
         .eq("id", organizationId)
         .single();
 
-      if (!org || org.owner_user_id !== user.id) {
-        return NextResponse.json(
-          { error: "Organization not found or access denied" },
-          { status: 404 }
-        );
+      if (orgError || !org) {
+        logger.error("[FORCE SYNC] Organization not found", {
+          organizationId,
+          error: orgError?.message,
+        });
+        return apiErrors.notFound("Organization not found");
       }
 
-      // STEP 6: Business logic
-      logger.info("[FORCE SYNC] Starting sync", { organizationId, userId: user.id });
-
-      // Get organization
-      const { data: fullOrg, error: orgError } = await supabase
-        .from("organizations")
-        .select("id, stripe_customer_id, subscription_tier, subscription_status")
-        .eq("id", organizationId)
-        .single();
-
-      if (orgError || !fullOrg) {
-        logger.error("[FORCE SYNC] Organization not found", { organizationId, error: orgError });
-        return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+      if (!org.stripe_customer_id) {
+        logger.warn("[FORCE SYNC] No Stripe customer ID", { organizationId });
+        return apiErrors.badRequest("Organization has no Stripe customer ID");
       }
 
-      if (!fullOrg.stripe_customer_id) {
-        return NextResponse.json(
-          { error: "Organization has no Stripe customer ID" },
-          { status: 400 }
-        );
-      }
-
-      // Get active subscription from Stripe
+      // Get active subscriptions from Stripe
       const subscriptions = await stripe.subscriptions.list({
-        customer: fullOrg.stripe_customer_id,
+        customer: org.stripe_customer_id,
         status: "active",
         limit: 1,
       });
@@ -102,12 +77,11 @@ export const POST = withUnifiedAuth(
           .eq("id", organizationId);
 
         if (updateError) {
-          logger.error("[FORCE SYNC] Error updating to starter", { error: updateError });
-          return NextResponse.json({ error: "Failed to update organization" }, { status: 500 });
+          logger.error("[FORCE SYNC] Error updating organization", { error: updateError });
+          return apiErrors.database("Failed to update organization");
         }
 
-        return NextResponse.json({
-          success: true,
+        return success({
           message: "No active subscription found - set to starter/trialing",
           tier: "starter",
           status: "trialing",
@@ -129,43 +103,36 @@ export const POST = withUnifiedAuth(
 
       if (updateError) {
         logger.error("[FORCE SYNC] Error updating organization", { error: updateError });
-        return NextResponse.json({ error: "Failed to update organization" }, { status: 500 });
+        return apiErrors.database("Failed to update organization");
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
+      logger.info("[FORCE SYNC] Subscription synced successfully", {
+        organizationId,
+        tier,
+        status: subscription.status,
+        userId: context.user.id,
+      });
+
+      // STEP 4: Return success response
+      return success({
         message: "Subscription synced successfully",
         tier,
         status: subscription.status,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+    } catch (error) {
       logger.error("[FORCE SYNC] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },

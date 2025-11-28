@@ -1,29 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
-interface ErrorData {
-  error?: {
-    name: string;
-    message: string;
-    stack?: string;
-  };
-  message?: {
-    text: string;
-    level: string;
-  };
-  context: {
-    userId?: string;
-    venueId?: string;
-    userRole?: string;
-    url: string;
-    timestamp: number;
-    userAgent: string;
-    sessionId: string;
-    customData?: Record<string, unknown>;
-  };
-}
+const errorDataSchema = z.object({
+  error: z.object({
+    name: z.string(),
+    message: z.string(),
+    stack: z.string().optional(),
+  }).optional(),
+  message: z.object({
+    text: z.string(),
+    level: z.string(),
+  }).optional(),
+  context: z.object({
+    userId: z.string().uuid().optional(),
+    venueId: z.string().uuid().optional(),
+    userRole: z.string().optional(),
+    url: z.string().url(),
+    timestamp: z.number(),
+    userAgent: z.string(),
+    sessionId: z.string(),
+    customData: z.record(z.unknown()).optional(),
+  }),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -31,24 +35,15 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      // STEP 2: Get user from context (already verified)
-      // STEP 3: Parse request
-      const data: ErrorData = await req.json();
+      // STEP 2: Validate input
+      const data = await validateBody(errorDataSchema, await req.json());
 
-      // STEP 4: Validate inputs
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
-      // Log error/message
+      // STEP 3: Business logic - Log error/message
       if (data.error) {
         logger.error("[ERROR TRACKING] Error captured:", {
           name: data.error.name,
@@ -77,53 +72,22 @@ export const POST = withUnifiedAuth(
       // In production, you might want to store this in a database
       // or send it to a service like Sentry, LogRocket, etc.
 
-      // Example: Store in Supabase
-      // const supabase = createServerSupabase();
-      // await supabase.from('error_logs').insert({
-      //   error_name: data.error?.name,
-      //   error_message: data.error?.message,
-      //   error_stack: data.error?.stack,
-      //   message_text: data.message?.text,
-      //   message_level: data.message?.level,
-      //   url: data.context.url,
-      //   user_id: data.context.userId,
-      //   venue_id: data.context.venueId,
-      //   user_role: data.context.userRole,
-      //   session_id: data.context.sessionId,
-      //   user_agent: data.context.userAgent,
-      //   custom_data: data.context.customData,
-      //   created_at: new Date().toISOString(),
-      // });
-
-      // STEP 7: Return success response
-      return NextResponse.json({ success: true });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      // STEP 4: Return success response
+      return success({ success: true });
+    } catch (error) {
       logger.error("[ERROR TRACKING] Failed to process error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Failed to process error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Failed to process error",
+        isDevelopment() ? error : undefined
       );
     }
   },
@@ -139,54 +103,30 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      // STEP 2: Get user from context (already verified)
-      // STEP 3: Parse request
-      // STEP 4: Validate inputs (none required)
-
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
-      // STEP 7: Return success response
-      return NextResponse.json({
+      // STEP 2: Return success response
+      return success({
         message: "Error tracking endpoint",
         status: "active",
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+    } catch (error) {
       logger.error("[ERROR TRACKING GET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },

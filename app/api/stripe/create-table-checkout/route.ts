@@ -3,6 +3,8 @@ import { logger } from "@/lib/logger";
 import Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe-client";
 import { withStripeRetry } from "@/lib/stripe-retry";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -26,11 +28,11 @@ export async function POST(req: Request) {
     });
 
     if (!amount || amount <= 0) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+      return apiErrors.badRequest('Invalid amount');
     }
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
-      return NextResponse.json({ error: "orderIds array is required" }, { status: 400 });
+      return apiErrors.badRequest('orderIds array is required');
     }
 
     // Create Stripe checkout session for table payment
@@ -52,8 +54,8 @@ export async function POST(req: Request) {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`,
+      success_url: `${env('NEXT_PUBLIC_SITE_URL')}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${env('NEXT_PUBLIC_SITE_URL')}/payment/cancel`,
       customer_email: customerEmail,
       metadata: {
         orderIds: orderIds.join(","), // Comma-separated list of order IDs
@@ -80,7 +82,7 @@ export async function POST(req: Request) {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 
-    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
+    return apiErrors.internal('Failed to create checkout session');
   }
 }
 

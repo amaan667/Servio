@@ -1,8 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { NextRequest } from "next/server";
+import { createAdminClient, createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 // Function to automatically backfill missing KDS tickets for orders
 async function autoBackfillMissingTickets(venueId: string) {
@@ -61,7 +65,7 @@ async function autoBackfillMissingTickets(venueId: string) {
           order_id: order.id,
           station_id: expoStation.id,
           item_name: item.item_name || "Unknown Item",
-          quantity: parseInt(item.quantity) || 1,
+          quantity: parseInt(String(item.quantity)) || 1,
           special_instructions: item.specialInstructions || null,
           table_number: order.table_number,
           table_label: order.table_id || order.table_number?.toString() || "Unknown",
@@ -83,98 +87,104 @@ async function autoBackfillMissingTickets(venueId: string) {
   }
 }
 
+const updateTicketSchema = z.object({
+  ticket_id: z.string().uuid("Invalid ticket ID"),
+  status: z.enum(["new", "preparing", "ready", "bumped", "served", "cancelled"]),
+});
+
 // GET - Fetch KDS tickets for a venue or station
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
+      // STEP 2: Get venueId from context
+      const venueId = context.venueId;
+      
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
+
+      // STEP 3: Parse query parameters
       const { searchParams } = new URL(req.url);
-      const stationId = searchParams.get("stationId");
+      const stationId = searchParams.get("station_id");
       const status = searchParams.get("status");
 
-      logger.debug("[KDS TICKETS] GET Request:", {
-        venueId: context.venueId,
-        stationId,
-        status,
-      });
+      // STEP 4: Business logic - Fetch tickets
+      const supabase = await createClient();
 
-      const adminSupabase = createAdminClient();
-
-      // Build query
-      let query = adminSupabase
+      let query = supabase
         .from("kds_tickets")
-        .select(
-          `
-        *,
-        kds_stations (
-          id,
-          station_name,
-          station_type,
-          color_code
-        ),
-        orders (
-          id,
-          customer_name,
-          order_status,
-          payment_status
-        )
-      `
-        )
-        .eq("venue_id", context.venueId)
-        .order("created_at", { ascending: true });
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("created_at", { ascending: false });
 
-      // Filter by station if provided
       if (stationId) {
         query = query.eq("station_id", stationId);
       }
 
-      // Filter by status if provided
       if (status) {
         query = query.eq("status", status);
-      } else {
-        // By default, exclude bumped tickets (they're done)
-        query = query.neq("status", "bumped");
       }
 
-      // Auto-backfill: Check if we have orders without KDS tickets and create them
-      try {
-        await autoBackfillMissingTickets(context.venueId);
-      } catch (backfillError) {
-        logger.warn("[KDS] Auto-backfill failed (non-critical):", { value: backfillError });
-        // Don't fail the request if backfill fails
+      const { data: tickets, error: fetchError } = await query;
+
+      if (fetchError) {
+        logger.error("[KDS TICKETS] Error fetching tickets:", {
+          error: fetchError.message,
+          venueId,
+          stationId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to fetch KDS tickets",
+          isDevelopment() ? fetchError.message : undefined
+        );
       }
 
-      // Fetch tickets after potential backfill
-      const { data: finalTickets, error: finalError } = await query;
+      // Auto-backfill missing tickets
+      await autoBackfillMissingTickets(venueId);
 
-      if (finalError) {
-        logger.error("[KDS] Error fetching tickets after backfill:", { value: finalError });
-        return NextResponse.json({ ok: false, error: finalError.message }, { status: 500 });
+      // Refetch if backfill occurred
+      let finalTickets = tickets || [];
+      if (!tickets || tickets.length === 0) {
+        const { data: refetchedTickets } = await supabase
+          .from("kds_tickets")
+          .select("*")
+          .eq("venue_id", venueId)
+          .order("created_at", { ascending: false });
+        finalTickets = refetchedTickets || [];
       }
 
-      return NextResponse.json({
-        ok: true,
-        tickets: finalTickets || [],
+      logger.info("[KDS TICKETS] Tickets fetched successfully", {
+        venueId,
+        ticketCount: finalTickets.length,
+        userId: context.user.id,
       });
-    } catch (_error) {
-      logger.error("[KDS] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-        stack: _error instanceof Error ? _error.stack : undefined,
+
+      // STEP 5: Return success response
+      return success({ tickets: finalTickets });
+    } catch (error) {
+      logger.error("[KDS TICKETS] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
       });
-      return NextResponse.json(
-        { ok: false, error: _error instanceof Error ? _error.message : "Internal server _error" },
-        { status: 500 }
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   }
@@ -184,82 +194,75 @@ export const GET = withUnifiedAuth(
 export const PATCH = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-      const body = await req.json();
-      const { ticketId, status } = body;
+      // STEP 2: Validate input
+      const body = await validateBody(updateTicketSchema, await req.json());
 
-      if (!ticketId || !status) {
-        return NextResponse.json(
-          { ok: false, error: "ticketId and status are required" },
-          { status: 400 }
-        );
+      // STEP 3: Get venueId from context
+      const venueId = context.venueId;
+
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
       }
 
-      const validStatuses = ["new", "in_progress", "ready", "bumped"];
-      if (!validStatuses.includes(status)) {
-        return NextResponse.json(
-          { ok: false, error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` },
-          { status: 400 }
-        );
-      }
+      // STEP 4: Business logic - Update ticket
+      const supabase = await createClient();
 
-      const adminSupabase = createAdminClient();
-
-      // Build update object with timestamp
-      const updateData: {
-        status: string;
-        started_at?: string;
-        ready_at?: string;
-        bumped_at?: string;
-      } = {
-        status,
-      };
-
-      // Set timestamps based on status
-      if (status === "in_progress") {
-        updateData.started_at = new Date().toISOString();
-      } else if (status === "ready") {
-        updateData.ready_at = new Date().toISOString();
-      } else if (status === "bumped") {
-        updateData.bumped_at = new Date().toISOString();
-      }
-
-      // Update ticket
-      const { data: updatedTicket, error: updateError } = await adminSupabase
+      const { data: updatedTicket, error: updateError } = await supabase
         .from("kds_tickets")
-        .update(updateData)
-        .eq("id", ticketId)
-        .eq("venue_id", context.venueId)
+        .update({
+          status: body.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", body.ticket_id)
+        .eq("venue_id", venueId)
         .select()
         .single();
 
-      if (updateError) {
-        logger.error("[KDS] Error updating ticket:", { value: updateError });
-        return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+      if (updateError || !updatedTicket) {
+        logger.error("[KDS TICKETS] Error updating ticket:", {
+          error: updateError?.message,
+          ticketId: body.ticket_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to update ticket",
+          isDevelopment() ? updateError?.message : undefined
+        );
       }
 
-      return NextResponse.json({
-        ok: true,
-        ticket: updatedTicket,
+      logger.info("[KDS TICKETS] Ticket updated successfully", {
+        ticketId: body.ticket_id,
+        newStatus: body.status,
+        venueId,
+        userId: context.user.id,
       });
-    } catch (_error) {
-      logger.error("[KDS] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+
+      // STEP 5: Return success response
+      return success({ ticket: updatedTicket });
+    } catch (error) {
+      logger.error("[KDS TICKETS] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
       });
-      return NextResponse.json(
-        { ok: false, error: _error instanceof Error ? _error.message : "Internal server error" },
-        { status: 500 }
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   }

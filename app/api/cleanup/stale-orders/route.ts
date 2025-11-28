@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -10,12 +11,12 @@ export async function POST(req: NextRequest) {
     const { venueId, hoursThreshold = 4, closeAll = false } = await req.json();
 
     if (!venueId) {
-      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Venue ID is required');
     }
 
     const { user } = await getAuthenticatedUser();
     if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return apiErrors.unauthorized('Not authenticated');
     }
 
     const supabase = await createClient();
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (venueError || !venue) {
-      return NextResponse.json({ error: "Venue not found or access denied" }, { status: 403 });
+      return apiErrors.forbidden('Venue not found or access denied');
     }
 
     // Find stale orders
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
       logger.error("[STALE ORDERS CLEANUP] Error fetching stale orders:", {
         error: fetchError.message || "Unknown error",
       });
-      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch orders');
     }
 
     if (!staleOrders || staleOrders.length === 0) {
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       logger.error("[STALE ORDERS CLEANUP] Error updating orders:", {
         error: updateError.message || "Unknown error",
       });
-      return NextResponse.json({ error: "Failed to update orders" }, { status: 500 });
+      return apiErrors.internal('Failed to update orders');
     }
 
     // Clean up tables for each order
@@ -139,6 +140,6 @@ export async function POST(req: NextRequest) {
     logger.error("[STALE ORDERS CLEANUP] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,16 +17,15 @@ export async function POST(req: NextRequest) {
       }));
       const { error } = await supabase.from("menu_items").insert(itemsToInsert);
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return apiErrors.badRequest(error.message);
       }
-      return NextResponse.json({ success: true });
+      return success({ success: true });
     }
 
-    return NextResponse.json({ error: "Missing items or venue_id" }, { status: 400 });
+    return apiErrors.badRequest('Missing items or venue_id');
   } catch (_err) {
-    return NextResponse.json(
-      { error: _err instanceof Error ? _err.message : "Failed to save menu." },
-      { status: 500 }
+    return apiErrors.internal(
+      _err instanceof Error ? _err.message : "Failed to save menu."
     );
   }
 }

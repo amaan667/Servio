@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
 
 type OrderRow = {
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
     const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
 
     if (!venueId) {
-      return NextResponse.json({ ok: false, error: "venueId required" }, { status: 400 });
+      return apiErrors.badRequest('venueId required');
     }
 
     // Authenticate using Authorization header
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
     // Verify venue access
     const access = await verifyVenueAccess(supabase, user.id, venueId);
     if (!access.hasAccess) {
-      return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
+      return apiErrors.forbidden('Access denied');
     }
 
     // Use default timezone since venues table doesn't have timezone column

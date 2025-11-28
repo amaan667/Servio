@@ -1,8 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { isDevelopment } from '@/lib/env';
+import { z } from 'zod';
+import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
+
+// Validation schemas
+const billSplitItemSchema = z.object({
+  total_amount: z.number().nonnegative(),
+  order_ids: z.array(z.string().uuid()).optional(),
+});
+
+const createBillSplitsSchema = z.object({
+  venue_id: z.string().uuid(),
+  table_session_id: z.string().uuid().optional(),
+  counter_session_id: z.string().uuid().optional(),
+  splits: z.array(billSplitItemSchema).min(1, "At least one split required"),
+  action: z.literal("create_splits"),
+});
+
+const paySplitSchema = z.object({
+  venue_id: z.string().uuid(),
+  split_id: z.string().uuid(),
+  payment_method: z.enum(["CASH", "CARD", "STRIPE"]),
+  action: z.literal("pay_split"),
+});
+
+const billSplitsActionSchema = z.discriminatedUnion("action", [
+  createBillSplitsSchema,
+  paySplitSchema,
+]);
+
+const getBillSplitsQuerySchema = z.object({
+  table_session_id: z.string().uuid().optional(),
+  counter_session_id: z.string().uuid().optional(),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -10,59 +45,40 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      const body = await req.json();
-      const { table_session_id, counter_session_id, splits, action } = body;
+      // STEP 3: Validate input
+      const body = await validateBody(billSplitsActionSchema, await req.json());
 
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        return NextResponse.json(
-          { error: "venue_id is required" },
-          { status: 400 }
-        );
+      // Verify venue_id matches context
+      if (body.venue_id !== venueId) {
+        return apiErrors.forbidden('Venue ID mismatch');
       }
 
-      if (!splits || !Array.isArray(splits)) {
-        return NextResponse.json(
-          { error: "splits array is required" },
-          { status: 400 }
-        );
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 4: Business logic
       const supabase = createAdminClient();
+      let result;
 
-    let result;
-
-    switch (action) {
-      case "create_splits":
+      if (body.action === "create_splits") {
         // Create bill splits
         const billSplits = [];
 
-        for (let i = 0; i < splits.length; i++) {
-          const split = splits[i];
+        for (let i = 0; i < body.splits.length; i++) {
+          const split = body.splits[i];
 
           // Create bill split record
           const { data: billSplit, error: splitError } = await supabase
             .from("bill_splits")
             .insert({
-              venue_id: venueId, // Use context.venueId
-              table_session_id,
-              counter_session_id,
+              venue_id: venueId,
+              table_session_id: body.table_session_id || null,
+              counter_session_id: body.counter_session_id || null,
               split_number: i + 1,
               total_amount: split.total_amount,
               payment_status: "UNPAID",
@@ -70,17 +86,25 @@ export const POST = withUnifiedAuth(
             .select()
             .single();
 
-          if (splitError) {
-            logger.error("[POS BILL SPLITS] Error creating split:", splitError);
-            return NextResponse.json({ error: "Failed to create bill split" }, { status: 500 });
+          if (splitError || !billSplit) {
+            logger.error("[POS BILL SPLITS] Error creating split:", {
+              error: splitError,
+              venueId,
+              userId: context.user.id,
+            });
+            return apiErrors.database(
+              "Failed to create bill split",
+              isDevelopment() ? splitError?.message : undefined
+            );
           }
 
           // Link orders to this split
-          if (split.order_ids && split.order_ids.length > 0) {
-            const orderSplitLinks = split.order_ids.map((orderId: string) => ({
+          if (split.order_ids && Array.isArray(split.order_ids) && split.order_ids.length > 0) {
+            const orderIds = split.order_ids || [];
+            const orderSplitLinks = orderIds.map((orderId) => ({
               order_id: orderId,
               bill_split_id: billSplit.id,
-              amount: split.total_amount / split.order_ids.length,
+              amount: split.total_amount / orderIds.length,
             }));
 
             const { error: linksError } = await supabase
@@ -88,10 +112,14 @@ export const POST = withUnifiedAuth(
               .insert(orderSplitLinks);
 
             if (linksError) {
-              logger.error("[POS BILL SPLITS] Error linking orders:", linksError);
-              return NextResponse.json(
-                { error: "Failed to link orders to split" },
-                { status: 500 }
+              logger.error("[POS BILL SPLITS] Error linking orders:", {
+                error: linksError,
+                venueId,
+                userId: context.user.id,
+              });
+              return apiErrors.database(
+                "Failed to link orders to split",
+                isDevelopment() ? linksError.message : undefined
               );
             }
           }
@@ -100,72 +128,60 @@ export const POST = withUnifiedAuth(
         }
 
         result = { splits: billSplits, action: "created" };
-        break;
-
-      case "pay_split": {
-        const { split_id, payment_method } = body;
-
-        if (!split_id || !payment_method) {
-          return NextResponse.json(
-            { error: "split_id and payment_method are required" },
-            { status: 400 }
-          );
-        }
-
+      } else if (body.action === "pay_split") {
         // Mark split as paid
         const { data: paidSplit, error: payError } = await supabase
           .from("bill_splits")
           .update({
             payment_status: "PAID",
-            payment_method,
+            payment_method: body.payment_method,
           })
-          .eq("id", split_id)
+          .eq("id", body.split_id)
           .eq("venue_id", venueId) // Security: ensure venue matches
           .select()
           .single();
 
-        if (payError) {
-          logger.error("[POS BILL SPLITS] Error paying split:", payError);
-          return NextResponse.json({ error: "Failed to mark split as paid" }, { status: 500 });
+        if (payError || !paidSplit) {
+          logger.error("[POS BILL SPLITS] Error paying split:", {
+            error: payError,
+            splitId: body.split_id,
+            venueId,
+            userId: context.user.id,
+          });
+          return apiErrors.database(
+            "Failed to mark split as paid",
+            isDevelopment() ? payError?.message : undefined
+          );
         }
 
         result = { split: paidSplit, action: "paid" };
-        break;
+      } else {
+        return apiErrors.badRequest("Invalid action");
       }
 
-      default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-    }
+      logger.info("[POS BILL SPLITS] Operation completed successfully", {
+        action: body.action,
+        venueId,
+        userId: context.user.id,
+      });
 
-      return NextResponse.json(result);
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      // STEP 5: Return success response
+      return success(result);
+    } catch (error) {
       logger.error("[POS BILL SPLITS] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
@@ -173,8 +189,10 @@ export const POST = withUnifiedAuth(
     // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
         return null;
       }
@@ -188,34 +206,25 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
+      // STEP 3: Validate query parameters
       const { searchParams } = new URL(req.url);
-      const tableSessionId = searchParams.get("table_session_id");
-      const counterSessionId = searchParams.get("counter_session_id");
+      const query = validateQuery(getBillSplitsQuerySchema, {
+        table_session_id: searchParams.get("table_session_id") || undefined,
+        counter_session_id: searchParams.get("counter_session_id") || undefined,
+      });
 
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 4: Business logic
       const supabase = createAdminClient();
 
-      let query = supabase
+      let dbQuery = supabase
         .from("bill_splits")
         .select(
           `
@@ -234,61 +243,45 @@ export const GET = withUnifiedAuth(
         )
         .eq("venue_id", venueId); // Security: always filter by venueId
 
-      if (tableSessionId) {
-        query = query.eq("table_session_id", tableSessionId);
+      if (query.table_session_id) {
+        dbQuery = dbQuery.eq("table_session_id", query.table_session_id);
       }
 
-      if (counterSessionId) {
-        query = query.eq("counter_session_id", counterSessionId);
+      if (query.counter_session_id) {
+        dbQuery = dbQuery.eq("counter_session_id", query.counter_session_id);
       }
 
-      const { data: splits, error } = await query.order("split_number");
+      const { data: splits, error } = await dbQuery.order("split_number");
 
       if (error) {
         logger.error("[POS BILL SPLITS GET] Error fetching splits:", {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error.message,
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: "Failed to fetch bill splits",
-            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
-          },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to fetch bill splits",
+          isDevelopment() ? error.message : undefined
         );
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({ splits });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      // STEP 5: Return success response
+      return success({ splits: splits || [] });
+    } catch (error) {
       logger.error("[POS BILL SPLITS GET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },

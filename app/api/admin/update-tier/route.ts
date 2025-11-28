@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 /**
  * Admin endpoint to update subscription tier
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     const { email, tier } = await request.json();
 
     if (!email || !tier) {
-      return NextResponse.json({ error: "Email and tier are required" }, { status: 400 });
+      return apiErrors.badRequest('Email and tier are required');
     }
 
     const supabase = await createClient();
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     // Admin role check
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userRole?.role !== "admin" && userRole?.role !== "owner") {
-      return NextResponse.json({ ok: false, error: "Admin access required" }, { status: 403 });
+      return apiErrors.forbidden('Admin access required');
     }
 
     logger.info("[ADMIN UPDATE TIER] Request to update tier", {
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!venues || venues.length === 0) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
+      return apiErrors.notFound('No organization found');
     }
 
     const organizationId = venues[0].organization_id;
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!org) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+      return apiErrors.notFound('Organization not found');
     }
 
     logger.info("[ADMIN UPDATE TIER] Current subscription", {
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       logger.error("[ADMIN UPDATE TIER] Update failed", { error });
-      return NextResponse.json({ error: "Failed to update tier" }, { status: 500 });
+      return apiErrors.internal('Failed to update tier');
     }
 
     logger.info("[ADMIN UPDATE TIER] Successfully updated tier", {
@@ -104,6 +105,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     logger.error("[ADMIN UPDATE TIER] Unexpected error", { error: err });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

@@ -1,152 +1,176 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
+
+const cancelInvitationSchema = z.object({
+  id: z.string().uuid("Invalid invitation ID"),
+  venue_id: z.string().uuid("Invalid venue ID").optional(),
+  venueId: z.string().uuid("Invalid venue ID").optional(),
+});
 
 // POST /api/staff/invitations/cancel - Cancel an invitation
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
+      // STEP 2: Validate input
+      const body = await validateBody(cancelInvitationSchema, await req.json());
+      const venue_id = context.venueId || body.venue_id || body.venueId;
+
+      if (!venue_id) {
+        return apiErrors.badRequest("Venue ID is required");
+      }
+
+      // STEP 3: Business logic
       const user = context.user;
-      const body = await req.json();
-      const { id, venue_id: bodyVenueId } = body;
-      const venue_id = context.venueId || bodyVenueId;
+      const supabase = await createServerSupabase();
 
-    if (!id) {
-      return NextResponse.json({ error: "Invitation ID is required" }, { status: 400 });
-    }
+      // Verify venue access (must be owner or admin)
+      const { data: venueAccess } = await supabase
+        .from("venues")
+        .select("venue_id")
+        .eq("venue_id", venue_id)
+        .eq("owner_user_id", user.id)
+        .maybeSingle();
 
-    if (!venue_id) {
-      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
-    }
+      const { data: staffAccess } = await supabase
+        .from("user_venue_roles")
+        .select("role")
+        .eq("venue_id", venue_id)
+        .eq("user_id", user.id)
+        .in("role", ["owner", "admin"])
+        .maybeSingle();
 
-    const supabase = await createServerSupabase();
+      if (!venueAccess && !staffAccess) {
+        logger.warn("[INVITATION CANCEL] Insufficient permissions", {
+          userId: user.id,
+          venueId: venue_id,
+        });
+        return apiErrors.forbidden("Insufficient permissions");
+      }
 
-    // Verify venue access (must be owner or admin)
-    const { data: venueAccess } = await supabase
-      .from("venues")
-      .select("venue_id")
-      .eq("venue_id", venue_id)
-      .eq("owner_user_id", user.id)
-      .maybeSingle();
+      // Check if staff_invitations table exists
+      try {
+        await supabase.from("staff_invitations").select("id").limit(1);
+      } catch (tableError: unknown) {
+        const errorMessage = tableError instanceof Error ? tableError.message : "Unknown error";
+        const errorCode =
+          tableError && typeof tableError === "object" && "code" in tableError
+            ? String(tableError.code)
+            : undefined;
 
-    const { data: staffAccess } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("venue_id", venue_id)
-      .eq("user_id", user.id)
-      .in("role", ["owner", "admin"])
-      .maybeSingle();
+        if (
+          errorCode === "PGRST116" ||
+          errorMessage?.includes('relation "staff_invitations" does not exist')
+        ) {
+          return apiErrors.serviceUnavailable(
+            "Staff invitation system not set up. Please run the database migration first."
+          );
+        } else {
+          logger.error("[INVITATION CANCEL] Unexpected table error:", {
+            error: errorMessage,
+            userId: user.id,
+          });
+          return apiErrors.database("Database error. Please try again.");
+        }
+      }
 
-    if (!venueAccess && !staffAccess) {
-      return NextResponse.json({ error: "Forbidden - insufficient permissions" }, { status: 403 });
-    }
+      // Get invitation details - verify it belongs to the venue
+      const { data: invitation, error: fetchInvitationError } = await supabase
+        .from("staff_invitations")
+        .select("venue_id, status")
+        .eq("id", body.id)
+        .eq("venue_id", venue_id)
+        .single();
 
-    // Check if staff_invitations table exists
-    try {
-      await supabase.from("staff_invitations").select("id").limit(1);
-    } catch (tableError: unknown) {
-      const errorMessage = tableError instanceof Error ? tableError.message : "Unknown error";
-      const errorCode =
-        tableError && typeof tableError === "object" && "code" in tableError
-          ? String(tableError.code)
-          : undefined;
+      if (fetchInvitationError) {
+        logger.error("[INVITATION CANCEL] Error fetching invitation:", {
+          error: fetchInvitationError.message,
+          invitationId: body.id,
+          userId: user.id,
+        });
+        return apiErrors.notFound("Invitation not found");
+      }
 
-      if (
-        errorCode === "PGRST116" ||
-        errorMessage?.includes('relation "staff_invitations" does not exist')
-      ) {
-        return NextResponse.json(
-          {
-            error: "Staff invitation system not set up. Please run the database migration first.",
-          },
-          { status: 503 }
-        );
-      } else {
-        logger.error("[INVITATION API] Unexpected table error:", { error: errorMessage });
-        return NextResponse.json(
-          {
-            error: "Database error. Please try again.",
-          },
-          { status: 500 }
+      // Check if invitation can be cancelled
+      if (invitation.status !== "pending") {
+        return apiErrors.badRequest("Only pending invitations can be cancelled");
+      }
+
+      // Cancel invitation
+      const { error: updateError } = await supabase
+        .from("staff_invitations")
+        .update({
+          status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", body.id);
+
+      if (updateError) {
+        logger.error("[INVITATION CANCEL] Error updating invitation:", {
+          error: updateError.message,
+          invitationId: body.id,
+          userId: user.id,
+        });
+        return apiErrors.database(
+          "Failed to cancel invitation",
+          isDevelopment() ? updateError.message : undefined
         );
       }
-    }
 
-    // Get invitation details - verify it belongs to the venue
-    const { data: invitation, error: fetchInvitationError } = await supabase
-      .from("staff_invitations")
-      .select("venue_id, status")
-      .eq("id", id)
-      .eq("venue_id", venue_id) // Must match the venue user has access to
-      .single();
-
-    if (fetchInvitationError) {
-      logger.error("[INVITATION API] Error fetching invitation:", fetchInvitationError);
-      return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
-    }
-
-    logger.info("✅ [INVITATION CANCEL] User canceling invitation", {
-      userId: user.id,
-      invitationId: id,
-      venueId: venue_id,
-    });
-
-    // Check if invitation can be cancelled
-    if (invitation.status !== "pending") {
-      return NextResponse.json(
-        {
-          error: "Only pending invitations can be cancelled",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Simple approach: just mark as cancelled and let the UI filter it out
-    // This avoids all constraint issues
-    const { error: updateError } = await supabase
-      .from("staff_invitations")
-      .update({
-        status: "cancelled",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-
-    if (updateError) {
-      logger.error("[INVITATION API] Error updating invitation:", updateError);
-      return NextResponse.json(
-        {
-          error: "Failed to cancel invitation",
-          details: updateError.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Invitation cancelled successfully",
-    });
-    } catch (_error) {
-      logger.error("[INVITATION API] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+      logger.info("[INVITATION CANCEL] Invitation cancelled successfully", {
+        invitationId: body.id,
+        venueId: venue_id,
+        userId: user.id,
       });
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+      // STEP 4: Return success response
+      return success({
+        message: "Invitation cancelled successfully",
+      });
+    } catch (error) {
+      logger.error("[INVITATION CANCEL] Unexpected error:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: context.user.id,
+      });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
+      } catch {
+        return null;
+      }
+    },
   }
 );

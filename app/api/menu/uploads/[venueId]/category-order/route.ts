@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ venueId: string }> }) {
   try {
     const { venueId } = await params;
 
     if (!venueId) {
-      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Venue ID is required');
     }
 
     const supabase = await createClient();
@@ -25,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
       logger.error("[CATEGORY ORDER API] Error fetching upload data:", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
-      return NextResponse.json({ error: "Failed to fetch category order" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch category order');
     }
 
     // Extract categories from the parsed_json
@@ -44,6 +45,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
     logger.error("[CATEGORY ORDER API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

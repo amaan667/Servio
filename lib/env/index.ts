@@ -10,7 +10,6 @@
  */
 
 import { z } from "zod";
-import "server-only";
 
 // Comprehensive environment variable schema
 const envSchema = z.object({
@@ -56,6 +55,14 @@ const envSchema = z.object({
   
   // Logging (Optional)
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
+  
+  // Resend (Optional)
+  RESEND_API_KEY: z.string().min(1).optional(),
+  
+  // Stripe Price IDs (Optional)
+  STRIPE_BASIC_PRICE_ID: z.string().optional(),
+  STRIPE_STANDARD_PRICE_ID: z.string().optional(),
+  STRIPE_PREMIUM_PRICE_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -108,6 +115,10 @@ function validateEnv(): Env {
         SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
         RAILWAY_PUBLIC_DOMAIN: process.env.RAILWAY_PUBLIC_DOMAIN,
         LOG_LEVEL: process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error" | undefined,
+        RESEND_API_KEY: process.env.RESEND_API_KEY,
+        STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
+        STRIPE_STANDARD_PRICE_ID: process.env.STRIPE_STANDARD_PRICE_ID,
+        STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
       } as Env;
       return validatedEnv;
     }

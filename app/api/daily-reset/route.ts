@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -10,13 +12,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
+        return apiErrors.rateLimit();
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -28,12 +24,10 @@ export const POST = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!venueId) {
-        return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
+        return apiErrors.badRequest("Venue ID is required");
       }
 
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 5: Business logic
       const supabase = await createClient();
 
       // Check if venue exists
@@ -49,10 +43,10 @@ export const POST = withUnifiedAuth(
           error: venueError,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+        return apiErrors.notFound("Venue not found");
       }
 
-      // Step 1: Complete all active orders (mark as COMPLETED)
+      // Step 1: Complete all active orders
       const { data: activeOrders, error: activeOrdersError } = await supabase
         .from("orders")
         .select("id, order_status, table_number")
@@ -65,7 +59,10 @@ export const POST = withUnifiedAuth(
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Failed to fetch active orders" }, { status: 500 });
+        return apiErrors.database(
+          "Failed to fetch active orders",
+          isDevelopment() ? activeOrdersError.message : undefined
+        );
       }
 
       if (activeOrders && activeOrders.length > 0) {
@@ -84,7 +81,10 @@ export const POST = withUnifiedAuth(
             venueId,
             userId: context.user.id,
           });
-          return NextResponse.json({ error: "Failed to complete active orders" }, { status: 500 });
+          return apiErrors.database(
+            "Failed to complete active orders",
+            isDevelopment() ? completeOrdersError.message : undefined
+          );
         }
       }
 
@@ -101,7 +101,10 @@ export const POST = withUnifiedAuth(
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Failed to fetch active reservations" }, { status: 500 });
+          return apiErrors.database(
+            "Failed to fetch active reservations",
+            isDevelopment() ? activeReservationsError.message : undefined
+          );
       }
 
       if (activeReservations && activeReservations.length > 0) {
@@ -120,7 +123,10 @@ export const POST = withUnifiedAuth(
             venueId,
             userId: context.user.id,
           });
-          return NextResponse.json({ error: "Failed to cancel active reservations" }, { status: 500 });
+          return apiErrors.database(
+            "Failed to cancel active reservations",
+            isDevelopment() ? cancelReservationsError.message : undefined
+          );
         }
       }
 
@@ -136,7 +142,10 @@ export const POST = withUnifiedAuth(
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Failed to clear table sessions" }, { status: 500 });
+        return apiErrors.database(
+          "Failed to clear table sessions",
+          isDevelopment() ? clearSessionsError.message : undefined
+        );
       }
 
       // Step 4: Reset all tables to available
@@ -154,56 +163,34 @@ export const POST = withUnifiedAuth(
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Failed to reset tables" }, { status: 500 });
+        return apiErrors.database(
+          "Failed to reset tables",
+          isDevelopment() ? resetTablesError.message : undefined
+        );
       }
 
       // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
+      return success({
         message: "Daily reset completed successfully",
         ordersCompleted: activeOrders?.length || 0,
         reservationsCancelled: activeReservations?.length || 0,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+    } catch (error) {
       logger.error("[DAILY RESET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
-        userId: context.user.id,
+        userId: context.user?.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
-  },
-  {
-    // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
-        const body = await req.json();
-        return body?.venueId || body?.venue_id || null;
-      } catch {
-        return null;
-      }
-    },
   }
 );

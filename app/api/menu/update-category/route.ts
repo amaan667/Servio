@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Deployment trigger
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(_request: NextRequest) {
 
     if (updateError) {
       logger.error("[UPDATE CATEGORY] Error updating menu items:", updateError);
-      return NextResponse.json({ error: "Failed to update menu items" }, { status: 500 });
+      return apiErrors.internal('Failed to update menu items');
     }
 
     // Update category order in menu_uploads if it exists
@@ -73,6 +74,6 @@ export async function POST(_request: NextRequest) {
     logger.error("[UPDATE CATEGORY] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

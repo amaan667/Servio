@@ -1,8 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { isDevelopment } from '@/lib/env';
+import { z } from 'zod';
+import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
+
+// Validation schemas
+const createQuestionSchema = z.object({
+  venue_id: z.string().uuid(),
+  question_text: z.string().min(1).max(500),
+  question_type: z.enum(["stars", "multiple_choice", "paragraph"]),
+  is_active: z.boolean().default(true),
+  sort_index: z.number().int().nonnegative().optional(),
+  options: z.array(z.string()).optional(),
+});
+
+const updateQuestionSchema = createQuestionSchema.partial().extend({
+  id: z.string().uuid(),
+});
+
+const deleteQuestionSchema = z.object({
+  id: z.string().uuid(),
+});
 
 // GET - List questions for venue
 export const GET = withUnifiedAuth(
@@ -11,27 +33,15 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        return NextResponse.json({ error: "venueId required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 3: Business logic
       const supabase = await createClient();
 
       // Get questions (all questions since we don't have soft delete yet)
@@ -48,12 +58,9 @@ export const GET = withUnifiedAuth(
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: "Failed to fetch questions",
-            message: process.env.NODE_ENV === "development" ? error.message : "Database query failed",
-          },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to fetch questions",
+          isDevelopment() ? error.message : undefined
         );
       }
 
@@ -61,219 +68,135 @@ export const GET = withUnifiedAuth(
       const totalCount = questions?.length || 0;
       const activeCount = questions?.filter((q) => q.is_active).length || 0;
 
-      // STEP 7: Return success response
-      return NextResponse.json({
+      // STEP 4: Return success response
+      return success({
         questions: questions || [],
-        totalCount: totalCount,
-        activeCount: activeCount,
+        totalCount,
+        activeCount,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+    } catch (error) {
       logger.error("[FEEDBACK QUESTIONS GET] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
   {
-    // Extract venueId from query params
     extractVenueId: async (req) => {
-      try {
-        const { searchParams } = new URL(req.url);
-        return searchParams.get("venueId") || searchParams.get("venue_id");
-      } catch {
-        return null;
-      }
+      const { searchParams } = new URL(req.url);
+      return searchParams.get("venueId");
     },
   }
 );
 
-// POST - Create new question
+// POST - Create question
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      let body;
-      try {
-        body = await req.json();
-      } catch (parseError) {
-        logger.error("[FEEDBACK QUESTIONS POST] JSON parse error:", { error: parseError });
-        return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+      // STEP 3: Validate input
+      const body = await validateBody(createQuestionSchema, await req.json());
+
+      // Verify venue_id matches context
+      if (body.venue_id !== venueId) {
+        return apiErrors.forbidden('Venue ID mismatch');
       }
 
-      const { prompt, type, choices, is_active = true } = body;
-
-      // STEP 4: Validate inputs
-      if (!venueId) {
-        logger.error("[FEEDBACK QUESTIONS POST] Missing venue_id in request:", { body });
-        return NextResponse.json({ error: "venueId required" }, { status: 400 });
-      }
-      if (!prompt || !type) {
-        logger.error("[FEEDBACK QUESTIONS POST] Missing prompt or type:", { prompt: !!prompt, type: !!type });
-        return NextResponse.json({ error: "prompt and type required" }, { status: 400 });
-      }
-
-      if (prompt.length < 4 || prompt.length > 160) {
-        return NextResponse.json({ error: "Prompt must be 4-160 characters" }, { status: 400 });
-      }
-
-      if (!["stars", "multiple_choice", "paragraph"].includes(type)) {
-        return NextResponse.json({ error: "Invalid question type" }, { status: 400 });
-      }
-
-      if (type === "multiple_choice") {
-        if (!choices || !Array.isArray(choices) || choices.length < 2 || choices.length > 6) {
-          return NextResponse.json(
-            { error: "Multiple choice questions require 2-6 choices" },
-            { status: 400 }
-          );
-        }
-
-        for (const choice of choices) {
-          if (!choice || typeof choice !== "string" || choice.length === 0 || choice.length > 40) {
-            return NextResponse.json(
-              { error: "Each choice must be 1-40 characters" },
-              { status: 400 }
-            );
-          }
-        }
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
+      // STEP 4: Business logic
       const supabase = await createClient();
 
-      // Get max sort_index for this venue
-      const { data: maxSort, error: maxSortError } = await supabase
+      // Get current max sort_index for this venue
+      const { data: existingQuestions } = await supabase
         .from("feedback_questions")
         .select("sort_index")
         .eq("venue_id", venueId)
         .order("sort_index", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (maxSortError && maxSortError.message.includes("sort_index")) {
-        logger.error("[FEEDBACK QUESTIONS POST] Database schema error - sort_index column missing");
-        return NextResponse.json(
-          {
-            error:
-              "Database schema not set up. Please contact support to apply the feedback questions schema.",
-          },
-          { status: 500 }
-        );
-      }
-
-      const sort_index = (maxSort?.sort_index || 0) + 1;
-
-      // Create question
-      const questionData = {
-        venue_id: venueId,
-        prompt: prompt.trim(),
-        type,
-        choices: type === "multiple_choice" ? choices : null,
-        is_active,
-        sort_index,
-      };
+      const nextSortIndex = existingQuestions?.sort_index !== undefined
+        ? (existingQuestions.sort_index + 1)
+        : 0;
 
       const { data: question, error } = await supabase
         .from("feedback_questions")
-        .insert(questionData)
+        .insert({
+          venue_id: venueId,
+          question_text: body.question_text,
+          question_type: body.question_type,
+          is_active: body.is_active ?? true,
+          sort_index: body.sort_index ?? nextSortIndex,
+          options: body.options || null,
+        })
         .select()
         .single();
 
-      if (error) {
+      if (error || !question) {
         logger.error("[FEEDBACK QUESTIONS POST] Error creating question:", {
-          error: error.message,
+          error: error?.message,
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: "Failed to create question",
-            message: process.env.NODE_ENV === "development" ? error.message : "Database insert failed",
-          },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to create question",
+          isDevelopment() ? error?.message : undefined
         );
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({ question });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      logger.info("[FEEDBACK QUESTIONS POST] Question created successfully", {
+        questionId: question.id,
+        venueId,
+        userId: context.user.id,
+      });
+
+      // STEP 5: Return success response
+      return success({ question });
+    } catch (error) {
       logger.error("[FEEDBACK QUESTIONS POST] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
   {
-    // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
         return null;
       }
@@ -288,150 +211,97 @@ export const PATCH = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      const { id, prompt, type, choices, is_active, sort_index } = await req.json();
+      // STEP 3: Validate input
+      const body = await validateBody(updateQuestionSchema, await req.json());
 
-      // STEP 4: Validate inputs
-      if (!id || !venueId) {
-        return NextResponse.json({ error: "id and venue_id required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-      // Verify question belongs to venue
+      // STEP 4: Security - Verify question belongs to venue
       const supabase = await createClient();
-      const { data: question } = await supabase
+      const { data: existingQuestion, error: checkError } = await supabase
         .from("feedback_questions")
         .select("venue_id")
-        .eq("id", id)
+        .eq("id", body.id)
         .eq("venue_id", venueId)
         .single();
 
-      if (!question) {
-        return NextResponse.json(
-          { error: "Question not found or access denied" },
-          { status: 404 }
-        );
-      }
-
-      // STEP 6: Business logic
-      const updateData: Record<string, unknown> = {};
-
-      if (prompt !== undefined) {
-        if (prompt.length < 4 || prompt.length > 160) {
-          return NextResponse.json({ error: "Prompt must be 4-160 characters" }, { status: 400 });
-        }
-        updateData.prompt = prompt.trim();
-      }
-
-      if (type !== undefined) {
-        if (!["stars", "multiple_choice", "paragraph"].includes(type)) {
-          return NextResponse.json({ error: "Invalid question type" }, { status: 400 });
-        }
-        updateData.type = type;
-        updateData.choices = type === "multiple_choice" ? choices : null;
-      }
-
-      if (choices !== undefined && type === "multiple_choice") {
-        if (!Array.isArray(choices) || choices.length < 2 || choices.length > 6) {
-          return NextResponse.json(
-            { error: "Multiple choice questions require 2-6 choices" },
-            { status: 400 }
-          );
-        }
-
-        for (const choice of choices) {
-          if (!choice || typeof choice !== "string" || choice.length === 0 || choice.length > 40) {
-            return NextResponse.json(
-              { error: "Each choice must be 1-40 characters" },
-              { status: 400 }
-            );
-          }
-        }
-        updateData.choices = choices;
-      }
-
-      if (is_active !== undefined) {
-        updateData.is_active = is_active;
-      }
-
-      if (sort_index !== undefined) {
-        updateData.sort_index = sort_index;
-      }
-
-      const { data: updatedQuestion, error } = await supabase
-        .from("feedback_questions")
-        .update(updateData)
-        .eq("id", id)
-        .eq("venue_id", venueId) // Security: ensure venue matches
-        .select()
-        .single();
-
-      if (error) {
-        logger.error("[FEEDBACK QUESTIONS PATCH] Error updating question:", {
-          error: error.message,
+      if (checkError || !existingQuestion) {
+        logger.warn("[FEEDBACK QUESTIONS PATCH] Question not found or access denied", {
+          questionId: body.id,
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: "Failed to update question",
-            message: process.env.NODE_ENV === "development" ? error.message : "Database update failed",
-          },
-          { status: 500 }
+        return apiErrors.notFound("Question not found or access denied");
+      }
+
+      // STEP 5: Business logic - Update question
+      const updateData: Record<string, unknown> = {};
+      if (body.question_text !== undefined) updateData.question_text = body.question_text;
+      if (body.question_type !== undefined) updateData.question_type = body.question_type;
+      if (body.is_active !== undefined) updateData.is_active = body.is_active;
+      if (body.sort_index !== undefined) updateData.sort_index = body.sort_index;
+      if (body.options !== undefined) updateData.options = body.options;
+
+      const { data: question, error } = await supabase
+        .from("feedback_questions")
+        .update(updateData)
+        .eq("id", body.id)
+        .eq("venue_id", venueId)
+        .select()
+        .single();
+
+      if (error || !question) {
+        logger.error("[FEEDBACK QUESTIONS PATCH] Error updating question:", {
+          error: error?.message,
+          questionId: body.id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to update question",
+          isDevelopment() ? error?.message : undefined
         );
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({ question: updatedQuestion });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      logger.info("[FEEDBACK QUESTIONS PATCH] Question updated successfully", {
+        questionId: body.id,
+        venueId,
+        userId: context.user.id,
+      });
+
+      // STEP 6: Return success response
+      return success({ question });
+    } catch (error) {
       logger.error("[FEEDBACK QUESTIONS PATCH] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
   {
-    // Extract venueId from body
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
+        const body = await req.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
       } catch {
         return null;
       }
@@ -446,107 +316,88 @@ export const DELETE = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
-      // STEP 3: Parse request
-      const { id } = await req.json();
+      // STEP 3: Validate input
+      const { searchParams } = new URL(req.url);
+      const query = validateQuery(deleteQuestionSchema, {
+        id: searchParams.get("id"),
+      });
 
-      // STEP 4: Validate inputs
-      if (!id || !venueId) {
-        return NextResponse.json({ error: "id and venue_id required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-      // Verify question belongs to venue
+      // STEP 4: Security - Verify question belongs to venue
       const supabase = await createClient();
-      const { data: question } = await supabase
+      const { data: existingQuestion, error: checkError } = await supabase
         .from("feedback_questions")
         .select("venue_id")
-        .eq("id", id)
+        .eq("id", query.id)
         .eq("venue_id", venueId)
         .single();
 
-      if (!question) {
-        return NextResponse.json(
-          { error: "Question not found or access denied" },
-          { status: 404 }
-        );
+      if (checkError || !existingQuestion) {
+        logger.warn("[FEEDBACK QUESTIONS DELETE] Question not found or access denied", {
+          questionId: query.id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.notFound("Question not found or access denied");
       }
 
-      // STEP 6: Business logic
+      // STEP 5: Business logic - Delete question
       const { error } = await supabase
         .from("feedback_questions")
         .delete()
-        .eq("id", id)
-        .eq("venue_id", venueId); // Security: ensure venue matches
+        .eq("id", query.id)
+        .eq("venue_id", venueId);
 
       if (error) {
         logger.error("[FEEDBACK QUESTIONS DELETE] Error deleting question:", {
           error: error.message,
+          questionId: query.id,
           venueId,
           userId: context.user.id,
         });
-        return NextResponse.json(
-          {
-            error: "Failed to delete question",
-            message: process.env.NODE_ENV === "development" ? error.message : "Database delete failed",
-          },
-          { status: 500 }
+        return apiErrors.database(
+          "Failed to delete question",
+          isDevelopment() ? error.message : undefined
         );
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({ success: true });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+      logger.info("[FEEDBACK QUESTIONS DELETE] Question deleted successfully", {
+        questionId: query.id,
+        venueId,
+        userId: context.user.id,
+      });
+
+      // STEP 6: Return success response
+      return success({ deleted: true });
+    } catch (error) {
       logger.error("[FEEDBACK QUESTIONS DELETE] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },
   {
-    // Extract venueId from body
     extractVenueId: async (req) => {
-      try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
-      } catch {
-        return null;
-      }
+      const { searchParams } = new URL(req.url);
+      return searchParams.get("venueId");
     },
   }
 );

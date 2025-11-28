@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -15,7 +17,7 @@ export async function POST(_request: NextRequest) {
     const user = session?.user;
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     const body = await _request.json();
@@ -29,7 +31,7 @@ export async function POST(_request: NextRequest) {
     }
 
     if (!["starter", "pro", "enterprise"].includes(newTier)) {
-      return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
+      return apiErrors.badRequest('Invalid tier');
     }
 
     // Get organization
@@ -41,7 +43,7 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (!org) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+      return apiErrors.notFound('Organization not found');
     }
 
     // If already on the requested tier, no action needed
@@ -68,7 +70,7 @@ export async function POST(_request: NextRequest) {
 
     if (updateError) {
       logger.error("[DOWNGRADE] Database update error:", updateError);
-      return NextResponse.json({ error: "Failed to update subscription tier" }, { status: 500 });
+      return apiErrors.internal('Failed to update subscription tier');
     }
 
     // If the organization has an active Stripe subscription,
@@ -87,9 +89,9 @@ export async function POST(_request: NextRequest) {
 
           // Get the price ID for the new tier
           const priceIds = {
-            starter: process.env.STRIPE_BASIC_PRICE_ID,
-            pro: process.env.STRIPE_STANDARD_PRICE_ID,
-            enterprise: process.env.STRIPE_PREMIUM_PRICE_ID,
+            starter: env('STRIPE_BASIC_PRICE_ID'),
+            pro: env('STRIPE_STANDARD_PRICE_ID'),
+            enterprise: env('STRIPE_PREMIUM_PRICE_ID'),
           };
 
           const newPriceId = priceIds[newTier as keyof typeof priceIds];

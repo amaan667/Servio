@@ -1,11 +1,15 @@
 // Stripe Billing Portal - Let customers manage their subscription
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase";
+import { env, isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
 
 interface Organization {
   id: string;
@@ -13,134 +17,80 @@ interface Organization {
   owner_user_id: string;
 }
 
+const createPortalSessionSchema = z.object({
+  organizationId: z.string().uuid("Invalid organization ID"),
+});
+
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get user from context (already verified)
       const user = context.user;
 
-      // STEP 3: Parse request
-      const body = await req.json();
-      const { organizationId } = body;
+      // STEP 3: Validate input
+      const body = await validateBody(createPortalSessionSchema, await req.json());
 
-      // STEP 4: Validate inputs
-      if (!organizationId) {
-        return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify user owns organization
+      // STEP 4: Security - Verify user owns organization
       const supabase = await createClient();
 
       // Get organization
-      const { data: org } = await supabase
+      const { data: org, error: orgError } = await supabase
         .from("organizations")
         .select("*")
-        .eq("id", organizationId)
+        .eq("id", body.organizationId)
         .eq("owner_user_id", user.id)
         .single();
 
-      const typedOrg = org as unknown as Organization | null;
-
-      if (!typedOrg) {
-        return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-      }
-
-      // If no Stripe customer ID, try to find it from subscriptions
-      let stripeCustomerId = typedOrg.stripe_customer_id;
-      
-      if (!stripeCustomerId) {
-        // Try to find customer from active subscriptions
-        const subscriptions = await stripe.subscriptions.list({
-          limit: 10,
-        });
-        
-        // Find subscription with matching organization_id in metadata
-        const matchingSub = subscriptions.data.find(
-          (sub) => sub.metadata?.organization_id === organizationId
-        );
-        
-        if (matchingSub?.customer) {
-          stripeCustomerId = typeof matchingSub.customer === "string" 
-            ? matchingSub.customer 
-            : matchingSub.customer.id;
-          
-          // Update organization with customer ID
-          await supabase
-            .from("organizations")
-            .update({ stripe_customer_id: stripeCustomerId })
-            .eq("id", organizationId);
-        }
-      }
-      
-      if (!stripeCustomerId) {
-        logger.error("[STRIPE PORTAL] No Stripe customer found", {
-          organizationId,
+      if (orgError || !org) {
+        logger.warn("[STRIPE PORTAL] Organization not found or access denied", {
+          organizationId: body.organizationId,
           userId: user.id,
         });
-        return NextResponse.json(
-          { 
-            error: "No billing account found",
-            message: "Please contact support to set up your billing account."
-          }, 
-          { status: 400 }
-        );
+        return apiErrors.notFound("Organization not found or access denied");
       }
 
-      // STEP 6: Business logic
-      // Create Stripe billing portal session
-      const baseUrl =
-        process.env.NEXT_PUBLIC_SITE_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        "https://servio-production.up.railway.app";
+      if (!org.stripe_customer_id) {
+        return apiErrors.badRequest("No Stripe customer ID found for this organization");
+      }
 
-      const session = await stripe.billingPortal.sessions.create({
-        customer: stripeCustomerId,
-        return_url: `${baseUrl}/dashboard`,
+      // STEP 5: Business logic - Create portal session
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: org.stripe_customer_id,
+        return_url: `${env("NEXT_PUBLIC_APP_URL") || env("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000"}/settings/billing`,
       });
 
-      // STEP 7: Return success response
-      return NextResponse.json({
-        url: session.url,
+      logger.info("[STRIPE PORTAL] Portal session created", {
+        sessionId: portalSession.id,
+        organizationId: body.organizationId,
+        userId: user.id,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
+      // STEP 6: Return success response
+      return success({
+        url: portalSession.url,
+      });
+    } catch (error) {
       logger.error("[STRIPE PORTAL] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Failed to create portal session",
+        isDevelopment() ? error : undefined
       );
     }
   },

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
@@ -85,7 +86,7 @@ export async function GET(
             {
               ok: false,
               error: "Failed to fetch reservation",
-              message: process.env.NODE_ENV === "development" ? reservationError.message : "Database query failed",
+              message: isDevelopment() ? reservationError.message : "Database query failed",
             },
             { status: 500 }
           );
@@ -120,8 +121,8 @@ export async function GET(
           {
             ok: false,
             error: "Internal Server Error",
-            message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to fetch reservation",
-            ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+            message: isDevelopment() ? errorMessage : "Failed to fetch reservation",
+            ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
           },
           { status: 500 }
         );

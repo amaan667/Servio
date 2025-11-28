@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(_request: NextRequest) {
     } = await supabase.auth.getSession();
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     const user = session.user;
@@ -62,6 +63,6 @@ export async function POST(_request: NextRequest) {
     });
   } catch (_error) {
     logger.error("[EMAIL VERIFICATION] Error:", _error);
-    return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });
+    return apiErrors.internal('Failed to send verification email');
   }
 }

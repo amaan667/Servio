@@ -4,13 +4,21 @@
  * Uses metadata and product name - NO hardcoded Price IDs needed
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody } from '@/lib/api/validation-schemas';
+
+const syncSubscriptionSchema = z.object({
+  organizationId: z.string().uuid("Invalid organization ID"),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -18,27 +26,19 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       // STEP 2: Get user from context (already verified)
       const user = context.user;
 
-      // STEP 3: Parse request
-      const { organizationId } = await req.json();
+      // STEP 3: Validate input
+      const body = await validateBody(syncSubscriptionSchema, await req.json());
+      const organizationId = body.organizationId;
 
-      // STEP 4: Validate inputs
-      if (!organizationId) {
-        return NextResponse.json({ error: "organizationId required" }, { status: 400 });
-      }
-
-      // STEP 5: Security - Verify user owns organization
+      // STEP 4: Security - Verify user owns organization
       const supabase = createAdminClient();
 
       // Get organization with Stripe customer ID
@@ -54,23 +54,17 @@ export const POST = withUnifiedAuth(
           error: orgError?.message,
           userId: user.id,
         });
-        return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+        return apiErrors.notFound("Organization not found");
       }
 
       // Verify user owns organization
       if (org.owner_user_id !== user.id) {
-        return NextResponse.json(
-          { error: "Organization not found or access denied" },
-          { status: 404 }
-        );
+        return apiErrors.notFound("Organization not found or access denied");
       }
 
-      // STEP 6: Business logic
+      // STEP 5: Business logic
       if (!org.stripe_customer_id) {
-        return NextResponse.json(
-          { error: "Organization has no Stripe customer ID" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("Organization has no Stripe customer ID");
       }
 
       // Get active subscription from Stripe
@@ -93,15 +87,17 @@ export const POST = withUnifiedAuth(
 
         if (updateError) {
           logger.error("[SUBSCRIPTION SYNC] Error updating to starter", {
-            error: updateError,
+            error: updateError.message,
             organizationId,
             userId: user.id,
           });
-          return NextResponse.json({ error: "Failed to update organization" }, { status: 500 });
+          return apiErrors.database(
+            "Failed to update organization",
+            isDevelopment() ? updateError.message : undefined
+          );
         }
 
-        return NextResponse.json({
-          success: true,
+        return success({
           message: "No active subscription found - set to starter/trialing",
           tier: "starter",
           status: "trialing",
@@ -124,47 +120,43 @@ export const POST = withUnifiedAuth(
 
       if (updateError) {
         logger.error("[SUBSCRIPTION SYNC] Error updating organization", {
-          error: updateError,
+          error: updateError.message,
           organizationId,
           userId: user.id,
         });
-        return NextResponse.json({ error: "Failed to update organization" }, { status: 500 });
+        return apiErrors.database(
+          "Failed to update organization",
+          isDevelopment() ? updateError.message : undefined
+        );
       }
 
-      // STEP 7: Return success response
-      return NextResponse.json({
-        success: true,
+      logger.info("[SUBSCRIPTION SYNC] Subscription synced successfully", {
+        organizationId,
+        tier,
+        status: subscription.status,
+        userId: user.id,
+      });
+
+      // STEP 6: Return success response
+      return success({
         message: "Subscription synced successfully",
         tier,
         status: subscription.status,
       });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+    } catch (error) {
       logger.error("[SUBSCRIPTION SYNC] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         userId: context.user.id,
       });
-      
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+
+      if (isZodError(error)) {
+        return handleZodError(error);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
       );
     }
   },

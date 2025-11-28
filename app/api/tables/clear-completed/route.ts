@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { apiLogger as logger } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,71 +14,115 @@ export const dynamic = "force-dynamic";
  * Call: POST /api/tables/clear-completed
  */
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
+  async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
-    const admin = createAdminClient();
+      // STEP 2: Get venueId from context
+      const venueId = context.venueId;
 
-    // Get all completed/cancelled orders
-    const { data: completedOrders } = await admin
-      .from("orders")
-      .select("id, venue_id, table_id, table_number, order_status")
-      .in("order_status", ["COMPLETED", "CANCELLED", "REFUNDED"]);
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
 
-    if (!completedOrders || completedOrders.length === 0) {
-      return NextResponse.json({
-        ok: true,
-        message: "No tables to clear",
-        cleared: 0,
+      // STEP 3: Business logic - Find completed orders and clear their table sessions
+      const supabase = createAdminClient();
+
+      // Find all orders that are completed or cancelled and have a table
+      const { data: completedOrders, error: ordersError } = await supabase
+        .from("orders")
+        .select("id, table_id, table_number")
+        .eq("venue_id", venueId)
+        .in("order_status", ["COMPLETED", "CANCELLED"]);
+
+      if (ordersError) {
+        logger.error("[CLEAR COMPLETED TABLES] Error fetching completed orders:", {
+          error: ordersError.message,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to fetch completed orders",
+          isDevelopment() ? ordersError.message : undefined
+        );
+      }
+
+      if (!completedOrders || completedOrders.length === 0) {
+        return success({
+          message: "No completed orders found",
+          cleared: 0,
+          orderIds: [],
+        });
+      }
+
+      const orderIds = completedOrders.map((o) => o.id);
+      const tableIds = completedOrders.map((o) => o.table_id).filter((id): id is string => !!id);
+
+      if (tableIds.length === 0) {
+        return success({
+          message: "No tables to clear",
+          cleared: 0,
+          orderIds,
+        });
+      }
+
+      // Close table sessions for these tables
+      const { data: clearedSessions, error: clearError } = await supabase
+        .from("table_sessions")
+        .update({
+          closed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .in("table_id", tableIds)
+        .eq("venue_id", venueId)
+        .is("closed_at", null)
+        .select();
+
+      if (clearError) {
+        logger.error("[CLEAR COMPLETED TABLES] Error clearing table sessions:", {
+          error: clearError.message,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to clear table sessions",
+          isDevelopment() ? clearError.message : undefined
+        );
+      }
+
+      logger.info("[CLEAR COMPLETED TABLES] Cleared table sessions", {
+        count: clearedSessions?.length || 0,
+        venueId,
+        userId: context.user.id,
       });
-    }
 
-    // Get order IDs
-    const orderIds = completedOrders.map((o: { id: string }) => o.id);
-
-    // Close table sessions for these orders
-    const { data: clearedSessions, error: clearError } = await admin
-      .from("table_sessions")
-      .update({
-        status: "FREE",
-        order_id: null,
-        closed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .in("order_id", orderIds)
-      .is("closed_at", null)
-      .select("id, table_id, venue_id");
-
-    if (clearError) {
-      return NextResponse.json({ ok: false, error: clearError.message }, { status: 500 });
-    }
-
-    logger.debug("[CLEAR COMPLETED TABLES] Cleared table sessions", {
-      count: clearedSessions?.length || 0,
-    });
-
-      return NextResponse.json({
-        ok: true,
+      return success({
         message: `Cleared ${clearedSessions?.length || 0} table sessions`,
         cleared: clearedSessions?.length || 0,
-        orderIds: orderIds,
+        orderIds,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error("[CLEAR COMPLETED TABLES] Error:", {
-        error: _error instanceof Error ? _error.message : String(_error),
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
       });
-      return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
   }
 );

@@ -4,13 +4,15 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {
   subscription?: string | Stripe.Subscription | null;
 }
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = env('STRIPE_WEBHOOK_SECRET')!;
 
 export async function POST(_request: NextRequest) {
   try {
@@ -18,7 +20,7 @@ export async function POST(_request: NextRequest) {
     const signature = _request.headers.get("stripe-signature");
 
     if (!signature) {
-      return NextResponse.json({ error: "No signature" }, { status: 400 });
+      return apiErrors.badRequest('No signature');
     }
 
     // Verify webhook signature
@@ -60,7 +62,7 @@ export async function POST(_request: NextRequest) {
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });
-    return NextResponse.json({ error: errorMessage }, { status: 400 });
+    return apiErrors.badRequest(errorMessage);
   }
 }
 

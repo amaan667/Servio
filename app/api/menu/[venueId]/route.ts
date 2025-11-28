@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache/index";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function GET(
   _request: NextRequest,
@@ -14,7 +15,7 @@ export async function GET(
     rawVenueId = params.venueId;
 
     if (!rawVenueId) {
-      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Venue ID is required');
     }
 
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
@@ -81,7 +82,7 @@ export async function GET(
 
     if (menuError) {
       logger.error("[MENU API] Error fetching menu items:", { value: menuError });
-      return NextResponse.json({ error: "Failed to load menu items" }, { status: 500 });
+      return apiErrors.internal('Failed to load menu items');
     }
 
     if (menuItems && menuItems.length > 0) {

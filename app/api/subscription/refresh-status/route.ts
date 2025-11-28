@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -15,14 +16,14 @@ export async function POST(_request: NextRequest) {
     const user = session?.user;
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     const body = await _request.json();
     const { organizationId } = body;
 
     if (!organizationId) {
-      return NextResponse.json({ error: "Organization ID required" }, { status: 400 });
+      return apiErrors.badRequest('Organization ID required');
     }
 
     logger.debug("[SUBSCRIPTION REFRESH] Refreshing subscription status for org:", {
@@ -38,7 +39,7 @@ export async function POST(_request: NextRequest) {
 
     if (orgError || !org) {
       logger.error("[SUBSCRIPTION REFRESH] Organization not found:", { value: orgError });
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+      return apiErrors.notFound('Organization not found');
     }
 
     // If no Stripe subscription ID, return current status
@@ -134,7 +135,7 @@ export async function POST(_request: NextRequest) {
 
       if (resetError) {
         logger.error("[SUBSCRIPTION REFRESH] Error resetting organization:", { value: resetError });
-        return NextResponse.json({ error: "Failed to reset subscription status" }, { status: 500 });
+        return apiErrors.internal('Failed to reset subscription status');
       }
 
       return NextResponse.json({

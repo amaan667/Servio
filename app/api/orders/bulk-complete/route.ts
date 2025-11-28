@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
     const { venueId, orderIds } = await req.json();
 
     if (!venueId) {
-      return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
+      return apiErrors.badRequest('Venue ID is required');
     }
 
     // Use admin client - no authentication required for Live Orders feature
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
 
       if (fetchError) {
         logger.error("[BULK COMPLETE] Error fetching active orders:", { value: fetchError });
-        return NextResponse.json({ error: "Failed to fetch active orders" }, { status: 500 });
+        return apiErrors.internal('Failed to fetch active orders');
       }
 
       targetOrderIds = activeOrders?.map((order) => order.id) || [];
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
 
     if (fetchError) {
       logger.error("[BULK COMPLETE] Error fetching orders:", { value: fetchError });
-      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+      return apiErrors.internal('Failed to fetch orders');
     }
 
     // Filter out unpaid orders
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
 
     if (updateError) {
       logger.error("[BULK COMPLETE] Error updating orders:", { value: updateError });
-      return NextResponse.json({ error: "Failed to update orders" }, { status: 500 });
+      return apiErrors.internal('Failed to update orders');
     }
 
     // Handle table cleanup for completed orders
@@ -262,6 +263,6 @@ export async function POST(req: Request) {
     logger.error("[BULK COMPLETE] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

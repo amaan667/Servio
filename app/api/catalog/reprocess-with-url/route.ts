@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -76,10 +77,11 @@ export const POST = withUnifiedAuth(
     // Step 1: Scrape URL for item data using centralized API
     let urlItems: ScrapedMenuItem[] = [];
     try {
+      const railwayDomain = env('RAILWAY_PUBLIC_DOMAIN');
       const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        (process.env.RAILWAY_PUBLIC_DOMAIN
-          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        env('NEXT_PUBLIC_APP_URL') ||
+        (railwayDomain
+          ? `https://${railwayDomain.replace(/^https?:\/\//, '')}`
           : "http://localhost:3000");
 
       // Create AbortController with 120s timeout (Playwright with scrolling can take 60-90s)
@@ -228,8 +230,8 @@ export const POST = withUnifiedAuth(
         {
           ok: false,
           error: "Processing failed",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Failed to reprocess menu",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Failed to reprocess menu",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

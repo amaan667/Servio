@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const dynamic = "force-dynamic";
 export const runtime = "edge";
@@ -27,14 +29,14 @@ export async function GET(req: NextRequest) {
 
     // STEP 2: CRON_SECRET authentication (special auth for cron jobs)
     const authHeader = req.headers.get("authorization");
-    const expectedSecret = process.env.CRON_SECRET || "demo-reset-secret";
+    const expectedSecret = env('CRON_SECRET') || "demo-reset-secret";
 
     if (authHeader !== `Bearer ${expectedSecret}`) {
       logger.warn("[DEMO RESET CRON] Unauthorized cron request", {
         hasHeader: !!authHeader,
         expectedPrefix: "Bearer",
       });
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     // STEP 3: Parse request
@@ -99,8 +101,8 @@ export async function GET(req: NextRequest) {
         success: false,
         error: "Failed to run demo reset cron",
         details: errorMessage,
-        message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-        ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+        message: isDevelopment() ? errorMessage : "Request processing failed",
+        ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }
     );

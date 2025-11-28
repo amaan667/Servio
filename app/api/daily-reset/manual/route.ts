@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -10,13 +12,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
+        return apiErrors.rateLimit();
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -28,19 +24,10 @@ export const POST = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!finalVenueId) {
-        return NextResponse.json({ error: "Venue ID is required" }, { status: 400 });
+        return apiErrors.badRequest("Venue ID is required");
       }
 
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
-      // Check if service role key is available
-      if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        logger.error("[MANUAL DAILY RESET] SUPABASE_SERVICE_ROLE_KEY not found");
-        return NextResponse.json({ error: "Service role key not configured" }, { status: 500 });
-      }
-
-      const supabase = await createAdminClient();
+      const supabase = createAdminClient();
 
       // Check if venue exists
       const { data: venue, error: venueError } = await supabase
@@ -55,11 +42,14 @@ export const POST = withUnifiedAuth(
           venueId: finalVenueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: `Database error: ${venueError.message}` }, { status: 500 });
+        return apiErrors.database(
+          "Failed to fetch venue",
+          isDevelopment() ? venueError.message : undefined
+        );
       }
 
       if (!venue) {
-        return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+        return apiErrors.notFound('Venue not found');
       }
 
       // Check if there are unknown recent orders (within last 2 hours) - if so, warn user
@@ -93,7 +83,7 @@ export const POST = withUnifiedAuth(
           venueId: finalVenueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Failed to fetch active orders" }, { status: 500 });
+        return apiErrors.internal('Failed to fetch active orders');
       }
 
       if (activeOrders && activeOrders.length > 0) {
@@ -112,7 +102,7 @@ export const POST = withUnifiedAuth(
             venueId: finalVenueId,
             userId: context.user.id,
           });
-          return NextResponse.json({ error: "Failed to complete active orders" }, { status: 500 });
+          return apiErrors.internal('Failed to complete active orders');
         }
       }
 
@@ -129,7 +119,7 @@ export const POST = withUnifiedAuth(
           venueId: finalVenueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Failed to fetch active reservations" }, { status: 500 });
+        return apiErrors.internal('Failed to fetch active reservations');
       }
 
       if (activeReservations && activeReservations.length > 0) {
@@ -148,10 +138,7 @@ export const POST = withUnifiedAuth(
             venueId: finalVenueId,
             userId: context.user.id,
           });
-          return NextResponse.json(
-            { error: "Failed to cancel active reservations" },
-            { status: 500 }
-          );
+          return apiErrors.internal("Failed to cancel active reservations");
         }
       }
 
@@ -167,7 +154,7 @@ export const POST = withUnifiedAuth(
           venueId: finalVenueId,
           userId: context.user.id,
         });
-        return NextResponse.json({ error: "Failed to fetch tables" }, { status: 500 });
+        return apiErrors.internal('Failed to fetch tables');
       }
 
       if (tables && tables.length > 0) {
@@ -198,7 +185,7 @@ export const POST = withUnifiedAuth(
             venueId: finalVenueId,
             userId: context.user.id,
           });
-          return NextResponse.json({ error: "Failed to delete tables" }, { status: 500 });
+          return apiErrors.internal('Failed to delete tables');
         }
       }
 
@@ -247,7 +234,7 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 7: Return success response
-      return NextResponse.json({
+      return success({
         success: true,
         message: "Manual daily reset completed successfully",
         summary: {
@@ -271,22 +258,14 @@ export const POST = withUnifiedAuth(
       });
       
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+        return errorMessage.includes("Unauthorized")
+          ? apiErrors.unauthorized(errorMessage)
+          : apiErrors.forbidden(errorMessage);
       }
-      
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? errorMessage : undefined
       );
     }
   },

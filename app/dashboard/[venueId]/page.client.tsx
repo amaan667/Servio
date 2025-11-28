@@ -6,8 +6,7 @@ import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
 import Link from "next/link";
 import { useDashboardPrefetch } from "@/hooks/usePrefetch";
 import { useConnectionMonitor } from "@/lib/connection-monitor";
-import RoleManagementPopup from "@/components/role-management-popup";
-import VenueSwitcherPopup from "@/components/venue-switcher-popup";
+// RoleManagementPopup and VenueSwitcherPopup removed - not used in this component
 import { supabaseBrowser } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
 import { useAuthRedirect } from "./hooks/useAuthRedirect";
@@ -211,8 +210,7 @@ const DashboardClient = React.memo(function DashboardClient({
           // If getSession fails, try getUser() which makes a server request
           if (!session?.user) {
             const userResult = await supabase.auth.getUser();
-            const hasUser = !!userResult.data?.user;
-            const userId = userResult.data?.user?.id;
+            // User data fetched - no need to store separately
 
             if (userResult.data?.user && !userResult.error) {
               // After getUser(), try getSession again
@@ -242,9 +240,7 @@ const DashboardClient = React.memo(function DashboardClient({
         if (!session?.user) {
           // NO REDIRECTS - User requested ZERO sign-in redirects
           // Use cached user if available
-          if (user) {
-          } else {
-          }
+          // Empty blocks removed - no action needed here
           // Don't return - continue with cached data or proceed without auth
         } else {
           setUser(session.user);
@@ -301,14 +297,11 @@ const DashboardClient = React.memo(function DashboardClient({
         // NO REDIRECTS - User requested ZERO sign-in redirects
         // Always allow access - fail open approach
         if (!isOwner && !isStaff && !venueError && !roleError) {
-          // Use cached venue if available
-          if (venue) {
-          }
+          // Use cached venue if available - no action needed
         }
 
         // If queries failed but we have a cached venue, allow access
-        if ((venueError || roleError) && venue) {
-        }
+        // Empty block removed - no action needed
 
         // Set venue data and track the role that was set
         let finalRole: string | null = null;
@@ -344,9 +337,7 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         // CRITICAL LOG: Role assignment result
-
-        if (!finalRole) {
-        }
+        // No role assigned - continue without blocking
 
         setAuthCheckComplete(true);
       } catch (_error) {
@@ -354,10 +345,9 @@ const DashboardClient = React.memo(function DashboardClient({
       }
     }
 
-    checkAuth()
-      .then(() => {})
-      .catch(() => {
-      });
+    checkAuth().catch(() => {
+      // Error handled in checkAuth
+    });
   }, [venueId]);
 
   // Log whenever userRole changes for dashboard rendering

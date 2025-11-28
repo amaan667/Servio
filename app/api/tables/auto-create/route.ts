@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
@@ -39,8 +40,8 @@ export const POST = withUnifiedAuth(
 
     const cookieStore = await cookies();
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      env('NEXT_PUBLIC_SUPABASE_URL')!,
+      env('SUPABASE_SERVICE_ROLE_KEY')!,
       {
         cookies: {
           get(name: string) {

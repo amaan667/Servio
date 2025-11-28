@@ -1,77 +1,116 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { z } from 'zod';
+import { validateBody, validateParams } from '@/lib/api/validation-schemas';
 
 export const runtime = "nodejs";
+
+const seatTableSchema = z.object({
+  customerName: z.string().min(1).max(100).optional(),
+  partySize: z.number().int().positive().max(50).optional(),
+});
+
+const tableIdParamSchema = z.object({
+  tableId: z.string().uuid("Invalid table ID"),
+});
 
 // POST /api/tables/[tableId]/seat - Seat a party at a table
 export async function POST(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext, routeParams) => {
       try {
-        // CRITICAL: Rate limiting
+        // STEP 1: Rate limiting (ALWAYS FIRST)
         const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
         if (!rateLimitResult.success) {
-          return NextResponse.json(
-            {
-              error: 'Too many requests',
-              message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-            },
-            { status: 429 }
+          return apiErrors.rateLimit(
+            Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
           );
         }
 
-        const { tableId } = await routeParams!.params!;
-        const body = await req.json();
-    const { reservationId, serverId } = body;
+        // STEP 2: Validate params and body
+        const params = await routeParams!.params!;
+        const validatedParams = validateParams(tableIdParamSchema, params);
+        const body = await validateBody(seatTableSchema, await req.json().catch(() => ({})));
 
-    if (!tableId) {
-      return NextResponse.json({ ok: false, error: "tableId is required" }, { status: 400 });
-    }
+        // STEP 3: Business logic
+        const adminSupabase = createAdminClient();
 
-    // Use admin client - no auth needed
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
+        // Get table to verify it exists and get venue_id
+        const { data: table, error: tableError } = await adminSupabase
+          .from("tables")
+          .select("id, venue_id, label, capacity")
+          .eq("id", validatedParams.tableId)
+          .single();
 
-    // Get table info
-    const { data: table, error: tableError } = await supabase
-      .from("tables")
-      .select("venue_id")
-      .eq("id", tableId)
-      .eq("venue_id", authContext.venueId)
-      .single();
+        if (tableError || !table) {
+          return apiErrors.notFound("Table not found");
+        }
 
-    if (tableError || !table) {
-      return NextResponse.json({ ok: false, error: "Table not found" }, { status: 404 });
-    }
+        // Verify venue access
+        if (table.venue_id !== authContext.venueId) {
+          return apiErrors.forbidden("Table does not belong to your venue");
+        }
 
-    // Call the database function to seat the party
-    const { error } = await supabase.rpc("api_seat_party", {
-      p_table_id: tableId,
-      p_venue_id: authContext.venueId,
-      p_reservation_id: reservationId || null,
-      p_server_id: serverId || null,
-    });
+        // Create or update table session
+        const { data: session, error: sessionError } = await adminSupabase
+          .from("table_sessions")
+          .upsert({
+            table_id: validatedParams.tableId,
+            venue_id: table.venue_id,
+            customer_name: body.customerName || null,
+            party_size: body.partySize || null,
+            status: "OPEN",
+            opened_at: new Date().toISOString(),
+          }, {
+            onConflict: "table_id",
+          })
+          .select()
+          .single();
 
-    if (error) {
-      logger.error("[TABLES SEAT] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-    }
+        if (sessionError) {
+          logger.error("[TABLES SEAT] Error creating session:", {
+            error: sessionError.message,
+            tableId: validatedParams.tableId,
+            venueId: authContext.venueId,
+            userId: authContext.user.id,
+          });
+          return apiErrors.database(
+            "Failed to seat party",
+            isDevelopment() ? sessionError.message : undefined
+          );
+        }
 
-    return NextResponse.json({
-      ok: true,
-      message: "Party seated successfully",
-    });
-      } catch (_error) {
-        logger.error("[TABLES SEAT] Unexpected error:", {
-          error: _error instanceof Error ? _error.message : "Unknown _error",
+        logger.info("[TABLES SEAT] Party seated successfully", {
+          tableId: validatedParams.tableId,
+          venueId: authContext.venueId,
+          userId: authContext.user.id,
         });
-        return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+
+        // STEP 4: Return success response
+        return success({
+          session,
+          table,
+        });
+      } catch (error) {
+        logger.error("[TABLES SEAT] Unexpected error:", {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          userId: authContext.user.id,
+        });
+
+        if (isZodError(error)) {
+          return handleZodError(error);
+        }
+
+        return apiErrors.internal(
+          "Request processing failed",
+          isDevelopment() ? error : undefined
+        );
       }
     },
     {

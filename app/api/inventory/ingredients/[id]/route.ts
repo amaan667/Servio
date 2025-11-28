@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import type { UpdateIngredientRequest } from "@/types/inventory";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 // PATCH /api/inventory/ingredients/[id]
 export async function PATCH(
@@ -24,7 +25,7 @@ export async function PATCH(
       logger.error("[INVENTORY API] Error updating ingredient:", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrors.internal(error.message || 'Internal server error');
     }
 
     return NextResponse.json({ data });
@@ -32,7 +33,7 @@ export async function PATCH(
     logger.error("[INVENTORY API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }
 
@@ -51,7 +52,7 @@ export async function DELETE(
       logger.error("[INVENTORY API] Error deleting ingredient:", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrors.internal(error.message || 'Internal server error');
     }
 
     return NextResponse.json({ success: true });
@@ -59,6 +60,6 @@ export async function DELETE(
     logger.error("[INVENTORY API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

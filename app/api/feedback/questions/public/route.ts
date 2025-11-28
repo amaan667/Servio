@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 // GET - List active questions for venue (public endpoint for customers)
 export async function GET(req: Request) {
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
     const venueId = searchParams.get('venueId');
     
     if (!venueId) {
-      return NextResponse.json({ error: 'venueId required' }, { status: 400 });
+      return apiErrors.badRequest('venueId required');
     }
 
     const serviceClient = await createAdminClient();
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
 
     if (error) {
       logger.error('[FEEDBACK:PUBLIC] Error fetching questions:', { error: error.message });
-      return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
+      return apiErrors.internal('Failed to fetch questions');
     }
 
     
@@ -36,6 +37,6 @@ export async function GET(req: Request) {
 
   } catch (_error) {
     logger.error('[FEEDBACK:PUBLIC] Exception:', { error: _error instanceof Error ? _error.message : 'Unknown error' });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

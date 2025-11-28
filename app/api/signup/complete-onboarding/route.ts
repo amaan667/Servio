@@ -8,6 +8,8 @@ import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -66,7 +68,7 @@ export const POST = withUnifiedAuth(
       const { venueName, venueType, serviceType, tier, stripeCustomerId } = pendingSignup;
 
       if (!venueName || !tier) {
-        return NextResponse.json({ error: "Missing required signup data" }, { status: 400 });
+        return apiErrors.badRequest('Missing required signup data');
       }
 
       // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
@@ -101,7 +103,7 @@ export const POST = withUnifiedAuth(
           {
             error: "Failed to create organization",
             details: orgError?.message || "Unknown error",
-            message: process.env.NODE_ENV === "development" ? orgError?.message : "Database operation failed",
+            message: isDevelopment() ? orgError?.message : "Database operation failed",
           },
           { status: 500 }
         );
@@ -141,7 +143,7 @@ export const POST = withUnifiedAuth(
           {
             error: "Failed to create venue",
             details: venueError.message,
-            message: process.env.NODE_ENV === "development" ? venueError.message : "Database operation failed",
+            message: isDevelopment() ? venueError.message : "Database operation failed",
           },
           { status: 500 }
         );
@@ -204,8 +206,8 @@ export const POST = withUnifiedAuth(
         {
           error: "Failed to complete onboarding",
           details: errorMessage,
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
+          message: isDevelopment() ? errorMessage : "Request processing failed",
+          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
       );

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { createServerSupabase } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
@@ -12,7 +14,7 @@ export async function POST(req: Request) {
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     const { orderId, status } = await req.json();
@@ -35,7 +37,7 @@ export async function POST(req: Request) {
       .single();
 
     if (!orderCheck) {
-      return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Verify venue access
@@ -54,7 +56,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (!venueAccess && !staffAccess) {
-      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden('Forbidden');
     }
 
     // CRITICAL: Verify payment status before allowing COMPLETED
@@ -66,7 +68,7 @@ export async function POST(req: Request) {
         .single();
 
       if (!currentOrder) {
-        return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+        return apiErrors.notFound('Order not found');
       }
 
       if (currentOrder.payment_status !== "PAID") {
@@ -146,7 +148,7 @@ export async function POST(req: Request) {
         if (status === "COMPLETED" && order.payment_status === "PAID") {
           try {
             const baseUrl =
-              process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+              env('NEXT_PUBLIC_SITE_URL') || "https://servio-production.up.railway.app";
             const completionResponse = await fetch(`${baseUrl}/api/reservations/check-completion`, {
               method: "POST",
               headers: {
@@ -176,6 +178,6 @@ export async function POST(req: Request) {
     logger.error("[UPDATE STATUS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

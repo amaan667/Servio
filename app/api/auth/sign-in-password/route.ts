@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+      return apiErrors.badRequest('Email and password are required');
     }
 
     // Create server-side Supabase client that can set cookies
@@ -16,10 +18,7 @@ export async function POST(request: NextRequest) {
       supabase = await createServerSupabase();
     } catch (dbError) {
       logger.error("[AUTH SIGN-IN] Failed to create Supabase client:", { error: dbError });
-      return NextResponse.json(
-        { error: "Database connection error. Please try again in a moment." },
-        { status: 503 }
-      );
+      return apiErrors.serviceUnavailable("Database connection error. Please try again in a moment.");
     }
 
     // Sign in with password - THIS SETS THE COOKIES!
@@ -36,22 +35,19 @@ export async function POST(request: NextRequest) {
       const errorMsg =
         fetchError instanceof Error ? fetchError.message : "Network connection failed";
       if (errorMsg.includes("timeout") || errorMsg.includes("ETIMEDOUT")) {
-        return NextResponse.json(
-          { error: "Connection timeout. Please check your internet and try again." },
-          { status: 503 }
-        );
+        return apiErrors.serviceUnavailable("Connection timeout. Please check your internet and try again.");
       }
-      return NextResponse.json({ error: "Network error. Please try again." }, { status: 503 });
+      return apiErrors.serviceUnavailable("Network error. Please try again.");
     }
 
     if (signInError) {
       logger.error("[AUTH SIGN-IN] Sign-in error:", { error: signInError.message });
-      return NextResponse.json({ error: signInError.message }, { status: 401 });
+      return apiErrors.unauthorized(signInError.message);
     }
 
     if (!data.session) {
       logger.error("[AUTH SIGN-IN] No session returned");
-      return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
+      return apiErrors.internal('Failed to create session');
     }
 
     logger.info("[AUTH SIGN-IN] ✅ User signed in successfully:", {
@@ -180,7 +176,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Get Supabase project ID from URL for cookie names
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseUrl = env('NEXT_PUBLIC_SUPABASE_URL') || "";
     const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
 
     // DON'T manually set cookies - let Supabase SSR handle it!
@@ -189,6 +185,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err) {
     logger.error("[AUTH SIGN-IN] Unexpected error:", { error: err });
-    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
+    return apiErrors.internal('An unexpected error occurred');
   }
 }

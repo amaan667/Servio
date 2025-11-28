@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -12,12 +13,8 @@ export const POST = withUnifiedAuth(
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
@@ -25,7 +22,7 @@ export const POST = withUnifiedAuth(
       const { name, role } = body || {};
 
       if (!name) {
-        return NextResponse.json({ error: "name is required" }, { status: 400 });
+        return apiErrors.badRequest('name is required');
       }
 
       const admin = createAdminClient();
@@ -35,14 +32,13 @@ export const POST = withUnifiedAuth(
         .select("*");
       
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return apiErrors.badRequest(error.message);
       }
       
-      return NextResponse.json({ success: true, data: data ?? [] });
+      return success({ data: data ?? [] });
     } catch (_e) {
-      return NextResponse.json(
-        { error: _e instanceof Error ? _e.message : "Unknown error" },
-        { status: 500 }
+      return apiErrors.internal(
+        _e instanceof Error ? _e.message : "Unknown error"
       );
     }
   }

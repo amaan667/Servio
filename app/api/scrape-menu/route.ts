@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiErrors } from '@/lib/api/standard-response';
 import { logger } from "@/lib/logger";
 import OpenAI from "openai";
+import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: env('OPENAI_API_KEY') });
 
 // Force Node.js runtime (required for Playwright)
 export const runtime = "nodejs";
@@ -296,7 +298,7 @@ export async function POST(req: NextRequest) {
     const { url } = body;
 
     if (!url) {
-      return NextResponse.json({ ok: false, error: "URL is required" }, { status: 400 });
+      return apiErrors.badRequest('URL is required');
     }
 
 

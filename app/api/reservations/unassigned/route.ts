@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -11,46 +12,66 @@ export const runtime = "nodejs";
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      // CRITICAL: Rate limiting
+      // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
+      // STEP 2: Get venueId from context
       const venueId = context.venueId;
 
-    // Use admin client - no auth needed (venueId is sufficient)
-    const supabase = await createClient();
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
 
-    // Get unassigned reservations using the view
-    const { data: reservations, error } = await supabase
-      .from("unassigned_reservations")
-      .select("*")
-      .eq("venue_id", venueId)
-      .order("start_at", { ascending: true });
+      // STEP 3: Business logic - Fetch unassigned reservations
+      const supabase = await createClient();
 
-    if (error) {
-      logger.error("[RESERVATIONS UNASSIGNED] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      const { data: reservations, error: fetchError } = await supabase
+        .from("unassigned_reservations")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("start_at", { ascending: true });
+
+      if (fetchError) {
+        logger.error("[RESERVATIONS UNASSIGNED] Error fetching unassigned reservations:", {
+          error: fetchError.message,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to fetch unassigned reservations",
+          isDevelopment() ? fetchError.message : undefined
+        );
+      }
+
+      logger.info("[RESERVATIONS UNASSIGNED] Unassigned reservations fetched successfully", {
+        venueId,
+        reservationCount: reservations?.length || 0,
+        userId: context.user.id,
       });
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
 
-      return NextResponse.json({
-        ok: true,
-        reservations: reservations || [],
-      });
-    } catch (_error) {
+      // STEP 4: Return success response
+      return success({ reservations: reservations || [] });
+    } catch (error) {
       logger.error("[RESERVATIONS UNASSIGNED] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown error",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        venueId: context.venueId,
+        userId: context.user.id,
       });
-      return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+
+      if (isZodError(error)) {
+        return handleZodError(error);
+      }
+
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined
+      );
     }
   }
 );

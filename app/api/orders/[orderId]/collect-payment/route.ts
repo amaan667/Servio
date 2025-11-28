@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,13 +48,13 @@ export async function POST(
       logger.error("[COLLECT PAYMENT] Order not found", {
         data: { orderId, venue_id, error: fetchError },
       });
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Validate order state
     if (order.payment_status === "PAID") {
       logger.warn("[COLLECT PAYMENT] Order already paid", { data: { orderId } });
-      return NextResponse.json({ error: "Order has already been paid" }, { status: 400 });
+      return apiErrors.badRequest('Order has already been paid');
     }
 
     if (order.payment_mode !== "pay_at_till") {
@@ -83,7 +84,7 @@ export async function POST(
       logger.error("[COLLECT PAYMENT] Failed to update order", {
         data: { orderId, error: updateError },
       });
-      return NextResponse.json({ error: "Failed to mark payment as collected" }, { status: 500 });
+      return apiErrors.internal('Failed to mark payment as collected');
     }
 
     logger.info("[COLLECT PAYMENT] Payment collected successfully", {
@@ -99,6 +100,6 @@ export async function POST(
     logger.error("[COLLECT PAYMENT] Unexpected error", {
       data: { orderId, error: _error instanceof Error ? _error.message : String(_error) },
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiErrors.internal('Internal server error');
   }
 }

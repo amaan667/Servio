@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 import { apiLogger as logger } from "@/lib/logger";
+import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 /**
  * Check current subscription status and tier detection
@@ -17,7 +18,7 @@ export async function GET() {
     } = await supabase.auth.getSession();
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized('Unauthorized');
     }
 
     // Get user's organization
