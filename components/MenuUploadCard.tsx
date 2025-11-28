@@ -42,14 +42,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         });
 
         // Use a simple query to check if any items exist - avoid limit(1) with count to prevent 406 errors
-        const { data, error, count } = await supabase
+        // Just get the count without fetching data
+        const { count, error } = await supabase
           .from("menu_items")
-          .select("id", { count: "exact", head: true }) // head: true means we only get count, not data
+          .select("*", { count: "exact", head: true }) // head: true means we only get count, not data
           .eq("venue_id", normalizedVenueId);
 
         console.log("[MENU UPLOAD CARD] Existing items check result:", {
-          hasData: !!data && data.length > 0,
-          itemCount: data?.length || 0,
           totalCount: count || 0,
           error: error?.message || null,
           errorCode: error?.code || null,
