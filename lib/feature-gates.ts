@@ -34,6 +34,7 @@ export const PREMIUM_FEATURES = {
 
 /**
  * Check if a venue has access to a specific feature
+ * Fetches tier from organization (which is synced from Stripe)
  */
 export async function checkFeatureAccess(
   venueId: string,
@@ -42,28 +43,66 @@ export async function checkFeatureAccess(
   try {
     const supabase = await createClient();
 
-    // Get venue subscription info
-    // For now, we'll check if a subscription_tier column exists on venues table
-    // This can be enhanced to check Stripe subscriptions
-    const { data: venue, error } = await supabase
+    // Get venue to find owner_user_id
+    const { data: venue, error: venueError } = await supabase
       .from("venues")
-      .select("subscription_tier")
+      .select("owner_user_id")
       .eq("venue_id", venueId)
       .single();
 
-    if (error) {
-      logger.error("[FEATURE GATE] Error fetching venue:", errorToContext(error));
-      // Default to enterprise tier if error (allow all features)
+    if (venueError || !venue?.owner_user_id) {
+      logger.error("[FEATURE GATE] Error fetching venue:", errorToContext(venueError));
+      // Deny access if we can't verify tier (fail secure)
       return {
-        hasAccess: true,
-        tier: "enterprise",
+        hasAccess: false,
+        tier: "starter",
         requiredTier,
-        message: undefined,
+        message: "Unable to verify subscription tier. Please contact support.",
       };
     }
 
-    // Temporarily allow all features for development
-    const currentTier = "enterprise";
+    // Get organization tier from owner_user_id (synced from Stripe)
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("subscription_tier, subscription_status")
+      .eq("owner_user_id", venue.owner_user_id)
+      .single();
+
+    if (orgError || !org) {
+      logger.error("[FEATURE GATE] Error fetching organization:", errorToContext(orgError));
+      // Deny access if we can't verify tier (fail secure)
+      return {
+        hasAccess: false,
+        tier: "starter",
+        requiredTier,
+        message: "Unable to verify subscription tier. Please contact support.",
+      };
+    }
+
+    // Get tier from organization (should be synced from Stripe)
+    let currentTier: SubscriptionTier = "starter";
+    const tierFromDb = org.subscription_tier?.toLowerCase().trim();
+    
+    // Validate tier is one of the valid values
+    if (tierFromDb && ["starter", "pro", "enterprise"].includes(tierFromDb)) {
+      currentTier = tierFromDb as SubscriptionTier;
+    } else {
+      logger.warn("[FEATURE GATE] Invalid tier in database, defaulting to starter", {
+        venueId,
+        tierFromDb,
+        ownerUserId: venue.owner_user_id,
+      });
+      currentTier = "starter";
+    }
+
+    // Check subscription status - if not active, restrict to starter features
+    if (org.subscription_status !== "active" && org.subscription_status !== "trialing") {
+      logger.warn("[FEATURE GATE] Subscription not active, restricting to starter tier", {
+        venueId,
+        subscriptionStatus: org.subscription_status,
+      });
+      currentTier = "starter";
+    }
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
       starter: 1,
@@ -83,11 +122,12 @@ export async function checkFeatureAccess(
     };
   } catch (_error) {
     logger.error("[FEATURE GATE] Unexpected error:", errorToContext(_error));
+    // Fail secure - deny access if error
     return {
-      hasAccess: true,
-      tier: "enterprise",
+      hasAccess: false,
+      tier: "starter",
       requiredTier,
-      message: undefined,
+      message: "Unable to verify subscription tier. Please contact support.",
     };
   }
 }
@@ -135,10 +175,11 @@ export async function clientCheckFeatureAccess(
     return await response.json();
   } catch (_error) {
     logger.error("[FEATURE GATE CLIENT] Error:", errorToContext(_error));
+    // Fail secure - deny access on error
     return {
-      hasAccess: true,
-      tier: "enterprise",
-      message: undefined,
+      hasAccess: false,
+      tier: "starter",
+      message: "Unable to verify feature access. Please contact support.",
     };
   }
 }
