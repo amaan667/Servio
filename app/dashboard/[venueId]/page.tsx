@@ -120,15 +120,13 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     }
 
     // Count ALL menu items (not just available) to match menu management count
-    const { data: menuItems, error: menuError, count: menuItemCountFromCount } = await supabase
-      .from("menu_items")
-      .select("id", { count: "exact" })
-      .eq("venue_id", normalizedVenueId);
-      // Removed .eq("is_available", true) to match menu management count
-
     // ALWAYS use actual array length - it's the source of truth
     // Don't use count query as it can be inconsistent
-    const menuItemCount = actualMenuItemCount;
+    const { data: menuItems, error: menuError } = await supabase
+      .from("menu_items")
+      .select("id")
+      .eq("venue_id", normalizedVenueId);
+      // Removed .eq("is_available", true) to match menu management count
 
     // Use actual array length - it's the source of truth
     // The count query can be inconsistent, so always use the actual items returned
