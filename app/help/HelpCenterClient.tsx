@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Search, Mail, BookOpen, MessageSquare, HelpCircle, QrCode, ShoppingBag, BarChart, Users, Settings } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 const faqs = [
@@ -162,51 +162,96 @@ const faqs = [
 ];
 
 export function HelpCenterClient() {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [venueId, setVenueId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get venueId from localStorage/sessionStorage (similar to navigation breadcrumb)
+  // Fetch venueId from user's session and venues
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const fetchVenueId = async () => {
+      try {
+        const supabase = await createClient();
+        
+        // 1. Check if user is authenticated
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData?.session?.user;
 
-    let foundVenueId: string | null = null;
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
 
-    // 1. Check localStorage
-    foundVenueId =
-      localStorage.getItem("currentVenueId") ||
-      localStorage.getItem("venueId") ||
-      null;
+        // 2. Try to get venueId from storage first (fast path)
+        let foundVenueId: string | null = null;
+        
+        // Check localStorage
+        foundVenueId =
+          localStorage.getItem("currentVenueId") ||
+          localStorage.getItem("venueId") ||
+          null;
 
-    // 2. Check sessionStorage for keys starting with "dashboard_venue_"
-    if (!foundVenueId) {
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        if (key?.startsWith("dashboard_venue_")) {
-          const venueIdFromKey = key.replace("dashboard_venue_", "");
-          if (venueIdFromKey && venueIdFromKey.length > 0) {
-            foundVenueId = venueIdFromKey;
-            break;
+        // Check sessionStorage for keys starting with "dashboard_venue_"
+        if (!foundVenueId) {
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key?.startsWith("dashboard_venue_")) {
+              const venueIdFromKey = key.replace("dashboard_venue_", "");
+              if (venueIdFromKey && venueIdFromKey.length > 0) {
+                foundVenueId = venueIdFromKey;
+                break;
+              }
+            }
           }
         }
-      }
-    }
 
-    // 3. Check sessionStorage for "venue_id_${userId}" pattern
-    if (!foundVenueId) {
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        if (key?.startsWith("venue_id_")) {
-          const value = sessionStorage.getItem(key);
-          if (value && value.length > 0) {
-            foundVenueId = value;
-            break;
+        // Check sessionStorage for "venue_id_${userId}" pattern
+        if (!foundVenueId) {
+          const cachedVenueId = sessionStorage.getItem(`venue_id_${user.id}`);
+          if (cachedVenueId) {
+            foundVenueId = cachedVenueId;
           }
         }
-      }
-    }
 
-    setVenueId(foundVenueId);
+        // 3. If not in storage, fetch from database
+        if (!foundVenueId) {
+          // Try owner venues first
+          const { data: ownerVenues } = await supabase
+            .from("venues")
+            .select("venue_id")
+            .eq("owner_user_id", user.id)
+            .order("created_at", { ascending: true })
+            .limit(1);
+
+          if (ownerVenues && ownerVenues.length > 0) {
+            foundVenueId = ownerVenues[0]?.venue_id as string;
+            // Cache it
+            sessionStorage.setItem(`venue_id_${user.id}`, foundVenueId);
+          } else {
+            // Try staff venues
+            const { data: staffVenue } = await supabase
+              .from("user_venue_roles")
+              .select("venue_id")
+              .eq("user_id", user.id)
+              .limit(1)
+              .single();
+
+            if (staffVenue?.venue_id) {
+              foundVenueId = staffVenue.venue_id as string;
+              // Cache it
+              sessionStorage.setItem(`venue_id_${user.id}`, foundVenueId);
+            }
+          }
+        }
+
+        setVenueId(foundVenueId);
+      } catch (error) {
+        // Silently fail - user can still use help center
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVenueId();
   }, []);
 
   // Build quick links with proper dashboard routes
@@ -332,20 +377,7 @@ export function HelpCenterClient() {
             {quickLinks.map((link) => {
               const Icon = link.icon;
               return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={(e) => {
-                    // If no venueId, prevent navigation and show message
-                    if (!venueId && link.href === "/") {
-                      e.preventDefault();
-                      alert(
-                        "Please sign in and select a venue to access this feature."
-                      );
-                      router.push("/");
-                    }
-                  }}
-                >
+                <Link key={link.href} href={link.href}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                     <CardContent className="p-6 text-center">
                       <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
