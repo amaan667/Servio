@@ -104,20 +104,32 @@ export function useMenuItems(venueId: string) {
       const itemCount = items?.length || 0;
       
       // CRITICAL LOG: Menu builder count when page loads
+      // Log to both console (browser) and logger (Railway)
+      const menuBuilderLogData = {
+        venueId,
+        normalizedVenueId,
+        totalMenuItems: itemCount,
+        itemsArrayLength: items?.length || 0,
+        first3Items: items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name, is_available: i.is_available })) || [],
+        allItemIds: items?.map((i) => i.id) || [],
+        timestamp: new Date().toISOString(),
+      };
+      
       console.log("═══════════════════════════════════════════════════════════");
       console.log("🔧 [MENU BUILDER LOAD] Menu Items Count");
       console.log("═══════════════════════════════════════════════════════════");
       console.log("Venue ID:", venueId);
       console.log("Normalized Venue ID:", normalizedVenueId);
       console.log("Total Menu Items:", itemCount);
-      console.log("Items Array:", items || []);
       console.log("Items Array Length:", items?.length || 0);
-      console.log("First 3 Items:", items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name, is_available: i.is_available })) || []);
-      console.log("All Item IDs:", items?.map((i) => i.id) || []);
+      console.log("First 3 Items:", menuBuilderLogData.first3Items);
       console.log("⚠️  THIS IS THE COUNT THAT SHOULD MATCH DASHBOARD");
       console.log("⚠️  Dashboard should show:", itemCount);
       console.log("Timestamp:", new Date().toISOString());
       console.log("═══════════════════════════════════════════════════════════");
+      
+      // Log to Railway
+      logger.info("[MENU BUILDER LOAD] Menu Items Count", menuBuilderLogData);
 
       setMenuItems(items || []);
 

@@ -88,15 +88,19 @@ export function useDashboardData(
   const [stats, setStats] = useState<DashboardStats>(() => {
     // Always prefer server data - it's guaranteed fresh
     if (initialStats) {
+      // Log to both console (for browser) and logger (for Railway)
+      const logData = {
+        menuItems: initialStats.menuItems,
+        revenue: initialStats.revenue,
+        unpaid: initialStats.unpaid,
+        timestamp: new Date().toISOString(),
+      };
       console.log("═══════════════════════════════════════════════════════════");
       console.log("[DASHBOARD DATA] Using initialStats from server");
       console.log("═══════════════════════════════════════════════════════════");
-      console.log("initialStats.menuItems:", initialStats.menuItems);
-      console.log("initialStats.revenue:", initialStats.revenue);
-      console.log("initialStats.unpaid:", initialStats.unpaid);
-      console.log("⚠️  This is the count that will be displayed on dashboard");
-      console.log("Timestamp:", new Date().toISOString());
+      console.log("initialStats:", logData);
       console.log("═══════════════════════════════════════════════════════════");
+      logger.info("[DASHBOARD DATA] Using initialStats from server", logData);
       return initialStats;
     }
     // Only use cache if server didn't provide data (shouldn't happen with force-dynamic)
@@ -136,12 +140,14 @@ export function useDashboardData(
         // Normalize venueId format
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-        console.log("[DASHBOARD DATA] loadStats called:", {
+        const loadStatsLogData = {
           venueId,
           normalizedVenueId,
           window,
           timestamp: new Date().toISOString(),
-        });
+        };
+        console.log("[DASHBOARD DATA] loadStats called:", loadStatsLogData);
+        logger.info("[DASHBOARD DATA] loadStats called", loadStatsLogData);
 
         const { data: orders } = await supabase
           .from("orders")
@@ -159,12 +165,14 @@ export function useDashboardData(
           .eq("venue_id", normalizedVenueId);
           // Removed .eq("is_available", true) to match menu management count
 
-        console.log("[DASHBOARD DATA] loadStats query results:", {
+        const loadStatsResults = {
           menuItemCount: menuItems?.length || 0,
           menuError: menuError?.message || null,
           orderCount: orders?.length || 0,
           timestamp: new Date().toISOString(),
-        });
+        };
+        console.log("[DASHBOARD DATA] loadStats query results:", loadStatsResults);
+        logger.info("[DASHBOARD DATA] loadStats query results", loadStatsResults);
 
         // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
