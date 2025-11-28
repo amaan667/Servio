@@ -475,18 +475,42 @@ export const POST = withUnifiedAuth(
     }
   },
   {
-    // Extract venueId from form data or query
+    // Extract venueId from query params (preferred) or form data
+    // NOTE: We prefer query params to avoid consuming the request body
     extractVenueId: async (req) => {
       try {
         const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
+        
         if (!venueId) {
-          // Try to get from form data (for file uploads)
-          const formData = await req.formData();
-          venueId = formData.get("venue_id") as string || formData.get("venueId") as string || null;
+          // Fallback: Try to read from formData (this will consume the body, so it's a last resort)
+          // In practice, venueId should be in query params to avoid this issue
+          console.warn("[CATALOG REPLACE] venueId not in query params, attempting to read from formData (may cause body consumption issues)");
+          try {
+            // Clone request to avoid consuming original body
+            const clonedReq = req.clone();
+            const formData = await clonedReq.formData();
+            venueId = formData.get("venue_id") as string || formData.get("venueId") as string || null;
+          } catch (formDataError) {
+            console.error("[CATALOG REPLACE] Failed to read formData in extractVenueId:", {
+              error: formDataError instanceof Error ? formDataError.message : String(formDataError),
+            });
+            // venueId remains null - will need to be extracted in main handler
+          }
         }
-        return venueId;
-      } catch {
+        
+        // Ensure extracted venueId is normalized before returning
+        const normalized = venueId ? (venueId.startsWith("venue-") ? venueId : `venue-${venueId}`) : null;
+        console.log("[CATALOG REPLACE] extractVenueId result:", {
+          originalVenueId: venueId,
+          normalizedVenueId: normalized,
+          source: searchParams.get("venueId") ? "query" : "formData",
+        });
+        return normalized;
+      } catch (error) {
+        console.error("[CATALOG REPLACE] Error in extractVenueId:", {
+          error: error instanceof Error ? error.message : String(error),
+        });
         return null;
       }
     },

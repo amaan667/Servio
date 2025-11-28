@@ -195,6 +195,10 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         formData.append("venue_id", venueId);
         formData.append("replace_mode", String(isReplacing)); // Send replace/append mode
 
+        // Also add venueId as query param to avoid body reading issues
+        const url = new URL("/api/catalog/replace", window.location.origin);
+        url.searchParams.set("venueId", venueId);
+
         // Add menu URL if provided (for hybrid import)
         const hasUrl = menuUrl && menuUrl.trim();
         if (hasUrl) {
@@ -212,10 +216,11 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           hasUrl,
           fileSize: file.size,
           fileName: file.name,
+          url: url.toString(),
           timestamp: new Date().toISOString(),
         });
 
-        const response = await fetch("/api/catalog/replace", {
+        const response = await fetch(url.toString(), {
           method: "POST",
           body: formData,
           credentials: "include", // Ensure cookies are sent
