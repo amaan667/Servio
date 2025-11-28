@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,7 +173,6 @@ export function HelpCenterClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [venueId, setVenueId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const linksRenderedRef = useRef(false);
 
   // Fetch venueId from user's session and venues
   useEffect(() => {
@@ -263,12 +262,9 @@ export function HelpCenterClient() {
     fetchVenueId();
   }, []);
 
-  // Build quick links with proper dashboard routes
-  // Getting Started Guide links to website support page
-  // Use useMemo to ensure links update when venueId changes
+  // Build quick links - only the exact links we need, no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
     // Don't build links until we know if venueId exists (after loading)
-    // This prevents showing fallback links that get replaced
     if (isLoading) {
       return [];
     }
@@ -285,9 +281,8 @@ export function HelpCenterClient() {
       ];
     }
 
-    // All dashboard links with venueId - each link appears only once
-    // Build array and ensure uniqueness by title using Map
-    const linksArray: QuickLink[] = [
+    // Build exactly 7 links - one for each feature page
+    return [
       {
         title: "Getting Started Guide",
         href: "https://servio.uk/support",
@@ -331,16 +326,6 @@ export function HelpCenterClient() {
         external: false,
       },
     ];
-
-    // Force uniqueness by title - this is a safety check
-    const uniqueLinks = new Map<string, QuickLink>();
-    linksArray.forEach((link) => {
-      if (!uniqueLinks.has(link.title)) {
-        uniqueLinks.set(link.title, link);
-      }
-    });
-
-    return Array.from(uniqueLinks.values());
   }, [venueId, isLoading]);
 
   const filteredFAQs = faqs.map((category) => ({
@@ -399,29 +384,7 @@ export function HelpCenterClient() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Final deduplication check before rendering - use Set to track rendered titles */}
-              {(() => {
-                // Reset ref on each render to track this render cycle
-                linksRenderedRef.current = false;
-                
-                const seenTitles = new Set<string>();
-                const uniqueLinks: QuickLink[] = [];
-                
-                quickLinks.forEach((link) => {
-                  if (!seenTitles.has(link.title)) {
-                    seenTitles.add(link.title);
-                    uniqueLinks.push(link);
-                  }
-                });
-
-                // Safety check: if we somehow have more than 7 links, log and limit
-                const linksToRender = uniqueLinks.length > 7 ? uniqueLinks.slice(0, 7) : uniqueLinks;
-                
-                if (uniqueLinks.length > 7) {
-                  console.warn(`[Help Center] Found ${uniqueLinks.length} links, expected max 7. Limiting to first 7.`);
-                }
-
-                return linksToRender.map((link) => {
+              {quickLinks.map((link) => {
                   const Icon = link.icon;
                   const uniqueKey = link.title;
                   const linkContent = (
