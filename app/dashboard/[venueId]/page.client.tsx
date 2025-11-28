@@ -99,13 +99,23 @@ const DashboardClient = React.memo(function DashboardClient({
   // CRITICAL LOG: Dashboard page loaded with initial stats
   useEffect(() => {
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("📊 [DASHBOARD PAGE LOADED]");
+    console.log("📊 [DASHBOARD CLIENT LOADED]");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("Venue ID:", venueId);
-    console.log("Initial Stats Menu Items:", initialStats?.menuItems || 0);
-    console.log("Initial Stats Revenue:", initialStats?.revenue || 0);
-    console.log("Initial Stats Unpaid:", initialStats?.unpaid || 0);
-    console.log("Current Stats Menu Items:", dashboardData.stats.menuItems);
+    console.log("Initial Stats (from server):", {
+      menuItems: initialStats?.menuItems || 0,
+      revenue: initialStats?.revenue || 0,
+      unpaid: initialStats?.unpaid || 0,
+    });
+    console.log("Current Stats (from hook):", {
+      menuItems: dashboardData.stats.menuItems,
+      revenue: dashboardData.stats.revenue,
+      unpaid: dashboardData.stats.unpaid,
+    });
+    console.log("⚠️  COMPARISON:");
+    console.log("  - Server initialStats.menuItems:", initialStats?.menuItems || 0);
+    console.log("  - Client dashboardData.stats.menuItems:", dashboardData.stats.menuItems);
+    console.log("  - Match:", (initialStats?.menuItems || 0) === dashboardData.stats.menuItems ? "✅ YES" : "❌ NO");
     console.log("⚠️  This count should match the menu builder count!");
     console.log("Timestamp:", new Date().toISOString());
     console.log("═══════════════════════════════════════════════════════════");

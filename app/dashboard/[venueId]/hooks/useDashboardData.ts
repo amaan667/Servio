@@ -88,24 +88,27 @@ export function useDashboardData(
   const [stats, setStats] = useState<DashboardStats>(() => {
     // Always prefer server data - it's guaranteed fresh
     if (initialStats) {
-      console.log("[DASHBOARD DATA] Using initialStats from server:", {
-        menuItems: initialStats.menuItems,
-        revenue: initialStats.revenue,
-        unpaid: initialStats.unpaid,
-        timestamp: new Date().toISOString(),
-      });
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("[DASHBOARD DATA] Using initialStats from server");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("initialStats.menuItems:", initialStats.menuItems);
+      console.log("initialStats.revenue:", initialStats.revenue);
+      console.log("initialStats.unpaid:", initialStats.unpaid);
+      console.log("⚠️  This is the count that will be displayed on dashboard");
+      console.log("Timestamp:", new Date().toISOString());
+      console.log("═══════════════════════════════════════════════════════════");
       return initialStats;
     }
     // Only use cache if server didn't provide data (shouldn't happen with force-dynamic)
     const cached = getCachedStats();
     if (cached) {
-      console.log("[DASHBOARD DATA] Using cached stats (no server data):", {
+      console.log("[DASHBOARD DATA] ⚠️ Using cached stats (no server data):", {
         menuItems: cached.menuItems,
         timestamp: new Date().toISOString(),
       });
       return cached;
     }
-    console.log("[DASHBOARD DATA] Using default stats (no server or cache):", {
+    console.log("[DASHBOARD DATA] ⚠️ Using default stats (no server or cache):", {
       timestamp: new Date().toISOString(),
     });
     return { revenue: 0, menuItems: 0, unpaid: 0 };

@@ -360,7 +360,7 @@ export default function MenuManagementClient({
         body: requestBody,
         timestamp: new Date().toISOString(),
       });
-
+      
       const response = await fetch("/api/menu/clear", {
         method: "POST",
         headers: {

@@ -112,8 +112,8 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       // Clear cache if no items to prevent stale data
       if (typeof window !== "undefined") {
         if (itemCount > 0) {
-          sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(normalized));
-          sessionStorage.setItem(`venue_name_${venueSlug}`, venueNameValue);
+        sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(normalized));
+        sessionStorage.setItem(`venue_name_${venueSlug}`, venueNameValue);
         } else {
           // Clear cache when no items
           sessionStorage.removeItem(`menu_${venueSlug}`);

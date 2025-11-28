@@ -311,7 +311,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
             );
             console.log("[PDF UPLOAD] Dispatched menuChanged event to refresh dashboard");
           }
-          
+
           onSuccess?.();
         } else {
           console.error("[PDF UPLOAD] Upload failed:", {

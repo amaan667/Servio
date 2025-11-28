@@ -120,24 +120,28 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     }
 
     // Count ALL menu items (not just available) to match menu management count
-    const { data: menuItems, error: menuError } = await supabase
+    const { data: menuItems, error: menuError, count: menuItemCountFromCount } = await supabase
       .from("menu_items")
-      .select("id")
+      .select("id", { count: "exact" })
       .eq("venue_id", normalizedVenueId);
       // Removed .eq("is_available", true) to match menu management count
 
-    const menuItemCount = menuItems?.length || 0;
+    const menuItemCount = menuItems?.length || menuItemCountFromCount || 0;
 
     // CRITICAL LOG: Dashboard count on page load
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("📊 [DASHBOARD LOAD] Menu Items Count");
+    console.log("📊 [DASHBOARD SERVER LOAD] Menu Items Count");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("Venue ID:", venueId);
     console.log("Normalized Venue ID:", normalizedVenueId);
-    console.log("Total Menu Items:", menuItemCount);
+    console.log("Menu Items Array Length:", menuItems?.length || 0);
+    console.log("Menu Items Count (from count):", menuItemCountFromCount || 0);
+    console.log("Final Menu Item Count:", menuItemCount);
     console.log("Error:", menuError?.message || "None");
     console.log("Error Code:", menuError?.code || "None");
     console.log("Sample Item IDs:", menuItems?.slice(0, 5).map((m) => m.id) || []);
+    console.log("All Item IDs Count:", menuItems?.length || 0);
+    console.log("⚠️  THIS COUNT WILL BE PASSED TO CLIENT AS initialStats.menuItems");
     console.log("Timestamp:", new Date().toISOString());
     console.log("═══════════════════════════════════════════════════════════");
 

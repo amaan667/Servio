@@ -82,8 +82,8 @@ export const POST = withUnifiedAuth(
 
     if (!venueId || !normalizedVenueId) {
       console.error("[CATALOG REPLACE] Missing venueId:", { venueId, normalizedVenueId });
-      return apiErrors.badRequest('venue_id required');
-    }
+        return apiErrors.badRequest('venue_id required');
+      }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
@@ -312,7 +312,7 @@ export const POST = withUnifiedAuth(
       if (item.spiceLevel === "mild") spiceLevelInt = 1;
       else if (item.spiceLevel === "medium") spiceLevelInt = 2;
       else if (item.spiceLevel === "hot") spiceLevelInt = 3;
-      
+
       menuItems.push({
         id: itemId,
         venue_id: normalizedVenueId,
@@ -490,7 +490,7 @@ export const POST = withUnifiedAuth(
             // Clone request to avoid consuming original body
             const clonedReq = req.clone();
             const formData = await clonedReq.formData();
-            venueId = formData.get("venue_id") as string || formData.get("venueId") as string || null;
+          venueId = formData.get("venue_id") as string || formData.get("venueId") as string || null;
           } catch (formDataError) {
             console.error("[CATALOG REPLACE] Failed to read formData in extractVenueId:", {
               error: formDataError instanceof Error ? formDataError.message : String(formDataError),

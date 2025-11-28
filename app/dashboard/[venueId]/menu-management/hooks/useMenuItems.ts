@@ -6,7 +6,7 @@ import { MenuItem } from "../types";
 
 export function useMenuItems(venueId: string) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false to prevent showing 0 items
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const { toast } = useToast();
 
@@ -110,11 +110,13 @@ export function useMenuItems(venueId: string) {
       console.log("Venue ID:", venueId);
       console.log("Normalized Venue ID:", normalizedVenueId);
       console.log("Total Menu Items:", itemCount);
-      console.log("First 3 Items:", items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name })) || []);
+      console.log("Items Array:", items || []);
+      console.log("Items Array Length:", items?.length || 0);
+      console.log("First 3 Items:", items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name, is_available: i.is_available })) || []);
       console.log("All Item IDs:", items?.map((i) => i.id) || []);
+      console.log("⚠️  THIS IS THE COUNT THAT SHOULD MATCH DASHBOARD");
+      console.log("⚠️  Dashboard should show:", itemCount);
       console.log("Timestamp:", new Date().toISOString());
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("✅ COMPARISON: Dashboard should match this count!");
       console.log("═══════════════════════════════════════════════════════════");
 
       setMenuItems(items || []);
