@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Receipt, Download, Mail, MessageSquare, Printer } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
@@ -304,57 +305,42 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Tab Navigation */}
         <section className="mb-6 sm:mb-8">
-          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
-            {[
-              {
-                key: "today",
-                label: "Today",
-                count: todayReceipts.length,
-              },
-              {
-                key: "history",
-                label: "History",
-                count: historyReceipts.length,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`
-                  group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition-all duration-200 border-2
-                  ${
-                    activeTab === tab.key
-                      ? "bg-servio-purple text-white border-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] hover:bg-white hover:text-servio-purple"
-                      : "bg-servio-purple text-white border-servio-purple hover:bg-white hover:text-servio-purple hover:border-servio-purple"
-                  }
-                `}
-              >
-                <span className="flex items-center justify-between w-full">
-                  <span className="font-medium">{tab.label}</span>
-                  <span
-                    className={`
-                    ml-2 inline-flex min-w-[1.5rem] h-6 items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold transition-all duration-200
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="today" className="flex items-center gap-2 relative">
+                <span className="flex-1 text-left">Today</span>
+                <span
+                  className={`
+                    ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
                     ${
-                      activeTab === tab.key
-                        ? "bg-white text-servio-purple shadow-sm"
-                        : tab.count === 0
-                        ? "bg-white/80 text-servio-purple border border-white/50"
-                        : "bg-white/80 text-servio-purple group-hover:bg-white group-hover:text-servio-purple"
+                      activeTab === "today"
+                        ? "bg-white text-servio-purple"
+                        : "bg-white/30 text-white"
                     }
                   `}
-                  >
-                    {tab.count}
-                  </span>
+                >
+                  {todayReceipts.length}
                 </span>
-              </button>
-            ))}
-          </div>
-        </section>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2 relative">
+                <span className="flex-1 text-left">History</span>
+                <span
+                  className={`
+                    ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
+                    ${
+                      activeTab === "history"
+                        ? "bg-white text-servio-purple"
+                        : "bg-white/30 text-white"
+                    }
+                  `}
+                >
+                  {historyReceipts.length}
+                </span>
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Receipts Content */}
-        <div className="space-y-4">
-          {activeTab === "today" && (
-            <div>
+            {/* Receipts Content */}
+            <TabsContent value="today" className="mt-6">
               {todayReceipts.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
@@ -368,11 +354,9 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                   {todayReceipts.map(renderReceiptCard)}
                 </div>
               )}
-            </div>
-          )}
+            </TabsContent>
 
-          {activeTab === "history" && (
-            <div>
+            <TabsContent value="history" className="mt-6">
               {historyReceipts.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
@@ -399,9 +383,9 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                     ))}
                 </div>
               )}
-            </div>
-          )}
-        </div>
+            </TabsContent>
+          </Tabs>
+        </section>
       </div>
 
       {/* Receipt Modal */}
