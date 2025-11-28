@@ -377,30 +377,82 @@ export function useDashboardData(
     const handleMenuChange = async (event: Event) => {
       const customEvent = event as CustomEvent<{ venueId: string; action: string; itemCount?: number }>;
       const changedVenueId = customEvent.detail?.venueId;
-      if (changedVenueId === venueId && todayWindow) {
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("🔄 [DASHBOARD] Menu change detected - refreshing stats...");
-        console.log("═══════════════════════════════════════════════════════════");
+      
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("🔄 [DASHBOARD DATA] Menu change event received");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("Event Venue ID:", changedVenueId);
+      console.log("Current Venue ID:", venueId);
+      console.log("Action:", customEvent.detail?.action || "unknown");
+      console.log("Item Count:", customEvent.detail?.itemCount || "unknown");
+      console.log("Timestamp:", new Date().toISOString());
+      console.log("═══════════════════════════════════════════════════════════");
+
+      // Normalize both venue IDs for comparison
+      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
+        ? changedVenueId 
+        : changedVenueId ? `venue-${changedVenueId}` : null;
+      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
+        ? venueId 
+        : `venue-${venueId}`;
+
+      if (normalizedChangedVenueId === normalizedCurrentVenueId) {
+        console.log("🗑️ [DASHBOARD DATA] Clearing ALL caches...");
         
-        // Clear cache first
-        sessionStorage.removeItem(`dashboard_stats_${venueId}`);
-        sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+        // Clear all possible cache keys
+        try {
+          const allKeys = Object.keys(sessionStorage);
+          allKeys.forEach((key) => {
+            if (key.includes("dashboard_") && (key.includes(venueId) || key.includes(normalizedCurrentVenueId))) {
+              sessionStorage.removeItem(key);
+              console.log(`🗑️ Cleared: ${key}`);
+            }
+          });
+        } catch (e) {
+          console.error("[DASHBOARD DATA] Error clearing cache:", e);
+        }
         
-        // Refresh counts and stats
+        console.log("🔄 [DASHBOARD DATA] Refreshing counts and stats...");
+        
+        // Force refresh counts
         await refreshCounts();
+        
+        // Force refresh stats - use todayWindow if available, otherwise create one
+        const window = todayWindow || todayWindowForTZ(venueTz);
         const venue_id =
           venue && typeof venue === "object" && "venue_id" in venue
             ? (venue as { venue_id?: string }).venue_id
-            : venueId;
-        if (venue_id && todayWindow.startUtcISO && todayWindow.endUtcISO) {
+            : normalizedCurrentVenueId;
+            
+        if (venue_id && window.startUtcISO && window.endUtcISO) {
           await loadStats(venue_id, {
-            startUtcISO: todayWindow.startUtcISO,
-            endUtcISO: todayWindow.endUtcISO,
+            startUtcISO: window.startUtcISO,
+            endUtcISO: window.endUtcISO,
           });
+        } else {
+          // Fallback: directly query menu items count
+          console.log("⚠️ [DASHBOARD DATA] No window available, querying menu items directly...");
+          const supabase = createClient();
+          const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+          const { count, error: menuError } = await supabase
+            .from("menu_items")
+            .select("*", { count: "exact", head: true })
+            .eq("venue_id", normalizedVenueId)
+            .eq("is_available", true);
+          
+          if (!menuError && count !== null) {
+            setStats((prev) => ({
+              ...prev,
+              menuItems: count || 0,
+            }));
+            console.log("✅ [DASHBOARD DATA] Menu items count updated directly:", count || 0);
+          }
         }
         
-        console.log("✅ [DASHBOARD] Stats refreshed after menu change");
+        console.log("✅ [DASHBOARD DATA] Dashboard refreshed after menu change");
         console.log("═══════════════════════════════════════════════════════════");
+      } else {
+        console.log("⚠️ [DASHBOARD DATA] Venue ID mismatch, ignoring event");
       }
     };
 
@@ -408,7 +460,7 @@ export function useDashboardData(
     return () => {
       window.removeEventListener("menuChanged", handleMenuChange);
     };
-  }, [venueId, venue, todayWindow, refreshCounts, loadStats]);
+  }, [venueId, venue, venueTz, todayWindow, refreshCounts, loadStats]);
 
   return {
     venue,
