@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,18 +173,19 @@ export function HelpCenterClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [venueId, setVenueId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const renderedLinksRef = useRef<Set<string>>(new Set());
 
   // Fetch venueId from user's session
   useEffect(() => {
     const fetchVenueId = async () => {
-      console.log("[HELP CENTER] Starting venueId fetch");
+      console.error("[HELP CENTER] Starting venueId fetch");
       try {
         const supabase = await createClient();
         const { data: sessionData } = await supabase.auth.getSession();
         const user = sessionData?.session?.user;
 
         if (!user) {
-          console.log("[HELP CENTER] No user found");
+          console.error("[HELP CENTER] No user found");
           setIsLoading(false);
           return;
         }
@@ -230,13 +231,13 @@ export function HelpCenterClient() {
           }
         }
 
-        console.log("[HELP CENTER] Found venueId:", foundVenueId);
+        console.error("[HELP CENTER] Found venueId:", foundVenueId);
         setVenueId(foundVenueId);
       } catch (error) {
         console.error("[HELP CENTER] Error fetching venueId:", error);
       } finally {
         setIsLoading(false);
-        console.log("[HELP CENTER] Loading complete");
+        console.error("[HELP CENTER] Loading complete");
       }
     };
 
@@ -245,7 +246,7 @@ export function HelpCenterClient() {
 
   // Build exactly 7 links - no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
-    console.log("[HELP CENTER] Building quickLinks", { isLoading, venueId });
+    console.error("[HELP CENTER] Building quickLinks", { isLoading, venueId, timestamp: Date.now() });
 
     if (isLoading) {
       return [];
@@ -260,10 +261,11 @@ export function HelpCenterClient() {
           external: true,
         },
       ];
-      console.log("[HELP CENTER] No venueId, returning 1 link:", links);
+      console.error("[HELP CENTER] No venueId, returning 1 link");
       return links;
     }
 
+    // Build exactly 7 links - hardcoded, no way to duplicate
     const links: QuickLink[] = [
       {
         title: "Getting Started Guide",
@@ -309,9 +311,25 @@ export function HelpCenterClient() {
       },
     ];
 
-    console.log("[HELP CENTER] Built links:", links.map(l => l.title));
-    console.log("[HELP CENTER] Total links:", links.length);
-    return links;
+    console.error("[HELP CENTER] Built links:", links.map(l => l.title).join(", "));
+    console.error("[HELP CENTER] Total links:", links.length);
+    
+    // Safety check - if somehow we have duplicates, filter them
+    const seen = new Set<string>();
+    const unique = links.filter(link => {
+      if (seen.has(link.title)) {
+        console.error("[HELP CENTER] DUPLICATE DETECTED:", link.title);
+        return false;
+      }
+      seen.add(link.title);
+      return true;
+    });
+
+    if (unique.length !== links.length) {
+      console.error("[HELP CENTER] DUPLICATES REMOVED:", links.length, "->", unique.length);
+    }
+
+    return unique;
   }, [venueId, isLoading]);
 
   const filteredFAQs = faqs.map((category) => ({
@@ -323,7 +341,11 @@ export function HelpCenterClient() {
     ),
   })).filter((category) => category.questions.length > 0);
 
-  console.log("[HELP CENTER] Rendering with", quickLinks.length, "links");
+  // Log on every render
+  useEffect(() => {
+    console.error("[HELP CENTER] RENDER - Links count:", quickLinks.length, "Titles:", quickLinks.map(l => l.title).join(", "));
+    console.error("[HELP CENTER] RENDER - VenueId:", venueId, "Loading:", isLoading);
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -372,6 +394,14 @@ export function HelpCenterClient() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {quickLinks.map((link, index) => {
+                // Track rendered links to detect duplicates
+                const linkKey = `${link.title}-${index}`;
+                if (renderedLinksRef.current.has(link.title)) {
+                  console.error("[HELP CENTER] DUPLICATE RENDER DETECTED:", link.title, "at index", index);
+                } else {
+                  renderedLinksRef.current.add(link.title);
+                }
+
                 const Icon = link.icon;
                 const linkContent = (
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
@@ -385,7 +415,7 @@ export function HelpCenterClient() {
                 if (link.external) {
                   return (
                     <a
-                      key={`${link.title}-${index}`}
+                      key={linkKey}
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -396,7 +426,7 @@ export function HelpCenterClient() {
                 }
 
                 return (
-                  <Link key={`${link.title}-${index}`} href={link.href}>
+                  <Link key={linkKey} href={link.href}>
                     {linkContent}
                   </Link>
                 );
