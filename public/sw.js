@@ -5,18 +5,31 @@
 
 const CACHE_NAME = 'servio-v1';
 const OFFLINE_PAGE = '/offline';
+// Only cache pages that definitely exist and are accessible
 const CRITICAL_PAGES = [
   '/',
   '/sign-in',
-  '/dashboard',
-  '/order',
+  '/help',
+  '/offline',
 ];
 
 // Install event - cache critical assets
+// Use individual cache.add() calls with error handling so failures don't block installation
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CRITICAL_PAGES.map(page => new Request(page, { cache: 'reload' })));
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Cache each page individually, ignoring failures
+      const cachePromises = CRITICAL_PAGES.map(async (page) => {
+        try {
+          await cache.add(new Request(page, { cache: 'reload' }));
+        } catch (error) {
+          // Silently fail - don't block service worker installation
+          console.warn(`[SW] Failed to cache ${page}:`, error);
+        }
+      });
+      
+      // Wait for all cache attempts (even if some fail)
+      await Promise.allSettled(cachePromises);
     })
   );
   self.skipWaiting();
