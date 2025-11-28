@@ -83,52 +83,62 @@ export function useDashboardData(
     };
   });
 
-  // Priority: Always use initialStats from server (fresh data)
-  // Don't use cached stats on initial load - server data is always fresher
+  // Priority: ALWAYS use initialStats from server - NEVER use cache for stats
+  // Cache causes stale counts - force fresh data every time
   const [stats, setStats] = useState<DashboardStats>(() => {
-    // Always prefer server data - it's guaranteed fresh
+    // ALWAYS prefer server data - it's guaranteed fresh
     if (initialStats) {
-      // Log to console (logger is no-op, so console.log is needed for Railway)
+      // Log to console.error for Railway visibility
       const logData = {
         menuItems: initialStats.menuItems,
         revenue: initialStats.revenue,
         unpaid: initialStats.unpaid,
         timestamp: new Date().toISOString(),
       };
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("[DASHBOARD DATA] Using initialStats from server");
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("initialStats:", JSON.stringify(logData, null, 2));
-      console.log("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
-      console.log("═══════════════════════════════════════════════════════════");
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("[DASHBOARD DATA] Using initialStats from server");
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("initialStats:", JSON.stringify(logData, null, 2));
+      console.error("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
+      console.error("═══════════════════════════════════════════════════════════");
       return initialStats;
     }
-    // Only use cache if server didn't provide data (shouldn't happen with force-dynamic)
-    const cached = getCachedStats();
-    if (cached) {
-      console.log("[DASHBOARD DATA] ⚠️ Using cached stats (no server data):", {
-        menuItems: cached.menuItems,
-        timestamp: new Date().toISOString(),
-      });
-      return cached;
-    }
-    console.log("[DASHBOARD DATA] ⚠️ Using default stats (no server or cache):", {
-      timestamp: new Date().toISOString(),
-    });
+    // If no server data, use defaults - NEVER use cache for stats
+    console.error("[DASHBOARD DATA] ⚠️ No server data, using defaults (menuItems: 0)");
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
+  
+  // Force update stats when initialStats changes (e.g., after menu changes)
+  useEffect(() => {
+    if (initialStats) {
+      console.error("[DASHBOARD DATA] initialStats changed, updating stats:", {
+        oldMenuItems: stats.menuItems,
+        newMenuItems: initialStats.menuItems,
+        timestamp: new Date().toISOString(),
+      });
+      setStats(initialStats);
+    }
+  }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid]); // Only depend on values, not object reference
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
   const [error, setError] = useState<string | null>(null);
 
-  // Cache initial data immediately on mount to prevent future flicker
+  // DON'T cache initialStats - always use fresh server data
+  // Only cache counts, not stats (stats should always be fresh from server)
   useEffect(() => {
     if (initialCounts) {
       setCachedCounts(venueId, initialCounts);
     }
+    // DO NOT cache initialStats - it causes stale counts
+    // Always use fresh server data for menu items count
     if (initialStats && typeof window !== "undefined") {
-      sessionStorage.setItem(`dashboard_stats_${venueId}`, JSON.stringify(initialStats));
+      // Clear any old cached stats to force fresh data
+      sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+      console.log("[DASHBOARD DATA] Cleared cached stats to force fresh data:", {
+        venueId,
+        freshCount: initialStats.menuItems,
+      });
     }
   }, [venueId, initialCounts, initialStats]); // Run when initial data changes
 
