@@ -12,7 +12,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get("sessionId");
 
-
     if (!sessionId) {
       return apiErrors.badRequest('Session ID is required');
     }

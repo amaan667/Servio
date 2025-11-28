@@ -12,7 +12,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get("sessionId");
 
-
     if (!sessionId) {
       return apiErrors.badRequest('Session ID is required');
     }
@@ -41,7 +40,6 @@ export async function GET(req: Request) {
         /* Empty */
       };
     const orderId = metadata.orderId;
-
 
     if (!orderId) {
       return NextResponse.json(
@@ -96,7 +94,6 @@ export async function GET(req: Request) {
         { status: 500 }
       );
     }
-
 
     return NextResponse.json({
       order: updatedOrder,

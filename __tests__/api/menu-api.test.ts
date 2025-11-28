@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Integration Tests - Menu API Endpoints
  * Tests API routes for menu management

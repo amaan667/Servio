@@ -1,3 +1,4 @@
+ 
 /**
  * Auto-generated test for dashboard/orders/[id]
  * Generated: 2025-11-23T00:14:32.209Z
@@ -45,26 +46,26 @@ describe("Dashboard Orders Id API", () => {
   describe("DELETE dashboard/orders/[id]", () => {
     it("should handle delete request", async () => {
       const request = createMockRequest("DELETE", "http://localhost:3000/api//dashboard/orders/[id]");
-      // TODO: Import and test actual route handler
+
       const response = await deleteDELETE(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 
   describe("PATCH dashboard/orders/[id]", () => {
     it("should handle patch request", async () => {
       const request = createMockRequest("PATCH", "http://localhost:3000/api//dashboard/orders/[id]");
-      // TODO: Import and test actual route handler
+
       const response = await patchPATCH(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 });

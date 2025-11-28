@@ -77,7 +77,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       };
     }
 
-
     let sessionsCleared = 0;
     let runtimeStateCleared = false;
 
@@ -149,7 +148,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         runtimeStateCleared = true;
       }
     }
-
 
     return {
       success: true,

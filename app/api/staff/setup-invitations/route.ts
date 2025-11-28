@@ -45,7 +45,6 @@ export const POST = withUnifiedAuth(
       });
     }
 
-
     // Create the staff_invitations table
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS staff_invitations (
@@ -109,7 +108,6 @@ export const POST = withUnifiedAuth(
     }
 
     // Indexes and RLS will be set up via migration scripts
-
 
     return NextResponse.json({
       success: true,

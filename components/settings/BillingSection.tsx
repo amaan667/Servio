@@ -161,7 +161,6 @@ export default function BillingSection({ organization }: BillingSectionProps) {
     }
   };
 
-
   const getTierInfo = () => {
     if (isGrandfathered) {
       return {

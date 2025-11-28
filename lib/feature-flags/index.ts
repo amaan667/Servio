@@ -250,7 +250,6 @@ export class FeatureFlagsManager {
     // Update cache
     await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
 
-
     return true;
   }
 

@@ -349,8 +349,3 @@ export function TablePaymentDialog({
   );
 }
 
-
-
-
-
-

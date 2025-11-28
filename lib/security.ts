@@ -158,7 +158,6 @@ class SecurityService {
       timestamp: new Date().toISOString(),
     };
 
-
     // Future: Store audit logs in database for compliance tracking
     // await supabase.from('audit_logs').insert(auditEntry);
   }

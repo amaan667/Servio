@@ -1,3 +1,4 @@
+ 
 /**
  * Auto-generated test for kds/tickets/bulk-update
  * Generated: 2025-11-23T00:14:32.211Z
@@ -44,13 +45,13 @@ describe("Kds Tickets Bulk Update API", () => {
   describe("PATCH kds/tickets/bulk-update", () => {
     it("should handle patch request", async () => {
       const request = createMockRequest("PATCH", "http://localhost:3000/api//kds/tickets/bulk-update");
-      // TODO: Import and test actual route handler
+
       const response = await patchPATCH(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 });

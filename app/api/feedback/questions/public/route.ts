@@ -29,7 +29,6 @@ export async function GET(req: Request) {
       return apiErrors.internal('Failed to fetch questions');
     }
 
-    
     return NextResponse.json({ 
       questions: questions || [],
       count: questions?.length || 0

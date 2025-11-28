@@ -552,8 +552,7 @@ export function withUnifiedAuth(
           }
         }
       }
-      
-       
+
       logger.debug("[UNIFIED AUTH] Final venueId:", venueId, "usedCustomExtractor:", usedCustomExtractor);
 
       // If custom extractor returned null, this route doesn't need venueId - skip venue check
@@ -598,7 +597,6 @@ export function withUnifiedAuth(
         );
       }
 
-       
       logger.debug("[UNIFIED AUTH] Step 2: Checking authentication and venue access...");
       const authResult = await requireAuthAndVenueAccess(req, venueId);
 

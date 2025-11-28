@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     // Create response object first so we can set cookies on it
     const response = NextResponse.json({ success: true });
 

@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest("access_token and refresh_token are required");
     }
 
-
     // Create server-side Supabase client
     const supabase = await createServerSupabase();
 
@@ -43,7 +42,6 @@ export async function POST(request: NextRequest) {
     // The cookies are automatically set by the Supabase SSR client via setSession
     // Don't manually override them - let Supabase handle the chunking properly
     const response = NextResponse.json({ success: true });
-
 
     return response;
   } catch (err) {

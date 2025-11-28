@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Comprehensive Auth API Tests
  * Tests all authentication-related endpoints

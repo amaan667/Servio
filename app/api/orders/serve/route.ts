@@ -73,7 +73,6 @@ export async function POST(req: Request) {
       return apiErrors.badRequest('Order missing venue_id');
     }
 
-
     // Update the order status to SERVED
     const { error } = await admin
       .from("orders")

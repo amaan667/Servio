@@ -189,7 +189,6 @@ export class PerformanceTracker {
             loadComplete: perfData.loadEventEnd - perfData.fetchStart,
           };
 
-
           // Send to analytics
           fetch("/api/analytics/vitals", {
             method: "POST",

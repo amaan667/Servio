@@ -21,7 +21,6 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json(cachedCategories);
     }
 
-
     const supabase = await createClient();
 
     // Get the most recent menu upload to get category order

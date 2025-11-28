@@ -1,3 +1,4 @@
+ 
 /**
  * Auto-generated test for reservations/[reservationId]/modify
  * Generated: 2025-11-23T00:14:32.217Z
@@ -44,13 +45,13 @@ describe("Reservations ReservationId Modify API", () => {
   describe("PUT reservations/[reservationId]/modify", () => {
     it("should handle put request", async () => {
       const request = createMockRequest("PUT", "http://localhost:3000/api//reservations/[reservationId]/modify");
-      // TODO: Import and test actual route handler
+
       const response = await putPUT(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 });

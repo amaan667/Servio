@@ -161,7 +161,6 @@ const SAMPLE_RECIPES: RecipeMapping[] = [
 export async function seedInventoryData(venueId: string) {
   const supabase = createAdminClient();
 
-
   // Step 1: Create ingredients
   const createdIngredients: Record<string, string> = {
     /* Empty */
@@ -291,7 +290,6 @@ export async function seedInventoryData(venueId: string) {
       );
     }
   }
-
 
   return {
     success: true,

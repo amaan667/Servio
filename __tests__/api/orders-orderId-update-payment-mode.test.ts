@@ -1,3 +1,4 @@
+ 
 /**
  * Auto-generated test for orders/[orderId]/update-payment-mode
  * Generated: 2025-11-23T00:14:32.213Z
@@ -44,13 +45,13 @@ describe("Orders OrderId Update Payment Mode API", () => {
   describe("PATCH orders/[orderId]/update-payment-mode", () => {
     it("should handle patch request", async () => {
       const request = createMockRequest("PATCH", "http://localhost:3000/api//orders/[orderId]/update-payment-mode");
-      // TODO: Import and test actual route handler
+
       const response = await patchPATCH(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 });

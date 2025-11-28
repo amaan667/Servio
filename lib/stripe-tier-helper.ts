@@ -126,7 +126,6 @@ export function normalizeTier(tierString: string | null | undefined): Subscripti
   return "starter";
 }
 
-
 /**
  * Parse tier from product name
  * Handles: "Premium Plan" → enterprise, "Standard Plan" → pro, "Basic Plan" → starter

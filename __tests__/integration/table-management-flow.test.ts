@@ -1,3 +1,4 @@
+ 
 /**
  * Integration test for table management flow
  * Tests table CRUD operations and session management

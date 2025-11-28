@@ -123,7 +123,6 @@ OTHER RULES:
       throw new Error("No response from Vision AI");
     }
 
-
     // Extract JSON from response (might be wrapped in markdown like ```json [...] ```)
     let jsonText = text;
 
@@ -146,7 +145,6 @@ OTHER RULES:
       return [];
     }
 
-
     // Log categories for debugging
     const categories = Array.from(new Set(json.map((item) => item.category).filter(Boolean)));
     logger.info("[VISION PDF] Categories extracted:", {
@@ -160,7 +158,6 @@ OTHER RULES:
       const cat = item.category || "Uncategorized";
       categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
     });
-
 
     // Log sample items from each category
     const samplesByCategory: Record<string, ExtractedMenuItem[]> = {};
@@ -177,7 +174,6 @@ OTHER RULES:
         } as ExtractedMenuItem);
       }
     });
-
 
     // Log any items with potential issues
     const itemsWithoutName = json.filter((item) => !item.name);

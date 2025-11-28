@@ -301,7 +301,6 @@ export async function POST(req: NextRequest) {
       return apiErrors.badRequest('URL is required');
     }
 
-
     // Detect site type for optimal strategy
     const siteType = await detectSiteType(url);
     logger.info(`[MENU SCRAPE] Detected site type: ${siteType.type}`, {

@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-
     // Step 1: Fetch stored PDF images from database
 
     const { data: uploadData, error: uploadError } = await supabase
@@ -72,7 +71,6 @@ export async function POST(req: NextRequest) {
       logger.error("[HYBRID ENHANCE] Failed to delete existing items", { deleteItemsError });
       throw new Error(`Failed to clear menu: ${deleteItemsError.message}`);
     }
-
 
     // Step 5: Run THE ONE TRUE HYBRID EXTRACTION SYSTEM
     logger.info(

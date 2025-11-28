@@ -11,7 +11,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ session
     const supabaseAdmin = createAdminClient();
     const { sessionId } = await params;
 
-
     if (!sessionId) {
       logger.error("[ORDER SESSION LOOKUP DEBUG] No session ID provided");
       return apiErrors.badRequest('Session ID is required');

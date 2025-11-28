@@ -105,8 +105,7 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
   } => {
     // Use the same logic as deriveEntityKind to determine order type
     const isCounterOrder = order.source === 'counter';
-    
-    
+
     // Additional debug for table number processing
     if (order.table_number) {
       // Empty block
@@ -140,7 +139,6 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
 
   const { table_label, counter_label } = generateLabels(legacyOrder);
 
-  
   // Additional debug to see the actual values
 
   return {

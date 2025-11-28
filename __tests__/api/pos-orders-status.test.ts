@@ -1,3 +1,4 @@
+ 
 /**
  * Auto-generated test for pos/orders/status
  * Generated: 2025-11-23T00:14:32.216Z
@@ -44,13 +45,13 @@ describe("Pos Orders Status API", () => {
   describe("PATCH pos/orders/status", () => {
     it("should handle patch request", async () => {
       const request = createMockRequest("PATCH", "http://localhost:3000/api//pos/orders/status");
-      // TODO: Import and test actual route handler
+
       const response = await patchPATCH(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 });

@@ -70,8 +70,7 @@ export const POST = withUnifiedAuth(
         venueId: context.venueId,
         features: assistantContext.features,
       });
-      
-       
+
       logger.debug("[AI SIMPLE CHAT] Step 3: Getting data summaries...");
       summaries = await getAllSummaries(context.venueId, assistantContext.features);
       // Summaries retrieved

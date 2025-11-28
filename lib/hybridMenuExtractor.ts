@@ -56,7 +56,6 @@ export async function extractMenuHybrid(
 ): Promise<HybridMenuResult> {
   const { pdfImages, websiteUrl, venueId } = options;
 
-
   // Validation
   if (!pdfImages && !websiteUrl) {
     logger.error("[HYBRID] No sources provided");
@@ -136,7 +135,6 @@ export async function extractMenuHybrid(
       }
     }
 
-
     // PDF Analysis
     const pdfCategories = Array.from(
       new Set(pdfData.items.map((i) => i.category).filter(Boolean))
@@ -181,8 +179,6 @@ export async function extractMenuHybrid(
       const cat = item.category || "Uncategorized";
       urlCategoryBreakdown[cat] = (urlCategoryBreakdown[cat] || 0) + 1;
     });
-
-
 
     // Intelligent merge
     const mergedItems = await mergeWebAndPdfData(pdfData.items, webItems);
@@ -231,7 +227,6 @@ export async function extractMenuHybrid(
         mergedWithImages
     );
 
-
     return {
       items: mergedItems,
       itemCount: mergedItems.length,
@@ -271,10 +266,8 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 async function extractFromPDF(pdfImages: string[]): Promise<{ items: MenuItem[] }> {
   const items: MenuItem[] = [];
 
-
   for (let i = 0; i < pdfImages.length; i++) {
     const imageUrl = pdfImages[i];
-
 
     try {
       // Extract items from page
@@ -783,7 +776,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
     };
   });
 
-
   // Analyze match reasons to show algorithm performance
   const matchReasons: Record<string, number> = {};
   merged.forEach((item) => {
@@ -942,7 +934,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
 
   // Extract PDF categories for intelligent categorization of new URL items
   const pdfCategories = Array.from(new Set(pdfItems.map((item) => item.category).filter((cat): cat is string => Boolean(cat))));
-
 
   // Add web-only items that PDF didn't find with AI-POWERED CATEGORIZATION
   let webOnlyCount = 0;

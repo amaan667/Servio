@@ -1,9 +1,10 @@
+ 
 /**
  * Auto-generated test for vitals
  * Generated: 2025-11-23T00:14:32.223Z
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { it, expect, vi } from "vitest";
 import { createMockRequest } from "../helpers/api-test-helpers";
 import { POST as postPOST } from "@/app/api/vitals/route";
 
@@ -40,17 +41,8 @@ vi.mock("@/lib/api-auth", () => ({
   verifyVenueAccess: vi.fn(() => Promise.resolve(true)),
 }));
 
-describe("Vitals API", () => {
-  describe("POST vitals", () => {
-    it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apivitals");
-      // TODO: Import and test actual route handler
-      const response = await postPOST(request);
-      expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
-    });
-
-    it("should validate request parameters", async () => {
-      // TODO: Add validation tests
-    });
-  });
+it("POST vitals should handle post request", async () => {
+  const request = createMockRequest("POST", "http://localhost:3000/apivitals");
+  const response = await postPOST(request);
+  expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
 });

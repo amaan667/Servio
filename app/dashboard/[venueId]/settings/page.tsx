@@ -14,7 +14,6 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   // STEP 2: Now safe to fetch data using admin client
   const supabase = createAdminClient();
 
-
   // Fetch all settings data on server using admin client (bypasses RLS)
   // Auth already verified above, so safe to use admin client
   const [venueResult, userRoleResult, allVenuesResult, firstVenueResult] = await Promise.all([

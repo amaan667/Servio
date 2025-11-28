@@ -25,7 +25,6 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
     const pdfDoc = await pdfLib.PDFDocument.load(pdfBuffer);
     const pageCount = pdfDoc.getPageCount();
 
-
     // Convert each page
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
       const result = await converter(pageNum, { responseType: "base64" });

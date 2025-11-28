@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Integration test for order creation flow
  * Tests the complete order creation process including:

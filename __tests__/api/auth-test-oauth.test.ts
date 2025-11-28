@@ -1,3 +1,4 @@
+ 
 /**
  * Auto-generated test for auth/test-oauth
  * Generated: 2025-11-23T00:14:32.207Z
@@ -44,13 +45,13 @@ describe("Auth Test Oauth API", () => {
   describe("GET auth/test-oauth", () => {
     it("should handle get request", async () => {
       const request = createMockRequest("GET", "http://localhost:3000/api//auth/test-oauth");
-      // TODO: Import and test actual route handler
+
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 });

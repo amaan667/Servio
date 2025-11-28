@@ -64,7 +64,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-
     // Update orders to completed
     const orderIds = staleOrders.map((order) => order.id);
     const { error: updateError } = await supabase

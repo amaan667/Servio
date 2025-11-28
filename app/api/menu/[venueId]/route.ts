@@ -33,7 +33,6 @@ export async function GET(
       return NextResponse.json(cachedMenu);
     }
 
-
     // Use admin client to bypass RLS for public menu access
     const supabase = createAdminClient();
 

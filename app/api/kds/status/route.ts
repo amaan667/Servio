@@ -69,7 +69,6 @@ export async function GET() {
       system_ready: tableNames.length === 3 && stationsCount > 0,
     };
 
-
     return NextResponse.json({
       ok: true,
       status,

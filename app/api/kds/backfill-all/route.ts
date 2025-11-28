@@ -157,7 +157,6 @@ export const POST = withUnifiedAuth(
         continue;
       }
 
-
       let scopeOrdersProcessed = 0;
       let scopeTicketsCreated = 0;
       const scopeErrors: string[] = [];

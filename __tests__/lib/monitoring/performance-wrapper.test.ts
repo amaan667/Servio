@@ -1,3 +1,4 @@
+ 
 /**
  * @fileoverview Tests for performance monitoring wrapper
  * @module __tests__/lib/monitoring/performance-wrapper

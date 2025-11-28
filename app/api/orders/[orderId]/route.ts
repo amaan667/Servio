@@ -15,7 +15,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ orderId
       return apiErrors.badRequest('Order ID is required');
     }
 
-
     // Fetch order with items (items are stored as JSONB in orders table)
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")

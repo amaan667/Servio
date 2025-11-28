@@ -1,3 +1,4 @@
+ 
 /**
  * Auto-generated test for tables/[tableId]/close
  * Generated: 2025-11-23T00:14:32.221Z
@@ -44,13 +45,13 @@ describe("Tables TableId Close API", () => {
   describe("POST tables/[tableId]/close", () => {
     it("should handle post request", async () => {
       const request = createMockRequest("POST", "http://localhost:3000/api//tables/[tableId]/close");
-      // TODO: Import and test actual route handler
+
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
     it("should validate request parameters", async () => {
-      // TODO: Add validation tests
+
     });
   });
 });

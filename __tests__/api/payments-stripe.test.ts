@@ -1,3 +1,4 @@
+ 
 /**
  * Tests for Payment Processing - Stripe Integration
  * Critical: Payment security and reliability
