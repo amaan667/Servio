@@ -11,6 +11,9 @@ export function useMenuItems(venueId: string) {
   const { toast } = useToast();
 
   const loadMenuItems = async () => {
+    // Normalize venueId format - database stores with venue- prefix
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    
     try {
       setLoading(true);
       
@@ -20,7 +23,12 @@ export function useMenuItems(venueId: string) {
         supabase = createClient();
       } catch (clientError) {
         const errorMessage = clientError instanceof Error ? clientError.message : String(clientError);
-        console.error("[MENU BUILDER] Failed to create Supabase client:", errorMessage);
+        console.error("[MENU BUILDER] Failed to create Supabase client:", {
+          error: errorMessage,
+          venueId,
+          normalizedVenueId,
+          timestamp: new Date().toISOString(),
+        });
         toast({
           title: "Configuration Error",
           description: "Failed to connect to database. Please refresh the page or contact support.",
@@ -28,9 +36,6 @@ export function useMenuItems(venueId: string) {
         });
         return;
       }
-
-      // Normalize venueId format - database stores with venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       console.log("[MENU BUILDER] Loading menu items:", {
         originalVenueId: venueId,
