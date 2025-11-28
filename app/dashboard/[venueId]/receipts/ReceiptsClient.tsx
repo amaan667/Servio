@@ -333,11 +333,13 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                   <span className="font-medium">{tab.label}</span>
                   <span
                     className={`
-                    ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-200
+                    ml-2 inline-flex min-w-[1.5rem] h-6 items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold transition-all duration-200
                     ${
                       activeTab === tab.key
                         ? "bg-white text-servio-purple shadow-sm"
-                        : "bg-white/30 text-white group-hover:bg-white group-hover:text-servio-purple"
+                        : tab.count === 0
+                        ? "bg-white/80 text-servio-purple border border-white/50"
+                        : "bg-white/80 text-servio-purple group-hover:bg-white group-hover:text-servio-purple"
                     }
                   `}
                   >

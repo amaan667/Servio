@@ -2873,3 +2873,191 @@ button[class*="destructive"]:hover,
 [role="button"][class*="destructive"]:hover {
   opacity: 0.9;
 }
+
+/* Print Styles for Receipts and QR Codes */
+@media print {
+  /* Reset page margins and ensure full page usage */
+  @page {
+    size: A4;
+    margin: 0.5cm;
+  }
+
+  /* Hide all non-essential elements when printing */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only receipt/printable content */
+  .print-content,
+  .print-receipt,
+  [class*="receipt"],
+  [class*="Receipt"],
+  .qr-code-print,
+  [class*="QRCode"] {
+    visibility: visible;
+  }
+
+  /* Receipt-specific print styles */
+  .print-receipt,
+  [class*="receipt"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+    padding: 20px !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hide buttons, navigation, and interactive elements */
+  button,
+  .print\\:hidden,
+  [class*="print:hidden"],
+  nav,
+  header,
+  footer,
+  .no-print,
+  [class*="no-print"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Ensure text is black and readable */
+  .print-receipt *,
+  [class*="receipt"] * {
+    color: black !important;
+    background: transparent !important;
+  }
+
+  /* Receipt layout adjustments */
+  .print-receipt h1,
+  .print-receipt h2,
+  .print-receipt h3 {
+    color: black !important;
+    font-weight: bold !important;
+    page-break-after: avoid;
+  }
+
+  /* Ensure separators are visible */
+  .print-receipt hr,
+  .print-receipt [class*="Separator"],
+  .print-receipt [class*="separator"] {
+    border-color: black !important;
+    background: black !important;
+  }
+
+  /* QR Code print styles */
+  .qr-code-print,
+  [class*="QRCode"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    padding: 20px !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure QR code images print correctly */
+  .qr-code-print img,
+  [class*="QRCode"] img,
+  [class*="qr-code"] img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Prevent page breaks inside important sections */
+  .print-receipt [class*="order-items"],
+  .print-receipt [class*="totals"],
+  .print-receipt [class*="payment-info"] {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure logos and images print */
+  .print-receipt img,
+  [class*="receipt"] img {
+    max-width: 200px !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Table formatting for receipts */
+  .print-receipt table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .print-receipt table td,
+  .print-receipt table th {
+    border: 1px solid black !important;
+    padding: 8px !important;
+    color: black !important;
+  }
+
+  /* Ensure proper spacing */
+  .print-receipt [class*="space-y"] > * + * {
+    margin-top: 1rem !important;
+  }
+
+  /* Force black text on all receipt elements */
+  .print-receipt * {
+    color: #000000 !important;
+  }
+
+  /* Badge styling for print */
+  .print-receipt [class*="Badge"],
+  .print-receipt [class*="badge"] {
+    background: transparent !important;
+    border: 1px solid black !important;
+    color: black !important;
+    padding: 2px 6px !important;
+  }
+
+  /* Ensure proper font sizes for print */
+  .print-receipt {
+    font-size: 12pt !important;
+    line-height: 1.5 !important;
+  }
+
+  .print-receipt h1 {
+    font-size: 18pt !important;
+  }
+
+  .print-receipt h2 {
+    font-size: 16pt !important;
+  }
+
+  .print-receipt h3 {
+    font-size: 14pt !important;
+  }
+
+  /* Remove shadows and effects */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* QR Code specific print optimizations */
+  .qr-code-print [class*="grid"],
+  [class*="QRCode"] [class*="grid"] {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 20px !important;
+    page-break-inside: avoid;
+  }
+
+  .qr-code-print [class*="card"],
+  [class*="QRCode"] [class*="card"] {
+    page-break-inside: avoid;
+    border: 1px solid black !important;
+    padding: 10px !important;
+    margin-bottom: 10px !important;
+  }
+}

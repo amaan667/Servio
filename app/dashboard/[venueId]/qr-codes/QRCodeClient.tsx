@@ -404,9 +404,9 @@ export default function QRCodeClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 qr-code-print">
             {qrManagement.generatedQRs.map((qr, index) => (
-              <Card key={`${qr.name}-${qr.type}-${index}`} className="shadow-lg rounded-xl">
+              <Card key={`${qr.name}-${qr.type}-${index}`} className="shadow-lg rounded-xl print:shadow-none print:border print:border-black">
                 <CardHeader>
                   <CardTitle className="text-lg">{qr.name}</CardTitle>
                 </CardHeader>
