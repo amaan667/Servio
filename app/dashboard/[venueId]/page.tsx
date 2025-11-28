@@ -126,38 +126,13 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .eq("venue_id", normalizedVenueId);
       // Removed .eq("is_available", true) to match menu management count
 
-    const menuItemCount = menuItems?.length || menuItemCountFromCount || 0;
+    // ALWAYS use actual array length - it's the source of truth
+    // Don't use count query as it can be inconsistent
+    const menuItemCount = actualMenuItemCount;
 
-    // CRITICAL LOG: Dashboard count on page load - Use console.error for Railway visibility
-    // Railway shows console.error and console.warn more prominently
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("📊 [DASHBOARD SERVER LOAD] Menu Items Count");
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("Venue ID:", venueId);
-    console.error("Normalized Venue ID:", normalizedVenueId);
-    console.error("Menu Items Array Length:", menuItems?.length || 0);
-    console.error("Menu Items Count (from count):", menuItemCountFromCount || 0);
-    console.error("Final Menu Item Count:", menuItemCount);
-    console.error("Error:", menuError?.message || "None");
-    console.error("Error Code:", menuError?.code || "None");
-    console.error("Sample Item IDs:", menuItems?.slice(0, 5).map((m) => m.id) || []);
-    console.error("All Item IDs Count:", menuItems?.length || 0);
-    console.error("⚠️  THIS COUNT WILL BE PASSED TO CLIENT AS initialStats.menuItems");
-    console.error("Timestamp:", new Date().toISOString());
-    console.error("═══════════════════════════════════════════════════════════");
-    
-    // Also log as structured data for easier parsing
-    console.error("[DASHBOARD SERVER] Menu items count", JSON.stringify({
-      venueId,
-      normalizedVenueId,
-      menuItemsArrayLength: menuItems?.length || 0,
-      menuItemsCountFromCount: menuItemCountFromCount || 0,
-      finalMenuItemCount: menuItemCount,
-      error: menuError?.message || null,
-      errorCode: menuError?.code || null,
-      sampleItemIds: menuItems?.slice(0, 5).map((m) => m.id) || [],
-      timestamp: new Date().toISOString(),
-    }, null, 2));
+    // Use actual array length - it's the source of truth
+    // The count query can be inconsistent, so always use the actual items returned
+    const actualMenuItemCount = menuItems?.length || 0;
 
     if (menuError) {
       logger.error("[DASHBOARD] Error fetching menu items:", {
@@ -174,7 +149,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
     initialStats = {
       revenue,
-      menuItems: menuItemCount,
+      menuItems: actualMenuItemCount, // Use actual array length, not count query
       unpaid,
     };
   } catch (_error) {

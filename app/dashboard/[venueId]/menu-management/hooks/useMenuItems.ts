@@ -68,15 +68,29 @@ export function useMenuItems(venueId: string) {
       });
 
       // Query ALL menu items (not filtered by is_available) to match dashboard count
-      const { data: items, error, count: itemsCount } = await supabase
+      // ALWAYS use actual array length - it's the source of truth
+      const { data: items, error } = await supabase
         .from("menu_items")
-        .select("*", { count: "exact" })
+        .select("*")
         .eq("venue_id", normalizedVenueId)
         .order("position", { ascending: true, nullsFirst: false });
       
-      console.log("[MENU BUILDER] Query with count:", {
-        itemsArrayLength: items?.length || 0,
-        itemsCountFromCount: itemsCount || 0,
+      const actualItemCount = items?.length || 0;
+      
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("📊 [MENU BUILDER] Menu Items Loaded");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("Venue ID:", venueId);
+      console.log("Normalized Venue ID:", normalizedVenueId);
+      console.log("Items Array Length:", actualItemCount);
+      console.log("Error:", error?.message || "None");
+      console.log("Sample Item IDs:", items?.slice(0, 5).map((m) => m.id) || []);
+      console.log("⚠️  THIS COUNT SHOULD MATCH DASHBOARD COUNT");
+      console.log("Timestamp:", new Date().toISOString());
+      console.log("═══════════════════════════════════════════════════════════");
+      
+      console.log("[MENU BUILDER] Query result:", {
+        itemsArrayLength: actualItemCount,
         normalizedVenueId,
       });
 
@@ -115,7 +129,7 @@ export function useMenuItems(venueId: string) {
       const menuBuilderLogData = {
         venueId,
         normalizedVenueId,
-        totalMenuItems: itemCount,
+        totalMenuItems: actualItemCount,
         itemsArrayLength: items?.length || 0,
         first3Items: items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name, is_available: i.is_available })) || [],
         allItemIds: items?.map((i) => i.id) || [],

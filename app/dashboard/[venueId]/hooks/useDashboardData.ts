@@ -95,16 +95,16 @@ export function useDashboardData(
         unpaid: initialStats.unpaid,
         timestamp: new Date().toISOString(),
       };
-      console.error("═══════════════════════════════════════════════════════════");
-      console.error("[DASHBOARD DATA] Using initialStats from server");
-      console.error("═══════════════════════════════════════════════════════════");
-      console.error("initialStats:", JSON.stringify(logData, null, 2));
-      console.error("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
-      console.error("═══════════════════════════════════════════════════════════");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("[DASHBOARD DATA] Using initialStats from server");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("initialStats:", JSON.stringify(logData, null, 2));
+      console.log("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
+      console.log("═══════════════════════════════════════════════════════════");
       return initialStats;
     }
     // If no server data, use defaults - NEVER use cache for stats
-    console.error("[DASHBOARD DATA] ⚠️ No server data, using defaults (menuItems: 0)");
+    console.log("[DASHBOARD DATA] ⚠️ No server data, using defaults (menuItems: 0)");
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
   
@@ -115,7 +115,7 @@ export function useDashboardData(
       const oldCount = stats.menuItems;
       const newCount = initialStats.menuItems;
       
-      console.error("[DASHBOARD DATA] initialStats changed, updating stats:", {
+      console.log("[DASHBOARD DATA] initialStats changed, updating stats:", {
         oldMenuItems: oldCount,
         newMenuItems: newCount,
         changed: oldCount !== newCount,
@@ -126,7 +126,7 @@ export function useDashboardData(
       setStats(initialStats);
       
       if (oldCount !== newCount) {
-        console.error("✅ [DASHBOARD DATA] Menu items count updated from", oldCount, "to", newCount);
+        console.log("✅ [DASHBOARD DATA] Menu items count updated from", oldCount, "to", newCount);
       }
     }
   }, [initialStats]); // Depend on the whole object to catch any changes
