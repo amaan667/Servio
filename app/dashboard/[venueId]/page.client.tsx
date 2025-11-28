@@ -96,6 +96,21 @@ const DashboardClient = React.memo(function DashboardClient({
   const venueTz = "Europe/London"; // Default timezone
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
 
+  // CRITICAL LOG: Dashboard page loaded with initial stats
+  useEffect(() => {
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📊 [DASHBOARD PAGE LOADED]");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Venue ID:", venueId);
+    console.log("Initial Stats Menu Items:", initialStats?.menuItems || 0);
+    console.log("Initial Stats Revenue:", initialStats?.revenue || 0);
+    console.log("Initial Stats Unpaid:", initialStats?.unpaid || 0);
+    console.log("Current Stats Menu Items:", dashboardData.stats.menuItems);
+    console.log("⚠️  This count should match the menu builder count!");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
+  }, [venueId, initialStats, dashboardData.stats.menuItems]);
+
   useDashboardRealtime({
     venueId,
     todayWindow: dashboardData.todayWindow,

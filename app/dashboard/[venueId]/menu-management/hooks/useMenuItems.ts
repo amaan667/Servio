@@ -79,20 +79,22 @@ export function useMenuItems(venueId: string) {
       }
 
       const itemCount = items?.length || 0;
-      console.log("[MENU BUILDER] Successfully loaded menu items:", {
-        count: itemCount,
-        firstFewItems: items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name })) || [],
-      });
+      
+      // CRITICAL LOG: Menu builder count when page loads
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("🔧 [MENU BUILDER LOAD] Menu Items Count");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("Venue ID:", venueId);
+      console.log("Normalized Venue ID:", normalizedVenueId);
+      console.log("Total Menu Items:", itemCount);
+      console.log("First 3 Items:", items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name })) || []);
+      console.log("All Item IDs:", items?.map((i) => i.id) || []);
+      console.log("Timestamp:", new Date().toISOString());
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("✅ COMPARISON: Dashboard should match this count!");
+      console.log("═══════════════════════════════════════════════════════════");
 
       setMenuItems(items || []);
-      
-      // Log summary for comparison
-      console.log("[MENU BUILDER] SUMMARY:", {
-        venueId,
-        normalizedVenueId,
-        totalMenuItems: itemCount,
-        timestamp: new Date().toISOString(),
-      });
 
       if (items && items.length > 0) {
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;

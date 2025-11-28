@@ -127,23 +127,18 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
     const menuItemCount = menuItems?.length || 0;
 
-    console.log("[DASHBOARD] Menu items count:", {
-      venueId,
-      normalizedVenueId,
-      count: menuItemCount,
-      error: menuError?.message || null,
-      errorCode: menuError?.code || null,
-      sampleIds: menuItems?.slice(0, 5).map((m) => m.id) || [],
-      timestamp: new Date().toISOString(),
-    });
-
-    // Log summary for comparison
-    console.log("[DASHBOARD] SUMMARY:", {
-      venueId,
-      normalizedVenueId,
-      totalMenuItems: menuItemCount,
-      timestamp: new Date().toISOString(),
-    });
+    // CRITICAL LOG: Dashboard count on page load
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📊 [DASHBOARD LOAD] Menu Items Count");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Venue ID:", venueId);
+    console.log("Normalized Venue ID:", normalizedVenueId);
+    console.log("Total Menu Items:", menuItemCount);
+    console.log("Error:", menuError?.message || "None");
+    console.log("Error Code:", menuError?.code || "None");
+    console.log("Sample Item IDs:", menuItems?.slice(0, 5).map((m) => m.id) || []);
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
 
     if (menuError) {
       console.error("[DASHBOARD] Error fetching menu items:", {

@@ -128,15 +128,19 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   };
 
   const processFile = async (file: File) => {
-    console.log("[PDF UPLOAD] processFile called:", {
-      fileName: file?.name,
-      fileSize: file?.size,
-      fileType: file?.type,
-      venueId,
-      isReplacing,
-      hasMenuUrl: !!menuUrl,
-      timestamp: new Date().toISOString(),
-    });
+    // CRITICAL LOG: PDF upload started
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📤 [PDF UPLOAD START]");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("File Name:", file?.name);
+    console.log("File Size:", file?.size, "bytes");
+    console.log("File Type:", file?.type);
+    console.log("Venue ID:", venueId);
+    console.log("Replace Mode:", isReplacing ? "REPLACE" : "APPEND");
+    console.log("Has Menu URL:", !!menuUrl);
+    console.log("Menu URL:", menuUrl || "None");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
 
     if (!file) {
       console.error("[PDF UPLOAD] No file provided");
@@ -246,15 +250,19 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         }
 
         const result = await response.json();
-        console.log("[PDF UPLOAD] API result:", {
-          ok: result.ok,
-          mode: result.mode,
-          items: result.items,
-          duration: result.duration,
-          error: result.error,
-          fullResult: result,
-          timestamp: new Date().toISOString(),
-        });
+        // CRITICAL LOG: PDF upload API response
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("📥 [PDF UPLOAD API RESPONSE]");
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("Status:", response.status);
+        console.log("OK:", result.ok);
+        console.log("Mode:", result.mode || "unknown");
+        console.log("Items Imported:", result.items || 0);
+        console.log("Duration:", result.duration);
+        console.log("Error:", result.error || "None");
+        console.log("Full Result:", JSON.stringify(result, null, 2));
+        console.log("Timestamp:", new Date().toISOString());
+        console.log("═══════════════════════════════════════════════════════════");
 
         if (result.ok) {
           const mode = result.mode || "unknown";
@@ -264,12 +272,17 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             "url-only": "🌐 URL Only",
           };
 
-          console.log("[PDF UPLOAD] Upload successful:", {
-            mode,
-            itemCount: result.items || 0,
-            duration: result.duration,
-            timestamp: new Date().toISOString(),
-          });
+          // CRITICAL LOG: PDF upload success
+          console.log("═══════════════════════════════════════════════════════════");
+          console.log("✅ [PDF UPLOAD SUCCESS]");
+          console.log("═══════════════════════════════════════════════════════════");
+          console.log("Mode:", modeLabels[mode] || mode);
+          console.log("Items Imported:", result.items || 0);
+          console.log("Duration:", result.duration);
+          console.log("Venue ID:", venueId);
+          console.log("⚠️  Dashboard count should now update to:", result.items || 0);
+          console.log("Timestamp:", new Date().toISOString());
+          console.log("═══════════════════════════════════════════════════════════");
 
           toast({
             title: isReplacing ? "Menu replaced successfully" : "Menu items added successfully",

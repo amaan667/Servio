@@ -156,12 +156,16 @@ export default function MenuManagementClient({
   };
 
   useEffect(() => {
-    console.log("[MENU BUILDER] Component mounted, initializing...", {
-      venueId,
-      menuItemsCount: menuItems.length,
-      loading,
-      timestamp: new Date().toISOString(),
-    });
+    // CRITICAL LOG: Menu builder page opened
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("🔧 [MENU BUILDER PAGE OPENED]");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Venue ID:", venueId);
+    console.log("Initial Menu Items Count:", menuItems.length);
+    console.log("Loading:", loading);
+    console.log("⚠️  This count should match the dashboard count!");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
   }, []); // Run once on mount
 
   useEffect(() => {
@@ -330,11 +334,15 @@ export default function MenuManagementClient({
   };
 
   const clearAllMenu = async () => {
-    console.log("[MENU BUILDER] clearAllMenu called:", {
-      venueId,
-      currentItemCount: menuItems.length,
-      timestamp: new Date().toISOString(),
-    });
+    // CRITICAL LOG: Clear menu button clicked
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("🗑️  [CLEAR MENU BUTTON CLICKED]");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Venue ID:", venueId);
+    console.log("Current Item Count:", menuItems.length);
+    console.log("Current Items:", menuItems.map((i) => ({ id: i.id, name: i.name })));
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
 
     if (!confirm("Are you sure you want to clear the entire menu? This action cannot be undone.")) {
       console.log("[MENU BUILDER] clearAllMenu cancelled by user");
@@ -379,11 +387,16 @@ export default function MenuManagementClient({
       }
 
       const result = await response.json();
-      console.log("[MENU BUILDER] Clear menu API result:", {
-        ok: result.ok,
-        result,
-        timestamp: new Date().toISOString(),
-      });
+      
+      // CRITICAL LOG: Clear menu API response
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("📥 [CLEAR MENU API RESPONSE]");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("Status:", response.status);
+      console.log("OK:", result.ok);
+      console.log("Result:", JSON.stringify(result, null, 2));
+      console.log("Timestamp:", new Date().toISOString());
+      console.log("═══════════════════════════════════════════════════════════");
 
       if (result.ok) {
         toast({
@@ -391,18 +404,29 @@ export default function MenuManagementClient({
           description: `All menu items, categories, and options have been cleared successfully.`,
         });
         
-        console.log("[MENU BUILDER] Reloading menu items after clear...");
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("🔄 [CLEAR MENU] Reloading menu items...");
+        console.log("═══════════════════════════════════════════════════════════");
         await loadMenuItems();
         
         // Clear dashboard cache to force fresh count
         if (typeof window !== "undefined") {
           sessionStorage.removeItem(`dashboard_stats_${venueId}`);
           sessionStorage.removeItem(`dashboard_counts_${venueId}`);
-          console.log("[MENU BUILDER] Cleared dashboard cache");
+          console.log("✅ Cleared dashboard cache");
         }
         
         router.refresh();
-        console.log("[MENU BUILDER] Menu cleared successfully");
+        
+        // CRITICAL LOG: Clear menu success
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("✅ [CLEAR MENU SUCCESS]");
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("Venue ID:", venueId);
+        console.log("⚠️  Dashboard count should now update to: 0");
+        console.log("⚠️  Menu builder count should now be: 0");
+        console.log("Timestamp:", new Date().toISOString());
+        console.log("═══════════════════════════════════════════════════════════");
       } else {
         throw new Error(result.error || "Failed to clear menu");
       }
