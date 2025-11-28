@@ -217,8 +217,8 @@ export function ReceiptPageClient({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 print:bg-white print:py-0 print:px-0 print-content print-receipt">
-      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 print:shadow-none print:rounded-none print:max-w-full print:p-4">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 print:bg-white print:py-0 print:px-0">
+      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 print:shadow-none print:rounded-none print:max-w-full print:p-0 print-content print-receipt">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 print:hidden">
           <div className="flex items-center gap-2">

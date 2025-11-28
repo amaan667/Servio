@@ -2879,37 +2879,40 @@ button[class*="destructive"]:hover,
   /* Reset page margins and ensure full page usage */
   @page {
     size: A4;
-    margin: 0.5cm;
+    margin: 15mm;
   }
 
   /* Hide all non-essential elements when printing */
-  body * {
-    visibility: hidden;
+  body > *:not(.print-content):not(.print-receipt) {
+    display: none !important;
   }
 
   /* Show only receipt/printable content */
   .print-content,
-  .print-receipt,
-  [class*="receipt"],
-  [class*="Receipt"],
-  .qr-code-print,
-  [class*="QRCode"] {
-    visibility: visible;
+  .print-receipt {
+    display: block !important;
+    visibility: visible !important;
   }
 
   /* Receipt-specific print styles */
-  .print-receipt,
-  [class*="receipt"] {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+  .print-receipt {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
     background: white !important;
     color: black !important;
-    padding: 20px !important;
+    padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    page-break-inside: avoid;
+  }
+
+  .print-receipt > * {
+    display: block !important;
+    visibility: visible !important;
   }
 
   /* Hide buttons, navigation, and interactive elements */
@@ -2926,10 +2929,18 @@ button[class*="destructive"]:hover,
   }
 
   /* Ensure text is black and readable */
-  .print-receipt *,
-  [class*="receipt"] * {
-    color: black !important;
+  .print-receipt,
+  .print-receipt * {
+    color: #000000 !important;
     background: transparent !important;
+  }
+
+  .print-receipt [class*="bg-"] {
+    background: transparent !important;
+  }
+
+  .print-receipt [class*="text-"] {
+    color: #000000 !important;
   }
 
   /* Receipt layout adjustments */

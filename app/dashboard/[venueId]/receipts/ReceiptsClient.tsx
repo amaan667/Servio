@@ -156,6 +156,8 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     if (!venueId) return;
 
     const supabase = createClient();
+    let debounceTimeout: NodeJS.Timeout | null = null;
+
     const channel = supabase
       .channel("receipts-updates")
       .on(
@@ -167,7 +169,11 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
-          loadReceipts();
+          // Debounce to prevent excessive calls
+          if (debounceTimeout) clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(() => {
+            loadReceipts();
+          }, 500);
         }
       )
       .subscribe();
@@ -178,6 +184,7 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     }, 30000); // Refresh every 30 seconds
 
     return () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
       supabase.removeChannel(channel);
       clearInterval(refreshInterval);
     };
@@ -311,11 +318,11 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                 <span className="flex-1 text-left">Today</span>
                 <span
                   className={`
-                    ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
+                    ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
                     ${
                       activeTab === "today"
-                        ? "bg-white text-servio-purple"
-                        : "bg-white/30 text-white"
+                        ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
+                        : "bg-white/40 text-white border-white/30"
                     }
                   `}
                 >
@@ -326,11 +333,11 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
                 <span className="flex-1 text-left">History</span>
                 <span
                   className={`
-                    ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
+                    ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
                     ${
                       activeTab === "history"
-                        ? "bg-white text-servio-purple"
-                        : "bg-white/30 text-white"
+                        ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
+                        : "bg-white/40 text-white border-white/30"
                     }
                   `}
                 >
