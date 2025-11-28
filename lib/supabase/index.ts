@@ -413,11 +413,11 @@ export async function getAuthenticatedUser() {
       },
     });
 
+    // Use getUser() for secure authentication
     const {
-      data: { session },
+      data: { user },
       error,
-    } = await supabase.auth.getSession();
-    const user = session?.user;
+    } = await supabase.auth.getUser();
 
     // Silently handle refresh token errors - don't log them
     if (error) {

@@ -106,10 +106,11 @@ export async function getAuthUserFromRequest(
       },
     });
     
+    // Use getUser() instead of getSession() for secure authentication
     const {
-      data: { session },
+      data: { user },
       error,
-    } = await supabase.auth.getSession();
+    } = await supabase.auth.getUser();
 
     if (error) {
       // Silently handle refresh token errors
@@ -122,8 +123,8 @@ export async function getAuthUserFromRequest(
       return { user: null, error: error.message };
     }
 
-    if (session?.user) {
-      return { user: session.user, error: null };
+    if (user) {
+      return { user, error: null };
     }
 
     return { user: null, error: "No authentication found" };

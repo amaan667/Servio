@@ -10,13 +10,13 @@ export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Check auth
+    // Check auth - use getUser() for secure authentication
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const user = session?.user;
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (authError || !user) {
       return apiErrors.unauthorized('Unauthorized');
     }
 

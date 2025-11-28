@@ -13,11 +13,13 @@ import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standa
 export async function GET() {
   try {
     const supabase = await createClient();
+    // Use getUser() for secure authentication
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (authError || !user) {
       return apiErrors.unauthorized('Unauthorized');
     }
 
@@ -27,7 +29,7 @@ export async function GET() {
       .select(
         "id, subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id, trial_ends_at"
       )
-      .eq("owner_user_id", session.user.id)
+      .eq("owner_user_id", user.id)
       .maybeSingle();
 
     if (orgError || !org) {

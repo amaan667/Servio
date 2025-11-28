@@ -8,7 +8,7 @@ export async function POST() {
     const supabase = await createServerSupabase();
 
     // SECURE: Use getUser() instead of getSession() for authentication check
-    await supabase.auth.getSession();
+    await supabase.auth.getUser();
 
     // Perform the signout
     const { error } = await supabase.auth.signOut();

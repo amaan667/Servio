@@ -112,11 +112,15 @@ export const POST = withUnifiedAuth(
         return apiErrors.badRequest("No valid rows found in CSV");
       }
 
-      // Get current user
+      // Get current user - use getUser() for secure authentication
       const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
-      const currentUser = currentSession?.user;
+        data: { user: currentUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !currentUser) {
+        return apiErrors.unauthorized('Unauthorized');
+      }
 
       const imported: string[] = [];
       const errors: Array<{ row: string; error: string }> = [];

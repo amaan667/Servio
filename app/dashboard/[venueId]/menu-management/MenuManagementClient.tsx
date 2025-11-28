@@ -293,25 +293,38 @@ export default function MenuManagementClient({
   };
 
   const clearAllMenu = async () => {
-    if (!confirm("Are you sure you want to clear all menu items? This action cannot be undone.")) {
+    if (!confirm("Are you sure you want to clear the entire menu? This action cannot be undone.")) {
       return;
     }
 
     try {
       setIsClearing(true);
-      const supabase = createClient();
-      const { error } = await supabase.from("menu_items").delete().eq("venue_id", venueId);
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Menu cleared",
-        description: "All menu items have been cleared successfully.",
+      
+      const response = await fetch("/api/menu/clear", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ venue_id: venueId }),
       });
 
-      await loadMenuItems();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to clear menu");
+      }
+
+      const result = await response.json();
+
+      if (result.ok) {
+        toast({
+          title: "Menu cleared",
+          description: `All menu items, categories, and options have been cleared successfully.`,
+        });
+        await loadMenuItems();
+        router.refresh();
+      } else {
+        throw new Error(result.error || "Failed to clear menu");
+      }
     } catch (_error) {
       toast({
         title: "Error",
@@ -396,7 +409,7 @@ export default function MenuManagementClient({
                         className="flex items-center space-x-2"
                       >
                         <Trash className="h-4 w-4" />
-                        <span>{isClearing ? "Clearing..." : "Clear All"}</span>
+                        <span>{isClearing ? "Clearing..." : "Clear Menu"}</span>
                       </Button>
                     )}
                   </div>

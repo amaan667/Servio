@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { FileText, Upload, Info, Trash2 } from "lucide-react";
+import { FileText, Upload, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
@@ -21,7 +21,6 @@ interface MenuUploadCardProps {
 export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isReplacing, setIsReplacing] = useState(true); // Default to replace mode
-  const [isClearing, setIsClearing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [hasExistingUpload, setHasExistingUpload] = useState(false);
   const [menuUrl, setMenuUrl] = useState(""); // Add URL input for hybrid import
@@ -385,50 +384,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
-  const handleClearCatalog = async () => {
-    if (
-      !confirm("Are you sure you want to clear the entire catalog? This action cannot be undone.")
-    ) {
-      return;
-    }
-
-    setIsClearing(true);
-
-    try {
-      const response = await fetch("/api/catalog/clear", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ venueId }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Clear catalog failed: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.ok) {
-        toast({
-          title: "Catalog cleared successfully",
-          description: `Removed ${result.deletedCount} items from catalog`,
-        });
-        onSuccess?.();
-      } else {
-        throw new Error(`Clear catalog failed: ${result.error}`);
-      }
-    } catch (_error) {
-      toast({
-        title: "Clear catalog failed",
-        description: _error instanceof Error ? _error.message : "Unknown _error",
-        variant: "destructive",
-      });
-    } finally {
-      setIsClearing(false);
-    }
-  };
 
   return (
     <Card>
@@ -541,18 +496,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               onChange={handleFileUpload}
               className="hidden"
             />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="destructive"
-              onClick={handleClearCatalog}
-              disabled={isClearing || isProcessing}
-              size="sm"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {isClearing ? "Clearing..." : "Clear Menu"}
-            </Button>
           </div>
 
           <div className="text-sm text-gray-900">

@@ -10,11 +10,11 @@ export async function GET(_request: NextRequest) {
     // Test OAuth configuration
     const redirectUrl = getAuthRedirectUrl("/auth/callback");
 
-    // Test Supabase connection
+    // Test Supabase connection - use getUser() for secure authentication
     const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     const testResults = {
       timestamp: new Date().toISOString(),
@@ -31,10 +31,10 @@ export async function GET(_request: NextRequest) {
           redirectUrl === "https://servio-production.up.railway.app/auth/callback",
       },
       auth: {
-        hasSession: !!session,
-        userId: session?.user?.id,
-        userEmail: session?.user?.email,
-        sessionError: sessionError?.message,
+        hasUser: !!user,
+        userId: user?.id,
+        userEmail: user?.email,
+        authError: authError?.message,
       },
       providers: {
         hasProviders: false,

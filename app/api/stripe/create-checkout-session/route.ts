@@ -181,14 +181,14 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ sessionId: session.id, url: session.url });
     }
 
-    // For existing users, check auth
+    // For existing users, check auth - use getUser() for secure authentication
     const supabase = await createClient();
     const {
-      data: { session: authSession },
-    } = await supabase.auth.getSession();
-    const user = authSession?.user;
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (authError || !user) {
       return apiErrors.unauthorized('Unauthorized');
     }
 

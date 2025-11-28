@@ -8,15 +8,15 @@ import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standa
 export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
+    // Use getUser() for secure authentication
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (authError || !user) {
       return apiErrors.unauthorized('Unauthorized');
     }
-
-    const user = session.user;
 
     // Check if already verified
     if (user.email_confirmed_at) {

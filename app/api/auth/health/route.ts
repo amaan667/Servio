@@ -19,16 +19,17 @@ export async function GET() {
     let userId = null;
 
     try {
+      // Use getUser() for secure authentication check
       const {
-        data: { session },
+        data: { user },
         error,
-      } = await supabase.auth.getSession();
+      } = await supabase.auth.getUser();
       if (error) {
         sessionStatus = "error";
         sessionError = error.message;
-      } else if (session) {
+      } else if (user) {
         sessionStatus = "active";
-        userId = session.user?.id;
+        userId = user.id;
       } else {
         sessionStatus = "none";
       }
