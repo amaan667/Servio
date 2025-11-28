@@ -178,11 +178,14 @@ export function useMenuItems(venueId: string) {
     }
   };
 
+  // Load items immediately on mount
   useEffect(() => {
+    console.log("[MENU BUILDER] useEffect triggered, loading menu items for venueId:", venueId);
     if (venueId) {
       loadMenuItems();
     }
-  }, [venueId]);
+     
+  }, [venueId]); // loadMenuItems is stable, don't need in deps
 
   // Auto-refresh when window regains focus to prevent stale data
   useEffect(() => {
