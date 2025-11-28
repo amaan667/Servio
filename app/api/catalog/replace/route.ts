@@ -24,6 +24,7 @@ export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     const startTime = Date.now();
     const requestId = Math.random().toString(36).substring(7);
+    let normalizedVenueId = "unknown";
 
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
@@ -43,7 +44,7 @@ export const POST = withUnifiedAuth(
       const user = context.user;
 
       // Normalize venueId format immediately
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       console.log("[CATALOG REPLACE] Starting menu import:", {
         requestId,
@@ -425,13 +426,29 @@ export const POST = withUnifiedAuth(
       const duration = Date.now() - startTime;
       const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
+      const errorName = _error instanceof Error ? _error.name : "UnknownError";
+      
+      // Enhanced error logging
+      console.error(`[CATALOG REPLACE] Error caught:`, {
+        requestId,
+        errorName,
+        errorMessage,
+        errorStack,
+        duration: `${duration}ms`,
+        venueId: context?.venueId || "unknown",
+        normalizedVenueId: normalizedVenueId || "unknown",
+        userId: context?.user?.id || "unknown",
+        errorObject: _error,
+      });
       
       logger.error(`[MENU IMPORT ${requestId}] Failed:`, {
         error: errorMessage,
+        errorName,
         stack: errorStack,
         duration: `${duration}ms`,
-        venueId: context.venueId,
-        userId: context.user.id,
+        venueId: context?.venueId || "unknown",
+        normalizedVenueId: normalizedVenueId || "unknown",
+        userId: context?.user?.id || "unknown",
       });
       
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
@@ -450,6 +467,7 @@ export const POST = withUnifiedAuth(
           ok: false,
           error: "Menu import failed",
           message: isDevelopment() ? errorMessage : "Failed to import menu",
+          requestId,
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }

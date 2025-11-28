@@ -40,20 +40,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           normalizedVenueId,
         });
 
-        const { data, error } = await supabase
+        // Use a simpler query without maybeSingle to avoid 406 errors
+        const { data, error, count } = await supabase
           .from("menu_items")
-          .select("id")
+          .select("id", { count: "exact" })
           .eq("venue_id", normalizedVenueId)
-          .limit(1)
-          .maybeSingle();
+          .limit(1);
 
         console.log("[MENU UPLOAD CARD] Existing items check result:", {
-          hasData: !!data,
+          hasData: !!data && data.length > 0,
+          itemCount: data?.length || 0,
+          totalCount: count || 0,
           error: error?.message || null,
-          hasExistingUpload: !!(data && !error),
+          errorCode: error?.code || null,
+          hasExistingUpload: !!(data && data.length > 0 && !error),
         });
 
-        if (data && !error) {
+        if (data && data.length > 0 && !error) {
           setHasExistingUpload(true);
         } else {
           setHasExistingUpload(false);
@@ -77,12 +80,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       // Extract style from text
       const style = extractStyleFromPDF(extractedText);
 
-      // Get venue name
-      const { data: venue } = await supabase
+      // Get venue name - normalize venueId first
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      
+      console.log("[MENU UPLOAD CARD] Fetching venue:", {
+        originalVenueId: venueId,
+        normalizedVenueId,
+      });
+
+      const { data: venue, error: venueError } = await supabase
         .from("venues")
         .select("venue_name")
-        .eq("venue_id", venueId)
-        .single();
+        .eq("venue_id", normalizedVenueId)
+        .maybeSingle();
+
+      if (venueError) {
+        console.error("[MENU UPLOAD CARD] Error fetching venue:", venueError);
+      }
 
       // Upsert style settings
       const { error } = await supabase.from("menu_design_settings").upsert(
