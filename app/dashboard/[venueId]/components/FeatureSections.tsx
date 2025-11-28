@@ -16,6 +16,7 @@ import {
   QrCode,
   Receipt,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
 
 interface Feature {
@@ -163,6 +164,13 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
 
   return (
     <div className="space-y-8">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Features</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Access all platform features from one place
+        </p>
+      </div>
+
       {sections.map((section) => (
         <div key={section.title} className="space-y-4">
           <div className="space-y-1">

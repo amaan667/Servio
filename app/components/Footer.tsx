@@ -107,6 +107,14 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
+                  href="/help"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Help Center
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="mailto:support@servio.app"
                   className="text-gray-300 hover:text-white transition-colors"
                 >

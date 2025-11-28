@@ -1,13 +1,22 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat } from "lucide-react";
+import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat, HelpCircle, MoreVertical, Lightbulb, Bug } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import RoleManagementPopup from "@/components/role-management-popup";
 import VenueSwitcherPopup from "@/components/venue-switcher-popup";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { SupportForm } from "./SupportForm";
 
 interface QuickAction {
   label: string;
@@ -30,6 +39,8 @@ export function QuickActionsToolbar({
   onVenueChange,
 }: QuickActionsToolbarProps) {
   const isMobile = useIsMobile();
+  const [supportFormOpen, setSupportFormOpen] = useState(false);
+  const [supportFormType, setSupportFormType] = useState<"feature" | "bug">("feature");
 
   // Track role changes (must be before return)
   useEffect(() => {}, [userRole]);
@@ -106,8 +117,60 @@ export function QuickActionsToolbar({
               ))}
             </div>
 
-            {/* Right: Venue/Role Controls */}
+            {/* Right: Help, Support, and Venue/Role Controls */}
             <div className="flex items-center gap-2 flex-shrink-0 py-1">
+              {/* Help Center Link */}
+              <Link href="/help">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Help</span>
+                </Button>
+              </Link>
+
+              {/* Support Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="hidden sm:inline">Support</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSupportFormType("feature");
+                      setSupportFormOpen(true);
+                    }}
+                  >
+                    <Lightbulb className="h-4 w-4 mr-2" />
+                    Request Feature
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSupportFormType("bug");
+                      setSupportFormOpen(true);
+                    }}
+                  >
+                    <Bug className="h-4 w-4 mr-2" />
+                    Report Bug
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/help" className="flex items-center w-full">
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      Help Center
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Support Form Modal */}
+              <SupportForm
+                open={supportFormOpen}
+                onOpenChange={setSupportFormOpen}
+                type={supportFormType}
+              />
+
               <RoleManagementPopup />
               <VenueSwitcherPopup
                 currentVenueId={venueId}
