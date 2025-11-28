@@ -11,7 +11,7 @@
  * Orders automatically move from "Live Orders" to "Earlier Today" after a period of time
  */
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useTabCounts } from "@/hooks/use-tab-counts";
@@ -19,6 +19,9 @@ import { OrderCard } from "@/components/orders/OrderCard";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 import type { LegacyOrder } from "@/types/orders";
 import MobileNav from "@/components/MobileNav";
+import { Input } from "@/components/ui/input";
+import { Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Hooks
 import { useOrderManagement } from "./hooks/useOrderManagement";
@@ -35,7 +38,7 @@ import { isCounterOrder } from "./utils/orderHelpers";
 import { LIVE_ORDER_WINDOW_MS, LIVE_WINDOW_STATUSES, LIVE_TABLE_ORDER_STATUSES } from "./constants";
 
 // Types
-import { LiveOrdersClientProps } from "./types";
+import { LiveOrdersClientProps, Order } from "./types";
 
 export default function LiveOrdersClient({
   venueId,
@@ -55,6 +58,7 @@ export default function LiveOrdersClient({
   const [venueName, setVenueName] = useState<string>(venueNameProp || "");
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(120000);
+  const [searchQuery, setSearchQuery] = useState("");
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use custom hooks
@@ -192,6 +196,55 @@ export default function LiveOrdersClient({
     return typeof rpc === "number" ? rpc : 0;
   };
 
+  // Filter orders by search query (order ID, customer name, customer phone, table number)
+  const filterOrdersBySearch = (ordersToFilter: Order[]): Order[] => {
+    if (!searchQuery.trim()) return ordersToFilter;
+
+    const query = searchQuery.toLowerCase().trim();
+
+    return ordersToFilter.filter((order) => {
+      // Search by order ID
+      if (order.id?.toLowerCase().includes(query)) return true;
+
+      // Search by customer name
+      if (order.customer_name?.toLowerCase().includes(query)) return true;
+
+      // Search by customer phone
+      if (order.customer_phone?.includes(query)) return true;
+
+      // Search by table number
+      if (order.table_number?.toString().includes(query)) return true;
+
+      return false;
+    });
+  };
+
+  // Memoized filtered orders for each tab
+  const filteredLiveOrders = useMemo(() => {
+    let filtered = orders;
+    if (parsedTableFilter) {
+      filtered = filtered.filter((order) => order.table_number?.toString() === parsedTableFilter);
+    }
+    return filterOrdersBySearch(filtered);
+  }, [orders, parsedTableFilter, searchQuery]);
+
+  const filteredAllTodayOrders = useMemo(() => {
+    let filtered = allTodayOrders;
+    if (parsedTableFilter) {
+      filtered = filtered.filter((order) => order.table_number?.toString() === parsedTableFilter);
+    }
+    return filterOrdersBySearch(filtered);
+  }, [allTodayOrders, parsedTableFilter, searchQuery]);
+
+  const filteredHistoryOrders = useMemo(() => {
+    const allHistoryOrders = Object.values(groupedHistoryOrders).flat();
+    let filtered = allHistoryOrders;
+    if (parsedTableFilter) {
+      filtered = filtered.filter((order) => order.table_number?.toString() === parsedTableFilter);
+    }
+    return filterOrdersBySearch(filtered);
+  }, [groupedHistoryOrders, parsedTableFilter, searchQuery]);
+
   const renderOrderCard = (order: unknown, showActions: boolean = true) => {
     const orderData = order as {
       id?: string;
@@ -277,6 +330,30 @@ export default function LiveOrdersClient({
           venueId={venueId}
         />
 
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search by order ID, customer name, phone, or table number..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10 w-full"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
         <OrderTabs activeTab={activeTab} onTabChange={handleTabChange} counts={counts} />
 
         {activeTab === "live" && (
@@ -293,21 +370,21 @@ export default function LiveOrdersClient({
         {activeTab === "live" && (
           <div className="space-y-6">
             {(() => {
-              // If filtering by table, search through both live and all tabs
-              const filteredLiveOrders = parsedTableFilter
-                ? orders.filter((order) => order.table_number?.toString() === parsedTableFilter)
-                : orders;
-              const filteredAllOrders = parsedTableFilter
-                ? allTodayOrders.filter(
-                    (order) => order.table_number?.toString() === parsedTableFilter
-                  )
-                : [];
-
-              const allFilteredOrders = [...filteredLiveOrders, ...filteredAllOrders];
+              // Combine live and all today orders if table filter is active
+              const allFilteredOrders = parsedTableFilter
+                ? [...filteredLiveOrders, ...filteredAllTodayOrders]
+                : filteredLiveOrders;
 
               if (allFilteredOrders.length === 0) {
                 return (
-                  <EmptyState title="No Live Orders" description="Recent orders will appear here" />
+                  <EmptyState
+                    title={searchQuery ? "No orders found" : "No Live Orders"}
+                    description={
+                      searchQuery
+                        ? "Try adjusting your search query"
+                        : "Recent orders will appear here"
+                    }
+                  />
                 );
               }
 
@@ -324,6 +401,12 @@ export default function LiveOrdersClient({
                     isCompleting={isBulkCompleting}
                     onClick={handleBulkComplete}
                   />
+
+                  {searchQuery && (
+                    <div className="text-sm text-gray-600 mb-4">
+                      Found {allFilteredOrders.length} order{allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                    </div>
+                  )}
 
                   {renderOrdersSection(
                     allFilteredOrders.filter((order) => isCounterOrder(order)),
@@ -349,23 +432,20 @@ export default function LiveOrdersClient({
         {activeTab === "all" && (
           <div className="space-y-6">
             {(() => {
-              // If filtering by table, search through both live and all tabs
-              const filteredLiveOrders = parsedTableFilter
-                ? orders.filter((order) => order.table_number?.toString() === parsedTableFilter)
-                : [];
-              const filteredAllOrders = parsedTableFilter
-                ? allTodayOrders.filter(
-                    (order) => order.table_number?.toString() === parsedTableFilter
-                  )
-                : allTodayOrders;
-
-              const allFilteredOrders = [...filteredLiveOrders, ...filteredAllOrders];
+              // Combine live and all today orders if table filter is active
+              const allFilteredOrders = parsedTableFilter
+                ? [...filteredLiveOrders, ...filteredAllTodayOrders]
+                : filteredAllTodayOrders;
 
               if (allFilteredOrders.length === 0) {
                 return (
                   <EmptyState
-                    title="No Earlier Orders Today"
-                    description="Orders from earlier today will appear here"
+                    title={searchQuery ? "No orders found" : "No Earlier Orders Today"}
+                    description={
+                      searchQuery
+                        ? "Try adjusting your search query"
+                        : "Orders from earlier today will appear here"
+                    }
                   />
                 );
               }
@@ -383,6 +463,12 @@ export default function LiveOrdersClient({
                     isCompleting={isBulkCompleting}
                     onClick={handleBulkComplete}
                   />
+
+                  {searchQuery && (
+                    <div className="text-sm text-gray-600 mb-4">
+                      Found {allFilteredOrders.length} order{allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                    </div>
+                  )}
 
                   {renderOrdersSection(
                     allFilteredOrders.filter((order) => isCounterOrder(order)),
@@ -403,34 +489,64 @@ export default function LiveOrdersClient({
 
         {activeTab === "history" && (
           <div className="space-y-6">
-            {Object.keys(groupedHistoryOrders).length === 0 ? (
+            {filteredHistoryOrders.length === 0 ? (
               <EmptyState
-                title="No Historical Orders"
-                description="Previous orders will appear here"
+                title={searchQuery ? "No orders found" : "No Historical Orders"}
+                description={
+                  searchQuery
+                    ? "Try adjusting your search query"
+                    : "Previous orders will appear here"
+                }
               />
             ) : (
-              Object.entries(groupedHistoryOrders).map(([date, ordersForDate]) => (
-                <div key={date} className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{date}</h3>
-                    <span className="bg-slate-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-                      {ordersForDate.length} orders
-                    </span>
-                  </div>
+              (() => {
+                // Group filtered history orders by date
+                const groupedFiltered = filteredHistoryOrders.reduce(
+                  (acc, order) => {
+                    const date = new Date(order.created_at).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    });
+                    if (!acc[date]) acc[date] = [];
+                    acc[date].push(order);
+                    return acc;
+                  },
+                  {} as Record<string, Order[]>
+                );
 
-                  {renderOrdersSection(
-                    ordersForDate.filter((order) => isCounterOrder(order)),
-                    "Counter Orders",
-                    "orange"
-                  )}
+                return (
+                  <>
+                    {searchQuery && (
+                      <div className="text-sm text-gray-600 mb-4">
+                        Found {filteredHistoryOrders.length} order{filteredHistoryOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                      </div>
+                    )}
+                    {Object.entries(groupedFiltered).map(([date, ordersForDate]) => (
+                      <div key={date} className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{date}</h3>
+                          <span className="bg-slate-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+                            {ordersForDate.length} order{ordersForDate.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
 
-                  {renderOrdersSection(
-                    ordersForDate.filter((order) => !isCounterOrder(order)),
-                    "Table Orders",
-                    "blue"
-                  )}
-                </div>
-              ))
+                        {renderOrdersSection(
+                          ordersForDate.filter((order) => isCounterOrder(order)),
+                          "Counter Orders",
+                          "orange"
+                        )}
+
+                        {renderOrdersSection(
+                          ordersForDate.filter((order) => !isCounterOrder(order)),
+                          "Table Orders",
+                          "blue"
+                        )}
+                      </div>
+                    ))}
+                  </>
+                );
+              })()
             )}
           </div>
         )}
