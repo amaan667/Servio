@@ -285,8 +285,8 @@ export function HelpCenterClient() {
     }
 
     // All dashboard links with venueId - each link appears only once
-    // Build array directly (no need for Map since we control the source)
-    return [
+    // Build array and ensure uniqueness by title using Map
+    const linksArray: QuickLink[] = [
       {
         title: "Getting Started Guide",
         href: "https://servio.uk/support",
@@ -330,6 +330,16 @@ export function HelpCenterClient() {
         external: false,
       },
     ];
+
+    // Force uniqueness by title - this is a safety check
+    const uniqueLinks = new Map<string, QuickLink>();
+    linksArray.forEach((link) => {
+      if (!uniqueLinks.has(link.title)) {
+        uniqueLinks.set(link.title, link);
+      }
+    });
+
+    return Array.from(uniqueLinks.values());
   }, [venueId, isLoading]);
 
   const filteredFAQs = faqs.map((category) => ({
@@ -388,10 +398,19 @@ export function HelpCenterClient() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Ensure uniqueness one more time before rendering */}
-              {Array.from(
-                new Map(quickLinks.map((link) => [link.title, link])).values()
-              ).map((link) => {
+              {/* Final deduplication check before rendering - use Set to track rendered titles */}
+              {(() => {
+                const seenTitles = new Set<string>();
+                const uniqueLinks: QuickLink[] = [];
+                
+                quickLinks.forEach((link) => {
+                  if (!seenTitles.has(link.title)) {
+                    seenTitles.add(link.title);
+                    uniqueLinks.push(link);
+                  }
+                });
+
+                return uniqueLinks.map((link) => {
                 const Icon = link.icon;
                 // Use title as key since it's guaranteed unique (we filter duplicates)
                 const uniqueKey = link.title;
@@ -422,7 +441,8 @@ export function HelpCenterClient() {
                     {linkContent}
                   </Link>
                 );
-              })}
+                });
+              })()}
             </div>
           )}
         </div>
