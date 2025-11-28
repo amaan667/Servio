@@ -13,17 +13,17 @@ import { z } from "zod";
 
 // Comprehensive environment variable schema
 const envSchema = z.object({
-  // Supabase (Required)
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url("Invalid Supabase URL"),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "Supabase anon key is required"),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Supabase service role key is required"),
+  // Supabase (Required for runtime, but optional for graceful degradation)
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url("Invalid Supabase URL").optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "Supabase anon key is required").optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Supabase service role key is required").optional(),
   
   // Database
   DATABASE_URL: z.string().url("Invalid database URL").optional(),
   
   // App URLs (Required)
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  NEXT_PUBLIC_APP_URL: z.string().url("Invalid app URL"),
+  NEXT_PUBLIC_APP_URL: z.string().url("Invalid app URL").optional(),
   NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
   APP_URL: z.string().url().optional(),
@@ -123,8 +123,69 @@ function validateEnv(): Env {
       return validatedEnv;
     }
 
-    // At runtime, validate strictly
-    validatedEnv = envSchema.parse(process.env);
+    // At runtime, validate with graceful error handling
+    // Use safeParse to handle validation errors gracefully
+    const result = envSchema.safeParse(process.env);
+    
+    if (!result.success) {
+      // Log the validation errors but don't crash
+      const missing = result.error.errors
+        .filter((e) => e.code === "invalid_type" && e.received === "undefined")
+        .map((e) => e.path.join("."))
+        .join(", ");
+      
+      if (missing) {
+        console.error(`[ENV] Missing required environment variables: ${missing}`);
+        console.error(`[ENV] Full validation errors:`, result.error.errors);
+      }
+      
+      // In production, use partial env with defaults to prevent crashes
+      // Only throw in development for better debugging
+      if (process.env.NODE_ENV === "production") {
+        // Return partial env with defaults for missing required vars
+        validatedEnv = {
+          NODE_ENV: (process.env.NODE_ENV as "development" | "production" | "test") || "production",
+          NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+          SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+          NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN || process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app",
+          DATABASE_URL: process.env.DATABASE_URL,
+          NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+          NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+          APP_URL: process.env.APP_URL,
+          STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+          STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+          STRIPE_CUSTOMER_WEBHOOK_SECRET: process.env.STRIPE_CUSTOMER_WEBHOOK_SECRET,
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+          REDIS_URL: process.env.REDIS_URL,
+          REDIS_HOST: process.env.REDIS_HOST,
+          REDIS_PORT: process.env.REDIS_PORT,
+          REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+          CRON_SECRET: process.env.CRON_SECRET,
+          SENTRY_DSN: process.env.SENTRY_DSN,
+          SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+          RAILWAY_PUBLIC_DOMAIN: process.env.RAILWAY_PUBLIC_DOMAIN,
+          LOG_LEVEL: process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error" | undefined,
+          RESEND_API_KEY: process.env.RESEND_API_KEY,
+          STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
+          STRIPE_STANDARD_PRICE_ID: process.env.STRIPE_STANDARD_PRICE_ID,
+          STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
+        } as Env;
+        return validatedEnv;
+      } else {
+        // In development, throw to see errors immediately
+        const missing = result.error.errors
+          .map((e) => `${e.path.join(".")}: ${e.message}`)
+          .join(", ");
+        validationError = new Error(
+          `Environment validation failed:\n${missing}\n\nPlease check your .env.local or Railway environment variables.`
+        );
+        throw validationError;
+      }
+    }
+    
+    validatedEnv = result.data;
     return validatedEnv;
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -196,19 +257,11 @@ export function getNodeEnv(): "development" | "production" | "test" {
 }
 
 // Validate on module load (server-side only)
+// Use lazy validation - don't validate until first env() call
+// This prevents crashes on module load
 if (typeof window === "undefined") {
-  try {
-    validateEnv();
-  } catch (error) {
-    // Only throw in production - in dev, we want to see the error
-    if (process.env.NODE_ENV === "production") {
-      console.error("[ENV] Environment validation failed:", error);
-      // Don't throw in production to allow graceful degradation
-    } else {
-      // In development, log but don't throw (allows dev server to start)
-      console.warn("[ENV] Environment validation warning:", error);
-    }
-  }
+  // Don't validate on module load - validate lazily on first use
+  // This allows the app to start even with missing env vars
 }
 
 // Export for backward compatibility
