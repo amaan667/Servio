@@ -385,6 +385,15 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
   };
 
   const handleProcessWithUrl = async () => {
+    // CRITICAL LOG: Hybrid merge with URL started
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("🔀 [HYBRID MERGE WITH URL START]");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Venue ID:", venueId);
+    console.log("Menu URL:", menuUrl);
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
+
     if (!menuUrl || !menuUrl.trim()) {
       toast({
         title: "No URL provided",
@@ -397,49 +406,106 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     setIsProcessing(true);
 
     try {
-      // Check if PDF menu exists
-      const { data: existingItems } = await supabase
-        .from("menu_items")
-        .select("id")
-        .eq("venue_id", venueId)
-        .limit(1);
+      // Normalize venueId format
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-      if (!existingItems || existingItems.length === 0) {
+      // Check if PDF menu exists (check menu_uploads, not menu_items)
+      const { data: uploadData, error: uploadError } = await supabase
+        .from("menu_uploads")
+        .select("id, pdf_images")
+        .eq("venue_id", normalizedVenueId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      console.log("[HYBRID MERGE] PDF upload check:", {
+        normalizedVenueId,
+        hasUpload: !!uploadData,
+        hasPdfImages: !!uploadData?.pdf_images,
+        pdfImageCount: uploadData?.pdf_images?.length || 0,
+        error: uploadError?.message || null,
+      });
+
+      if (!uploadData || !uploadData.pdf_images || uploadData.pdf_images.length === 0) {
         throw new Error("No existing PDF menu found. Please upload a PDF first.");
       }
 
-      // Call new hybrid merge API
+      // Call hybrid merge API
+      console.log("[HYBRID MERGE] Calling API...");
       const response = await fetch("/api/menu/hybrid-merge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          venueId: venueId,
+          venueId: normalizedVenueId,
           menuUrl: menuUrl.trim(),
         }),
       });
 
+      console.log("[HYBRID MERGE] API response:", {
+        status: response.status,
+        ok: response.ok,
+        timestamp: new Date().toISOString(),
+      });
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("[HYBRID MERGE] API error:", {
+          status: response.status,
+          error: errorData,
+        });
         throw new Error(errorData.error || `Processing failed: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log("[HYBRID MERGE] API result:", {
+        ok: result.ok,
+        items: result.items,
+        mode: result.mode,
+        fullResult: result,
+      });
 
       if (result.ok) {
+        // CRITICAL LOG: Hybrid merge success
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("✅ [HYBRID MERGE SUCCESS]");
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("Items Created:", result.items || 0);
+        console.log("Mode:", result.mode || "unknown");
+        console.log("⚠️  Dashboard count should now update to:", result.items || 0);
+        console.log("═══════════════════════════════════════════════════════════");
+
         toast({
-          title: "🎉 Menu Updated Successfully!",
-          description: `${result.stats.items_updated} items updated, ${result.stats.new_items_added} new items added. Prices: ${result.stats.prices_updated}, Images: ${result.stats.images_added}`,
+          title: "🎉 Menu Enhanced Successfully!",
+          description: `${result.items || 0} items created using hybrid extraction (PDF + URL)`,
           duration: 7000,
         });
+
+        // Clear dashboard cache and dispatch event
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+          sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+          window.dispatchEvent(
+            new CustomEvent("menuChanged", {
+              detail: { venueId, action: "hybrid-merged", itemCount: result.items || 0 },
+            })
+          );
+        }
 
         // Refresh menu items
         await new Promise((resolve) => setTimeout(resolve, 500));
         onSuccess?.();
       }
     } catch (_error) {
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("❌ [HYBRID MERGE FAILED]");
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("Error:", _error instanceof Error ? _error.message : String(_error));
+      console.error("Stack:", _error instanceof Error ? _error.stack : undefined);
+      console.error("═══════════════════════════════════════════════════════════");
+
       toast({
         title: "Hybrid Merge Failed",
-        description: _error instanceof Error ? _error.message : "Unknown _error",
+        description: _error instanceof Error ? _error.message : "Unknown error",
         variant: "destructive",
       });
     } finally {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Hybrid Menu Enhancement API - Unified System
@@ -19,10 +20,21 @@ import { revalidatePath } from "next/cache";
  */
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
 
   try {
     const body = await req.json();
-    const { venueId, menuUrl } = body;
+    let venueId = body.venueId;
+    const menuUrl = body.menuUrl;
+
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("🔀 [HYBRID MERGE START]");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Request ID:", requestId);
+    console.log("Venue ID:", venueId);
+    console.log("Menu URL:", menuUrl);
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
 
     if (!venueId || !menuUrl) {
       return NextResponse.json(
@@ -31,6 +43,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Normalize venueId format - database stores with venue- prefix
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    console.log("[HYBRID MERGE] Normalized venue ID:", {
+      original: venueId,
+      normalized: normalizedVenueId,
+    });
+
     const supabase = createAdminClient();
 
     // Step 1: Fetch stored PDF images from database
@@ -38,10 +57,16 @@ export async function POST(req: NextRequest) {
     const { data: uploadData, error: uploadError } = await supabase
       .from("menu_uploads")
       .select("pdf_images, filename")
-      .eq("venue_id", venueId)
+      .eq("venue_id", normalizedVenueId)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
+
+    console.log("[HYBRID MERGE] PDF upload lookup:", {
+      normalizedVenueId,
+      hasData: !!uploadData,
+      error: uploadError?.message || null,
+    });
 
     if (uploadError || !uploadData?.pdf_images) {
       logger.error("[HYBRID ENHANCE] No PDF images found", { uploadError });
@@ -65,7 +90,12 @@ export async function POST(req: NextRequest) {
     const { error: deleteItemsError } = await supabase
       .from("menu_items")
       .delete()
-      .eq("venue_id", venueId);
+      .eq("venue_id", normalizedVenueId);
+
+    console.log("[HYBRID MERGE] Delete existing items:", {
+      normalizedVenueId,
+      error: deleteItemsError?.message || null,
+    });
 
     if (deleteItemsError) {
       logger.error("[HYBRID ENHANCE] Failed to delete existing items", { deleteItemsError });
@@ -79,10 +109,22 @@ export async function POST(req: NextRequest) {
 
     const { extractMenuHybrid } = await import("@/lib/hybridMenuExtractor");
 
+    console.log("[HYBRID MERGE] Starting hybrid extraction:", {
+      pdfImageCount: pdfImages.length,
+      menuUrl,
+      normalizedVenueId,
+    });
+
     const extractionResult = await extractMenuHybrid({
       pdfImages,
       websiteUrl: menuUrl,
-      venueId,
+      venueId: normalizedVenueId,
+    });
+
+    console.log("[HYBRID MERGE] Extraction complete:", {
+      mode: extractionResult.mode,
+      itemCount: extractionResult.itemCount,
+      extractedItems: extractionResult.items?.length || 0,
     });
 
     logger.info("[HYBRID ENHANCE] Step 6: Extraction complete!", {
@@ -96,6 +138,7 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < extractionResult.items.length; i++) {
       const item = extractionResult.items[i];
+      const itemId = uuidv4();
 
       // Convert spice level string to integer for database
       let spiceLevelInt = null;
@@ -103,8 +146,12 @@ export async function POST(req: NextRequest) {
       else if (item.spiceLevel === "medium") spiceLevelInt = 2;
       else if (item.spiceLevel === "hot") spiceLevelInt = 3;
 
+      // Normalize venueId format - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
       menuItems.push({
-        venue_id: venueId,
+        id: itemId,
+        venue_id: normalizedVenueId,
         name: item.name,
         description: item.description || "",
         price: item.price || 0,
@@ -115,21 +162,47 @@ export async function POST(req: NextRequest) {
         spice_level: spiceLevelInt,
         is_available: true,
         position: i,
-        page_index: item.page_index || 0,
+        created_at: new Date().toISOString(),
+        // NOTE: page_index removed - not in database schema
       });
     }
 
     // Insert menu items
     if (menuItems.length > 0) {
-      const { error: insertError } = await supabase.from("menu_items").insert(menuItems);
+      console.log("[HYBRID MERGE] Ready to insert items:", {
+        itemCount: menuItems.length,
+        normalizedVenueId,
+        sampleItem: menuItems[0] || null,
+      });
+
+      const { data: insertedData, error: insertError } = await supabase
+        .from("menu_items")
+        .insert(menuItems)
+        .select();
+
+      console.log("[HYBRID MERGE] Insert result:", {
+        insertedCount: insertedData?.length || 0,
+        error: insertError?.message || null,
+        errorCode: insertError?.code || null,
+        errorDetails: insertError?.details || null,
+      });
 
       if (insertError) {
         logger.error("[HYBRID ENHANCE] Failed to insert menu items", {
           error: insertError.message,
+          code: insertError.code,
+          details: insertError.details,
         });
         throw new Error(`Failed to insert menu items: ${insertError.message}`);
       }
 
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("✅ [HYBRID MERGE SUCCESS]");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("Items Inserted:", insertedData?.length || 0);
+      console.log("Mode:", extractionResult.mode);
+      console.log("⚠️  Dashboard count should now update to:", insertedData?.length || 0);
+      console.log("═══════════════════════════════════════════════════════════");
     }
 
     const duration = Date.now() - startTime;
@@ -142,10 +215,11 @@ export async function POST(req: NextRequest) {
 
     // Revalidate all pages that display menu data
     try {
-      revalidatePath(`/dashboard/${venueId}`, "layout");
-      revalidatePath(`/dashboard/${venueId}`, "page");
-      revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
-      revalidatePath(`/menu/${venueId}`, "page");
+      revalidatePath(`/dashboard/${normalizedVenueId}`, "layout");
+      revalidatePath(`/dashboard/${normalizedVenueId}`, "page");
+      revalidatePath(`/dashboard/${normalizedVenueId}/menu-management`, "page");
+      revalidatePath(`/menu/${normalizedVenueId}`, "page");
+      console.log("[HYBRID MERGE] Cache revalidated for:", normalizedVenueId);
     } catch (revalidateError) {
       logger.warn("[HYBRID ENHANCE] Cache revalidation failed (non-critical)", revalidateError);
     }
