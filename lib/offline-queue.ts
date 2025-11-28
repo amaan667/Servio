@@ -230,7 +230,24 @@ class OfflineQueue {
     orderId: string;
     status: string;
     endpoint: string;
+    paymentStatus?: string;
+    paymentMethod?: string;
   }): Promise<boolean> {
+    // Handle payment status updates (POST to /api/orders/update-payment-status)
+    if (data.endpoint.includes("update-payment-status")) {
+      const response = await fetch(data.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: data.orderId,
+          paymentStatus: data.paymentStatus || data.status,
+          paymentMethod: data.paymentMethod,
+        }),
+      });
+      return response.ok;
+    }
+
+    // Handle order status updates (PATCH)
     const response = await fetch(data.endpoint, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -248,10 +265,11 @@ class OfflineQueue {
     email?: string;
     phone?: string;
     endpoint: string;
+    venueId?: string;
   }): Promise<boolean> {
-    const body: { orderId: string; email?: string; phone?: string; venueId: string } = {
+    const body: { orderId: string; email?: string; phone?: string; venueId?: string } = {
       orderId: data.orderId,
-      venueId: "", // Will need to be included in data
+      venueId: data.venueId || "",
     };
 
     if (data.email) body.email = data.email;
@@ -332,10 +350,18 @@ export async function queuePayment(payment: unknown, endpoint: string): Promise<
 export async function queueStatusUpdate(
   orderId: string,
   status: string,
-  endpoint: string
+  endpoint: string,
+  paymentStatus?: string,
+  paymentMethod?: string
 ): Promise<string> {
   const queue = getOfflineQueue();
-  return queue.queueOperation("status_update", { orderId, status, endpoint });
+  return queue.queueOperation("status_update", {
+    orderId,
+    status,
+    endpoint,
+    paymentStatus,
+    paymentMethod,
+  });
 }
 
 /**

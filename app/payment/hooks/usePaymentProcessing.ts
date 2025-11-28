@@ -2,6 +2,12 @@ import { logger } from "@/lib/logger";
 import { toast } from "@/hooks/use-toast";
 import { PaymentAction } from "./usePaymentState";
 import { CheckoutData } from "@/types/payment";
+import {
+  queueOrder,
+  queuePayment,
+  queueStatusUpdate,
+  getOfflineQueue,
+} from "@/lib/offline-queue";
 
 export function usePaymentProcessing() {
   const processPayment = async (
@@ -16,7 +22,7 @@ export function usePaymentProcessing() {
     setError(null);
 
     try {
-      // Helper function to create order in database
+      // Helper function to create order in database (with offline support)
       const createOrder = async () => {
         const orderData = {
           venue_id: checkoutData.venueId,
@@ -43,6 +49,25 @@ export function usePaymentProcessing() {
           source: checkoutData.source || "qr",
         };
 
+        // Check if offline - queue order if offline
+        if (!navigator.onLine) {
+          logger.info("[OFFLINE] Queueing order for offline sync");
+          const queueId = await queueOrder(orderData, "/api/orders");
+          toast({
+            title: "Order Queued",
+            description: "Your order has been queued and will be processed when you're back online.",
+          });
+          // Return a mock result so the flow can continue
+          return {
+            order: {
+              id: `queued-${queueId}`,
+              order_number: `QUEUED-${Date.now()}`,
+              status: "QUEUED",
+            },
+          };
+        }
+
+        // Online - create order immediately
         const createOrderResponse = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -50,12 +75,28 @@ export function usePaymentProcessing() {
         });
 
         if (!createOrderResponse.ok) {
+          // If network error, queue the order
+          if (!navigator.onLine || createOrderResponse.status === 0) {
+            logger.info("[OFFLINE] Network error, queueing order");
+            const queueId = await queueOrder(orderData, "/api/orders");
+            toast({
+              title: "Order Queued",
+              description: "Your order has been queued and will be processed when you're back online.",
+            });
+            return {
+              order: {
+                id: `queued-${queueId}`,
+                order_number: `QUEUED-${Date.now()}`,
+                status: "QUEUED",
+              },
+            };
+          }
+
           const errorData = await createOrderResponse.json();
           throw new Error(errorData.error || "Failed to create order");
         }
 
         const orderResult = await createOrderResponse.json();
-
         return orderResult;
       };
 
@@ -64,19 +105,48 @@ export function usePaymentProcessing() {
         // Create order immediately for demo
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
-        // Demo payment - just mark as paid
-        const response = await fetch("/api/orders/update-payment-status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: orderId,
-            paymentStatus: "PAID",
-            paymentMethod: "demo",
-          }),
-        });
+        // Demo payment - just mark as paid (with offline support)
+        if (!navigator.onLine) {
+          await queueStatusUpdate(
+            orderId,
+            "PAID",
+            "/api/orders/update-payment-status",
+            "PAID",
+            "demo"
+          );
+          toast({
+            title: "Payment Queued",
+            description: "Payment status will be updated when you're back online.",
+          });
+        } else {
+          const response = await fetch("/api/orders/update-payment-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: orderId,
+              paymentStatus: "PAID",
+              paymentMethod: "demo",
+            }),
+          });
 
-        if (!response.ok) {
-          throw new Error("Failed to update payment status");
+          if (!response.ok) {
+            // Queue if network error
+            if (!navigator.onLine || response.status === 0) {
+              await queueStatusUpdate(
+                orderId,
+                "PAID",
+                "/api/orders/update-payment-status",
+                "PAID",
+                "demo"
+              );
+              toast({
+                title: "Payment Queued",
+                description: "Payment status will be updated when you're back online.",
+              });
+            } else {
+              throw new Error("Failed to update payment status");
+            }
+          }
         }
 
         // Clear cart after successful order (keep checkout-data for order summary page)
@@ -133,25 +203,47 @@ export function usePaymentProcessing() {
           customerPhone: checkoutData.customerPhone,
         };
 
-        const response = await fetch("/api/pay/till", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(tillPayload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          logger.error("[PAYMENT] ❌ Pay till failed:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorText,
+        // Till payment (with offline support)
+        let result;
+        if (!navigator.onLine) {
+          await queuePayment(tillPayload, "/api/pay/till");
+          toast({
+            title: "Payment Queued",
+            description: "Till payment will be processed when you're back online.",
           });
-          throw new Error(
-            `Failed to confirm order for till payment: ${response.status} - ${errorText}`
-          );
-        }
+          // Create mock result for offline flow
+          result = { order_number: `QUEUED-${Date.now()}` };
+        } else {
+          const response = await fetch("/api/pay/till", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(tillPayload),
+          });
 
-        const result = await response.json();
+          if (!response.ok) {
+            // Queue if network error
+            if (!navigator.onLine || response.status === 0) {
+              await queuePayment(tillPayload, "/api/pay/till");
+              toast({
+                title: "Payment Queued",
+                description: "Till payment will be processed when you're back online.",
+              });
+              result = { order_number: `QUEUED-${Date.now()}` };
+            } else {
+              const errorText = await response.text();
+              logger.error("[PAYMENT] ❌ Pay till failed:", {
+                status: response.status,
+                statusText: response.statusText,
+                errorText,
+              });
+              throw new Error(
+                `Failed to confirm order for till payment: ${response.status} - ${errorText}`
+              );
+            }
+          } else {
+            result = await response.json();
+          }
+        }
 
         // Clear cart after successful order (keep checkout-data for order summary page)
         localStorage.removeItem("servio-order-cart");
@@ -172,23 +264,45 @@ export function usePaymentProcessing() {
           sessionId: checkoutData.sessionId || `session_${Date.now()}`,
         };
 
-        const response = await fetch("/api/pay/later", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(laterPayload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          logger.error("[PAYMENT] ❌ Pay later failed:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorText,
+        // Pay later (with offline support)
+        let result;
+        if (!navigator.onLine) {
+          await queuePayment(laterPayload, "/api/pay/later");
+          toast({
+            title: "Payment Queued",
+            description: "Pay later will be processed when you're back online.",
           });
-          throw new Error(`Failed to confirm order: ${response.status} - ${errorText}`);
-        }
+          // Create mock result for offline flow
+          result = { order_number: `QUEUED-${Date.now()}` };
+        } else {
+          const response = await fetch("/api/pay/later", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(laterPayload),
+          });
 
-        const result = await response.json();
+          if (!response.ok) {
+            // Queue if network error
+            if (!navigator.onLine || response.status === 0) {
+              await queuePayment(laterPayload, "/api/pay/later");
+              toast({
+                title: "Payment Queued",
+                description: "Pay later will be processed when you're back online.",
+              });
+              result = { order_number: `QUEUED-${Date.now()}` };
+            } else {
+              const errorText = await response.text();
+              logger.error("[PAYMENT] ❌ Pay later failed:", {
+                status: response.status,
+                statusText: response.statusText,
+                errorText,
+              });
+              throw new Error(`Failed to confirm order: ${response.status} - ${errorText}`);
+            }
+          } else {
+            result = await response.json();
+          }
+        }
 
         // Store session for re-scanning
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;

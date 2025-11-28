@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { WifiOff, RefreshCw } from "lucide-react";
 import { getOfflineQueue } from "@/lib/offline-queue";
+import { logger } from "@/lib/logger";
 
 interface ServiceWorkerRegistrationProps {
   children: React.ReactNode;
@@ -67,14 +68,22 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     // Update queue status periodically
     const queueInterval = setInterval(updateQueueStatus, 5000);
 
-    // Service worker registration disabled - not currently needed
-    // Offline queue works without service worker using localStorage
-    // If service worker is needed in future, create /public/sw.js first
-    // if ("serviceWorker" in navigator) {
-    //   navigator.serviceWorker.register("/sw.js").catch(() => {
-    //     // Service worker registration failed - not critical
-    //   });
-    // }
+    // Register service worker for offline support
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        .then((registration) => {
+          logger.info("[SW] Service worker registered:", registration.scope);
+          
+          // Check for updates periodically
+          setInterval(() => {
+            registration.update();
+          }, 60000); // Check every minute
+        })
+        .catch((error) => {
+          logger.error("[SW] Service worker registration failed:", error);
+        });
+    }
 
     // Listen for messages from service worker
     if ("serviceWorker" in navigator) {
