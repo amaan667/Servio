@@ -31,14 +31,59 @@ export default function NavigationBreadcrumb({
   const pathname = pathnameRaw || "";
   const params = useParams() as { venueId?: string };
 
-  // [NAV] Get venueId from localStorage for help page
+  // [NAV] Get venueId from localStorage/sessionStorage for pages without venueId in path
   const [storedVenueId, setStoredVenueId] = useState<string | null>(null);
   
   useEffect(() => {
-    if (typeof window !== "undefined" && pathname.includes("/help")) {
-      const stored = localStorage.getItem("currentVenueId") || localStorage.getItem("venueId");
-      if (stored) {
-        setStoredVenueId(stored);
+    if (typeof window !== "undefined") {
+      // Try multiple sources for venueId
+      let foundVenueId: string | null = null;
+      
+      // 1. Check localStorage (common keys)
+      foundVenueId = localStorage.getItem("currentVenueId") || 
+                     localStorage.getItem("venueId") || 
+                     null;
+      
+      // 2. Check sessionStorage for keys starting with "dashboard_venue_"
+      // Format: dashboard_venue_${venueId}
+      if (!foundVenueId) {
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith("dashboard_venue_")) {
+            const venueIdFromKey = key.replace("dashboard_venue_", "");
+            if (venueIdFromKey && venueIdFromKey.length > 0) {
+              foundVenueId = venueIdFromKey;
+              break;
+            }
+          }
+        }
+      }
+      
+      // 3. Check sessionStorage for "venue_id_${userId}" pattern
+      // We need to find any key matching this pattern and get its value
+      if (!foundVenueId) {
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith("venue_id_")) {
+            const value = sessionStorage.getItem(key);
+            if (value && value.length > 0) {
+              foundVenueId = value;
+              break;
+            }
+          }
+        }
+      }
+      
+      // 4. Try to extract from document.referrer if available
+      if (!foundVenueId && document.referrer) {
+        const referrerMatch = document.referrer.match(/\/dashboard\/([^/]+)/);
+        if (referrerMatch?.[1]) {
+          foundVenueId = referrerMatch[1];
+        }
+      }
+      
+      if (foundVenueId) {
+        setStoredVenueId(foundVenueId);
       }
     }
   }, [pathname]);
@@ -52,7 +97,8 @@ export default function NavigationBreadcrumb({
   // [NAV] Determine home link - always route to actual home page
   const homeLink = "/";
 
-  // [NAV] Determine dashboard link - route to dashboard if we have a venueId
+  // [NAV] Determine dashboard link - route to dashboard if we have a venueId, otherwise home
+  // For help page and other non-dashboard pages, we need venueId to link to dashboard
   const dashboardLink = venueId ? `/dashboard/${venueId}` : "/";
 
   const getPageTitle = () => {
@@ -244,9 +290,7 @@ export default function NavigationBreadcrumb({
 
   // Help page: Home ← Dashboard ← Support
   if (isHelpPage) {
-    // For help page, try to get venueId from localStorage or use a default dashboard link
-    const helpDashboardLink = venueId ? `/dashboard/${venueId}` : "/";
-    
+    // Use the computed dashboardLink which already handles venueId detection
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
@@ -273,7 +317,7 @@ export default function NavigationBreadcrumb({
               size="sm"
               className="flex items-center gap-1 text-gray-700 dark:text-foreground/80 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors duration-200"
             >
-              <Link href={helpDashboardLink}>
+              <Link href={dashboardLink}>
                 <>
                   <LayoutDashboard className="h-4 w-4" />
                   <span className="hidden md:inline">Dashboard</span>
