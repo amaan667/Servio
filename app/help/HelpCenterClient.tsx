@@ -274,7 +274,7 @@ export function HelpCenterClient() {
   // Build quick links - only the exact links we need, no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
     // Don't build links until we know if venueId exists (after loading)
-    if (isLoading) {
+    if (isLoading || !isMounted) {
       return [];
     }
 
@@ -291,7 +291,8 @@ export function HelpCenterClient() {
     }
 
     // Build exactly 7 links - one for each feature page
-    return [
+    // Use a Set to ensure no duplicate titles (safety check)
+    const links: QuickLink[] = [
       {
         title: "Getting Started Guide",
         href: "https://servio.uk/support",
@@ -335,7 +336,29 @@ export function HelpCenterClient() {
         external: false,
       },
     ];
-  }, [venueId, isLoading]);
+
+    // Final safety check - ensure no duplicate titles
+    const seenTitles = new Set<string>();
+    const uniqueLinks: QuickLink[] = [];
+    for (const link of links) {
+      if (!seenTitles.has(link.title)) {
+        seenTitles.add(link.title);
+        uniqueLinks.push(link);
+      }
+    }
+
+    // Debug log in development
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      if (uniqueLinks.length !== links.length) {
+        console.warn('[Help Center] Duplicate links detected and removed', {
+          original: links.length,
+          unique: uniqueLinks.length,
+        });
+      }
+    }
+
+    return uniqueLinks;
+  }, [venueId, isLoading, isMounted]);
 
   const filteredFAQs = faqs.map((category) => ({
     ...category,
