@@ -109,16 +109,27 @@ export function useDashboardData(
   });
   
   // Force update stats when initialStats changes (e.g., after menu changes)
+  // This ensures the count updates immediately when the page re-renders with new data
   useEffect(() => {
     if (initialStats) {
+      const oldCount = stats.menuItems;
+      const newCount = initialStats.menuItems;
+      
       console.error("[DASHBOARD DATA] initialStats changed, updating stats:", {
-        oldMenuItems: stats.menuItems,
-        newMenuItems: initialStats.menuItems,
+        oldMenuItems: oldCount,
+        newMenuItems: newCount,
+        changed: oldCount !== newCount,
         timestamp: new Date().toISOString(),
       });
+      
+      // Always update to ensure fresh data
       setStats(initialStats);
+      
+      if (oldCount !== newCount) {
+        console.error("✅ [DASHBOARD DATA] Menu items count updated from", oldCount, "to", newCount);
+      }
     }
-  }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid]); // Only depend on values, not object reference
+  }, [initialStats]); // Depend on the whole object to catch any changes
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
