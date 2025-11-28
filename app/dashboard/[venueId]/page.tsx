@@ -8,9 +8,8 @@ import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
 // Force dynamic rendering to prevent stale cached menu counts
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = 0;
 export const fetchCache = "force-no-store"; // Never cache fetch requests
+export const revalidate = 0;
 
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
