@@ -149,11 +149,12 @@ export function useDashboardData(
           .neq("order_status", "CANCELLED")
           .neq("order_status", "REFUNDED");
 
+        // Count ALL menu items (not just available) to match menu management count
         const { data: menuItems, error: menuError } = await supabase
           .from("menu_items")
           .select("id")
-          .eq("venue_id", normalizedVenueId)
-          .eq("is_available", true);
+          .eq("venue_id", normalizedVenueId);
+          // Removed .eq("is_available", true) to match menu management count
 
         console.log("[DASHBOARD DATA] loadStats query results:", {
           menuItemCount: menuItems?.length || 0,
@@ -434,11 +435,12 @@ export function useDashboardData(
           console.log("⚠️ [DASHBOARD DATA] No window available, querying menu items directly...");
           const supabase = createClient();
           const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+          // Count ALL menu items (not just available) to match menu management count
           const { count, error: menuError } = await supabase
             .from("menu_items")
             .select("*", { count: "exact", head: true })
-            .eq("venue_id", normalizedVenueId)
-            .eq("is_available", true);
+            .eq("venue_id", normalizedVenueId);
+            // Removed .eq("is_available", true) to match menu management count
           
           if (!menuError && count !== null) {
             setStats((prev) => ({

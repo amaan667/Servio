@@ -119,11 +119,12 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       // Intentionally empty
     }
 
+    // Count ALL menu items (not just available) to match menu management count
     const { data: menuItems, error: menuError } = await supabase
       .from("menu_items")
       .select("id")
-      .eq("venue_id", normalizedVenueId)
-      .eq("is_available", true);
+      .eq("venue_id", normalizedVenueId);
+      // Removed .eq("is_available", true) to match menu management count
 
     const menuItemCount = menuItems?.length || 0;
 
