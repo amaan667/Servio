@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -173,55 +173,29 @@ export function HelpCenterClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [venueId, setVenueId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
 
-  // Mark component as mounted to prevent hydration mismatches
+  // Fetch venueId from user's session
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Fetch venueId from user's session and venues
-  useEffect(() => {
-    // Only run on client side after mount
-    if (!isMounted) return;
-
     const fetchVenueId = async () => {
+      console.log("[HELP CENTER] Starting venueId fetch");
       try {
         const supabase = await createClient();
-        
-        // 1. Check if user is authenticated
         const { data: sessionData } = await supabase.auth.getSession();
         const user = sessionData?.session?.user;
 
         if (!user) {
+          console.log("[HELP CENTER] No user found");
           setIsLoading(false);
           return;
         }
 
-        // 2. Try to get venueId from storage first (fast path)
-        let foundVenueId: string | null = null;
-        
-        // Check localStorage
-        foundVenueId =
+        // Try to get venueId from storage first
+        let foundVenueId: string | null =
           localStorage.getItem("currentVenueId") ||
           localStorage.getItem("venueId") ||
           null;
 
-        // Check sessionStorage for keys starting with "dashboard_venue_"
-        if (!foundVenueId) {
-          for (let i = 0; i < sessionStorage.length; i++) {
-            const key = sessionStorage.key(i);
-            if (key?.startsWith("dashboard_venue_")) {
-              const venueIdFromKey = key.replace("dashboard_venue_", "");
-              if (venueIdFromKey && venueIdFromKey.length > 0) {
-                foundVenueId = venueIdFromKey;
-                break;
-              }
-            }
-          }
-        }
-
-        // Check sessionStorage for "venue_id_${userId}" pattern
+        // Check sessionStorage
         if (!foundVenueId) {
           const cachedVenueId = sessionStorage.getItem(`venue_id_${user.id}`);
           if (cachedVenueId) {
@@ -229,9 +203,8 @@ export function HelpCenterClient() {
           }
         }
 
-        // 3. If not in storage, fetch from database
+        // If not in storage, fetch from database
         if (!foundVenueId) {
-          // Try owner venues first
           const { data: ownerVenues } = await supabase
             .from("venues")
             .select("venue_id")
@@ -241,10 +214,8 @@ export function HelpCenterClient() {
 
           if (ownerVenues && ownerVenues.length > 0) {
             foundVenueId = ownerVenues[0]?.venue_id as string;
-            // Cache it
             sessionStorage.setItem(`venue_id_${user.id}`, foundVenueId);
           } else {
-            // Try staff venues
             const { data: staffVenue } = await supabase
               .from("user_venue_roles")
               .select("venue_id")
@@ -254,33 +225,34 @@ export function HelpCenterClient() {
 
             if (staffVenue?.venue_id) {
               foundVenueId = staffVenue.venue_id as string;
-              // Cache it
               sessionStorage.setItem(`venue_id_${user.id}`, foundVenueId);
             }
           }
         }
 
+        console.log("[HELP CENTER] Found venueId:", foundVenueId);
         setVenueId(foundVenueId);
       } catch (error) {
-        // Silently fail - user can still use help center
+        console.error("[HELP CENTER] Error fetching venueId:", error);
       } finally {
         setIsLoading(false);
+        console.log("[HELP CENTER] Loading complete");
       }
     };
 
     fetchVenueId();
-  }, [isMounted]);
+  }, []);
 
-  // Build quick links - only the exact links we need, no duplicates possible
+  // Build exactly 7 links - no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
-    // Don't build links until we know if venueId exists (after loading)
-    if (isLoading || !isMounted) {
+    console.log("[HELP CENTER] Building quickLinks", { isLoading, venueId });
+
+    if (isLoading) {
       return [];
     }
 
-    // If no venueId after loading, only show Getting Started Guide
     if (!venueId) {
-      return [
+      const links = [
         {
           title: "Getting Started Guide",
           href: "https://servio.uk/support",
@@ -288,10 +260,10 @@ export function HelpCenterClient() {
           external: true,
         },
       ];
+      console.log("[HELP CENTER] No venueId, returning 1 link:", links);
+      return links;
     }
 
-    // Build exactly 7 links - one for each feature page
-    // Use a Set to ensure no duplicate titles (safety check)
     const links: QuickLink[] = [
       {
         title: "Getting Started Guide",
@@ -337,28 +309,10 @@ export function HelpCenterClient() {
       },
     ];
 
-    // Final safety check - ensure no duplicate titles
-    const seenTitles = new Set<string>();
-    const uniqueLinks: QuickLink[] = [];
-    for (const link of links) {
-      if (!seenTitles.has(link.title)) {
-        seenTitles.add(link.title);
-        uniqueLinks.push(link);
-      }
-    }
-
-    // Debug log in development
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      if (uniqueLinks.length !== links.length) {
-        console.warn('[Help Center] Duplicate links detected and removed', {
-          original: links.length,
-          unique: uniqueLinks.length,
-        });
-      }
-    }
-
-    return uniqueLinks;
-  }, [venueId, isLoading, isMounted]);
+    console.log("[HELP CENTER] Built links:", links.map(l => l.title));
+    console.log("[HELP CENTER] Total links:", links.length);
+    return links;
+  }, [venueId, isLoading]);
 
   const filteredFAQs = faqs.map((category) => ({
     ...category,
@@ -368,6 +322,8 @@ export function HelpCenterClient() {
         q.answer.toLowerCase().includes(searchQuery.toLowerCase())
     ),
   })).filter((category) => category.questions.length > 0);
+
+  console.log("[HELP CENTER] Rendering with", quickLinks.length, "links");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -399,12 +355,11 @@ export function HelpCenterClient() {
           </div>
         </div>
 
-        {/* Quick Links */}
+        {/* Quick Links - Exactly 7 links, no duplicates */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Links</h2>
-          {!isMounted || isLoading ? (
+          {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Show skeleton/loading state while fetching venueId */}
               {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <Card key={`skeleton-${i}`} className="h-full animate-pulse">
                   <CardContent className="p-6 text-center">
@@ -415,38 +370,36 @@ export function HelpCenterClient() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" key={`quick-links-${venueId || 'no-venue'}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {quickLinks.map((link, index) => {
                 const Icon = link.icon;
-                // Use index + title for unique key to prevent React from reusing components
-                const uniqueKey = `link-${index}-${link.title}`;
-                  const linkContent = (
-                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                      <CardContent className="p-6 text-center">
-                        <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                        <h3 className="font-semibold text-gray-900">{link.title}</h3>
-                      </CardContent>
-                    </Card>
-                  );
+                const linkContent = (
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                    <CardContent className="p-6 text-center">
+                      <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                      <h3 className="font-semibold text-gray-900">{link.title}</h3>
+                    </CardContent>
+                  </Card>
+                );
 
-                  if (link.external) {
-                    return (
-                      <a
-                        key={uniqueKey}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {linkContent}
-                      </a>
-                    );
-                  }
-
+                if (link.external) {
                   return (
-                    <Link key={uniqueKey} href={link.href}>
+                    <a
+                      key={`${link.title}-${index}`}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {linkContent}
-                    </Link>
+                    </a>
                   );
+                }
+
+                return (
+                  <Link key={`${link.title}-${index}`} href={link.href}>
+                    {linkContent}
+                  </Link>
+                );
               })}
             </div>
           )}
@@ -518,4 +471,3 @@ export function HelpCenterClient() {
     </div>
   );
 }
-
