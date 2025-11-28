@@ -119,7 +119,7 @@ Submitted: ${new Date().toLocaleString("en-GB", { dateStyle: "full", timeStyle: 
 
       // STEP 4: Send email
       const emailSent = await sendEmail({
-        to: "support@servio.app",
+        to: "enquiries@servio.uk",
         subject: emailSubject,
         html: emailHtml,
         text: emailText,
