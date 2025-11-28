@@ -381,7 +381,10 @@ export function HelpCenterClient() {
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Links</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickLinks.map((link) => {
+            {/* Ensure uniqueness one more time before rendering */}
+            {Array.from(
+              new Map(quickLinks.map((link) => [link.title, link])).values()
+            ).map((link) => {
               const Icon = link.icon;
               // Use title as key since it's guaranteed unique (we filter duplicates)
               const uniqueKey = link.title;
