@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Search, Mail, BookOpen, MessageSquare, HelpCircle, QrCode, ShoppingBag, BarChart, Users, Settings } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 const faqs = [
@@ -160,18 +161,130 @@ const faqs = [
   },
 ];
 
-const quickLinks = [
-  { title: "Getting Started Guide", href: "#getting-started", icon: BookOpen },
-  { title: "Menu Setup", href: "#menu", icon: ShoppingBag },
-  { title: "QR Code Setup", href: "#qr-codes", icon: QrCode },
-  { title: "Order Management", href: "#orders", icon: MessageSquare },
-  { title: "Analytics", href: "#analytics", icon: BarChart },
-  { title: "Staff Management", href: "#staff", icon: Users },
-  { title: "Settings", href: "#settings", icon: Settings },
-];
-
 export function HelpCenterClient() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [venueId, setVenueId] = useState<string | null>(null);
+
+  // Get venueId from localStorage/sessionStorage (similar to navigation breadcrumb)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let foundVenueId: string | null = null;
+
+    // 1. Check localStorage
+    foundVenueId =
+      localStorage.getItem("currentVenueId") ||
+      localStorage.getItem("venueId") ||
+      null;
+
+    // 2. Check sessionStorage for keys starting with "dashboard_venue_"
+    if (!foundVenueId) {
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith("dashboard_venue_")) {
+          const venueIdFromKey = key.replace("dashboard_venue_", "");
+          if (venueIdFromKey && venueIdFromKey.length > 0) {
+            foundVenueId = venueIdFromKey;
+            break;
+          }
+        }
+      }
+    }
+
+    // 3. Check sessionStorage for "venue_id_${userId}" pattern
+    if (!foundVenueId) {
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith("venue_id_")) {
+          const value = sessionStorage.getItem(key);
+          if (value && value.length > 0) {
+            foundVenueId = value;
+            break;
+          }
+        }
+      }
+    }
+
+    setVenueId(foundVenueId);
+  }, []);
+
+  // Build quick links with proper dashboard routes
+  const quickLinks = venueId
+    ? [
+        {
+          title: "Getting Started Guide",
+          href: `/dashboard/${venueId}`,
+          icon: BookOpen,
+        },
+        {
+          title: "Menu Setup",
+          href: `/dashboard/${venueId}/menu-management`,
+          icon: ShoppingBag,
+        },
+        {
+          title: "QR Code Setup",
+          href: `/dashboard/${venueId}/qr-codes`,
+          icon: QrCode,
+        },
+        {
+          title: "Order Management",
+          href: `/dashboard/${venueId}/live-orders`,
+          icon: MessageSquare,
+        },
+        {
+          title: "Analytics",
+          href: `/dashboard/${venueId}/analytics`,
+          icon: BarChart,
+        },
+        {
+          title: "Staff Management",
+          href: `/dashboard/${venueId}/staff`,
+          icon: Users,
+        },
+        {
+          title: "Settings",
+          href: `/dashboard/${venueId}/settings`,
+          icon: Settings,
+        },
+      ]
+    : [
+        {
+          title: "Getting Started Guide",
+          href: "/",
+          icon: BookOpen,
+        },
+        {
+          title: "Menu Setup",
+          href: "/",
+          icon: ShoppingBag,
+        },
+        {
+          title: "QR Code Setup",
+          href: "/",
+          icon: QrCode,
+        },
+        {
+          title: "Order Management",
+          href: "/",
+          icon: MessageSquare,
+        },
+        {
+          title: "Analytics",
+          href: "/",
+          icon: BarChart,
+        },
+        {
+          title: "Staff Management",
+          href: "/",
+          icon: Users,
+        },
+        {
+          title: "Settings",
+          href: "/",
+          icon: Settings,
+        },
+      ];
 
   const filteredFAQs = faqs.map((category) => ({
     ...category,
@@ -219,7 +332,20 @@ export function HelpCenterClient() {
             {quickLinks.map((link) => {
               const Icon = link.icon;
               return (
-                <Link key={link.href} href={link.href}>
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => {
+                    // If no venueId, prevent navigation and show message
+                    if (!venueId && link.href === "/") {
+                      e.preventDefault();
+                      alert(
+                        "Please sign in and select a venue to access this feature."
+                      );
+                      router.push("/");
+                    }
+                  }}
+                >
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                     <CardContent className="p-6 text-center">
                       <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
