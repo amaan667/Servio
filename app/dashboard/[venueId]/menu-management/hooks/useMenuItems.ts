@@ -60,6 +60,8 @@ export function useMenuItems(venueId: string) {
           details: error.details,
           hint: error.hint,
           normalizedVenueId,
+          fullError: error,
+          timestamp: new Date().toISOString(),
         });
         logger.error("[MENU ITEMS] Error loading:", error);
         toast({
@@ -67,6 +69,7 @@ export function useMenuItems(venueId: string) {
           description: `Failed to load menu items: ${error.message}`,
           variant: "destructive",
         });
+        setMenuItems([]);
         return;
       }
 
@@ -100,13 +103,27 @@ export function useMenuItems(venueId: string) {
         }
       }
     } catch (_error) {
+      console.error("[MENU BUILDER] Exception loading menu items:", {
+        error: _error instanceof Error ? _error.message : String(_error),
+        stack: _error instanceof Error ? _error.stack : undefined,
+        venueId,
+        normalizedVenueId,
+        timestamp: new Date().toISOString(),
+      });
       toast({
         title: "Error",
-        description: `Failed to load menu items: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
+        description: `Failed to load menu items: ${_error instanceof Error ? _error.message : "Unknown error"}`,
         variant: "destructive",
       });
+      setMenuItems([]);
     } finally {
       setLoading(false);
+      console.log("[MENU BUILDER] loadMenuItems completed:", {
+        venueId,
+        loading: false,
+        itemCount: menuItems.length,
+        timestamp: new Date().toISOString(),
+      });
     }
   };
 
