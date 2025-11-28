@@ -20,7 +20,29 @@ export function useMenuItems(venueId: string) {
       // Validate Supabase client creation
       let supabase;
       try {
+        // Check environment variables before creating client
+        const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const hasAnonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        console.log("[MENU BUILDER] Environment check:", {
+          hasUrl,
+          hasAnonKey,
+          urlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) || "none",
+          anonKeyPrefix: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) || "none",
+        });
+
+        if (!hasUrl || !hasAnonKey) {
+          throw new Error(
+            `Supabase environment variables missing. URL: ${hasUrl ? "✓" : "✗"}, AnonKey: ${hasAnonKey ? "✓" : "✗"}`
+          );
+        }
+
         supabase = createClient();
+        
+        // Verify client was created successfully
+        if (!supabase) {
+          throw new Error("Supabase client creation returned null/undefined");
+        }
       } catch (clientError) {
         const errorMessage = clientError instanceof Error ? clientError.message : String(clientError);
         console.error("[MENU BUILDER] Failed to create Supabase client:", {
@@ -28,10 +50,11 @@ export function useMenuItems(venueId: string) {
           venueId,
           normalizedVenueId,
           timestamp: new Date().toISOString(),
+          stack: clientError instanceof Error ? clientError.stack : undefined,
         });
         toast({
           title: "Configuration Error",
-          description: "Failed to connect to database. Please refresh the page or contact support.",
+          description: `Database connection failed: ${errorMessage}. Please refresh the page or contact support.`,
           variant: "destructive",
         });
         return;

@@ -41,11 +41,26 @@ export function getSupabaseAnonKey(): string {
   // Use process.env directly for client-side, env() for server-side
   if (typeof window !== "undefined") {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
+    if (!key) {
+      console.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in browser environment");
+      console.error("[SUPABASE] Available env vars:", {
+        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        nodeEnv: process.env.NODE_ENV,
+      });
+      throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables.");
+    }
+    // Validate key format (should start with eyJ)
+    if (!key.startsWith("eyJ")) {
+      console.warn("[SUPABASE] Anon key format looks unusual (should start with 'eyJ')");
+    }
     return key;
   }
   const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
+  if (!key) {
+    console.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in server environment");
+    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables.");
+  }
   return key;
 }
 
@@ -150,6 +165,23 @@ export function supabaseBrowser() {
     if (!url || !anonKey) {
       throw new Error(
         `Supabase configuration incomplete. URL: ${url ? "✓" : "✗"}, Key: ${anonKey ? "✓" : "✗"}. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.`
+      );
+    }
+
+    // Log client creation for debugging (only in development)
+    if (process.env.NODE_ENV === "development") {
+      console.log("[SUPABASE] Creating browser client:", {
+        url: url.substring(0, 30) + "...",
+        hasAnonKey: !!anonKey,
+        anonKeyLength: anonKey?.length || 0,
+        anonKeyPrefix: anonKey?.substring(0, 10) || "none",
+      });
+    }
+
+    // Double-check that anonKey is valid before creating client
+    if (!anonKey || anonKey.trim().length === 0) {
+      throw new Error(
+        "Supabase anon key is empty or invalid. Please check NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable."
       );
     }
 
