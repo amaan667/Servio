@@ -266,98 +266,64 @@ export function HelpCenterClient() {
   // Getting Started Guide links to website support page
   // Use useMemo to ensure links update when venueId changes
   const quickLinks: QuickLink[] = useMemo(() => {
-    const baseLinks: QuickLink[] = [
+    // Only show links when venueId is available (authenticated users)
+    // Don't show fallback links to avoid confusion
+    if (!venueId) {
+      return [
+        {
+          title: "Getting Started Guide",
+          href: "https://servio.uk/support",
+          icon: BookOpen,
+          external: true,
+        },
+      ];
+    }
+
+    // All dashboard links with venueId - each link appears only once
+    return [
       {
         title: "Getting Started Guide",
         href: "https://servio.uk/support",
         icon: BookOpen,
         external: true,
       },
+      {
+        title: "Menu Setup",
+        href: `/dashboard/${venueId}/menu-management`,
+        icon: ShoppingBag,
+        external: false,
+      },
+      {
+        title: "QR Code Setup",
+        href: `/dashboard/${venueId}/qr-codes`,
+        icon: QrCode,
+        external: false,
+      },
+      {
+        title: "Order Management",
+        href: `/dashboard/${venueId}/live-orders`,
+        icon: MessageSquare,
+        external: false,
+      },
+      {
+        title: "Analytics",
+        href: `/dashboard/${venueId}/analytics`,
+        icon: BarChart,
+        external: false,
+      },
+      {
+        title: "Staff Management",
+        href: `/dashboard/${venueId}/staff`,
+        icon: Users,
+        external: false,
+      },
+      {
+        title: "Settings",
+        href: `/dashboard/${venueId}/settings`,
+        icon: Settings,
+        external: false,
+      },
     ];
-
-    if (venueId) {
-      // All dashboard links with venueId
-      baseLinks.push(
-        {
-          title: "Menu Setup",
-          href: `/dashboard/${venueId}/menu-management`,
-          icon: ShoppingBag,
-          external: false,
-        },
-        {
-          title: "QR Code Setup",
-          href: `/dashboard/${venueId}/qr-codes`,
-          icon: QrCode,
-          external: false,
-        },
-        {
-          title: "Order Management",
-          href: `/dashboard/${venueId}/live-orders`,
-          icon: MessageSquare,
-          external: false,
-        },
-        {
-          title: "Analytics",
-          href: `/dashboard/${venueId}/analytics`,
-          icon: BarChart,
-          external: false,
-        },
-        {
-          title: "Staff Management",
-          href: `/dashboard/${venueId}/staff`,
-          icon: Users,
-          external: false,
-        },
-        {
-          title: "Settings",
-          href: `/dashboard/${venueId}/settings`,
-          icon: Settings,
-          external: false,
-        }
-      );
-    } else {
-      // Fallback links when no venueId (shouldn't happen for authenticated users)
-      baseLinks.push(
-        {
-          title: "Menu Setup",
-          href: "/",
-          icon: ShoppingBag,
-          external: false,
-        },
-        {
-          title: "QR Code Setup",
-          href: "/",
-          icon: QrCode,
-          external: false,
-        },
-        {
-          title: "Order Management",
-          href: "/",
-          icon: MessageSquare,
-          external: false,
-        },
-        {
-          title: "Analytics",
-          href: "/",
-          icon: BarChart,
-          external: false,
-        },
-        {
-          title: "Staff Management",
-          href: "/",
-          icon: Users,
-          external: false,
-        },
-        {
-          title: "Settings",
-          href: "/",
-          icon: Settings,
-          external: false,
-        }
-      );
-    }
-
-    return baseLinks;
   }, [venueId]);
 
   const filteredFAQs = faqs.map((category) => ({
@@ -403,8 +369,10 @@ export function HelpCenterClient() {
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Links</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickLinks.map((link) => {
+            {quickLinks.map((link, index) => {
               const Icon = link.icon;
+              // Use title as key since it's unique, with index as fallback
+              const uniqueKey = `${link.title}-${index}`;
               const linkContent = (
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                   <CardContent className="p-6 text-center">
@@ -417,7 +385,7 @@ export function HelpCenterClient() {
               if (link.external) {
                 return (
                   <a
-                    key={link.href}
+                    key={uniqueKey}
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -428,7 +396,7 @@ export function HelpCenterClient() {
               }
 
               return (
-                <Link key={link.href} href={link.href}>
+                <Link key={uniqueKey} href={link.href}>
                   {linkContent}
                 </Link>
               );
