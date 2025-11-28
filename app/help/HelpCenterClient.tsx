@@ -280,7 +280,10 @@ export function HelpCenterClient() {
     }
 
     // All dashboard links with venueId - each link appears only once
-    return [
+    // Use Set to ensure uniqueness by title
+    const linksMap = new Map<string, QuickLink>();
+    
+    const allLinks: QuickLink[] = [
       {
         title: "Getting Started Guide",
         href: "https://servio.uk/support",
@@ -324,6 +327,15 @@ export function HelpCenterClient() {
         external: false,
       },
     ];
+
+    // Ensure uniqueness by title (first occurrence wins)
+    allLinks.forEach((link) => {
+      if (!linksMap.has(link.title)) {
+        linksMap.set(link.title, link);
+      }
+    });
+
+    return Array.from(linksMap.values());
   }, [venueId]);
 
   const filteredFAQs = faqs.map((category) => ({
@@ -369,10 +381,10 @@ export function HelpCenterClient() {
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Links</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickLinks.map((link, index) => {
+            {quickLinks.map((link) => {
               const Icon = link.icon;
-              // Use title as key since it's unique, with index as fallback
-              const uniqueKey = `${link.title}-${index}`;
+              // Use title as key since it's guaranteed unique (we filter duplicates)
+              const uniqueKey = link.title;
               const linkContent = (
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                   <CardContent className="p-6 text-center">
