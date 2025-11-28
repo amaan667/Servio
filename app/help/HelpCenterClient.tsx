@@ -9,6 +9,14 @@ import { Search, Mail, BookOpen, MessageSquare, HelpCircle, QrCode, ShoppingBag,
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import type { LucideIcon } from "lucide-react";
+
+interface QuickLink {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  external: boolean;
+}
 
 const faqs = [
   {
@@ -255,81 +263,92 @@ export function HelpCenterClient() {
   }, []);
 
   // Build quick links with proper dashboard routes
-  const quickLinks = venueId
-    ? [
-        {
-          title: "Getting Started Guide",
-          href: `/dashboard/${venueId}`,
-          icon: BookOpen,
-        },
-        {
-          title: "Menu Setup",
-          href: `/dashboard/${venueId}/menu-management`,
-          icon: ShoppingBag,
-        },
-        {
-          title: "QR Code Setup",
-          href: `/dashboard/${venueId}/qr-codes`,
-          icon: QrCode,
-        },
-        {
-          title: "Order Management",
-          href: `/dashboard/${venueId}/live-orders`,
-          icon: MessageSquare,
-        },
-        {
-          title: "Analytics",
-          href: `/dashboard/${venueId}/analytics`,
-          icon: BarChart,
-        },
-        {
-          title: "Staff Management",
-          href: `/dashboard/${venueId}/staff`,
-          icon: Users,
-        },
-        {
-          title: "Settings",
-          href: `/dashboard/${venueId}/settings`,
-          icon: Settings,
-        },
-      ]
-    : [
-        {
-          title: "Getting Started Guide",
-          href: "/",
-          icon: BookOpen,
-        },
-        {
-          title: "Menu Setup",
-          href: "/",
-          icon: ShoppingBag,
-        },
-        {
-          title: "QR Code Setup",
-          href: "/",
-          icon: QrCode,
-        },
-        {
-          title: "Order Management",
-          href: "/",
-          icon: MessageSquare,
-        },
-        {
-          title: "Analytics",
-          href: "/",
-          icon: BarChart,
-        },
-        {
-          title: "Staff Management",
-          href: "/",
-          icon: Users,
-        },
-        {
-          title: "Settings",
-          href: "/",
-          icon: Settings,
-        },
-      ];
+  // Getting Started Guide links to website support page
+  const quickLinks: QuickLink[] = [
+    {
+      title: "Getting Started Guide",
+      href: "https://servio.uk/support",
+      icon: BookOpen,
+      external: true,
+    },
+    ...(venueId
+      ? [
+          {
+            title: "Menu Setup",
+            href: `/dashboard/${venueId}/menu-management`,
+            icon: ShoppingBag,
+            external: false,
+          },
+          {
+            title: "QR Code Setup",
+            href: `/dashboard/${venueId}/qr-codes`,
+            icon: QrCode,
+            external: false,
+          },
+          {
+            title: "Order Management",
+            href: `/dashboard/${venueId}/live-orders`,
+            icon: MessageSquare,
+            external: false,
+          },
+          {
+            title: "Analytics",
+            href: `/dashboard/${venueId}/analytics`,
+            icon: BarChart,
+            external: false,
+          },
+          {
+            title: "Staff Management",
+            href: `/dashboard/${venueId}/staff`,
+            icon: Users,
+            external: false,
+          },
+          {
+            title: "Settings",
+            href: `/dashboard/${venueId}/settings`,
+            icon: Settings,
+            external: false,
+          },
+        ]
+      : [
+          {
+            title: "Menu Setup",
+            href: "/",
+            icon: ShoppingBag,
+            external: false,
+          },
+          {
+            title: "QR Code Setup",
+            href: "/",
+            icon: QrCode,
+            external: false,
+          },
+          {
+            title: "Order Management",
+            href: "/",
+            icon: MessageSquare,
+            external: false,
+          },
+          {
+            title: "Analytics",
+            href: "/",
+            icon: BarChart,
+            external: false,
+          },
+          {
+            title: "Staff Management",
+            href: "/",
+            icon: Users,
+            external: false,
+          },
+          {
+            title: "Settings",
+            href: "/",
+            icon: Settings,
+            external: false,
+          },
+        ]),
+  ];
 
   const filteredFAQs = faqs.map((category) => ({
     ...category,
@@ -376,14 +395,31 @@ export function HelpCenterClient() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickLinks.map((link) => {
               const Icon = link.icon;
+              const linkContent = (
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                  <CardContent className="p-6 text-center">
+                    <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                    <h3 className="font-semibold text-gray-900">{link.title}</h3>
+                  </CardContent>
+                </Card>
+              );
+
+              if (link.external) {
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {linkContent}
+                  </a>
+                );
+              }
+
               return (
                 <Link key={link.href} href={link.href}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                    <CardContent className="p-6 text-center">
-                      <Icon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                      <h3 className="font-semibold text-gray-900">{link.title}</h3>
-                    </CardContent>
-                  </Card>
+                  {linkContent}
                 </Link>
               );
             })}
