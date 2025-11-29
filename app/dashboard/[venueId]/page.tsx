@@ -16,11 +16,29 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   const { venueId } = params;
   
   // IMMEDIATE SERVER-SIDE LOG - Railway will see this
-  process.stdout.write(`\n[RAILWAY] =================================================\n`);
+  // Use both process.stdout.write AND console.error for maximum visibility
+  const startTime = Date.now();
+  const timestamp = new Date().toISOString();
+  
+  // Force flush stdout immediately
+  process.stdout.write(`\n`);
+  process.stdout.write(`[RAILWAY] =================================================\n`);
   process.stdout.write(`[RAILWAY] Dashboard Server Component - START\n`);
   process.stdout.write(`[RAILWAY] Venue ID: ${venueId}\n`);
-  process.stdout.write(`[RAILWAY] Timestamp: ${new Date().toISOString()}\n`);
+  process.stdout.write(`[RAILWAY] Timestamp: ${timestamp}\n`);
+  process.stdout.write(`[RAILWAY] Process PID: ${process.pid}\n`);
   process.stdout.write(`[RAILWAY] =================================================\n`);
+  process.stdout.write(`\n`);
+  
+  // Also use console.error (Railway captures stderr)
+  console.error(`[RAILWAY] Dashboard Server Component - START`);
+  console.error(`[RAILWAY] Venue ID: ${venueId}`);
+  console.error(`[RAILWAY] Timestamp: ${timestamp}`);
+  
+  // Force flush
+  if (process.stdout.isTTY) {
+    process.stdout.flush?.();
+  }
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
