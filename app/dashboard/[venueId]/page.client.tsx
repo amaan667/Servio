@@ -132,52 +132,79 @@ const DashboardClient = React.memo(function DashboardClient({
   // CRITICAL LOG: Dashboard page loaded with initial stats
   // Log immediately on component mount
   useEffect(() => {
-    // Force immediate log - this will definitely show
-    const serverCount = initialStats?.menuItems || 0;
-    const clientCount = dashboardData.stats.menuItems;
-    const matches = serverCount === clientCount;
+    // Get all values for comparison
+    const serverMenuItems = initialStats?.menuItems || 0;
+    const serverRevenue = initialStats?.revenue || 0;
+    const serverTables = initialCounts?.tables_set_up || 0;
+    const serverOrders = initialCounts?.today_orders_count || 0;
+    
+    const clientMenuItems = dashboardData.stats.menuItems;
+    const clientRevenue = dashboardData.stats.revenue;
+    const clientTables = dashboardData.counts.tables_set_up;
+    const clientOrders = dashboardData.counts.today_orders_count;
+    
+    // What's actually displayed (using fallback logic)
+    const displayedMenuItems = initialStats?.menuItems ?? clientMenuItems ?? 0;
+    const displayedRevenue = clientRevenue || 0;
+    const displayedTables = initialCounts?.tables_set_up ?? clientTables ?? 0;
+    const displayedOrders = clientOrders || 0;
     
     // DETAILED LOG: Show exactly what's being displayed
-    console.warn("═══════════════════════════════════════════════════════════");
-    console.warn("📊 [DASHBOARD CLIENT] useEffect - Full Count Details");
-    console.warn("═══════════════════════════════════════════════════════════");
-    console.warn("Venue ID:", venueId);
-    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.warn("📥 RECEIVED FROM SERVER:");
-    console.warn("  initialStats object:", JSON.stringify(initialStats, null, 2));
-    console.warn("  initialStats.menuItems:", serverCount);
-    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.warn("📊 CLIENT STATE:");
-    console.warn("  dashboardData.stats object:", JSON.stringify(dashboardData.stats, null, 2));
-    console.warn("  dashboardData.stats.menuItems:", clientCount);
-    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.warn("🖥️  DISPLAYED VALUE:");
-    console.warn("  Value shown on dashboard card:", dashboardData.stats.menuItems);
-    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.warn("✅ COMPARISON:");
-    console.warn("  Server count:", serverCount);
-    console.warn("  Client count:", clientCount);
-    console.warn("  Match:", matches ? "✅ YES" : "❌ NO");
-    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.warn("Timestamp:", new Date().toISOString());
-    console.warn("═══════════════════════════════════════════════════════════");
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("📊 [DASHBOARD CLIENT] useEffect - COMPLETE COUNT ANALYSIS");
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("Venue ID:", venueId);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("📥 RECEIVED FROM SERVER:");
+    console.error("  initialStats.menuItems:", serverMenuItems);
+    console.error("  initialStats.revenue: £", serverRevenue.toFixed(2));
+    console.error("  initialCounts.tables_set_up:", serverTables);
+    console.error("  initialCounts.today_orders_count:", serverOrders);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("📊 CLIENT STATE (dashboardData):");
+    console.error("  stats.menuItems:", clientMenuItems);
+    console.error("  stats.revenue: £", clientRevenue.toFixed(2));
+    console.error("  counts.tables_set_up:", clientTables);
+    console.error("  counts.today_orders_count:", clientOrders);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("🖥️  DISPLAYED VALUES (what user sees):");
+    console.error("  Menu Items card:", displayedMenuItems);
+    console.error("  Revenue card: £", displayedRevenue.toFixed(2));
+    console.error("  Tables Set Up card:", displayedTables);
+    console.error("  Today's Orders card:", displayedOrders);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("✅ COMPARISON:");
+    console.error("  Menu Items - Server:", serverMenuItems, "| Client:", clientMenuItems, "| Displayed:", displayedMenuItems, serverMenuItems === displayedMenuItems ? "✅" : "❌");
+    console.error("  Revenue - Server: £", serverRevenue.toFixed(2), "| Client: £", clientRevenue.toFixed(2), "| Displayed: £", displayedRevenue.toFixed(2), serverRevenue === displayedRevenue ? "✅" : "❌");
+    console.error("  Tables - Server:", serverTables, "| Client:", clientTables, "| Displayed:", displayedTables, serverTables === displayedTables ? "✅" : "❌");
+    console.error("  Orders - Server:", serverOrders, "| Client:", clientOrders, "| Displayed:", displayedOrders, serverOrders === displayedOrders ? "✅" : "❌");
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("═══════════════════════════════════════════════════════════");
     
-    if (!matches) {
-      console.error("❌ MISMATCH DETECTED!");
-      console.error("  Server says:", serverCount);
-      console.error("  Client shows:", clientCount);
-      console.error("  Difference:", Math.abs(serverCount - clientCount));
+    // Check for mismatches
+    const menuItemsMatch = serverMenuItems === displayedMenuItems;
+    const revenueMatch = Math.abs(serverRevenue - displayedRevenue) < 0.01;
+    const tablesMatch = serverTables === displayedTables;
+    const ordersMatch = serverOrders === displayedOrders;
+    
+    if (!menuItemsMatch || !revenueMatch || !tablesMatch || !ordersMatch) {
+      console.error("❌ MISMATCHES DETECTED!");
+      if (!menuItemsMatch) console.error("  Menu Items: Server", serverMenuItems, "≠ Displayed", displayedMenuItems);
+      if (!revenueMatch) console.error("  Revenue: Server £", serverRevenue.toFixed(2), "≠ Displayed £", displayedRevenue.toFixed(2));
+      if (!tablesMatch) console.error("  Tables: Server", serverTables, "≠ Displayed", displayedTables);
+      if (!ordersMatch) console.error("  Orders: Server", serverOrders, "≠ Displayed", displayedOrders);
     }
     
     // Also log as plain console.log for easy filtering
-    console.log("DASHBOARD COUNT SUMMARY:", {
-      server: serverCount,
-      client: clientCount,
-      displayed: dashboardData.stats.menuItems,
-      match: matches,
+    console.log("DASHBOARD COUNTS SUMMARY:", {
+      menuItems: { server: serverMenuItems, client: clientMenuItems, displayed: displayedMenuItems },
+      revenue: { server: serverRevenue, client: clientRevenue, displayed: displayedRevenue },
+      tables: { server: serverTables, client: clientTables, displayed: displayedTables },
+      orders: { server: serverOrders, client: clientOrders, displayed: displayedOrders },
       venueId,
     });
-  }, [venueId, initialStats?.menuItems, dashboardData.stats.menuItems]);
+  }, [venueId, initialStats?.menuItems, initialStats?.revenue, initialCounts?.tables_set_up, initialCounts?.today_orders_count, dashboardData.stats.menuItems, dashboardData.stats.revenue, dashboardData.counts.tables_set_up, dashboardData.counts.today_orders_count]);
 
   useDashboardRealtime({
     venueId,
