@@ -15,14 +15,23 @@ export const runtime = "nodejs"; // Ensure Node.js runtime
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
   
-  // CRITICAL: Log IMMEDIATELY - Railway only shows console.info
+  // CRITICAL: Log IMMEDIATELY - Use multiple methods to ensure visibility
   const timestamp = new Date().toISOString();
   
+  // Method 1: console.info
   console.info(`[RAILWAY] =================================================`);
   console.info(`[RAILWAY] Dashboard Server Component - START`);
   console.info(`[RAILWAY] Venue ID: ${venueId}`);
   console.info(`[RAILWAY] Timestamp: ${timestamp}`);
   console.info(`[RAILWAY] =================================================`);
+  
+  // Method 2: console.log (also captured)
+  console.log(`[RAILWAY] Dashboard START - Venue: ${venueId} - Time: ${timestamp}`);
+  
+  // Method 3: Direct write to stderr (bypasses Next.js)
+  if (typeof process !== 'undefined' && process.stderr) {
+    process.stderr.write(`[RAILWAY] Dashboard START - Venue: ${venueId}\n`);
+  }
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
@@ -214,13 +223,14 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       unpaid,
     };
     
-    // LOG: Show what's being passed to client - Railway only shows console.info
+    // LOG: Show what's being passed to client - Use multiple methods
     const finalStats = {
       menuItems: initialStats.menuItems,
       revenue: initialStats.revenue,
       unpaid: initialStats.unpaid,
     };
     
+    // Method 1: console.info
     console.info(`[RAILWAY] =================================================`);
     console.info(`[RAILWAY] ✅ FINAL DATA BEING PASSED TO CLIENT`);
     console.info(`[RAILWAY] =================================================`);
@@ -231,7 +241,17 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     console.info(`[RAILWAY] initialCounts.tables_set_up: ${initialCounts?.tables_set_up || 0}`);
     console.info(`[RAILWAY] initialCounts.live_count: ${initialCounts?.live_count || 0}`);
     console.info(`[RAILWAY] =================================================`);
+    
+    // Method 2: Single line summary (easy to spot)
     console.info(`[RAILWAY] FINAL COUNTS - Menu: ${finalStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${finalStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}`);
+    
+    // Method 3: console.log
+    console.log(`[RAILWAY] FINAL COUNTS - Menu: ${finalStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${finalStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}`);
+    
+    // Method 4: Direct stderr write
+    if (typeof process !== 'undefined' && process.stderr) {
+      process.stderr.write(`[RAILWAY] FINAL COUNTS - Menu: ${finalStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${finalStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}\n`);
+    }
   } catch (error) {
     // Log error to Railway - use console.info
     const errorMsg = error instanceof Error ? error.message : String(error);
