@@ -9,7 +9,8 @@ import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 // Force dynamic rendering to prevent stale cached menu counts
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store"; // Never cache fetch requests
-export const revalidate = 0;
+export const revalidate = 0; // Never revalidate (always fetch fresh)
+export const runtime = "nodejs"; // Ensure Node.js runtime
 
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
@@ -122,38 +123,46 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Count ALL menu items (not just available) to match menu management count
     // ALWAYS use actual array length - it's the source of truth
     // Don't use count query as it can be inconsistent
+    // Add cache-busting timestamp to ensure fresh query
+    const queryStartTime = Date.now();
     const { data: menuItems, error: menuError } = await supabase
       .from("menu_items")
       .select("id")
-      .eq("venue_id", normalizedVenueId);
+      .eq("venue_id", normalizedVenueId)
+      .order("created_at", { ascending: false }); // Add ordering to ensure consistent results
       // Removed .eq("is_available", true) to match menu management count
+    const queryEndTime = Date.now();
+    const queryDuration = queryEndTime - queryStartTime;
 
     // Use actual array length - it's the source of truth
     // The count query can be inconsistent, so always use the actual items returned
     const actualMenuItemCount = menuItems?.length || 0;
     
-    // DETAILED LOG: Show exactly what was loaded
-    // Use console.error for Railway visibility - Railway captures stderr
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("📊 [DASHBOARD SERVER] Menu Items Query Result");
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("Venue ID:", venueId);
-    console.error("Normalized Venue ID:", normalizedVenueId);
-    console.error("Query: SELECT id FROM menu_items WHERE venue_id =", normalizedVenueId);
-    console.error("Items Returned (array):", JSON.stringify(menuItems || [], null, 2));
-    console.error("Array Length:", menuItems?.length || 0);
-    console.error("Actual Count (used for stats):", actualMenuItemCount);
-    console.error("Error:", menuError?.message || "None");
-    console.error("Error Code:", menuError?.code || "None");
-    console.error("First 10 Item IDs:", menuItems?.slice(0, 10).map((m) => m.id) || []);
-    console.error("All Item IDs Count:", menuItems?.length || 0);
-    console.error("⚠️  THIS COUNT WILL BE PASSED TO CLIENT");
-    console.error("Timestamp:", new Date().toISOString());
-    console.error("═══════════════════════════════════════════════════════════");
+    // LOG: Query execution details
+    process.stdout.write(`\n[RAILWAY] Menu Items Query Executed\n`);
+    process.stdout.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
+    process.stdout.write(`[RAILWAY] Items Returned: ${actualMenuItemCount}\n`);
     
-    // Also use console.log for stdout (Railway captures both)
+    // DETAILED LOG: Show exactly what was loaded
+    // Use process.stdout.write for guaranteed Railway visibility
+    process.stdout.write(`\n[RAILWAY] =================================================\n`);
+    process.stdout.write(`[RAILWAY] Menu Items Query Result\n`);
+    process.stdout.write(`[RAILWAY] Venue ID: ${venueId}\n`);
+    process.stdout.write(`[RAILWAY] Normalized Venue ID: ${normalizedVenueId}\n`);
+    process.stdout.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
+    process.stdout.write(`[RAILWAY] Array Length: ${menuItems?.length || 0}\n`);
+    process.stdout.write(`[RAILWAY] Actual Count (used for stats): ${actualMenuItemCount}\n`);
+    process.stdout.write(`[RAILWAY] Error: ${menuError?.message || "None"}\n`);
+    process.stdout.write(`[RAILWAY] First 10 Item IDs: ${JSON.stringify(menuItems?.slice(0, 10).map((m) => m.id) || [])}\n`);
+    process.stdout.write(`[RAILWAY] ⚠️  THIS COUNT WILL BE PASSED TO CLIENT: ${actualMenuItemCount}\n`);
+    process.stdout.write(`[RAILWAY] Timestamp: ${new Date().toISOString()}\n`);
+    process.stdout.write(`[RAILWAY] =================================================\n`);
+    
+    // Also use console.error and console.log for Railway
+    console.error("[RAILWAY] Dashboard Server - Menu Items Count:", actualMenuItemCount);
+    console.error("[RAILWAY] Dashboard Server - Venue ID:", normalizedVenueId);
+    console.error("[RAILWAY] Dashboard Server - Query Duration:", queryDuration, "ms");
     console.log("[RAILWAY] Dashboard Server - Menu Items Count:", actualMenuItemCount);
-    console.log("[RAILWAY] Dashboard Server - Venue ID:", normalizedVenueId);
 
     if (menuError) {
       logger.error("[DASHBOARD] Error fetching menu items:", {
@@ -175,35 +184,43 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     };
     
     // LOG: Show what's being passed to client
-    // Use console.error for Railway visibility
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("📤 [DASHBOARD SERVER] Passing initialStats to Client");
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("initialStats:", JSON.stringify(initialStats, null, 2));
-    console.error("menuItems count:", initialStats.menuItems);
-    console.error("revenue:", initialStats.revenue);
-    console.error("unpaid:", initialStats.unpaid);
-    console.error("═══════════════════════════════════════════════════════════");
+    // Use process.stdout.write for guaranteed Railway visibility
+    process.stdout.write(`\n[RAILWAY] =================================================\n`);
+    process.stdout.write(`[RAILWAY] Passing initialStats to Client\n`);
+    process.stdout.write(`[RAILWAY] menuItems count: ${initialStats.menuItems}\n`);
+    process.stdout.write(`[RAILWAY] revenue: ${initialStats.revenue}\n`);
+    process.stdout.write(`[RAILWAY] unpaid: ${initialStats.unpaid}\n`);
+    process.stdout.write(`[RAILWAY] Full initialStats: ${JSON.stringify(initialStats)}\n`);
+    process.stdout.write(`[RAILWAY] =================================================\n`);
     
-    // Also use console.log for stdout
-    console.log("[RAILWAY] Dashboard Server - Passing to client:", {
+    // Also use console.error and console.log
+    console.error("[RAILWAY] Dashboard Server - Passing to client:", {
       menuItems: initialStats.menuItems,
       revenue: initialStats.revenue,
       unpaid: initialStats.unpaid,
     });
+    console.log("[RAILWAY] Dashboard Server - Final menuItems count:", initialStats.menuItems);
   } catch (error) {
-    // Log error to Railway
-    console.error("[RAILWAY] Dashboard Server - Error:", error instanceof Error ? error.message : String(error));
-    console.error("[RAILWAY] Dashboard Server - Error stack:", error instanceof Error ? error.stack : "No stack");
+    // Log error to Railway - use process.stdout.write for guaranteed visibility
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : "No stack";
+    process.stdout.write(`\n[RAILWAY] ERROR: ${errorMsg}\n`);
+    process.stdout.write(`[RAILWAY] ERROR STACK: ${errorStack}\n`);
+    console.error("[RAILWAY] Dashboard Server - Error:", errorMsg);
+    console.error("[RAILWAY] Dashboard Server - Error stack:", errorStack);
     // Continue without initial data - client will load it
   }
 
   // FINAL SERVER-SIDE LOG - Railway will see this
-  console.error("[RAILWAY] =================================================");
+  const finalCount = initialStats?.menuItems || 0;
+  process.stdout.write(`\n[RAILWAY] =================================================\n`);
+  process.stdout.write(`[RAILWAY] Dashboard Server Component - END\n`);
+  process.stdout.write(`[RAILWAY] Final menuItems count: ${finalCount}\n`);
+  process.stdout.write(`[RAILWAY] Final initialStats: ${JSON.stringify(initialStats)}\n`);
+  process.stdout.write(`[RAILWAY] =================================================\n`);
+  
   console.error("[RAILWAY] Dashboard Server Component - END");
-  console.error("[RAILWAY] Final initialStats:", JSON.stringify(initialStats, null, 2));
-  console.error("[RAILWAY] Final menuItems count:", initialStats?.menuItems || 0);
-  console.error("[RAILWAY] =================================================");
+  console.error("[RAILWAY] Final menuItems count:", finalCount);
   console.log("[RAILWAY] Dashboard page completed, sending to client");
 
   return (
