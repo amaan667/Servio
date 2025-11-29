@@ -187,6 +187,29 @@ export function useDashboardRealtime({
           async (_payload: RealtimePayload) => {
             if (!isMountedRef.current) return;
             debouncedRefresh();
+            
+            // Also fetch and dispatch tables count for instant updates
+            try {
+              const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+              const { data: allTables } = await supabase
+                .from("tables")
+                .select("id, is_active")
+                .eq("venue_id", normalizedVenueId);
+              
+              const activeTables = allTables?.filter((t) => t.is_active) || [];
+              const count = activeTables.length;
+              
+              // Dispatch custom event for instant updates
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("tablesChanged", {
+                    detail: { venueId, count },
+                  })
+                );
+              }
+            } catch (_error) {
+              // Error handled silently
+            }
           }
         )
         .on(
