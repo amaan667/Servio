@@ -18,10 +18,10 @@ export async function GET(req: NextRequest) {
   const venueTz = "Europe/London";
   const window = todayWindowForTZ(venueTz);
   
-  // Log to stderr - Railway will capture this
-  process.stderr.write(`\n[RAILWAY] =================================================\n`);
-  process.stderr.write(`[RAILWAY] DEBUG API: Fetching counts for ${normalizedVenueId}\n`);
-  process.stderr.write(`[RAILWAY] =================================================\n`);
+  // Log to Railway - use console.info
+  console.info(`[RAILWAY] =================================================`);
+  console.info(`[RAILWAY] DEBUG API: Fetching counts for ${normalizedVenueId}`);
+  console.info(`[RAILWAY] =================================================`);
   
   // Fetch menu items
   const { data: menuItems, error: menuError } = await supabase
@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
   
   const menuItemsCount = menuItems?.length || 0;
   
-  process.stderr.write(`[RAILWAY] Menu Items: ${menuItemsCount}\n`);
-  process.stderr.write(`[RAILWAY] Menu Items Error: ${menuError?.message || "None"}\n`);
+  console.info(`[RAILWAY] Menu Items: ${menuItemsCount}`);
+  console.info(`[RAILWAY] Menu Items Error: ${menuError?.message || "None"}`);
   
   // Fetch tables
   const { data: allTables } = await supabase
@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
   const activeTables = allTables?.filter((t) => t.is_active) || [];
   const tablesCount = activeTables.length;
   
-  process.stderr.write(`[RAILWAY] Tables Set Up: ${tablesCount}\n`);
-  process.stderr.write(`[RAILWAY] Total Tables: ${allTables?.length || 0}\n`);
+  console.info(`[RAILWAY] Tables Set Up: ${tablesCount}`);
+  console.info(`[RAILWAY] Total Tables: ${allTables?.length || 0}`);
   
   // Fetch orders and revenue
   const { data: orders } = await supabase
@@ -60,15 +60,9 @@ export async function GET(req: NextRequest) {
   const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
   const ordersCount = orders?.length || 0;
   
-  process.stderr.write(`[RAILWAY] Revenue: £${revenue.toFixed(2)}\n`);
-  process.stderr.write(`[RAILWAY] Orders Count: ${ordersCount}\n`);
-  process.stderr.write(`[RAILWAY] =================================================\n\n`);
-  
-  // Also use console.error
-  console.error(`[RAILWAY] DEBUG API - Menu Items: ${menuItemsCount}`);
-  console.error(`[RAILWAY] DEBUG API - Tables: ${tablesCount}`);
-  console.error(`[RAILWAY] DEBUG API - Revenue: £${revenue.toFixed(2)}`);
-  console.error(`[RAILWAY] DEBUG API - Orders: ${ordersCount}`);
+  console.info(`[RAILWAY] Revenue: £${revenue.toFixed(2)}`);
+  console.info(`[RAILWAY] Orders Count: ${ordersCount}`);
+  console.info(`[RAILWAY] =================================================`);
   
   return NextResponse.json({
     venueId: normalizedVenueId,
