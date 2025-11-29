@@ -114,29 +114,30 @@ export function useDashboardData(
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
   
-  // Force update stats when initialStats changes (e.g., after menu changes)
-  // This ensures the count updates immediately when the page re-renders with new data
+  // CRITICAL: Force update stats when initialStats changes
+  // This MUST run immediately to prevent loadStats from overriding with stale data
   useEffect(() => {
     if (initialStats) {
       const oldCount = stats.menuItems;
       const newCount = initialStats.menuItems;
       
       // Use console.warn for maximum visibility
-      console.warn("[DASHBOARD DATA] initialStats changed:", {
+      console.warn("[DASHBOARD DATA] initialStats received from server:", {
         old: oldCount,
         new: newCount,
         changed: oldCount !== newCount,
       });
       
-      // Always update to ensure fresh data
+      // ALWAYS update immediately - this is the source of truth from server
+      // Don't let loadStats override this on initial mount
       setStats(initialStats);
       
       if (oldCount !== newCount) {
-        console.warn("✅ [DASHBOARD DATA] Count updated:", oldCount, "→", newCount);
+        console.warn("✅ [DASHBOARD DATA] Count updated from server:", oldCount, "→", newCount);
         console.log("DASHBOARD COUNT UPDATE:", oldCount, "→", newCount);
       }
     }
-  }, [initialStats]); // Depend on the whole object to catch any changes
+  }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid]); // Depend on values, not object reference
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
@@ -187,14 +188,23 @@ export function useDashboardData(
 
         // Count ALL menu items (not just available) to match menu management count
         // ALWAYS use actual array length - it's the source of truth
+        // Use EXACT same query as server component for consistency
         const { data: menuItems, error: menuError } = await supabase
           .from("menu_items")
           .select("id")
-          .eq("venue_id", normalizedVenueId);
+          .eq("venue_id", normalizedVenueId)
+          .order("created_at", { ascending: false }); // Same ordering as server
           // Removed .eq("is_available", true) to match menu management count
 
         // ALWAYS use actual array length - it's the source of truth
         const finalMenuItemCount = menuItems?.length || 0;
+        
+        // Log to detect if loadStats is overriding initialStats
+        console.warn("[DASHBOARD DATA] loadStats query result:", {
+          count: finalMenuItemCount,
+          arrayLength: menuItems?.length || 0,
+          venueId: normalizedVenueId,
+        });
 
         // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
