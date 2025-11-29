@@ -67,9 +67,11 @@ import { MenuItem, ActiveTab, PreviewMode } from "./types";
 export default function MenuManagementClient({
   venueId,
   canEdit: _canEdit = true,
+  initialMenuItemCount = 0,
 }: {
   venueId: string;
   canEdit?: boolean;
+  initialMenuItemCount?: number;
 }) {
   console.log("[MENU BUILDER] Component mounting:", {
     venueId,
@@ -161,7 +163,11 @@ export default function MenuManagementClient({
     console.log("🔧 [MENU BUILDER PAGE OPENED]");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("Venue ID:", venueId);
-    console.log("Initial Menu Items Count:", menuItems.length);
+    console.log("Initial Menu Items Count (from hook):", menuItems.length);
+    console.log("Initial Menu Items Count (from server prop):", initialMenuItemCount);
+    if (menuItems.length !== initialMenuItemCount) {
+      console.warn("⚠️ COUNT MISMATCH: Hook says", menuItems.length, "but server says", initialMenuItemCount);
+    }
     console.log("Loading:", loading);
     console.log("⚠️  This count should match the dashboard count!");
     console.log("Timestamp:", new Date().toISOString());
