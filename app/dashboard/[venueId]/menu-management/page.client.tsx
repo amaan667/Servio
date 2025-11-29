@@ -9,7 +9,13 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 import { isValidUserRole } from "@/lib/utils/userRole";
 
-export default function MenuManagementClientPage({ venueId }: { venueId: string }) {
+export default function MenuManagementClientPage({ 
+  venueId,
+  initialMenuItemCount = 0,
+}: { 
+  venueId: string;
+  initialMenuItemCount?: number;
+}) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -111,7 +117,7 @@ export default function MenuManagementClientPage({ venueId }: { venueId: string 
           </p>
         </div>
 
-        <MenuManagementClient venueId={venueId} />
+        <MenuManagementClient venueId={venueId} initialMenuItemCount={initialMenuItemCount} />
       </div>
     </div>
   );
