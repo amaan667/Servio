@@ -88,30 +88,24 @@ export function useDashboardData(
   const [stats, setStats] = useState<DashboardStats>(() => {
     // ALWAYS prefer server data - it's guaranteed fresh
     if (initialStats) {
-      // Log to console.error for Railway visibility
-      const logData = {
-        menuItems: initialStats.menuItems,
-        revenue: initialStats.revenue,
-        unpaid: initialStats.unpaid,
-        timestamp: new Date().toISOString(),
-      };
-      // Use console.warn for maximum visibility
-      console.warn("═══════════════════════════════════════════════════════════");
-      console.warn("[DASHBOARD DATA] ✅ INITIALIZING with initialStats from server");
-      console.warn("═══════════════════════════════════════════════════════════");
-      console.warn("Menu Items Count:", initialStats.menuItems);
-      console.warn("Revenue:", initialStats.revenue);
-      console.warn("Unpaid:", initialStats.unpaid);
-      console.warn("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
-      console.warn("⚠️  loadStats will NOT override this count");
-      console.warn("═══════════════════════════════════════════════════════════");
+      // Log to console.error for maximum visibility
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("[DASHBOARD DATA] ✅ INITIALIZING stats state with initialStats");
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("initialStats received:", JSON.stringify(initialStats, null, 2));
+      console.error("initialStats.menuItems:", initialStats.menuItems);
+      console.error("initialStats.revenue:", initialStats.revenue);
+      console.error("initialStats.unpaid:", initialStats.unpaid);
+      console.error("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
+      console.error("⚠️  loadStats will NOT override this count");
+      console.error("═══════════════════════════════════════════════════════════");
       
       // Also log as plain console.log
       console.log("DASHBOARD initialStats COUNT:", initialStats.menuItems, "items");
       return initialStats;
     }
     // If no server data, use defaults - NEVER use cache for stats
-    console.log("[DASHBOARD DATA] ⚠️ No server data, using defaults (menuItems: 0)");
+    console.error("[DASHBOARD DATA] ⚠️ No server data, using defaults (menuItems: 0)");
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
   
@@ -122,21 +116,26 @@ export function useDashboardData(
       const oldCount = stats.menuItems;
       const newCount = initialStats.menuItems;
       
-      // Use console.warn for maximum visibility
-      console.warn("[DASHBOARD DATA] initialStats received from server:", {
+      // Use console.error for maximum visibility
+      console.error("[DASHBOARD DATA] useEffect - initialStats received from server:", {
         old: oldCount,
         new: newCount,
         changed: oldCount !== newCount,
+        fullInitialStats: JSON.stringify(initialStats, null, 2),
       });
       
       // ALWAYS update immediately - this is the source of truth from server
       // Don't let loadStats override this on initial mount
       setStats(initialStats);
       
+      console.error("[DASHBOARD DATA] ✅ setStats called with initialStats.menuItems:", initialStats.menuItems);
+      
       if (oldCount !== newCount) {
-        console.warn("✅ [DASHBOARD DATA] Count updated from server:", oldCount, "→", newCount);
+        console.error("✅ [DASHBOARD DATA] Count updated from server:", oldCount, "→", newCount);
         console.log("DASHBOARD COUNT UPDATE:", oldCount, "→", newCount);
       }
+    } else {
+      console.error("[DASHBOARD DATA] ⚠️ useEffect - No initialStats provided!");
     }
   }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid]); // Depend on values, not object reference
   

@@ -54,14 +54,19 @@ const DashboardClient = React.memo(function DashboardClient({
 }) {
   // IMMEDIATE LOG - runs on every render, before any hooks
   const serverCount = initialStats?.menuItems || 0;
-  console.warn("═══════════════════════════════════════════════════════════");
-  console.warn("🚨 [DASHBOARD CLIENT] Component Rendered");
-  console.warn("═══════════════════════════════════════════════════════════");
-  console.warn("Received from Server (initialStats):", JSON.stringify(initialStats, null, 2));
-  console.warn("Menu Items Count from Server:", serverCount);
-  console.warn("Venue ID:", venueId);
-  console.warn("═══════════════════════════════════════════════════════════");
-  console.log("DASHBOARD RENDER - Server Count:", serverCount);
+  console.error("═══════════════════════════════════════════════════════════");
+  console.error("🚨 [DASHBOARD CLIENT] Component Rendered - WHAT FRONTEND RECEIVES");
+  console.error("═══════════════════════════════════════════════════════════");
+  console.error("initialStats prop (from server):", initialStats);
+  console.error("initialStats?.menuItems:", initialStats?.menuItems);
+  console.error("initialStats?.revenue:", initialStats?.revenue);
+  console.error("initialStats?.unpaid:", initialStats?.unpaid);
+  console.error("Full initialStats JSON:", JSON.stringify(initialStats, null, 2));
+  console.error("Menu Items Count from Server:", serverCount);
+  console.error("Venue ID:", venueId);
+  console.error("⚠️  THIS IS WHAT THE FRONTEND RECEIVED FROM SERVER");
+  console.error("═══════════════════════════════════════════════════════════");
+  console.log("FRONTEND RECEIVED:", { menuItems: serverCount, venueId });
   
   const router = useRouter();
 
