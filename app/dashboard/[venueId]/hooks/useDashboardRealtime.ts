@@ -202,15 +202,28 @@ export function useDashboardRealtime({
             filter: `venue_id=eq.${venueId}`,
           },
           async (_payload: unknown) => {
+            if (!isMountedRef.current) return;
             try {
+              // Normalize venueId for query
+              const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+              
+              // Fetch ALL menu items (not just available) to match dashboard count
               const { data: menuItems } = await supabase
                 .from("menu_items")
                 .select("id")
-                .eq("venue_id", venueId)
-                .eq("is_available", true);
+                .eq("venue_id", normalizedVenueId)
+                .order("created_at", { ascending: false });
 
-              // Update menu items count in parent component
-              // This will be handled by the parent component
+              const count = menuItems?.length || 0;
+
+              // Dispatch custom event for instant updates across all components
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("menuItemsChanged", {
+                    detail: { venueId, count },
+                  })
+                );
+              }
             } catch (_error) {
               // Error silently handled
             }

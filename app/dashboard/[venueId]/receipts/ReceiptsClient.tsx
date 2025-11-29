@@ -31,7 +31,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
   const [todayReceipts, setTodayReceipts] = useState<ReceiptOrder[]>([]);
   const [historyReceipts, setHistoryReceipts] = useState<ReceiptOrder[]>([]);
   const [groupedHistoryReceipts, setGroupedHistoryReceipts] = useState<GroupedReceipts>({});
-  const [loading, setLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState<ReceiptOrder | null>(null);
   const [venueInfo, setVenueInfo] = useState<{
     venue_name?: string;
@@ -45,8 +44,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
 
   const loadReceipts = useCallback(async () => {
     if (!venueId) return;
-
-    setLoading(true);
 
     try {
       const supabase = createClient();
@@ -104,7 +101,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (fetchError) {
-        setLoading(false);
         return;
       }
 
@@ -139,10 +135,8 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         return acc;
       }, {});
       setGroupedHistoryReceipts(grouped);
-
-      setLoading(false);
     } catch (error) {
-      setLoading(false);
+      // Error handled silently - show empty state
     }
   }, [venueId]);
 
@@ -295,17 +289,6 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       </Card>
     );
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading receipts...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
