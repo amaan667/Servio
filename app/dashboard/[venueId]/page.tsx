@@ -119,15 +119,15 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         const tablesInUse = activeSessions?.length || 0;
         const tablesReserved = currentReservations?.length || 0;
         
-        process.stderr.write(`\n[RAILWAY] =================================================\n`);
-        process.stderr.write(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE\n`);
-        process.stderr.write(`[RAILWAY] =================================================\n`);
-        process.stderr.write(`[RAILWAY] Total tables in database: ${totalTables}\n`);
-        process.stderr.write(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}\n`);
-        process.stderr.write(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}\n`);
-        process.stderr.write(`[RAILWAY] Tables reserved now: ${tablesReserved}\n`);
-        process.stderr.write(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}\n`);
-        process.stderr.write(`[RAILWAY] =================================================\n`);
+        console.info(`\n[RAILWAY] =================================================\n`);
+        console.info(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE\n`);
+        console.info(`[RAILWAY] =================================================\n`);
+        console.info(`[RAILWAY] Total tables in database: ${totalTables}\n`);
+        console.info(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}\n`);
+        console.info(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}\n`);
+        console.info(`[RAILWAY] Tables reserved now: ${tablesReserved}\n`);
+        console.info(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}\n`);
+        console.info(`[RAILWAY] =================================================\n`);
         
         initialCounts = {
           ...initialCounts,
