@@ -140,14 +140,17 @@ export function useDashboardData(
   }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid]); // Depend on values, not object reference
   
   // CRITICAL: Mark that we've received initialStats to prevent loadStats from overriding
+  // Initialize immediately if initialStats exists
   const [hasInitialStats, setHasInitialStats] = useState(!!initialStats);
   
+  // Set flag immediately when initialStats is provided
   useEffect(() => {
-    if (initialStats && !hasInitialStats) {
+    if (initialStats) {
       setHasInitialStats(true);
-      console.warn("[DASHBOARD DATA] ✅ Received initialStats from server, will not override with loadStats");
+      console.warn("[DASHBOARD DATA] ✅ Received initialStats from server:", initialStats.menuItems, "items");
+      console.warn("[DASHBOARD DATA] ✅ Flag set: hasInitialStats=true, loadStats will NOT override menuItems");
     }
-  }, [initialStats, hasInitialStats]);
+  }, [initialStats?.menuItems]); // Only depend on menuItems value
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
@@ -173,6 +176,12 @@ export function useDashboardData(
 
   const loadStats = useCallback(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
+      // CRITICAL: If we have initialStats, don't update menuItems - server data is source of truth
+      if (hasInitialStats && initialStats) {
+        console.warn("[DASHBOARD DATA] 🛑 loadStats called but hasInitialStats=true - skipping menuItems query");
+        console.warn("[DASHBOARD DATA] Will only update revenue/unpaid, keeping menuItems:", initialStats.menuItems);
+      }
+      
       try {
         const supabase = createClient();
 
