@@ -15,25 +15,26 @@ export const runtime = "nodejs"; // Ensure Node.js runtime
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
   
-  // IMMEDIATE SERVER-SIDE LOG - Railway will see this
-  // Use both process.stderr.write AND console.error for maximum visibility
-  const startTime = Date.now();
+  // CRITICAL: Log IMMEDIATELY - this MUST appear in Railway
+  // Use multiple methods to ensure visibility
   const timestamp = new Date().toISOString();
   
-  // CRITICAL: Log at the very start - this MUST appear in Railway
-  process.stderr.write(`\n`);
-  process.stderr.write(`[RAILWAY] =================================================\n`);
+  // Method 1: process.stderr.write (Railway captures stderr)
+  process.stderr.write(`\n[RAILWAY] =================================================\n`);
   process.stderr.write(`[RAILWAY] Dashboard Server Component - START\n`);
   process.stderr.write(`[RAILWAY] Venue ID: ${venueId}\n`);
   process.stderr.write(`[RAILWAY] Timestamp: ${timestamp}\n`);
-  process.stderr.write(`[RAILWAY] Process PID: ${process.pid}\n`);
-  process.stderr.write(`[RAILWAY] =================================================\n`);
-  process.stderr.write(`\n`);
+  process.stderr.write(`[RAILWAY] =================================================\n\n`);
   
-  // Also use console.error (Railway captures stderr)
+  // Method 2: console.error (goes to stderr)
+  console.error(`[RAILWAY] =================================================`);
   console.error(`[RAILWAY] Dashboard Server Component - START`);
   console.error(`[RAILWAY] Venue ID: ${venueId}`);
   console.error(`[RAILWAY] Timestamp: ${timestamp}`);
+  console.error(`[RAILWAY] =================================================`);
+  
+  // Method 3: console.warn (also captured)
+  console.warn(`[RAILWAY] Dashboard START - Venue: ${venueId} - Time: ${timestamp}`);
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
@@ -252,22 +253,39 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     };
     
     // LOG: Show what's being passed to client
-    // Use process.stderr.write for guaranteed Railway visibility
-    process.stderr.write(`\n[RAILWAY] =================================================\n`);
-    process.stderr.write(`[RAILWAY] Passing initialStats to Client\n`);
-    process.stderr.write(`[RAILWAY] menuItems count: ${initialStats.menuItems}\n`);
-    process.stderr.write(`[RAILWAY] revenue: ${initialStats.revenue}\n`);
-    process.stderr.write(`[RAILWAY] unpaid: ${initialStats.unpaid}\n`);
-    process.stderr.write(`[RAILWAY] Full initialStats: ${JSON.stringify(initialStats)}\n`);
-    process.stderr.write(`[RAILWAY] =================================================\n`);
-    
-    // Also use console.error and console.log
-    console.error("[RAILWAY] Dashboard Server - Passing to client:", {
+    // Use MULTIPLE logging methods to ensure visibility
+    const finalStats = {
       menuItems: initialStats.menuItems,
       revenue: initialStats.revenue,
       unpaid: initialStats.unpaid,
-    });
-    console.log("[RAILWAY] Dashboard Server - Final menuItems count:", initialStats.menuItems);
+    };
+    
+    // Method 1: process.stderr.write
+    process.stderr.write(`\n[RAILWAY] =================================================\n`);
+    process.stderr.write(`[RAILWAY] ✅ FINAL DATA BEING PASSED TO CLIENT\n`);
+    process.stderr.write(`[RAILWAY] =================================================\n`);
+    process.stderr.write(`[RAILWAY] initialStats.menuItems: ${finalStats.menuItems}\n`);
+    process.stderr.write(`[RAILWAY] initialStats.revenue: £${finalStats.revenue.toFixed(2)}\n`);
+    process.stderr.write(`[RAILWAY] initialStats.unpaid: ${finalStats.unpaid}\n`);
+    process.stderr.write(`[RAILWAY] initialCounts.today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
+    process.stderr.write(`[RAILWAY] initialCounts.tables_set_up: ${initialCounts?.tables_set_up || 0}\n`);
+    process.stderr.write(`[RAILWAY] initialCounts.live_count: ${initialCounts?.live_count || 0}\n`);
+    process.stderr.write(`[RAILWAY] =================================================\n\n`);
+    
+    // Method 2: console.error (multiple lines)
+    console.error(`[RAILWAY] =================================================`);
+    console.error(`[RAILWAY] ✅ FINAL DATA BEING PASSED TO CLIENT`);
+    console.error(`[RAILWAY] =================================================`);
+    console.error(`[RAILWAY] initialStats.menuItems: ${finalStats.menuItems}`);
+    console.error(`[RAILWAY] initialStats.revenue: £${finalStats.revenue.toFixed(2)}`);
+    console.error(`[RAILWAY] initialStats.unpaid: ${finalStats.unpaid}`);
+    console.error(`[RAILWAY] initialCounts.today_orders_count: ${initialCounts?.today_orders_count || 0}`);
+    console.error(`[RAILWAY] initialCounts.tables_set_up: ${initialCounts?.tables_set_up || 0}`);
+    console.error(`[RAILWAY] initialCounts.live_count: ${initialCounts?.live_count || 0}`);
+    console.error(`[RAILWAY] =================================================`);
+    
+    // Method 3: Single line summary (easy to spot)
+    console.error(`[RAILWAY] FINAL COUNTS - Menu: ${finalStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${finalStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}`);
   } catch (error) {
     // Log error to Railway - use process.stderr.write for guaranteed visibility
     const errorMsg = error instanceof Error ? error.message : String(error);
