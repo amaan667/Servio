@@ -268,9 +268,10 @@ export function useDashboardData(
         
         // CRITICAL: If we have initialStats, NEVER override menuItems - server data is source of truth
         // This prevents the 178 vs 181 mismatch on first load
-        if (hasInitialStats && initialStats) {
+        // Note: This code should never run if the early return above works, but keeping as safety check
+        if (initialStats) {
           console.warn("[DASHBOARD DATA] 🛑 loadStats would set menuItems to:", finalMenuItemCount);
-          console.warn("[DASHBOARD DATA] 🛑 But hasInitialStats=true, keeping server count:", initialStats.menuItems);
+          console.warn("[DASHBOARD DATA] 🛑 But initialStats exists, keeping server count:", initialStats.menuItems);
           // Only update revenue and unpaid, ALWAYS keep menuItems from initialStats
           setStats({
             revenue,
