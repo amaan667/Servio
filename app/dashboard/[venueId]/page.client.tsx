@@ -53,37 +53,29 @@ const DashboardClient = React.memo(function DashboardClient({
   initialStats?: DashboardStats;
 }) {
   // IMMEDIATE LOG - runs on every render, before any hooks
-  // Use console.error for Railway visibility (stderr is captured)
+  // Use console.error - ALWAYS visible in browser console
   const serverMenuItems = initialStats?.menuItems || 0;
   const serverRevenue = initialStats?.revenue || 0;
   const serverTables = initialCounts?.tables_set_up || 0;
   const serverOrders = initialCounts?.today_orders_count || 0;
   
+  // CRITICAL: Log immediately - cannot be skipped
   console.error("═══════════════════════════════════════════════════════════");
   console.error("🚨 [DASHBOARD CLIENT] Component Rendered - WHAT FRONTEND RECEIVES");
   console.error("═══════════════════════════════════════════════════════════");
   console.error("Venue ID:", venueId);
-  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.error("📥 RECEIVED FROM SERVER (initialStats):");
   console.error("  menuItems:", serverMenuItems);
   console.error("  revenue: £", serverRevenue.toFixed(2));
   console.error("  unpaid:", initialStats?.unpaid || 0);
-  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.error("📥 RECEIVED FROM SERVER (initialCounts):");
   console.error("  today_orders_count:", serverOrders);
   console.error("  tables_set_up:", serverTables);
   console.error("  live_count:", initialCounts?.live_count || 0);
-  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.error("Full initialStats:", JSON.stringify(initialStats, null, 2));
-  console.error("Full initialCounts:", JSON.stringify(initialCounts, null, 2));
   console.error("═══════════════════════════════════════════════════════════");
-  console.log("FRONTEND RECEIVED:", { 
-    menuItems: serverMenuItems, 
-    revenue: serverRevenue,
-    tables: serverTables,
-    orders: serverOrders,
-    venueId 
-  });
+  
+  // Single line summary for easy spotting
+  console.error(`[FRONTEND RECEIVED] Menu: ${serverMenuItems} | Tables: ${serverTables} | Revenue: £${serverRevenue.toFixed(2)} | Orders: ${serverOrders}`);
   
   const router = useRouter();
 
