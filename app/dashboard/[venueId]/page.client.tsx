@@ -540,7 +540,17 @@ const DashboardClient = React.memo(function DashboardClient({
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
             <EnhancedStatCard
               title="Menu Items"
-              value={dashboardData.stats.menuItems}
+              value={(() => {
+                const displayedValue = dashboardData.stats.menuItems;
+                const serverValue = initialStats?.menuItems || 0;
+                // Log what's actually being displayed
+                if (displayedValue !== serverValue) {
+                  console.error("🚨 [DISPLAY] MISMATCH - Displaying:", displayedValue, "but server sent:", serverValue);
+                } else {
+                  console.log("✅ [DISPLAY] Match - Displaying:", displayedValue, "Server sent:", serverValue);
+                }
+                return displayedValue;
+              })()}
               icon={ShoppingBag}
               iconColor="text-orange-600"
               iconBgColor="bg-orange-100"

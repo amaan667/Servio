@@ -175,9 +175,20 @@ export function useDashboardData(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
       // CRITICAL: If we have initialStats, NEVER update menuItems - server data is source of truth
       // This prevents the 178 vs 181 mismatch on first load
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("🔍 [DASHBOARD DATA] loadStats CALLED");
+      console.error("═══════════════════════════════════════════════════════════");
+      console.error("venueId:", venueId);
+      console.error("initialStats exists:", !!initialStats);
+      console.error("initialStats?.menuItems:", initialStats?.menuItems);
+      console.error("Current stats.menuItems:", stats.menuItems);
+      console.error("Stack trace:", new Error().stack);
+      console.error("═══════════════════════════════════════════════════════════");
+      
       if (initialStats) {
         console.error("[DASHBOARD DATA] 🛑 loadStats called but initialStats exists");
         console.error("[DASHBOARD DATA] 🛑 initialStats.menuItems:", initialStats.menuItems);
+        console.error("[DASHBOARD DATA] 🛑 Current stats.menuItems:", stats.menuItems);
         console.error("[DASHBOARD DATA] 🛑 Skipping menuItems query, keeping server count");
         // Only update revenue and unpaid, NEVER touch menuItems
         try {
