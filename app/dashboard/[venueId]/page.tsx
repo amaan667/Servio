@@ -133,22 +133,27 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const actualMenuItemCount = menuItems?.length || 0;
     
     // DETAILED LOG: Show exactly what was loaded
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("📊 [DASHBOARD SERVER] Menu Items Query Result");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("Venue ID:", venueId);
-    console.log("Normalized Venue ID:", normalizedVenueId);
-    console.log("Query: SELECT id FROM menu_items WHERE venue_id =", normalizedVenueId);
-    console.log("Items Returned (array):", menuItems);
-    console.log("Array Length:", menuItems?.length || 0);
-    console.log("Actual Count (used for stats):", actualMenuItemCount);
-    console.log("Error:", menuError?.message || "None");
-    console.log("Error Code:", menuError?.code || "None");
-    console.log("First 10 Item IDs:", menuItems?.slice(0, 10).map((m) => m.id) || []);
-    console.log("All Item IDs Count:", menuItems?.length || 0);
-    console.log("⚠️  THIS COUNT WILL BE PASSED TO CLIENT");
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("═══════════════════════════════════════════════════════════");
+    // Use console.error for Railway visibility - Railway captures stderr
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("📊 [DASHBOARD SERVER] Menu Items Query Result");
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("Venue ID:", venueId);
+    console.error("Normalized Venue ID:", normalizedVenueId);
+    console.error("Query: SELECT id FROM menu_items WHERE venue_id =", normalizedVenueId);
+    console.error("Items Returned (array):", JSON.stringify(menuItems || [], null, 2));
+    console.error("Array Length:", menuItems?.length || 0);
+    console.error("Actual Count (used for stats):", actualMenuItemCount);
+    console.error("Error:", menuError?.message || "None");
+    console.error("Error Code:", menuError?.code || "None");
+    console.error("First 10 Item IDs:", menuItems?.slice(0, 10).map((m) => m.id) || []);
+    console.error("All Item IDs Count:", menuItems?.length || 0);
+    console.error("⚠️  THIS COUNT WILL BE PASSED TO CLIENT");
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("═══════════════════════════════════════════════════════════");
+    
+    // Also use console.log for stdout (Railway captures both)
+    console.log("[RAILWAY] Dashboard Server - Menu Items Count:", actualMenuItemCount);
+    console.log("[RAILWAY] Dashboard Server - Venue ID:", normalizedVenueId);
 
     if (menuError) {
       logger.error("[DASHBOARD] Error fetching menu items:", {
@@ -170,17 +175,36 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     };
     
     // LOG: Show what's being passed to client
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("📤 [DASHBOARD SERVER] Passing initialStats to Client");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("initialStats:", JSON.stringify(initialStats, null, 2));
-    console.log("menuItems count:", initialStats.menuItems);
-    console.log("revenue:", initialStats.revenue);
-    console.log("unpaid:", initialStats.unpaid);
-    console.log("═══════════════════════════════════════════════════════════");
-  } catch (_error) {
+    // Use console.error for Railway visibility
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("📤 [DASHBOARD SERVER] Passing initialStats to Client");
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("initialStats:", JSON.stringify(initialStats, null, 2));
+    console.error("menuItems count:", initialStats.menuItems);
+    console.error("revenue:", initialStats.revenue);
+    console.error("unpaid:", initialStats.unpaid);
+    console.error("═══════════════════════════════════════════════════════════");
+    
+    // Also use console.log for stdout
+    console.log("[RAILWAY] Dashboard Server - Passing to client:", {
+      menuItems: initialStats.menuItems,
+      revenue: initialStats.revenue,
+      unpaid: initialStats.unpaid,
+    });
+  } catch (error) {
+    // Log error to Railway
+    console.error("[RAILWAY] Dashboard Server - Error:", error instanceof Error ? error.message : String(error));
+    console.error("[RAILWAY] Dashboard Server - Error stack:", error instanceof Error ? error.stack : "No stack");
     // Continue without initial data - client will load it
   }
+
+  // FINAL SERVER-SIDE LOG - Railway will see this
+  console.error("[RAILWAY] =================================================");
+  console.error("[RAILWAY] Dashboard Server Component - END");
+  console.error("[RAILWAY] Final initialStats:", JSON.stringify(initialStats, null, 2));
+  console.error("[RAILWAY] Final menuItems count:", initialStats?.menuItems || 0);
+  console.error("[RAILWAY] =================================================");
+  console.log("[RAILWAY] Dashboard page completed, sending to client");
 
   return (
     <DashboardClient
