@@ -39,9 +39,9 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   // NO REDIRECTS - User requested ZERO sign-in redirects
   // Auth check is optional - client will handle auth display
   // Dashboard ALWAYS loads - client handles authentication
-  process.stdout.write(`[RAILWAY] Starting auth check...\n`);
+  process.stderr.write(`[RAILWAY] Starting auth check...\n`);
   const auth = await requirePageAuth(venueId).catch(() => null);
-  process.stdout.write(`[RAILWAY] Auth check complete\n`);
+  process.stderr.write(`[RAILWAY] Auth check complete\n`);
 
   // STEP 2: Fetch initial dashboard data on server (even without auth)
   // Always fetch data - don't block on auth
@@ -67,19 +67,19 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .single();
 
     if (countsError) {
-      process.stdout.write(`\n[RAILWAY] ❌ ERROR fetching dashboard_counts: ${countsError.message}\n`);
+      process.stderr.write(`\n[RAILWAY] ❌ ERROR fetching dashboard_counts: ${countsError.message}\n`);
     } else {
       initialCounts = countsData as DashboardCounts;
-      process.stdout.write(`\n[RAILWAY] =================================================\n`);
-      process.stdout.write(`[RAILWAY] 📊 DASHBOARD COUNTS FROM DATABASE (RPC)\n`);
-      process.stdout.write(`[RAILWAY] =================================================\n`);
-      process.stdout.write(`[RAILWAY] Venue ID: ${normalizedVenueId}\n`);
-      process.stdout.write(`[RAILWAY] live_count: ${initialCounts?.live_count || 0}\n`);
-      process.stdout.write(`[RAILWAY] earlier_today_count: ${initialCounts?.earlier_today_count || 0}\n`);
-      process.stdout.write(`[RAILWAY] history_count: ${initialCounts?.history_count || 0}\n`);
-      process.stdout.write(`[RAILWAY] today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
-      process.stdout.write(`[RAILWAY] active_tables_count: ${initialCounts?.active_tables_count || 0}\n`);
-      process.stdout.write(`[RAILWAY] =================================================\n`);
+      process.stderr.write(`\n[RAILWAY] =================================================\n`);
+      process.stderr.write(`[RAILWAY] 📊 DASHBOARD COUNTS FROM DATABASE (RPC)\n`);
+      process.stderr.write(`[RAILWAY] =================================================\n`);
+      process.stderr.write(`[RAILWAY] Venue ID: ${normalizedVenueId}\n`);
+      process.stderr.write(`[RAILWAY] live_count: ${initialCounts?.live_count || 0}\n`);
+      process.stderr.write(`[RAILWAY] earlier_today_count: ${initialCounts?.earlier_today_count || 0}\n`);
+      process.stderr.write(`[RAILWAY] history_count: ${initialCounts?.history_count || 0}\n`);
+      process.stderr.write(`[RAILWAY] today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
+      process.stderr.write(`[RAILWAY] active_tables_count: ${initialCounts?.active_tables_count || 0}\n`);
+      process.stderr.write(`[RAILWAY] =================================================\n`);
     }
 
     // Fetch REAL table counts directly from tables table (no RPC, no caching)
@@ -130,15 +130,15 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         const tablesInUse = activeSessions?.length || 0;
         const tablesReserved = currentReservations?.length || 0;
         
-        process.stdout.write(`\n[RAILWAY] =================================================\n`);
-        process.stdout.write(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE\n`);
-        process.stdout.write(`[RAILWAY] =================================================\n`);
-        process.stdout.write(`[RAILWAY] Total tables in database: ${totalTables}\n`);
-        process.stdout.write(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}\n`);
-        process.stdout.write(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}\n`);
-        process.stdout.write(`[RAILWAY] Tables reserved now: ${tablesReserved}\n`);
-        process.stdout.write(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}\n`);
-        process.stdout.write(`[RAILWAY] =================================================\n`);
+        process.stderr.write(`\n[RAILWAY] =================================================\n`);
+        process.stderr.write(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE\n`);
+        process.stderr.write(`[RAILWAY] =================================================\n`);
+        process.stderr.write(`[RAILWAY] Total tables in database: ${totalTables}\n`);
+        process.stderr.write(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}\n`);
+        process.stderr.write(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}\n`);
+        process.stderr.write(`[RAILWAY] Tables reserved now: ${tablesReserved}\n`);
+        process.stderr.write(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}\n`);
+        process.stderr.write(`[RAILWAY] =================================================\n`);
         
         initialCounts = {
           ...initialCounts,
@@ -167,15 +167,15 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
       const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
       
-      process.stdout.write(`\n[RAILWAY] =================================================\n`);
-      process.stdout.write(`[RAILWAY] 💰 REVENUE & ORDERS DATA FROM DATABASE\n`);
-      process.stdout.write(`[RAILWAY] =================================================\n`);
-      process.stdout.write(`[RAILWAY] Time Window: ${window.startUtcISO} to ${window.endUtcISO}\n`);
-      process.stdout.write(`[RAILWAY] Total orders in time window: ${totalOrders}\n`);
-      process.stdout.write(`[RAILWAY] Total revenue: £${revenue.toFixed(2)}\n`);
-      process.stdout.write(`[RAILWAY] Unpaid orders: ${unpaid}\n`);
-      process.stdout.write(`[RAILWAY] ⚠️  THIS IS THE ACTUAL REVENUE FROM DATABASE: £${revenue.toFixed(2)}\n`);
-      process.stdout.write(`[RAILWAY] =================================================\n`);
+      process.stderr.write(`\n[RAILWAY] =================================================\n`);
+      process.stderr.write(`[RAILWAY] 💰 REVENUE & ORDERS DATA FROM DATABASE\n`);
+      process.stderr.write(`[RAILWAY] =================================================\n`);
+      process.stderr.write(`[RAILWAY] Time Window: ${window.startUtcISO} to ${window.endUtcISO}\n`);
+      process.stderr.write(`[RAILWAY] Total orders in time window: ${totalOrders}\n`);
+      process.stderr.write(`[RAILWAY] Total revenue: £${revenue.toFixed(2)}\n`);
+      process.stderr.write(`[RAILWAY] Unpaid orders: ${unpaid}\n`);
+      process.stderr.write(`[RAILWAY] ⚠️  THIS IS THE ACTUAL REVENUE FROM DATABASE: £${revenue.toFixed(2)}\n`);
+      process.stderr.write(`[RAILWAY] =================================================\n`);
     }
 
     // Count ALL menu items (not just available) to match menu management count
@@ -196,15 +196,15 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // The count query can be inconsistent, so always use the actual items returned
     const actualMenuItemCount = menuItems?.length || 0;
     
-    process.stdout.write(`\n[RAILWAY] =================================================\n`);
-    process.stdout.write(`[RAILWAY] 🍽️  MENU ITEMS DATA FROM DATABASE\n`);
-    process.stdout.write(`[RAILWAY] =================================================\n`);
-    process.stdout.write(`[RAILWAY] Query: SELECT id FROM menu_items WHERE venue_id = '${normalizedVenueId}' ORDER BY created_at DESC\n`);
-    process.stdout.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
-    process.stdout.write(`[RAILWAY] Items returned (array length): ${actualMenuItemCount}\n`);
-    process.stdout.write(`[RAILWAY] Error: ${menuError?.message || "None"}\n`);
-    process.stdout.write(`[RAILWAY] ⚠️  THIS IS THE ACTUAL COUNT FROM DATABASE: ${actualMenuItemCount}\n`);
-    process.stdout.write(`[RAILWAY] =================================================\n`);
+    process.stderr.write(`\n[RAILWAY] =================================================\n`);
+    process.stderr.write(`[RAILWAY] 🍽️  MENU ITEMS DATA FROM DATABASE\n`);
+    process.stderr.write(`[RAILWAY] =================================================\n`);
+    process.stderr.write(`[RAILWAY] Query: SELECT id FROM menu_items WHERE venue_id = '${normalizedVenueId}' ORDER BY created_at DESC\n`);
+    process.stderr.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
+    process.stderr.write(`[RAILWAY] Items returned (array length): ${actualMenuItemCount}\n`);
+    process.stderr.write(`[RAILWAY] Error: ${menuError?.message || "None"}\n`);
+    process.stderr.write(`[RAILWAY] ⚠️  THIS IS THE ACTUAL COUNT FROM DATABASE: ${actualMenuItemCount}\n`);
+    process.stderr.write(`[RAILWAY] =================================================\n`);
     
     // LOG: Query execution details
     process.stdout.write(`\n[RAILWAY] Menu Items Query Executed\n`);
@@ -281,17 +281,15 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
   // FINAL SERVER-SIDE LOG - Railway will see this
   const finalCount = initialStats?.menuItems || 0;
-  process.stdout.write(`\n`);
-  process.stdout.write(`[RAILWAY] =================================================\n`);
-  process.stdout.write(`[RAILWAY] Dashboard Server Component - END\n`);
-  process.stdout.write(`[RAILWAY] Final menuItems count: ${finalCount}\n`);
-  process.stdout.write(`[RAILWAY] Final revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}\n`);
-  process.stdout.write(`[RAILWAY] Final tables_set_up: ${initialCounts?.tables_set_up || 0}\n`);
-  process.stdout.write(`[RAILWAY] Final today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
-  process.stdout.write(`[RAILWAY] Final initialStats: ${JSON.stringify(initialStats, null, 2)}\n`);
-  process.stdout.write(`[RAILWAY] Final initialCounts: ${JSON.stringify(initialCounts, null, 2)}\n`);
-  process.stdout.write(`[RAILWAY] =================================================\n`);
-  process.stdout.write(`\n`);
+  process.stderr.write(`\n[RAILWAY] =================================================\n`);
+  process.stderr.write(`[RAILWAY] Dashboard Server Component - END\n`);
+  process.stderr.write(`[RAILWAY] Final menuItems count: ${finalCount}\n`);
+  process.stderr.write(`[RAILWAY] Final revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}\n`);
+  process.stderr.write(`[RAILWAY] Final tables_set_up: ${initialCounts?.tables_set_up || 0}\n`);
+  process.stderr.write(`[RAILWAY] Final today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
+  process.stderr.write(`[RAILWAY] Final initialStats: ${JSON.stringify(initialStats, null, 2)}\n`);
+  process.stderr.write(`[RAILWAY] Final initialCounts: ${JSON.stringify(initialCounts, null, 2)}\n`);
+  process.stderr.write(`[RAILWAY] =================================================\n\n`);
 
   console.error("[RAILWAY] Dashboard Server Component - END");
   console.error("[RAILWAY] Final menuItems count:", finalCount);
