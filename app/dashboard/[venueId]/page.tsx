@@ -34,11 +34,6 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   console.error(`[RAILWAY] Dashboard Server Component - START`);
   console.error(`[RAILWAY] Venue ID: ${venueId}`);
   console.error(`[RAILWAY] Timestamp: ${timestamp}`);
-  
-  // Force flush
-  if (process.stdout.isTTY) {
-    process.stdout.flush?.();
-  }
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
