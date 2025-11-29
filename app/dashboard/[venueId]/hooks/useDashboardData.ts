@@ -197,11 +197,13 @@ export function useDashboardData(
           const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
 
           // ONLY update revenue and unpaid, NEVER menuItems
-          setStats({
-            revenue,
-            menuItems: initialStats.menuItems, // ALWAYS keep server-provided count
-            unpaid,
-          });
+          if (initialStats) {
+            setStats({
+              revenue,
+              menuItems: initialStats.menuItems, // ALWAYS keep server-provided count
+              unpaid,
+            });
+          }
         } catch (_error) {
           // Error handled silently
         }
