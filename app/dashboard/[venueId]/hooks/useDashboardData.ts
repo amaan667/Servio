@@ -174,6 +174,40 @@ export function useDashboardData(
 
   const loadStats = useCallback(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
+      // CRITICAL: If we have initialStats, NEVER update menuItems - server data is source of truth
+      // This prevents the 178 vs 181 mismatch on first load
+      if (initialStats) {
+        console.warn("[DASHBOARD DATA] 🛑 loadStats called but initialStats exists - skipping menuItems query");
+        console.warn("[DASHBOARD DATA] 🛑 Will only update revenue/unpaid, keeping menuItems:", initialStats.menuItems);
+        // Only update revenue and unpaid, NEVER touch menuItems
+        try {
+          const supabase = createClient();
+          const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+          
+          const { data: orders } = await supabase
+            .from("orders")
+            .select("total_amount, order_status, payment_status")
+            .eq("venue_id", normalizedVenueId)
+            .gte("created_at", window.startUtcISO)
+            .lt("created_at", window.endUtcISO)
+            .neq("order_status", "CANCELLED")
+            .neq("order_status", "REFUNDED");
+
+          const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+          const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
+
+          // ONLY update revenue and unpaid, NEVER menuItems
+          setStats({
+            revenue,
+            menuItems: initialStats.menuItems, // ALWAYS keep server-provided count
+            unpaid,
+          });
+        } catch (_error) {
+          // Error handled silently
+        }
+        return; // Early return - don't run the menu items query
+      }
+      
       try {
         const supabase = createClient();
 
