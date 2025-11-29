@@ -54,8 +54,14 @@ const DashboardClient = React.memo(function DashboardClient({
 }) {
   // IMMEDIATE LOG - runs on every render, before any hooks
   const serverCount = initialStats?.menuItems || 0;
-  console.warn("🚨 DASHBOARD RENDER - Menu Items Count:", serverCount);
-  console.log("DASHBOARD RENDER COUNT:", serverCount);
+  console.warn("═══════════════════════════════════════════════════════════");
+  console.warn("🚨 [DASHBOARD CLIENT] Component Rendered");
+  console.warn("═══════════════════════════════════════════════════════════");
+  console.warn("Received from Server (initialStats):", JSON.stringify(initialStats, null, 2));
+  console.warn("Menu Items Count from Server:", serverCount);
+  console.warn("Venue ID:", venueId);
+  console.warn("═══════════════════════════════════════════════════════════");
+  console.log("DASHBOARD RENDER - Server Count:", serverCount);
   
   const router = useRouter();
 
@@ -109,27 +115,44 @@ const DashboardClient = React.memo(function DashboardClient({
     const clientCount = dashboardData.stats.menuItems;
     const matches = serverCount === clientCount;
     
-    // Use console.warn and console.error for maximum visibility
+    // DETAILED LOG: Show exactly what's being displayed
     console.warn("═══════════════════════════════════════════════════════════");
-    console.warn("📊 [DASHBOARD CLIENT LOADED] - MENU ITEMS COUNT");
+    console.warn("📊 [DASHBOARD CLIENT] useEffect - Full Count Details");
     console.warn("═══════════════════════════════════════════════════════════");
     console.warn("Venue ID:", venueId);
-    console.warn("Server Count (initialStats.menuItems):", serverCount);
-    console.warn("Client Count (dashboardData.stats.menuItems):", clientCount);
-    console.warn("Match:", matches ? "✅ YES" : "❌ NO");
-    console.warn("Displayed Value:", dashboardData.stats.menuItems);
+    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.warn("📥 RECEIVED FROM SERVER:");
+    console.warn("  initialStats object:", JSON.stringify(initialStats, null, 2));
+    console.warn("  initialStats.menuItems:", serverCount);
+    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.warn("📊 CLIENT STATE:");
+    console.warn("  dashboardData.stats object:", JSON.stringify(dashboardData.stats, null, 2));
+    console.warn("  dashboardData.stats.menuItems:", clientCount);
+    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.warn("🖥️  DISPLAYED VALUE:");
+    console.warn("  Value shown on dashboard card:", dashboardData.stats.menuItems);
+    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.warn("✅ COMPARISON:");
+    console.warn("  Server count:", serverCount);
+    console.warn("  Client count:", clientCount);
+    console.warn("  Match:", matches ? "✅ YES" : "❌ NO");
+    console.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.warn("Timestamp:", new Date().toISOString());
     console.warn("═══════════════════════════════════════════════════════════");
     
     if (!matches) {
-      console.error("❌ MISMATCH! Server:", serverCount, "Client:", clientCount);
+      console.error("❌ MISMATCH DETECTED!");
+      console.error("  Server says:", serverCount);
+      console.error("  Client shows:", clientCount);
+      console.error("  Difference:", Math.abs(serverCount - clientCount));
     }
     
-    // Also log as plain console.log
-    console.log("DASHBOARD COUNT:", {
+    // Also log as plain console.log for easy filtering
+    console.log("DASHBOARD COUNT SUMMARY:", {
       server: serverCount,
       client: clientCount,
       displayed: dashboardData.stats.menuItems,
+      match: matches,
       venueId,
     });
   }, [venueId, initialStats?.menuItems, dashboardData.stats.menuItems]);

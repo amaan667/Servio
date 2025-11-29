@@ -131,6 +131,24 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Use actual array length - it's the source of truth
     // The count query can be inconsistent, so always use the actual items returned
     const actualMenuItemCount = menuItems?.length || 0;
+    
+    // DETAILED LOG: Show exactly what was loaded
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📊 [DASHBOARD SERVER] Menu Items Query Result");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Venue ID:", venueId);
+    console.log("Normalized Venue ID:", normalizedVenueId);
+    console.log("Query: SELECT id FROM menu_items WHERE venue_id =", normalizedVenueId);
+    console.log("Items Returned (array):", menuItems);
+    console.log("Array Length:", menuItems?.length || 0);
+    console.log("Actual Count (used for stats):", actualMenuItemCount);
+    console.log("Error:", menuError?.message || "None");
+    console.log("Error Code:", menuError?.code || "None");
+    console.log("First 10 Item IDs:", menuItems?.slice(0, 10).map((m) => m.id) || []);
+    console.log("All Item IDs Count:", menuItems?.length || 0);
+    console.log("⚠️  THIS COUNT WILL BE PASSED TO CLIENT");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("═══════════════════════════════════════════════════════════");
 
     if (menuError) {
       logger.error("[DASHBOARD] Error fetching menu items:", {
@@ -150,6 +168,16 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       menuItems: actualMenuItemCount, // Use actual array length, not count query
       unpaid,
     };
+    
+    // LOG: Show what's being passed to client
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📤 [DASHBOARD SERVER] Passing initialStats to Client");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("initialStats:", JSON.stringify(initialStats, null, 2));
+    console.log("menuItems count:", initialStats.menuItems);
+    console.log("revenue:", initialStats.revenue);
+    console.log("unpaid:", initialStats.unpaid);
+    console.log("═══════════════════════════════════════════════════════════");
   } catch (_error) {
     // Continue without initial data - client will load it
   }

@@ -208,6 +208,15 @@ export function useDashboardData(
           menuItems: finalMenuItemCount, // Use the count from count query
           unpaid,
         };
+        
+        // LOG: Show what stats are being set
+        console.warn("═══════════════════════════════════════════════════════════");
+        console.warn("📝 [DASHBOARD DATA] Setting New Stats");
+        console.warn("═══════════════════════════════════════════════════════════");
+        console.warn("newStats object:", JSON.stringify(newStats, null, 2));
+        console.warn("newStats.menuItems:", newStats.menuItems);
+        console.warn("⚠️  This will update the displayed count");
+        console.warn("═══════════════════════════════════════════════════════════");
 
         setStats(newStats);
 
