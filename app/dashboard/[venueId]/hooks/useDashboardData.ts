@@ -171,16 +171,6 @@ export function useDashboardData(
     }
   }, [venueId, initialCounts, initialStats]); // Run when initial data changes
 
-  // CRITICAL: Mark that we've received initialStats to prevent loadStats from overriding
-  const [hasInitialStats, setHasInitialStats] = useState(!!initialStats);
-  
-  useEffect(() => {
-    if (initialStats && !hasInitialStats) {
-      setHasInitialStats(true);
-      console.warn("[DASHBOARD DATA] ✅ Received initialStats from server, will not override with loadStats");
-    }
-  }, [initialStats, hasInitialStats]);
-
   const loadStats = useCallback(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
       try {
