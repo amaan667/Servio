@@ -526,7 +526,7 @@ const DashboardClient = React.memo(function DashboardClient({
           <Link href={`/dashboard/${venueId}/tables`} className="block">
             <EnhancedStatCard
               title="Tables Set Up"
-              value={dashboardData.counts.tables_set_up}
+              value={initialCounts?.tables_set_up ?? dashboardData.counts.tables_set_up ?? 0}
               icon={Table}
               iconColor="text-purple-600"
               iconBgColor="bg-purple-100"
@@ -540,17 +540,7 @@ const DashboardClient = React.memo(function DashboardClient({
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
             <EnhancedStatCard
               title="Menu Items"
-              value={(() => {
-                const displayedValue = dashboardData.stats.menuItems;
-                const serverValue = initialStats?.menuItems || 0;
-                // Log what's actually being displayed
-                if (displayedValue !== serverValue) {
-                  console.error("🚨 [DISPLAY] MISMATCH - Displaying:", displayedValue, "but server sent:", serverValue);
-                } else {
-                  console.log("✅ [DISPLAY] Match - Displaying:", displayedValue, "Server sent:", serverValue);
-                }
-                return displayedValue;
-              })()}
+              value={initialStats?.menuItems ?? dashboardData.stats.menuItems ?? 0}
               icon={ShoppingBag}
               iconColor="text-orange-600"
               iconBgColor="bg-orange-100"
@@ -567,9 +557,10 @@ const DashboardClient = React.memo(function DashboardClient({
           <AIInsights
             venueId={venueId}
             stats={{
-              revenue: dashboardData.stats.revenue,
-              menuItems: dashboardData.stats.menuItems,
-              todayOrdersCount: dashboardData.counts.today_orders_count,
+              revenue: dashboardData.stats.revenue || 0,
+              // Always use server value if available, fallback to client state
+              menuItems: initialStats?.menuItems ?? dashboardData.stats.menuItems ?? 0,
+              todayOrdersCount: dashboardData.counts.today_orders_count || 0,
             }}
             topSellingItems={analyticsData.data?.topSellingItems}
             yesterdayComparison={analyticsData.data?.yesterdayComparison}
