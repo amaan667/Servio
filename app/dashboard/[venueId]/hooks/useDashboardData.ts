@@ -176,8 +176,9 @@ export function useDashboardData(
       // CRITICAL: If we have initialStats, NEVER update menuItems - server data is source of truth
       // This prevents the 178 vs 181 mismatch on first load
       if (initialStats) {
-        console.warn("[DASHBOARD DATA] 🛑 loadStats called but initialStats exists - skipping menuItems query");
-        console.warn("[DASHBOARD DATA] 🛑 Will only update revenue/unpaid, keeping menuItems:", initialStats.menuItems);
+        console.error("[DASHBOARD DATA] 🛑 loadStats called but initialStats exists");
+        console.error("[DASHBOARD DATA] 🛑 initialStats.menuItems:", initialStats.menuItems);
+        console.error("[DASHBOARD DATA] 🛑 Skipping menuItems query, keeping server count");
         // Only update revenue and unpaid, NEVER touch menuItems
         try {
           const supabase = createClient();
@@ -196,13 +197,13 @@ export function useDashboardData(
           const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
 
           // ONLY update revenue and unpaid, NEVER menuItems
-          if (initialStats) {
-            setStats({
-              revenue,
-              menuItems: initialStats.menuItems, // ALWAYS keep server-provided count
-              unpaid,
-            });
-          }
+          console.error("[DASHBOARD DATA] 🛑 Updating stats - keeping menuItems:", initialStats.menuItems);
+          setStats({
+            revenue,
+            menuItems: initialStats.menuItems, // ALWAYS keep server-provided count
+            unpaid,
+          });
+          console.error("[DASHBOARD DATA] 🛑 Stats updated - menuItems preserved:", initialStats.menuItems);
         } catch (_error) {
           // Error handled silently
         }
