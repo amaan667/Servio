@@ -59,14 +59,18 @@ export function useDashboardData(
   const [counts, setCounts] = useState<DashboardCounts>(() => {
     // ALWAYS prefer server data - it's guaranteed fresh
     if (initialCounts) {
-      console.log("[DASHBOARD DATA] ✅ Initializing counts with server data:", initialCounts);
+      console.error("[DASHBOARD DATA] ✅ Initializing counts state with server data:");
+      console.error("  today_orders_count:", initialCounts.today_orders_count);
+      console.error("  tables_set_up:", initialCounts.tables_set_up);
+      console.error("  live_count:", initialCounts.live_count);
+      console.error("  Full initialCounts:", JSON.stringify(initialCounts, null, 2));
       return initialCounts;
     }
     
     // Fallback to cache only if no server data
     const cached = getCachedCounts(venueId);
     if (cached) {
-      console.log("[DASHBOARD DATA] ⚠️ No server data, using cached counts:", cached);
+      console.error("[DASHBOARD DATA] ⚠️ No server data, using cached counts:", cached);
       return {
         live_count: cached.live_count || 0,
         earlier_today_count: cached.earlier_today_count || 0,
@@ -79,7 +83,7 @@ export function useDashboardData(
       };
     }
     
-    console.log("[DASHBOARD DATA] ⚠️ No server data or cache, using defaults");
+    console.error("[DASHBOARD DATA] ⚠️ No server data or cache, using defaults (all 0)");
     return {
       live_count: 0,
       earlier_today_count: 0,

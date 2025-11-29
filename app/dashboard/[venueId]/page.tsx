@@ -65,9 +65,19 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .single();
 
     if (countsError) {
-      /* Empty */
+      process.stdout.write(`\n[RAILWAY] ❌ ERROR fetching dashboard_counts: ${countsError.message}\n`);
     } else {
       initialCounts = countsData as DashboardCounts;
+      process.stdout.write(`\n[RAILWAY] =================================================\n`);
+      process.stdout.write(`[RAILWAY] 📊 DASHBOARD COUNTS FROM DATABASE (RPC)\n`);
+      process.stdout.write(`[RAILWAY] =================================================\n`);
+      process.stdout.write(`[RAILWAY] Venue ID: ${normalizedVenueId}\n`);
+      process.stdout.write(`[RAILWAY] live_count: ${initialCounts?.live_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] earlier_today_count: ${initialCounts?.earlier_today_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] history_count: ${initialCounts?.history_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] active_tables_count: ${initialCounts?.active_tables_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] =================================================\n`);
     }
 
     // Fetch REAL table counts directly from tables table (no RPC, no caching)
@@ -114,11 +124,25 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       // Merge real counts into initialCounts
       if (initialCounts) {
         const activeTables = allTables?.filter((t) => t.is_active) || [];
+        const totalTables = allTables?.length || 0;
+        const tablesInUse = activeSessions?.length || 0;
+        const tablesReserved = currentReservations?.length || 0;
+        
+        process.stdout.write(`\n[RAILWAY] =================================================\n`);
+        process.stdout.write(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE\n`);
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+        process.stdout.write(`[RAILWAY] Total tables in database: ${totalTables}\n`);
+        process.stdout.write(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}\n`);
+        process.stdout.write(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}\n`);
+        process.stdout.write(`[RAILWAY] Tables reserved now: ${tablesReserved}\n`);
+        process.stdout.write(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}\n`);
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+        
         initialCounts = {
           ...initialCounts,
           tables_set_up: activeTables.length, // Real count from tables table
-          tables_in_use: activeSessions?.length || 0, // Real count from table_sessions
-          tables_reserved_now: currentReservations?.length || 0, // Real count from reservations
+          tables_in_use: tablesInUse, // Real count from table_sessions
+          tables_reserved_now: tablesReserved, // Real count from reservations
           active_tables_count: activeTables.length, // Same as tables_set_up
         };
       }
@@ -135,9 +159,21 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .neq("order_status", "REFUNDED");
 
     if (ordersError) {
-      /* Empty */
+      process.stdout.write(`\n[RAILWAY] ❌ ERROR fetching orders: ${ordersError.message}\n`);
     } else {
-      // Intentionally empty
+      const totalOrders = orders?.length || 0;
+      const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+      const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
+      
+      process.stdout.write(`\n[RAILWAY] =================================================\n`);
+      process.stdout.write(`[RAILWAY] 💰 REVENUE & ORDERS DATA FROM DATABASE\n`);
+      process.stdout.write(`[RAILWAY] =================================================\n`);
+      process.stdout.write(`[RAILWAY] Time Window: ${window.startUtcISO} to ${window.endUtcISO}\n`);
+      process.stdout.write(`[RAILWAY] Total orders in time window: ${totalOrders}\n`);
+      process.stdout.write(`[RAILWAY] Total revenue: £${revenue.toFixed(2)}\n`);
+      process.stdout.write(`[RAILWAY] Unpaid orders: ${unpaid}\n`);
+      process.stdout.write(`[RAILWAY] ⚠️  THIS IS THE ACTUAL REVENUE FROM DATABASE: £${revenue.toFixed(2)}\n`);
+      process.stdout.write(`[RAILWAY] =================================================\n`);
     }
 
     // Count ALL menu items (not just available) to match menu management count
@@ -157,6 +193,16 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Use actual array length - it's the source of truth
     // The count query can be inconsistent, so always use the actual items returned
     const actualMenuItemCount = menuItems?.length || 0;
+    
+    process.stdout.write(`\n[RAILWAY] =================================================\n`);
+    process.stdout.write(`[RAILWAY] 🍽️  MENU ITEMS DATA FROM DATABASE\n`);
+    process.stdout.write(`[RAILWAY] =================================================\n`);
+    process.stdout.write(`[RAILWAY] Query: SELECT id FROM menu_items WHERE venue_id = '${normalizedVenueId}' ORDER BY created_at DESC\n`);
+    process.stdout.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
+    process.stdout.write(`[RAILWAY] Items returned (array length): ${actualMenuItemCount}\n`);
+    process.stdout.write(`[RAILWAY] Error: ${menuError?.message || "None"}\n`);
+    process.stdout.write(`[RAILWAY] ⚠️  THIS IS THE ACTUAL COUNT FROM DATABASE: ${actualMenuItemCount}\n`);
+    process.stdout.write(`[RAILWAY] =================================================\n`);
     
     // LOG: Query execution details
     process.stdout.write(`\n[RAILWAY] Menu Items Query Executed\n`);
