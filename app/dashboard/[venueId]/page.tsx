@@ -14,6 +14,13 @@ export const runtime = "nodejs"; // Ensure Node.js runtime
 
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
+  
+  // IMMEDIATE SERVER-SIDE LOG - Railway will see this
+  process.stdout.write(`\n[RAILWAY] =================================================\n`);
+  process.stdout.write(`[RAILWAY] Dashboard Server Component - START\n`);
+  process.stdout.write(`[RAILWAY] Venue ID: ${venueId}\n`);
+  process.stdout.write(`[RAILWAY] Timestamp: ${new Date().toISOString()}\n`);
+  process.stdout.write(`[RAILWAY] =================================================\n`);
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
