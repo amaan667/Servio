@@ -97,12 +97,13 @@ export function useDashboardData(
       };
       // Use console.warn for maximum visibility
       console.warn("═══════════════════════════════════════════════════════════");
-      console.warn("[DASHBOARD DATA] Using initialStats from server");
+      console.warn("[DASHBOARD DATA] ✅ INITIALIZING with initialStats from server");
       console.warn("═══════════════════════════════════════════════════════════");
       console.warn("Menu Items Count:", initialStats.menuItems);
       console.warn("Revenue:", initialStats.revenue);
       console.warn("Unpaid:", initialStats.unpaid);
       console.warn("⚠️  This menuItems count will be displayed:", initialStats.menuItems);
+      console.warn("⚠️  loadStats will NOT override this count");
       console.warn("═══════════════════════════════════════════════════════════");
       
       // Also log as plain console.log
