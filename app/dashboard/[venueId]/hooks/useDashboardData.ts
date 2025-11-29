@@ -266,30 +266,17 @@ export function useDashboardData(
           unpaid,
         };
         
-        // CRITICAL: If we have initialStats, NEVER override menuItems - server data is source of truth
-        // This prevents the 178 vs 181 mismatch on first load
-        // Note: This code should never run if the early return above works, but keeping as safety check
-        if (initialStats) {
-          console.warn("[DASHBOARD DATA] 🛑 loadStats would set menuItems to:", finalMenuItemCount);
-          console.warn("[DASHBOARD DATA] 🛑 But initialStats exists, keeping server count:", initialStats.menuItems);
-          // Only update revenue and unpaid, ALWAYS keep menuItems from initialStats
-          setStats({
-            revenue,
-            menuItems: initialStats.menuItems, // ALWAYS keep server-provided count
-            unpaid,
-          });
-        } else {
-          // LOG: Show what stats are being set
-          console.warn("═══════════════════════════════════════════════════════════");
-          console.warn("📝 [DASHBOARD DATA] Setting New Stats");
-          console.warn("═══════════════════════════════════════════════════════════");
-          console.warn("newStats object:", JSON.stringify(newStats, null, 2));
-          console.warn("newStats.menuItems:", newStats.menuItems);
-          console.warn("⚠️  This will update the displayed count");
-          console.warn("═══════════════════════════════════════════════════════════");
+        // LOG: Show what stats are being set
+        // Note: This code only runs if initialStats doesn't exist (early return above prevents this)
+        console.warn("═══════════════════════════════════════════════════════════");
+        console.warn("📝 [DASHBOARD DATA] Setting New Stats (no initialStats)");
+        console.warn("═══════════════════════════════════════════════════════════");
+        console.warn("newStats object:", JSON.stringify(newStats, null, 2));
+        console.warn("newStats.menuItems:", newStats.menuItems);
+        console.warn("⚠️  This will update the displayed count");
+        console.warn("═══════════════════════════════════════════════════════════");
 
-          setStats(newStats);
-        }
+        setStats(newStats);
 
         // Cache the stats to prevent flicker - IMPORTANT: Key includes venueId
         if (typeof window !== "undefined") {
