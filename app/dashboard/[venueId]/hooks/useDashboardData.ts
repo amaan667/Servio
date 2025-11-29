@@ -230,16 +230,29 @@ export function useDashboardData(
           unpaid,
         };
         
-        // LOG: Show what stats are being set
-        console.warn("═══════════════════════════════════════════════════════════");
-        console.warn("📝 [DASHBOARD DATA] Setting New Stats");
-        console.warn("═══════════════════════════════════════════════════════════");
-        console.warn("newStats object:", JSON.stringify(newStats, null, 2));
-        console.warn("newStats.menuItems:", newStats.menuItems);
-        console.warn("⚠️  This will update the displayed count");
-        console.warn("═══════════════════════════════════════════════════════════");
+        // CRITICAL: If we have initialStats, NEVER override menuItems - server data is source of truth
+        // This prevents the 178 vs 181 mismatch on first load
+        if (hasInitialStats && initialStats) {
+          console.warn("[DASHBOARD DATA] 🛑 loadStats would set menuItems to:", finalMenuItemCount);
+          console.warn("[DASHBOARD DATA] 🛑 But hasInitialStats=true, keeping server count:", initialStats.menuItems);
+          // Only update revenue and unpaid, ALWAYS keep menuItems from initialStats
+          setStats({
+            revenue,
+            menuItems: initialStats.menuItems, // ALWAYS keep server-provided count
+            unpaid,
+          });
+        } else {
+          // LOG: Show what stats are being set
+          console.warn("═══════════════════════════════════════════════════════════");
+          console.warn("📝 [DASHBOARD DATA] Setting New Stats");
+          console.warn("═══════════════════════════════════════════════════════════");
+          console.warn("newStats object:", JSON.stringify(newStats, null, 2));
+          console.warn("newStats.menuItems:", newStats.menuItems);
+          console.warn("⚠️  This will update the displayed count");
+          console.warn("═══════════════════════════════════════════════════════════");
 
-        setStats(newStats);
+          setStats(newStats);
+        }
 
         // Cache the stats to prevent flicker - IMPORTANT: Key includes venueId
         if (typeof window !== "undefined") {
