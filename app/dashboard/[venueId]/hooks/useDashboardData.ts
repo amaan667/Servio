@@ -176,12 +176,6 @@ export function useDashboardData(
 
   const loadStats = useCallback(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
-      // CRITICAL: If we have initialStats, don't update menuItems - server data is source of truth
-      if (hasInitialStats && initialStats) {
-        console.warn("[DASHBOARD DATA] 🛑 loadStats called but hasInitialStats=true - skipping menuItems query");
-        console.warn("[DASHBOARD DATA] Will only update revenue/unpaid, keeping menuItems:", initialStats.menuItems);
-      }
-      
       try {
         const supabase = createClient();
 
