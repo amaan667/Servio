@@ -54,11 +54,19 @@ export function useDashboardData(
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(false); // Start with false - we have initial data
 
-  // Priority: initialCounts from server → cached → default 0
-  // NEVER show 0 if we have cached data - this prevents flicker
+  // Priority: ALWAYS use initialCounts from server first - it's the source of truth
+  // Only use cache if initialCounts is not provided
   const [counts, setCounts] = useState<DashboardCounts>(() => {
+    // ALWAYS prefer server data - it's guaranteed fresh
+    if (initialCounts) {
+      console.log("[DASHBOARD DATA] ✅ Initializing counts with server data:", initialCounts);
+      return initialCounts;
+    }
+    
+    // Fallback to cache only if no server data
     const cached = getCachedCounts(venueId);
     if (cached) {
+      console.log("[DASHBOARD DATA] ⚠️ No server data, using cached counts:", cached);
       return {
         live_count: cached.live_count || 0,
         earlier_today_count: cached.earlier_today_count || 0,
@@ -70,7 +78,8 @@ export function useDashboardData(
         tables_reserved_now: cached.tables_reserved_now || 0,
       };
     }
-    if (initialCounts) return initialCounts;
+    
+    console.log("[DASHBOARD DATA] ⚠️ No server data or cache, using defaults");
     return {
       live_count: 0,
       earlier_today_count: 0,
@@ -109,7 +118,7 @@ export function useDashboardData(
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
   
-  // CRITICAL: Force update stats when initialStats changes
+  // CRITICAL: Force update stats AND counts when initialStats/initialCounts change
   // This MUST run immediately to prevent loadStats from overriding with stale data
   useEffect(() => {
     if (initialStats) {
@@ -137,7 +146,13 @@ export function useDashboardData(
     } else {
       console.error("[DASHBOARD DATA] ⚠️ useEffect - No initialStats provided!");
     }
-  }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid]); // Depend on values, not object reference
+    
+    // Also update counts if initialCounts is provided
+    if (initialCounts) {
+      console.log("[DASHBOARD DATA] ✅ Updating counts with server data:", initialCounts);
+      setCounts(initialCounts);
+    }
+  }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid, initialCounts?.tables_set_up, initialCounts?.today_orders_count]); // Depend on values, not object reference
   
   // CRITICAL: Mark that we've received initialStats to prevent loadStats from overriding
   // Initialize immediately if initialStats exists - this must be set BEFORE loadStats can be called
