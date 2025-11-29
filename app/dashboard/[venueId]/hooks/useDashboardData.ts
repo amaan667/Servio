@@ -262,7 +262,7 @@ export function useDashboardData(
         // Error handled silently
       }
     },
-    []
+    [initialStats] // Include initialStats so callback has access to current value for hasInitialStats check
   );
 
   const refreshCounts = useCallback(async () => {
