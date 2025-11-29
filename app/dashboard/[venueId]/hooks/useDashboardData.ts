@@ -141,17 +141,14 @@ export function useDashboardData(
   }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid]); // Depend on values, not object reference
   
   // CRITICAL: Mark that we've received initialStats to prevent loadStats from overriding
-  // Initialize immediately if initialStats exists
-  const [hasInitialStats, setHasInitialStats] = useState(!!initialStats);
+  // Initialize immediately if initialStats exists - this must be set BEFORE loadStats can be called
+  const hasInitialStats = !!initialStats; // Use direct check, not state - ensures it's always current
   
-  // Set flag immediately when initialStats is provided
-  useEffect(() => {
-    if (initialStats) {
-      setHasInitialStats(true);
-      console.warn("[DASHBOARD DATA] ✅ Received initialStats from server:", initialStats.menuItems, "items");
-      console.warn("[DASHBOARD DATA] ✅ Flag set: hasInitialStats=true, loadStats will NOT override menuItems");
-    }
-  }, [initialStats?.menuItems]); // Only depend on menuItems value
+  // Log immediately when initialStats exists
+  if (initialStats) {
+    console.warn("[DASHBOARD DATA] ✅ initialStats available:", initialStats.menuItems, "items");
+    console.warn("[DASHBOARD DATA] ✅ hasInitialStats=true, loadStats will NOT override menuItems");
+  }
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
