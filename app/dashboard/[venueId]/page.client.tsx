@@ -576,7 +576,7 @@ const DashboardClient = React.memo(function DashboardClient({
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
             <EnhancedStatCard
               title="Menu Items"
-              value={initialStats?.menuItems ?? dashboardData.stats.menuItems ?? 0}
+              value={initialStats?.menuItems ?? 0}
               icon={ShoppingBag}
               iconColor="text-orange-600"
               iconBgColor="bg-orange-100"
@@ -595,7 +595,7 @@ const DashboardClient = React.memo(function DashboardClient({
             stats={{
               revenue: dashboardData.stats.revenue || 0,
               // Always use server value if available, fallback to client state
-              menuItems: initialStats?.menuItems ?? dashboardData.stats.menuItems ?? 0,
+              menuItems: initialStats?.menuItems ?? 0,
               todayOrdersCount: dashboardData.counts.today_orders_count || 0,
             }}
             topSellingItems={analyticsData.data?.topSellingItems}
