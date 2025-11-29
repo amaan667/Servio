@@ -12,6 +12,7 @@ export interface UnifiedCounts {
   todayOrders: number;
   revenue: number;
   unpaid: number;
+  tablesSetUp: number;
 }
 
 /**
@@ -74,12 +75,22 @@ export async function fetchUnifiedCounts(
   const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
   const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
   
+  // Fetch tables set up count
+  const { data: allTables } = await supabase
+    .from("tables")
+    .select("id, is_active")
+    .eq("venue_id", normalizedVenueId);
+  
+  const activeTables = allTables?.filter((t) => t.is_active) || [];
+  const tablesSetUp = activeTables.length;
+  
   return {
     menuItems,
     liveOrders,
     todayOrders,
     revenue,
     unpaid,
+    tablesSetUp,
   };
 }
 
@@ -130,7 +141,8 @@ export function subscribeToMenuItemsChanges(
  */
 export function subscribeToOrdersChanges(
   venueId: string,
-  onUpdate: (counts: { liveOrders: number; todayOrders: number; revenue: number; unpaid: number }) => void
+  onUpdate: (counts: { liveOrders: number; todayOrders: number; revenue: number; unpaid: number }) => void,
+  venueTz: string = "Europe/London"
 ): () => void {
   const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
   const supabase = createClient();
@@ -140,7 +152,7 @@ export function subscribeToOrdersChanges(
   const refreshCounts = async () => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(async () => {
-      const counts = await fetchUnifiedCounts(venueId);
+      const counts = await fetchUnifiedCounts(venueId, venueTz);
       onUpdate({
         liveOrders: counts.liveOrders,
         todayOrders: counts.todayOrders,
@@ -152,7 +164,7 @@ export function subscribeToOrdersChanges(
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("ordersChanged", {
-            detail: { venueId, counts },
+            detail: { venueId, revenue: counts.revenue, unpaid: counts.unpaid },
           })
         );
       }

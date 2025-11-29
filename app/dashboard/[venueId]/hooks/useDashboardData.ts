@@ -601,11 +601,62 @@ export function useDashboardData(
       }
     };
 
+    const handleRevenueChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; amount: number }>;
+      const changedVenueId = customEvent.detail?.venueId;
+      const amount = customEvent.detail?.amount;
+      
+      // Normalize both venue IDs for comparison
+      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
+        ? changedVenueId 
+        : changedVenueId ? `venue-${changedVenueId}` : null;
+      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
+        ? venueId 
+        : `venue-${venueId}`;
+
+      if (normalizedChangedVenueId === normalizedCurrentVenueId && typeof amount === "number") {
+        // Update revenue instantly
+        setStats((prev) => ({
+          ...prev,
+          revenue: prev.revenue + amount,
+        }));
+        console.log("✅ [DASHBOARD DATA] Revenue updated instantly via real-time:", amount);
+      }
+    };
+
+    const handleTablesChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
+      const changedVenueId = customEvent.detail?.venueId;
+      const count = customEvent.detail?.count;
+      
+      // Normalize both venue IDs for comparison
+      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
+        ? changedVenueId 
+        : changedVenueId ? `venue-${changedVenueId}` : null;
+      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
+        ? venueId 
+        : `venue-${venueId}`;
+
+      if (normalizedChangedVenueId === normalizedCurrentVenueId && typeof count === "number") {
+        // Update tables set up count instantly
+        setCounts((prev) => ({
+          ...prev,
+          tables_set_up: count,
+          active_tables_count: count,
+        }));
+        console.log("✅ [DASHBOARD DATA] Tables set up count updated instantly via real-time:", count);
+      }
+    };
+
     window.addEventListener("menuChanged", handleMenuChange);
     window.addEventListener("menuItemsChanged", handleMenuItemsChanged);
+    window.addEventListener("revenueChanged", handleRevenueChanged);
+    window.addEventListener("tablesChanged", handleTablesChanged);
     return () => {
       window.removeEventListener("menuChanged", handleMenuChange);
       window.removeEventListener("menuItemsChanged", handleMenuItemsChanged);
+      window.removeEventListener("revenueChanged", handleRevenueChanged);
+      window.removeEventListener("tablesChanged", handleTablesChanged);
     };
   }, [venueId, venue, venueTz, todayWindow, refreshCounts, loadStats]);
 

@@ -153,7 +153,7 @@ export function useDashboardRealtime({
             debouncedLoadStats();
 
             if (payload.eventType === "INSERT" && payload.new) {
-              const order = payload.new as { order_status: string; total_amount?: number };
+              const order = payload.new as { order_status: string; total_amount?: number; created_at?: string };
               const orderCreatedAt = payload.new?.created_at as string | undefined;
               // Only incrementally update if order is from today's window
               if (
@@ -163,6 +163,15 @@ export function useDashboardRealtime({
                 orderCreatedAt < todayWindow.endUtcISO
               ) {
                 updateRevenueIncrementallyRef.current(order);
+              }
+              
+              // Dispatch revenue changed event for instant updates
+              if (typeof window !== "undefined" && order.total_amount) {
+                window.dispatchEvent(
+                  new CustomEvent("revenueChanged", {
+                    detail: { venueId, amount: order.total_amount },
+                  })
+                );
               }
             }
           }
