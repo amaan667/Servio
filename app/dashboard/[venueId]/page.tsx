@@ -20,7 +20,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   const startTime = Date.now();
   const timestamp = new Date().toISOString();
   
-  // Force flush stdout immediately
+  // CRITICAL: Log at the very start - this MUST appear in Railway
   process.stdout.write(`\n`);
   process.stdout.write(`[RAILWAY] =================================================\n`);
   process.stdout.write(`[RAILWAY] Dashboard Server Component - START\n`);
@@ -34,12 +34,23 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   console.error(`[RAILWAY] Dashboard Server Component - START`);
   console.error(`[RAILWAY] Venue ID: ${venueId}`);
   console.error(`[RAILWAY] Timestamp: ${timestamp}`);
+  
+  // Force immediate flush
+  if (typeof process.stdout.flush === 'function') {
+    try {
+      process.stdout.flush();
+    } catch {
+      // Ignore flush errors
+    }
+  }
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
   // Auth check is optional - client will handle auth display
   // Dashboard ALWAYS loads - client handles authentication
+  process.stdout.write(`[RAILWAY] Starting auth check...\n`);
   const auth = await requirePageAuth(venueId).catch(() => null);
+  process.stdout.write(`[RAILWAY] Auth check complete\n`);
 
   // STEP 2: Fetch initial dashboard data on server (even without auth)
   // Always fetch data - don't block on auth
@@ -279,14 +290,23 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
   // FINAL SERVER-SIDE LOG - Railway will see this
   const finalCount = initialStats?.menuItems || 0;
-  process.stdout.write(`\n[RAILWAY] =================================================\n`);
+  process.stdout.write(`\n`);
+  process.stdout.write(`[RAILWAY] =================================================\n`);
   process.stdout.write(`[RAILWAY] Dashboard Server Component - END\n`);
   process.stdout.write(`[RAILWAY] Final menuItems count: ${finalCount}\n`);
-  process.stdout.write(`[RAILWAY] Final initialStats: ${JSON.stringify(initialStats)}\n`);
+  process.stdout.write(`[RAILWAY] Final revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}\n`);
+  process.stdout.write(`[RAILWAY] Final tables_set_up: ${initialCounts?.tables_set_up || 0}\n`);
+  process.stdout.write(`[RAILWAY] Final today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
+  process.stdout.write(`[RAILWAY] Final initialStats: ${JSON.stringify(initialStats, null, 2)}\n`);
+  process.stdout.write(`[RAILWAY] Final initialCounts: ${JSON.stringify(initialCounts, null, 2)}\n`);
   process.stdout.write(`[RAILWAY] =================================================\n`);
-  
+  process.stdout.write(`\n`);
+
   console.error("[RAILWAY] Dashboard Server Component - END");
   console.error("[RAILWAY] Final menuItems count:", finalCount);
+  console.error("[RAILWAY] Final revenue:", initialStats?.revenue);
+  console.error("[RAILWAY] Final tables_set_up:", initialCounts?.tables_set_up);
+  console.error("[RAILWAY] Final today_orders_count:", initialCounts?.today_orders_count);
   console.log("[RAILWAY] Dashboard page completed, sending to client");
 
   return (
