@@ -16,19 +16,19 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   const { venueId } = params;
   
   // IMMEDIATE SERVER-SIDE LOG - Railway will see this
-  // Use both process.stdout.write AND console.error for maximum visibility
+  // Use both process.stderr.write AND console.error for maximum visibility
   const startTime = Date.now();
   const timestamp = new Date().toISOString();
   
   // CRITICAL: Log at the very start - this MUST appear in Railway
-  process.stdout.write(`\n`);
-  process.stdout.write(`[RAILWAY] =================================================\n`);
-  process.stdout.write(`[RAILWAY] Dashboard Server Component - START\n`);
-  process.stdout.write(`[RAILWAY] Venue ID: ${venueId}\n`);
-  process.stdout.write(`[RAILWAY] Timestamp: ${timestamp}\n`);
-  process.stdout.write(`[RAILWAY] Process PID: ${process.pid}\n`);
-  process.stdout.write(`[RAILWAY] =================================================\n`);
-  process.stdout.write(`\n`);
+  process.stderr.write(`\n`);
+  process.stderr.write(`[RAILWAY] =================================================\n`);
+  process.stderr.write(`[RAILWAY] Dashboard Server Component - START\n`);
+  process.stderr.write(`[RAILWAY] Venue ID: ${venueId}\n`);
+  process.stderr.write(`[RAILWAY] Timestamp: ${timestamp}\n`);
+  process.stderr.write(`[RAILWAY] Process PID: ${process.pid}\n`);
+  process.stderr.write(`[RAILWAY] =================================================\n`);
+  process.stderr.write(`\n`);
   
   // Also use console.error (Railway captures stderr)
   console.error(`[RAILWAY] Dashboard Server Component - START`);
@@ -161,7 +161,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .neq("order_status", "REFUNDED");
 
     if (ordersError) {
-      process.stdout.write(`\n[RAILWAY] ❌ ERROR fetching orders: ${ordersError.message}\n`);
+      process.stderr.write(`\n[RAILWAY] ❌ ERROR fetching orders: ${ordersError.message}\n`);
     } else {
       const totalOrders = orders?.length || 0;
       const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -207,24 +207,24 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     process.stderr.write(`[RAILWAY] =================================================\n`);
     
     // LOG: Query execution details
-    process.stdout.write(`\n[RAILWAY] Menu Items Query Executed\n`);
-    process.stdout.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
-    process.stdout.write(`[RAILWAY] Items Returned: ${actualMenuItemCount}\n`);
+    process.stderr.write(`\n[RAILWAY] Menu Items Query Executed\n`);
+    process.stderr.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
+    process.stderr.write(`[RAILWAY] Items Returned: ${actualMenuItemCount}\n`);
     
     // DETAILED LOG: Show exactly what was loaded
-    // Use process.stdout.write for guaranteed Railway visibility
-    process.stdout.write(`\n[RAILWAY] =================================================\n`);
-    process.stdout.write(`[RAILWAY] Menu Items Query Result\n`);
-    process.stdout.write(`[RAILWAY] Venue ID: ${venueId}\n`);
-    process.stdout.write(`[RAILWAY] Normalized Venue ID: ${normalizedVenueId}\n`);
-    process.stdout.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
-    process.stdout.write(`[RAILWAY] Array Length: ${menuItems?.length || 0}\n`);
-    process.stdout.write(`[RAILWAY] Actual Count (used for stats): ${actualMenuItemCount}\n`);
-    process.stdout.write(`[RAILWAY] Error: ${menuError?.message || "None"}\n`);
-    process.stdout.write(`[RAILWAY] First 10 Item IDs: ${JSON.stringify(menuItems?.slice(0, 10).map((m) => m.id) || [])}\n`);
-    process.stdout.write(`[RAILWAY] ⚠️  THIS COUNT WILL BE PASSED TO CLIENT: ${actualMenuItemCount}\n`);
-    process.stdout.write(`[RAILWAY] Timestamp: ${new Date().toISOString()}\n`);
-    process.stdout.write(`[RAILWAY] =================================================\n`);
+    // Use process.stderr.write for guaranteed Railway visibility
+    process.stderr.write(`\n[RAILWAY] =================================================\n`);
+    process.stderr.write(`[RAILWAY] Menu Items Query Result\n`);
+    process.stderr.write(`[RAILWAY] Venue ID: ${venueId}\n`);
+    process.stderr.write(`[RAILWAY] Normalized Venue ID: ${normalizedVenueId}\n`);
+    process.stderr.write(`[RAILWAY] Query Duration: ${queryDuration}ms\n`);
+    process.stderr.write(`[RAILWAY] Array Length: ${menuItems?.length || 0}\n`);
+    process.stderr.write(`[RAILWAY] Actual Count (used for stats): ${actualMenuItemCount}\n`);
+    process.stderr.write(`[RAILWAY] Error: ${menuError?.message || "None"}\n`);
+    process.stderr.write(`[RAILWAY] First 10 Item IDs: ${JSON.stringify(menuItems?.slice(0, 10).map((m) => m.id) || [])}\n`);
+    process.stderr.write(`[RAILWAY] ⚠️  THIS COUNT WILL BE PASSED TO CLIENT: ${actualMenuItemCount}\n`);
+    process.stderr.write(`[RAILWAY] Timestamp: ${new Date().toISOString()}\n`);
+    process.stderr.write(`[RAILWAY] =================================================\n`);
     
     // Also use console.error and console.log for Railway
     console.error("[RAILWAY] Dashboard Server - Menu Items Count:", actualMenuItemCount);
@@ -252,14 +252,14 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     };
     
     // LOG: Show what's being passed to client
-    // Use process.stdout.write for guaranteed Railway visibility
-    process.stdout.write(`\n[RAILWAY] =================================================\n`);
-    process.stdout.write(`[RAILWAY] Passing initialStats to Client\n`);
-    process.stdout.write(`[RAILWAY] menuItems count: ${initialStats.menuItems}\n`);
-    process.stdout.write(`[RAILWAY] revenue: ${initialStats.revenue}\n`);
-    process.stdout.write(`[RAILWAY] unpaid: ${initialStats.unpaid}\n`);
-    process.stdout.write(`[RAILWAY] Full initialStats: ${JSON.stringify(initialStats)}\n`);
-    process.stdout.write(`[RAILWAY] =================================================\n`);
+    // Use process.stderr.write for guaranteed Railway visibility
+    process.stderr.write(`\n[RAILWAY] =================================================\n`);
+    process.stderr.write(`[RAILWAY] Passing initialStats to Client\n`);
+    process.stderr.write(`[RAILWAY] menuItems count: ${initialStats.menuItems}\n`);
+    process.stderr.write(`[RAILWAY] revenue: ${initialStats.revenue}\n`);
+    process.stderr.write(`[RAILWAY] unpaid: ${initialStats.unpaid}\n`);
+    process.stderr.write(`[RAILWAY] Full initialStats: ${JSON.stringify(initialStats)}\n`);
+    process.stderr.write(`[RAILWAY] =================================================\n`);
     
     // Also use console.error and console.log
     console.error("[RAILWAY] Dashboard Server - Passing to client:", {
@@ -269,11 +269,11 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     });
     console.log("[RAILWAY] Dashboard Server - Final menuItems count:", initialStats.menuItems);
   } catch (error) {
-    // Log error to Railway - use process.stdout.write for guaranteed visibility
+    // Log error to Railway - use process.stderr.write for guaranteed visibility
     const errorMsg = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : "No stack";
-    process.stdout.write(`\n[RAILWAY] ERROR: ${errorMsg}\n`);
-    process.stdout.write(`[RAILWAY] ERROR STACK: ${errorStack}\n`);
+    process.stderr.write(`\n[RAILWAY] ERROR: ${errorMsg}\n`);
+    process.stderr.write(`[RAILWAY] ERROR STACK: ${errorStack}\n`);
     console.error("[RAILWAY] Dashboard Server - Error:", errorMsg);
     console.error("[RAILWAY] Dashboard Server - Error stack:", errorStack);
     // Continue without initial data - client will load it
