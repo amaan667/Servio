@@ -197,7 +197,7 @@ export function usePaymentProcessing() {
 
         const tillPayload = {
           order_id: orderId,
-          venueId: checkoutData.venueId,
+          venue_id: checkoutData.venueId,
           tableNumber: checkoutData.tableNumber,
           customerName: checkoutData.customerName,
           customerPhone: checkoutData.customerPhone,
@@ -257,7 +257,7 @@ export function usePaymentProcessing() {
 
         const laterPayload = {
           order_id: orderId,
-          venueId: checkoutData.venueId,
+          venue_id: checkoutData.venueId,
           tableNumber: checkoutData.tableNumber,
           customerName: checkoutData.customerName,
           customerPhone: checkoutData.customerPhone,

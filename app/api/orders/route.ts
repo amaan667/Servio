@@ -51,7 +51,7 @@ export const runtime = "nodejs";
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// GET handler for orders - Migrated to withUnifiedAuth
+// GET handler for orders - Requires auth
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -418,8 +418,7 @@ async function createKDSTickets(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+export async function POST(req: NextRequest) {
     const requestId = Math.random().toString(36).substring(7);
     const startTime = Date.now();
 
@@ -445,18 +444,12 @@ export const POST = withUnifiedAuth(
 
       const body = (await req.json()) as Partial<OrderPayload>;
       
-      // Verify venue_id matches authenticated context (security check)
-      if (body.venue_id && body.venue_id !== context.venueId) {
-        logger.warn("[ORDERS POST] Venue ID mismatch", {
-          provided: body.venue_id,
-          authenticated: context.venueId,
-          userId: context.user.id,
-        });
-        return apiErrors.forbidden("Venue ID mismatch");
+      // Validate venue_id is provided
+      if (!body.venue_id) {
+        return apiErrors.badRequest("venue_id is required");
       }
       
-      // Use venueId from context (already verified by withUnifiedAuth)
-      const venueId = context.venueId;
+      const venueId = body.venue_id;
 
     // STEP 3: Validate input with Zod
     let validatedOrderBody: OrderPayload;
@@ -510,10 +503,8 @@ export const POST = withUnifiedAuth(
     }
 
     if (!venue) {
-      // Venue should exist (verified by withUnifiedAuth), but if it doesn't, return error
-      logger.error("[ORDERS POST] Venue not found despite auth check", {
+      logger.error("[ORDERS POST] Venue not found", {
         venueId,
-        userId: context.user.id,
       });
       return bad("Venue not found", 404);
     }
@@ -881,8 +872,6 @@ export const POST = withUnifiedAuth(
         stack: errorStack,
         duration: `${duration}ms`,
         requestId,
-        venueId: context.venueId,
-        userId: context.user.id,
       });
 
       // Check if it's an authentication/authorization error

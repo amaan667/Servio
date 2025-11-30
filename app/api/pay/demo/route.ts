@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+export async function POST(req: NextRequest) {
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -36,20 +34,14 @@ export const POST = withUnifiedAuth(
           { status: 400 }
         );
       }
-      
-      // Verify venue_id matches authenticated context (security check)
-      if (venue_id && venue_id !== context.venueId) {
-        logger.warn("[PAY DEMO] Venue ID mismatch", {
-          provided: venue_id,
-          authenticated: context.venueId,
-          order_id,
-        });
+
+      if (!venue_id) {
         return NextResponse.json(
           {
             success: false,
-            error: "Venue ID mismatch",
+            error: "Venue ID is required",
           },
-          { status: 403 }
+          { status: 400 }
         );
       }
 
@@ -72,18 +64,18 @@ export const POST = withUnifiedAuth(
         }
       );
 
-      // Verify order belongs to authenticated venue (security check)
+      // Verify order belongs to venue (security check)
       const { data: orderCheck, error: checkError } = await supabase
         .from("orders")
         .select("id, venue_id")
         .eq("id", order_id)
-        .eq("venue_id", context.venueId)
+        .eq("venue_id", venue_id)
         .single();
 
       if (checkError || !orderCheck) {
         logger.error("[PAY DEMO] Order not found or venue mismatch:", {
           order_id,
-          venueId: context.venueId,
+          venueId: venue_id,
           error: checkError,
         });
         return NextResponse.json(
@@ -104,14 +96,14 @@ export const POST = withUnifiedAuth(
           updated_at: new Date().toISOString(),
         })
         .eq("id", order_id)
-        .eq("venue_id", context.venueId) // Security: ensure venue matches
+        .eq("venue_id", venue_id) // Security: ensure venue matches
         .select()
         .single();
 
       if (updateError || !order) {
         logger.error("[PAY DEMO] Failed to update order:", {
           order_id,
-          venueId: context.venueId,
+          venueId: venue_id,
           error: updateError,
         });
         return NextResponse.json(
@@ -140,7 +132,6 @@ export const POST = withUnifiedAuth(
       logger.error("[PAY DEMO] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
-        venueId: context.venueId,
       });
       
       // Check if it's an authentication/authorization error
@@ -166,16 +157,4 @@ export const POST = withUnifiedAuth(
         { status: 500 }
       );
     }
-  },
-  {
-    // Extract venueId from body (required for payment routes)
-    extractVenueId: async (req) => {
-      try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
-      } catch {
-        return null;
-      }
-    },
-  }
-);
+}
