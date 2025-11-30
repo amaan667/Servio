@@ -99,7 +99,55 @@ const DashboardClient = React.memo(function DashboardClient({
   const displayMenuItems = dashboardData.stats.menuItems;
   const displayTables = dashboardData.counts.tables_set_up;
 
-  // Removed complex logging - counts now update directly from database via real-time subscriptions
+  // Listen to custom events for instant updates when menu items or tables change
+  useEffect(() => {
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    
+    const handleMenuItemsChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
+      const eventVenueId = customEvent.detail?.venueId;
+      // Match both formats: venue-xxx and xxx
+      if (
+        eventVenueId === venueId ||
+        eventVenueId === normalizedVenueId ||
+        eventVenueId === venueId.replace("venue-", "") ||
+        normalizedVenueId === eventVenueId.replace("venue-", "")
+      ) {
+        // Update menu items count immediately
+        dashboardData.setStats((prev) => ({
+          ...prev,
+          menuItems: customEvent.detail.count,
+        }));
+      }
+    };
+
+    const handleTablesChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
+      const eventVenueId = customEvent.detail?.venueId;
+      // Match both formats: venue-xxx and xxx
+      if (
+        eventVenueId === venueId ||
+        eventVenueId === normalizedVenueId ||
+        eventVenueId === venueId.replace("venue-", "") ||
+        normalizedVenueId === eventVenueId.replace("venue-", "")
+      ) {
+        // Update tables count immediately
+        dashboardData.setCounts((prev) => ({
+          ...prev,
+          tables_set_up: customEvent.detail.count,
+          active_tables_count: customEvent.detail.count,
+        }));
+      }
+    };
+
+    window.addEventListener("menuItemsChanged", handleMenuItemsChanged);
+    window.addEventListener("tablesChanged", handleTablesChanged);
+
+    return () => {
+      window.removeEventListener("menuItemsChanged", handleMenuItemsChanged);
+      window.removeEventListener("tablesChanged", handleTablesChanged);
+    };
+  }, [venueId, dashboardData.setStats, dashboardData.setCounts]);
 
   // Fetch live analytics data for charts
   const analyticsData = useAnalyticsData(venueId);
@@ -140,19 +188,37 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [handleRefresh]);
 
   // Auto-refresh when user navigates back to dashboard
-  // Only refresh if cache is stale - prevents unnecessary refreshes
+  // Always refresh on focus to ensure counts are up-to-date
   useEffect(() => {
     const handleFocus = () => {
-      // Only refresh if cache is stale (older than 5 minutes)
-      // This prevents flicker and unnecessary API calls
-      if (!isCacheFresh(venueId)) {
+      // Always refresh when page gains focus to ensure counts are accurate
+      handleRefresh();
+    };
+
+    const handleVisibilityChange = () => {
+      // Refresh when page becomes visible
+      if (!document.hidden) {
         handleRefresh();
       }
     };
 
     window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [venueId, handleRefresh]);
+
+  // Periodic refresh as fallback (every 30 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleRefresh();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [handleRefresh]);
 
   // Use live analytics data or fallback to empty data
   const ordersByHour = useMemo(() => {

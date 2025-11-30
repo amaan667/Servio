@@ -73,6 +73,8 @@ export function useDashboardData(
 
   // Fetch all counts directly from database
   const fetchCounts = useCallback(async (force = false) => {
+    // Always fetch when force=true, even if initialCounts exists
+    // This ensures real-time updates always work
     if (!force && initialCounts) {
       return;
     }
@@ -142,6 +144,8 @@ export function useDashboardData(
 
   // Fetch stats (revenue, menu items, unpaid) directly from database
   const fetchStats = useCallback(async (force = false) => {
+    // Always fetch when force=true, even if initialStats exists
+    // This ensures real-time updates always work
     if (!force && initialStats) {
       return;
     }
@@ -207,21 +211,22 @@ export function useDashboardData(
     const supabase = createClient();
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-    // Debounce to prevent immediate firing
-    let debounceTimeout: NodeJS.Timeout | null = null;
+    // Separate debounce timeouts for counts and stats to prevent conflicts
+    let countsDebounceTimeout: NodeJS.Timeout | null = null;
+    let statsDebounceTimeout: NodeJS.Timeout | null = null;
 
     const debouncedFetchCounts = () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
+      if (countsDebounceTimeout) clearTimeout(countsDebounceTimeout);
+      countsDebounceTimeout = setTimeout(() => {
         fetchCounts(true);
-      }, 500);
+      }, 300);
     };
 
     const debouncedFetchStats = () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
+      if (statsDebounceTimeout) clearTimeout(statsDebounceTimeout);
+      statsDebounceTimeout = setTimeout(() => {
         fetchStats(true);
-      }, 500);
+      }, 300);
     };
 
     // Subscribe to orders changes
@@ -316,7 +321,8 @@ export function useDashboardData(
       .subscribe();
 
     return () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
+      if (countsDebounceTimeout) clearTimeout(countsDebounceTimeout);
+      if (statsDebounceTimeout) clearTimeout(statsDebounceTimeout);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(menuChannel);
       supabase.removeChannel(tablesChannel);
