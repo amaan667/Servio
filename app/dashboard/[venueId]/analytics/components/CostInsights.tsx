@@ -65,6 +65,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
       setError(null);
 
       const supabase = supabaseBrowser();
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // Calculate date range
       const now = new Date();
@@ -83,59 +84,72 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
           startDate = new Date(0); // All time
       }
 
-      // Fetch completed orders with items
-      const { data: orders, error: ordersError } = await supabase
-        .from("orders")
-        .select("id, items, total_amount, created_at")
-        .eq("venue_id", venueId)
-        .eq("order_status", "COMPLETED")
-        .eq("payment_status", "PAID")
-        .gte("created_at", startDate.toISOString())
-        .order("created_at", { ascending: false });
+      // Fetch all data in parallel for faster loading
+      const [ordersResult, menuItemsResult] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("id, items, total_amount, created_at")
+          .eq("venue_id", normalizedVenueId)
+          .eq("order_status", "COMPLETED")
+          .eq("payment_status", "PAID")
+          .gte("created_at", startDate.toISOString())
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("menu_items")
+          .select("id, name, category, price")
+          .eq("venue_id", normalizedVenueId)
+          .eq("is_available", true),
+      ]);
 
-      if (ordersError) throw ordersError;
+      if (ordersResult.error) throw ordersResult.error;
+      if (menuItemsResult.error) throw menuItemsResult.error;
 
-      // Fetch menu items with their recipes (for COGS calculation)
-      const { data: menuItems, error: menuError } = await supabase
-        .from("menu_items")
-        .select("id, name, category, price")
-        .eq("venue_id", venueId)
-        .eq("is_available", true);
+      const orders = ordersResult.data || [];
+      const menuItems = menuItemsResult.data || [];
 
-      if (menuError) throw menuError;
-
-      // Fetch recipe costs for each menu item
+      // Fetch recipe costs in parallel (batch query)
       const recipeCosts = new Map<string, number>();
-
-      for (const item of menuItems || []) {
-        try {
-          const { data: recipeData } = await supabase
-            .from("menu_item_ingredients")
-            .select(
-              `
-              qty_per_item,
-              ingredient:ingredients(cost_per_unit)
+      
+      if (menuItems.length > 0) {
+        // Batch fetch all recipes at once
+        const { data: allRecipes } = await supabase
+          .from("menu_item_ingredients")
+          .select(
             `
-            )
-            .eq("menu_item_id", item.id);
+            menu_item_id,
+            qty_per_item,
+            ingredient:ingredients(cost_per_unit)
+          `
+          )
+          .in("menu_item_id", menuItems.map((item) => item.id));
 
-          if (recipeData) {
-            const totalCost = recipeData.reduce(
-              (sum: number, recipe: unknown) => {
-                const recipeTyped = recipe as {
-                  qty_per_item: number;
-                  ingredient?: { cost_per_unit: number } | null;
-                };
-                const ingredientCost = recipeTyped.ingredient?.cost_per_unit || 0;
-                return sum + ingredientCost * (recipeTyped.qty_per_item || 0);
+        // Process recipes
+        if (allRecipes) {
+          const recipeMap = new Map<string, typeof allRecipes>();
+          allRecipes.forEach((recipe: unknown) => {
+            const recipeTyped = recipe as {
+              menu_item_id: string;
+              qty_per_item: number;
+              ingredient?: { cost_per_unit: number } | null;
+            };
+            if (!recipeMap.has(recipeTyped.menu_item_id)) {
+              recipeMap.set(recipeTyped.menu_item_id, []);
+            }
+            recipeMap.get(recipeTyped.menu_item_id)!.push(recipeTyped);
+          });
+
+          // Calculate costs for each item
+          menuItems.forEach((item) => {
+            const recipes = recipeMap.get(item.id) || [];
+            const totalCost = recipes.reduce(
+              (sum: number, recipe) => {
+                const ingredientCost = recipe.ingredient?.cost_per_unit || 0;
+                return sum + ingredientCost * (recipe.qty_per_item || 0);
               },
               0
             );
             recipeCosts.set(item.id, totalCost);
-          }
-        } catch (err) {
-          // If recipe doesn't exist, use 0 or estimated cost
-          recipeCosts.set(item.id, 0);
+          });
         }
       }
 
@@ -253,12 +267,28 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
   };
 
   if (loading) {
+    // Show skeleton UI instead of spinner for better UX
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading cost insights...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-16"></div>
+                <div className="h-3 bg-gray-200 rounded w-32 mt-2"></div>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-48"></div>
+              <div className="h-64 bg-gray-100 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

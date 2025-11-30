@@ -249,12 +249,14 @@ export function useDashboardRealtime({
               const count = menuItems?.length || 0;
 
               // Dispatch custom event for instant updates across all components
+              // Use normalized venueId in event detail for consistent matching
               if (typeof window !== "undefined") {
                 window.dispatchEvent(
                   new CustomEvent("menuItemsChanged", {
-                    detail: { venueId, count },
+                    detail: { venueId: normalizedVenueId, count },
                   })
                 );
+                console.info("[DASHBOARD REALTIME] Dispatched menuItemsChanged event:", { venueId: normalizedVenueId, count });
               }
             } catch (_error) {
               // Error silently handled

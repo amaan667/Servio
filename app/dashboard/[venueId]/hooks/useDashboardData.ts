@@ -501,9 +501,77 @@ export function useDashboardData(
     fetchData();
   }, [venue]);
 
-  // Listen for menu changes to auto-refresh stats
+  // Listen for real-time custom events to update counts immediately
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const handleMenuItemsChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
+      const changedVenueId = customEvent.detail?.venueId;
+      const count = customEvent.detail?.count;
+      
+      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
+        ? changedVenueId 
+        : changedVenueId ? `venue-${changedVenueId}` : null;
+      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
+        ? venueId 
+        : `venue-${venueId}`;
+
+      if (normalizedChangedVenueId === normalizedCurrentVenueId && typeof count === "number") {
+        console.info("[DASHBOARD DATA] menuItemsChanged event - updating count:", count);
+        setStats((prev) => ({
+          ...prev,
+          menuItems: count,
+        }));
+      }
+    };
+
+    const handleOrdersChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; revenue: number; unpaid: number }>;
+      const changedVenueId = customEvent.detail?.venueId;
+      const revenue = customEvent.detail?.revenue;
+      const unpaid = customEvent.detail?.unpaid;
+      
+      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
+        ? changedVenueId 
+        : changedVenueId ? `venue-${changedVenueId}` : null;
+      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
+        ? venueId 
+        : `venue-${venueId}`;
+
+      if (normalizedChangedVenueId === normalizedCurrentVenueId) {
+        console.info("[DASHBOARD DATA] ordersChanged event - updating revenue:", revenue, "unpaid:", unpaid);
+        setStats((prev) => ({
+          ...prev,
+          revenue: typeof revenue === "number" ? revenue : prev.revenue,
+          unpaid: typeof unpaid === "number" ? unpaid : prev.unpaid,
+        }));
+        // Also refresh counts to get order counts
+        refreshCounts();
+      }
+    };
+
+    const handleTablesChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
+      const changedVenueId = customEvent.detail?.venueId;
+      const count = customEvent.detail?.count;
+      
+      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
+        ? changedVenueId 
+        : changedVenueId ? `venue-${changedVenueId}` : null;
+      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
+        ? venueId 
+        : `venue-${venueId}`;
+
+      if (normalizedChangedVenueId === normalizedCurrentVenueId && typeof count === "number") {
+        console.info("[DASHBOARD DATA] tablesChanged event - updating count:", count);
+        setCounts((prev) => ({
+          ...prev,
+          tables_set_up: count,
+          active_tables_count: count,
+        }));
+      }
+    };
 
     const handleMenuChange = async (event: Event) => {
       const customEvent = event as CustomEvent<{ venueId: string; action: string; itemCount?: number }>;
