@@ -77,9 +77,9 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
           bgColor: "bg-purple-100",
         },
         {
-          title: "Receipts",
-          description: "View, manage, and export order receipts",
-          href: `/dashboard/${venueId}/receipts`,
+          title: "Payments",
+          description: "Manage payments, split bills, and view receipts",
+          href: `/dashboard/${venueId}/payments`,
           icon: Receipt,
           color: "text-emerald-600",
           bgColor: "bg-emerald-100",

@@ -212,19 +212,6 @@ export default function PaymentPage() {
                         </>
                       )}
                     </Button>
-                    {paymentState.checkoutData && !paymentState.checkoutData.isSplit && (
-                      <Button
-                        onClick={() => {
-                          // Redirect to bill split flow
-                          window.location.href = `/order?venue=${paymentState.checkoutData?.venueId}&table=${paymentState.checkoutData?.tableNumber}&splitBill=true`;
-                        }}
-                        variant="outline"
-                        className="w-full h-12 text-base"
-                      >
-                        <Users className="h-5 w-5 mr-2" />
-                        Split Bill
-                      </Button>
-                    )}
                   </>
                 )}
 

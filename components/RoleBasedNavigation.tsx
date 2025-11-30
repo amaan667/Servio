@@ -112,8 +112,8 @@ export default function RoleBasedNavigation({
       show: canAccess(userRole, "payments"),
     },
     {
-      label: "Receipts",
-      href: `/dashboard/${venueId}/receipts`,
+      label: "Payments",
+      href: `/dashboard/${venueId}/payments`,
       icon: Receipt,
       feature: "payments",
       show: canAccess(userRole, "payments"),

@@ -5,33 +5,38 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Receipt, Download, Mail, MessageSquare, Printer } from "lucide-react";
+import { Receipt, Download, CheckCircle, Split, CreditCard, Clock } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order } from "@/types/order";
 import { detectColorsFromImage } from "@/app/dashboard/[venueId]/menu-management/utils/colorDetection";
+import { BillSplittingDialog } from "@/components/pos/BillSplittingDialog";
 
-type ReceiptsClientProps = {
+type PaymentsClientProps = {
   venueId: string;
 };
 
-interface ReceiptOrder extends Omit<Order, "table_number"> {
+interface PaymentOrder extends Omit<Order, "table_number"> {
   table_label?: string;
   counter_label?: string;
   table_number?: number | string | null;
   created_at: string;
+  payment_mode?: string;
 }
 
 interface GroupedReceipts {
-  [date: string]: ReceiptOrder[];
+  [date: string]: PaymentOrder[];
 }
 
-const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
-  const [todayReceipts, setTodayReceipts] = useState<ReceiptOrder[]>([]);
-  const [historyReceipts, setHistoryReceipts] = useState<ReceiptOrder[]>([]);
+const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
+  const [payAtTillOrders, setPayAtTillOrders] = useState<PaymentOrder[]>([]);
+  const [todayReceipts, setTodayReceipts] = useState<PaymentOrder[]>([]);
+  const [historyReceipts, setHistoryReceipts] = useState<PaymentOrder[]>([]);
   const [groupedHistoryReceipts, setGroupedHistoryReceipts] = useState<GroupedReceipts>({});
-  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptOrder | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<PaymentOrder | null>(null);
+  const [selectedOrderForSplit, setSelectedOrderForSplit] = useState<PaymentOrder | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState<string | null>(null);
   const [venueInfo, setVenueInfo] = useState<{
     venue_name?: string;
     venue_email?: string;
@@ -40,9 +45,25 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     primary_color?: string;
     show_vat_breakdown?: boolean;
   }>({});
-  const [activeTab, setActiveTab] = useState("today");
+  const [activeTab, setActiveTab] = useState("pay-at-till");
 
-  const loadReceipts = useCallback(async () => {
+  // Check URL params for split action
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get("orderId");
+    const action = urlParams.get("action");
+    if (orderId && action === "split") {
+      setActiveTab("pay-at-till");
+      // Find the order and open split dialog
+      const order = payAtTillOrders.find((o) => o.id === orderId);
+      if (order) {
+        setSelectedOrderForSplit(order);
+      }
+    }
+  }, [payAtTillOrders]);
+
+  const loadPayments = useCallback(async () => {
     if (!venueId) return;
 
     try {
@@ -92,7 +113,18 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         show_vat_breakdown: venue?.show_vat_breakdown ?? true,
       });
 
-      // Fetch paid orders only
+      // Fetch pay-at-till orders (UNPAID with payment_mode = pay_at_till)
+      const { data: payAtTillData } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("payment_status", "UNPAID")
+        .eq("payment_mode", "pay_at_till")
+        .order("created_at", { ascending: false });
+
+      setPayAtTillOrders((payAtTillData || []) as PaymentOrder[]);
+
+      // Fetch paid orders for receipts
       const { data: ordersData, error: fetchError } = await supabase
         .from("orders")
         .select("*")
@@ -104,7 +136,7 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         return;
       }
 
-      const allReceipts = (ordersData || []) as ReceiptOrder[];
+      const allReceipts = (ordersData || []) as PaymentOrder[];
 
       // Categorize receipts
       const todayReceiptsList = allReceipts.filter((receipt) => {
@@ -140,12 +172,12 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     }
   }, [venueId]);
 
-  // Always load receipts on mount to ensure counts are visible
+  // Always load payments on mount
   useEffect(() => {
-    loadReceipts();
-  }, [loadReceipts]);
+    loadPayments();
+  }, [loadPayments]);
 
-  // Set up real-time subscription - always active regardless of active tab
+  // Set up real-time subscription
   useEffect(() => {
     if (!venueId) return;
 
@@ -153,7 +185,7 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
     let debounceTimeout: NodeJS.Timeout | null = null;
 
     const channel = supabase
-      .channel("receipts-updates")
+      .channel("payments-updates")
       .on(
         "postgres_changes",
         {
@@ -166,15 +198,15 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
           // Debounce to prevent excessive calls
           if (debounceTimeout) clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(() => {
-            loadReceipts();
+            loadPayments();
           }, 500);
         }
       )
       .subscribe();
 
-    // Also set up periodic refresh to ensure counts stay updated
+    // Also set up periodic refresh
     const refreshInterval = setInterval(() => {
-      loadReceipts();
+      loadPayments();
     }, 30000); // Refresh every 30 seconds
 
     return () => {
@@ -182,7 +214,35 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       supabase.removeChannel(channel);
       clearInterval(refreshInterval);
     };
-  }, [venueId, loadReceipts]);
+  }, [venueId, loadPayments]);
+
+  const handleMarkAsPaid = async (orderId: string) => {
+    try {
+      setIsProcessingPayment(orderId);
+      const response = await fetch("/api/orders/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId,
+          venue_id: venueId,
+          payment_method: "till",
+          payment_status: "PAID",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to mark order as paid");
+      }
+
+      await loadPayments();
+    } catch (error) {
+      // Error handled silently
+    } finally {
+      setIsProcessingPayment(null);
+    }
+  };
 
   const handleDownloadPDF = async (orderId: string) => {
     try {
@@ -204,10 +264,98 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
+      // Error handled silently
     }
   };
 
-  const renderReceiptCard = (receipt: ReceiptOrder) => {
+  const renderPayAtTillCard = (order: PaymentOrder) => {
+    const orderNumber = order.id.slice(-6).toUpperCase();
+    const date = new Date(order.created_at);
+    const formattedDate = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const formattedTime = date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return (
+      <Card key={order.id} className="hover:shadow-md transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-5 w-5 text-orange-600" />
+                <span className="font-semibold text-lg">#{orderNumber}</span>
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                  Pay at Till
+                </Badge>
+              </div>
+              <div className="space-y-1 text-sm text-gray-600">
+                {order.table_label && (
+                  <div>
+                    <span className="font-medium">Table:</span> {order.table_label}
+                  </div>
+                )}
+                {order.counter_label && (
+                  <div>
+                    <span className="font-medium">Counter:</span> {order.counter_label}
+                  </div>
+                )}
+                {order.customer_name && (
+                  <div>
+                    <span className="font-medium">Customer:</span> {order.customer_name}
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium">Date:</span> {formattedDate} at {formattedTime}
+                </div>
+              </div>
+              <div className="mt-3">
+                <span className="text-2xl font-bold text-gray-900">
+                  £{order.total_amount.toFixed(2)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 ml-4">
+              <Button
+                onClick={() => handleMarkAsPaid(order.id)}
+                disabled={isProcessingPayment === order.id}
+                variant="default"
+                size="sm"
+                className="w-full"
+              >
+                {isProcessingPayment === order.id ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-1 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Mark as Paid
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => setSelectedOrderForSplit(order)}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Split className="h-4 w-4 mr-1" />
+                Split Bill
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderReceiptCard = (receipt: PaymentOrder) => {
     const orderNumber = receipt.id.slice(-6).toUpperCase();
     const date = new Date(receipt.created_at);
     const formattedDate = date.toLocaleDateString("en-GB", {
@@ -296,7 +444,22 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
         {/* Tab Navigation */}
         <section className="mb-6 sm:mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="pay-at-till" className="flex items-center gap-2 relative">
+                <span className="flex-1 text-left">Pay at Till</span>
+                <span
+                  className={`
+                    ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
+                    ${
+                      activeTab === "pay-at-till"
+                        ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
+                        : "bg-white/40 text-white border-white/30"
+                    }
+                  `}
+                >
+                  {payAtTillOrders.length}
+                </span>
+              </TabsTrigger>
               <TabsTrigger value="today" className="flex items-center gap-2 relative">
                 <span className="flex-1 text-left">Today</span>
                 <span
@@ -329,7 +492,24 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
               </TabsTrigger>
             </TabsList>
 
-            {/* Receipts Content */}
+            {/* Pay at Till Orders */}
+            <TabsContent value="pay-at-till" className="mt-6">
+              {payAtTillOrders.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Pay at Till Orders</h3>
+                    <p className="text-gray-600">No unpaid orders with pay at till payment method</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {payAtTillOrders.map(renderPayAtTillCard)}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Today's Receipts */}
             <TabsContent value="today" className="mt-6">
               {todayReceipts.length === 0 ? (
                 <Card>
@@ -346,6 +526,7 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
               )}
             </TabsContent>
 
+            {/* History Receipts */}
             <TabsContent value="history" className="mt-6">
               {historyReceipts.length === 0 ? (
                 <Card>
@@ -392,8 +573,31 @@ const ReceiptsClient: React.FC<ReceiptsClientProps> = ({ venueId }) => {
           isCustomerView={false}
         />
       )}
+
+      {/* Bill Splitting Dialog */}
+      {selectedOrderForSplit && (
+        <BillSplittingDialog
+          isOpen={!!selectedOrderForSplit}
+          onClose={() => {
+            setSelectedOrderForSplit(null);
+            // Clear URL params
+            if (typeof window !== "undefined") {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("orderId");
+              url.searchParams.delete("action");
+              window.history.replaceState({}, "", url.toString());
+            }
+          }}
+          orders={[selectedOrderForSplit]}
+          venueId={venueId}
+          onSplitComplete={() => {
+            setSelectedOrderForSplit(null);
+            loadPayments();
+          }}
+        />
+      )}
     </div>
   );
 };
 
-export default ReceiptsClient;
+export default PaymentsClient;

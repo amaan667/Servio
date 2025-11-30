@@ -322,16 +322,22 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
                   <CreditCard className="h-4 w-4 mr-1" />
                   Card Payment
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {/* Bill splitting feature coming soon */}}
-                  disabled={isProcessingPayment}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                >
-                  <Split className="h-4 w-4 mr-1" />
-                  Split Bill
-                </Button>
+                {/* Only show split bill for pay-at-till orders */}
+                {(order.payment_mode === 'pay_at_till' || order.payment_method === 'TILL') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      // Navigate to payments page for bill splitting
+                      window.location.href = `/dashboard/${venueId}/payments?orderId=${order.id}&action=split`;
+                    }}
+                    disabled={isProcessingPayment}
+                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                  >
+                    <Split className="h-4 w-4 mr-1" />
+                    Split Bill
+                  </Button>
+                )}
               </div>
             </div>
           </div>
