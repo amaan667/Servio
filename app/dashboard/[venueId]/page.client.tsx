@@ -120,6 +120,26 @@ const DashboardClient = React.memo(function DashboardClient({
   // Custom hooks for dashboard data and realtime (call before any returns)
   const venueTz = "Europe/London"; // Default timezone
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
+  
+  // CRITICAL: Use useMemo to ensure we always use server props first, before state updates
+  // This prevents stale state from being displayed on first render
+  const displayMenuItems = useMemo(() => {
+    // ALWAYS prioritize server props - they're available immediately
+    if (initialStats !== null && initialStats !== undefined) {
+      return initialStats.menuItems ?? 0;
+    }
+    // Only use state if props aren't available
+    return dashboardData.stats.menuItems ?? 0;
+  }, [initialStats?.menuItems, dashboardData.stats.menuItems]);
+  
+  const displayTables = useMemo(() => {
+    // ALWAYS prioritize server props - they're available immediately
+    if (initialCounts !== null && initialCounts !== undefined) {
+      return initialCounts.tables_set_up ?? 0;
+    }
+    // Only use state if props aren't available
+    return dashboardData.counts.tables_set_up ?? 0;
+  }, [initialCounts?.tables_set_up, dashboardData.counts.tables_set_up]);
 
   // CRITICAL LOG: Dashboard page loaded with initial stats
   // Log immediately on component mount
@@ -799,60 +819,30 @@ const DashboardClient = React.memo(function DashboardClient({
 
           {/* Card 3: Tables Set Up */}
           <Link href={`/dashboard/${venueId}/tables`} className="block">
-            {(() => {
-              // CRITICAL: ALWAYS use initialCounts if it exists (even if tables_set_up is 0)
-              // This ensures first load always shows correct server value, not stale cache
-              // Only fall back to dashboardData if initialCounts doesn't exist at all
-              const tablesValue = initialCounts !== null && initialCounts !== undefined
-                ? (initialCounts.tables_set_up ?? 0)
-                : (dashboardData.counts.tables_set_up ?? 0);
-              console.error(`[FRONTEND RENDER] Tables Set Up card - Value being displayed: ${tablesValue}`);
-              console.error(`[FRONTEND RENDER]   initialCounts exists: ${initialCounts !== null && initialCounts !== undefined}`);
-              console.error(`[FRONTEND RENDER]   initialCounts?.tables_set_up: ${initialCounts?.tables_set_up ?? "undefined"}`);
-              console.error(`[FRONTEND RENDER]   dashboardData.counts.tables_set_up: ${dashboardData.counts.tables_set_up ?? "undefined"}`);
-              console.error(`[FRONTEND RENDER]   Using server value: ${initialCounts !== null && initialCounts !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
-              return (
-                <EnhancedStatCard
-                  key="tables"
-                  title="Tables Set Up"
-                  value={tablesValue}
-                  icon={Table}
-                  iconColor="text-purple-600"
-                  iconBgColor="bg-purple-100"
-                  subtitle="all active"
-                  tooltip="Manage table setup and reservations"
-                />
-              );
-            })()}
+            <EnhancedStatCard
+              key={`tables-${displayTables}`}
+              title="Tables Set Up"
+              value={displayTables}
+              icon={Table}
+              iconColor="text-purple-600"
+              iconBgColor="bg-purple-100"
+              subtitle="all active"
+              tooltip="Manage table setup and reservations"
+            />
           </Link>
 
           {/* Card 4: Menu Items */}
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
-            {(() => {
-              // CRITICAL: ALWAYS use initialStats if it exists (even if menuItems is 0)
-              // This ensures first load always shows correct server value, not stale cache
-              // Only fall back to dashboardData if initialStats doesn't exist at all
-              const menuItemsValue = initialStats !== null && initialStats !== undefined
-                ? (initialStats.menuItems ?? 0)
-                : (dashboardData.stats.menuItems ?? 0);
-              console.error(`[FRONTEND RENDER] Menu Items card - Value being displayed: ${menuItemsValue}`);
-              console.error(`[FRONTEND RENDER]   initialStats exists: ${initialStats !== null && initialStats !== undefined}`);
-              console.error(`[FRONTEND RENDER]   initialStats?.menuItems: ${initialStats?.menuItems ?? "undefined"}`);
-              console.error(`[FRONTEND RENDER]   dashboardData.stats.menuItems: ${dashboardData.stats.menuItems ?? "undefined"}`);
-              console.error(`[FRONTEND RENDER]   Using server value: ${initialStats !== null && initialStats !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
-              return (
-                <EnhancedStatCard
-                  key="menu-items"
-                  title="Menu Items"
-                  value={menuItemsValue}
-                  icon={ShoppingBag}
-                  iconColor="text-orange-600"
-                  iconBgColor="bg-orange-100"
-                  subtitle="available"
-                  tooltip="Edit your menu items"
-                />
-              );
-            })()}
+            <EnhancedStatCard
+              key={`menu-items-${displayMenuItems}`}
+              title="Menu Items"
+              value={displayMenuItems}
+              icon={ShoppingBag}
+              iconColor="text-orange-600"
+              iconBgColor="bg-orange-100"
+              subtitle="available"
+              tooltip="Edit your menu items"
+            />
           </Link>
         </div>
 
