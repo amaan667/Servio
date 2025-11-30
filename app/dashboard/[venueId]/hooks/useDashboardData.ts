@@ -57,8 +57,16 @@ export function useDashboardData(
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
 
+  const hasInitialCounts = Boolean(initialCounts);
+  const hasInitialStats = Boolean(initialStats);
+  const hasCompleteServerData = hasInitialCounts && hasInitialStats;
+
   // Fetch all counts directly from database
-  const fetchCounts = useCallback(async () => {
+  const fetchCounts = useCallback(async (force = false) => {
+    if (!force && hasInitialCounts) {
+      return;
+    }
+
     try {
       setError(null);
       const supabase = createClient();
@@ -120,10 +128,14 @@ export function useDashboardData(
       logger.error("[Dashboard] Error fetching counts:", err);
       setError("Failed to fetch dashboard counts");
     }
-  }, [venueId, venueTz]);
+  }, [venueId, venueTz, hasInitialCounts]);
 
   // Fetch stats (revenue, menu items, unpaid) directly from database
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (force = false) => {
+    if (!force && hasInitialStats) {
+      return;
+    }
+
     try {
       setError(null);
       const supabase = createClient();
@@ -151,7 +163,7 @@ export function useDashboardData(
       logger.error("[Dashboard] Error fetching stats:", err);
       setError("Failed to fetch dashboard stats");
     }
-  }, [venueId, venueTz]);
+  }, [venueId, venueTz, hasInitialStats]);
 
   // Initial data fetch on mount
   useEffect(() => {
@@ -164,20 +176,18 @@ export function useDashboardData(
     });
 
     // If we have initial data, use it and still fetch fresh data in background
-    if (initialCounts && initialStats) {
+    if (hasCompleteServerData) {
       setLoading(false);
-      // Still fetch fresh data to ensure it's up to date
-      fetchCounts();
-      fetchStats();
+      return;
     } else {
       // No initial data - fetch immediately
       const loadData = async () => {
-        await Promise.all([fetchCounts(), fetchStats()]);
+        await Promise.all([fetchCounts(true), fetchStats(true)]);
         setLoading(false);
       };
       loadData();
     }
-  }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
+  }, [venueId, venueTz, hasCompleteServerData, fetchCounts, fetchStats]);
 
   // Set up real-time subscriptions for live updates
   useEffect(() => {
@@ -199,8 +209,8 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts and stats when orders change
-          fetchCounts();
-          fetchStats();
+          fetchCounts(true);
+          fetchStats(true);
         }
       )
       .subscribe();
@@ -218,7 +228,7 @@ export function useDashboardData(
         },
         () => {
           // Refresh stats when menu items change
-          fetchStats();
+          fetchStats(true);
         }
       )
       .subscribe();
@@ -236,7 +246,7 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts when tables change
-          fetchCounts();
+          fetchCounts(true);
         }
       )
       .subscribe();
@@ -254,7 +264,7 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts when sessions change
-          fetchCounts();
+          fetchCounts(true);
         }
       )
       .subscribe();
@@ -272,7 +282,7 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts when reservations change
-          fetchCounts();
+          fetchCounts(true);
         }
       )
       .subscribe();
@@ -288,12 +298,12 @@ export function useDashboardData(
 
   // Manual refresh function
   const refreshCounts = useCallback(async () => {
-    await fetchCounts();
+    await fetchCounts(true);
   }, [fetchCounts]);
 
   const loadStats = useCallback(
     async (_venueId: string, _window: { startUtcISO: string; endUtcISO: string }) => {
-      await fetchStats();
+      await fetchStats(true);
     },
     [fetchStats]
   );
