@@ -187,16 +187,6 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     console.info(`[RAILWAY] Menu Items Count: ${actualMenuItemCount}`);
     console.info(`[RAILWAY] =================================================`);
 
-    if (menuError) {
-      logger.error("[DASHBOARD] Error fetching menu items:", {
-        error: menuError.message,
-        code: menuError.code,
-        details: menuError.details,
-        normalizedVenueId,
-        venueId,
-      });
-    }
-
     const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
     const unpaid = orders?.filter((o) => o.order_status === "UNPAID").length || 0;
 
