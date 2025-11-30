@@ -57,13 +57,23 @@ export function useDashboardData(
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
 
-  const hasInitialCounts = Boolean(initialCounts);
-  const hasInitialStats = Boolean(initialStats);
-  const hasCompleteServerData = hasInitialCounts && hasInitialStats;
+  // CRITICAL: Update state immediately when server props change
+  // This ensures we always use the latest server data
+  useEffect(() => {
+    if (initialCounts) {
+      setCounts(initialCounts);
+    }
+  }, [initialCounts]);
+
+  useEffect(() => {
+    if (initialStats) {
+      setStats(initialStats);
+    }
+  }, [initialStats]);
 
   // Fetch all counts directly from database
   const fetchCounts = useCallback(async (force = false) => {
-    if (!force && hasInitialCounts) {
+    if (!force && initialCounts) {
       return;
     }
 
@@ -128,11 +138,11 @@ export function useDashboardData(
       logger.error("[Dashboard] Error fetching counts:", err);
       setError("Failed to fetch dashboard counts");
     }
-  }, [venueId, venueTz, hasInitialCounts]);
+  }, [venueId, venueTz, initialCounts]);
 
   // Fetch stats (revenue, menu items, unpaid) directly from database
   const fetchStats = useCallback(async (force = false) => {
-    if (!force && hasInitialStats) {
+    if (!force && initialStats) {
       return;
     }
 
@@ -163,7 +173,7 @@ export function useDashboardData(
       logger.error("[Dashboard] Error fetching stats:", err);
       setError("Failed to fetch dashboard stats");
     }
-  }, [venueId, venueTz, hasInitialStats]);
+  }, [venueId, venueTz, initialStats]);
 
   // Initial data fetch on mount
   useEffect(() => {
@@ -175,8 +185,8 @@ export function useDashboardData(
       endUtcISO: window.endUtcISO || "",
     });
 
-    // If we have initial data, use it and still fetch fresh data in background
-    if (hasCompleteServerData) {
+    // If we have initial data, use it - don't fetch (server data is always correct)
+    if (initialCounts && initialStats) {
       setLoading(false);
       return;
     } else {
@@ -187,14 +197,32 @@ export function useDashboardData(
       };
       loadData();
     }
-  }, [venueId, venueTz, hasCompleteServerData, fetchCounts, fetchStats]);
+  }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
 
   // Set up real-time subscriptions for live updates
+  // Only set up after initial load is complete to prevent overwriting server data
   useEffect(() => {
-    if (!venueId) return;
+    if (!venueId || loading) return;
 
     const supabase = createClient();
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
+    // Debounce to prevent immediate firing
+    let debounceTimeout: NodeJS.Timeout | null = null;
+
+    const debouncedFetchCounts = () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        fetchCounts(true);
+      }, 500);
+    };
+
+    const debouncedFetchStats = () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        fetchStats(true);
+      }, 500);
+    };
 
     // Subscribe to orders changes
     const ordersChannel = supabase
@@ -209,8 +237,8 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts and stats when orders change
-          fetchCounts(true);
-          fetchStats(true);
+          debouncedFetchCounts();
+          debouncedFetchStats();
         }
       )
       .subscribe();
@@ -228,7 +256,7 @@ export function useDashboardData(
         },
         () => {
           // Refresh stats when menu items change
-          fetchStats(true);
+          debouncedFetchStats();
         }
       )
       .subscribe();
@@ -246,7 +274,7 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts when tables change
-          fetchCounts(true);
+          debouncedFetchCounts();
         }
       )
       .subscribe();
@@ -264,7 +292,7 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts when sessions change
-          fetchCounts(true);
+          debouncedFetchCounts();
         }
       )
       .subscribe();
@@ -282,19 +310,20 @@ export function useDashboardData(
         },
         () => {
           // Refresh counts when reservations change
-          fetchCounts(true);
+          debouncedFetchCounts();
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(menuChannel);
       supabase.removeChannel(tablesChannel);
       supabase.removeChannel(sessionsChannel);
       supabase.removeChannel(reservationsChannel);
     };
-  }, [venueId, fetchCounts, fetchStats]);
+  }, [venueId, loading, fetchCounts, fetchStats]);
 
   // Manual refresh function
   const refreshCounts = useCallback(async () => {
