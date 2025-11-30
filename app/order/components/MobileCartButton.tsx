@@ -14,7 +14,6 @@ export function MobileCartButton({ totalItems, onClick }: MobileCartButtonProps)
         className="rounded-full w-14 h-14 shadow-lg relative"
         variant="servio"
         size="icon"
-        disabled={totalItems === 0}
       >
         <ShoppingCart className="h-6 w-6" />
         {totalItems > 0 && (

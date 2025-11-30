@@ -10,7 +10,7 @@
  * - Structured error logging
  */
 
-import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { supabaseBrowser as createClient, createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { logger } from "@/lib/logger";
 import { withRetry, DEFAULT_RETRY_OPTIONS } from "@/lib/retry";
@@ -62,6 +62,7 @@ function safeExtractNumber(
 /**
  * Fetch menu item count - same query logic used everywhere
  * Includes retry logic for network failures
+ * Uses admin client on server, browser client on client
  */
 export async function fetchMenuItemCount(venueId: string): Promise<number> {
   if (!venueId || typeof venueId !== "string") {
@@ -74,7 +75,11 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
   try {
     return await withRetry(
       async () => {
-        const supabase = createClient();
+        // Use admin client on server (Node.js), browser client on client
+        const supabase = typeof window === "undefined" 
+          ? createAdminClient() 
+          : createClient();
+        
         const { data: menuItems, error } = await supabase
           .from("menu_items")
           .select("id")
