@@ -16,23 +16,20 @@ export const runtime = "nodejs"; // Ensure Node.js runtime
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
   
-  // CRITICAL: Log IMMEDIATELY - Use multiple methods to ensure visibility
+  // CRITICAL: Log IMMEDIATELY - Use stdout.write which Railway ALWAYS captures
   const timestamp = new Date().toISOString();
   
-  // Method 1: console.info
-  console.info(`[RAILWAY] =================================================`);
-  console.info(`[RAILWAY] Dashboard Server Component - START`);
-  console.info(`[RAILWAY] Venue ID: ${venueId}`);
-  console.info(`[RAILWAY] Timestamp: ${timestamp}`);
-  console.info(`[RAILWAY] =================================================`);
-  
-  // Method 2: console.log (also captured)
-  console.log(`[RAILWAY] Dashboard START - Venue: ${venueId} - Time: ${timestamp}`);
-  
-  // Method 3: Direct write to stderr (bypasses Next.js)
-  if (typeof process !== 'undefined' && process.stderr) {
-    process.stderr.write(`[RAILWAY] Dashboard START - Venue: ${venueId}\n`);
+  // Railway captures stdout.write - use this as primary method
+  if (typeof process !== 'undefined' && process.stdout) {
+    process.stdout.write(`[RAILWAY] =================================================\n`);
+    process.stdout.write(`[RAILWAY] Dashboard Server Component - START\n`);
+    process.stdout.write(`[RAILWAY] Venue ID: ${venueId}\n`);
+    process.stdout.write(`[RAILWAY] Timestamp: ${timestamp}\n`);
+    process.stdout.write(`[RAILWAY] =================================================\n`);
   }
+  
+  // Also use console.info as backup
+  console.info(`[RAILWAY] Dashboard START - Venue: ${venueId} - Time: ${timestamp}`);
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
@@ -178,68 +175,55 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     }
 
     // Use unified count function - single source of truth
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] 🍽️  CALLING fetchMenuItemCount`);
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] Input venueId: ${venueId}`);
-    console.info(`[RAILWAY] Normalized venueId: ${normalizedVenueId}`);
-    console.info(`[RAILWAY] =================================================`);
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[RAILWAY] =================================================\n`);
+      process.stdout.write(`[RAILWAY] 🍽️  CALLING fetchMenuItemCount\n`);
+      process.stdout.write(`[RAILWAY] Input venueId: ${venueId}\n`);
+      process.stdout.write(`[RAILWAY] Normalized venueId: ${normalizedVenueId}\n`);
+      process.stdout.write(`[RAILWAY] =================================================\n`);
+    }
     
     const actualMenuItemCount = await fetchMenuItemCount(venueId);
     
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] 🍽️  MENU ITEMS COUNT RESULT`);
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] Venue ID: ${normalizedVenueId}`);
-    console.info(`[RAILWAY] fetchMenuItemCount returned: ${actualMenuItemCount}`);
-    console.info(`[RAILWAY] Type: ${typeof actualMenuItemCount}`);
-    console.info(`[RAILWAY] Is NaN: ${Number.isNaN(actualMenuItemCount)}`);
-    console.info(`[RAILWAY] =================================================`);
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[RAILWAY] =================================================\n`);
+      process.stdout.write(`[RAILWAY] 🍽️  MENU ITEMS COUNT RESULT\n`);
+      process.stdout.write(`[RAILWAY] Venue ID: ${normalizedVenueId}\n`);
+      process.stdout.write(`[RAILWAY] fetchMenuItemCount returned: ${actualMenuItemCount}\n`);
+      process.stdout.write(`[RAILWAY] Type: ${typeof actualMenuItemCount}\n`);
+      process.stdout.write(`[RAILWAY] Is NaN: ${Number.isNaN(actualMenuItemCount)}\n`);
+      process.stdout.write(`[RAILWAY] =================================================\n`);
+    }
+    
+    console.info(`[RAILWAY] Menu Items Count: ${actualMenuItemCount}`);
 
     const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
     const unpaid = orders?.filter((o) => o.order_status === "UNPAID").length || 0;
 
     // CRITICAL: Create initialStats object
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] 📦 CREATING initialStats OBJECT`);
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] actualMenuItemCount value: ${actualMenuItemCount}`);
-    console.info(`[RAILWAY] revenue value: ${revenue}`);
-    console.info(`[RAILWAY] unpaid value: ${unpaid}`);
-    console.info(`[RAILWAY] =================================================`);
-    
     initialStats = {
       revenue,
       menuItems: actualMenuItemCount, // Use actual array length, not count query
       unpaid,
     };
     
-    // CRITICAL LOG: Show EXACT object being passed to client
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] ✅ FINAL initialStats OBJECT (JSON)`);
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] ${JSON.stringify(initialStats, null, 2)}`);
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] ✅ FINAL initialCounts OBJECT (JSON)`);
-    console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] ${JSON.stringify(initialCounts, null, 2)}`);
-    console.info(`[RAILWAY] =================================================`);
-    
-    // Single line summary (easy to spot in Railway logs)
-    console.info(`[RAILWAY] ═══════════════════════════════════════════════════════════`);
-    console.info(`[RAILWAY] 🎯 SERVER FINAL COUNTS - PASSING TO CLIENT`);
-    console.info(`[RAILWAY] ═══════════════════════════════════════════════════════════`);
-    console.info(`[RAILWAY] Menu Items: ${initialStats.menuItems}`);
-    console.info(`[RAILWAY] Tables Set Up: ${initialCounts?.tables_set_up || 0}`);
-    console.info(`[RAILWAY] Revenue: £${initialStats.revenue.toFixed(2)}`);
-    console.info(`[RAILWAY] Today's Orders: ${initialCounts?.today_orders_count || 0}`);
-    console.info(`[RAILWAY] Live Orders: ${initialCounts?.live_count || 0}`);
-    console.info(`[RAILWAY] ═══════════════════════════════════════════════════════════`);
-    
-    // Also write to stderr for maximum visibility
-    if (typeof process !== 'undefined' && process.stderr) {
-      process.stderr.write(`[RAILWAY] SERVER COUNTS - Menu: ${initialStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}\n`);
+    // CRITICAL LOG: Use stdout.write which Railway ALWAYS captures
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
+      process.stdout.write(`[RAILWAY] 🎯 SERVER FINAL COUNTS - PASSING TO CLIENT\n`);
+      process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
+      process.stdout.write(`[RAILWAY] Menu Items: ${initialStats.menuItems}\n`);
+      process.stdout.write(`[RAILWAY] Tables Set Up: ${initialCounts?.tables_set_up || 0}\n`);
+      process.stdout.write(`[RAILWAY] Revenue: £${initialStats.revenue.toFixed(2)}\n`);
+      process.stdout.write(`[RAILWAY] Today's Orders: ${initialCounts?.today_orders_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] Live Orders: ${initialCounts?.live_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
+      process.stdout.write(`[RAILWAY] initialStats JSON: ${JSON.stringify(initialStats)}\n`);
+      process.stdout.write(`[RAILWAY] initialCounts JSON: ${JSON.stringify(initialCounts)}\n`);
     }
+    
+    // Backup logging
+    console.info(`[RAILWAY] SERVER COUNTS - Menu: ${initialStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}`);
   } catch (error) {
     // Log error to Railway - use console.info
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -249,17 +233,21 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Continue without initial data - client will load it
   }
 
-  // FINAL SERVER-SIDE LOG - Railway only shows console.info
+  // FINAL SERVER-SIDE LOG - Use stdout.write which Railway ALWAYS captures
   const finalCount = initialStats?.menuItems || 0;
-  console.info(`[RAILWAY] ═══════════════════════════════════════════════════════════`);
-  console.info(`[RAILWAY] 🏁 Dashboard Server Component - END`);
-  console.info(`[RAILWAY] ═══════════════════════════════════════════════════════════`);
-  console.info(`[RAILWAY] About to render DashboardClient with:`);
-  console.info(`[RAILWAY]   initialStats.menuItems: ${finalCount}`);
-  console.info(`[RAILWAY]   initialStats.revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}`);
-  console.info(`[RAILWAY]   initialCounts.tables_set_up: ${initialCounts?.tables_set_up || 0}`);
-  console.info(`[RAILWAY]   initialCounts.today_orders_count: ${initialCounts?.today_orders_count || 0}`);
-  console.info(`[RAILWAY] ═══════════════════════════════════════════════════════════`);
+  if (typeof process !== 'undefined' && process.stdout) {
+    process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
+    process.stdout.write(`[RAILWAY] 🏁 Dashboard Server Component - END\n`);
+    process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
+    process.stdout.write(`[RAILWAY] Rendering DashboardClient with:\n`);
+    process.stdout.write(`[RAILWAY]   initialStats.menuItems: ${finalCount}\n`);
+    process.stdout.write(`[RAILWAY]   initialStats.revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}\n`);
+    process.stdout.write(`[RAILWAY]   initialCounts.tables_set_up: ${initialCounts?.tables_set_up || 0}\n`);
+    process.stdout.write(`[RAILWAY]   initialCounts.today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
+    process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
+  }
+  
+  console.info(`[RAILWAY] END - Menu: ${finalCount} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}`);
 
   return (
     <DashboardClient

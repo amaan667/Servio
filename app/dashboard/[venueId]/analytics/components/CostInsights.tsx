@@ -52,7 +52,6 @@ interface CostInsightsProps {
 
 export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps) {
   const [data, setData] = useState<CostInsightsData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,7 +60,6 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
 
   const fetchCostInsights = async () => {
     try {
-      setLoading(true);
       setError(null);
 
       const supabase = supabaseBrowser();
@@ -266,37 +264,8 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load cost insights");
-    } finally {
-      setLoading(false);
     }
   };
-
-  if (loading) {
-    // Show skeleton UI instead of spinner for better UX
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-16"></div>
-                <div className="h-3 bg-gray-200 rounded w-32 mt-2"></div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-48"></div>
-              <div className="h-64 bg-gray-100 rounded"></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -311,6 +280,27 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
           </p>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Show empty state while loading - no spinner
+  if (!data && !error) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">-</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">-</div>
+                <p className="text-xs text-muted-foreground">-</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     );
   }
 
