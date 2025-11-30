@@ -148,12 +148,12 @@ export default function MobileNav({
       isActive: pathname === `/dashboard/${venueId}/feedback`,
     },
     {
-      id: "receipts",
-      label: "Receipts",
-      href: `/dashboard/${venueId}/receipts`,
+      id: "payments",
+      label: "Payments",
+      href: `/dashboard/${venueId}/payments`,
       icon: Receipt,
-      description: "View order receipts",
-      isActive: pathname === `/dashboard/${venueId}/receipts`,
+      description: "Manage payments, split bills, and view receipts",
+      isActive: pathname === `/dashboard/${venueId}/payments`,
     },
     {
       id: "settings",

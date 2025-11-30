@@ -509,13 +509,13 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               )}
             </TabsContent>
 
-            {/* Today's Receipts */}
+            {/* Today's Payments */}
             <TabsContent value="today" className="mt-6">
               {todayReceipts.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Receipts Today</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Payments Today</h3>
                     <p className="text-gray-600">No paid orders found for today</p>
                   </CardContent>
                 </Card>
@@ -526,16 +526,16 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               )}
             </TabsContent>
 
-            {/* History Receipts */}
+            {/* Payment History */}
             <TabsContent value="history" className="mt-6">
               {historyReceipts.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No Historical Receipts
+                      No Payment History
                     </h3>
-                    <p className="text-gray-600">No receipts from previous days</p>
+                    <p className="text-gray-600">No payments from previous days</p>
                   </CardContent>
                 </Card>
               ) : (

@@ -44,7 +44,7 @@ export default function RoleBasedNavigation({
     if (path.includes("/feedback")) return "Feedback";
     if (path.includes("/live-orders")) return "Live Orders";
     if (path.includes("/orders")) return "Orders";
-    if (path.includes("/receipts")) return "Receipts";
+    if (path.includes("/payments")) return "Payments";
     if (path.includes("/ai-chat")) return "AI Assistant";
     return "Dashboard";
   };
