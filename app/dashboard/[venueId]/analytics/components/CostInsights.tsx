@@ -125,7 +125,12 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
 
         // Process recipes
         if (allRecipes) {
-          const recipeMap = new Map<string, typeof allRecipes>();
+          type RecipeType = {
+            menu_item_id: string;
+            qty_per_item: number;
+            ingredient?: { cost_per_unit: number } | null;
+          };
+          const recipeMap = new Map<string, RecipeType[]>();
           allRecipes.forEach((recipe: unknown) => {
             const recipeTyped = recipe as {
               menu_item_id: string;
@@ -142,7 +147,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
           menuItems.forEach((item) => {
             const recipes = recipeMap.get(item.id) || [];
             const totalCost = recipes.reduce(
-              (sum: number, recipe) => {
+              (sum: number, recipe: RecipeType) => {
                 const ingredientCost = recipe.ingredient?.cost_per_unit || 0;
                 return sum + ingredientCost * (recipe.qty_per_item || 0);
               },

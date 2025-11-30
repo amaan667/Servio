@@ -665,28 +665,6 @@ export function useDashboardData(
       }
     };
 
-    const handleMenuItemsChanged = (event: Event) => {
-      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
-      const changedVenueId = customEvent.detail?.venueId;
-      const count = customEvent.detail?.count;
-      
-      // Normalize both venue IDs for comparison
-      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
-        ? changedVenueId 
-        : changedVenueId ? `venue-${changedVenueId}` : null;
-      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
-        ? venueId 
-        : `venue-${venueId}`;
-
-      if (normalizedChangedVenueId === normalizedCurrentVenueId && typeof count === "number") {
-        // Update menu items count instantly
-        setStats((prev) => ({
-          ...prev,
-          menuItems: count,
-        }));
-        console.log("✅ [DASHBOARD DATA] Menu items count updated instantly via real-time:", count);
-      }
-    };
 
     const handleRevenueChanged = (event: Event) => {
       const customEvent = event as CustomEvent<{ venueId: string; amount: number }>;
