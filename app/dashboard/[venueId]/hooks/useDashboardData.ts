@@ -689,29 +689,6 @@ export function useDashboardData(
       }
     };
 
-    const handleTablesChanged = (event: Event) => {
-      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
-      const changedVenueId = customEvent.detail?.venueId;
-      const count = customEvent.detail?.count;
-      
-      // Normalize both venue IDs for comparison
-      const normalizedChangedVenueId = changedVenueId?.startsWith("venue-") 
-        ? changedVenueId 
-        : changedVenueId ? `venue-${changedVenueId}` : null;
-      const normalizedCurrentVenueId = venueId.startsWith("venue-") 
-        ? venueId 
-        : `venue-${venueId}`;
-
-      if (normalizedChangedVenueId === normalizedCurrentVenueId && typeof count === "number") {
-        // Update tables set up count instantly
-        setCounts((prev) => ({
-          ...prev,
-          tables_set_up: count,
-          active_tables_count: count,
-        }));
-        console.log("✅ [DASHBOARD DATA] Tables set up count updated instantly via real-time:", count);
-      }
-    };
 
     window.addEventListener("menuChanged", handleMenuChange);
     window.addEventListener("menuItemsChanged", handleMenuItemsChanged);
