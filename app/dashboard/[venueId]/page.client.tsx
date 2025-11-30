@@ -95,7 +95,8 @@ const DashboardClient = React.memo(function DashboardClient({
   const venueTz = "Europe/London"; // Default timezone
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
   
-  // Simple display values - directly from dashboardData state (which updates from DB)
+  // Simple display values - use client state which is synced from server data
+  // The useDashboardData hook ensures initialCounts/initialStats are used immediately
   const displayMenuItems = dashboardData.stats.menuItems;
   const displayTables = dashboardData.counts.tables_set_up;
 
@@ -466,7 +467,7 @@ const DashboardClient = React.memo(function DashboardClient({
         )}
 
         {/* Enhanced KPI Cards - Responsive Grid (Always 4 Cards) */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {/* Card 1: Today's Orders */}
           <Link href={`/dashboard/${venueId}/live-orders?since=today`} className="block">
             <EnhancedStatCard
@@ -521,7 +522,6 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 3: Tables Set Up */}
           <Link href={`/dashboard/${venueId}/tables`} className="block">
             <EnhancedStatCard
-              key={`tables-${displayTables}`}
               title="Tables Set Up"
               value={displayTables}
               icon={Table}
@@ -535,7 +535,6 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 4: Menu Items */}
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
             <EnhancedStatCard
-              key={`menu-items-${displayMenuItems}`}
               title="Menu Items"
               value={displayMenuItems}
               icon={ShoppingBag}
