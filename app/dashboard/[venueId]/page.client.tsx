@@ -198,6 +198,245 @@ const DashboardClient = React.memo(function DashboardClient({
     });
   }, [venueId, initialStats?.menuItems, initialStats?.revenue, initialCounts?.tables_set_up, initialCounts?.today_orders_count, dashboardData.stats.menuItems, dashboardData.stats.revenue, dashboardData.counts.tables_set_up, dashboardData.counts.today_orders_count]);
 
+  // Fetch ACTUAL database counts and compare with what was sent
+  useEffect(() => {
+    const fetchActualCounts = async () => {
+      try {
+        const supabase = supabaseBrowser();
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        const venueTz = "Europe/London";
+        
+        // Fetch actual counts from database
+        const { data: actualCountsData, error: countsError } = await supabase
+          .rpc("dashboard_counts", {
+            p_venue_id: normalizedVenueId,
+            p_tz: venueTz,
+            p_live_window_mins: 30,
+          })
+          .single();
+
+        // Fetch actual menu items count
+        const { fetchMenuItemCount } = await import("@/lib/counts/unified-counts");
+        const actualMenuItems = await fetchMenuItemCount(venueId);
+
+        // Fetch actual tables count
+        const { data: allTables } = await supabase
+          .from("tables")
+          .select("id, is_active")
+          .eq("venue_id", normalizedVenueId);
+        const actualTablesSetUp = allTables?.filter((t) => t.is_active).length || 0;
+
+        // Fetch actual revenue
+        const { todayWindowForTZ } = await import("@/lib/time");
+        const window = todayWindowForTZ(venueTz);
+        const { data: orders } = await supabase
+          .from("orders")
+          .select("total_amount, order_status, payment_status")
+          .eq("venue_id", normalizedVenueId)
+          .gte("created_at", window.startUtcISO)
+          .lt("created_at", window.endUtcISO)
+          .neq("order_status", "CANCELLED")
+          .neq("order_status", "REFUNDED");
+        const actualRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+
+        // Extract actual counts from RPC response
+        const actualCounts = actualCountsData as DashboardCounts | null;
+        const actualTodayOrders = actualCounts?.today_orders_count || 0;
+        const actualLiveOrders = actualCounts?.live_count || 0;
+        const actualEarlierToday = actualCounts?.earlier_today_count || 0;
+        const actualHistory = actualCounts?.history_count || 0;
+        const actualActiveTables = actualCounts?.active_tables_count || 0;
+        const actualTablesInUse = actualCounts?.tables_in_use || 0;
+        const actualTablesReserved = actualCounts?.tables_reserved_now || 0;
+
+        // Fetch actual table counts directly
+        const { data: activeSessions } = await supabase
+          .from("table_sessions")
+          .select("id")
+          .eq("venue_id", normalizedVenueId)
+          .eq("status", "OCCUPIED")
+          .is("closed_at", null);
+        const actualTablesInUseDirect = activeSessions?.length || 0;
+
+        const now = new Date();
+        const { data: currentReservations } = await supabase
+          .from("reservations")
+          .select("id")
+          .eq("venue_id", normalizedVenueId)
+          .eq("status", "BOOKED")
+          .lte("start_at", now.toISOString())
+          .gte("end_at", now.toISOString());
+        const actualTablesReservedDirect = currentReservations?.length || 0;
+
+        // What was sent from server
+        const sentMenuItems = initialStats?.menuItems || 0;
+        const sentRevenue = initialStats?.revenue || 0;
+        const sentUnpaid = initialStats?.unpaid || 0;
+        const sentTables = initialCounts?.tables_set_up || 0;
+        const sentTodayOrders = initialCounts?.today_orders_count || 0;
+        const sentLiveOrders = initialCounts?.live_count || 0;
+        const sentEarlierToday = initialCounts?.earlier_today_count || 0;
+        const sentHistory = initialCounts?.history_count || 0;
+        const sentActiveTables = initialCounts?.active_tables_count || 0;
+        const sentTablesInUse = initialCounts?.tables_in_use || 0;
+        const sentTablesReserved = initialCounts?.tables_reserved_now || 0;
+
+        // Log comprehensive comparison
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("🔍 [DASHBOARD] ACTUAL DATABASE COUNTS vs SENT COUNTS");
+        console.log("═══════════════════════════════════════════════════════════");
+        console.log("Venue ID:", venueId);
+        console.log("Normalized Venue ID:", normalizedVenueId);
+        console.log("Timestamp:", new Date().toISOString());
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("📤 SENT FROM SERVER (initialCounts/initialStats):");
+        console.log("  Menu Items:", sentMenuItems);
+        console.log("  Revenue: £", sentRevenue.toFixed(2));
+        console.log("  Unpaid Orders:", sentUnpaid);
+        console.log("  Tables Set Up:", sentTables);
+        console.log("  Active Tables Count:", sentActiveTables);
+        console.log("  Tables In Use:", sentTablesInUse);
+        console.log("  Tables Reserved Now:", sentTablesReserved);
+        console.log("  Today's Orders:", sentTodayOrders);
+        console.log("  Live Orders:", sentLiveOrders);
+        console.log("  Earlier Today:", sentEarlierToday);
+        console.log("  History:", sentHistory);
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("💾 ACTUAL DATABASE COUNTS (just fetched):");
+        console.log("  Menu Items:", actualMenuItems);
+        console.log("  Revenue: £", actualRevenue.toFixed(2));
+        console.log("  Tables Set Up:", actualTablesSetUp);
+        console.log("  Active Tables Count:", actualActiveTables);
+        console.log("  Tables In Use (RPC):", actualTablesInUse);
+        console.log("  Tables In Use (Direct):", actualTablesInUseDirect);
+        console.log("  Tables Reserved Now (RPC):", actualTablesReserved);
+        console.log("  Tables Reserved Now (Direct):", actualTablesReservedDirect);
+        console.log("  Today's Orders:", actualTodayOrders);
+        console.log("  Live Orders:", actualLiveOrders);
+        console.log("  Earlier Today:", actualEarlierToday);
+        console.log("  History:", actualHistory);
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("🔎 COMPARISON (Sent vs Actual):");
+        console.log("  Menu Items:", sentMenuItems, "vs", actualMenuItems, sentMenuItems === actualMenuItems ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Revenue: £", sentRevenue.toFixed(2), "vs £", actualRevenue.toFixed(2), Math.abs(sentRevenue - actualRevenue) < 0.01 ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Tables Set Up:", sentTables, "vs", actualTablesSetUp, sentTables === actualTablesSetUp ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Active Tables Count:", sentActiveTables, "vs", actualActiveTables, sentActiveTables === actualActiveTables ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Tables In Use:", sentTablesInUse, "vs", actualTablesInUseDirect, sentTablesInUse === actualTablesInUseDirect ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Tables Reserved Now:", sentTablesReserved, "vs", actualTablesReservedDirect, sentTablesReserved === actualTablesReservedDirect ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Today's Orders:", sentTodayOrders, "vs", actualTodayOrders, sentTodayOrders === actualTodayOrders ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Live Orders:", sentLiveOrders, "vs", actualLiveOrders, sentLiveOrders === actualLiveOrders ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  Earlier Today:", sentEarlierToday, "vs", actualEarlierToday, sentEarlierToday === actualEarlierToday ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("  History:", sentHistory, "vs", actualHistory, sentHistory === actualHistory ? "✅ MATCH" : "❌ MISMATCH");
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        
+        // Check for any mismatches
+        const hasMismatches = 
+          sentMenuItems !== actualMenuItems ||
+          Math.abs(sentRevenue - actualRevenue) >= 0.01 ||
+          sentTables !== actualTablesSetUp ||
+          sentActiveTables !== actualActiveTables ||
+          sentTablesInUse !== actualTablesInUseDirect ||
+          sentTablesReserved !== actualTablesReservedDirect ||
+          sentTodayOrders !== actualTodayOrders ||
+          sentLiveOrders !== actualLiveOrders ||
+          sentEarlierToday !== actualEarlierToday ||
+          sentHistory !== actualHistory;
+
+        if (hasMismatches) {
+          console.error("❌ MISMATCHES DETECTED BETWEEN SENT AND ACTUAL COUNTS!");
+          if (sentMenuItems !== actualMenuItems) {
+            console.error(`  Menu Items: Sent ${sentMenuItems} but actual is ${actualMenuItems} (diff: ${actualMenuItems - sentMenuItems})`);
+          }
+          if (Math.abs(sentRevenue - actualRevenue) >= 0.01) {
+            console.error(`  Revenue: Sent £${sentRevenue.toFixed(2)} but actual is £${actualRevenue.toFixed(2)} (diff: £${(actualRevenue - sentRevenue).toFixed(2)})`);
+          }
+          if (sentTables !== actualTablesSetUp) {
+            console.error(`  Tables Set Up: Sent ${sentTables} but actual is ${actualTablesSetUp} (diff: ${actualTablesSetUp - sentTables})`);
+          }
+          if (sentActiveTables !== actualActiveTables) {
+            console.error(`  Active Tables Count: Sent ${sentActiveTables} but actual is ${actualActiveTables} (diff: ${actualActiveTables - sentActiveTables})`);
+          }
+          if (sentTablesInUse !== actualTablesInUseDirect) {
+            console.error(`  Tables In Use: Sent ${sentTablesInUse} but actual is ${actualTablesInUseDirect} (diff: ${actualTablesInUseDirect - sentTablesInUse})`);
+          }
+          if (sentTablesReserved !== actualTablesReservedDirect) {
+            console.error(`  Tables Reserved Now: Sent ${sentTablesReserved} but actual is ${actualTablesReservedDirect} (diff: ${actualTablesReservedDirect - sentTablesReserved})`);
+          }
+          if (sentTodayOrders !== actualTodayOrders) {
+            console.error(`  Today's Orders: Sent ${sentTodayOrders} but actual is ${actualTodayOrders} (diff: ${actualTodayOrders - sentTodayOrders})`);
+          }
+          if (sentLiveOrders !== actualLiveOrders) {
+            console.error(`  Live Orders: Sent ${sentLiveOrders} but actual is ${actualLiveOrders} (diff: ${actualLiveOrders - sentLiveOrders})`);
+          }
+          if (sentEarlierToday !== actualEarlierToday) {
+            console.error(`  Earlier Today: Sent ${sentEarlierToday} but actual is ${actualEarlierToday} (diff: ${actualEarlierToday - sentEarlierToday})`);
+          }
+          if (sentHistory !== actualHistory) {
+            console.error(`  History: Sent ${sentHistory} but actual is ${actualHistory} (diff: ${actualHistory - sentHistory})`);
+          }
+        } else {
+          console.log("✅ ALL COUNTS MATCH - Server sent correct values!");
+        }
+        
+        console.log("═══════════════════════════════════════════════════════════");
+        
+        // Also log as structured object for easy filtering
+        console.log("DASHBOARD COUNTS COMPARISON:", {
+          venueId,
+          timestamp: new Date().toISOString(),
+          sent: {
+            menuItems: sentMenuItems,
+            revenue: sentRevenue,
+            unpaid: sentUnpaid,
+            tablesSetUp: sentTables,
+            activeTablesCount: sentActiveTables,
+            tablesInUse: sentTablesInUse,
+            tablesReservedNow: sentTablesReserved,
+            todayOrders: sentTodayOrders,
+            liveOrders: sentLiveOrders,
+            earlierToday: sentEarlierToday,
+            history: sentHistory,
+          },
+          actual: {
+            menuItems: actualMenuItems,
+            revenue: actualRevenue,
+            tablesSetUp: actualTablesSetUp,
+            activeTablesCount: actualActiveTables,
+            tablesInUse: actualTablesInUseDirect,
+            tablesReservedNow: actualTablesReservedDirect,
+            todayOrders: actualTodayOrders,
+            liveOrders: actualLiveOrders,
+            earlierToday: actualEarlierToday,
+            history: actualHistory,
+          },
+          matches: {
+            menuItems: sentMenuItems === actualMenuItems,
+            revenue: Math.abs(sentRevenue - actualRevenue) < 0.01,
+            tablesSetUp: sentTables === actualTablesSetUp,
+            activeTablesCount: sentActiveTables === actualActiveTables,
+            tablesInUse: sentTablesInUse === actualTablesInUseDirect,
+            tablesReservedNow: sentTablesReserved === actualTablesReservedDirect,
+            todayOrders: sentTodayOrders === actualTodayOrders,
+            liveOrders: sentLiveOrders === actualLiveOrders,
+            earlierToday: sentEarlierToday === actualEarlierToday,
+            history: sentHistory === actualHistory,
+          },
+        });
+
+        if (countsError) {
+          console.error("❌ Error fetching actual counts:", countsError);
+        }
+      } catch (error) {
+        console.error("❌ Error in fetchActualCounts:", error);
+      }
+    };
+
+    // Only fetch if we have initial data to compare
+    if (initialCounts || initialStats) {
+      fetchActualCounts();
+    }
+  }, [venueId, initialCounts, initialStats]);
+
   useDashboardRealtime({
     venueId,
     todayWindow: dashboardData.todayWindow,
@@ -561,10 +800,15 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 3: Tables Set Up */}
           <Link href={`/dashboard/${venueId}/tables`} className="block">
             {(() => {
-              const tablesValue = initialCounts?.tables_set_up ?? dashboardData.counts.tables_set_up ?? 0;
+              // ALWAYS prioritize initialCounts from server - it's the source of truth
+              // Only use dashboardData.counts if initialCounts is not available
+              const tablesValue = initialCounts?.tables_set_up !== undefined 
+                ? initialCounts.tables_set_up 
+                : (dashboardData.counts.tables_set_up ?? 0);
               console.error(`[FRONTEND RENDER] Tables Set Up card - Value being displayed: ${tablesValue}`);
               console.error(`[FRONTEND RENDER]   initialCounts?.tables_set_up: ${initialCounts?.tables_set_up ?? "undefined"}`);
               console.error(`[FRONTEND RENDER]   dashboardData.counts.tables_set_up: ${dashboardData.counts.tables_set_up ?? "undefined"}`);
+              console.error(`[FRONTEND RENDER]   Using server value: ${initialCounts?.tables_set_up !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
               return (
                 <EnhancedStatCard
                   key="tables"
@@ -583,9 +827,15 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 4: Menu Items */}
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
             {(() => {
-              const menuItemsValue = initialStats?.menuItems ?? 0;
+              // ALWAYS prioritize initialStats from server - it's the source of truth
+              // Only use dashboardData.stats if initialStats is not available
+              const menuItemsValue = initialStats?.menuItems !== undefined 
+                ? initialStats.menuItems 
+                : (dashboardData.stats.menuItems ?? 0);
               console.error(`[FRONTEND RENDER] Menu Items card - Value being displayed: ${menuItemsValue}`);
               console.error(`[FRONTEND RENDER]   initialStats?.menuItems: ${initialStats?.menuItems ?? "undefined"}`);
+              console.error(`[FRONTEND RENDER]   dashboardData.stats.menuItems: ${dashboardData.stats.menuItems ?? "undefined"}`);
+              console.error(`[FRONTEND RENDER]   Using server value: ${initialStats?.menuItems !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
               console.error(`[FRONTEND RENDER]   Type: ${typeof menuItemsValue}`);
               console.error(`[FRONTEND RENDER]   Is NaN: ${Number.isNaN(menuItemsValue)}`);
               return (

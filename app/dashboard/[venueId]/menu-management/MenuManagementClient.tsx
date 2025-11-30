@@ -1,13 +1,10 @@
 "use client";
+/* eslint-disable no-console */
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -29,15 +26,11 @@ import {
   Save,
   Eye,
   Settings,
-  Upload,
-  Grid,
   GripVertical,
   Palette,
-  Info,
   ImageIcon,
 } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
-import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { MenuPreview } from "@/components/MenuPreview";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 import { useToast } from "@/hooks/use-toast";
@@ -66,11 +59,9 @@ import { MenuItem, ActiveTab, PreviewMode } from "./types";
 
 export default function MenuManagementClient({
   venueId,
-  canEdit: _canEdit = true,
   initialMenuItemCount = 0,
 }: {
   venueId: string;
-  canEdit?: boolean;
   initialMenuItemCount?: number;
 }) {
   console.log("[MENU BUILDER] Component mounting:", {
@@ -92,7 +83,6 @@ export default function MenuManagementClient({
   });
   const [isClearing, setIsClearing] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("manage");
-  const [showCategories, setShowCategories] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("pdf");
   const [designRefreshKey, setDesignRefreshKey] = useState(0); // Triggers preview refresh
   const { toast } = useToast();
@@ -254,6 +244,28 @@ export default function MenuManagementClient({
       setEditingItem(null);
 
       await loadMenuItems();
+      
+      // Dispatch event with updated count after menu items are loaded
+      // Use a small delay to ensure state has updated
+      setTimeout(async () => {
+        if (typeof window !== "undefined") {
+          // Get the actual count from the database
+          const { fetchMenuItemCount } = await import("@/lib/counts/unified-counts");
+          const newCount = await fetchMenuItemCount(venueId);
+          window.dispatchEvent(
+            new CustomEvent("menuItemsChanged", {
+              detail: { venueId, count: newCount },
+            })
+          );
+          // Also dispatch menuChanged for backward compatibility
+          window.dispatchEvent(
+            new CustomEvent("menuChanged", {
+              detail: { venueId, action: editingItem ? "updated" : "created", itemCount: newCount },
+            })
+          );
+          console.log("✅ Dispatched menuItemsChanged event with count:", newCount);
+        }
+      }, 100);
     } catch (_error) {
       toast({
         title: "Error",
@@ -282,6 +294,28 @@ export default function MenuManagementClient({
       });
 
       await loadMenuItems();
+      
+      // Dispatch event with updated count after menu items are loaded
+      // Use a small delay to ensure state has updated
+      setTimeout(async () => {
+        if (typeof window !== "undefined") {
+          // Get the actual count from the database
+          const { fetchMenuItemCount } = await import("@/lib/counts/unified-counts");
+          const newCount = await fetchMenuItemCount(venueId);
+          window.dispatchEvent(
+            new CustomEvent("menuItemsChanged", {
+              detail: { venueId, count: newCount },
+            })
+          );
+          // Also dispatch menuChanged for backward compatibility
+          window.dispatchEvent(
+            new CustomEvent("menuChanged", {
+              detail: { venueId, action: "deleted", itemCount: newCount },
+            })
+          );
+          console.log("✅ Dispatched menuItemsChanged event with count:", newCount);
+        }
+      }, 100);
     } catch (_error) {
       toast({
         title: "Error",

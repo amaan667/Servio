@@ -137,7 +137,7 @@ export function useDashboardData(
         fullInitialStats: JSON.stringify(initialStats, null, 2),
       });
       
-      // ALWAYS update immediately - this is the source of truth from server
+      // ALWAYS update immediately with server data - it's the source of truth
       // Don't let loadStats override this on initial mount
       setStats(initialStats);
       
@@ -154,9 +154,10 @@ export function useDashboardData(
     // Also update counts if initialCounts is provided
     if (initialCounts) {
       console.log("[DASHBOARD DATA] ✅ Updating counts with server data:", initialCounts);
+      console.error("[DASHBOARD DATA] ✅ Updating counts with server data - tables_set_up:", initialCounts.tables_set_up);
       setCounts(initialCounts);
     }
-  }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid, initialCounts?.tables_set_up, initialCounts?.today_orders_count]); // Depend on values, not object reference
+  }, [initialStats?.menuItems, initialStats?.revenue, initialStats?.unpaid, initialCounts?.tables_set_up, initialCounts?.today_orders_count, initialCounts?.live_count]); // Depend on specific values to ensure updates
   
   // CRITICAL: Mark that we've received initialStats to prevent loadStats from overriding
   // Initialize immediately if initialStats exists - this must be set BEFORE loadStats can be called
@@ -192,22 +193,26 @@ export function useDashboardData(
 
   const loadStats = useCallback(
     async (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => {
-      // CRITICAL: If we have initialStats, NEVER update menuItems - server data is source of truth
-      // This prevents the 178 vs 181 mismatch on first load
+      // CRITICAL: Check current stats state to see if we have server-provided menuItems
+      // This check happens at CALL TIME, not callback creation time
+      const currentStats = stats; // Get current state value
+      const hasServerMenuItems = initialStats?.menuItems !== undefined && initialStats.menuItems > 0;
+      
       console.error("═══════════════════════════════════════════════════════════");
       console.error("🔍 [DASHBOARD DATA] loadStats CALLED");
       console.error("═══════════════════════════════════════════════════════════");
       console.error("venueId:", venueId);
       console.error("initialStats exists:", !!initialStats);
       console.error("initialStats?.menuItems:", initialStats?.menuItems);
-      console.error("Current stats.menuItems:", stats.menuItems);
+      console.error("Current stats.menuItems:", currentStats.menuItems);
+      console.error("hasServerMenuItems:", hasServerMenuItems);
       console.error("Stack trace:", new Error().stack);
       console.error("═══════════════════════════════════════════════════════════");
       
-      if (initialStats) {
-        console.error("[DASHBOARD DATA] 🛑 loadStats called but initialStats exists");
-        console.error("[DASHBOARD DATA] 🛑 initialStats.menuItems:", initialStats.menuItems);
-        console.error("[DASHBOARD DATA] 🛑 Current stats.menuItems:", stats.menuItems);
+      // If we have server-provided menuItems, NEVER override them
+      if (hasServerMenuItems) {
+        console.error("[DASHBOARD DATA] 🛑 loadStats called but initialStats.menuItems exists:", initialStats.menuItems);
+        console.error("[DASHBOARD DATA] 🛑 Current stats.menuItems:", currentStats.menuItems);
         console.error("[DASHBOARD DATA] 🛑 Skipping menuItems query, keeping server count");
         // Only update revenue and unpaid, NEVER touch menuItems
         try {
@@ -300,7 +305,7 @@ export function useDashboardData(
         // Error handled silently
       }
     },
-    [initialStats] // Include initialStats so callback has access to current value for hasInitialStats check
+    [initialStats, stats] // Include both initialStats and stats to check at call time
   );
 
   const refreshCounts = useCallback(async () => {
