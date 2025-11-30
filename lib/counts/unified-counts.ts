@@ -76,7 +76,7 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
     return await withRetry(
       async () => {
         // Use admin client on server (Node.js), browser client on client
-        const supabase = typeof window === "undefined" 
+        const supabase = typeof globalThis.window === "undefined" 
           ? createAdminClient() 
           : createClient();
         
@@ -145,7 +145,10 @@ export async function fetchUnifiedCounts(
   }
 
   const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-  const supabase = createClient();
+  // Use admin client on server (Node.js), browser client on client
+  const supabase = typeof globalThis.window === "undefined" 
+    ? createAdminClient() 
+    : createClient();
   
   // Validate time window
   let window;
