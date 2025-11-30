@@ -457,9 +457,11 @@ export function OrderCard({
       name: (item.item_name as string) || (item.name as string) || "Item",
       price: (item.price as number) || 0,
       quantity: (item.quantity as number) || 1,
-      specialInstructions: (item.special_instructions as string) || null,
-      selectedModifiers: (item.modifiers as Record<string, string[]>) || null,
+      specialInstructions: (item.special_instructions as string) || undefined,
+      selectedModifiers: (item.modifiers as Record<string, string[]>) || undefined,
       modifierPrice: 0,
+      category: (item.category as string) || "Other",
+      is_available: true,
     }));
   };
 
@@ -573,7 +575,7 @@ export function OrderCard({
             )}
 
             {/* Split Bill Button - Only show for unpaid orders */}
-            {showActions && venueId && !isPaid && (
+            {showActions && venueId && (order.payment?.status || order.payment_status || "unpaid").toLowerCase() !== "paid" && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

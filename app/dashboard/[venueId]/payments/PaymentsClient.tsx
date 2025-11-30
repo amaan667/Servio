@@ -588,7 +588,21 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               window.history.replaceState({}, "", url.toString());
             }
           }}
-          orders={[selectedOrderForSplit]}
+          orders={[selectedOrderForSplit].map(order => ({
+            id: order.id,
+            customer_name: order.customer_name || "Customer",
+            total_amount: order.total_amount,
+            items: (order.items || []).map((item: unknown) => {
+              const it = item as { menu_item_id?: string; quantity: number; price: number; item_name: string; specialInstructions?: string };
+              return {
+                menu_item_id: it.menu_item_id || "",
+                quantity: it.quantity,
+                price: it.price,
+                item_name: it.item_name,
+                specialInstructions: it.specialInstructions,
+              };
+            }),
+          }))}
           venueId={venueId}
           onSplitComplete={() => {
             setSelectedOrderForSplit(null);

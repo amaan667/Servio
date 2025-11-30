@@ -892,16 +892,4 @@ export async function POST(req: NextRequest) {
         isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
       );
     }
-  },
-  {
-    // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
-      } catch {
-        return null;
-      }
-    },
-  }
-);
+}

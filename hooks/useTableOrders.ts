@@ -13,6 +13,8 @@ export interface TableOrder {
   customer_phone: string | null;
   order_status: string;
   payment_status: string;
+  payment_mode?: string;
+  payment_method?: string;
   total_amount: number;
   created_at: string;
   updated_at: string;
