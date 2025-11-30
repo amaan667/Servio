@@ -560,30 +560,47 @@ const DashboardClient = React.memo(function DashboardClient({
 
           {/* Card 3: Tables Set Up */}
           <Link href={`/dashboard/${venueId}/tables`} className="block">
-            <EnhancedStatCard
-              title="Tables Set Up"
-              value={initialCounts?.tables_set_up ?? dashboardData.counts.tables_set_up ?? 0}
-              icon={Table}
-              iconColor="text-purple-600"
-              iconBgColor="bg-purple-100"
-              subtitle="all active"
-              tooltip="Manage table setup and reservations"
-              href={`/dashboard/${venueId}/tables`}
-            />
+            {(() => {
+              const tablesValue = initialCounts?.tables_set_up ?? dashboardData.counts.tables_set_up ?? 0;
+              console.error(`[FRONTEND RENDER] Tables Set Up card - Value being displayed: ${tablesValue}`);
+              console.error(`[FRONTEND RENDER]   initialCounts?.tables_set_up: ${initialCounts?.tables_set_up ?? "undefined"}`);
+              console.error(`[FRONTEND RENDER]   dashboardData.counts.tables_set_up: ${dashboardData.counts.tables_set_up ?? "undefined"}`);
+              return (
+                <EnhancedStatCard
+                  key="tables"
+                  title="Tables Set Up"
+                  value={tablesValue}
+                  icon={Table}
+                  iconColor="text-purple-600"
+                  iconBgColor="bg-purple-100"
+                  subtitle="all active"
+                  tooltip="Manage table setup and reservations"
+                />
+              );
+            })()}
           </Link>
 
           {/* Card 4: Menu Items */}
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
-            <EnhancedStatCard
-              title="Menu Items"
-              value={initialStats?.menuItems ?? 0}
-              icon={ShoppingBag}
-              iconColor="text-orange-600"
-              iconBgColor="bg-orange-100"
-              subtitle="available"
-              tooltip="Edit your menu items"
-              href={`/dashboard/${venueId}/menu-management`}
-            />
+            {(() => {
+              const menuItemsValue = initialStats?.menuItems ?? 0;
+              console.error(`[FRONTEND RENDER] Menu Items card - Value being displayed: ${menuItemsValue}`);
+              console.error(`[FRONTEND RENDER]   initialStats?.menuItems: ${initialStats?.menuItems ?? "undefined"}`);
+              console.error(`[FRONTEND RENDER]   Type: ${typeof menuItemsValue}`);
+              console.error(`[FRONTEND RENDER]   Is NaN: ${Number.isNaN(menuItemsValue)}`);
+              return (
+                <EnhancedStatCard
+                  key="menu-items"
+                  title="Menu Items"
+                  value={menuItemsValue}
+                  icon={ShoppingBag}
+                  iconColor="text-orange-600"
+                  iconBgColor="bg-orange-100"
+                  subtitle="available"
+                  tooltip="Edit your menu items"
+                />
+              );
+            })()}
           </Link>
         </div>
 

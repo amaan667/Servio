@@ -96,6 +96,14 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
         }
 
         const count = menuItems?.length || 0;
+        
+        // CRITICAL LOG: Must show in Railway
+        console.info(`[RAILWAY] [UNIFIED COUNTS] fetchMenuItemCount - Query Result:`);
+        console.info(`[RAILWAY]   Venue ID: ${normalizedVenueId}`);
+        console.info(`[RAILWAY]   Query returned ${menuItems?.length || 0} items`);
+        console.info(`[RAILWAY]   First 3 item IDs: ${menuItems?.slice(0, 3).map(m => m.id).join(", ") || "none"}`);
+        console.info(`[RAILWAY]   Final count returned: ${count}`);
+        
         logger.debug("[UNIFIED COUNTS] Menu items count fetched:", {
           venueId: normalizedVenueId,
           count,
