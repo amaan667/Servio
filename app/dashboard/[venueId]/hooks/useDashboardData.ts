@@ -34,6 +34,7 @@ export function useDashboardData(
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
 
   // Initialize with server data if available, otherwise defaults
+  // CRITICAL: Use server data immediately to prevent showing 0 on first load
   const [counts, setCounts] = useState<DashboardCounts>(() => {
     if (initialCounts) {
       return initialCounts;
@@ -59,20 +60,25 @@ export function useDashboardData(
 
   // CRITICAL: Update state immediately when server props change
   // This ensures we always use the latest server data
+  // Run synchronously on mount if initialCounts exists to prevent showing 0
   useEffect(() => {
     if (initialCounts) {
       setCounts(initialCounts);
+      setLoading(false);
     }
   }, [initialCounts]);
 
   useEffect(() => {
     if (initialStats) {
       setStats(initialStats);
+      setLoading(false);
     }
   }, [initialStats]);
 
   // Fetch all counts directly from database
   const fetchCounts = useCallback(async (force = false) => {
+    // Always fetch when force=true, even if initialCounts exists
+    // This ensures real-time updates always work
     if (!force && initialCounts) {
       return;
     }
@@ -142,6 +148,8 @@ export function useDashboardData(
 
   // Fetch stats (revenue, menu items, unpaid) directly from database
   const fetchStats = useCallback(async (force = false) => {
+    // Always fetch when force=true, even if initialStats exists
+    // This ensures real-time updates always work
     if (!force && initialStats) {
       return;
     }
@@ -185,10 +193,28 @@ export function useDashboardData(
       endUtcISO: window.endUtcISO || "",
     });
 
-    // If we have initial data, use it - don't fetch (server data is always correct)
+    // If we have initial data, use it immediately - don't fetch (server data is always correct)
+    // Set loading to false immediately to prevent showing 0 values
     if (initialCounts && initialStats) {
+      setCounts(initialCounts);
+      setStats(initialStats);
       setLoading(false);
       return;
+    } else if (initialCounts || initialStats) {
+      // Partial data - use what we have and fetch the rest
+      if (initialCounts) {
+        setCounts(initialCounts);
+      }
+      if (initialStats) {
+        setStats(initialStats);
+      }
+      setLoading(false);
+      // Still fetch missing data
+      const loadData = async () => {
+        if (!initialCounts) await fetchCounts(true);
+        if (!initialStats) await fetchStats(true);
+      };
+      loadData();
     } else {
       // No initial data - fetch immediately
       const loadData = async () => {
@@ -207,21 +233,22 @@ export function useDashboardData(
     const supabase = createClient();
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-    // Debounce to prevent immediate firing
-    let debounceTimeout: NodeJS.Timeout | null = null;
+    // Separate debounce timeouts for counts and stats to prevent conflicts
+    let countsDebounceTimeout: NodeJS.Timeout | null = null;
+    let statsDebounceTimeout: NodeJS.Timeout | null = null;
 
     const debouncedFetchCounts = () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
+      if (countsDebounceTimeout) clearTimeout(countsDebounceTimeout);
+      countsDebounceTimeout = setTimeout(() => {
         fetchCounts(true);
-      }, 500);
+      }, 300);
     };
 
     const debouncedFetchStats = () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
+      if (statsDebounceTimeout) clearTimeout(statsDebounceTimeout);
+      statsDebounceTimeout = setTimeout(() => {
         fetchStats(true);
-      }, 500);
+      }, 300);
     };
 
     // Subscribe to orders changes
@@ -316,7 +343,8 @@ export function useDashboardData(
       .subscribe();
 
     return () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
+      if (countsDebounceTimeout) clearTimeout(countsDebounceTimeout);
+      if (statsDebounceTimeout) clearTimeout(statsDebounceTimeout);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(menuChannel);
       supabase.removeChannel(tablesChannel);
