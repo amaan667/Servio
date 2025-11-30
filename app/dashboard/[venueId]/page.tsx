@@ -63,9 +63,24 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .single();
 
     if (countsError) {
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`[RAILWAY] ❌ ERROR fetching dashboard_counts: ${countsError.message}\n`);
+      }
       console.info(`[RAILWAY] ❌ ERROR fetching dashboard_counts: ${countsError.message}`);
     } else {
       initialCounts = countsData as DashboardCounts;
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+        process.stdout.write(`[RAILWAY] 📊 DASHBOARD COUNTS FROM DATABASE (RPC)\n`);
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+        process.stdout.write(`[RAILWAY] Venue ID: ${normalizedVenueId}\n`);
+        process.stdout.write(`[RAILWAY] live_count: ${initialCounts?.live_count || 0}\n`);
+        process.stdout.write(`[RAILWAY] earlier_today_count: ${initialCounts?.earlier_today_count || 0}\n`);
+        process.stdout.write(`[RAILWAY] history_count: ${initialCounts?.history_count || 0}\n`);
+        process.stdout.write(`[RAILWAY] today_orders_count: ${initialCounts?.today_orders_count || 0}\n`);
+        process.stdout.write(`[RAILWAY] active_tables_count: ${initialCounts?.active_tables_count || 0}\n`);
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+      }
       console.info(`[RAILWAY] =================================================`);
       console.info(`[RAILWAY] 📊 DASHBOARD COUNTS FROM DATABASE (RPC)`);
       console.info(`[RAILWAY] =================================================`);
@@ -126,15 +141,26 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         const tablesInUse = activeSessions?.length || 0;
         const tablesReserved = currentReservations?.length || 0;
         
-        console.info(`\n[RAILWAY] =================================================\n`);
-        console.info(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE\n`);
-        console.info(`[RAILWAY] =================================================\n`);
-        console.info(`[RAILWAY] Total tables in database: ${totalTables}\n`);
-        console.info(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}\n`);
-        console.info(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}\n`);
-        console.info(`[RAILWAY] Tables reserved now: ${tablesReserved}\n`);
-        console.info(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}\n`);
-        console.info(`[RAILWAY] =================================================\n`);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`[RAILWAY] =================================================\n`);
+          process.stdout.write(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE\n`);
+          process.stdout.write(`[RAILWAY] =================================================\n`);
+          process.stdout.write(`[RAILWAY] Total tables in database: ${totalTables}\n`);
+          process.stdout.write(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}\n`);
+          process.stdout.write(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}\n`);
+          process.stdout.write(`[RAILWAY] Tables reserved now: ${tablesReserved}\n`);
+          process.stdout.write(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}\n`);
+          process.stdout.write(`[RAILWAY] =================================================\n`);
+        }
+        console.info(`[RAILWAY] =================================================`);
+        console.info(`[RAILWAY] 🪑 TABLES DATA FROM DATABASE`);
+        console.info(`[RAILWAY] =================================================`);
+        console.info(`[RAILWAY] Total tables in database: ${totalTables}`);
+        console.info(`[RAILWAY] Active tables (is_active=true): ${activeTables.length}`);
+        console.info(`[RAILWAY] Tables in use (OCCUPIED sessions): ${tablesInUse}`);
+        console.info(`[RAILWAY] Tables reserved now: ${tablesReserved}`);
+        console.info(`[RAILWAY] ⚠️  tables_set_up will be set to: ${activeTables.length}`);
+        console.info(`[RAILWAY] =================================================`);
         
         initialCounts = {
           ...initialCounts,
@@ -163,6 +189,17 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
       const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
       
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+        process.stdout.write(`[RAILWAY] 💰 REVENUE & ORDERS DATA FROM DATABASE\n`);
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+        process.stdout.write(`[RAILWAY] Time Window: ${window.startUtcISO} to ${window.endUtcISO}\n`);
+        process.stdout.write(`[RAILWAY] Total orders in time window: ${totalOrders}\n`);
+        process.stdout.write(`[RAILWAY] Total revenue: £${revenue.toFixed(2)}\n`);
+        process.stdout.write(`[RAILWAY] Unpaid orders: ${unpaid}\n`);
+        process.stdout.write(`[RAILWAY] ⚠️  THIS IS THE ACTUAL REVENUE FROM DATABASE: £${revenue.toFixed(2)}\n`);
+        process.stdout.write(`[RAILWAY] =================================================\n`);
+      }
       console.info(`[RAILWAY] =================================================`);
       console.info(`[RAILWAY] 💰 REVENUE & ORDERS DATA FROM DATABASE`);
       console.info(`[RAILWAY] =================================================`);
@@ -195,6 +232,9 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       process.stdout.write(`[RAILWAY] =================================================\n`);
     }
     
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[RAILWAY] Menu Items Count: ${actualMenuItemCount}\n`);
+    }
     console.info(`[RAILWAY] Menu Items Count: ${actualMenuItemCount}`);
 
     const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -212,22 +252,36 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
       process.stdout.write(`[RAILWAY] 🎯 SERVER FINAL COUNTS - PASSING TO CLIENT\n`);
       process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
-      process.stdout.write(`[RAILWAY] Menu Items: ${initialStats.menuItems}\n`);
-      process.stdout.write(`[RAILWAY] Tables Set Up: ${initialCounts?.tables_set_up || 0}\n`);
-      process.stdout.write(`[RAILWAY] Revenue: £${initialStats.revenue.toFixed(2)}\n`);
-      process.stdout.write(`[RAILWAY] Today's Orders: ${initialCounts?.today_orders_count || 0}\n`);
-      process.stdout.write(`[RAILWAY] Live Orders: ${initialCounts?.live_count || 0}\n`);
+      process.stdout.write(`[RAILWAY] 📊 COMPLETE DASHBOARD COUNTS SUMMARY:\n`);
+      process.stdout.write(`[RAILWAY]   Menu Items: ${initialStats.menuItems}\n`);
+      process.stdout.write(`[RAILWAY]   Tables Set Up: ${initialCounts?.tables_set_up || 0}\n`);
+      process.stdout.write(`[RAILWAY]   Tables In Use: ${initialCounts?.tables_in_use || 0}\n`);
+      process.stdout.write(`[RAILWAY]   Tables Reserved Now: ${initialCounts?.tables_reserved_now || 0}\n`);
+      process.stdout.write(`[RAILWAY]   Revenue: £${initialStats.revenue.toFixed(2)}\n`);
+      process.stdout.write(`[RAILWAY]   Unpaid Orders: ${initialStats.unpaid || 0}\n`);
+      process.stdout.write(`[RAILWAY]   Today's Orders: ${initialCounts?.today_orders_count || 0}\n`);
+      process.stdout.write(`[RAILWAY]   Live Orders: ${initialCounts?.live_count || 0}\n`);
+      process.stdout.write(`[RAILWAY]   Earlier Today: ${initialCounts?.earlier_today_count || 0}\n`);
+      process.stdout.write(`[RAILWAY]   History Count: ${initialCounts?.history_count || 0}\n`);
+      process.stdout.write(`[RAILWAY]   Active Tables Count: ${initialCounts?.active_tables_count || 0}\n`);
       process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
       process.stdout.write(`[RAILWAY] initialStats JSON: ${JSON.stringify(initialStats)}\n`);
       process.stdout.write(`[RAILWAY] initialCounts JSON: ${JSON.stringify(initialCounts)}\n`);
     }
     
-    // Backup logging
+    // Backup logging - also use stdout for Railway
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[RAILWAY] SERVER COUNTS - Menu: ${initialStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}\n`);
+    }
     console.info(`[RAILWAY] SERVER COUNTS - Menu: ${initialStats.menuItems} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats.revenue.toFixed(2)} | Orders: ${initialCounts?.today_orders_count || 0}`);
   } catch (error) {
-    // Log error to Railway - use console.info
+    // Log error to Railway - use both stdout and console.info
     const errorMsg = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : "No stack";
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[RAILWAY] ERROR: ${errorMsg}\n`);
+      process.stdout.write(`[RAILWAY] ERROR STACK: ${errorStack}\n`);
+    }
     console.info(`[RAILWAY] ERROR: ${errorMsg}`);
     console.info(`[RAILWAY] ERROR STACK: ${errorStack}`);
     // Continue without initial data - client will load it
@@ -247,6 +301,9 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     process.stdout.write(`[RAILWAY] ═══════════════════════════════════════════════════════════\n`);
   }
   
+  if (typeof process !== 'undefined' && process.stdout) {
+    process.stdout.write(`[RAILWAY] END - Menu: ${finalCount} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}\n`);
+  }
   console.info(`[RAILWAY] END - Menu: ${finalCount} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}`);
 
   return (
