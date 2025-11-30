@@ -103,11 +103,12 @@ export function useDashboardData(
 
       if (countsData && typeof countsData === "object") {
         const activeTables = allTables?.filter((t) => t.is_active) || [];
+        const counts = countsData as Record<string, unknown>;
         const finalCounts: DashboardCounts = {
-          live_count: (countsData.live_count as number) || 0,
-          earlier_today_count: (countsData.earlier_today_count as number) || 0,
-          history_count: (countsData.history_count as number) || 0,
-          today_orders_count: (countsData.today_orders_count as number) || 0,
+          live_count: (counts.live_count as number) || 0,
+          earlier_today_count: (counts.earlier_today_count as number) || 0,
+          history_count: (counts.history_count as number) || 0,
+          today_orders_count: (counts.today_orders_count as number) || 0,
           active_tables_count: activeTables.length,
           tables_set_up: activeTables.length,
           tables_in_use: activeSessions?.length || 0,
