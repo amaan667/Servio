@@ -54,7 +54,7 @@ const faqs = [
       },
       {
         question: "How do I send receipts to customers?",
-        answer: "Go to Receipts in your dashboard. You can view all receipts, send them via email or SMS, and print them. Receipts are automatically generated for all completed orders.",
+        answer: "Go to Payments in your dashboard. You can view all receipts, send them via email or SMS, and print them. Receipts are automatically generated for all completed orders.",
       },
     ],
   },

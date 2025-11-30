@@ -17,9 +17,7 @@ import { PaymentCollectionDialog } from "./PaymentCollectionDialog";
 import { TablePaymentDialog } from "./TablePaymentDialog";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order } from "@/types/order";
-import { Users, Split } from "lucide-react";
-import { BillSplitModal } from "@/app/order/components/BillSplitModal";
-import type { BillSplit } from "@/app/order/components/BillSplitModal";
+import { Users } from "lucide-react";
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -43,7 +41,6 @@ export function OrderCard({
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showTablePaymentDialog, setShowTablePaymentDialog] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [showSplitBill, setShowSplitBill] = useState(false);
   const [tableUnpaidCount, setTableUnpaidCount] = useState<number | null>(null);
   const [venueInfo, setVenueInfo] = useState<{
     name?: string;
@@ -448,62 +445,6 @@ export function OrderCard({
     return null;
   };
 
-  // Convert order items to cart items format for BillSplitModal
-  const getCartItemsForSplit = () => {
-    if (!order.items || order.items.length === 0) return [];
-    
-    return order.items.map((item: Record<string, unknown>, index: number) => ({
-      id: item.menu_item_id as string || `item-${index}`,
-      name: (item.item_name as string) || (item.name as string) || "Item",
-      price: (item.price as number) || 0,
-      quantity: (item.quantity as number) || 1,
-      specialInstructions: (item.special_instructions as string) || undefined,
-      selectedModifiers: (item.modifiers as Record<string, string[]>) || undefined,
-      modifierPrice: 0,
-      category: (item.category as string) || "Other",
-      is_available: true,
-    }));
-  };
-
-  const handleSplitBillComplete = async (splits: BillSplit[]) => {
-    if (!venueId) return;
-
-    try {
-      const response = await fetch("/api/orders/create-split-orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId: venueId,
-          tableNumber: order.table_number || 1,
-          customerName: order.customer_name || "Customer",
-          customerPhone: order.customer_phone || "",
-          splits: splits.map((split) => ({
-            name: split.name,
-            items: split.items.map((item) => ({
-              id: item.id && item.id.startsWith("demo-") ? null : item.id,
-              name: item.name,
-              price: item.price + (item.modifierPrice || 0),
-              quantity: item.quantity,
-              specialInstructions: item.specialInstructions || null,
-              modifiers: item.selectedModifiers || null,
-              modifierPrice: item.modifierPrice || 0,
-            })),
-            total: split.total,
-          })),
-          source: isTableVariant ? "qr" : "counter",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create split orders");
-      }
-
-      setShowSplitBill(false);
-      await onActionComplete?.();
-    } catch {
-      alert("Failed to create split orders. Please try again.");
-    }
-  };
 
   return (
     <Card
@@ -569,27 +510,6 @@ export function OrderCard({
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>View Receipt</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            {/* Split Bill Button - Only show for unpaid orders */}
-            {showActions && venueId && (order.payment?.status || order.payment_status || "unpaid").toLowerCase() !== "paid" && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => setShowSplitBill(true)}
-                    >
-                      <Split className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Split Bill</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -702,17 +622,6 @@ export function OrderCard({
           isOpen={showReceipt}
           onClose={() => setShowReceipt(false)}
           isCustomerView={false}
-        />
-      )}
-
-      {/* Split Bill Modal */}
-      {showActions && venueId && (
-        <BillSplitModal
-          isOpen={showSplitBill}
-          onClose={() => setShowSplitBill(false)}
-          cart={getCartItemsForSplit()}
-          totalPrice={order.total_amount}
-          onSplitComplete={handleSplitBillComplete}
         />
       )}
     </Card>

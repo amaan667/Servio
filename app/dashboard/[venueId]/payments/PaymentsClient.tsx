@@ -446,7 +446,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="pay-at-till" className="flex items-center gap-2 relative">
-                <span className="flex-1 text-left">Pay at Till</span>
+                <span className="flex-1 text-left">Payments</span>
                 <span
                   className={`
                     ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
@@ -461,7 +461,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 </span>
               </TabsTrigger>
               <TabsTrigger value="today" className="flex items-center gap-2 relative">
-                <span className="flex-1 text-left">Today</span>
+                <span className="flex-1 text-left">Today's Receipts</span>
                 <span
                   className={`
                     ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
@@ -476,7 +476,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 </span>
               </TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-2 relative">
-                <span className="flex-1 text-left">History</span>
+                <span className="flex-1 text-left">Receipt History</span>
                 <span
                   className={`
                     ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
@@ -492,7 +492,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               </TabsTrigger>
             </TabsList>
 
-            {/* Pay at Till Orders */}
+            {/* Payments - Pay at Till Orders */}
             <TabsContent value="pay-at-till" className="mt-6">
               {payAtTillOrders.length === 0 ? (
                 <Card>
@@ -509,13 +509,13 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               )}
             </TabsContent>
 
-            {/* Today's Payments */}
+            {/* Today's Receipts */}
             <TabsContent value="today" className="mt-6">
               {todayReceipts.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Payments Today</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Receipts Today</h3>
                     <p className="text-gray-600">No paid orders found for today</p>
                   </CardContent>
                 </Card>
@@ -526,16 +526,16 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               )}
             </TabsContent>
 
-            {/* Payment History */}
+            {/* Receipt History */}
             <TabsContent value="history" className="mt-6">
               {historyReceipts.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No Payment History
+                      No Receipt History
                     </h3>
-                    <p className="text-gray-600">No payments from previous days</p>
+                    <p className="text-gray-600">No receipts from previous days</p>
                   </CardContent>
                 </Card>
               ) : (
