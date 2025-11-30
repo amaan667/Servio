@@ -378,9 +378,17 @@ export function useDashboardData(
           active_tables_count: activeTables.length, // Same as tables_set_up
         };
 
-        setCounts(finalCounts);
-        // Cache the counts using shared cache utility
-        setCachedCounts(venueId, finalCounts);
+        // CRITICAL: Only update counts if we don't have server-provided initialCounts
+        // If initialCounts exists, it's the source of truth and should not be overridden
+        if (!initialCounts) {
+          setCounts(finalCounts);
+          // Cache the counts using shared cache utility
+          setCachedCounts(venueId, finalCounts);
+        } else {
+          // We have server data - only update cache, don't override state
+          setCachedCounts(venueId, finalCounts);
+          console.log("[DASHBOARD DATA] refreshCounts: Server data exists, not overriding state");
+        }
       } else {
         logger.warn("[Dashboard] No counts data received from RPC");
       }
@@ -388,12 +396,21 @@ export function useDashboardData(
       logger.error("[Dashboard] Error refreshing counts:", _err);
       setError("Failed to refresh dashboard data");
     }
-  }, [venueId, venueTz]);
+  }, [venueId, venueTz, initialCounts]);
 
   // Only refresh on mount if cache is stale or missing
-  // DON'T refresh on every navigation - use cached data instead
+  // CRITICAL: NEVER use cache if we have server data (initialCounts/initialStats)
+  // Server data is always the source of truth
   useEffect(() => {
     if (venueId) {
+      // CRITICAL: If we have server data, NEVER use cache - server data is always correct
+      if (initialCounts || initialStats) {
+        // Server data exists - don't use cache, don't refresh
+        // The server data will be used via the useEffect that updates state
+        return;
+      }
+      
+      // Only use cache if we DON'T have server data
       // If we have fresh cache, use it and skip refresh
       if (isCacheFresh(venueId)) {
         const cached = getCachedCounts(venueId);
@@ -432,10 +449,16 @@ export function useDashboardData(
     }
   }, [venueId]); // Only depend on venueId - don't include refreshCounts to prevent re-runs
 
-  // Refresh data when page becomes visible (only if cache is stale)
+  // Refresh data when page becomes visible (only if cache is stale AND no server data)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && venueId) {
+        // CRITICAL: If we have server data, don't refresh - server data is always correct
+        if (initialCounts || initialStats) {
+          console.log("[DASHBOARD DATA] Page visible but server data exists, skipping refresh");
+          return;
+        }
+        
         // Only refresh if cache is stale - prevents unnecessary refreshes
         if (!isCacheFresh(venueId)) {
           refreshCounts();
@@ -452,7 +475,7 @@ export function useDashboardData(
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [venueId, venueTz, refreshCounts, loadStats]);
+  }, [venueId, venueTz, refreshCounts, loadStats, initialCounts, initialStats]);
 
   const updateRevenueIncrementally = useCallback(
     (order: { order_status: string; total_amount?: number }) => {
