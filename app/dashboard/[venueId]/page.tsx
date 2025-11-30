@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { todayWindowForTZ } from "@/lib/time";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { fetchMenuItemCount, fetchUnifiedCounts } from "@/lib/counts/unified-counts";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
 // Force dynamic rendering to prevent stale cached menu counts
@@ -176,32 +177,14 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       console.info(`[RAILWAY] =================================================`);
     }
 
-    // Count ALL menu items (not just available) to match menu management count
-    // ALWAYS use actual array length - it's the source of truth
-    // Don't use count query as it can be inconsistent
-    // Add cache-busting timestamp to ensure fresh query
-    const queryStartTime = Date.now();
-    const { data: menuItems, error: menuError } = await supabase
-      .from("menu_items")
-      .select("id")
-      .eq("venue_id", normalizedVenueId)
-      .order("created_at", { ascending: false }); // Add ordering to ensure consistent results
-      // Removed .eq("is_available", true) to match menu management count
-    const queryEndTime = Date.now();
-    const queryDuration = queryEndTime - queryStartTime;
-
-    // Use actual array length - it's the source of truth
-    // The count query can be inconsistent, so always use the actual items returned
-    const actualMenuItemCount = menuItems?.length || 0;
+    // Use unified count function - single source of truth
+    const actualMenuItemCount = await fetchMenuItemCount(venueId);
     
     console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] 🍽️  MENU ITEMS DATA FROM DATABASE`);
+    console.info(`[RAILWAY] 🍽️  MENU ITEMS COUNT FROM DATABASE`);
     console.info(`[RAILWAY] =================================================`);
-    console.info(`[RAILWAY] Query: SELECT id FROM menu_items WHERE venue_id = '${normalizedVenueId}' ORDER BY created_at DESC`);
-    console.info(`[RAILWAY] Query Duration: ${queryDuration}ms`);
-    console.info(`[RAILWAY] Items returned (array length): ${actualMenuItemCount}`);
-    console.info(`[RAILWAY] Error: ${menuError?.message || "None"}`);
-    console.info(`[RAILWAY] ⚠️  THIS IS THE ACTUAL COUNT FROM DATABASE: ${actualMenuItemCount}`);
+    console.info(`[RAILWAY] Venue ID: ${normalizedVenueId}`);
+    console.info(`[RAILWAY] Menu Items Count: ${actualMenuItemCount}`);
     console.info(`[RAILWAY] =================================================`);
 
     if (menuError) {

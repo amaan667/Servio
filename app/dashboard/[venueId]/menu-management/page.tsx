@@ -1,6 +1,6 @@
 import MenuManagementClientPage from "./page.client";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
-import { createAdminClient } from "@/lib/supabase";
+import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
 
 // Force dynamic rendering to prevent caching
 export const dynamic = "force-dynamic";
@@ -17,30 +17,13 @@ export default async function MenuManagementPage({
   // Server-side auth check
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  // Fetch menu item count using EXACT same query as dashboard
-  // This ensures consistency between dashboard and menu management
+  // Use unified count function - single source of truth
   let initialMenuItemCount = 0;
   try {
-    const supabase = createAdminClient();
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-    
-    // Use EXACT same query as dashboard for consistency
-    const { data: menuItems, error: menuError } = await supabase
-      .from("menu_items")
-      .select("id")
-      .eq("venue_id", normalizedVenueId)
-      .order("created_at", { ascending: false }); // Same ordering as dashboard
-    
-    if (!menuError && menuItems) {
-      initialMenuItemCount = menuItems.length;
-    }
-    
-    // Log for Railway
-    process.stdout.write(`\n[RAILWAY] Menu Management Server - Menu Items Count: ${initialMenuItemCount}\n`);
-    process.stdout.write(`[RAILWAY] Menu Management Server - Venue ID: ${normalizedVenueId}\n`);
-    console.error("[RAILWAY] Menu Management Server - Count:", initialMenuItemCount);
+    initialMenuItemCount = await fetchMenuItemCount(venueId);
+    console.info(`[RAILWAY] Menu Management Server - Menu Items Count: ${initialMenuItemCount}`);
   } catch (error) {
-    process.stdout.write(`\n[RAILWAY] Menu Management Server - Error fetching count: ${error instanceof Error ? error.message : String(error)}\n`);
+    console.info(`[RAILWAY] Menu Management Server - Error: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   return <MenuManagementClientPage venueId={venueId} initialMenuItemCount={initialMenuItemCount} />;

@@ -236,27 +236,18 @@ export function useDashboardRealtime({
           async (_payload: unknown) => {
             if (!isMountedRef.current) return;
             try {
-              // Normalize venueId for query
+              // Use unified count function - single source of truth
+              const { fetchMenuItemCount } = await import("@/lib/counts/unified-counts");
               const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-              
-              // Fetch ALL menu items (not just available) to match dashboard count
-              const { data: menuItems } = await supabase
-                .from("menu_items")
-                .select("id")
-                .eq("venue_id", normalizedVenueId)
-                .order("created_at", { ascending: false });
+              const count = await fetchMenuItemCount(venueId);
 
-              const count = menuItems?.length || 0;
-
-              // Dispatch custom event for instant updates across all components
-              // Use normalized venueId in event detail for consistent matching
+              // Dispatch custom event for instant updates
               if (typeof window !== "undefined") {
                 window.dispatchEvent(
                   new CustomEvent("menuItemsChanged", {
                     detail: { venueId: normalizedVenueId, count },
                   })
                 );
-                console.info("[DASHBOARD REALTIME] Dispatched menuItemsChanged event:", { venueId: normalizedVenueId, count });
               }
             } catch (_error) {
               // Error silently handled

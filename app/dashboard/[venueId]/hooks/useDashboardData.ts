@@ -263,25 +263,9 @@ export function useDashboardData(
           .neq("order_status", "CANCELLED")
           .neq("order_status", "REFUNDED");
 
-        // Count ALL menu items (not just available) to match menu management count
-        // ALWAYS use actual array length - it's the source of truth
-        // Use EXACT same query as server component for consistency
-        const { data: menuItems, error: menuError } = await supabase
-          .from("menu_items")
-          .select("id")
-          .eq("venue_id", normalizedVenueId)
-          .order("created_at", { ascending: false }); // Same ordering as server
-          // Removed .eq("is_available", true) to match menu management count
-
-        // ALWAYS use actual array length - it's the source of truth
-        const finalMenuItemCount = menuItems?.length || 0;
-        
-        // Log to detect if loadStats is overriding initialStats
-        console.warn("[DASHBOARD DATA] loadStats query result:", {
-          count: finalMenuItemCount,
-          arrayLength: menuItems?.length || 0,
-          venueId: normalizedVenueId,
-        });
+        // Use unified count function - single source of truth
+        const { fetchMenuItemCount } = await import("@/lib/counts/unified-counts");
+        const finalMenuItemCount = await fetchMenuItemCount(venueId);
 
         // Calculate revenue from all non-cancelled orders (regardless of payment status)
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -629,33 +613,13 @@ export function useDashboardData(
             endUtcISO: window.endUtcISO,
           });
         } else {
-          // Fallback: directly query menu items count
-          console.log("⚠️ [DASHBOARD DATA] No window available, querying menu items directly...");
-          const supabase = createClient();
-          const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-          // Count ALL menu items (not just available) to match menu management count
-          const { data: menuItemsData, count, error: menuError } = await supabase
-            .from("menu_items")
-            .select("id", { count: "exact" })
-            .eq("venue_id", normalizedVenueId);
-            // Removed .eq("is_available", true) to match menu management count
-          
-          const finalCount = menuItemsData?.length || count || 0;
-          
-          console.log("[DASHBOARD DATA] Fallback query results:", {
-            menuItemsArrayLength: menuItemsData?.length || 0,
-            countFromCount: count || 0,
-            finalCount,
-            error: menuError?.message || null,
-          });
-          
-          if (!menuError) {
-            setStats((prev) => ({
-              ...prev,
-              menuItems: finalCount,
-            }));
-            console.log("✅ [DASHBOARD DATA] Menu items count updated directly:", finalCount);
-          }
+          // Fallback: use unified count function
+          const { fetchMenuItemCount } = await import("@/lib/counts/unified-counts");
+          const finalCount = await fetchMenuItemCount(venueId);
+          setStats((prev) => ({
+            ...prev,
+            menuItems: finalCount,
+          }));
         }
         
         console.log("✅ [DASHBOARD DATA] Dashboard refreshed after menu change");
