@@ -406,7 +406,11 @@ export function useDashboardData(
       // CRITICAL: If we have server data, NEVER use cache - server data is always correct
       if (initialCounts || initialStats) {
         // Server data exists - don't use cache, don't refresh
-        // The server data will be used via the useEffect that updates state
+        // Update cache with server data for future use, but don't override current state
+        if (initialCounts) {
+          setCachedCounts(venueId, initialCounts);
+        }
+        console.log("[DASHBOARD DATA] ✅ Server data available, skipping cache check - using server data");
         return;
       }
       
@@ -415,6 +419,7 @@ export function useDashboardData(
       if (isCacheFresh(venueId)) {
         const cached = getCachedCounts(venueId);
         if (cached) {
+          console.log("[DASHBOARD DATA] ⚠️ No server data, using cached counts");
           setCounts({
             live_count: cached.live_count || 0,
             earlier_today_count: cached.earlier_today_count || 0,
@@ -443,11 +448,16 @@ export function useDashboardData(
         });
       }
 
-      // Only refresh if cache is stale or missing
+      // Only refresh if cache is stale or missing AND we don't have server data
       // This prevents unnecessary refreshes when navigating between pages
-      refreshCounts();
+      // CRITICAL: Don't refresh if we have fresh server data - it's already correct
+      if (!initialCounts) {
+        refreshCounts();
+      } else {
+        console.log("[DASHBOARD DATA] ✅ Server data available, skipping refreshCounts - using server data");
+      }
     }
-  }, [venueId]); // Only depend on venueId - don't include refreshCounts to prevent re-runs
+  }, [venueId, initialCounts]); // Include initialCounts to check if server data is available
 
   // Refresh data when page becomes visible (only if cache is stale AND no server data)
   useEffect(() => {
