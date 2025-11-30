@@ -800,15 +800,17 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 3: Tables Set Up */}
           <Link href={`/dashboard/${venueId}/tables`} className="block">
             {(() => {
-              // ALWAYS prioritize initialCounts from server - it's the source of truth
-              // Only use dashboardData.counts if initialCounts is not available
-              const tablesValue = initialCounts?.tables_set_up !== undefined 
-                ? initialCounts.tables_set_up 
+              // CRITICAL: ALWAYS use initialCounts if it exists (even if tables_set_up is 0)
+              // This ensures first load always shows correct server value, not stale cache
+              // Only fall back to dashboardData if initialCounts doesn't exist at all
+              const tablesValue = initialCounts !== null && initialCounts !== undefined
+                ? (initialCounts.tables_set_up ?? 0)
                 : (dashboardData.counts.tables_set_up ?? 0);
               console.error(`[FRONTEND RENDER] Tables Set Up card - Value being displayed: ${tablesValue}`);
+              console.error(`[FRONTEND RENDER]   initialCounts exists: ${initialCounts !== null && initialCounts !== undefined}`);
               console.error(`[FRONTEND RENDER]   initialCounts?.tables_set_up: ${initialCounts?.tables_set_up ?? "undefined"}`);
               console.error(`[FRONTEND RENDER]   dashboardData.counts.tables_set_up: ${dashboardData.counts.tables_set_up ?? "undefined"}`);
-              console.error(`[FRONTEND RENDER]   Using server value: ${initialCounts?.tables_set_up !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
+              console.error(`[FRONTEND RENDER]   Using server value: ${initialCounts !== null && initialCounts !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
               return (
                 <EnhancedStatCard
                   key="tables"
@@ -827,17 +829,17 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 4: Menu Items */}
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
             {(() => {
-              // ALWAYS prioritize initialStats from server - it's the source of truth
-              // Only use dashboardData.stats if initialStats is not available
-              const menuItemsValue = initialStats?.menuItems !== undefined 
-                ? initialStats.menuItems 
+              // CRITICAL: ALWAYS use initialStats if it exists (even if menuItems is 0)
+              // This ensures first load always shows correct server value, not stale cache
+              // Only fall back to dashboardData if initialStats doesn't exist at all
+              const menuItemsValue = initialStats !== null && initialStats !== undefined
+                ? (initialStats.menuItems ?? 0)
                 : (dashboardData.stats.menuItems ?? 0);
               console.error(`[FRONTEND RENDER] Menu Items card - Value being displayed: ${menuItemsValue}`);
+              console.error(`[FRONTEND RENDER]   initialStats exists: ${initialStats !== null && initialStats !== undefined}`);
               console.error(`[FRONTEND RENDER]   initialStats?.menuItems: ${initialStats?.menuItems ?? "undefined"}`);
               console.error(`[FRONTEND RENDER]   dashboardData.stats.menuItems: ${dashboardData.stats.menuItems ?? "undefined"}`);
-              console.error(`[FRONTEND RENDER]   Using server value: ${initialStats?.menuItems !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
-              console.error(`[FRONTEND RENDER]   Type: ${typeof menuItemsValue}`);
-              console.error(`[FRONTEND RENDER]   Is NaN: ${Number.isNaN(menuItemsValue)}`);
+              console.error(`[FRONTEND RENDER]   Using server value: ${initialStats !== null && initialStats !== undefined ? "YES ✅" : "NO - using dashboardData ❌"}`);
               return (
                 <EnhancedStatCard
                   key="menu-items"

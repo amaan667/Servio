@@ -176,18 +176,26 @@ export function useDashboardData(
   // DON'T cache initialStats - always use fresh server data
   // Only cache counts, not stats (stats should always be fresh from server)
   useEffect(() => {
-    if (initialCounts) {
-      setCachedCounts(venueId, initialCounts);
-    }
-    // DO NOT cache initialStats - it causes stale counts
-    // Always use fresh server data for menu items count
-    if (initialStats && typeof window !== "undefined") {
-      // Clear any old cached stats to force fresh data
-      sessionStorage.removeItem(`dashboard_stats_${venueId}`);
-      console.log("[DASHBOARD DATA] Cleared cached stats to force fresh data:", {
-        venueId,
-        freshCount: initialStats.menuItems,
-      });
+    // CRITICAL: Clear ALL cached data when server provides fresh data
+    // This prevents stale cache from being used on first load
+    if (typeof window !== "undefined") {
+      if (initialStats) {
+        // Clear cached stats to prevent stale menu items count
+        sessionStorage.removeItem(`dashboard_stats_${venueId}`);
+        console.log("[DASHBOARD DATA] Cleared cached stats to force fresh data:", {
+          venueId,
+          freshCount: initialStats.menuItems,
+        });
+      }
+      if (initialCounts) {
+        // Update cache with fresh server data
+        setCachedCounts(venueId, initialCounts);
+        // Also clear any stale cached counts that might have wrong values
+        const cached = getCachedCounts(venueId);
+        if (cached && (cached.tables_set_up !== initialCounts.tables_set_up || cached.today_orders_count !== initialCounts.today_orders_count)) {
+          console.log("[DASHBOARD DATA] Cache had stale data, cleared and updated with server data");
+        }
+      }
     }
   }, [venueId, initialCounts, initialStats]); // Run when initial data changes
 
