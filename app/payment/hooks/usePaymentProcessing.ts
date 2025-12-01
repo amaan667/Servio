@@ -10,25 +10,23 @@ import {
 } from "@/lib/offline-queue";
 
 // Helper function to log to server (appears in Railway logs)
-const logToServer = async (level: "info" | "warn" | "error", event: string, data: Record<string, unknown>) => {
-  try {
-    await fetch("/api/log-payment-flow", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        level,
-        event,
-        data: {
-          ...data,
-          timestamp: new Date().toISOString(),
-        },
-      }),
-    }).catch(() => {
-      // Silently fail - logging shouldn't break the flow
-    });
-  } catch {
+// Uses fetch with fire-and-forget to not block the payment flow
+const logToServer = (level: "info" | "warn" | "error", event: string, data: Record<string, unknown>) => {
+  // Fire and forget - don't await, don't block
+  fetch("/api/log-payment-flow", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      level,
+      event,
+      data: {
+        ...data,
+        timestamp: new Date().toISOString(),
+      },
+    }),
+  }).catch(() => {
     // Silently fail - logging shouldn't break the flow
-  }
+  });
 };
 
 export function usePaymentProcessing() {
@@ -40,8 +38,8 @@ export function usePaymentProcessing() {
     setIsProcessing: (processing: boolean) => void,
     setError: (error: string | null) => void
   ) => {
-    // Log to server (appears in Railway)
-    await logToServer("info", "PAYMENT_METHOD_SELECTED", {
+    // Log to server (appears in Railway) - fire and forget
+    logToServer("info", "PAYMENT_METHOD_SELECTED", {
       action,
       venueId: checkoutData.venueId,
       tableNumber: checkoutData.tableNumber,
@@ -142,8 +140,8 @@ export function usePaymentProcessing() {
           is_active: true,
         };
 
-        // Log to server (appears in Railway) - FULL PAYLOAD
-        await logToServer("info", "ORDER_DATA_PREPARED", {
+        // Log to server (appears in Railway) - FULL PAYLOAD - fire and forget
+        logToServer("info", "ORDER_DATA_PREPARED", {
           action,
           venueId: orderData.venue_id,
           customerName: orderData.customer_name,

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logger } from "@/lib/logger";
 
 /**
  * Server-side logging endpoint for payment flow
  * Client can call this to log events that will appear in Railway logs
+ * Uses console.log/console.error directly so Railway captures the logs
  */
 export async function POST(req: NextRequest) {
   try {
@@ -17,17 +17,22 @@ export async function POST(req: NextRequest) {
       ...data,
     };
 
+    // Use console.log/console.error directly so Railway captures it
+    // Railway logs capture stdout/stderr
+    const logString = `[${logData.timestamp}] ${logMessage} ${JSON.stringify(logData, null, 2)}`;
+    
     if (level === "error") {
-      logger.error(logMessage, logData);
+      console.error(logString);
     } else if (level === "warn") {
-      logger.warn(logMessage, logData);
+      console.warn(logString);
     } else {
-      logger.info(logMessage, logData);
+      console.log(logString);
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    // Don't fail if logging fails
+    // Don't fail if logging fails, but log the error
+    console.error("[PAYMENT FLOW LOG] Failed to log:", error);
     return NextResponse.json({ ok: false });
   }
 }
