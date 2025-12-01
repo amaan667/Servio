@@ -83,12 +83,21 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
   };
 
   const handleViewOrder = () => {
-    // Extract table number from label (e.g., "Table 5" -> "5")
-    const tableNumber = tableLabel.replace(/^Table\s*/i, "");
-    // Filter for ALL orders today (not just live 30 mins) - order might be in "Earlier Today" tab
-    router.push(
-      `/dashboard/${venueId}/live-orders?table=${encodeURIComponent(tableNumber)}&tab=all&since=today`
-    );
+    // Use the first order's ID to navigate directly to that specific order
+    // This ensures we find it in ANY tab (live, all, history) using the unique order ID
+    if (orders.length > 0) {
+      const firstOrderId = orders[0].id;
+      // Navigate to Live Orders with order ID search - will find it in any tab
+      router.push(
+        `/dashboard/${venueId}/live-orders?order=${encodeURIComponent(firstOrderId)}&tab=all`
+      );
+    } else {
+      // Fallback: filter by table number
+      const tableNumber = tableLabel.replace(/^Table\s*/i, "");
+      router.push(
+        `/dashboard/${venueId}/live-orders?table=${encodeURIComponent(tableNumber)}&tab=all`
+      );
+    }
   };
 
   const overallStatus = getOverallStatus();
