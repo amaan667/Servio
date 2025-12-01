@@ -695,7 +695,7 @@ export async function POST(req: NextRequest) {
     // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
     const orderSource = ((body as { source?: "qr" | "counter" }).source) || "qr" as "qr" | "counter"; // Default to 'qr' if not provided
 
-    const payload: OrderPayload = {
+    const payload: OrderPayload & { is_active?: boolean } = {
       venue_id: venueId,
       table_number,
       table_id: tableId, // Add table_id to the payload
@@ -710,6 +710,7 @@ export async function POST(req: NextRequest) {
       payment_method: ((body as { payment_method?: "demo" | "stripe" | "till" | null }).payment_method ?? null) as "demo" | "stripe" | "till" | null,
       // NOTE: session_id is NOT a database column - don't include in payload
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
+      is_active: true, // Ensure order is marked as active (required by database)
     };
 
     // Check for duplicate orders (idempotency check)
