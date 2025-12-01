@@ -303,7 +303,10 @@ export function HelpCenterClient() {
 
   // Build exactly 7 links - no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
-    console.error("[HELP CENTER] Building quickLinks", { isLoading, venueId, timestamp: Date.now() });
+    // Log only primitive values, not React components
+    if (process.env.NODE_ENV === 'development') {
+      console.log("[HELP CENTER] Building quickLinks", { isLoading, venueId, timestamp: Date.now() });
+    }
 
     if (isLoading) {
       return [];
@@ -368,23 +371,15 @@ export function HelpCenterClient() {
       },
     ];
 
-    console.error("[HELP CENTER] Built links:", links.map(l => l.title).join(", "));
-    console.error("[HELP CENTER] Total links:", links.length);
-    
     // Safety check - if somehow we have duplicates, filter them
     const seen = new Set<string>();
     const unique = links.filter(link => {
       if (seen.has(link.title)) {
-        console.error("[HELP CENTER] DUPLICATE DETECTED:", link.title);
         return false;
       }
       seen.add(link.title);
       return true;
     });
-
-    if (unique.length !== links.length) {
-      console.error("[HELP CENTER] DUPLICATES REMOVED:", links.length, "->", unique.length);
-    }
 
     return unique;
   }, [venueId, isLoading]);
@@ -398,11 +393,7 @@ export function HelpCenterClient() {
     ),
   })).filter((category) => category.questions.length > 0);
 
-  // Log on every render
-  useEffect(() => {
-    console.error("[HELP CENTER] RENDER - Links count:", quickLinks.length, "Titles:", quickLinks.map(l => l.title).join(", "));
-    console.error("[HELP CENTER] RENDER - VenueId:", venueId, "Loading:", isLoading);
-  });
+  // Removed logging that was trying to serialize React components
 
   return (
     <div className="min-h-screen bg-gray-50">

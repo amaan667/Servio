@@ -135,42 +135,50 @@ export function useOrderSubmission() {
         source: orderType === "counter" ? "counter" : "qr",
       };
 
-      // Comprehensive logging for order submission
-      console.log("🛒 [ORDER SUBMISSION] ===== ORDER SUBMITTED =====", {
-        timestamp: new Date().toISOString(),
-        venueId: venueSlug,
-        tableNumber: orderLocation,
-        customerName: customerInfo.name,
-        customerPhone: customerInfo.phone,
-        cartItemCount: cart.length,
-        total: checkoutData.total,
-        sessionId: sessionId,
-        orderType: orderType,
-        checkoutData: {
-          venueId: checkoutData.venueId,
-          tableNumber: checkoutData.tableNumber,
-          cart: checkoutData.cart.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-          })),
+      // Comprehensive logging for order submission - send to server
+      const submissionLog = {
+        level: "info",
+        event: "ORDER_SUBMITTED",
+        details: {
+          timestamp: new Date().toISOString(),
+          venueId: venueSlug,
+          tableNumber: orderLocation,
+          customerName: customerInfo.name,
+          customerPhone: customerInfo.phone,
+          cartItemCount: cart.length,
           total: checkoutData.total,
+          sessionId: sessionId,
+          orderType: orderType,
+          checkoutData: {
+            venueId: checkoutData.venueId,
+            tableNumber: checkoutData.tableNumber,
+            cart: checkoutData.cart.map(item => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+            })),
+            total: checkoutData.total,
+          },
         },
+      };
+
+      // Send to server so it appears in Railway logs
+      fetch("/api/log-payment-flow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submissionLog),
+      }).catch(() => {
+        // Silently handle - error logging failed
       });
+
+      // Also log to browser console
+      console.log("🛒 [ORDER SUBMISSION] ===== ORDER SUBMITTED =====", submissionLog.details);
 
       localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
 
-      console.log("💾 [ORDER SUBMISSION] Checkout data saved to localStorage", {
-        timestamp: new Date().toISOString(),
-        hasCheckoutData: !!localStorage.getItem("servio-checkout-data"),
-      });
-
       // Instant redirect to payment method selection page
       // Order will be created AFTER payment method is selected
-      console.log("🔀 [ORDER SUBMISSION] Redirecting to payment page...", {
-        timestamp: new Date().toISOString(),
-      });
       window.location.href = "/payment";
     } catch (_error) {
       let errorMessage = "Failed to place order. Please try again.";

@@ -498,8 +498,24 @@ export async function POST(req: NextRequest) {
 
       const body = (await req.json()) as Partial<OrderPayload>;
       
+      // Log received payload structure (for debugging 400 errors)
+      logger.info(`📥 [ORDERS API ${requestId}] Received request body:`, {
+        hasVenueId: !!body.venue_id,
+        hasCustomerName: !!body.customer_name,
+        hasCustomerPhone: !!body.customer_phone,
+        hasItems: Array.isArray(body.items),
+        itemsCount: Array.isArray(body.items) ? body.items.length : 0,
+        hasTotalAmount: typeof body.total_amount === "number",
+        totalAmount: body.total_amount,
+        tableNumber: body.table_number,
+        paymentMode: (body as { payment_mode?: string }).payment_mode,
+        paymentStatus: (body as { payment_status?: string }).payment_status,
+        orderStatus: (body as { order_status?: string }).order_status,
+      });
+      
       // Validate venue_id is provided
       if (!body.venue_id) {
+        logger.error(`❌ [ORDERS API ${requestId}] Missing venue_id in request`);
         return apiErrors.badRequest("venue_id is required");
       }
       
@@ -516,9 +532,28 @@ export async function POST(req: NextRequest) {
       // Use validated body for rest of function
       validatedOrderBody = validatedBody as OrderPayload;
     } catch (validationError) {
+      // Log validation errors in detail for debugging 400 errors
       if (isZodError(validationError)) {
+        logger.error(`❌ [ORDERS API ${requestId}] Validation error:`, {
+          error: validationError.errors,
+          receivedPayload: {
+            venue_id: body.venue_id,
+            customer_name: body.customer_name,
+            customer_phone: body.customer_phone,
+            items: Array.isArray(body.items) ? body.items.map((item: unknown) => ({
+              hasMenuItemId: !!(item as { menu_item_id?: unknown }).menu_item_id,
+              hasItemName: !!(item as { item_name?: unknown }).item_name,
+              hasQuantity: typeof (item as { quantity?: unknown }).quantity === "number",
+              hasPrice: typeof (item as { price?: unknown }).price === "number",
+            })) : "not an array",
+            total_amount: body.total_amount,
+          },
+        });
         return handleZodError(validationError);
       }
+      logger.error(`❌ [ORDERS API ${requestId}] Non-Zod validation error:`, {
+        error: validationError instanceof Error ? validationError.message : String(validationError),
+      });
       return apiErrors.validation("Invalid order data");
     }
 
@@ -797,8 +832,8 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Log the EXACT payload being inserted before database insert
-    logger.error("[ORDER CREATION DEBUG] ===== PAYLOAD BEFORE INSERT =====", {
+    // Log the EXACT payload being inserted before database insert (use logger.info so it shows in Railway)
+    logger.info(`📤 [ORDERS API ${requestId}] ===== PAYLOAD BEFORE DATABASE INSERT =====`, {
       payload: JSON.stringify(cleanPayload, null, 2),
       payloadKeys: Object.keys(cleanPayload),
       itemsCount: Array.isArray(cleanPayload.items) ? (cleanPayload.items as unknown[]).length : 0,
@@ -826,12 +861,18 @@ export async function POST(req: NextRequest) {
       .select("*");
 
     if (insertErr) {
-      logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");
-      logger.error("[ORDER CREATION DEBUG] Database error code:", insertErr.code);
-      logger.error("[ORDER CREATION DEBUG] Database error message:", insertErr.message);
-      logger.error("[ORDER CREATION DEBUG] Database error details:", insertErr.details);
-      logger.error("[ORDER CREATION DEBUG] Database error hint:", insertErr.hint);
-      logger.error("[ORDER CREATION DEBUG] Full error object:", JSON.stringify(insertErr, null, 2));
+      logger.error(`❌ [ORDERS API ${requestId}] ===== DATABASE INSERT FAILED =====`, {
+        errorCode: insertErr.code,
+        errorMessage: insertErr.message,
+        errorDetails: insertErr.details,
+        errorHint: insertErr.hint,
+        fullError: JSON.stringify(insertErr, null, 2),
+        payload: JSON.stringify(cleanPayload, null, 2),
+      });
+      logger.error(`❌ [ORDERS API ${requestId}] Database error code:`, insertErr.code);
+      logger.error(`❌ [ORDERS API ${requestId}] Database error message:`, insertErr.message);
+      logger.error(`❌ [ORDERS API ${requestId}] Database error details:`, insertErr.details);
+      logger.error(`❌ [ORDERS API ${requestId}] Database error hint:`, insertErr.hint);
       
       console.error("[ORDER CREATION DEBUG] ===== DATABASE INSERT ERROR =====");
       console.error("Error Code:", insertErr.code);
