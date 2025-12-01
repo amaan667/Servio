@@ -19,15 +19,12 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    // Query for orders that need KDS tickets
-    // Include all active order statuses that need kitchen preparation
+    // CRITICAL: Query ALL orders - no date restrictions, no status filters
+    // User wants ALL items from EVERY order to always be visible
     const { data: ordersWithoutTickets, error: queryError } = await adminSupabase
       .from("orders")
       .select("id")
       .eq("venue_id", venueId)
-      .in("payment_status", ["PAID", "UNPAID", "PAYMENT_PENDING"])
-      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "SERVED"])
-      .gte("created_at", todayStart.toISOString())
       .not("id", "in", `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
 
     if (queryError) {
@@ -138,6 +135,8 @@ export const GET = withUnifiedAuth(
       // STEP 4: Business logic - Fetch tickets
       const supabase = createAdminClient();
 
+      // CRITICAL: Fetch ALL tickets - no status or date restrictions
+      // User wants ALL items from EVERY order to always be visible
       let query = supabase
         .from("kds_tickets")
         .select(`
