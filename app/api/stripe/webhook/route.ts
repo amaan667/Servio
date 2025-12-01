@@ -90,7 +90,7 @@ export async function POST(_request: NextRequest) {
       .from("orders")
       .update({
         payment_status: "PAID",
-        payment_method: "stripe",
+        payment_method: "PAY_NOW", // Use standardized payment method value
         stripe_session_id: session.id,
         stripe_payment_intent_id: String(session.payment_intent ?? ""),
         updated_at: new Date().toISOString(),
@@ -117,7 +117,7 @@ export async function POST(_request: NextRequest) {
       .from("orders")
       .update({
         payment_status: "PAID",
-        payment_method: "stripe",
+        payment_method: "PAY_NOW", // Use standardized payment method value
         stripe_session_id: session.id,
         stripe_payment_intent_id: String(session.payment_intent ?? ""),
         updated_at: new Date().toISOString(),

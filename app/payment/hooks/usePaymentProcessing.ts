@@ -100,15 +100,26 @@ export function usePaymentProcessing() {
           order_status: string;
           payment_status: string;
           payment_mode: string;
-          payment_method: string | null;
-          is_active: boolean;
+          payment_method: string;
+          // Note: is_active is a GENERATED column - do NOT include it in the payload
         }
         
         const orderData: OrderPayload = {
           venue_id: checkoutData.venueId,
           customer_name: checkoutData.customerName?.trim() || "",
           customer_phone: checkoutData.customerPhone?.trim() || "",
-          customer_email: checkoutData.customerEmail?.trim() || null,
+          customer_email: (() => {
+            // For Pay Now (Stripe), email is required
+            if (action === "stripe") {
+              const email = checkoutData.customerEmail?.trim();
+              if (!email) {
+                throw new Error("Email is required for Pay Now. Please provide your email address.");
+              }
+              return email;
+            }
+            // For other payment methods, email is optional
+            return checkoutData.customerEmail?.trim() || null;
+          })(),
           table_number: checkoutData.tableNumber ? String(checkoutData.tableNumber) : null,
           table_id: null,
           items: checkoutData.cart.map((item) => {
@@ -132,12 +143,12 @@ export function usePaymentProcessing() {
           }),
           total_amount: checkoutData.total,
           notes: checkoutData.notes || null,
-          order_status: "PLACED", // Start as PLACED so it shows in Live Orders immediately
-          payment_status: action === "stripe" ? "UNPAID" : "UNPAID", // All start as UNPAID, Stripe webhook will update
-          payment_mode: action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : "online",
-          payment_method: action === "demo" ? "demo" : action === "till" ? "till" : null,
+          order_status: "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
+          payment_status: action === "stripe" ? "PAYMENT_PENDING" : action === "later" ? "UNPAID" : action === "till" ? "UNPAID" : "UNPAID",
+          payment_mode: action === "till" ? "offline" : action === "later" ? "deferred" : "online",
+          payment_method: action === "demo" ? "PAY_NOW" : action === "stripe" ? "PAY_NOW" : action === "till" ? "PAY_AT_TILL" : action === "later" ? "PAY_LATER" : "PAY_NOW",
           // Note: source field is handled by the API route based on table_number
-          is_active: true,
+          // Note: is_active is a GENERATED column - do NOT include it in the payload
         };
 
         // Log to server (appears in Railway) - FULL PAYLOAD - fire and forget
@@ -223,7 +234,7 @@ export function usePaymentProcessing() {
               payment_status: orderData.payment_status,
               payment_mode: orderData.payment_mode,
               payment_method: orderData.payment_method,
-              is_active: orderData.is_active,
+              // Note: is_active is a GENERATED column - not included in payload
             },
             items_detail: orderData.items.map((item, idx) => ({
               index: idx,

@@ -292,8 +292,8 @@ export function OrderCard({
     if (!showActions || !venueId) return null;
 
     // Check payment status - handle both nested payment object and flat payment_status
-    const paymentStatus = order.payment?.status || order.payment_status || "unpaid";
-    const isPaid = paymentStatus.toLowerCase() === "paid";
+    const paymentStatus = (order.payment?.status || order.payment_status || "unpaid").toUpperCase();
+    const isPaid = paymentStatus === "PAID" || paymentStatus === "TILL";
     const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
     // Normalize order status - handle both uppercase and lowercase, and "served" vs "serving"
     const rawStatus = (order.order_status || "").toString();

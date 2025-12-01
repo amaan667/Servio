@@ -60,7 +60,7 @@ export async function POST(req: Request) {
         orderId: body.orderId,
         paymentType: "order_payment",
       },
-      customer_email: body.customerEmail,
+      customer_email: body.customerEmail || undefined,
     });
 
     logger.info("✅ Stripe checkout session created", {

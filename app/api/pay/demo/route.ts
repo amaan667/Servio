@@ -92,7 +92,8 @@ export async function POST(req: NextRequest) {
         .from("orders")
         .update({
           payment_status: "PAID",
-          payment_method: "demo",
+          payment_method: "PAY_NOW", // Demo uses PAY_NOW method
+          payment_mode: "online", // Required for payment_method consistency constraint
           updated_at: new Date().toISOString(),
         })
         .eq("id", order_id)
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
         data: {
           order_id: order.id,
           payment_status: "PAID",
-          payment_method: "demo",
+          payment_method: "PAY_NOW", // Demo uses PAY_NOW method
           total_amount: order.total_amount,
         },
       });

@@ -101,20 +101,27 @@ export function useOrderSession(orderParams: OrderParams) {
           });
 
           if (orderInDb) {
-            // If order has payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
-            if (orderInDb.payment_mode === "pay_later" && orderInDb.payment_status === "UNPAID") {
+            // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            const isPayLater = (orderInDb.payment_method === "PAY_LATER" || orderInDb.payment_mode === "pay_later" || orderInDb.payment_mode === "deferred") && 
+                               (orderInDb.payment_status === "UNPAID" || orderInDb.payment_status === "PAY_LATER_PENDING");
+            
+            if (isPayLater) {
               logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
                 orderId: orderData.orderId,
+                customerEmail: orderInDb.customer_email,
               });
+              
+              // Use customer_email from database order (preferred) or fallback to stored data
+              const customerEmail = orderInDb.customer_email || orderData.customerEmail;
               
               // Create Stripe checkout session for pay later order
               const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  amount: orderData.total,
-                  customerEmail: orderData.customerEmail || "customer@email.com",
-                  customerName: orderData.customerName,
+                  amount: orderInDb.total_amount || orderData.total,
+                  customerEmail: customerEmail || undefined, // Use from DB order
+                  customerName: orderInDb.customer_name || orderData.customerName,
                   venueName: "Restaurant",
                   orderId: orderData.orderId,
                 }),
@@ -197,20 +204,27 @@ export function useOrderSession(orderParams: OrderParams) {
           }
 
           if (sessionOrderInDb) {
-            // If order has payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
-            if (sessionOrderInDb.payment_mode === "pay_later" && sessionOrderInDb.payment_status === "UNPAID") {
+            // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            const isPayLater = (sessionOrderInDb.payment_method === "PAY_LATER" || sessionOrderInDb.payment_mode === "pay_later" || sessionOrderInDb.payment_mode === "deferred") && 
+                               (sessionOrderInDb.payment_status === "UNPAID" || sessionOrderInDb.payment_status === "PAY_LATER_PENDING");
+            
+            if (isPayLater) {
               logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
                 orderId: orderData.orderId,
+                customerEmail: sessionOrderInDb.customer_email,
               });
+              
+              // Use customer_email from database order (preferred) or fallback to stored data
+              const customerEmail = sessionOrderInDb.customer_email || orderData.customerEmail;
               
               // Create Stripe checkout session for pay later order
               const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  amount: orderData.total,
-                  customerEmail: orderData.customerEmail || "customer@email.com",
-                  customerName: orderData.customerName,
+                  amount: sessionOrderInDb.total_amount || orderData.total,
+                  customerEmail: customerEmail || undefined, // Use from DB order
+                  customerName: sessionOrderInDb.customer_name || orderData.customerName,
                   venueName: "Restaurant",
                   orderId: orderData.orderId,
                 }),

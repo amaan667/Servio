@@ -151,8 +151,8 @@ type OrderPayload = {
     | "CANCELLED"
     | "REFUNDED";
   payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
-  payment_mode?: "online" | "pay_later" | "pay_at_till";
-  payment_method?: "demo" | "stripe" | "till" | null;
+  payment_mode?: "online" | "deferred" | "offline";
+  payment_method?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL" | string; // Standardized payment method values
   // NOTE: session_id is NOT a database column - it's only used for client-side tracking
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   stripe_session_id?: string | null;
@@ -737,7 +737,7 @@ export async function POST(req: NextRequest) {
     // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
     const orderSource = ((body as { source?: "qr" | "counter" }).source) || "qr" as "qr" | "counter"; // Default to 'qr' if not provided
 
-    const payload: OrderPayload & { is_active?: boolean } = {
+    const payload: OrderPayload = {
       venue_id: venueId,
       table_number,
       table_id: tableId, // Add table_id to the payload
@@ -749,7 +749,16 @@ export async function POST(req: NextRequest) {
       order_status: ((body as { order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED" }).order_status) || "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
       payment_status: ((body as { payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED" }).payment_status) || "UNPAID", // Use provided status or default to 'UNPAID'
       payment_mode: validatedOrderBody.payment_mode || "online", // New field for payment mode
-      payment_method: ((body as { payment_method?: "demo" | "stripe" | "till" | null }).payment_method ?? null) as "demo" | "stripe" | "till" | null,
+      payment_method: (() => {
+        const method = ((body as { payment_method?: string }).payment_method);
+        // Map old values to standardized values
+        if (!method) return "PAY_NOW"; // Default fallback
+        const upperMethod = (method || "").toUpperCase();
+        if (upperMethod === "DEMO" || upperMethod === "STRIPE" || upperMethod === "PAY_NOW") return "PAY_NOW";
+        if (upperMethod === "TILL" || upperMethod === "PAY_AT_TILL") return "PAY_AT_TILL";
+        if (upperMethod === "LATER" || upperMethod === "PAY_LATER") return "PAY_LATER";
+        return "PAY_NOW"; // Default fallback
+      })(),
       // NOTE: session_id is NOT a database column - don't include in payload
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
       // NOTE: is_active is a generated column in the database, don't include it in insert
@@ -825,8 +834,17 @@ export async function POST(req: NextRequest) {
       notes: payload.notes ?? null,
       order_status: payload.order_status || "IN_PREP",
       payment_status: payload.payment_status || "UNPAID",
-      payment_mode: payload.payment_mode || "online",
-      payment_method: payload.payment_method ?? null,
+      payment_method: payload.payment_method || "PAY_NOW", // Ensure payment_method is always set (required by constraint)
+      payment_mode: (() => {
+        // Ensure payment_mode matches payment_method for constraint consistency
+        const method = payload.payment_method || "PAY_NOW";
+        const upperMethod = (method || "").toUpperCase();
+        if (upperMethod === "PAY_NOW") return "online";
+        if (upperMethod === "PAY_AT_TILL") return "offline";
+        if (upperMethod === "PAY_LATER") return "deferred";
+        // Default fallback
+        return payload.payment_mode || "online";
+      })(),
       source: payload.source || "qr",
       // NOTE: is_active is a GENERATED column in the database - computed automatically, DO NOT include in insert
       created_at: now,

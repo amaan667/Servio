@@ -86,7 +86,8 @@ export async function POST(req: NextRequest) {
       order_status: "PLACED",
       payment_status: "PAID",
       payment_intent_id: paymentIntentId,
-      payment_method: paymentIntent.payment_method_types?.[0] || "card",
+      payment_method: "PAY_NOW", // Standardized payment method for Stripe payments
+      payment_mode: "online", // Required for payment_method consistency constraint
       items: [
         // Create a summary item from the metadata
         {
@@ -185,7 +186,8 @@ async function createDemoOrder(cartId: string) {
       order_status: "PLACED",
       payment_status: "PAID",
       payment_intent_id: `demo-${cartId}`,
-      payment_method: "demo",
+      payment_method: "PAY_NOW", // Demo orders use PAY_NOW method
+      payment_mode: "online", // Required for payment_method consistency constraint
       items: [
         {
           menu_item_id: null,
