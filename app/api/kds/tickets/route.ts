@@ -9,7 +9,8 @@ import { z } from 'zod';
 import { validateBody } from '@/lib/api/validation-schemas';
 
 // Function to automatically backfill missing KDS tickets for orders
-async function autoBackfillMissingTickets(venueId: string) {
+// Returns true if tickets were created, false otherwise
+async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
   try {
     const adminSupabase = createAdminClient();
 
@@ -27,7 +28,7 @@ async function autoBackfillMissingTickets(venueId: string) {
       .not("id", "in", `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
 
     if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
-      return;
+      return false;
     }
 
     logger.debug(
@@ -45,8 +46,10 @@ async function autoBackfillMissingTickets(venueId: string) {
       .single();
 
     if (!expoStation) {
-      return;
+      return false;
     }
+
+    let ticketsCreated = 0;
 
     // Create tickets for orders without them
     for (const orderRef of ordersWithoutTickets) {
@@ -67,18 +70,24 @@ async function autoBackfillMissingTickets(venueId: string) {
           item_name: item.item_name || "Unknown Item",
           quantity: parseInt(String(item.quantity)) || 1,
           special_instructions: item.specialInstructions || null,
+          modifiers: (item as { modifiers?: unknown }).modifiers || null,
           table_number: order.table_number,
           table_label: order.table_id || order.table_number?.toString() || "Unknown",
           status: "new",
         };
 
-        await adminSupabase.from("kds_tickets").insert(ticketData);
+        const { error } = await adminSupabase.from("kds_tickets").insert(ticketData);
+        if (!error) {
+          ticketsCreated++;
+        }
       }
     }
 
     logger.debug(
-      `[KDS AUTO-BACKFILL] Auto-backfill completed for ${ordersWithoutTickets.length} orders`
+      `[KDS AUTO-BACKFILL] Auto-backfill completed: ${ticketsCreated} tickets created for ${ordersWithoutTickets.length} orders`
     );
+
+    return ticketsCreated > 0;
   } catch (_error) {
     logger.error("[KDS AUTO-BACKFILL] Error during auto-backfill:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
@@ -121,7 +130,21 @@ export const GET = withUnifiedAuth(
 
       let query = supabase
         .from("kds_tickets")
-        .select("*")
+        .select(`
+          *,
+          kds_stations (
+            id,
+            station_name,
+            station_type,
+            color_code
+          ),
+          orders (
+            id,
+            customer_name,
+            order_status,
+            payment_status
+          )
+        `)
         .eq("venue_id", venueId)
         .order("created_at", { ascending: false });
 
@@ -149,14 +172,28 @@ export const GET = withUnifiedAuth(
       }
 
       // Auto-backfill missing tickets
-      await autoBackfillMissingTickets(venueId);
+      const backfillCreatedTickets = await autoBackfillMissingTickets(venueId);
 
-      // Refetch if backfill occurred
+      // Refetch if backfill created tickets or if no tickets were found initially
       let finalTickets = tickets || [];
-      if (!tickets || tickets.length === 0) {
+      if (backfillCreatedTickets || !tickets || tickets.length === 0) {
         const { data: refetchedTickets } = await supabase
           .from("kds_tickets")
-          .select("*")
+          .select(`
+            *,
+            kds_stations (
+              id,
+              station_name,
+              station_type,
+              color_code
+            ),
+            orders (
+              id,
+              customer_name,
+              order_status,
+              payment_status
+            )
+          `)
           .eq("venue_id", venueId)
           .order("created_at", { ascending: false });
         finalTickets = refetchedTickets || [];

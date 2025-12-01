@@ -91,8 +91,8 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       const response = await apiClient.get("/api/kds/stations", { params: { venueId } });
       const data = await response.json();
 
-      if (data.ok) {
-        const fetchedStations = data.stations || [];
+      if (data.success) {
+        const fetchedStations = data.data?.stations || [];
         setStations(fetchedStations);
         // Cache stations to prevent flicker
         if (typeof window !== "undefined") {
@@ -107,7 +107,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
           }
         }
       } else {
-        setError(data.error || "Failed to load stations");
+        setError(data.error?.message || "Failed to load stations");
       }
     } catch {
       setError("Failed to load stations");
@@ -122,7 +122,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         params: {
           venueId,
           ...(selectedStation
-            ? { stationId: selectedStation }
+            ? { station_id: selectedStation }
             : {
                 /* Empty */
               }),
@@ -130,14 +130,15 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       });
       const data = await response.json();
 
-      if (data.ok) {
-        setTickets(data.tickets || []);
+      if (data.success) {
+        setTickets(data.data?.tickets || []);
+        setError(null); // Clear any previous errors
         // Cache tickets
         if (typeof window !== "undefined") {
-          sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.tickets || []));
+          sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.data?.tickets || []));
         }
       } else {
-        setError(data.error || data.message || "Failed to load tickets");
+        setError(data.error?.message || "Failed to load tickets");
         console.error("[KDS] Tickets API error:", data);
       }
     } catch (error) {
@@ -152,13 +153,13 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   const updateTicketStatus = useCallback(async (ticketId: string, status: string) => {
     try {
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.patch("/api/kds/tickets", { ticketId, status });
+      const response = await apiClient.patch("/api/kds/tickets", { ticket_id: ticketId, status });
 
       const data = await response.json();
 
-      if (data.ok) {
+      if (data.success) {
         // Update local state
-        setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.ticket } : t)));
+        setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t)));
       }
     } catch {
       // Silently fail
@@ -176,7 +177,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
 
       const data = await response.json();
 
-      if (data.ok) {
+      if (data.success) {
         // REMOVE bumped tickets from KDS entirely
         setTickets((prev) => prev.filter((t) => t.order_id !== orderId));
       } else {
