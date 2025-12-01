@@ -35,14 +35,13 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     }
 
     // BACKFILL: Create tickets for existing orders that don't have them
-    // CRITICAL: Get ALL orders regardless of date - user wants ALL items from EVERY order
+    // CRITICAL: Get ALL orders - NO date restrictions, NO status filters - EVERY SINGLE ORDER
     try {
-      // Step 1: Get ALL active orders (no date restriction, no status filter except terminal statuses)
+      // Step 1: Get ALL orders from this venue (no filters except venue_id)
       const { data: allOrders, error: ordersError } = await supabase
         .from("orders")
         .select("id, venue_id, table_number, table_id, items, customer_name, order_status, payment_status")
         .eq("venue_id", venueId)
-        .not("order_status", "in", "('COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED')")
         .order("created_at", { ascending: false });
 
       if (ordersError) {

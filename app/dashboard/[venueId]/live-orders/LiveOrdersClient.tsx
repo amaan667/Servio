@@ -47,6 +47,8 @@ export default function LiveOrdersClient({
   const searchParams = useSearchParams();
   const tableFilter = searchParams?.get("table");
   const tabParam = searchParams?.get("tab");
+  const orderParam = searchParams?.get("order");
+  const searchParam = searchParams?.get("search");
 
   const parsedTableFilter = tableFilter
     ? tableFilter.startsWith("Table ")
@@ -58,7 +60,7 @@ export default function LiveOrdersClient({
   const [venueName, setVenueName] = useState<string>(venueNameProp || "");
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(120000);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParam || orderParam || "");
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use custom hooks
