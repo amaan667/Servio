@@ -35,19 +35,14 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     }
 
     // BACKFILL: Create tickets for existing orders that don't have them
-    // This ensures all existing orders have KDS tickets when the page loads
+    // CRITICAL: Get ALL orders regardless of date - user wants ALL items from EVERY order
     try {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      // Step 1: Get ALL orders from today (more aggressive - check all active orders)
-      const { data: allTodayOrders, error: ordersError } = await supabase
+      // Step 1: Get ALL active orders (no date restriction, no status filter except terminal statuses)
+      const { data: allOrders, error: ordersError } = await supabase
         .from("orders")
         .select("id, venue_id, table_number, table_id, items, customer_name, order_status, payment_status")
         .eq("venue_id", venueId)
-        .in("payment_status", ["PAID", "UNPAID", "PAYMENT_PENDING", "TILL"])
-        .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "SERVED"])
-        .gte("created_at", todayStart.toISOString())
+        .not("order_status", "in", "('COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED')")
         .order("created_at", { ascending: false });
 
       if (ordersError) {
@@ -55,9 +50,9 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
           error: ordersError.message,
           venueId,
         });
-      } else if (allTodayOrders && allTodayOrders.length > 0) {
+      } else if (allOrders && allOrders.length > 0) {
         logger.info("[KDS PAGE] Found orders to check for tickets:", {
-          count: allTodayOrders.length,
+          count: allOrders.length,
           venueId,
         });
 
@@ -72,7 +67,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
         );
 
         // Step 3: Filter to orders without tickets
-        const ordersWithoutTickets = allTodayOrders.filter(
+        const ordersWithoutTickets = allOrders.filter(
           (order) => !existingOrderIds.has(order.id)
         );
 
@@ -117,7 +112,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
           }
 
           logger.info("[KDS PAGE] Backfill completed:", {
-            totalChecked: allTodayOrders.length,
+            totalChecked: allOrders.length,
             withoutTickets: ordersWithoutTickets.length,
             success: successCount,
             failed: failCount,
@@ -127,7 +122,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
           logger.debug("[KDS PAGE] All orders already have tickets", { venueId });
         }
       } else {
-        logger.debug("[KDS PAGE] No orders found for today", { venueId });
+        logger.debug("[KDS PAGE] No orders found", { venueId });
       }
     } catch (backfillError) {
       logger.error("[KDS PAGE] Backfill error (non-critical):", {
@@ -138,11 +133,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     }
 
     // Fetch active KDS tickets (not bumped) after backfill
-    // Include all statuses: new, preparing, ready (but not bumped)
-    // Also fetch from today only to match the backfill scope
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    
+    // CRITICAL: Fetch ALL tickets from ALL orders - no date restrictions
     const { data: tickets, error: ticketsError } = await supabase
       .from("kds_tickets")
       .select(`
@@ -162,7 +153,6 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       `)
       .eq("venue_id", venueId)
       .neq("status", "bumped")
-      .gte("created_at", todayStart.toISOString())
       .order("created_at", { ascending: true });
     
     if (ticketsError) {
