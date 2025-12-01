@@ -855,7 +855,7 @@ export async function POST(req: NextRequest) {
       table_id: cleanPayload.table_id,
       total_amount: cleanPayload.total_amount,
       source: cleanPayload.source,
-      is_active: cleanPayload.is_active,
+      // is_active is a generated column, not included in payload
       created_at: cleanPayload.created_at,
       updated_at: cleanPayload.updated_at,
       requestId,
