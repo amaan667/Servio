@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
     // Keep payment_status as UNPAID so order shows in Payments page for staff to mark as paid
     const updateData = {
       payment_status: "UNPAID", // Keep as UNPAID so it shows in Payments page
-      payment_mode: "pay_at_till", // Ensure payment_mode is set
-      payment_method: "till",
+      payment_mode: "offline", // Standardized payment mode for Pay at Till
+      payment_method: "PAY_AT_TILL", // Standardized payment method
       updated_at: new Date().toISOString(),
     };
 
@@ -127,8 +127,8 @@ export async function POST(req: NextRequest) {
       data: {
         order_id: order.id,
         payment_status: "UNPAID", // Keep as UNPAID so it shows in Payments page
-        payment_mode: "pay_at_till",
-        payment_method: "till",
+        payment_mode: "offline", // Standardized payment mode
+        payment_method: "PAY_AT_TILL", // Standardized payment method
         total_amount: order.total_amount,
       },
     };

@@ -647,72 +647,66 @@ export function usePaymentProcessing() {
         });
 
         // Till payment (with offline support)
-        let result;
-        if (!navigator.onLine) {
-          await queuePayment(tillPayload, "/api/pay/till");
-          toast({
-            title: "Payment Queued",
-            description: "Till payment will be processed when you're back online.",
-          });
-          // Create mock result for offline flow
-          result = { order_number: `QUEUED-${Date.now()}` };
-        } else {
-          const response = await fetch("/api/pay/till", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(tillPayload),
-          });
-
-          logger.info("🧾 [PAYMENT PROCESSING] Till payment response:", {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-          });
-
-          if (!response.ok) {
-            // Queue if network error
-            if (!navigator.onLine || response.status === 0) {
-              await queuePayment(tillPayload, "/api/pay/till");
-              toast({
-                title: "Payment Queued",
-                description: "Till payment will be processed when you're back online.",
-              });
-              result = { order_number: `QUEUED-${Date.now()}` };
-            } else {
-              let errorMessage = `Failed to confirm order for till payment (${response.status})`;
-              try {
-                const errorText = await response.text();
-                if (errorText) {
-                  try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage = errorJson.error || errorJson.message || errorMessage;
-                  } catch {
-                    // If not JSON, use the text directly (limit length)
-                    errorMessage = errorText.length > 200 ? errorText.substring(0, 200) + "..." : errorText;
-                  }
-                }
-              } catch (textError) {
-                logger.error("[PAYMENT] ❌ Error parsing till payment error:", textError);
-              }
-              
-              logger.error("[PAYMENT] ❌ Pay till failed:", {
-                status: response.status,
-                statusText: response.statusText,
-                errorMessage,
-              });
-              throw new Error(errorMessage);
-            }
+        // Note: Order is already created, so even if this fails, we redirect to order summary
+        try {
+          let result;
+          if (!navigator.onLine) {
+            await queuePayment(tillPayload, "/api/pay/till");
+            toast({
+              title: "Payment Queued",
+              description: "Till payment will be processed when you're back online.",
+            });
+            // Create mock result for offline flow
+            result = { order_number: `QUEUED-${Date.now()}` };
           } else {
-            result = await response.json();
-            logger.info("🧾 [PAYMENT PROCESSING] ✅ Till payment confirmed:", { result });
+            const response = await fetch("/api/pay/till", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(tillPayload),
+            });
+
+            logger.info("🧾 [PAYMENT PROCESSING] Till payment response:", {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok,
+            });
+
+            if (!response.ok) {
+              // Queue if network error
+              if (!navigator.onLine || response.status === 0) {
+                await queuePayment(tillPayload, "/api/pay/till");
+                toast({
+                  title: "Payment Queued",
+                  description: "Till payment will be processed when you're back online.",
+                });
+                result = { order_number: `QUEUED-${Date.now()}` };
+              } else {
+                // Non-critical: order is already created, just log warning and continue
+                logger.warn("[PAYMENT] ⚠️ Pay till endpoint failed, but order already created:", {
+                  status: response.status,
+                  orderId,
+                });
+                // Continue to redirect - order exists in database
+              }
+            } else {
+              result = await response.json();
+              logger.info("🧾 [PAYMENT PROCESSING] ✅ Till payment confirmed:", { result });
+            }
           }
+        } catch (tillError) {
+          // Non-critical error - order is already created
+          logger.warn("[PAYMENT] ⚠️ Error calling pay/till endpoint (order already created):", {
+            error: tillError instanceof Error ? tillError.message : String(tillError),
+            orderId,
+          });
+          // Continue to redirect - order exists in database
         }
 
         // Clear cart after successful order (keep checkout-data for order summary page)
         logger.info("🧾 [PAYMENT PROCESSING] Clearing cart and redirecting to order summary...", { orderId });
         localStorage.removeItem("servio-order-cart");
 
-        // Redirect to order summary page
+        // Redirect to order summary page - order is already created
         window.location.href = `/order-summary?orderId=${orderId}`;
       } else if (action === "later") {
         logger.info("⏰ [PAYMENT PROCESSING] Processing PAY LATER payment...");
@@ -737,65 +731,59 @@ export function usePaymentProcessing() {
         });
 
         // Pay later (with offline support)
-        let result;
-        if (!navigator.onLine) {
-          await queuePayment(laterPayload, "/api/pay/later");
-          toast({
-            title: "Payment Queued",
-            description: "Pay later will be processed when you're back online.",
-          });
-          // Create mock result for offline flow
-          result = { order_number: `QUEUED-${Date.now()}` };
-        } else {
-          const response = await fetch("/api/pay/later", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(laterPayload),
-          });
-
-          logger.info("⏰ [PAYMENT PROCESSING] Pay later response:", {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-          });
-
-          if (!response.ok) {
-            // Queue if network error
-            if (!navigator.onLine || response.status === 0) {
-              await queuePayment(laterPayload, "/api/pay/later");
-              toast({
-                title: "Payment Queued",
-                description: "Pay later will be processed when you're back online.",
-              });
-              result = { order_number: `QUEUED-${Date.now()}` };
-            } else {
-              let errorMessage = `Failed to confirm order for pay later (${response.status})`;
-              try {
-                const errorText = await response.text();
-                if (errorText) {
-                  try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage = errorJson.error || errorJson.message || errorMessage;
-                  } catch {
-                    // If not JSON, use the text directly (limit length)
-                    errorMessage = errorText.length > 200 ? errorText.substring(0, 200) + "..." : errorText;
-                  }
-                }
-              } catch (textError) {
-                logger.error("[PAYMENT] ❌ Error parsing pay later error:", textError);
-              }
-              
-              logger.error("[PAYMENT] ❌ Pay later failed:", {
-                status: response.status,
-                statusText: response.statusText,
-                errorMessage,
-              });
-              throw new Error(errorMessage);
-            }
+        // Note: Order is already created, so even if this fails, we redirect to order summary
+        try {
+          let result;
+          if (!navigator.onLine) {
+            await queuePayment(laterPayload, "/api/pay/later");
+            toast({
+              title: "Payment Queued",
+              description: "Pay later will be processed when you're back online.",
+            });
+            // Create mock result for offline flow
+            result = { order_number: `QUEUED-${Date.now()}` };
           } else {
-            result = await response.json();
-            logger.info("⏰ [PAYMENT PROCESSING] ✅ Pay later confirmed:", { result });
+            const response = await fetch("/api/pay/later", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(laterPayload),
+            });
+
+            logger.info("⏰ [PAYMENT PROCESSING] Pay later response:", {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok,
+            });
+
+            if (!response.ok) {
+              // Queue if network error
+              if (!navigator.onLine || response.status === 0) {
+                await queuePayment(laterPayload, "/api/pay/later");
+                toast({
+                  title: "Payment Queued",
+                  description: "Pay later will be processed when you're back online.",
+                });
+                result = { order_number: `QUEUED-${Date.now()}` };
+              } else {
+                // Non-critical: order is already created, just log warning and continue
+                logger.warn("[PAYMENT] ⚠️ Pay later endpoint failed, but order already created:", {
+                  status: response.status,
+                  orderId,
+                });
+                // Continue to redirect - order exists in database
+              }
+            } else {
+              result = await response.json();
+              logger.info("⏰ [PAYMENT PROCESSING] ✅ Pay later confirmed:", { result });
+            }
           }
+        } catch (laterError) {
+          // Non-critical error - order is already created
+          logger.warn("[PAYMENT] ⚠️ Error calling pay/later endpoint (order already created):", {
+            error: laterError instanceof Error ? laterError.message : String(laterError),
+            orderId,
+          });
+          // Continue to redirect - order exists in database
         }
 
         // Store session for re-scanning
@@ -812,7 +800,7 @@ export function usePaymentProcessing() {
             customerPhone: checkoutData.customerPhone,
             cart: checkoutData.cart,
             total: checkoutData.total,
-            orderNumber: result.order_number || "",
+            orderNumber: orderId.slice(-6).toUpperCase(), // Use short order ID as order number
           })
         );
 
