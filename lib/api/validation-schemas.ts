@@ -11,6 +11,17 @@ import { z } from "zod";
  * Common validation patterns
  */
 const uuid = z.string().uuid("Invalid UUID format");
+// Venue ID can be a UUID or prefixed with "venue-" (e.g., "venue-1e02af4d")
+const venueId = z.string().refine(
+  (val) => {
+    // Accept UUID format
+    if (z.string().uuid().safeParse(val).success) return true;
+    // Accept "venue-" prefix format
+    if (val.startsWith("venue-") && val.length > 6) return true;
+    return false;
+  },
+  { message: "Invalid venue ID format. Must be a UUID or start with 'venue-'" }
+);
 const nonEmptyString = z.string().min(1, "Cannot be empty");
 const positiveNumber = z.number().positive("Must be positive");
 const nonNegativeNumber = z.number().nonnegative("Cannot be negative");
@@ -51,7 +62,7 @@ export const orderItemSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-  venue_id: uuid,
+  venue_id: venueId,
   customer_name: nonEmptyString.max(100),
   customer_phone: phone,
   customer_email: email.optional().nullable(),
