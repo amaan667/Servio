@@ -47,13 +47,39 @@ export function usePaymentProcessing() {
           total: checkoutData.total,
         });
 
-        const orderData = {
+        // Build order payload that exactly matches database schema
+        interface OrderItemPayload {
+          menu_item_id: string | null;
+          quantity: number;
+          price: number;
+          item_name: string;
+          special_instructions: string | null;
+        }
+        
+        interface OrderPayload {
+          venue_id: string;
+          customer_name: string;
+          customer_phone: string;
+          customer_email: string | null;
+          table_number: string | null;
+          table_id: null;
+          items: OrderItemPayload[];
+          total_amount: number;
+          notes: string | null;
+          order_status: string;
+          payment_status: string;
+          payment_mode: string;
+          payment_method: string | null;
+          is_active: boolean;
+        }
+        
+        const orderData: OrderPayload = {
           venue_id: checkoutData.venueId,
-          table_number: checkoutData.tableNumber ? String(checkoutData.tableNumber) : undefined,
+          customer_name: checkoutData.customerName?.trim() || "",
+          customer_phone: checkoutData.customerPhone?.trim() || "",
+          customer_email: checkoutData.customerEmail?.trim() || null,
+          table_number: checkoutData.tableNumber ? String(checkoutData.tableNumber) : null,
           table_id: null,
-          // Removed: counter_number, order_type, order_location - don't exist in DB
-          customer_name: checkoutData.customerName,
-          customer_phone: checkoutData.customerPhone,
           items: checkoutData.cart.map((item) => {
             // Validate and fix menu_item_id - must be valid UUID or null
             let menuItemId: string | null = null;
@@ -64,24 +90,23 @@ export function usePaymentProcessing() {
                 menuItemId = item.id;
               }
             }
-            // If no valid UUID, use null (schema should accept null)
             
             return {
               menu_item_id: menuItemId,
               quantity: item.quantity,
               price: item.price,
               item_name: item.name,
-              special_instructions: item.specialInstructions || undefined,
+              special_instructions: item.specialInstructions || null,
             };
           }),
           total_amount: checkoutData.total,
-          notes: checkoutData.notes || undefined,
+          notes: checkoutData.notes || null,
           order_status: "PLACED", // Start as PLACED so it shows in Live Orders immediately
-          payment_status: "UNPAID",
-          payment_mode: action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : action === "stripe" ? "online" : "online", // Use actual database values
+          payment_status: action === "stripe" ? "UNPAID" : "UNPAID", // All start as UNPAID, Stripe webhook will update
+          payment_mode: action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : "online",
           payment_method: action === "demo" ? "demo" : action === "till" ? "till" : null,
-          // NOTE: session_id is NOT a database column - don't send it
-          source: checkoutData.source || "qr",
+          // Note: source field is handled by the API route based on table_number
+          is_active: true,
         };
 
         // Log the EXACT data being sent
@@ -104,7 +129,6 @@ export function usePaymentProcessing() {
           payment_status: orderData.payment_status,
           payment_mode: orderData.payment_mode,
           payment_method: orderData.payment_method,
-          source: orderData.source,
         });
 
         // Check if offline - queue order if offline
