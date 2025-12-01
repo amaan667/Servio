@@ -66,15 +66,35 @@ export default function PaymentPage() {
 
     paymentState.setPaymentAction(action);
     
-    console.log("🔵 [PAYMENT PAGE] Calling processPayment...", { action });
-    await processPayment(
-      action,
-      paymentState.checkoutData,
-      paymentState.setOrderNumber,
-      paymentState.setPaymentComplete,
-      paymentState.setIsProcessing,
-      paymentState.setError
-    );
+    try {
+      console.log("🔵 [PAYMENT PAGE] Calling processPayment...", { action });
+      await processPayment(
+        action,
+        paymentState.checkoutData,
+        paymentState.setOrderNumber,
+        paymentState.setPaymentComplete,
+        paymentState.setIsProcessing,
+        (error: string | null) => {
+          // Ensure error is always a string
+          const safeError = error && typeof error === "string" 
+            ? error 
+            : (error ? String(error) : null);
+          paymentState.setError(safeError);
+        }
+      );
+    } catch (unhandledError) {
+      console.error("❌ [PAYMENT PAGE] Unhandled error in handlePayment:", unhandledError);
+      logger.error("[PAYMENT PAGE] Unhandled error", {
+        error: unhandledError instanceof Error ? unhandledError.message : String(unhandledError),
+      });
+      
+      const errorMessage = unhandledError instanceof Error 
+        ? unhandledError.message 
+        : "An unexpected error occurred. Please try again.";
+      
+      paymentState.setError(errorMessage);
+      paymentState.setIsProcessing(false);
+    }
   };
 
   if (!paymentState.checkoutData) {
@@ -116,7 +136,11 @@ export default function PaymentPage() {
         {paymentState.error && (
           <Card className="mb-6 shadow-lg bg-red-50 border-red-200">
             <CardContent className="p-6">
-              <p className="text-red-800">{paymentState.error}</p>
+              <p className="text-red-800">
+                {typeof paymentState.error === "string" 
+                  ? paymentState.error 
+                  : "An unexpected error occurred. Please try again."}
+              </p>
             </CardContent>
           </Card>
         )}

@@ -617,22 +617,53 @@ export function usePaymentProcessing() {
       if (errorMessage.includes("[object Object]") || errorMessage.includes("[object")) {
         errorMessage = "An unexpected error occurred. Please try again.";
       }
+
+      // CRITICAL: Ensure errorMessage is always a string
+      if (typeof errorMessage !== "string") {
+        console.error("⚠️ [PAYMENT PROCESSING] Error message is not a string!", {
+          type: typeof errorMessage,
+          value: errorMessage,
+          error: _err,
+        });
+        errorMessage = "An unexpected error occurred. Please try again.";
+      }
+
+      // Final safety check - ensure it's a valid string
+      const safeErrorMessage = String(errorMessage || "An unexpected error occurred. Please try again.").trim();
+      
+      // Remove any "[object Object]" strings that might have slipped through
+      const cleanedErrorMessage = safeErrorMessage.replace(/\[object\s+Object\]/gi, "An unexpected error occurred");
       
       logger.error("❌ [PAYMENT PROCESSING] Final error details:", {
         originalError: _err instanceof Error ? _err.message : String(_err),
         extractedMessage: errorMessage,
+        safeErrorMessage: cleanedErrorMessage,
         action,
+      });
+
+      console.error("❌ [PAYMENT PROCESSING] Payment Error (console):", {
+        action,
+        error: _err instanceof Error ? _err.message : String(_err),
+        cleanedMessage: cleanedErrorMessage,
+        timestamp: new Date().toISOString(),
       });
       
       logger.info("❌ [PAYMENT PROCESSING] ===== ERROR HANDLING COMPLETE =====", {
-        errorMessage,
+        errorMessage: cleanedErrorMessage,
         timestamp: new Date().toISOString(),
       });
 
-      setError(errorMessage);
+      // Ensure we set a string, never an object
+      setError(cleanedErrorMessage);
+      
+      // Ensure toast description is always a string
+      const toastDescription = typeof cleanedErrorMessage === "string" 
+        ? cleanedErrorMessage 
+        : "An unexpected error occurred. Please try again.";
+      
       toast({
         title: "Payment Error",
-        description: errorMessage,
+        description: toastDescription,
         variant: "destructive",
       });
     } finally {
