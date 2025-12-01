@@ -56,12 +56,22 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
         .eq("id", orderRef.id)
         .single();
 
-      if (!order || !Array.isArray(order.items) || order.items.length === 0) {
-        logger.debug("[KDS AUTO-BACKFILL] Skipping order with no items:", { orderId: order?.id });
+      if (!order) {
+        logger.debug("[KDS AUTO-BACKFILL] Order not found:", { orderId: orderRef.id });
+        continue;
+      }
+
+      if (!Array.isArray(order.items) || order.items.length === 0) {
+        logger.debug("[KDS AUTO-BACKFILL] Skipping order with no items:", { orderId: order.id });
         continue;
       }
 
       try {
+        logger.info("[KDS AUTO-BACKFILL] Creating tickets for order:", {
+          orderId: order.id,
+          itemCount: order.items.length,
+          venueId: order.venue_id,
+        });
         await createKDSTicketsWithAI(adminSupabase, {
           id: order.id,
           venue_id: order.venue_id,
@@ -71,6 +81,10 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
           table_id: order.table_id,
         });
         ticketsCreated += order.items.length;
+        logger.info("[KDS AUTO-BACKFILL] Successfully created tickets for order:", {
+          orderId: order.id,
+          ticketsCreated: order.items.length,
+        });
       } catch (error) {
         logger.error("[KDS AUTO-BACKFILL] Failed to create tickets for order:", {
           orderId: order.id,
