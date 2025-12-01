@@ -25,6 +25,7 @@ import { OrderTimeline } from "@/components/order-timeline";
 // Hooks
 import { usePaymentState } from "./hooks/usePaymentState";
 import { usePaymentProcessing } from "./hooks/usePaymentProcessing";
+import { logger } from "@/lib/logger";
 
 /**
  * Payment Page
@@ -39,9 +40,33 @@ export default function PaymentPage() {
   const { processPayment } = usePaymentProcessing();
 
   const handlePayment = async (action: "demo" | "stripe" | "till" | "later") => {
-    if (!paymentState.checkoutData) return;
+    console.log("🔵 [PAYMENT PAGE] Payment button clicked:", {
+      action,
+      timestamp: new Date().toISOString(),
+      hasCheckoutData: !!paymentState.checkoutData,
+      checkoutDataSummary: paymentState.checkoutData ? {
+        venueId: paymentState.checkoutData.venueId,
+        tableNumber: paymentState.checkoutData.tableNumber,
+        total: paymentState.checkoutData.total,
+        itemCount: paymentState.checkoutData.cart?.length || 0,
+      } : null,
+    });
+
+    logger.info("🔵 [PAYMENT PAGE] Payment method button clicked", {
+      action,
+      timestamp: new Date().toISOString(),
+      hasCheckoutData: !!paymentState.checkoutData,
+    });
+
+    if (!paymentState.checkoutData) {
+      console.error("❌ [PAYMENT PAGE] No checkout data available!");
+      logger.error("[PAYMENT PAGE] No checkout data available");
+      return;
+    }
 
     paymentState.setPaymentAction(action);
+    
+    console.log("🔵 [PAYMENT PAGE] Calling processPayment...", { action });
     await processPayment(
       action,
       paymentState.checkoutData,

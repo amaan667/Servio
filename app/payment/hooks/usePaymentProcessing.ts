@@ -18,12 +18,35 @@ export function usePaymentProcessing() {
     setIsProcessing: (processing: boolean) => void,
     setError: (error: string | null) => void
   ) => {
+    logger.info("🎯 [PAYMENT PROCESSING] ===== PAYMENT METHOD SELECTED =====", {
+      action,
+      timestamp: new Date().toISOString(),
+      checkoutData: {
+        venueId: checkoutData.venueId,
+        tableNumber: checkoutData.tableNumber,
+        customerName: checkoutData.customerName,
+        customerPhone: checkoutData.customerPhone,
+        total: checkoutData.total,
+        cartItemCount: checkoutData.cart?.length || 0,
+        source: checkoutData.source,
+      },
+    });
+
     setIsProcessing(true);
     setError(null);
 
     try {
       // Helper function to create order in database (with offline support)
       const createOrder = async () => {
+        logger.info("📦 [PAYMENT PROCESSING] Creating order...", {
+          action,
+          venueId: checkoutData.venueId,
+          tableNumber: checkoutData.tableNumber,
+          customerName: checkoutData.customerName,
+          itemCount: checkoutData.cart.length,
+          total: checkoutData.total,
+        });
+
         const orderData = {
           venue_id: checkoutData.venueId,
           table_number: checkoutData.tableNumber,
@@ -49,6 +72,21 @@ export function usePaymentProcessing() {
           source: checkoutData.source || "qr",
         };
 
+        logger.info("📤 [PAYMENT PROCESSING] Order data prepared:", {
+          orderData: {
+            venue_id: orderData.venue_id,
+            table_number: orderData.table_number,
+            customer_name: orderData.customer_name,
+            items_count: orderData.items.length,
+            total_amount: orderData.total_amount,
+            order_status: orderData.order_status,
+            payment_status: orderData.payment_status,
+            payment_mode: orderData.payment_mode,
+            payment_method: orderData.payment_method,
+            source: orderData.source,
+          },
+        });
+
         // Check if offline - queue order if offline
         if (!navigator.onLine) {
           logger.info("[OFFLINE] Queueing order for offline sync");
@@ -68,10 +106,23 @@ export function usePaymentProcessing() {
         }
 
         // Online - create order immediately
+        logger.info("🌐 [PAYMENT PROCESSING] Sending order creation request...", {
+          url: "/api/orders",
+          method: "POST",
+          online: navigator.onLine,
+        });
+
         const createOrderResponse = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(orderData),
+        });
+
+        logger.info("📥 [PAYMENT PROCESSING] Order creation response received:", {
+          status: createOrderResponse.status,
+          statusText: createOrderResponse.statusText,
+          ok: createOrderResponse.ok,
+          headers: Object.fromEntries(createOrderResponse.headers.entries()),
         });
 
         if (!createOrderResponse.ok) {
@@ -127,20 +178,35 @@ export function usePaymentProcessing() {
             status: createOrderResponse.status,
             statusText: createOrderResponse.statusText,
             errorMessage,
+            url: "/api/orders",
           });
           
           throw new Error(errorMessage);
         }
 
+        logger.info("✅ [PAYMENT PROCESSING] Order creation successful, parsing response...");
         const orderResult = await createOrderResponse.json();
+        
+        logger.info("📋 [PAYMENT PROCESSING] Order created:", {
+          orderId: orderResult.order?.id,
+          orderNumber: orderResult.order?.order_number,
+          status: orderResult.order?.order_status,
+          paymentStatus: orderResult.order?.payment_status,
+        });
+        
         return orderResult;
       };
 
       // Process payment based on selected method
+      logger.info("🔄 [PAYMENT PROCESSING] Processing payment method:", { action });
+
       if (action === "demo") {
+        logger.info("🎮 [PAYMENT PROCESSING] Processing DEMO payment...");
         // Create order immediately for demo
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
+        
+        logger.info("🎮 [PAYMENT PROCESSING] Demo order created:", { orderId });
         // Demo payment - just mark as paid (with offline support)
         if (!navigator.onLine) {
           await queueStatusUpdate(
@@ -191,29 +257,53 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
+        logger.info("💳 [PAYMENT PROCESSING] Processing STRIPE payment...");
         // Stripe payment - CREATE ORDER FIRST, then redirect to Stripe
 
         // Create order first with UNPAID status
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
+        logger.info("💳 [PAYMENT PROCESSING] Order created for Stripe:", { orderId });
+
         if (!orderId) {
+          logger.error("💳 [PAYMENT PROCESSING] ❌ No order ID returned from order creation");
           throw new Error("Failed to create order before Stripe checkout");
         }
 
         // Create Stripe checkout session with just the order ID
+        logger.info("💳 [PAYMENT PROCESSING] Creating Stripe checkout session...", {
+          orderId,
+          amount: checkoutData.total,
+          customerEmail: checkoutData.customerEmail || "(not provided)",
+          customerName: checkoutData.customerName,
+        });
+
         let result;
         try {
+          const checkoutPayload = {
+            amount: checkoutData.total,
+            customerEmail: checkoutData.customerEmail || "",
+            customerName: checkoutData.customerName,
+            venueName: checkoutData.venueName || "Restaurant",
+            orderId: orderId, // Just pass order ID (small!)
+          };
+
+          logger.info("💳 [PAYMENT PROCESSING] Sending Stripe checkout request:", {
+            url: "/api/stripe/create-customer-checkout",
+            payload: checkoutPayload,
+          });
+
           const response = await fetch("/api/stripe/create-customer-checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              amount: checkoutData.total,
-              customerEmail: checkoutData.customerEmail || "",
-              customerName: checkoutData.customerName,
-              venueName: checkoutData.venueName || "Restaurant",
-              orderId: orderId, // Just pass order ID (small!)
-            }),
+            body: JSON.stringify(checkoutPayload),
+          });
+
+          logger.info("💳 [PAYMENT PROCESSING] Stripe checkout response:", {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
           });
 
           const responseText = await response.text();
@@ -237,9 +327,14 @@ export function usePaymentProcessing() {
           // Redirect to Stripe checkout
           if (result?.data?.url || result?.url) {
             const checkoutUrl = result.data?.url || result.url;
+            logger.info("💳 [PAYMENT PROCESSING] ✅ Stripe checkout URL received, redirecting...", {
+              url: checkoutUrl,
+              sessionId: result?.data?.sessionId || result?.sessionId,
+            });
             window.location.href = checkoutUrl;
             return; // Exit early on redirect
           } else {
+            logger.error("💳 [PAYMENT PROCESSING] ❌ No checkout URL in response:", { result });
             throw new Error("No Stripe checkout URL returned from server");
           }
         } catch (fetchError) {
@@ -257,9 +352,12 @@ export function usePaymentProcessing() {
           }
         }
       } else if (action === "till") {
+        logger.info("🧾 [PAYMENT PROCESSING] Processing PAY AT TILL payment...");
         // Till payment - create order immediately, show "Order Confirmed!"
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
+
+        logger.info("🧾 [PAYMENT PROCESSING] Order created for till payment:", { orderId });
 
         const tillPayload = {
           order_id: orderId,
@@ -268,6 +366,11 @@ export function usePaymentProcessing() {
           customerName: checkoutData.customerName,
           customerPhone: checkoutData.customerPhone,
         };
+
+        logger.info("🧾 [PAYMENT PROCESSING] Sending till payment confirmation...", {
+          url: "/api/pay/till",
+          payload: tillPayload,
+        });
 
         // Till payment (with offline support)
         let result;
@@ -284,6 +387,12 @@ export function usePaymentProcessing() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(tillPayload),
+          });
+
+          logger.info("🧾 [PAYMENT PROCESSING] Till payment response:", {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
           });
 
           if (!response.ok) {
@@ -321,18 +430,23 @@ export function usePaymentProcessing() {
             }
           } else {
             result = await response.json();
+            logger.info("🧾 [PAYMENT PROCESSING] ✅ Till payment confirmed:", { result });
           }
         }
 
         // Clear cart after successful order (keep checkout-data for order summary page)
+        logger.info("🧾 [PAYMENT PROCESSING] Clearing cart and redirecting to order summary...", { orderId });
         localStorage.removeItem("servio-order-cart");
 
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}`;
       } else if (action === "later") {
+        logger.info("⏰ [PAYMENT PROCESSING] Processing PAY LATER payment...");
         // Pay later - create order immediately, show "Order Confirmed!"
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
+
+        logger.info("⏰ [PAYMENT PROCESSING] Order created for pay later:", { orderId });
 
         const laterPayload = {
           order_id: orderId,
@@ -342,6 +456,11 @@ export function usePaymentProcessing() {
           customerPhone: checkoutData.customerPhone,
           sessionId: checkoutData.sessionId || `session_${Date.now()}`,
         };
+
+        logger.info("⏰ [PAYMENT PROCESSING] Sending pay later confirmation...", {
+          url: "/api/pay/later",
+          payload: laterPayload,
+        });
 
         // Pay later (with offline support)
         let result;
@@ -358,6 +477,12 @@ export function usePaymentProcessing() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(laterPayload),
+          });
+
+          logger.info("⏰ [PAYMENT PROCESSING] Pay later response:", {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
           });
 
           if (!response.ok) {
@@ -395,11 +520,13 @@ export function usePaymentProcessing() {
             }
           } else {
             result = await response.json();
+            logger.info("⏰ [PAYMENT PROCESSING] ✅ Pay later confirmed:", { result });
           }
         }
 
         // Store session for re-scanning
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
+        logger.info("⏰ [PAYMENT PROCESSING] Storing session for QR re-scan...", { sessionId });
         localStorage.setItem("servio-current-session", sessionId);
         localStorage.setItem(
           `servio-order-${sessionId}`,
@@ -416,12 +543,26 @@ export function usePaymentProcessing() {
         );
 
         // Clear cart after successful order (keep checkout-data for order summary page)
+        logger.info("⏰ [PAYMENT PROCESSING] Clearing cart and redirecting to order summary...", { orderId });
         localStorage.removeItem("servio-order-cart");
 
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
+
+      logger.info("✅ [PAYMENT PROCESSING] Payment processing completed successfully", {
+        action,
+        timestamp: new Date().toISOString(),
+      });
     } catch (_err) {
+      logger.error("❌ [PAYMENT PROCESSING] ===== ERROR CAUGHT =====", {
+        action,
+        error: _err instanceof Error ? _err.message : String(_err),
+        errorType: _err instanceof Error ? _err.constructor.name : typeof _err,
+        errorStack: _err instanceof Error ? _err.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
+
       // Properly extract error message to prevent "[object Object]"
       let errorMessage = "Payment failed. Please try again.";
       
@@ -477,11 +618,17 @@ export function usePaymentProcessing() {
         errorMessage = "An unexpected error occurred. Please try again.";
       }
       
-      logger.error("[PAYMENT] ❌ Payment error caught:", {
-        error: _err instanceof Error ? _err.message : String(_err),
+      logger.error("❌ [PAYMENT PROCESSING] Final error details:", {
+        originalError: _err instanceof Error ? _err.message : String(_err),
         extractedMessage: errorMessage,
+        action,
       });
       
+      logger.info("❌ [PAYMENT PROCESSING] ===== ERROR HANDLING COMPLETE =====", {
+        errorMessage,
+        timestamp: new Date().toISOString(),
+      });
+
       setError(errorMessage);
       toast({
         title: "Payment Error",
@@ -489,6 +636,10 @@ export function usePaymentProcessing() {
         variant: "destructive",
       });
     } finally {
+      logger.info("🏁 [PAYMENT PROCESSING] ===== PAYMENT PROCESSING FINISHED =====", {
+        action,
+        timestamp: new Date().toISOString(),
+      });
       setIsProcessing(false);
     }
   };
