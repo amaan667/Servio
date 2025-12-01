@@ -819,6 +819,7 @@ export async function POST(req: NextRequest) {
       table_id: payload.table_id ?? null,
       customer_name: payload.customer_name,
       customer_phone: payload.customer_phone,
+      customer_email: validatedOrderBody.customer_email ?? null, // Include customer_email if provided
       items: payload.items,
       total_amount: payload.total_amount,
       notes: payload.notes ?? null,
@@ -827,7 +828,7 @@ export async function POST(req: NextRequest) {
       payment_mode: payload.payment_mode || "online",
       payment_method: payload.payment_method ?? null,
       source: payload.source || "qr",
-      // NOTE: is_active is a generated column in the database, don't include it in insert
+      // NOTE: is_active is a GENERATED column in the database - computed automatically, DO NOT include in insert
       created_at: now,
       updated_at: now,
     };
