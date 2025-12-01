@@ -77,9 +77,9 @@ export function useDashboardData(
 
   // Fetch all counts directly from database
   const fetchCounts = useCallback(async (force = false) => {
-    // Always fetch when force=true, even if initialCounts exists
-    // This ensures real-time updates always work
-    if (!force && initialCounts) {
+    // Always fetch when force=true to ensure fresh data
+    // This ensures real-time updates and correct initial state
+    if (!force) {
       return;
     }
 
@@ -148,9 +148,9 @@ export function useDashboardData(
 
   // Fetch stats (revenue, menu items, unpaid) directly from database
   const fetchStats = useCallback(async (force = false) => {
-    // Always fetch when force=true, even if initialStats exists
-    // This ensures real-time updates always work
-    if (!force && initialStats) {
+    // Always fetch when force=true to ensure fresh data
+    // This ensures real-time updates and correct initial state
+    if (!force) {
       return;
     }
 
@@ -193,36 +193,22 @@ export function useDashboardData(
       endUtcISO: window.endUtcISO || "",
     });
 
-    // If we have initial data, use it immediately - don't fetch (server data is always correct)
-    // Set loading to false immediately to prevent showing 0 values
-    if (initialCounts && initialStats) {
+    // Always use initial data immediately to prevent showing 0 values
+    // But then always fetch fresh data to ensure we have the latest state
+    if (initialCounts) {
       setCounts(initialCounts);
-      setStats(initialStats);
-      setLoading(false);
-      return;
-    } else if (initialCounts || initialStats) {
-      // Partial data - use what we have and fetch the rest
-      if (initialCounts) {
-        setCounts(initialCounts);
-      }
-      if (initialStats) {
-        setStats(initialStats);
-      }
-      setLoading(false);
-      // Still fetch missing data
-      const loadData = async () => {
-        if (!initialCounts) await fetchCounts(true);
-        if (!initialStats) await fetchStats(true);
-      };
-      loadData();
-    } else {
-      // No initial data - fetch immediately
-      const loadData = async () => {
-        await Promise.all([fetchCounts(true), fetchStats(true)]);
-        setLoading(false);
-      };
-      loadData();
     }
+    if (initialStats) {
+      setStats(initialStats);
+    }
+    setLoading(false);
+
+    // Always fetch fresh data on mount to ensure correct state
+    // This ensures the dashboard always shows current data, not stale cached data
+    const loadData = async () => {
+      await Promise.all([fetchCounts(true), fetchStats(true)]);
+    };
+    loadData();
   }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
 
   // Set up real-time subscriptions for live updates

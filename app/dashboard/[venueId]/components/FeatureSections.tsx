@@ -78,7 +78,7 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
         },
         {
           title: "Payments",
-          description: "Process pay-at-till orders, split bills, mark as paid, and view receipts",
+          description: "Manage payments (pay-at-till orders) and view receipts for all completed orders",
           href: `/dashboard/${venueId}/payments`,
           icon: Receipt,
           color: "text-emerald-600",
