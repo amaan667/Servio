@@ -2,31 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 
 /**
- * API endpoint to log payment flow events from client to server
- * This ensures payment flow logs appear in Railway logs
+ * Server-side logging endpoint for payment flow
+ * Client can call this to log events that will appear in Railway logs
  */
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json().catch(() => ({}));
+    const body = await req.json();
+    const { level = "info", event, data, timestamp } = body;
 
-    // Extract log data
-    const { level = "info", event, details } = data;
-
-    // Log to server using logger (appears in Railway logs)
     const logMessage = `[PAYMENT FLOW] ${event}`;
-    
+    const logData = {
+      event,
+      timestamp: timestamp || new Date().toISOString(),
+      ...data,
+    };
+
     if (level === "error") {
-      logger.error(logMessage, details || {});
+      logger.error(logMessage, logData);
     } else if (level === "warn") {
-      logger.warn(logMessage, details || {});
+      logger.warn(logMessage, logData);
     } else {
-      logger.info(logMessage, details || {});
+      logger.info(logMessage, logData);
     }
 
     return NextResponse.json({ ok: true });
-  } catch (_err) {
-    // Don't fail the request if logging fails
-    return NextResponse.json({ ok: false }, { status: 500 });
+  } catch (error) {
+    // Don't fail if logging fails
+    return NextResponse.json({ ok: false });
   }
 }
-

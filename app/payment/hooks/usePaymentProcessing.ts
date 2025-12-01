@@ -9,6 +9,28 @@ import {
   getOfflineQueue,
 } from "@/lib/offline-queue";
 
+// Helper function to log to server (appears in Railway logs)
+const logToServer = async (level: "info" | "warn" | "error", event: string, data: Record<string, unknown>) => {
+  try {
+    await fetch("/api/log-payment-flow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        level,
+        event,
+        data: {
+          ...data,
+          timestamp: new Date().toISOString(),
+        },
+      }),
+    }).catch(() => {
+      // Silently fail - logging shouldn't break the flow
+    });
+  } catch {
+    // Silently fail - logging shouldn't break the flow
+  }
+};
+
 export function usePaymentProcessing() {
   const processPayment = async (
     action: PaymentAction,
@@ -18,6 +40,17 @@ export function usePaymentProcessing() {
     setIsProcessing: (processing: boolean) => void,
     setError: (error: string | null) => void
   ) => {
+    // Log to server (appears in Railway)
+    await logToServer("info", "PAYMENT_METHOD_SELECTED", {
+      action,
+      venueId: checkoutData.venueId,
+      tableNumber: checkoutData.tableNumber,
+      customerName: checkoutData.customerName,
+      customerPhone: checkoutData.customerPhone,
+      total: checkoutData.total,
+      cartItemCount: checkoutData.cart?.length || 0,
+    });
+
     logger.info("🎯 [PAYMENT PROCESSING] ===== PAYMENT METHOD SELECTED =====", {
       action,
       timestamp: new Date().toISOString(),
@@ -109,8 +142,27 @@ export function usePaymentProcessing() {
           is_active: true,
         };
 
-        // Log the EXACT data being sent
-        console.log("📤 [PAYMENT PROCESSING] Order data prepared (FULL):", JSON.stringify(orderData, null, 2));
+        // Log to server (appears in Railway) - FULL PAYLOAD
+        await logToServer("info", "ORDER_DATA_PREPARED", {
+          action,
+          venueId: orderData.venue_id,
+          customerName: orderData.customer_name,
+          customerPhone: orderData.customer_phone,
+          tableNumber: orderData.table_number,
+          itemsCount: orderData.items.length,
+          totalAmount: orderData.total_amount,
+          paymentMode: orderData.payment_mode,
+          paymentStatus: orderData.payment_status,
+          orderStatus: orderData.order_status,
+          fullPayload: JSON.stringify(orderData, null, 2),
+          items: orderData.items.map((item, idx) => ({
+            index: idx,
+            menu_item_id: item.menu_item_id,
+            item_name: item.item_name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        });
         
         logger.info("📤 [PAYMENT PROCESSING] Order data prepared:", {
           venue_id: orderData.venue_id,
@@ -269,12 +321,30 @@ export function usePaymentProcessing() {
                   errorMessage = errorData;
                 }
                 
-                // Log validation errors in detail
+                // Log validation errors in detail - SEND TO SERVER FOR RAILWAY LOGS
                 if (errorData.details && Array.isArray(errorData.details)) {
                   console.error("❌ [PAYMENT PROCESSING] Validation errors:", errorData.details);
                   logger.error("[PAYMENT] ❌ Validation error details:", {
                     details: errorData.details,
                     fullError: errorData,
+                  });
+                  
+                  // Send to server for Railway logs
+                  fetch("/api/log-payment-flow", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      level: "error",
+                      event: "ORDER_CREATION_VALIDATION_ERROR",
+                      details: {
+                        status: createOrderResponse.status,
+                        validationErrors: errorData.details,
+                        fullErrorResponse: errorData,
+                        payload: JSON.stringify(orderData, null, 2),
+                      },
+                    }),
+                  }).catch(() => {
+                    // Silently handle - error logging failed
                   });
                 }
               } catch {
@@ -288,6 +358,38 @@ export function usePaymentProcessing() {
             console.error("❌ [PAYMENT PROCESSING] Failed to read error response:", textError);
             // Keep default error message
           }
+          
+          // SEND COMPREHENSIVE ERROR TO SERVER FOR RAILWAY LOGS
+          fetch("/api/log-payment-flow", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              level: "error",
+              event: "ORDER_CREATION_FAILED",
+              details: {
+                status: createOrderResponse.status,
+                statusText: createOrderResponse.statusText,
+                errorMessage,
+                fullErrorResponse: JSON.stringify(fullErrorResponse, null, 2),
+                url: "/api/orders",
+                requestPayload: JSON.stringify(orderData, null, 2),
+                payloadValidation: {
+                  hasVenueId: !!orderData.venue_id,
+                  hasCustomerName: !!orderData.customer_name,
+                  hasCustomerPhone: !!orderData.customer_phone,
+                  hasItems: Array.isArray(orderData.items) && orderData.items.length > 0,
+                  hasTotal: typeof orderData.total_amount === "number" && orderData.total_amount > 0,
+                  itemsValid: orderData.items.every((item) => 
+                    typeof item.quantity === "number" && 
+                    typeof item.price === "number" && 
+                    typeof item.item_name === "string"
+                  ),
+                },
+              },
+            }),
+          }).catch(() => {
+            // Silently handle - error logging failed
+          });
           
           // Comprehensive error logging - send to server so it appears in Railway logs
           const errorLogPayload = {
@@ -348,6 +450,15 @@ export function usePaymentProcessing() {
 
         logger.info("✅ [PAYMENT PROCESSING] Order creation successful, parsing response...");
         const orderResult = await createOrderResponse.json();
+        
+        // Log success to server (appears in Railway)
+        await logToServer("info", "ORDER_CREATION_SUCCESS", {
+          orderId: orderResult.order?.id,
+          orderNumber: orderResult.order?.order_number,
+          status: orderResult.order?.order_status,
+          paymentStatus: orderResult.order?.payment_status,
+          action,
+        });
         
         logger.info("📋 [PAYMENT PROCESSING] Order created:", {
           orderId: orderResult.order?.id,
