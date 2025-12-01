@@ -93,12 +93,97 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Custom hooks for dashboard data and realtime (call before any returns)
   const venueTz = "Europe/London"; // Default timezone
+  
+  // LOG: What server passed to client
+  useEffect(() => {
+    console.log("🔵 [DASHBOARD CLIENT] Initial data received from server:", {
+      timestamp: new Date().toISOString(),
+      venueId,
+      initialCounts: initialCounts ? {
+        live_count: initialCounts.live_count,
+        earlier_today_count: initialCounts.earlier_today_count,
+        history_count: initialCounts.history_count,
+        today_orders_count: initialCounts.today_orders_count,
+        active_tables_count: initialCounts.active_tables_count,
+        tables_set_up: initialCounts.tables_set_up,
+        tables_in_use: initialCounts.tables_in_use,
+        tables_reserved_now: initialCounts.tables_reserved_now,
+      } : null,
+      initialStats: initialStats ? {
+        revenue: initialStats.revenue,
+        menuItems: initialStats.menuItems,
+        unpaid: initialStats.unpaid,
+      } : null,
+    });
+  }, [venueId, initialCounts, initialStats]);
+  
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
   
   // Simple display values - use client state which is synced from server data
   // The useDashboardData hook ensures initialCounts/initialStats are used immediately
   const displayMenuItems = dashboardData.stats.menuItems;
   const displayTables = dashboardData.counts.tables_set_up;
+  
+  // LOG: What client is actually displaying
+  useEffect(() => {
+    const displayedCounts = {
+      live_count: dashboardData.counts.live_count,
+      earlier_today_count: dashboardData.counts.earlier_today_count,
+      history_count: dashboardData.counts.history_count,
+      today_orders_count: dashboardData.counts.today_orders_count,
+      active_tables_count: dashboardData.counts.active_tables_count,
+      tables_set_up: dashboardData.counts.tables_set_up,
+      tables_in_use: dashboardData.counts.tables_in_use,
+      tables_reserved_now: dashboardData.counts.tables_reserved_now,
+    };
+    const displayedStats = {
+      revenue: dashboardData.stats.revenue,
+      menuItems: dashboardData.stats.menuItems,
+      unpaid: dashboardData.stats.unpaid,
+    };
+    
+    console.log("🟢 [DASHBOARD CLIENT] Current displayed values:", {
+      timestamp: new Date().toISOString(),
+      venueId,
+      counts: displayedCounts,
+      stats: displayedStats,
+      loading: dashboardData.loading,
+    });
+    
+    // COMPARISON: Check if displayed values match initial server values
+    if (initialCounts && initialStats) {
+      const countsMatch = JSON.stringify(displayedCounts) === JSON.stringify({
+        live_count: initialCounts.live_count,
+        earlier_today_count: initialCounts.earlier_today_count,
+        history_count: initialCounts.history_count,
+        today_orders_count: initialCounts.today_orders_count,
+        active_tables_count: initialCounts.active_tables_count,
+        tables_set_up: initialCounts.tables_set_up,
+        tables_in_use: initialCounts.tables_in_use,
+        tables_reserved_now: initialCounts.tables_reserved_now,
+      });
+      const statsMatch = JSON.stringify(displayedStats) === JSON.stringify({
+        revenue: initialStats.revenue,
+        menuItems: initialStats.menuItems,
+        unpaid: initialStats.unpaid,
+      });
+      
+      if (!countsMatch || !statsMatch) {
+        console.warn("⚠️ [DASHBOARD CLIENT] MISMATCH DETECTED!", {
+          timestamp: new Date().toISOString(),
+          venueId,
+          countsMatch,
+          statsMatch,
+          serverCounts: initialCounts,
+          displayedCounts,
+          serverStats: initialStats,
+          displayedStats,
+        });
+      } else {
+        console.log("✅ [DASHBOARD CLIENT] Displayed values match server values");
+      }
+    }
+  }, [venueId, dashboardData.counts, dashboardData.stats, dashboardData.loading, initialCounts, initialStats]);
 
   // Listen to custom events for instant updates when menu items or tables change
   useEffect(() => {

@@ -305,6 +305,27 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     process.stdout.write(`[RAILWAY] END - Menu: ${finalCount} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}\n`);
   }
   console.info(`[RAILWAY] END - Menu: ${finalCount} | Tables: ${initialCounts?.tables_set_up || 0} | Revenue: £${initialStats?.revenue?.toFixed(2) || "0.00"}`);
+  
+  // CLIENT-VISIBLE LOG: What server is passing to client
+  console.log("🔴 [DASHBOARD SERVER] Passing data to client:", {
+    timestamp: new Date().toISOString(),
+    venueId,
+    initialCounts: initialCounts ? {
+      live_count: initialCounts.live_count,
+      earlier_today_count: initialCounts.earlier_today_count,
+      history_count: initialCounts.history_count,
+      today_orders_count: initialCounts.today_orders_count,
+      active_tables_count: initialCounts.active_tables_count,
+      tables_set_up: initialCounts.tables_set_up,
+      tables_in_use: initialCounts.tables_in_use,
+      tables_reserved_now: initialCounts.tables_reserved_now,
+    } : null,
+    initialStats: initialStats ? {
+      revenue: initialStats.revenue,
+      menuItems: initialStats.menuItems,
+      unpaid: initialStats.unpaid,
+    } : null,
+  });
 
   return (
     <DashboardClient

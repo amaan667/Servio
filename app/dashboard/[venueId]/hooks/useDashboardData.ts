@@ -37,8 +37,23 @@ export function useDashboardData(
   // CRITICAL: Use server data immediately to prevent showing 0 on first load
   const [counts, setCounts] = useState<DashboardCounts>(() => {
     if (initialCounts) {
+      console.log("🟡 [USE_DASHBOARD_DATA] Initializing counts from server data:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        initialCounts: {
+          live_count: initialCounts.live_count,
+          earlier_today_count: initialCounts.earlier_today_count,
+          history_count: initialCounts.history_count,
+          today_orders_count: initialCounts.today_orders_count,
+          active_tables_count: initialCounts.active_tables_count,
+          tables_set_up: initialCounts.tables_set_up,
+          tables_in_use: initialCounts.tables_in_use,
+          tables_reserved_now: initialCounts.tables_reserved_now,
+        },
+      });
       return initialCounts;
     }
+    console.log("🟡 [USE_DASHBOARD_DATA] No initial counts, using defaults (zeros)");
     return {
       live_count: 0,
       earlier_today_count: 0,
@@ -53,8 +68,18 @@ export function useDashboardData(
 
   const [stats, setStats] = useState<DashboardStats>(() => {
     if (initialStats) {
+      console.log("🟡 [USE_DASHBOARD_DATA] Initializing stats from server data:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        initialStats: {
+          revenue: initialStats.revenue,
+          menuItems: initialStats.menuItems,
+          unpaid: initialStats.unpaid,
+        },
+      });
       return initialStats;
     }
+    console.log("🟡 [USE_DASHBOARD_DATA] No initial stats, using defaults (zeros)");
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
 
@@ -63,6 +88,12 @@ export function useDashboardData(
   // Run synchronously on mount if initialCounts exists to prevent showing 0
   useEffect(() => {
     if (initialCounts) {
+      console.log("🔵 [USE_DASHBOARD_DATA] useEffect: Updating counts from initialCounts:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        newCounts: initialCounts,
+        previousCounts: counts,
+      });
       setCounts(initialCounts);
       setLoading(false);
     }
@@ -70,6 +101,12 @@ export function useDashboardData(
 
   useEffect(() => {
     if (initialStats) {
+      console.log("🔵 [USE_DASHBOARD_DATA] useEffect: Updating stats from initialStats:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        newStats: initialStats,
+        previousStats: stats,
+      });
       setStats(initialStats);
       setLoading(false);
     }
@@ -138,6 +175,12 @@ export function useDashboardData(
           tables_in_use: activeSessions?.length || 0,
           tables_reserved_now: currentReservations?.length || 0,
         };
+        console.log("🟠 [USE_DASHBOARD_DATA] Fresh counts fetched from DB:", {
+          timestamp: new Date().toISOString(),
+          venueId,
+          freshCounts: finalCounts,
+          previousCounts: counts,
+        });
         setCounts(finalCounts);
       }
     } catch (err) {
@@ -176,7 +219,14 @@ export function useDashboardData(
       const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
       const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
 
-      setStats({ revenue, menuItems, unpaid });
+      const freshStats = { revenue, menuItems, unpaid };
+      console.log("🟠 [USE_DASHBOARD_DATA] Fresh stats fetched from DB:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        freshStats,
+        previousStats: stats,
+      });
+      setStats(freshStats);
     } catch (err) {
       logger.error("[Dashboard] Error fetching stats:", err);
       setError("Failed to fetch dashboard stats");
@@ -193,12 +243,23 @@ export function useDashboardData(
       endUtcISO: window.endUtcISO || "",
     });
 
+    console.log("🟣 [USE_DASHBOARD_DATA] Mount effect triggered:", {
+      timestamp: new Date().toISOString(),
+      venueId,
+      hasInitialCounts: !!initialCounts,
+      hasInitialStats: !!initialStats,
+      initialCountsValue: initialCounts,
+      initialStatsValue: initialStats,
+    });
+
     // Always use initial data immediately to prevent showing 0 values
     // But then always fetch fresh data to ensure we have the latest state
     if (initialCounts) {
+      console.log("🟣 [USE_DASHBOARD_DATA] Setting counts from initial data:", initialCounts);
       setCounts(initialCounts);
     }
     if (initialStats) {
+      console.log("🟣 [USE_DASHBOARD_DATA] Setting stats from initial data:", initialStats);
       setStats(initialStats);
     }
     setLoading(false);
@@ -206,7 +267,9 @@ export function useDashboardData(
     // Always fetch fresh data on mount to ensure correct state
     // This ensures the dashboard always shows current data, not stale cached data
     const loadData = async () => {
+      console.log("🟣 [USE_DASHBOARD_DATA] Starting fresh data fetch...");
       await Promise.all([fetchCounts(true), fetchStats(true)]);
+      console.log("🟣 [USE_DASHBOARD_DATA] Fresh data fetch completed");
     };
     loadData();
   }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
