@@ -767,6 +767,26 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Log the EXACT payload being inserted before database insert
+    logger.error("[ORDER CREATION DEBUG] ===== PAYLOAD BEFORE INSERT =====", {
+      payload: JSON.stringify(payload, null, 2),
+      payloadKeys: Object.keys(payload),
+      itemsCount: Array.isArray(payload.items) ? payload.items.length : 0,
+      payment_status: payload.payment_status,
+      payment_mode: payload.payment_mode,
+      payment_method: payload.payment_method,
+      order_status: payload.order_status,
+      venue_id: payload.venue_id,
+      customer_name: payload.customer_name,
+      customer_phone: payload.customer_phone,
+      table_number: payload.table_number,
+      table_id: payload.table_id,
+      total_amount: payload.total_amount,
+      source: payload.source,
+      requestId,
+    });
+    console.error("[ORDER CREATION DEBUG] Full payload:", JSON.stringify(payload, null, 2));
+
     const { data: inserted, error: insertErr } = await supabase
       .from("orders")
       .insert(payload)
@@ -774,16 +794,35 @@ export async function POST(req: NextRequest) {
 
     if (insertErr) {
       logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");
-      logger.error("[ORDER CREATION DEBUG] Error details:", { value: insertErr });
+      logger.error("[ORDER CREATION DEBUG] Database error code:", insertErr.code);
+      logger.error("[ORDER CREATION DEBUG] Database error message:", insertErr.message);
+      logger.error("[ORDER CREATION DEBUG] Database error details:", insertErr.details);
+      logger.error("[ORDER CREATION DEBUG] Database error hint:", insertErr.hint);
+      logger.error("[ORDER CREATION DEBUG] Full error object:", JSON.stringify(insertErr, null, 2));
+      
+      console.error("[ORDER CREATION DEBUG] ===== DATABASE INSERT ERROR =====");
+      console.error("Error Code:", insertErr.code);
+      console.error("Error Message:", insertErr.message);
+      console.error("Error Details:", insertErr.details);
+      console.error("Error Hint:", insertErr.hint);
+      console.error("Full Error:", JSON.stringify(insertErr, null, 2));
+      console.error("Payload that failed:", JSON.stringify(payload, null, 2));
 
       // Try to provide more specific error messages
-      let errorMessage = insertErr.message;
+      let errorMessage = insertErr.message || "Database insert failed";
       if (insertErr.code === "23505") {
         errorMessage = "Order already exists with this ID";
       } else if (insertErr.code === "23503") {
-        errorMessage = "Referenced venue or table does not exist";
+        errorMessage = `Referenced venue or table does not exist: ${insertErr.message}`;
       } else if (insertErr.code === "23514") {
-        errorMessage = "Data validation failed - check required fields";
+        errorMessage = `Data validation failed: ${insertErr.message || "Check required fields"}`;
+      } else if (insertErr.code === "23502") {
+        errorMessage = `Required field is missing: ${insertErr.message || insertErr.hint || "Check all required fields"}`;
+      } else if (insertErr.message) {
+        errorMessage = insertErr.message;
+        if (insertErr.hint) {
+          errorMessage += ` (${insertErr.hint})`;
+        }
       }
 
       return bad(`Insert failed: ${errorMessage}`, 400);
