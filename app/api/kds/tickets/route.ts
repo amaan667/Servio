@@ -39,8 +39,8 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
       return false;
     }
 
-    logger.debug(
-      `[KDS AUTO-BACKFILL] Found ${ordersWithoutTickets.length} orders without KDS tickets, creating tickets...`
+    logger.info(
+      `[KDS AUTO-BACKFILL] Found ${ordersWithoutTickets.length} orders without KDS tickets (out of ${allOrders.length} total), creating tickets...`
     );
 
     let ticketsCreated = 0;
