@@ -752,7 +752,7 @@ export async function POST(req: NextRequest) {
       payment_method: ((body as { payment_method?: "demo" | "stripe" | "till" | null }).payment_method ?? null) as "demo" | "stripe" | "till" | null,
       // NOTE: session_id is NOT a database column - don't include in payload
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
-      is_active: true, // Ensure order is marked as active (required by database)
+      // NOTE: is_active is a generated column in the database, don't include it in insert
     };
 
     // Check for duplicate orders (idempotency check)
