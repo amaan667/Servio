@@ -40,7 +40,7 @@ export function usePaymentProcessing() {
           })),
           total_amount: checkoutData.total,
           notes: checkoutData.notes || "",
-          order_status: "IN_PREP", // Start as IN_PREP so it shows in Live Orders immediately as "Preparing"
+          order_status: "PLACED", // Start as PLACED so it shows in Live Orders immediately
           payment_status: "UNPAID",
           payment_mode:
             action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : action === "stripe" ? "online" : "online",
@@ -166,29 +166,59 @@ export function usePaymentProcessing() {
         }
 
         // Create Stripe checkout session with just the order ID
-        const response = await fetch("/api/stripe/create-customer-checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: checkoutData.total,
-            customerEmail: checkoutData.customerEmail || "customer@email.com",
-            customerName: checkoutData.customerName,
-            venueName: checkoutData.venueName || "Restaurant",
-            orderId: orderId, // Just pass order ID (small!)
-          }),
-        });
+        let result;
+        try {
+          const response = await fetch("/api/stripe/create-customer-checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: checkoutData.total,
+              customerEmail: checkoutData.customerEmail || "",
+              customerName: checkoutData.customerName,
+              venueName: checkoutData.venueName || "Restaurant",
+              orderId: orderId, // Just pass order ID (small!)
+            }),
+          });
 
-        const result = await response.json();
+          const responseText = await response.text();
+          
+          if (!response.ok) {
+            try {
+              result = JSON.parse(responseText);
+              const errorMsg = result?.error || result?.message || `Failed to create checkout session (${response.status})`;
+              throw new Error(errorMsg);
+            } catch (parseError) {
+              throw new Error(`Failed to create checkout session: ${response.status} ${response.statusText}`);
+            }
+          }
 
-        if (!response.ok) {
-          throw new Error(result.error || "Failed to create checkout session");
-        }
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            throw new Error("Invalid response from server");
+          }
 
-        // Redirect to Stripe checkout
-        if (result.url) {
-          window.location.href = result.url;
-        } else {
-          throw new Error("No Stripe checkout URL returned");
+          // Redirect to Stripe checkout
+          if (result?.data?.url || result?.url) {
+            const checkoutUrl = result.data?.url || result.url;
+            window.location.href = checkoutUrl;
+            return; // Exit early on redirect
+          } else {
+            throw new Error("No Stripe checkout URL returned from server");
+          }
+        } catch (fetchError) {
+          // Handle network errors and other fetch failures
+          logger.error("[PAYMENT] ❌ Stripe checkout fetch error:", {
+            error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+          });
+          
+          if (fetchError instanceof TypeError && fetchError.message.includes("fetch")) {
+            throw new Error("Network error. Please check your connection and try again.");
+          } else if (fetchError instanceof Error) {
+            throw fetchError;
+          } else {
+            throw new Error("Failed to create checkout session. Please try again.");
+          }
         }
       } else if (action === "till") {
         // Till payment - create order immediately, show "Order Confirmed!"
@@ -230,15 +260,28 @@ export function usePaymentProcessing() {
               });
               result = { order_number: `QUEUED-${Date.now()}` };
             } else {
-              const errorText = await response.text();
+              let errorMessage = `Failed to confirm order for till payment (${response.status})`;
+              try {
+                const errorText = await response.text();
+                if (errorText) {
+                  try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.error || errorJson.message || errorMessage;
+                  } catch {
+                    // If not JSON, use the text directly (limit length)
+                    errorMessage = errorText.length > 200 ? errorText.substring(0, 200) + "..." : errorText;
+                  }
+                }
+              } catch (textError) {
+                logger.error("[PAYMENT] ❌ Error parsing till payment error:", textError);
+              }
+              
               logger.error("[PAYMENT] ❌ Pay till failed:", {
                 status: response.status,
                 statusText: response.statusText,
-                errorText,
+                errorMessage,
               });
-              throw new Error(
-                `Failed to confirm order for till payment: ${response.status} - ${errorText}`
-              );
+              throw new Error(errorMessage);
             }
           } else {
             result = await response.json();
@@ -291,13 +334,28 @@ export function usePaymentProcessing() {
               });
               result = { order_number: `QUEUED-${Date.now()}` };
             } else {
-              const errorText = await response.text();
+              let errorMessage = `Failed to confirm order for pay later (${response.status})`;
+              try {
+                const errorText = await response.text();
+                if (errorText) {
+                  try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.error || errorJson.message || errorMessage;
+                  } catch {
+                    // If not JSON, use the text directly (limit length)
+                    errorMessage = errorText.length > 200 ? errorText.substring(0, 200) + "..." : errorText;
+                  }
+                }
+              } catch (textError) {
+                logger.error("[PAYMENT] ❌ Error parsing pay later error:", textError);
+              }
+              
               logger.error("[PAYMENT] ❌ Pay later failed:", {
                 status: response.status,
                 statusText: response.statusText,
-                errorText,
+                errorMessage,
               });
-              throw new Error(`Failed to confirm order: ${response.status} - ${errorText}`);
+              throw new Error(errorMessage);
             }
           } else {
             result = await response.json();
@@ -328,10 +386,28 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}`;
       }
     } catch (_err) {
-      setError(_err instanceof Error ? _err.message : "Payment failed. Please try again.");
+      // Properly extract error message to prevent "[object Object]"
+      let errorMessage = "Payment failed. Please try again.";
+      if (_err instanceof Error) {
+        errorMessage = _err.message;
+      } else if (typeof _err === "string") {
+        errorMessage = _err;
+      } else if (_err && typeof _err === "object") {
+        // Try to extract error message from error object
+        const errObj = _err as Record<string, unknown>;
+        if (errObj.message && typeof errObj.message === "string") {
+          errorMessage = errObj.message;
+        } else if (errObj.error && typeof errObj.error === "string") {
+          errorMessage = errObj.error;
+        } else {
+          errorMessage = JSON.stringify(_err);
+        }
+      }
+      
+      setError(errorMessage);
       toast({
         title: "Payment Error",
-        description: _err instanceof Error ? _err.message : "Payment failed. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
