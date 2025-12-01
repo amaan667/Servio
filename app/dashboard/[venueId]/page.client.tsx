@@ -29,6 +29,16 @@ import { AIInsights } from "./components/AIInsights";
 import { TodayAtAGlance } from "./components/TodayAtAGlance";
 import { FeatureSections } from "./components/FeatureSections";
 
+type DashboardLogLevel = "info" | "warn" | "error";
+
+interface DashboardLogPayload {
+  level: DashboardLogLevel;
+  event: string;
+  venueId: string;
+  timestamp: string;
+  details: Record<string, unknown>;
+}
+
 /**
  * Modern Venue Dashboard Client Component
  *
@@ -91,12 +101,28 @@ const DashboardClient = React.memo(function DashboardClient({
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
 
+  const sendDashboardLog = (payload: DashboardLogPayload) => {
+    if (typeof window === "undefined") return;
+
+    // Fire-and-forget - we don't await this so it never blocks UI
+    void fetch("/api/log-dashboard", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }).catch(() => {
+      // Swallow logging errors
+    });
+  };
+
   // Custom hooks for dashboard data and realtime (call before any returns)
   const venueTz = "Europe/London"; // Default timezone
   
   // LOG: What server passed to client
   useEffect(() => {
-    console.log("🔵 [DASHBOARD CLIENT] Initial data received from server:", {
+    const timestamp = new Date().toISOString();
+    const details = {
       timestamp: new Date().toISOString(),
       venueId,
       initialCounts: initialCounts ? {
@@ -114,6 +140,16 @@ const DashboardClient = React.memo(function DashboardClient({
         menuItems: initialStats.menuItems,
         unpaid: initialStats.unpaid,
       } : null,
+    };
+
+    console.log("🔵 [DASHBOARD CLIENT] Initial data received from server:", details);
+
+    sendDashboardLog({
+      level: "info",
+      event: "initial_server_data",
+      venueId,
+      timestamp,
+      details,
     });
   }, [venueId, initialCounts, initialStats]);
   
@@ -126,6 +162,8 @@ const DashboardClient = React.memo(function DashboardClient({
   
   // LOG: What client is actually displaying
   useEffect(() => {
+    const timestamp = new Date().toISOString();
+
     const displayedCounts = {
       live_count: dashboardData.counts.live_count,
       earlier_today_count: dashboardData.counts.earlier_today_count,
@@ -142,12 +180,22 @@ const DashboardClient = React.memo(function DashboardClient({
       unpaid: dashboardData.stats.unpaid,
     };
     
-    console.log("🟢 [DASHBOARD CLIENT] Current displayed values:", {
-      timestamp: new Date().toISOString(),
+    const details = {
+      timestamp,
       venueId,
       counts: displayedCounts,
       stats: displayedStats,
       loading: dashboardData.loading,
+    };
+
+    console.log("🟢 [DASHBOARD CLIENT] Current displayed values:", details);
+
+    sendDashboardLog({
+      level: "info",
+      event: "client_display_state",
+      venueId,
+      timestamp,
+      details,
     });
     
     // COMPARISON: Check if displayed values match initial server values
@@ -169,8 +217,8 @@ const DashboardClient = React.memo(function DashboardClient({
       });
       
       if (!countsMatch || !statsMatch) {
-        console.warn("⚠️ [DASHBOARD CLIENT] MISMATCH DETECTED!", {
-          timestamp: new Date().toISOString(),
+        const mismatchDetails = {
+          timestamp,
           venueId,
           countsMatch,
           statsMatch,
@@ -178,9 +226,30 @@ const DashboardClient = React.memo(function DashboardClient({
           displayedCounts,
           serverStats: initialStats,
           displayedStats,
+        };
+
+        console.warn("⚠️ [DASHBOARD CLIENT] MISMATCH DETECTED!", mismatchDetails);
+
+        sendDashboardLog({
+          level: "warn",
+          event: "client_server_mismatch",
+          venueId,
+          timestamp,
+          details: mismatchDetails,
         });
       } else {
         console.log("✅ [DASHBOARD CLIENT] Displayed values match server values");
+
+        sendDashboardLog({
+          level: "info",
+          event: "client_server_match",
+          venueId,
+          timestamp,
+          details: {
+            timestamp,
+            venueId,
+          },
+        });
       }
     }
   }, [venueId, dashboardData.counts, dashboardData.stats, dashboardData.loading, initialCounts, initialStats]);

@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const dashboardLogSchema = z.object({
+  level: z.enum(["info", "warn", "error"]).default("info"),
+  event: z.string(),
+  venueId: z.string().optional(),
+  timestamp: z.string().optional(),
+  details: z.record(z.unknown()).optional(),
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const parsed = dashboardLogSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Invalid log payload",
+          issues: parsed.error.issues,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { level, event, venueId, timestamp, details } = parsed.data;
+
+    const logPayload = {
+      source: "dashboard",
+      event,
+      venueId: venueId ?? "unknown",
+      timestamp: timestamp ?? new Date().toISOString(),
+      details: details ?? {},
+    };
+
+    const message = `[DASHBOARD] ${event}`;
+
+    // Use console.* so Railway always captures these logs from server runtime
+    if (level === "error") {
+      // eslint-disable-next-line no-console
+      console.error(message, logPayload);
+    } else if (level === "warn") {
+      // eslint-disable-next-line no-console
+      console.warn(message, logPayload);
+    } else {
+      // eslint-disable-next-line no-console
+      console.info(message, logPayload);
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line no-console
+    console.error("[DASHBOARD] Failed to write log", {
+      error: errorMessage,
+    });
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
+}
+
+
