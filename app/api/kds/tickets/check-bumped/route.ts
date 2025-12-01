@@ -33,12 +33,14 @@ export async function POST(req: NextRequest) {
       logger.debug("[KDS CHECK BUMPED] Received request:", {
         order_id: requestBody?.order_id,
         venue_id: requestBody?.venue_id,
+        hasOrderId: !!requestBody?.order_id,
+        hasVenueId: !!requestBody?.venue_id,
       });
       body = await validateBody(checkBumpedSchema, requestBody);
     } catch (validationError) {
       logger.error("[KDS CHECK BUMPED] Validation error:", {
         error: validationError instanceof Error ? validationError.message : String(validationError),
-        requestBody: await req.text().catch(() => "Could not read body"),
+        isZodError: isZodError(validationError),
       });
       if (isZodError(validationError)) {
         return handleZodError(validationError);
