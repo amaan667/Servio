@@ -19,14 +19,24 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const { data: ordersWithoutTickets } = await adminSupabase
+    // Query for orders that need KDS tickets
+    // Include all active order statuses that need kitchen preparation
+    const { data: ordersWithoutTickets, error: queryError } = await adminSupabase
       .from("orders")
       .select("id")
       .eq("venue_id", venueId)
       .in("payment_status", ["PAID", "UNPAID", "PAYMENT_PENDING"])
-      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"])
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "SERVED"])
       .gte("created_at", todayStart.toISOString())
       .not("id", "in", `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
+
+    if (queryError) {
+      logger.error("[KDS AUTO-BACKFILL] Error querying orders:", {
+        error: queryError.message,
+        venueId,
+      });
+      return false;
+    }
 
     if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
       return false;
@@ -46,7 +56,10 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
         .eq("id", orderRef.id)
         .single();
 
-      if (!order || !Array.isArray(order.items)) continue;
+      if (!order || !Array.isArray(order.items) || order.items.length === 0) {
+        logger.debug("[KDS AUTO-BACKFILL] Skipping order with no items:", { orderId: order?.id });
+        continue;
+      }
 
       try {
         await createKDSTicketsWithAI(adminSupabase, {

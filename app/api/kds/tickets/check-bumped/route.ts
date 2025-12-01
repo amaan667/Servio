@@ -26,8 +26,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // STEP 2: Validate input
-    const body = await validateBody(checkBumpedSchema, await req.json());
+    // STEP 2: Validate input - handle case where venueId might be missing
+    let body;
+    try {
+      const requestBody = await req.json();
+      logger.debug("[KDS CHECK BUMPED] Received request:", {
+        order_id: requestBody?.order_id,
+        venue_id: requestBody?.venue_id,
+      });
+      body = await validateBody(checkBumpedSchema, requestBody);
+    } catch (validationError) {
+      logger.error("[KDS CHECK BUMPED] Validation error:", {
+        error: validationError instanceof Error ? validationError.message : String(validationError),
+        requestBody: await req.text().catch(() => "Could not read body"),
+      });
+      if (isZodError(validationError)) {
+        return handleZodError(validationError);
+      }
+      return apiErrors.badRequest("Invalid request body - order_id is required");
+    }
+    
     const orderId = body.order_id;
     const venueIdFromBody = body.venue_id;
 
