@@ -51,13 +51,6 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
       (order) => !existingOrderIds.has(order.id)
     );
 
-    if (queryError) {
-      logger.error("[KDS AUTO-BACKFILL] Error querying orders:", {
-        error: queryError.message,
-        venueId,
-      });
-      return false;
-    }
 
     if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
       return false;
