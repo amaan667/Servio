@@ -108,18 +108,10 @@ export function usePaymentProcessing() {
           venue_id: checkoutData.venueId,
           customer_name: checkoutData.customerName?.trim() || "",
           customer_phone: checkoutData.customerPhone?.trim() || "",
-          customer_email: (() => {
-            // For Pay Now (Stripe), email is required
-            if (action === "stripe") {
-              const email = checkoutData.customerEmail?.trim();
-              if (!email) {
-                throw new Error("Email is required for Pay Now. Please provide your email address.");
-              }
-              return email;
-            }
-            // For other payment methods, email is optional
-            return checkoutData.customerEmail?.trim() || null;
-          })(),
+          customer_email: checkoutData.customerEmail?.trim() || null,
+          // Note: Email is optional for all payment methods
+          // For Pay Now (Stripe), email will be collected in Stripe Checkout
+          // If provided upfront, it will be used; otherwise Stripe Checkout collects it
           table_number: checkoutData.tableNumber ? String(checkoutData.tableNumber) : null,
           table_id: null,
           items: checkoutData.cart.map((item) => {

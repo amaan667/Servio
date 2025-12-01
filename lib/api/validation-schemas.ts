@@ -69,7 +69,7 @@ export const createOrderSchema = z.object({
   table_number: z.union([z.string(), z.number()]).optional().nullable().transform((val) => val !== null && val !== undefined ? String(val) : undefined),
   items: z.array(orderItemSchema).min(1, "At least one item required"),
   total_amount: nonNegativeNumber,
-  payment_mode: z.enum(["online", "pay_later", "pay_at_till", "STRIPE", "CASH", "CARD", "PAY_LATER"]).optional(),
+  payment_mode: z.enum(["online", "offline", "deferred", "pay_later", "pay_at_till", "STRIPE", "CASH", "CARD", "PAY_LATER"]).optional(),
   special_instructions: z.string().max(500).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
