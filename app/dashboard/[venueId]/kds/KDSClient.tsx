@@ -223,6 +223,39 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
     return grouped;
   }, [tickets]);
 
+  // Trigger backfill if no tickets found after initial load
+  useEffect(() => {
+    const triggerBackfill = async () => {
+      // Wait a bit for initial fetch to complete
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      // If still no tickets, trigger backfill
+      if (tickets.length === 0 && !loading) {
+        try {
+          console.log("[KDS CLIENT] No tickets found, triggering backfill...");
+          const { apiClient } = await import("@/lib/api-client");
+          const response = await apiClient.post("/api/kds/backfill", {
+            venueId,
+            scope: "today",
+          });
+          const data = await response.json();
+          
+          if (data.ok && data.tickets_created > 0) {
+            console.log("[KDS CLIENT] Backfill created tickets, refreshing...");
+            // Wait a moment then refresh tickets
+            setTimeout(() => {
+              fetchTickets();
+            }, 1000);
+          }
+        } catch (error) {
+          console.error("[KDS CLIENT] Backfill error:", error);
+        }
+      }
+    };
+
+    triggerBackfill();
+  }, [tickets.length, loading, venueId, fetchTickets]);
+
   // Initial load
   useEffect(() => {
     fetchStations();
