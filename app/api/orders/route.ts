@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { type SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createSupabaseClient } from "@/lib/supabase";
+import { createClient as createSupabaseClient, createAdminClient } from "@/lib/supabase";
 import { apiLogger, logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -577,10 +577,11 @@ export async function POST(req: NextRequest) {
     const tn = validatedOrderBody.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
 
-    // Use authenticated client
-    const supabase = await createSupabaseClient();
+    // Use admin client for public customer orders (bypasses RLS)
+    // Customers placing orders via QR codes are not authenticated
+    const supabase = createAdminClient();
 
-    // Verify venue exists (venue access already verified by withUnifiedAuth)
+    // Verify venue exists
     const { data: venue, error: venueErr } = await supabase
       .from("venues")
       .select("venue_id")
