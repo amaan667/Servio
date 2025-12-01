@@ -92,8 +92,44 @@ export function usePaymentProcessing() {
             };
           }
 
-          const errorData = await createOrderResponse.json();
-          throw new Error(errorData.error || "Failed to create order");
+          // Extract error message from response
+          let errorMessage = `Failed to create order (${createOrderResponse.status})`;
+          try {
+            const responseText = await createOrderResponse.text();
+            if (responseText) {
+              try {
+                const errorData = JSON.parse(responseText);
+                // Handle multiple possible error response formats
+                if (errorData.message && typeof errorData.message === "string") {
+                  errorMessage = errorData.message;
+                } else if (errorData.error && typeof errorData.error === "string") {
+                  errorMessage = errorData.error;
+                } else if (Array.isArray(errorData.details)) {
+                  // Handle Zod validation errors with details array
+                  const messages = errorData.details
+                    .map((detail: { message?: string }) => detail?.message)
+                    .filter(Boolean);
+                  errorMessage = messages.length > 0 ? messages.join(", ") : errorMessage;
+                } else if (typeof errorData === "string") {
+                  errorMessage = errorData;
+                }
+              } catch {
+                // If not JSON, use the text directly (limit length)
+                errorMessage = responseText.length > 200 ? responseText.substring(0, 200) + "..." : responseText;
+              }
+            }
+          } catch (textError) {
+            logger.error("[PAYMENT] ❌ Error parsing order creation error:", textError);
+            // Keep default error message
+          }
+          
+          logger.error("[PAYMENT] ❌ Order creation failed:", {
+            status: createOrderResponse.status,
+            statusText: createOrderResponse.statusText,
+            errorMessage,
+          });
+          
+          throw new Error(errorMessage);
         }
 
         const orderResult = await createOrderResponse.json();
@@ -388,21 +424,63 @@ export function usePaymentProcessing() {
     } catch (_err) {
       // Properly extract error message to prevent "[object Object]"
       let errorMessage = "Payment failed. Please try again.";
-      if (_err instanceof Error) {
-        errorMessage = _err.message;
-      } else if (typeof _err === "string") {
-        errorMessage = _err;
-      } else if (_err && typeof _err === "object") {
-        // Try to extract error message from error object
-        const errObj = _err as Record<string, unknown>;
-        if (errObj.message && typeof errObj.message === "string") {
-          errorMessage = errObj.message;
-        } else if (errObj.error && typeof errObj.error === "string") {
-          errorMessage = errObj.error;
-        } else {
-          errorMessage = JSON.stringify(_err);
+      
+      try {
+        if (_err instanceof Error) {
+          errorMessage = _err.message || "An unexpected error occurred";
+        } else if (typeof _err === "string") {
+          errorMessage = _err;
+        } else if (_err && typeof _err === "object") {
+          // Try to extract error message from error object
+          const errObj = _err as Record<string, unknown>;
+          
+          // Check common error message fields
+          if (errObj.message && typeof errObj.message === "string") {
+            errorMessage = errObj.message;
+          } else if (errObj.error && typeof errObj.error === "string") {
+            errorMessage = errObj.error;
+          } else if (errObj.details && typeof errObj.details === "string") {
+            errorMessage = errObj.details;
+          } else if (Array.isArray(errObj.details)) {
+            // Handle array of error details (e.g., from Zod validation)
+            const messages = errObj.details
+              .map((detail: unknown) => {
+                if (typeof detail === "string") return detail;
+                if (detail && typeof detail === "object") {
+                  const d = detail as Record<string, unknown>;
+                  return d.message || d.error || null;
+                }
+                return null;
+              })
+              .filter(Boolean) as string[];
+            errorMessage = messages.length > 0 ? messages.join(", ") : errorMessage;
+          } else {
+            // Last resort: try to stringify, but check if it's an object first
+            try {
+              const stringified = JSON.stringify(_err);
+              // Only use JSON if it's not just "{}" or "[object Object]"
+              if (stringified && stringified !== "{}" && !stringified.includes("[object")) {
+                errorMessage = `Error: ${stringified.substring(0, 200)}`;
+              }
+            } catch {
+              // If stringify fails, use default message
+            }
+          }
         }
+      } catch (extractionError) {
+        // If error extraction itself fails, use default message
+        logger.error("[PAYMENT] ❌ Error extracting error message:", extractionError);
       }
+      
+      // Ensure we never show "[object Object]" - final check
+      if (errorMessage.includes("[object Object]") || errorMessage.includes("[object")) {
+        errorMessage = "An unexpected error occurred. Please try again.";
+      }
+      
+      logger.error("[PAYMENT] ❌ Payment error caught:", {
+        error: _err instanceof Error ? _err.message : String(_err),
+        extractedMessage: errorMessage,
+      });
       
       setError(errorMessage);
       toast({
