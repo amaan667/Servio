@@ -7,14 +7,17 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { level = "info", event, data, timestamp } = body;
+    const body = await req.json().catch(() => ({}));
+    const { level = "info", event, data, details, timestamp } = body;
 
+    // Handle both 'data' and 'details' fields for backward compatibility
+    const logDetails = data || details || {};
+    
     const logMessage = `[PAYMENT FLOW] ${event}`;
     const logData = {
       event,
       timestamp: timestamp || new Date().toISOString(),
-      ...data,
+      ...logDetails,
     };
 
     // Use console.log/console.error directly so Railway captures it
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     // Don't fail if logging fails, but log the error
-    console.error("[PAYMENT FLOW LOG] Failed to log:", error);
+    console.error("[PAYMENT FLOW LOG] Failed to log:", error instanceof Error ? error.message : String(error));
     return NextResponse.json({ ok: false });
   }
 }

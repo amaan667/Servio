@@ -478,7 +478,7 @@ export async function POST(req: NextRequest) {
 
     // Use logger.info (not logger.debug - that's stripped in production!)
 
-    logger.info(
+    console.log(
       `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
     );
 
@@ -498,8 +498,8 @@ export async function POST(req: NextRequest) {
 
       const body = (await req.json()) as Partial<OrderPayload>;
       
-      // Log received payload structure (for debugging 400 errors)
-      logger.info(`📥 [ORDERS API ${requestId}] Received request body:`, {
+      // Log received payload structure (for debugging 400 errors) - use console.log for Railway
+      console.log(`📥 [ORDERS API ${requestId}] Received request body:`, JSON.stringify({
         hasVenueId: !!body.venue_id,
         hasCustomerName: !!body.customer_name,
         hasCustomerPhone: !!body.customer_phone,
@@ -511,11 +511,11 @@ export async function POST(req: NextRequest) {
         paymentMode: (body as { payment_mode?: string }).payment_mode,
         paymentStatus: (body as { payment_status?: string }).payment_status,
         orderStatus: (body as { order_status?: string }).order_status,
-      });
+      }, null, 2));
       
       // Validate venue_id is provided
       if (!body.venue_id) {
-        logger.error(`❌ [ORDERS API ${requestId}] Missing venue_id in request`);
+        console.error(`❌ [ORDERS API ${requestId}] Missing venue_id in request`);
         return apiErrors.badRequest("venue_id is required");
       }
       
@@ -532,9 +532,9 @@ export async function POST(req: NextRequest) {
       // Use validated body for rest of function
       validatedOrderBody = validatedBody as OrderPayload;
     } catch (validationError) {
-      // Log validation errors in detail for debugging 400 errors
+      // Log validation errors in detail for debugging 400 errors - use console.error for Railway
       if (isZodError(validationError)) {
-        logger.error(`❌ [ORDERS API ${requestId}] Validation error:`, {
+        console.error(`❌ [ORDERS API ${requestId}] Validation error:`, JSON.stringify({
           error: validationError.errors,
           receivedPayload: {
             venue_id: body.venue_id,
@@ -548,7 +548,7 @@ export async function POST(req: NextRequest) {
             })) : "not an array",
             total_amount: body.total_amount,
           },
-        });
+        }, null, 2));
         return handleZodError(validationError);
       }
       logger.error(`❌ [ORDERS API ${requestId}] Non-Zod validation error:`, {
@@ -832,8 +832,8 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Log the EXACT payload being inserted before database insert (use logger.info so it shows in Railway)
-    logger.info(`📤 [ORDERS API ${requestId}] ===== PAYLOAD BEFORE DATABASE INSERT =====`, {
+    // Log the EXACT payload being inserted before database insert (use console.log for Railway)
+    console.log(`📤 [ORDERS API ${requestId}] ===== PAYLOAD BEFORE DATABASE INSERT =====`, JSON.stringify({
       payload: JSON.stringify(cleanPayload, null, 2),
       payloadKeys: Object.keys(cleanPayload),
       itemsCount: Array.isArray(cleanPayload.items) ? (cleanPayload.items as unknown[]).length : 0,
@@ -852,7 +852,7 @@ export async function POST(req: NextRequest) {
       created_at: cleanPayload.created_at,
       updated_at: cleanPayload.updated_at,
       requestId,
-    });
+    }, null, 2));
     console.error("[ORDER CREATION DEBUG] Full cleaned payload:", JSON.stringify(cleanPayload, null, 2));
 
     const { data: inserted, error: insertErr } = await supabase
@@ -861,14 +861,14 @@ export async function POST(req: NextRequest) {
       .select("*");
 
     if (insertErr) {
-      logger.error(`❌ [ORDERS API ${requestId}] ===== DATABASE INSERT FAILED =====`, {
+      console.error(`❌ [ORDERS API ${requestId}] ===== DATABASE INSERT FAILED =====`, JSON.stringify({
         errorCode: insertErr.code,
         errorMessage: insertErr.message,
         errorDetails: insertErr.details,
         errorHint: insertErr.hint,
         fullError: JSON.stringify(insertErr, null, 2),
         payload: JSON.stringify(cleanPayload, null, 2),
-      });
+      }, null, 2));
       logger.error(`❌ [ORDERS API ${requestId}] Database error code:`, insertErr.code);
       logger.error(`❌ [ORDERS API ${requestId}] Database error message:`, insertErr.message);
       logger.error(`❌ [ORDERS API ${requestId}] Database error details:`, insertErr.details);
