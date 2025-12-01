@@ -450,7 +450,7 @@ export function usePaymentProcessing() {
         const orderResult = await createOrderResponse.json();
         
         // Log success to server (appears in Railway)
-        await logToServer("info", "ORDER_CREATION_SUCCESS", {
+        logToServer("info", "ORDER_CREATION_SUCCESS", {
           orderId: orderResult.order?.id,
           orderNumber: orderResult.order?.order_number,
           status: orderResult.order?.order_status,
