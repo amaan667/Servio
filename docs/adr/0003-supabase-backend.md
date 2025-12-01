@@ -53,3 +53,4 @@ We will use Supabase for:
 - [Supabase Documentation](https://supabase.com/docs)
 - [Supabase vs Firebase](https://supabase.com/docs/guides/getting-started/comparing-supabase-vs-firebase)
 
+

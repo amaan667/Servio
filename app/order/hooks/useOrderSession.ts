@@ -101,6 +101,44 @@ export function useOrderSession(orderParams: OrderParams) {
           });
 
           if (orderInDb) {
+            // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            const isPayLater = (orderInDb.payment_method === "PAY_LATER" || orderInDb.payment_mode === "pay_later" || orderInDb.payment_mode === "deferred") && 
+                               (orderInDb.payment_status === "UNPAID" || orderInDb.payment_status === "PAY_LATER_PENDING");
+            
+            if (isPayLater) {
+              logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
+                orderId: orderData.orderId,
+                customerEmail: orderInDb.customer_email,
+              });
+              
+              // Use customer_email from database order (preferred) or fallback to stored data
+              const customerEmail = orderInDb.customer_email || orderData.customerEmail;
+              
+              // Create Stripe checkout session for pay later order
+              const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  amount: orderInDb.total_amount || orderData.total,
+                  customerEmail: customerEmail || undefined, // Use from DB order
+                  customerName: orderInDb.customer_name || orderData.customerName,
+                  venueName: "Restaurant",
+                  orderId: orderData.orderId,
+                }),
+              });
+
+              const checkoutResult = await checkoutResponse.json();
+              if (checkoutResponse.ok && checkoutResult.url) {
+                window.location.href = checkoutResult.url;
+                return;
+              } else {
+                logger.error("[ORDER SESSION] Failed to create Stripe checkout for pay later order", {
+                  error: checkoutResult.error,
+                });
+                // Fall through to regular payment page
+              }
+            }
+            
             logger.info("✅ [ORDER SESSION] Redirecting to payment", {
               orderId: orderData.orderId,
             });
@@ -166,6 +204,44 @@ export function useOrderSession(orderParams: OrderParams) {
           }
 
           if (sessionOrderInDb) {
+            // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            const isPayLater = (sessionOrderInDb.payment_method === "PAY_LATER" || sessionOrderInDb.payment_mode === "pay_later" || sessionOrderInDb.payment_mode === "deferred") && 
+                               (sessionOrderInDb.payment_status === "UNPAID" || sessionOrderInDb.payment_status === "PAY_LATER_PENDING");
+            
+            if (isPayLater) {
+              logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
+                orderId: orderData.orderId,
+                customerEmail: sessionOrderInDb.customer_email,
+              });
+              
+              // Use customer_email from database order (preferred) or fallback to stored data
+              const customerEmail = sessionOrderInDb.customer_email || orderData.customerEmail;
+              
+              // Create Stripe checkout session for pay later order
+              const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  amount: sessionOrderInDb.total_amount || orderData.total,
+                  customerEmail: customerEmail || undefined, // Use from DB order
+                  customerName: sessionOrderInDb.customer_name || orderData.customerName,
+                  venueName: "Restaurant",
+                  orderId: orderData.orderId,
+                }),
+              });
+
+              const checkoutResult = await checkoutResponse.json();
+              if (checkoutResponse.ok && checkoutResult.url) {
+                window.location.href = checkoutResult.url;
+                return;
+              } else {
+                logger.error("[ORDER SESSION] Failed to create Stripe checkout for pay later order", {
+                  error: checkoutResult.error,
+                });
+                // Fall through to regular payment page
+              }
+            }
+            
             // Check if there are multiple unpaid orders for this table
             // If so, show table payment screen instead of single order payment
             try {

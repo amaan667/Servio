@@ -51,17 +51,17 @@ export default function ConditionalBottomNav() {
     const loadCounts = async (forceRefresh = false) => {
       if (!isMounted) return;
 
-      // Check cache first - don't refresh if cache is fresh
-      if (!forceRefresh) {
-        const cached = getCachedCounts(venueIdFromPath);
-        if (cached && isCacheFresh(venueIdFromPath)) {
-          setCounts({
-            live_orders: cached.live_count || 0,
-            total_orders: cached.today_orders_count || 0,
-            notifications: 0,
-          });
-          return;
-        }
+        // Always hydrate from cache first if available, but never skip the network fetch
+        // This ensures we never get stuck showing stale counts from a "fresh" cache
+        if (!forceRefresh) {
+          const cached = getCachedCounts(venueIdFromPath);
+          if (cached && isCacheFresh(venueIdFromPath)) {
+            setCounts({
+              live_orders: cached.live_count || 0,
+              total_orders: cached.today_orders_count || 0,
+              notifications: 0,
+            });
+          }
       }
 
       try {

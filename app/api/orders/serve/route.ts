@@ -35,6 +35,11 @@ export async function POST(req: Request) {
       return apiErrors.notFound('Order not found');
     }
     const currentStatus = (orderData.order_status || "").toString().toUpperCase();
+    const venueId = orderData.venue_id as string;
+    if (!venueId) {
+      return apiErrors.badRequest('Order missing venue_id');
+    }
+
     logger.debug("[ORDERS SERVE] Loaded order", {
       data: {
         orderId: orderData.id,
@@ -44,33 +49,78 @@ export async function POST(req: Request) {
       },
     });
 
-    // Allow serving orders that are READY or SERVING
-    // READY = kitchen marked as ready (from KDS bump), SERVING = already being served (re-serve case)
-    // Note: Orders must be READY before serving (set by KDS when tickets are bumped)
+    // Check if order has KDS tickets
+    const { data: kdsTickets, error: ticketsError } = await admin
+      .from("kds_tickets")
+      .select("id, status")
+      .eq("order_id", orderId)
+      .eq("venue_id", venueId);
+
+    if (ticketsError) {
+      logger.warn("[ORDERS SERVE] Error checking KDS tickets, proceeding with status check", {
+        orderId,
+        error: ticketsError.message,
+      });
+    }
+
+    const hasKdsTickets = kdsTickets && kdsTickets.length > 0;
+    const allTicketsBumped = hasKdsTickets 
+      ? kdsTickets.every((t) => t.status === "bumped")
+      : true; // If no tickets, consider as "all bumped"
+
+    // Allow serving orders that are:
+    // 1. READY or SERVING (normal flow with KDS)
+    // 2. PLACED or IN_PREP if they have no KDS tickets OR all tickets are already bumped
+    // This allows orders without KDS tickets to bypass the KDS workflow
     const allowedStatuses = ["READY", "SERVING"];
-    if (!allowedStatuses.includes(currentStatus)) {
+    const canServeWithoutKds = !hasKdsTickets || allTicketsBumped;
+    const allowedStatusesWithKdsBypass = canServeWithoutKds 
+      ? ["READY", "SERVING", "PLACED", "IN_PREP"]
+      : allowedStatuses;
+
+    if (!allowedStatusesWithKdsBypass.includes(currentStatus)) {
       logger.warn("[ORDERS SERVE] Refusing serve due to status", {
         orderId,
         currentStatus,
+        hasKdsTickets,
+        allTicketsBumped,
+        ticketCount: kdsTickets?.length || 0,
         orderData: {
           id: orderData.id,
           status: orderData.order_status,
           created_at: orderData.created_at,
         },
       });
+      const errorMessage = hasKdsTickets && !allTicketsBumped
+        ? `Order must be READY (from KDS) or SERVING to mark as served. Current status: ${currentStatus}. Please ensure KDS has marked all tickets as ready/bumped.`
+        : `Order cannot be served in current status: ${currentStatus}. Order must be READY, SERVING, PLACED, or IN_PREP to mark as served.`;
+      
       return NextResponse.json(
         {
-          error: `Order must be READY (from KDS) or SERVING to mark as served. Current status: ${currentStatus}. Please ensure KDS has marked tickets as ready/bumped.`,
+          error: errorMessage,
           currentStatus,
           orderId,
+          hasKdsTickets,
+          allTicketsBumped,
         },
         { status: 400 }
       );
     }
 
-    const venueId = orderData.venue_id as string;
-    if (!venueId) {
-      return apiErrors.badRequest('Order missing venue_id');
+    // Log if serving order without KDS tickets (bypassing KDS workflow)
+    if (!hasKdsTickets) {
+      logger.info("[ORDERS SERVE] Serving order without KDS tickets (bypassing KDS workflow)", {
+        orderId,
+        currentStatus,
+        venueId,
+      });
+    } else if (allTicketsBumped && currentStatus !== "READY" && currentStatus !== "SERVING") {
+      logger.info("[ORDERS SERVE] Serving order with all tickets bumped but status not READY/SERVING", {
+        orderId,
+        currentStatus,
+        venueId,
+        ticketCount: kdsTickets.length,
+      });
     }
 
     // Update the order status to SERVED

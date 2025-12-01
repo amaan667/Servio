@@ -38,6 +38,44 @@ export function usePaymentState() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Safe setter that ensures error is always a string
+  const setErrorSafe = (errorValue: string | null | unknown) => {
+    if (errorValue === null || errorValue === undefined) {
+      setError(null);
+      return;
+    }
+    
+    let safeError: string;
+    if (typeof errorValue === "string") {
+      safeError = errorValue;
+    } else if (errorValue instanceof Error) {
+      safeError = errorValue.message || "An unexpected error occurred";
+    } else if (typeof errorValue === "object") {
+      // Try to extract a message from the object
+      const errObj = errorValue as Record<string, unknown>;
+      if (errObj.message && typeof errObj.message === "string") {
+        safeError = errObj.message;
+      } else if (errObj.error && typeof errObj.error === "string") {
+        safeError = errObj.error;
+      } else {
+        // Last resort: stringify, but check for [object Object]
+        const stringified = JSON.stringify(errorValue);
+        if (stringified.includes("[object Object]")) {
+          safeError = "An unexpected error occurred. Please try again.";
+        } else {
+          safeError = stringified.length > 200 ? stringified.substring(0, 200) + "..." : stringified;
+        }
+      }
+    } else {
+      safeError = String(errorValue);
+    }
+    
+    // Final check: remove any [object Object] strings
+    safeError = safeError.replace(/\[object\s+Object\]/gi, "An unexpected error occurred");
+    
+    setError(safeError);
+  };
   const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);
   const [isDemo, setIsDemo] = useState(false);
   const [receiptEmail, setReceiptEmail] = useState("");
@@ -83,7 +121,7 @@ export function usePaymentState() {
     feedbackSubmitted,
     setFeedbackSubmitted,
     error,
-    setError,
+    setError: setErrorSafe,
     paymentAction,
     setPaymentAction,
     isDemo,

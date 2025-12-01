@@ -5,6 +5,7 @@ import { env } from '@/lib/env';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 import { z } from 'zod';
 import { validateBody } from '@/lib/api/validation-schemas';
+import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = "nodejs";
 
@@ -59,13 +60,46 @@ export async function POST(req: Request) {
         orderId: body.orderId,
         paymentType: "order_payment",
       },
-      customer_email: body.customerEmail,
+      customer_email: body.customerEmail || undefined,
     });
 
     logger.info("✅ Stripe checkout session created", {
       sessionId: session.id,
       orderId: body.orderId,
     });
+
+    // Update the order with the session ID so the webhook can find it
+    // This is important for webhook reliability
+    try {
+      const supabaseAdmin = createAdminClient();
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({
+          stripe_session_id: session.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", body.orderId);
+
+      if (updateError) {
+        logger.warn("[STRIPE CHECKOUT] Failed to update order with session ID (non-critical):", {
+          orderId: body.orderId,
+          sessionId: session.id,
+          error: updateError.message,
+        });
+        // Don't fail the request - webhook can still find order by orderId in metadata
+      } else {
+        logger.debug("[STRIPE CHECKOUT] Updated order with session ID", {
+          orderId: body.orderId,
+          sessionId: session.id,
+        });
+      }
+    } catch (updateError) {
+      logger.warn("[STRIPE CHECKOUT] Error updating order with session ID (non-critical):", {
+        orderId: body.orderId,
+        error: updateError instanceof Error ? updateError.message : "Unknown error",
+      });
+      // Don't fail the request - webhook can still find order by orderId in metadata
+    }
 
     return success({
       sessionId: session.id,

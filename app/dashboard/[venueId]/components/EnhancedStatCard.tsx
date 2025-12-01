@@ -44,11 +44,7 @@ export function EnhancedStatCard({
     <Card
       className={`group relative overflow-hidden transition-all duration-300 cursor-pointer border-2 
         bg-white dark:bg-gray-800 dark:border-gray-700
-        ${
-          onClick || href
-            ? "hover:shadow-xl hover:-translate-y-1 hover:border-gray-300 dark:hover:border-purple-500"
-            : "border-transparent dark:border-gray-700"
-        }`}
+        hover:shadow-xl hover:-translate-y-1 hover:border-gray-300 dark:hover:border-purple-500`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}

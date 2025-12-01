@@ -18,14 +18,9 @@ interface AnalyticsData {
 const COLORS = ["#5B21B6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
 
 export function useAnalyticsData(venueId: string) {
-  // Cache analytics data to prevent flicker
-  const getCachedAnalytics = () => {
-    if (typeof window === "undefined") return null;
-    const cached = sessionStorage.getItem(`analytics_data_${venueId}`);
-    return cached ? JSON.parse(cached) : null;
-  };
-
-  const [data, setData] = useState<AnalyticsData | null>(getCachedAnalytics());
+  // Always start without cached analytics data to avoid stale charts on first load
+  // We still write to sessionStorage for potential future use, but we don't read from it
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false); // Start with false
   const [error, setError] = useState<string | null>(null);
 

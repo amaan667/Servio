@@ -21,8 +21,6 @@ import { MobileCart } from "./components/MobileCart";
 import { MobileCartButton } from "./components/MobileCartButton";
 import { CheckoutModal } from "./components/CheckoutModal";
 import { GroupSizeModal } from "./components/GroupSizeModal";
-import { BillSplitModal, type BillSplit } from "./components/BillSplitModal";
-import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 export default function CustomerOrderPage() {
@@ -137,11 +135,9 @@ export default function CustomerOrderPage() {
   } = useGroupSession(venueSlug, tableNumber, isCounterOrder, skipGroupSize);
 
   const [showMobileCart, setShowMobileCart] = useState(false);
-  const [showBillSplit, setShowBillSplit] = useState(false);
   // Tier state - kept for future use
   const [, setSubscriptionTier] = useState<"starter" | "pro" | "enterprise">("starter");
   const [, setLoadingTier] = useState(true);
-  const shouldSplitBill = searchParams?.get("splitBill") === "true";
 
   // Log menu loading for debugging
   useEffect(() => {
@@ -165,62 +161,6 @@ export default function CustomerOrderPage() {
     });
   };
 
-  const handleBillSplitComplete = async (splits: BillSplit[]) => {
-    try {
-      const response = await fetch("/api/orders/create-split-orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId: venueSlug,
-          tableNumber: parseInt(tableNumber) || 1,
-          customerName: customerInfo.name || "Customer",
-          customerPhone: customerInfo.phone || "",
-          splits: splits.map((split) => ({
-            name: split.name,
-            items: split.items.map((item) => ({
-              id: item.id && item.id.startsWith("demo-") ? null : item.id,
-              name: item.name,
-              price: item.price + (item.modifierPrice || 0),
-              quantity: item.quantity,
-              specialInstructions: item.specialInstructions || null,
-              modifiers: item.selectedModifiers || null,
-              modifierPrice: item.modifierPrice || 0,
-            })),
-            total: split.total,
-          })),
-          source: orderType === "counter" ? "counter" : "qr",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create split orders");
-      }
-
-      const data = await response.json();
-      
-      // Redirect to payment page with split checkout sessions
-      localStorage.setItem("servio-split-checkout", JSON.stringify({
-        groupId: data.groupId,
-        checkoutSessions: data.checkoutSessions,
-        venueId: venueSlug,
-        tableNumber,
-      }));
-
-      // Redirect to first checkout session
-      if (data.checkoutSessions && data.checkoutSessions.length > 0) {
-        window.location.href = data.checkoutSessions[0].url || "/payment";
-      }
-    } catch {
-      alert("Failed to create split orders. Please try again.");
-    }
-  };
-
-  // Show bill split modal if URL param is set
-  useEffect(() => {
-    if (shouldSplitBill && cart.length > 0) {
-      setShowBillSplit(true);
-    }
-  }, [shouldSplitBill, cart.length]);
 
   // Show error if no venue or table parameter - no automatic redirect
   if (!venueSlug || !tableNumber) {
@@ -292,19 +232,6 @@ export default function CustomerOrderPage() {
             isDemo={isDemo}
             onDirectSubmit={handleSubmitOrder}
           />
-          
-          {/* Bill Split Button (if cart has items) */}
-          {cart.length > 0 && !isDemo && (
-            <div className="lg:col-span-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowBillSplit(true)}
-                className="w-full"
-              >
-                Split Bill
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Mobile Cart Button */}
@@ -383,14 +310,6 @@ export default function CustomerOrderPage() {
         mode="update"
       />
 
-      {/* Bill Split Modal */}
-      <BillSplitModal
-        isOpen={showBillSplit}
-        onClose={() => setShowBillSplit(false)}
-        cart={cart}
-        totalPrice={getTotalPrice()}
-        onSplitComplete={handleBillSplitComplete}
-      />
     </div>
   );
 }

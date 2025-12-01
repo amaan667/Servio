@@ -86,15 +86,23 @@ export async function POST(_request: NextRequest) {
     }
 
     // Update all orders in the table payment
+    // Update email from Stripe session if not already set
+    const updateData: Record<string, unknown> = {
+      payment_status: "PAID",
+      payment_method: "PAY_NOW", // Use standardized payment method value
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: String(session.payment_intent ?? ""),
+      updated_at: new Date().toISOString(),
+    };
+    
+    // Update email from Stripe session if available
+    if (session.customer_email) {
+      updateData.customer_email = session.customer_email;
+    }
+    
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("orders")
-      .update({
-        payment_status: "PAID",
-        payment_method: "stripe",
-        stripe_session_id: session.id,
-        stripe_payment_intent_id: String(session.payment_intent ?? ""),
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .in("id", orderIds)
       .select("id, venue_id, customer_email");
 
@@ -113,15 +121,23 @@ export async function POST(_request: NextRequest) {
     });
   } else if (orderId) {
     // Single order payment: update one order
+    // Update email from Stripe session if not already set
+    const updateData: Record<string, unknown> = {
+      payment_status: "PAID",
+      payment_method: "PAY_NOW", // Use standardized payment method value
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: String(session.payment_intent ?? ""),
+      updated_at: new Date().toISOString(),
+    };
+    
+    // Update email from Stripe session if available and order doesn't have one
+    if (session.customer_email) {
+      updateData.customer_email = session.customer_email;
+    }
+    
     const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from("orders")
-      .update({
-        payment_status: "PAID",
-        payment_method: "stripe",
-        stripe_session_id: session.id,
-        stripe_payment_intent_id: String(session.payment_intent ?? ""),
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", orderId)
       .select("id, venue_id, customer_email")
       .single();

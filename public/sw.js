@@ -71,6 +71,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Always bypass cache for dynamic dashboard pages to avoid stale metrics/labels
+  if (url.pathname.startsWith('/dashboard/')) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        // Network failed - fall back to offline page for navigation requests
+        if (request.mode === 'navigate') {
+          return caches.match(OFFLINE_PAGE) || new Response('Offline', { status: 503 });
+        }
+        return new Response('Network error', { status: 503 });
+      })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((response) => {
       // Return cached version if available
