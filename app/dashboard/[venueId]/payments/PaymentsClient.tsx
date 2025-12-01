@@ -84,12 +84,22 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .eq("venue_id", venueId)
         .single();
 
-      // Get venue contact info
-      const { data: venue } = await supabase
-        .from("venues")
-        .select("venue_name, venue_email, venue_address, show_vat_breakdown")
-        .eq("venue_id", venueId)
-        .single();
+      // Get venue contact info - handle RLS gracefully
+      let venue = null;
+      try {
+        const { data: venueData, error: venueError } = await supabase
+          .from("venues")
+          .select("venue_name, venue_email, venue_address, show_vat_breakdown")
+          .eq("venue_id", venueId)
+          .maybeSingle();
+        
+        if (!venueError && venueData) {
+          venue = venueData;
+        }
+      } catch (error) {
+        // Silently fail - venue info is optional for payments page
+        // Silently fail - venue info is optional
+      }
 
       const logoUrl = designSettings?.logo_url;
       let primaryColor = "#8b5cf6"; // Default fallback

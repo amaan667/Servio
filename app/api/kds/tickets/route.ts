@@ -117,7 +117,7 @@ export const GET = withUnifiedAuth(
       const status = searchParams.get("status");
 
       // STEP 4: Business logic - Fetch tickets
-      const supabase = await createClient();
+      const supabase = createAdminClient();
 
       let query = supabase
         .from("kds_tickets")

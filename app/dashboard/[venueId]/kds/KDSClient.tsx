@@ -137,10 +137,12 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
           sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.tickets || []));
         }
       } else {
-        setError(data.error || "Failed to load tickets");
+        setError(data.error || data.message || "Failed to load tickets");
+        console.error("[KDS] Tickets API error:", data);
       }
-    } catch (_error) {
-      setError("Failed to load tickets");
+    } catch (error) {
+      console.error("[KDS] Tickets fetch error:", error);
+      setError(error instanceof Error ? error.message : "Failed to load tickets");
     } finally {
       setLoading(false);
     }
