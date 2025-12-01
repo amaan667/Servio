@@ -136,7 +136,7 @@ export function usePaymentProcessing() {
           total_amount: checkoutData.total,
           notes: checkoutData.notes || null,
           order_status: "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
-          payment_status: action === "stripe" ? "PAYMENT_PENDING" : action === "later" ? "UNPAID" : action === "till" ? "UNPAID" : "UNPAID",
+          payment_status: "UNPAID", // All unpaid orders start as UNPAID, updated to PAID via webhook for Stripe
           payment_mode: action === "till" ? "offline" : action === "later" ? "deferred" : "online",
           payment_method: action === "demo" ? "PAY_NOW" : action === "stripe" ? "PAY_NOW" : action === "till" ? "PAY_AT_TILL" : action === "later" ? "PAY_LATER" : "PAY_NOW",
           // Note: source field is handled by the API route based on table_number

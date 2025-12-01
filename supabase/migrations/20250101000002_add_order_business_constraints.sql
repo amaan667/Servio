@@ -271,7 +271,7 @@ BEGIN
     AND objsubid = (SELECT attnum FROM pg_attribute WHERE attrelid = (SELECT oid FROM pg_class WHERE relname = 'orders') AND attname = 'payment_status')
   ) THEN
     COMMENT ON COLUMN orders.payment_status IS 
-    'Payment status: UNPAID, PAYMENT_PENDING, PAID, TILL (paid at till), FAILED, REFUNDED';
+    'Payment status: UNPAID, PAID, TILL (paid at till), FAILED, REFUNDED';
   END IF;
 
   -- Comment on payment_method enum values
