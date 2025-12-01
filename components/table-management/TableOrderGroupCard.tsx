@@ -87,13 +87,14 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
     // This ensures we find it in ANY tab (live, all, history) using the unique order ID
     if (orders.length > 0) {
       const firstOrderId = orders[0].id;
-      // Navigate to Live Orders with order ID search - will find it in any tab
+      // Navigate to Live Orders and search by order ID (last 6 chars) - will find it in any tab
+      // The search functionality searches across all tabs automatically
       router.push(
-        `/dashboard/${venueId}/live-orders?order=${encodeURIComponent(firstOrderId)}&tab=all`
+        `/dashboard/${venueId}/live-orders?search=${encodeURIComponent(firstOrderId.slice(-6).toUpperCase())}&tab=all`
       );
     } else {
       // Fallback: filter by table number
-      const tableNumber = tableLabel.replace(/^Table\s*/i, "");
+      const tableNumber = tableLabel.replace(/^Table\s*/i, "").replace(/^Counter\s*/i, "");
       router.push(
         `/dashboard/${venueId}/live-orders?table=${encodeURIComponent(tableNumber)}&tab=all`
       );
