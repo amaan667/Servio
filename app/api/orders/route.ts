@@ -768,29 +768,61 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Log the EXACT payload being inserted before database insert
-    logger.error("[ORDER CREATION DEBUG] ===== PAYLOAD BEFORE INSERT =====", {
-      payload: JSON.stringify(payload, null, 2),
-      payloadKeys: Object.keys(payload),
-      itemsCount: Array.isArray(payload.items) ? payload.items.length : 0,
-      payment_status: payload.payment_status,
-      payment_mode: payload.payment_mode,
-      payment_method: payload.payment_method,
-      order_status: payload.order_status,
+    // Clean payload: remove undefined values, ensure nulls, add timestamps
+    // Database might require created_at/updated_at or have NOT NULL constraints
+    const now = new Date().toISOString();
+    const cleanPayload: Record<string, unknown> = {
       venue_id: payload.venue_id,
+      table_number: payload.table_number ?? null,
+      table_id: payload.table_id ?? null,
       customer_name: payload.customer_name,
       customer_phone: payload.customer_phone,
-      table_number: payload.table_number,
-      table_id: payload.table_id,
+      items: payload.items,
       total_amount: payload.total_amount,
-      source: payload.source,
+      notes: payload.notes ?? null,
+      order_status: payload.order_status || "IN_PREP",
+      payment_status: payload.payment_status || "UNPAID",
+      payment_mode: payload.payment_mode || "online",
+      payment_method: payload.payment_method ?? null,
+      source: payload.source || "qr",
+      is_active: payload.is_active ?? true,
+      created_at: now,
+      updated_at: now,
+    };
+    
+    // Remove undefined fields (they break JSON serialization)
+    Object.keys(cleanPayload).forEach(key => {
+      if (cleanPayload[key] === undefined) {
+        delete cleanPayload[key];
+      }
+    });
+
+    // Log the EXACT payload being inserted before database insert
+    logger.error("[ORDER CREATION DEBUG] ===== PAYLOAD BEFORE INSERT =====", {
+      payload: JSON.stringify(cleanPayload, null, 2),
+      payloadKeys: Object.keys(cleanPayload),
+      itemsCount: Array.isArray(cleanPayload.items) ? (cleanPayload.items as unknown[]).length : 0,
+      payment_status: cleanPayload.payment_status,
+      payment_mode: cleanPayload.payment_mode,
+      payment_method: cleanPayload.payment_method,
+      order_status: cleanPayload.order_status,
+      venue_id: cleanPayload.venue_id,
+      customer_name: cleanPayload.customer_name,
+      customer_phone: cleanPayload.customer_phone,
+      table_number: cleanPayload.table_number,
+      table_id: cleanPayload.table_id,
+      total_amount: cleanPayload.total_amount,
+      source: cleanPayload.source,
+      is_active: cleanPayload.is_active,
+      created_at: cleanPayload.created_at,
+      updated_at: cleanPayload.updated_at,
       requestId,
     });
-    console.error("[ORDER CREATION DEBUG] Full payload:", JSON.stringify(payload, null, 2));
+    console.error("[ORDER CREATION DEBUG] Full cleaned payload:", JSON.stringify(cleanPayload, null, 2));
 
     const { data: inserted, error: insertErr } = await supabase
       .from("orders")
-      .insert(payload)
+      .insert(cleanPayload)
       .select("*");
 
     if (insertErr) {
@@ -807,7 +839,7 @@ export async function POST(req: NextRequest) {
       console.error("Error Details:", insertErr.details);
       console.error("Error Hint:", insertErr.hint);
       console.error("Full Error:", JSON.stringify(insertErr, null, 2));
-      console.error("Payload that failed:", JSON.stringify(payload, null, 2));
+      console.error("Payload that failed:", JSON.stringify(cleanPayload, null, 2));
 
       // Try to provide more specific error messages
       let errorMessage = insertErr.message || "Database insert failed";
