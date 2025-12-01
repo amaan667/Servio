@@ -150,10 +150,44 @@ export function usePaymentProcessing() {
         }
 
         // Online - create order immediately
+        // Log EXACT payload being sent
+        console.log("📤 [PAYMENT PROCESSING] ===== SENDING ORDER CREATION REQUEST =====", {
+          timestamp: new Date().toISOString(),
+          url: "/api/orders",
+          method: "POST",
+          online: navigator.onLine,
+          payload: JSON.stringify(orderData, null, 2),
+          payloadStructure: {
+            venue_id: orderData.venue_id,
+            customer_name: orderData.customer_name,
+            customer_phone: orderData.customer_phone,
+            customer_email: orderData.customer_email,
+            table_number: orderData.table_number,
+            table_id: orderData.table_id,
+            items_count: orderData.items.length,
+            total_amount: orderData.total_amount,
+            order_status: orderData.order_status,
+            payment_status: orderData.payment_status,
+            payment_mode: orderData.payment_mode,
+            payment_method: orderData.payment_method,
+            is_active: orderData.is_active,
+          },
+          items_detail: orderData.items.map((item, idx) => ({
+            index: idx,
+            menu_item_id: item.menu_item_id,
+            item_name: item.item_name,
+            quantity: item.quantity,
+            price: item.price,
+            hasSpecialInstructions: !!item.special_instructions,
+          })),
+        });
+
         logger.info("🌐 [PAYMENT PROCESSING] Sending order creation request...", {
           url: "/api/orders",
           method: "POST",
           online: navigator.onLine,
+          payloadSize: JSON.stringify(orderData).length,
+          itemsCount: orderData.items.length,
         });
 
         const createOrderResponse = await fetch("/api/orders", {
@@ -238,6 +272,29 @@ export function usePaymentProcessing() {
             console.error("❌ [PAYMENT PROCESSING] Failed to read error response:", textError);
             // Keep default error message
           }
+          
+          // Comprehensive error logging
+          console.error("❌ [PAYMENT PROCESSING] ===== ORDER CREATION FAILED =====", {
+            timestamp: new Date().toISOString(),
+            status: createOrderResponse.status,
+            statusText: createOrderResponse.statusText,
+            errorMessage,
+            fullErrorResponse,
+            url: "/api/orders",
+            requestPayload: JSON.stringify(orderData, null, 2),
+            payloadValidation: {
+              hasVenueId: !!orderData.venue_id,
+              hasCustomerName: !!orderData.customer_name,
+              hasCustomerPhone: !!orderData.customer_phone,
+              hasItems: Array.isArray(orderData.items) && orderData.items.length > 0,
+              hasTotal: typeof orderData.total_amount === "number" && orderData.total_amount > 0,
+              itemsValid: orderData.items.every((item) => 
+                typeof item.quantity === "number" && 
+                typeof item.price === "number" && 
+                typeof item.item_name === "string"
+              ),
+            },
+          });
           
           logger.error("[PAYMENT] ❌ Order creation failed:", {
             status: createOrderResponse.status,
