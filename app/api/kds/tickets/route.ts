@@ -23,8 +23,8 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
       .from("orders")
       .select("id")
       .eq("venue_id", venueId)
-      .in("payment_status", ["PAID", "UNPAID"])
-      .in("order_status", ["PLACED", "IN_PREP", "READY"])
+      .in("payment_status", ["PAID", "UNPAID", "PAYMENT_PENDING"])
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"])
       .gte("created_at", todayStart.toISOString())
       .not("id", "in", `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
 

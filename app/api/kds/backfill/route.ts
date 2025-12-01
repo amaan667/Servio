@@ -7,12 +7,6 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export const runtime = "nodejs"; // KDS backfill endpoint
 
-interface KDSStation {
-  id: string;
-  station_type: string;
-  [key: string]: unknown;
-}
-
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -110,7 +104,7 @@ export const POST = withUnifiedAuth(
         )
       .eq("venue_id", finalVenueId)
       .in("payment_status", ["PAID", "UNPAID", "PAYMENT_PENDING"]) // Only active orders
-      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY"]) // Only orders that need preparation
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]) // Only orders that need preparation (including SERVING for earlier today)
       .order("created_at", { ascending: false });
 
     // Apply time filtering based on scope
