@@ -813,12 +813,35 @@ export async function POST(req: NextRequest) {
 
     // Create KDS tickets for the order
     try {
-      await createKDSTickets(supabase, inserted[0]);
-    } catch (kdsError) {
-      logger.warn("[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):", {
-        value: kdsError,
+      logger.info("[ORDER CREATION DEBUG] Creating KDS tickets for order:", {
+        orderId: inserted[0].id,
+        itemCount: Array.isArray(inserted[0].items) ? inserted[0].items.length : 0,
+        venueId: inserted[0].venue_id,
+        requestId,
       });
-      // Don't fail the order creation if KDS tickets fail
+      await createKDSTickets(supabase, inserted[0]);
+      logger.info("[ORDER CREATION DEBUG] ✅ KDS tickets created successfully", {
+        orderId: inserted[0].id,
+        requestId,
+      });
+    } catch (kdsError) {
+      // Log detailed error but don't fail order creation
+      const errorMessage = kdsError instanceof Error ? kdsError.message : String(kdsError);
+      const errorStack = kdsError instanceof Error ? kdsError.stack : undefined;
+      logger.error("[ORDER CREATION DEBUG] ❌ KDS ticket creation failed (non-critical):", {
+        orderId: inserted[0].id,
+        error: errorMessage,
+        stack: errorStack,
+        orderItems: Array.isArray(inserted[0].items) ? inserted[0].items.length : 0,
+        venueId: inserted[0].venue_id,
+        requestId,
+      });
+      console.error(`❌ [ORDERS API ${requestId}] KDS ticket creation failed:`, {
+        orderId: inserted[0].id,
+        error: errorMessage,
+        stack: errorStack,
+      });
+      // Don't fail the order creation if KDS tickets fail - order is already created
     }
 
     const duration = Date.now() - startTime;

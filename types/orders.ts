@@ -12,6 +12,7 @@ export interface OrderForCard extends OrderForEntityKind {
   payment: {
     mode: 'online' | 'pay_at_till' | 'pay_later';
     status: 'paid' | 'unpaid' | 'failed' | 'refunded';
+    method?: string; // Payment method: PAY_NOW, PAY_LATER, PAY_AT_TILL
   };
   table_number?: number | null;
   table_label?: string | null;     // "Table 10"
@@ -21,6 +22,7 @@ export interface OrderForCard extends OrderForEntityKind {
   customer_phone?: string;
   payment_status?: string;
   payment_mode?: string;
+  payment_method?: string; // Raw payment_method from database
   items_preview?: string;          // precomputed "2x Burger, 1x Fries"
   items?: Array<{
     menu_item_id: string;

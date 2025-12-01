@@ -300,7 +300,7 @@ export function OrderCard({
           throw new Error(`Failed to mark order as served: ${response.status} - ${errorText}`);
         }
 
-        const result = await response.json().catch(() => null);
+        await response.json().catch(() => null);
       } else if (nextStatus === "COMPLETED") {
         // Use server endpoint for completing to clear tables
         const response = await fetch("/api/orders/complete", {
@@ -314,7 +314,7 @@ export function OrderCard({
           throw new Error(`Failed to mark order as completed: ${response.status} - ${errorText}`);
         }
 
-        const result = await response.json().catch(() => null);
+        await response.json().catch(() => null);
       } else {
         // Directly update status via Supabase for other transitions
         const supabase = createClient();
@@ -582,12 +582,28 @@ export function OrderCard({
               </Badge>
 
               {/* Status Chips */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <OrderStatusChip status={order.order_status} />
                 {shouldShowUnpaidChip(order) && <PaymentStatusChip status="unpaid" />}
                 {order.payment.status === "paid" && <PaymentStatusChip status="paid" />}
                 {order.payment.status === "failed" && <PaymentStatusChip status="failed" />}
                 {order.payment.status === "refunded" && <PaymentStatusChip status="refunded" />}
+                {/* Payment Method Badge */}
+                {(order.payment_method || order.payment?.method) && (
+                  <Badge 
+                    variant="outline" 
+                    className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-medium"
+                  >
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    {(() => {
+                      const method = (order.payment_method || order.payment?.method || '').toUpperCase();
+                      if (method === 'PAY_NOW') return 'Pay Now';
+                      if (method === 'PAY_LATER') return 'Pay Later';
+                      if (method === 'PAY_AT_TILL') return 'Pay at Till';
+                      return method || 'Online';
+                    })()}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>

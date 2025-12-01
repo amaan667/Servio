@@ -109,8 +109,8 @@ export const POST = withUnifiedAuth(
           "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at, customer_name"
         )
       .eq("venue_id", finalVenueId)
-      .in("payment_status", ["PAID", "UNPAID"]) // Only active orders
-      .in("order_status", ["PLACED", "IN_PREP", "READY"]) // Only orders that need preparation
+      .in("payment_status", ["PAID", "UNPAID", "PAYMENT_PENDING"]) // Only active orders
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY"]) // Only orders that need preparation
       .order("created_at", { ascending: false });
 
     // Apply time filtering based on scope
