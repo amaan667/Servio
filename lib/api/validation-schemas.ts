@@ -30,23 +30,25 @@ export const paginationSchema = z.object({
  * Order schemas
  */
 export const orderItemSchema = z.object({
-  menu_item_id: uuid,
+  menu_item_id: uuid.or(z.null()), // Allow null for items without menu_item_id
   quantity: positiveNumber.int(),
   price: nonNegativeNumber,
   item_name: nonEmptyString,
-  special_instructions: z.string().optional(),
+  special_instructions: z.string().optional().nullable(),
+  specialInstructions: z.string().optional().nullable(), // Accept both camelCase and snake_case for backward compatibility
 });
 
 export const createOrderSchema = z.object({
   venue_id: uuid,
   customer_name: nonEmptyString.max(100),
   customer_phone: phone,
-  customer_email: email.optional(),
-  table_number: z.string().optional(),
+  customer_email: email.optional().nullable(),
+  table_number: z.union([z.string(), z.number()]).optional().nullable().transform((val) => val !== null && val !== undefined ? String(val) : undefined),
   items: z.array(orderItemSchema).min(1, "At least one item required"),
   total_amount: nonNegativeNumber,
-  payment_mode: z.enum(["STRIPE", "CASH", "CARD", "PAY_LATER"]).optional(),
-  special_instructions: z.string().max(500).optional(),
+  payment_mode: z.enum(["online", "pay_later", "pay_at_till", "STRIPE", "CASH", "CARD", "PAY_LATER"]).optional(),
+  special_instructions: z.string().max(500).optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 export const updateOrderStatusSchema = z.object({

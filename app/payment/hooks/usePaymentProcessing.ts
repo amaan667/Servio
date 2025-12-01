@@ -49,42 +49,58 @@ export function usePaymentProcessing() {
 
         const orderData = {
           venue_id: checkoutData.venueId,
-          table_number: checkoutData.tableNumber,
+          table_number: checkoutData.tableNumber ? String(checkoutData.tableNumber) : undefined,
           table_id: null,
           // Removed: counter_number, order_type, order_location - don't exist in DB
           customer_name: checkoutData.customerName,
           customer_phone: checkoutData.customerPhone,
-          items: checkoutData.cart.map((item) => ({
-            menu_item_id: item.id || "unknown",
-            quantity: item.quantity,
-            price: item.price,
-            item_name: item.name,
-            specialInstructions: item.specialInstructions || null,
-          })),
+          items: checkoutData.cart.map((item) => {
+            // Generate a valid UUID if item.id is missing or invalid
+            let menuItemId = item.id;
+            if (!menuItemId || menuItemId === "unknown" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(menuItemId)) {
+              // Create a deterministic UUID from item name for tracking purposes
+              menuItemId = `00000000-0000-0000-0000-${Buffer.from(item.name || 'unknown').toString('hex').slice(0, 12).padStart(12, '0')}`;
+            }
+            
+            return {
+              menu_item_id: menuItemId,
+              quantity: item.quantity,
+              price: item.price,
+              item_name: item.name,
+              special_instructions: item.specialInstructions || undefined,
+            };
+          }),
           total_amount: checkoutData.total,
-          notes: checkoutData.notes || "",
+          notes: checkoutData.notes || undefined,
           order_status: "PLACED", // Start as PLACED so it shows in Live Orders immediately
           payment_status: "UNPAID",
-          payment_mode:
-            action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : action === "stripe" ? "online" : "online",
+          payment_mode: action === "till" ? "pay_at_till" : action === "later" ? "pay_later" : action === "stripe" ? "online" : "online", // Use actual database values
           payment_method: action === "demo" ? "demo" : action === "till" ? "till" : null,
           // NOTE: session_id is NOT a database column - don't send it
           source: checkoutData.source || "qr",
         };
 
+        // Log the EXACT data being sent
+        console.log("📤 [PAYMENT PROCESSING] Order data prepared (FULL):", JSON.stringify(orderData, null, 2));
+        
         logger.info("📤 [PAYMENT PROCESSING] Order data prepared:", {
-          orderData: {
-            venue_id: orderData.venue_id,
-            table_number: orderData.table_number,
-            customer_name: orderData.customer_name,
-            items_count: orderData.items.length,
-            total_amount: orderData.total_amount,
-            order_status: orderData.order_status,
-            payment_status: orderData.payment_status,
-            payment_mode: orderData.payment_mode,
-            payment_method: orderData.payment_method,
-            source: orderData.source,
-          },
+          venue_id: orderData.venue_id,
+          table_number: orderData.table_number,
+          customer_name: orderData.customer_name,
+          items_count: orderData.items.length,
+          items: orderData.items.map((item, idx) => ({
+            index: idx,
+            menu_item_id: item.menu_item_id,
+            item_name: item.item_name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total_amount: orderData.total_amount,
+          order_status: orderData.order_status,
+          payment_status: orderData.payment_status,
+          payment_mode: orderData.payment_mode,
+          payment_method: orderData.payment_method,
+          source: orderData.source,
         });
 
         // Check if offline - queue order if offline
