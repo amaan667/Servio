@@ -55,12 +55,16 @@ export function usePaymentProcessing() {
           customer_name: checkoutData.customerName,
           customer_phone: checkoutData.customerPhone,
           items: checkoutData.cart.map((item) => {
-            // Generate a valid UUID if item.id is missing or invalid
-            let menuItemId = item.id;
-            if (!menuItemId || menuItemId === "unknown" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(menuItemId)) {
-              // Create a deterministic UUID from item name for tracking purposes
-              menuItemId = `00000000-0000-0000-0000-${Buffer.from(item.name || 'unknown').toString('hex').slice(0, 12).padStart(12, '0')}`;
+            // Validate and fix menu_item_id - must be valid UUID or null
+            let menuItemId: string | null = null;
+            if (item.id && item.id !== "unknown") {
+              // Check if it's a valid UUID
+              const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+              if (uuidRegex.test(item.id)) {
+                menuItemId = item.id;
+              }
             }
+            // If no valid UUID, use null (schema should accept null)
             
             return {
               menu_item_id: menuItemId,
@@ -159,13 +163,20 @@ export function usePaymentProcessing() {
             };
           }
 
-          // Extract error message from response
+          // Extract error message from response - LOG THE FULL ERROR FIRST
           let errorMessage = `Failed to create order (${createOrderResponse.status})`;
+          let fullErrorResponse: unknown = null;
+          
           try {
             const responseText = await createOrderResponse.text();
+            console.error("❌ [PAYMENT PROCESSING] Full error response text:", responseText);
+            
             if (responseText) {
               try {
                 const errorData = JSON.parse(responseText);
+                fullErrorResponse = errorData;
+                console.error("❌ [PAYMENT PROCESSING] Parsed error response:", JSON.stringify(errorData, null, 2));
+                
                 // Handle multiple possible error response formats
                 if (errorData.message && typeof errorData.message === "string") {
                   errorMessage = errorData.message;
@@ -174,19 +185,33 @@ export function usePaymentProcessing() {
                 } else if (Array.isArray(errorData.details)) {
                   // Handle Zod validation errors with details array
                   const messages = errorData.details
-                    .map((detail: { message?: string }) => detail?.message)
+                    .map((detail: { message?: string; path?: string }) => {
+                      const path = detail.path ? `${detail.path}: ` : "";
+                      return `${path}${detail.message || ""}`;
+                    })
                     .filter(Boolean);
-                  errorMessage = messages.length > 0 ? messages.join(", ") : errorMessage;
+                  errorMessage = messages.length > 0 ? `Validation error: ${messages.join("; ")}` : errorMessage;
                 } else if (typeof errorData === "string") {
                   errorMessage = errorData;
                 }
+                
+                // Log validation errors in detail
+                if (errorData.details && Array.isArray(errorData.details)) {
+                  console.error("❌ [PAYMENT PROCESSING] Validation errors:", errorData.details);
+                  logger.error("[PAYMENT] ❌ Validation error details:", {
+                    details: errorData.details,
+                    fullError: errorData,
+                  });
+                }
               } catch {
                 // If not JSON, use the text directly (limit length)
+                console.error("❌ [PAYMENT PROCESSING] Error response is not JSON:", responseText);
                 errorMessage = responseText.length > 200 ? responseText.substring(0, 200) + "..." : responseText;
               }
             }
           } catch (textError) {
             logger.error("[PAYMENT] ❌ Error parsing order creation error:", textError);
+            console.error("❌ [PAYMENT PROCESSING] Failed to read error response:", textError);
             // Keep default error message
           }
           
@@ -194,7 +219,15 @@ export function usePaymentProcessing() {
             status: createOrderResponse.status,
             statusText: createOrderResponse.statusText,
             errorMessage,
+            fullErrorResponse,
             url: "/api/orders",
+            orderData: JSON.stringify(orderData, null, 2),
+          });
+          
+          console.error("❌ [PAYMENT PROCESSING] Order creation failed with:", {
+            status: createOrderResponse.status,
+            errorMessage,
+            fullError: fullErrorResponse,
           });
           
           throw new Error(errorMessage);

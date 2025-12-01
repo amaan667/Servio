@@ -77,8 +77,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 3: Attempt to update order
+    // Keep payment_status as UNPAID so order shows in Payments page for staff to mark as paid
     const updateData = {
-      payment_status: "TILL",
+      payment_status: "UNPAID", // Keep as UNPAID so it shows in Payments page
+      payment_mode: "pay_at_till", // Ensure payment_mode is set
       payment_method: "till",
       updated_at: new Date().toISOString(),
     };
@@ -124,7 +126,8 @@ export async function POST(req: NextRequest) {
       order_number: order.order_number,
       data: {
         order_id: order.id,
-        payment_status: "TILL",
+        payment_status: "UNPAID", // Keep as UNPAID so it shows in Payments page
+        payment_mode: "pay_at_till",
         payment_method: "till",
         total_amount: order.total_amount,
       },

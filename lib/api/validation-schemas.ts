@@ -15,7 +15,19 @@ const nonEmptyString = z.string().min(1, "Cannot be empty");
 const positiveNumber = z.number().positive("Must be positive");
 const nonNegativeNumber = z.number().nonnegative("Cannot be negative");
 const email = z.string().email("Invalid email format");
-const phone = z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format");
+// More flexible phone validation - accepts various formats
+const phone = z.string()
+  .min(1, "Phone number is required")
+  .refine(
+    (val) => {
+      // Remove all non-digit characters except +
+      const cleaned = val.replace(/[^\d+]/g, "");
+      // Must have at least 7 digits
+      const digitsOnly = cleaned.replace(/\+/g, "");
+      return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+    },
+    { message: "Phone number must be between 7 and 15 digits" }
+  );
 const url = z.string().url("Invalid URL format");
 
 /**

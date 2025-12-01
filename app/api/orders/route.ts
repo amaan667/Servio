@@ -274,53 +274,107 @@ async function createKDSTickets(
         specialInstructions?: string;
       };
 
-      // Smart station routing based on item name
-      const itemName = (itemData.item_name || "").toLowerCase();
+      // LLM-based station routing for intelligent assignment
+      const itemName = itemData.item_name || "Unknown Item";
       let assignedStation = expoStation;
 
-      // Route to appropriate station based on item keywords
-      if (
-        itemName.includes("coffee") ||
-        itemName.includes("latte") ||
-        itemName.includes("cappuccino") ||
-        itemName.includes("espresso") ||
-        itemName.includes("tea") ||
-        itemName.includes("drink")
-      ) {
-        const baristaStation = existingStations.find(
-          (s: Record<string, unknown>) =>
-            (s as { station_type?: string }).station_type === "barista"
+      // Try LLM-based assignment (with timeout to prevent blocking)
+      try {
+        const stationTypes = existingStations.map(
+          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type || "expo"
         );
-        if (baristaStation) assignedStation = baristaStation;
-      } else if (
-        itemName.includes("burger") ||
-        itemName.includes("steak") ||
-        itemName.includes("chicken") ||
-        itemName.includes("grill")
-      ) {
-        const grillStation = existingStations.find(
-          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "grill"
+        const stationNames = existingStations.map(
+          (s: Record<string, unknown>) => (s as { station_name?: string }).station_name || "Expo"
         );
-        if (grillStation) assignedStation = grillStation;
-      } else if (
-        itemName.includes("fries") ||
-        itemName.includes("chips") ||
-        itemName.includes("fried") ||
-        itemName.includes("fryer")
-      ) {
-        const fryerStation = existingStations.find(
-          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "fryer"
+
+        // Call LLM API with timeout
+        const llmPromise = fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/ai/simple-chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Menu item: "${itemName}". Available stations: ${stationNames.join(", ")} (types: ${stationTypes.join(", ")}). Return ONLY the station type (barista/grill/fryer/cold/expo) - no other text.`,
+            venueId: order.venue_id,
+          }),
+        });
+
+        const timeoutPromise = new Promise<Response>((_, reject) =>
+          setTimeout(() => reject(new Error("LLM timeout")), 2000)
         );
-        if (fryerStation) assignedStation = fryerStation;
-      } else if (
-        itemName.includes("salad") ||
-        itemName.includes("sandwich") ||
-        itemName.includes("cold")
-      ) {
-        const coldStation = existingStations.find(
-          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "cold"
-        );
-        if (coldStation) assignedStation = coldStation;
+
+        const llmResponse = await Promise.race([llmPromise, timeoutPromise]);
+
+        if (llmResponse.ok) {
+          const llmResult = await llmResponse.json();
+          const suggestedType = (llmResult.response || "").toLowerCase().trim().replace(/[^a-z]/g, "");
+          
+          // Find station matching LLM suggestion
+          const suggestedStation = existingStations.find(
+            (s: Record<string, unknown>) =>
+              ((s as { station_type?: string }).station_type || "").toLowerCase() === suggestedType
+          );
+          
+          if (suggestedStation) {
+            assignedStation = suggestedStation;
+            logger.debug("[KDS TICKETS] LLM assigned station", {
+              item: itemName,
+              station: (assignedStation as { station_type?: string }).station_type,
+            });
+          }
+        }
+      } catch (llmError) {
+        // LLM failed or timed out - will use keyword fallback
+        logger.debug("[KDS TICKETS] LLM unavailable, using keyword fallback", {
+          item: itemName,
+        });
+      }
+
+      // Fallback: Keyword-based routing if LLM didn't assign
+      if (assignedStation === expoStation) {
+        const itemNameLower = itemName.toLowerCase();
+        
+        if (
+          itemNameLower.includes("coffee") ||
+          itemNameLower.includes("latte") ||
+          itemNameLower.includes("cappuccino") ||
+          itemNameLower.includes("espresso") ||
+          itemNameLower.includes("tea") ||
+          itemNameLower.includes("drink")
+        ) {
+          const baristaStation = existingStations.find(
+            (s: Record<string, unknown>) =>
+              (s as { station_type?: string }).station_type === "barista"
+          );
+          if (baristaStation) assignedStation = baristaStation;
+        } else if (
+          itemNameLower.includes("burger") ||
+          itemNameLower.includes("steak") ||
+          itemNameLower.includes("chicken") ||
+          itemNameLower.includes("grill")
+        ) {
+          const grillStation = existingStations.find(
+            (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "grill"
+          );
+          if (grillStation) assignedStation = grillStation;
+        } else if (
+          itemNameLower.includes("fries") ||
+          itemNameLower.includes("chips") ||
+          itemNameLower.includes("fried") ||
+          itemNameLower.includes("fryer")
+        ) {
+          const fryerStation = existingStations.find(
+            (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "fryer"
+          );
+          if (fryerStation) assignedStation = fryerStation;
+        } else if (
+          itemNameLower.includes("salad") ||
+          itemNameLower.includes("sandwich") ||
+          itemNameLower.includes("cold")
+        ) {
+          const coldStation = existingStations.find(
+            (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "cold"
+          );
+          if (coldStation) assignedStation = coldStation;
+        }
       }
 
       const ticketData = {

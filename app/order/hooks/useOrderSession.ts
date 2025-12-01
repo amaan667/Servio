@@ -101,6 +101,37 @@ export function useOrderSession(orderParams: OrderParams) {
           });
 
           if (orderInDb) {
+            // If order has payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            if (orderInDb.payment_mode === "pay_later" && orderInDb.payment_status === "UNPAID") {
+              logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
+                orderId: orderData.orderId,
+              });
+              
+              // Create Stripe checkout session for pay later order
+              const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  amount: orderData.total,
+                  customerEmail: orderData.customerEmail || "customer@email.com",
+                  customerName: orderData.customerName,
+                  venueName: "Restaurant",
+                  orderId: orderData.orderId,
+                }),
+              });
+
+              const checkoutResult = await checkoutResponse.json();
+              if (checkoutResponse.ok && checkoutResult.url) {
+                window.location.href = checkoutResult.url;
+                return;
+              } else {
+                logger.error("[ORDER SESSION] Failed to create Stripe checkout for pay later order", {
+                  error: checkoutResult.error,
+                });
+                // Fall through to regular payment page
+              }
+            }
+            
             logger.info("✅ [ORDER SESSION] Redirecting to payment", {
               orderId: orderData.orderId,
             });
@@ -166,6 +197,37 @@ export function useOrderSession(orderParams: OrderParams) {
           }
 
           if (sessionOrderInDb) {
+            // If order has payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            if (sessionOrderInDb.payment_mode === "pay_later" && sessionOrderInDb.payment_status === "UNPAID") {
+              logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
+                orderId: orderData.orderId,
+              });
+              
+              // Create Stripe checkout session for pay later order
+              const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  amount: orderData.total,
+                  customerEmail: orderData.customerEmail || "customer@email.com",
+                  customerName: orderData.customerName,
+                  venueName: "Restaurant",
+                  orderId: orderData.orderId,
+                }),
+              });
+
+              const checkoutResult = await checkoutResponse.json();
+              if (checkoutResponse.ok && checkoutResult.url) {
+                window.location.href = checkoutResult.url;
+                return;
+              } else {
+                logger.error("[ORDER SESSION] Failed to create Stripe checkout for pay later order", {
+                  error: checkoutResult.error,
+                });
+                // Fall through to regular payment page
+              }
+            }
+            
             // Check if there are multiple unpaid orders for this table
             // If so, show table payment screen instead of single order payment
             try {
