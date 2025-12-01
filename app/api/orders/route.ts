@@ -827,7 +827,7 @@ export async function POST(req: NextRequest) {
       payment_mode: payload.payment_mode || "online",
       payment_method: payload.payment_method ?? null,
       source: payload.source || "qr",
-      is_active: payload.is_active ?? true,
+      // NOTE: is_active is a generated column in the database, don't include it in insert
       created_at: now,
       updated_at: now,
     };
