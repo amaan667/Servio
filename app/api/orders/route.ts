@@ -162,7 +162,9 @@ type OrderPayload = {
 };
 
 // Legacy helper - use apiErrors instead
-function bad(msg: string, status = 400) {
+function bad(msg: string, status = 400, requestId?: string) {
+  // Log error to Railway using console.error
+  console.error(`❌ [ORDERS API ${requestId || 'unknown'}] Error: ${msg}`, { status, requestId });
   if (status === 403) return apiErrors.forbidden(msg);
   if (status === 404) return apiErrors.notFound(msg);
   if (status === 500) return apiErrors.internal(msg);
@@ -551,9 +553,11 @@ export async function POST(req: NextRequest) {
         }, null, 2));
         return handleZodError(validationError);
       }
-      logger.error(`❌ [ORDERS API ${requestId}] Non-Zod validation error:`, {
+      console.error(`❌ [ORDERS API ${requestId}] Non-Zod validation error:`, JSON.stringify({
         error: validationError instanceof Error ? validationError.message : String(validationError),
-      });
+        errorType: validationError instanceof Error ? validationError.constructor.name : typeof validationError,
+        requestId,
+      }, null, 2));
       return apiErrors.validation("Invalid order data");
     }
 
@@ -588,15 +592,14 @@ export async function POST(req: NextRequest) {
       .eq("venue_id", venueId)
       .maybeSingle();
 
-    if (venueErr) {
-      return bad(`Failed to verify venue: ${venueErr.message}`, 500);
+      if (venueErr) {
+      console.error(`❌ [ORDERS API ${requestId}] Venue lookup error:`, JSON.stringify(venueErr, null, 2));
+      return bad(`Failed to verify venue: ${venueErr.message}`, 500, requestId);
     }
 
     if (!venue) {
-      logger.error("[ORDERS POST] Venue not found", {
-        venueId,
-      });
-      return bad("Venue not found", 404);
+      console.error(`❌ [ORDERS API ${requestId}] Venue not found:`, { venueId, requestId });
+      return bad("Venue not found", 404, requestId);
     }
 
     // Auto-create table if it doesn't exist (for QR code scenarios)
@@ -666,10 +669,12 @@ export async function POST(req: NextRequest) {
             if (existingTableAfterError) {
               tableId = existingTableAfterError.id;
             } else {
-              return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+              console.error(`❌ [ORDERS API ${requestId}] Failed to create table:`, { error: tableCreateErr.message, requestId });
+              return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
             }
           } else {
-            return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+            console.error(`❌ [ORDERS API ${requestId}] Failed to create table:`, { error: tableCreateErr.message, requestId });
+            return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
           }
         } else {
           tableId = newTable.id;
@@ -900,12 +905,14 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return bad(`Insert failed: ${errorMessage}`, 400);
+      console.error(`❌ [ORDERS API ${requestId}] Insert failed:`, { errorMessage, requestId });
+      return bad(`Insert failed: ${errorMessage}`, 400, requestId);
     }
 
     if (!inserted || inserted.length === 0) {
       logger.error("❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌", { requestId });
-      return bad("Order creation failed - no data returned", 500);
+      console.error(`❌ [ORDERS API ${requestId}] Order creation failed - no data returned from database`);
+      return bad("Order creation failed - no data returned", 500, requestId);
     }
     logger.info("🎉🎉🎉 ORDER CREATED IN DATABASE 🎉🎉🎉", {
       orderId: inserted[0].id,
@@ -985,7 +992,8 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (fetchError || !fetchedOrder) {
-        return bad("Order creation failed: No order data returned from database", 500);
+        console.error(`❌ [ORDERS API ${requestId}] Order creation failed: No order data returned from database`, { fetchError, requestId });
+        return bad("Order creation failed: No order data returned from database", 500, requestId);
       }
 
       createdOrder = fetchedOrder;
@@ -1035,12 +1043,12 @@ export async function POST(req: NextRequest) {
       const errorStack = _error instanceof Error ? _error.stack : undefined;
       const duration = Date.now() - startTime;
 
-      logger.error("❌❌❌ ORDER CREATION FAILED ❌❌❌", {
+      console.error(`❌ [ORDERS API ${requestId}] ORDER CREATION FAILED`, JSON.stringify({
         error: errorMessage,
         stack: errorStack,
         duration: `${duration}ms`,
         requestId,
-      });
+      }, null, 2));
 
       // Check if it's an authentication/authorization error
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
