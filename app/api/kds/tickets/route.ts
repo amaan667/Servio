@@ -15,17 +15,41 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
   try {
     const adminSupabase = createAdminClient();
 
-    // Get today's orders that should have KDS tickets but don't
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    // CRITICAL: Query ALL orders - no date restrictions, no status filters
+    // CRITICAL: Get ALL orders - NO date restrictions, NO status filters, NO subquery limitations
     // User wants ALL items from EVERY order to always be visible
-    const { data: ordersWithoutTickets, error: queryError } = await adminSupabase
+
+    // Step 1: Get ALL orders from this venue
+    const { data: allOrders, error: allOrdersError } = await adminSupabase
       .from("orders")
       .select("id")
-      .eq("venue_id", venueId)
-      .not("id", "in", `(SELECT DISTINCT order_id FROM kds_tickets WHERE venue_id = '${venueId}')`);
+      .eq("venue_id", venueId);
+
+    if (allOrdersError) {
+      logger.error("[KDS AUTO-BACKFILL] Error querying all orders:", {
+        error: allOrdersError.message,
+        venueId,
+      });
+      return false;
+    }
+
+    if (!allOrders || allOrders.length === 0) {
+      return false;
+    }
+
+    // Step 2: Get all existing ticket order IDs
+    const { data: existingTicketOrders } = await adminSupabase
+      .from("kds_tickets")
+      .select("order_id")
+      .eq("venue_id", venueId);
+
+    const existingOrderIds = new Set(
+      (existingTicketOrders || []).map((t: { order_id: string }) => t.order_id)
+    );
+
+    // Step 3: Filter to orders without tickets (in JavaScript - more reliable)
+    const ordersWithoutTickets = allOrders.filter(
+      (order) => !existingOrderIds.has(order.id)
+    );
 
     if (queryError) {
       logger.error("[KDS AUTO-BACKFILL] Error querying orders:", {
