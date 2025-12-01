@@ -819,7 +819,7 @@ export async function POST(req: NextRequest) {
       table_id: payload.table_id ?? null,
       customer_name: payload.customer_name,
       customer_phone: payload.customer_phone,
-      customer_email: validatedOrderBody.customer_email ?? null, // Include customer_email if provided
+      customer_email: (validatedOrderBody as { customer_email?: string | null }).customer_email ?? null, // Include customer_email if provided
       items: payload.items,
       total_amount: payload.total_amount,
       notes: payload.notes ?? null,
