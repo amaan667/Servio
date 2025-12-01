@@ -9,7 +9,7 @@ import { Receipt, Download, CheckCircle, Split, CreditCard, Clock } from "lucide
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
-import { Order } from "@/types/order";
+import { Order, type OrderStatus } from "@/types/order";
 import { detectColorsFromImage } from "@/app/dashboard/[venueId]/menu-management/utils/colorDetection";
 import { BillSplittingDialog } from "@/components/pos/BillSplittingDialog";
 
@@ -114,12 +114,24 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       });
 
       // Fetch pay-at-till orders (UNPAID with payment_mode = pay_at_till)
+      const activeStatuses: OrderStatus[] = [
+        "PLACED",
+        "ACCEPTED",
+        "IN_PREP",
+        "READY",
+        "SERVING",
+        "SERVED",
+      ];
+
       const { data: payAtTillData } = await supabase
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
         .eq("payment_status", "UNPAID")
         .eq("payment_mode", "pay_at_till")
+        // Only include currently active orders awaiting pay-at-till payment.
+        // This clears out old unpaid orders that were already completed or cancelled.
+        .in("order_status", activeStatuses)
         .order("created_at", { ascending: false });
 
       setPayAtTillOrders((payAtTillData || []) as PaymentOrder[]);
