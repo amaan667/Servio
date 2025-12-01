@@ -8,6 +8,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { isDevelopment } from '@/lib/env';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 import { validateBody, createOrderSchema } from '@/lib/api/validation-schemas';
+import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export const runtime = "nodejs";
 
@@ -171,249 +172,24 @@ function bad(msg: string, status = 400, requestId?: string) {
   return apiErrors.badRequest(msg);
 }
 
-// Function to create KDS tickets for an order
+// Wrapper function for backward compatibility
 async function createKDSTickets(
   supabase: SupabaseClient,
-  order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }
+  order: { id: string; venue_id: string; items?: Array<Record<string, unknown>>; customer_name?: string; table_number?: number | null; table_id?: string }
 ) {
-  try {
-    // First, ensure KDS stations exist for this venue
-    const { data: existingStations } = await supabase
-      .from("kds_stations")
-      .select("id, station_type")
-      .eq("venue_id", order.venue_id)
-      .eq("is_active", true);
-
-    if (!existingStations || existingStations.length === 0) {
-      logger.debug("[KDS TICKETS] No stations found, creating default stations for venue", {
-        extra: { venueId: order.venue_id },
-      });
-
-      // Create default stations
-      const defaultStations = [
-        { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
-        { name: "Grill", type: "grill", order: 1, color: "#ef4444" },
-        { name: "Fryer", type: "fryer", order: 2, color: "#f59e0b" },
-        { name: "Barista", type: "barista", order: 3, color: "#8b5cf6" },
-        { name: "Cold Prep", type: "cold", order: 4, color: "#06b6d4" },
-      ];
-
-      for (const station of defaultStations) {
-        await supabase.from("kds_stations").upsert(
-          {
-            venue_id: order.venue_id,
-            station_name: station.name,
-            station_type: station.type,
-            display_order: station.order,
-            color_code: station.color,
-            is_active: true,
-          },
-          {
-            onConflict: "venue_id,station_name",
-          }
-        );
-      }
-
-      // Fetch stations again
-      const { data: stations } = await supabase
-        .from("kds_stations")
-        .select("id, station_type")
-        .eq("venue_id", order.venue_id)
-        .eq("is_active", true);
-
-      if (!stations || stations.length === 0) {
-        throw new Error("Failed to create KDS stations");
-      }
-
-      if (existingStations) {
-        existingStations.push(...stations);
-      }
-    }
-
-    // Get the expo station (default for all items)
-    if (!existingStations || existingStations.length === 0) {
-      throw new Error("No KDS stations available");
-    }
-
-    const expoStation =
-      existingStations.find(
-        (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "expo"
-      ) || existingStations[0];
-
-    if (!expoStation) {
-      throw new Error("No KDS station available");
-    }
-
-    // Get customer name from order
-    const customerName = (order as Record<string, unknown>).customer_name as string | undefined;
-    const tableNumber = (order as Record<string, unknown>).table_number as number | null;
-
-    // Get actual table label if table_id exists
-    let tableLabel = customerName || "Guest"; // Default to customer name
-    const tableId = (order as Record<string, unknown>).table_id as string | undefined;
-
-    if (tableId) {
-      const { data: tableData } = await supabase
-        .from("tables")
-        .select("label")
-        .eq("id", tableId)
-        .single();
-
-      if (tableData?.label) {
-        tableLabel = tableData.label;
-      }
-    } else if (tableNumber) {
-      tableLabel = `Table ${tableNumber}`;
-    }
-
-    // Create tickets for each order item
-    const items = Array.isArray(order.items) ? (order.items as Array<Record<string, unknown>>) : [];
-
-    for (const item of items) {
-      const itemData = item as {
-        item_name?: string;
-        quantity?: string | number;
-        specialInstructions?: string;
-      };
-
-      // LLM-based station routing for intelligent assignment
-      const itemName = itemData.item_name || "Unknown Item";
-      let assignedStation = expoStation;
-
-      // Try LLM-based assignment (with timeout to prevent blocking)
-      try {
-        const stationTypes = existingStations.map(
-          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type || "expo"
-        );
-        const stationNames = existingStations.map(
-          (s: Record<string, unknown>) => (s as { station_name?: string }).station_name || "Expo"
-        );
-
-        // Call LLM API with timeout
-        const llmPromise = fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/ai/simple-chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: `Menu item: "${itemName}". Available stations: ${stationNames.join(", ")} (types: ${stationTypes.join(", ")}). Return ONLY the station type (barista/grill/fryer/cold/expo) - no other text.`,
-            venueId: order.venue_id,
-          }),
-        });
-
-        const timeoutPromise = new Promise<Response>((_, reject) =>
-          setTimeout(() => reject(new Error("LLM timeout")), 2000)
-        );
-
-        const llmResponse = await Promise.race([llmPromise, timeoutPromise]);
-
-        if (llmResponse.ok) {
-          const llmResult = await llmResponse.json();
-          const suggestedType = (llmResult.response || "").toLowerCase().trim().replace(/[^a-z]/g, "");
-          
-          // Find station matching LLM suggestion
-          const suggestedStation = existingStations.find(
-            (s: Record<string, unknown>) =>
-              ((s as { station_type?: string }).station_type || "").toLowerCase() === suggestedType
-          );
-          
-          if (suggestedStation) {
-            assignedStation = suggestedStation;
-            logger.debug("[KDS TICKETS] LLM assigned station", {
-              item: itemName,
-              station: (assignedStation as { station_type?: string }).station_type,
-            });
-          }
-        }
-      } catch (llmError) {
-        // LLM failed or timed out - will use keyword fallback
-        logger.debug("[KDS TICKETS] LLM unavailable, using keyword fallback", {
-          item: itemName,
-        });
-      }
-
-      // Fallback: Keyword-based routing if LLM didn't assign
-      if (assignedStation === expoStation) {
-        const itemNameLower = itemName.toLowerCase();
-        
-        if (
-          itemNameLower.includes("coffee") ||
-          itemNameLower.includes("latte") ||
-          itemNameLower.includes("cappuccino") ||
-          itemNameLower.includes("espresso") ||
-          itemNameLower.includes("tea") ||
-          itemNameLower.includes("drink")
-        ) {
-          const baristaStation = existingStations.find(
-            (s: Record<string, unknown>) =>
-              (s as { station_type?: string }).station_type === "barista"
-          );
-          if (baristaStation) assignedStation = baristaStation;
-        } else if (
-          itemNameLower.includes("burger") ||
-          itemNameLower.includes("steak") ||
-          itemNameLower.includes("chicken") ||
-          itemNameLower.includes("grill")
-        ) {
-          const grillStation = existingStations.find(
-            (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "grill"
-          );
-          if (grillStation) assignedStation = grillStation;
-        } else if (
-          itemNameLower.includes("fries") ||
-          itemNameLower.includes("chips") ||
-          itemNameLower.includes("fried") ||
-          itemNameLower.includes("fryer")
-        ) {
-          const fryerStation = existingStations.find(
-            (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "fryer"
-          );
-          if (fryerStation) assignedStation = fryerStation;
-        } else if (
-          itemNameLower.includes("salad") ||
-          itemNameLower.includes("sandwich") ||
-          itemNameLower.includes("cold")
-        ) {
-          const coldStation = existingStations.find(
-            (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "cold"
-          );
-          if (coldStation) assignedStation = coldStation;
-        }
-      }
-
-      const ticketData = {
-        venue_id: order.venue_id,
-        order_id: order.id,
-        station_id: (assignedStation as { id: string }).id,
-        item_name: itemData.item_name || "Unknown Item",
-        quantity:
-          typeof itemData.quantity === "string"
-            ? parseInt(itemData.quantity)
-            : itemData.quantity || 1,
-        special_instructions: itemData.specialInstructions || null,
-        modifiers: (itemData as { modifiers?: unknown }).modifiers || null,
-        table_number: tableNumber,
-        table_label: tableLabel,
-        status: "new",
-      };
-
-      const { error: ticketError } = await supabase.from("kds_tickets").insert(ticketData);
-
-      if (ticketError) {
-        logger.error("[KDS TICKETS] Failed to create ticket for item:", {
-          error: { item, context: ticketError },
-        });
-        throw ticketError;
-      }
-    }
-
-    logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
-      data: { count: items.length, orderId: order.id },
-    });
-  } catch (_error) {
-    logger.error("[KDS TICKETS] Error creating KDS tickets:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    throw _error;
-  }
+  return createKDSTicketsWithAI(supabase, {
+    id: order.id,
+    venue_id: order.venue_id,
+    items: order.items as Array<{
+      item_name?: string;
+      quantity?: string | number;
+      specialInstructions?: string;
+      modifiers?: unknown;
+    }>,
+    customer_name: order.customer_name,
+    table_number: order.table_number,
+    table_id: order.table_id,
+  });
 }
 
 /**

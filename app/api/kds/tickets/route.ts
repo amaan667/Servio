@@ -7,6 +7,7 @@ import { isDevelopment } from '@/lib/env';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 import { z } from 'zod';
 import { validateBody } from '@/lib/api/validation-schemas';
+import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 // Function to automatically backfill missing KDS tickets for orders
 // Returns true if tickets were created, false otherwise
@@ -35,51 +36,33 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
       `[KDS AUTO-BACKFILL] Found ${ordersWithoutTickets.length} orders without KDS tickets, creating tickets...`
     );
 
-    // Get expo station for this venue
-    const { data: expoStation } = await adminSupabase
-      .from("kds_stations")
-      .select("id")
-      .eq("venue_id", venueId)
-      .eq("station_type", "expo")
-      .eq("is_active", true)
-      .limit(1)
-      .single();
-
-    if (!expoStation) {
-      return false;
-    }
-
     let ticketsCreated = 0;
 
-    // Create tickets for orders without them
+    // Create tickets for orders without them using unified AI-based function
     for (const orderRef of ordersWithoutTickets) {
       const { data: order } = await adminSupabase
         .from("orders")
-        .select("id, venue_id, table_number, table_id, items")
+        .select("id, venue_id, table_number, table_id, items, customer_name")
         .eq("id", orderRef.id)
         .single();
 
       if (!order || !Array.isArray(order.items)) continue;
 
-      // Create tickets for each item
-      for (const item of order.items) {
-        const ticketData = {
+      try {
+        await createKDSTicketsWithAI(adminSupabase, {
+          id: order.id,
           venue_id: order.venue_id,
-          order_id: order.id,
-          station_id: expoStation.id,
-          item_name: item.item_name || "Unknown Item",
-          quantity: parseInt(String(item.quantity)) || 1,
-          special_instructions: item.specialInstructions || null,
-          modifiers: (item as { modifiers?: unknown }).modifiers || null,
+          items: order.items,
+          customer_name: order.customer_name,
           table_number: order.table_number,
-          table_label: order.table_id || order.table_number?.toString() || "Unknown",
-          status: "new",
-        };
-
-        const { error } = await adminSupabase.from("kds_tickets").insert(ticketData);
-        if (!error) {
-          ticketsCreated++;
-        }
+          table_id: order.table_id,
+        });
+        ticketsCreated += order.items.length;
+      } catch (error) {
+        logger.error("[KDS AUTO-BACKFILL] Failed to create tickets for order:", {
+          orderId: order.id,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }
 

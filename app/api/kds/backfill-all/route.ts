@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export const runtime = "nodejs";
 
@@ -107,23 +108,13 @@ export const POST = withUnifiedAuth(
         }
       }
 
-      // Get the expo station (default for all items)
-      if (!existingStations || existingStations.length === 0) {
-        throw new Error("No KDS stations available");
-      }
-
-      const expoStation =
-        existingStations.find((s: KDSStation) => s.station_type === "expo") || existingStations[0];
-
-      if (!expoStation) {
-        throw new Error("No KDS station available");
-      }
+      // Stations will be ensured by createKDSTicketsWithAI
 
       // Build query for orders based on scope
       let query = supabase
         .from("orders")
         .select(
-          "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at"
+          "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at, customer_name"
         )
         .eq("venue_id", finalVenueId)
         .in("payment_status", ["PAID", "UNPAID"]) // Only active orders
@@ -175,37 +166,28 @@ export const POST = withUnifiedAuth(
             continue;
           }
 
-          // Create tickets for each order item
+          // Create tickets using unified AI-based function
           const items = Array.isArray(order.items) ? order.items : [];
-
-          for (const item of items) {
-            const ticketData = {
+          
+          try {
+            await createKDSTicketsWithAI(supabase, {
+              id: order.id,
               venue_id: order.venue_id,
-              order_id: order.id,
-              station_id: expoStation.id,
-              item_name: item.item_name || "Unknown Item",
-              quantity: parseInt(item.quantity) || 1,
-              special_instructions: item.specialInstructions || null,
+              items: items,
+              customer_name: order.customer_name,
               table_number: order.table_number,
-              table_label: order.table_id || order.table_number?.toString() || "Unknown",
-              status: "new",
-            };
-
-            const { error: ticketError } = await supabase
-              .from("kds_tickets")
-              .insert(ticketData);
-
-            if (ticketError) {
-              logger.error("[KDS BACKFILL ALL] Failed to create ticket for item:", {
-                error: { item, context: ticketError.message },
-              });
-              scopeErrors.push(
-                `Failed to create ticket for order ${order.id}: ${ticketError.message}`
-              );
-              continue;
-            }
-
-            scopeTicketsCreated++;
+              table_id: order.table_id,
+            });
+            scopeTicketsCreated += items.length;
+          } catch (ticketError) {
+            logger.error("[KDS BACKFILL ALL] Failed to create tickets for order:", {
+              error: ticketError instanceof Error ? ticketError.message : "Unknown error",
+              orderId: order.id,
+            });
+            scopeErrors.push(
+              `Failed to create tickets for order ${order.id}: ${ticketError instanceof Error ? ticketError.message : "Unknown error"}`
+            );
+            continue;
           }
 
           scopeOrdersProcessed++;
