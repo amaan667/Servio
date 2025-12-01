@@ -615,7 +615,8 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (lookupError) {
-        return bad(`Failed to check existing tables: ${lookupError.message}`, 500);
+        console.error(`❌ [ORDERS API ${requestId}] Failed to check existing tables:`, { error: lookupError.message, requestId });
+        return bad(`Failed to check existing tables: ${lookupError.message}`, 500, requestId);
       }
 
       if (existingTable) {
