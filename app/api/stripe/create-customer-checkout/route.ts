@@ -27,8 +27,19 @@ const createCustomerCheckoutSchema = z.object({
  */
 export async function POST(req: Request) {
   try {
-    const body = await validateBody(createCustomerCheckoutSchema, await req.json());
+    const rawBody = await req.json();
+    console.log("💳 [STRIPE CHECKOUT API] ===== REQUEST RECEIVED =====", {
+      timestamp: new Date().toISOString(),
+      rawBody: JSON.stringify(rawBody, null, 2),
+    });
 
+    const body = await validateBody(createCustomerCheckoutSchema, rawBody);
+
+    console.log("💳 [STRIPE CHECKOUT API] Validation passed, creating session...", {
+      amount: body.amount,
+      orderId: body.orderId,
+      hasEmail: !!body.customerEmail,
+    });
     logger.info("💳 Creating Stripe customer checkout session", {
       amount: body.amount,
       customerName: body.customerName,
@@ -63,6 +74,11 @@ export async function POST(req: Request) {
       customer_email: body.customerEmail || undefined,
     });
 
+    console.log("💳 [STRIPE CHECKOUT API] ✅ Stripe session created successfully", {
+      sessionId: session.id,
+      orderId: body.orderId,
+      url: session.url?.substring(0, 50) + "...",
+    });
     logger.info("✅ Stripe checkout session created", {
       sessionId: session.id,
       orderId: body.orderId,
@@ -101,10 +117,15 @@ export async function POST(req: Request) {
       // Don't fail the request - webhook can still find order by orderId in metadata
     }
 
-    return success({
+    const responseData = {
       sessionId: session.id,
       url: session.url,
-    });
+    };
+    console.log("💳 [STRIPE CHECKOUT API] Returning response:", JSON.stringify({
+      success: true,
+      data: responseData,
+    }, null, 2));
+    return success(responseData);
   } catch (error) {
     logger.error("❌ Error creating Stripe checkout session:", {
       error: error instanceof Error ? error.message : String(error),

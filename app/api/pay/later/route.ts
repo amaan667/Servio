@@ -25,6 +25,13 @@ export async function POST(req: NextRequest) {
 
     const { order_id, venue_id, sessionId } = body;
 
+    console.log("⏰ [PAY LATER API] ===== REQUEST RECEIVED =====", {
+      orderId: order_id,
+      venueId: venue_id,
+      sessionId,
+      timestamp: new Date().toISOString(),
+      fullBody: JSON.stringify(body, null, 2),
+    });
     logger.info("⏰ [PAY LATER] Pay later requested", {
       orderId: order_id,
       sessionId,
@@ -66,6 +73,16 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
+      console.error("⏰ [PAY LATER API] ❌ ORDER NOT FOUND", {
+        orderId: order_id,
+        venueId: venue_id,
+        checkError: checkError ? {
+          message: checkError.message,
+          code: checkError.code,
+          details: checkError.details,
+        } : null,
+        orderCheckResult: orderCheck,
+      });
       logger.error("[PAY LATER] Order not found or venue mismatch:", {
         order_id,
         venueId: venue_id,
@@ -115,6 +132,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log("⏰ [PAY LATER API] ✅ SUCCESS - Order updated", {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      paymentStatus: order.payment_status,
+      paymentMethod: order.payment_method,
+      total: order.total_amount,
+    });
     logger.info("✅ [PAY LATER] Order marked as pay later successfully", {
       orderId: order.id,
       tableNumber: order.table_number,
@@ -135,6 +159,7 @@ export async function POST(req: NextRequest) {
       },
     };
 
+      console.log("⏰ [PAY LATER API] Returning response:", JSON.stringify(response, null, 2));
       return NextResponse.json(response);
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";

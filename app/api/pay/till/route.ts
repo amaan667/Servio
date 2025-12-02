@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
 
     const { order_id, venue_id } = body;
 
+    console.log("🧾 [PAY AT TILL API] ===== REQUEST RECEIVED =====", {
+      orderId: order_id,
+      venueId: venue_id,
+      timestamp: new Date().toISOString(),
+      fullBody: JSON.stringify(body, null, 2),
+    });
     logger.info("💳 [PAY TILL] Payment at till requested", {
       orderId: order_id,
       fullBody: body,
@@ -65,6 +71,16 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
+      console.error("🧾 [PAY AT TILL API] ❌ ORDER NOT FOUND", {
+        orderId: order_id,
+        venueId: venue_id,
+        checkError: checkError ? {
+          message: checkError.message,
+          code: checkError.code,
+          details: checkError.details,
+        } : null,
+        orderCheckResult: orderCheck,
+      });
       logger.error("[PAY TILL] Order not found or venue mismatch:", {
         order_id,
         venueId: venue_id,
@@ -114,6 +130,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log("🧾 [PAY AT TILL API] ✅ SUCCESS - Order updated", {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      paymentStatus: order.payment_status,
+      paymentMethod: order.payment_method,
+      total: order.total_amount,
+    });
     logger.info("✅ [PAY TILL] Order marked for till payment successfully", {
       orderId: order.id,
       tableNumber: order.table_number,
@@ -133,6 +156,7 @@ export async function POST(req: NextRequest) {
       },
     };
 
+      console.log("🧾 [PAY AT TILL API] Returning response:", JSON.stringify(response, null, 2));
       return NextResponse.json(response);
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";

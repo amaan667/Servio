@@ -472,14 +472,25 @@ export function usePaymentProcessing() {
       };
 
       // Process payment based on selected method
+      console.log(`🎯 [PAYMENT METHOD CLICKED] ===== ${action.toUpperCase()} =====`, {
+        timestamp: new Date().toISOString(),
+        action,
+        venueId: checkoutData.venueId,
+        tableNumber: checkoutData.tableNumber,
+        customerName: checkoutData.customerName,
+        total: checkoutData.total,
+        itemCount: checkoutData.cart?.length || 0,
+      });
       logger.info("🔄 [PAYMENT PROCESSING] Processing payment method:", { action });
 
       if (action === "demo") {
+        console.log("🎮 [DEMO PAYMENT] Step 1: Creating demo order...");
         logger.info("🎮 [PAYMENT PROCESSING] Processing DEMO payment...");
         // Create order immediately for demo
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
         
+        console.log("🎮 [DEMO PAYMENT] Step 2: Order created successfully", { orderId });
         logger.info("🎮 [PAYMENT PROCESSING] Demo order created:", { orderId });
         // Demo payment - just mark as paid (with offline support)
         if (!navigator.onLine) {
@@ -531,6 +542,8 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
+        console.log("💳 [PAY NOW - STRIPE] ===== STARTING STRIPE PAYMENT FLOW =====");
+        console.log("💳 [PAY NOW] Step 1: Creating order in database...");
         logger.info("💳 [PAYMENT PROCESSING] Processing STRIPE payment...");
         // Stripe payment - CREATE ORDER FIRST, then redirect to Stripe
 
@@ -538,13 +551,24 @@ export function usePaymentProcessing() {
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
+        console.log("💳 [PAY NOW] Step 2: Order created successfully", { 
+          orderId,
+          status: orderResult.order?.order_status,
+          paymentStatus: orderResult.order?.payment_status 
+        });
         logger.info("💳 [PAYMENT PROCESSING] Order created for Stripe:", { orderId });
 
         if (!orderId) {
+          console.error("💳 [PAY NOW] ❌ FAILED: No order ID returned");
           logger.error("💳 [PAYMENT PROCESSING] ❌ No order ID returned from order creation");
           throw new Error("Failed to create order before Stripe checkout");
         }
 
+        console.log("💳 [PAY NOW] Step 3: Creating Stripe checkout session...", {
+          orderId,
+          amount: checkoutData.total,
+          customerEmail: checkoutData.customerEmail || "(no email provided)",
+        });
         // Create Stripe checkout session with just the order ID
         logger.info("💳 [PAYMENT PROCESSING] Creating Stripe checkout session...", {
           orderId,
@@ -601,6 +625,10 @@ export function usePaymentProcessing() {
           // Redirect to Stripe checkout
           if (result?.data?.url || result?.url) {
             const checkoutUrl = result.data?.url || result.url;
+            console.log("💳 [PAY NOW] Step 4: ✅ SUCCESS - Stripe URL received, redirecting to checkout", {
+              url: checkoutUrl.substring(0, 50) + "...",
+              sessionId: result?.data?.sessionId || result?.sessionId,
+            });
             logger.info("💳 [PAYMENT PROCESSING] ✅ Stripe checkout URL received, redirecting...", {
               url: checkoutUrl,
               sessionId: result?.data?.sessionId || result?.sessionId,
@@ -608,6 +636,12 @@ export function usePaymentProcessing() {
             window.location.href = checkoutUrl;
             return; // Exit early on redirect
           } else {
+            console.error("💳 [PAY NOW] ❌ FAILED: No Stripe URL in response", { 
+              result,
+              hasData: !!result?.data,
+              hasUrl: !!result?.url,
+              dataUrl: result?.data?.url,
+            });
             logger.error("💳 [PAYMENT PROCESSING] ❌ No checkout URL in response:", { result });
             throw new Error("No Stripe checkout URL returned from server");
           }
@@ -626,11 +660,19 @@ export function usePaymentProcessing() {
           }
         }
       } else if (action === "till") {
+        console.log("🧾 [PAY AT TILL] ===== STARTING PAY AT TILL FLOW =====");
+        console.log("🧾 [PAY AT TILL] Step 1: Creating order in database...");
         logger.info("🧾 [PAYMENT PROCESSING] Processing PAY AT TILL payment...");
         // Till payment - create order immediately, show "Order Confirmed!"
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
+        console.log("🧾 [PAY AT TILL] Step 2: Order created successfully", { 
+          orderId,
+          status: orderResult.order?.order_status,
+          paymentStatus: orderResult.order?.payment_status,
+          paymentMethod: orderResult.order?.payment_method
+        });
         logger.info("🧾 [PAYMENT PROCESSING] Order created for till payment:", { orderId });
 
         const tillPayload = {
@@ -641,6 +683,10 @@ export function usePaymentProcessing() {
           customerPhone: checkoutData.customerPhone,
         };
 
+        console.log("🧾 [PAY AT TILL] Step 3: Confirming payment at till endpoint...", {
+          orderId,
+          venueId: checkoutData.venueId,
+        });
         logger.info("🧾 [PAYMENT PROCESSING] Sending till payment confirmation...", {
           url: "/api/pay/till",
           payload: tillPayload,
@@ -690,6 +736,10 @@ export function usePaymentProcessing() {
               }
             } else {
               result = await response.json();
+              console.log("🧾 [PAY AT TILL] Step 4: ✅ SUCCESS - Payment confirmed", { 
+                orderId,
+                status: response.status 
+              });
               logger.info("🧾 [PAYMENT PROCESSING] ✅ Till payment confirmed:", { result });
             }
           }
@@ -709,11 +759,19 @@ export function usePaymentProcessing() {
         // Redirect to order summary page - order is already created
         window.location.href = `/order-summary?orderId=${orderId}`;
       } else if (action === "later") {
+        console.log("⏰ [PAY LATER] ===== STARTING PAY LATER FLOW =====");
+        console.log("⏰ [PAY LATER] Step 1: Creating order in database...");
         logger.info("⏰ [PAYMENT PROCESSING] Processing PAY LATER payment...");
         // Pay later - create order immediately, show "Order Confirmed!"
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
+        console.log("⏰ [PAY LATER] Step 2: Order created successfully", { 
+          orderId,
+          status: orderResult.order?.order_status,
+          paymentStatus: orderResult.order?.payment_status,
+          paymentMethod: orderResult.order?.payment_method
+        });
         logger.info("⏰ [PAYMENT PROCESSING] Order created for pay later:", { orderId });
 
         const laterPayload = {
@@ -725,6 +783,10 @@ export function usePaymentProcessing() {
           sessionId: checkoutData.sessionId || `session_${Date.now()}`,
         };
 
+        console.log("⏰ [PAY LATER] Step 3: Confirming payment later endpoint...", {
+          orderId,
+          venueId: checkoutData.venueId,
+        });
         logger.info("⏰ [PAYMENT PROCESSING] Sending pay later confirmation...", {
           url: "/api/pay/later",
           payload: laterPayload,
@@ -774,6 +836,10 @@ export function usePaymentProcessing() {
               }
             } else {
               result = await response.json();
+              console.log("⏰ [PAY LATER] Step 4: ✅ SUCCESS - Payment later confirmed", { 
+                orderId,
+                status: response.status 
+              });
               logger.info("⏰ [PAYMENT PROCESSING] ✅ Pay later confirmed:", { result });
             }
           }
