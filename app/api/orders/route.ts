@@ -522,7 +522,7 @@ export async function POST(req: NextRequest) {
       items: safeItems,
       total_amount: finalTotal,
       notes: (body as { notes?: string }).notes ?? null,
-      order_status: ((body as { order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED" }).order_status) || "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
+      order_status: ((body as { order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED" }).order_status) || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
       payment_status: ((body as { payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED" }).payment_status) || "UNPAID", // Use provided status or default to 'UNPAID'
       payment_mode: validatedOrderBody.payment_mode || "online", // New field for payment mode
       payment_method: (() => {
@@ -608,7 +608,7 @@ export async function POST(req: NextRequest) {
       items: payload.items,
       total_amount: payload.total_amount,
       notes: payload.notes ?? null,
-      order_status: payload.order_status || "IN_PREP",
+      order_status: payload.order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
       payment_status: payload.payment_status || "UNPAID",
       payment_method: payload.payment_method || "PAY_NOW", // Ensure payment_method is always set (required by constraint)
       payment_mode: (() => {

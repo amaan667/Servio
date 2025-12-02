@@ -135,7 +135,7 @@ export function usePaymentProcessing() {
           }),
           total_amount: checkoutData.total,
           notes: checkoutData.notes || null,
-          order_status: "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
+          order_status: "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
           payment_status: "UNPAID", // All unpaid orders start as UNPAID, updated to PAID via webhook for Stripe
           payment_mode: action === "till" ? "offline" : action === "later" ? "deferred" : "online",
           payment_method: action === "demo" ? "PAY_NOW" : action === "stripe" ? "PAY_NOW" : action === "till" ? "PAY_AT_TILL" : action === "later" ? "PAY_LATER" : "PAY_NOW",

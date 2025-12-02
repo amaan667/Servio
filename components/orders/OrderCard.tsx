@@ -367,8 +367,8 @@ export function OrderCard({
       (paymentStatus === "PAID" || paymentStatus === "UNPAID") &&
       (allTicketsBumped === true || (allTicketsBumped === null && !checkingTickets));
 
-    // If order is IN_PREP or PREPARING, show preparing message
-    if (orderStatus === "IN_PREP" || orderStatus === "PREPARING") {
+    // If order is PLACED, IN_PREP, or READY, check if all tickets are bumped
+    if (["PLACED", "IN_PREP", "READY"].includes(orderStatus)) {
       if (canMarkServed) {
         // All tickets bumped - can mark as served
         return (
@@ -390,49 +390,13 @@ export function OrderCard({
           </div>
         );
       }
-      // Still waiting for KDS to bump tickets
+      // Still waiting for KDS to bump tickets - show "waiting on kitchen"
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
             <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
             <span className="text-sm font-medium text-blue-700">
-              {checkingTickets ? "Checking kitchen status..." : "Waiting for kitchen to complete items..."}
-            </span>
-          </div>
-        </div>
-      );
-    }
-
-    // If order is READY or PLACED, show "Mark Served" button if all tickets are bumped
-    if (canMarkServed) {
-      return (
-        <div className="mt-4 pt-4 border-t border-slate-200">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="text-sm text-green-600">
-              <span className="font-medium">✓ All items ready - Mark as Served</span>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate("SERVED")}
-              disabled={isProcessing}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Mark Served
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    // If order is PLACED/IN_PREP/READY but tickets not all bumped, show waiting message
-    if (["PLACED", "IN_PREP", "READY"].includes(orderStatus) && allTicketsBumped === false) {
-      return (
-        <div className="mt-4 pt-4 border-t border-slate-200">
-          <div className="flex items-center justify-center gap-2 p-3 bg-yellow-50 rounded-lg">
-            <Clock className="h-4 w-4 text-yellow-600 animate-pulse" />
-            <span className="text-sm font-medium text-yellow-700">
-              Waiting for kitchen to complete all items...
+              {checkingTickets ? "Checking kitchen status..." : "Waiting on kitchen"}
             </span>
           </div>
         </div>
