@@ -220,8 +220,17 @@ export function TableCardNew({
           onActionComplete?.();
         },
         onError: (error: Error) => {
-          // Error is already handled by the hook's toast
-          setRemoveError(error.message || "Failed to remove table");
+          // Extract proper error message
+          let errorMessage = "Failed to remove table";
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          } else if (typeof error === "string") {
+            errorMessage = error;
+          } else if (error && typeof error === "object") {
+            errorMessage = JSON.stringify(error);
+          }
+          
+          setRemoveError(errorMessage);
           // Reopen the dialog to show the error
           setShowRemoveDialog(true);
         },
