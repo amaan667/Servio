@@ -64,11 +64,11 @@ export function DesktopCart({
                           </span>
                         )}
                       </p>
-                      {item.selectedModifiers && Object.keys(item.selectedModifiers).length > 0 && (
+                      {item.selectedModifiers && item.selectedModifiers.length > 0 && (
                         <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                          {Object.entries(item.selectedModifiers).map(([modName, options]) => (
-                            <span key={modName} className="mr-2">
-                              {modName}: {options.join(", ")}
+                          {item.selectedModifiers.map((modifier) => (
+                            <span key={modifier.groupId} className="mr-2">
+                              {modifier.groupName}: {modifier.options.map(opt => opt.name).join(", ")}
                             </span>
                           ))}
                         </div>

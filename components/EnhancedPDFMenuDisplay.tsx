@@ -7,6 +7,8 @@ import { Plus, Minus, ShoppingCart, X, Search, List, Grid, ZoomIn, ZoomOut } fro
 import { ItemDetailsModal } from "@/components/ItemDetailsModal";
 import { Input } from "@/components/ui/input";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
+import { MenuItemModal } from "@/app/order/components/MenuItemModal";
+import type { MenuItem as OrderMenuItem, ModifierGroup, SelectedModifier } from "@/app/order/types";
 
 interface MenuItem {
   id: string;
@@ -20,6 +22,7 @@ interface MenuItem {
   created_at?: string;
   venue_name?: string;
   options?: Array<{ label: string; values: string[] }>;
+  modifier_groups?: ModifierGroup[];
 }
 
 // Type-safe menu item interface for hotspot system
@@ -28,7 +31,7 @@ interface EnhancedPDFMenuDisplayProps {
   venueId: string;
   menuItems: MenuItem[];
   categoryOrder: string[] | null;
-  onAddToCart: (item: MenuItem) => void;
+  onAddToCart: (item: MenuItem, selectedModifiers?: SelectedModifier[], modifierPrice?: number, specialInstructions?: string) => void;
   cart: Array<{ id: string; quantity: number }>;
   onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
@@ -67,6 +70,7 @@ export function EnhancedPDFMenuDisplay({
   const [loading, setLoading] = useState(!hasCachedImages); // Only show loading if no cached images
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modifierModalItem, setModifierModalItem] = useState<MenuItem | null>(null);
   const [viewMode, setViewMode] = useState<"pdf" | "list">(
     hasCachedImages && cachedImages.length > 0 ? "pdf" : "list"
   );
@@ -564,7 +568,12 @@ export function EnhancedPDFMenuDisplay({
                                   <Button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      onAddToCart(item);
+                                      // Check if item has modifiers - open modal, else add directly
+                                      if (item.modifier_groups && item.modifier_groups.length > 0) {
+                                        setModifierModalItem(item);
+                                      } else {
+                                        onAddToCart(item);
+                                      }
                                     }}
                                     variant="servio"
                                     className="w-full h-12 sm:h-11 md:h-10 text-base sm:text-sm font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple group"
@@ -662,6 +671,21 @@ export function EnhancedPDFMenuDisplay({
         quantity={selectedItem ? cart.find((c) => c.id === selectedItem.id)?.quantity || 0 : 0}
         isPreview={!isOrdering}
       />
+
+      {/* Modifier Selection Modal */}
+      {modifierModalItem && (
+        <MenuItemModal
+          item={modifierModalItem as OrderMenuItem}
+          onClose={() => setModifierModalItem(null)}
+          onAddToCart={(item, quantity, selectedModifiers, modifierPrice, specialInstructions) => {
+            // Add item to cart with modifiers
+            for (let i = 0; i < quantity; i++) {
+              onAddToCart(item, selectedModifiers, modifierPrice, specialInstructions);
+            }
+            setModifierModalItem(null);
+          }}
+        />
+      )}
     </div>
   );
 }

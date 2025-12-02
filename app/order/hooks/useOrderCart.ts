@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { CartItem, MenuItem } from "../types";
+import { CartItem, MenuItem, SelectedModifier } from "../types";
 import { useSearchParams } from "next/navigation";
 
 export function useOrderCart() {
@@ -48,21 +48,24 @@ export function useOrderCart() {
     }
   }, [venueSlug, tableNumber, CART_STORAGE_KEY]);
 
-  const addToCart = useCallback((item: MenuItem & { selectedModifiers?: Record<string, string[]>; modifierPrice?: number }) => {
+  const addToCart = useCallback((item: MenuItem, selectedModifiers?: SelectedModifier[], modifierPrice?: number, specialInstructions?: string) => {
     setCart((prev) => {
       // Check if item with same modifiers already exists
       const existing = prev.find((cartItem) => {
         if (cartItem.id !== item.id) return false;
-        // Compare modifiers
-        const cartModifiers = JSON.stringify(cartItem.selectedModifiers || {});
-        const itemModifiers = JSON.stringify(item.selectedModifiers || {});
-        return cartModifiers === itemModifiers;
+        // Compare modifiers and special instructions
+        const cartModifiers = JSON.stringify(cartItem.selectedModifiers || []);
+        const itemModifiers = JSON.stringify(selectedModifiers || []);
+        const cartInstructions = cartItem.specialInstructions || "";
+        const itemInstructions = specialInstructions || "";
+        return cartModifiers === itemModifiers && cartInstructions === itemInstructions;
       });
 
       if (existing) {
         return prev.map((cartItem) =>
           cartItem.id === item.id && 
-          JSON.stringify(cartItem.selectedModifiers || {}) === JSON.stringify(item.selectedModifiers || {})
+          JSON.stringify(cartItem.selectedModifiers || []) === JSON.stringify(selectedModifiers || []) &&
+          (cartItem.specialInstructions || "") === (specialInstructions || "")
             ? { 
                 ...cartItem, 
                 quantity: cartItem.quantity + 1 
@@ -73,8 +76,9 @@ export function useOrderCart() {
       return [...prev, { 
         ...item, 
         quantity: 1,
-        selectedModifiers: item.selectedModifiers,
-        modifierPrice: item.modifierPrice || 0,
+        selectedModifiers,
+        modifierPrice: modifierPrice || 0,
+        specialInstructions,
       }];
     });
   }, []);
