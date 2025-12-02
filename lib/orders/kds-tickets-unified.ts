@@ -37,6 +37,13 @@ export async function createKDSTicketsWithAI(
   order: OrderForKDSTickets
 ): Promise<void> {
   try {
+    console.log("[KDS TICKETS] ===== STARTING KDS TICKET CREATION =====", {
+      orderId: order.id,
+      venueId: order.venue_id,
+      itemCount: Array.isArray(order.items) ? order.items.length : 0,
+      tableNumber: order.table_number,
+      tableId: order.table_id,
+    });
     logger.debug("[KDS TICKETS] Starting KDS ticket creation", {
       orderId: order.id,
       venueId: order.venue_id,
@@ -47,28 +54,44 @@ export async function createKDSTicketsWithAI(
     });
 
     // Step 1: Ensure KDS stations exist for this venue
+    console.log("[KDS TICKETS] Step 1: Ensuring KDS stations exist...");
     let existingStations = await ensureKDSStations(supabase, order.venue_id);
 
     if (!existingStations || existingStations.length === 0) {
+      console.error("[KDS TICKETS] ❌ No KDS stations available for venue", { venueId: order.venue_id });
       throw new Error("No KDS stations available");
     }
+
+    console.log("[KDS TICKETS] Step 2: Found stations", { count: existingStations.length });
 
     // Step 2: Get expo station as default
     const expoStation =
       existingStations.find((s) => s.station_type === "expo") || existingStations[0];
 
     if (!expoStation) {
+      console.error("[KDS TICKETS] ❌ No expo station available");
       throw new Error("No KDS station available");
     }
 
     // Step 3: Get table label
+    console.log("[KDS TICKETS] Step 3: Getting table label...");
     const tableLabel = await getTableLabel(supabase, order);
+    console.log("[KDS TICKETS] Table label:", { tableLabel });
 
     // Step 4: Create tickets for each order item with AI assignment
     const items = Array.isArray(order.items) ? order.items : [];
+    console.log("[KDS TICKETS] Step 4: Creating tickets for items", { itemCount: items.length });
 
-    for (const item of items) {
+    if (items.length === 0) {
+      console.warn("[KDS TICKETS] ⚠️ No items in order, skipping ticket creation");
+      return;
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       const itemName = item.item_name || "Unknown Item";
+      
+      console.log(`[KDS TICKETS] Processing item ${i + 1}/${items.length}: ${itemName}`);
       
       // Use AI to assign station, fallback to keyword matching
       const assignedStation = await assignStationWithAI(
@@ -77,6 +100,11 @@ export async function createKDSTicketsWithAI(
         expoStation,
         order.venue_id
       );
+
+      console.log(`[KDS TICKETS] Assigned to station:`, { 
+        station: assignedStation.station_type,
+        stationName: assignedStation.station_name 
+      });
 
       // Combine special instructions and modifiers for kitchen display
       let combinedInstructions = item.specialInstructions || "";
@@ -132,9 +160,21 @@ export async function createKDSTicketsWithAI(
         status: "new",
       };
 
+      console.log(`[KDS TICKETS] Inserting ticket for item: ${itemName}`, {
+        ticketData: JSON.stringify(ticketData, null, 2),
+      });
+
       const { error: ticketError } = await supabase.from("kds_tickets").insert(ticketData);
 
       if (ticketError) {
+        console.error(`[KDS TICKETS] ❌ Failed to insert ticket for item: ${itemName}`, {
+          errorCode: ticketError.code,
+          errorMessage: ticketError.message,
+          errorDetails: ticketError.details,
+          errorHint: ticketError.hint,
+          ticketData: JSON.stringify(ticketData, null, 2),
+          fullError: JSON.stringify(ticketError, null, 2),
+        });
         logger.error("[KDS TICKETS] Failed to create ticket for item:", {
           error: { item, context: ticketError },
           orderId: order.id,
@@ -153,12 +193,25 @@ export async function createKDSTicketsWithAI(
         (error as unknown as { details: unknown }).details = ticketError;
         throw error;
       }
+
+      console.log(`[KDS TICKETS] ✅ Ticket created successfully for: ${itemName}`);
     }
 
+    console.log("[KDS TICKETS] ===== ✅ ALL TICKETS CREATED SUCCESSFULLY =====", {
+      count: items.length,
+      orderId: order.id,
+    });
     logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
       data: { count: items.length, orderId: order.id },
     });
   } catch (error) {
+    console.error("[KDS TICKETS] ===== ❌ KDS TICKET CREATION FAILED =====", {
+      error: error instanceof Error ? error.message : JSON.stringify(error),
+      orderId: order.id,
+      venueId: order.venue_id,
+      stack: error instanceof Error ? error.stack : undefined,
+      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+    });
     logger.error("[KDS TICKETS] Error creating KDS tickets:", {
       error: error instanceof Error ? error.message : JSON.stringify(error),
       orderId: order.id,
