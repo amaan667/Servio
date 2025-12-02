@@ -428,7 +428,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   });
 
   const activeTickets = sortedTickets.filter((t) => t.status !== "bumped");
-  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress" || t.status === "preparing"); // Treat all as "preparing"
+  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress"); // Treat all as "preparing"
   const readyTickets = activeTickets.filter((t) => t.status === "ready");
   const bumpedTickets = sortedTickets.filter((t) => t.status === "bumped");
 
