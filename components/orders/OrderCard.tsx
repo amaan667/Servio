@@ -42,6 +42,8 @@ export function OrderCard({
   const [showTablePaymentDialog, setShowTablePaymentDialog] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [tableUnpaidCount, setTableUnpaidCount] = useState<number | null>(null);
+  const [allTicketsBumped, setAllTicketsBumped] = useState<boolean | null>(null);
+  const [checkingTickets, setCheckingTickets] = useState(false);
   const [venueInfo, setVenueInfo] = useState<{
     name?: string;
     email?: string;
@@ -85,6 +87,56 @@ export function OrderCard({
 
     fetchTableUnpaidCount();
   }, [venueId, order.table_number]);
+
+  // Check if all KDS tickets are bumped for this order
+  React.useEffect(() => {
+    if (!venueId || !order.id) return;
+
+    const checkTicketsBumped = async () => {
+      try {
+        setCheckingTickets(true);
+        const response = await fetch("/api/kds/tickets/check-bumped", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            order_id: order.id,
+            venue_id: venueId,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setAllTicketsBumped(data.data?.all_bumped ?? false);
+          } else {
+            // If API fails, assume tickets are bumped (for orders without KDS tickets)
+            setAllTicketsBumped(true);
+          }
+        } else {
+          // If API fails, assume tickets are bumped (for orders without KDS tickets)
+          setAllTicketsBumped(true);
+        }
+      } catch {
+        // Silently fail - assume tickets are bumped for orders without KDS
+        setAllTicketsBumped(true);
+      } finally {
+        setCheckingTickets(false);
+      }
+    };
+
+    // Only check for orders that are not completed and have payment status PAID/UNPAID
+    const orderStatus = (order.order_status || "").toUpperCase();
+    const paymentStatus = (order.payment?.status || order.payment_status || "unpaid").toUpperCase();
+    const isCompletable = !["COMPLETED", "CANCELLED", "REFUNDED"].includes(orderStatus);
+    const isPaidOrUnpaid = ["PAID", "UNPAID"].includes(paymentStatus);
+
+    if (isCompletable && isPaidOrUnpaid) {
+      checkTicketsBumped();
+    } else {
+      setAllTicketsBumped(null);
+    }
+  }, [venueId, order.id, order.order_status, order.payment?.status, order.payment_status]);
 
   // Fetch venue info and logo for receipt
   React.useEffect(() => {
@@ -248,7 +300,7 @@ export function OrderCard({
           throw new Error(`Failed to mark order as served: ${response.status} - ${errorText}`);
         }
 
-        const result = await response.json().catch(() => null);
+        await response.json().catch(() => null);
       } else if (nextStatus === "COMPLETED") {
         // Use server endpoint for completing to clear tables
         const response = await fetch("/api/orders/complete", {
@@ -262,7 +314,7 @@ export function OrderCard({
           throw new Error(`Failed to mark order as completed: ${response.status} - ${errorText}`);
         }
 
-        const result = await response.json().catch(() => null);
+        await response.json().catch(() => null);
       } else {
         // Directly update status via Supabase for other transitions
         const supabase = createClient();
@@ -292,8 +344,8 @@ export function OrderCard({
     if (!showActions || !venueId) return null;
 
     // Check payment status - handle both nested payment object and flat payment_status
-    const paymentStatus = order.payment?.status || order.payment_status || "unpaid";
-    const isPaid = paymentStatus.toLowerCase() === "paid";
+    const paymentStatus = (order.payment?.status || order.payment_status || "unpaid").toUpperCase();
+    const isPaid = paymentStatus === "PAID" || paymentStatus === "TILL";
     const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
     // Normalize order status - handle both uppercase and lowercase, and "served" vs "serving"
     const rawStatus = (order.order_status || "").toString();
@@ -305,45 +357,63 @@ export function OrderCard({
       return null;
     }
 
-    // If order is IN_PREP or PREPARING, show preparing message (not clickable)
-    if (orderStatus === "IN_PREP" || orderStatus === "PREPARING") {
+    // Check if order can show "Mark Served" button
+    // Requirements:
+    // 1. Order status is PLACED, IN_PREP, or READY
+    // 2. Payment status is PAID or UNPAID
+    // 3. All KDS tickets are bumped (or no KDS tickets exist)
+    const canMarkServed =
+      ["PLACED", "IN_PREP", "READY"].includes(orderStatus) &&
+      (paymentStatus === "PAID" || paymentStatus === "UNPAID") &&
+      (allTicketsBumped === true || (allTicketsBumped === null && !checkingTickets));
+
+    // If order is PLACED, IN_PREP, or READY, check if all tickets are bumped
+    if (["PLACED", "IN_PREP", "READY"].includes(orderStatus)) {
+      if (canMarkServed) {
+        // All tickets bumped - can mark as served
+        return (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="text-sm text-green-600">
+                <span className="font-medium">✓ All items ready - Mark as Served</span>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => handleStatusUpdate("SERVED")}
+                disabled={isProcessing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Mark Served
+              </Button>
+            </div>
+          </div>
+        );
+      }
+      // Still waiting for KDS to bump tickets - show "waiting on kitchen"
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
             <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
-            <span className="text-sm font-medium text-blue-700">Preparing in Kitchen...</span>
+            <span className="text-sm font-medium text-blue-700">
+              {checkingTickets ? "Checking kitchen status..." : "Waiting on kitchen"}
+            </span>
           </div>
         </div>
       );
     }
 
-    // If order is READY, show "Mark Served" button
-    if (orderStatus === "READY") {
-      return (
-        <div className="mt-4 pt-4 border-t border-slate-200">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="text-sm text-blue-600">
-              <span className="font-medium">Kitchen Ready - Mark as Served</span>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate("SERVED")}
-              disabled={isProcessing}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Mark Served
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    // If order is SERVING, SERVED, or lowercase "served", check payment status before allowing completion
-    const isServed =
-      orderStatus === "SERVING" || orderStatus === "SERVED" || rawStatus.toLowerCase() === "served";
+    // If order is SERVED, check payment status before allowing completion
+    // Only show "Mark Completed" when:
+    // 1. Order status is SERVED
+    // 2. Payment status is PAID (for pay now - instant, for pay later - once Stripe goes through, for pay at till - when staff marks as paid)
+    const isServed = orderStatus === "SERVED";
     if (isServed) {
-      // CASE 1: Already paid (online/stripe) - can mark completed immediately
+      // CASE 1: Already paid - can mark completed immediately
+      // Payment status PAID covers:
+      // - Pay Now: Instant (already paid)
+      // - Pay Later: Once Stripe payment goes through
+      // - Pay at Till: When staff marks it as paid
       if (isPaid) {
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
@@ -445,6 +515,7 @@ export function OrderCard({
     return null;
   };
 
+
   return (
     <Card
       className={`rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow ${className}`}
@@ -475,12 +546,28 @@ export function OrderCard({
               </Badge>
 
               {/* Status Chips */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <OrderStatusChip status={order.order_status} />
                 {shouldShowUnpaidChip(order) && <PaymentStatusChip status="unpaid" />}
                 {order.payment.status === "paid" && <PaymentStatusChip status="paid" />}
                 {order.payment.status === "failed" && <PaymentStatusChip status="failed" />}
                 {order.payment.status === "refunded" && <PaymentStatusChip status="refunded" />}
+                {/* Payment Method Badge */}
+                {(order.payment_method || order.payment?.method) && (
+                  <Badge 
+                    variant="outline" 
+                    className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-medium"
+                  >
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    {(() => {
+                      const method = (order.payment_method || order.payment?.method || '').toUpperCase();
+                      if (method === 'PAY_NOW') return 'Pay Now';
+                      if (method === 'PAY_LATER') return 'Pay Later';
+                      if (method === 'PAY_AT_TILL') return 'Pay at Till';
+                      return method || 'Online';
+                    })()}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>

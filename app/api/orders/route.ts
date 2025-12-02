@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { type SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createSupabaseClient } from "@/lib/supabase";
+import { createClient as createSupabaseClient, createAdminClient } from "@/lib/supabase";
 import { apiLogger, logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { isDevelopment } from '@/lib/env';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 import { validateBody, createOrderSchema } from '@/lib/api/validation-schemas';
+import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export const runtime = "nodejs";
 
@@ -51,7 +52,7 @@ export const runtime = "nodejs";
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// GET handler for orders - Migrated to withUnifiedAuth
+// GET handler for orders - Requires auth
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -151,8 +152,8 @@ type OrderPayload = {
     | "CANCELLED"
     | "REFUNDED";
   payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
-  payment_mode?: "online" | "pay_later" | "pay_at_till";
-  payment_method?: "demo" | "stripe" | "till" | null;
+  payment_mode?: "online" | "deferred" | "offline";
+  payment_method?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL" | string; // Standardized payment method values
   // NOTE: session_id is NOT a database column - it's only used for client-side tracking
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   stripe_session_id?: string | null;
@@ -162,202 +163,33 @@ type OrderPayload = {
 };
 
 // Legacy helper - use apiErrors instead
-function bad(msg: string, status = 400) {
+function bad(msg: string, status = 400, requestId?: string) {
+  // Log error to Railway using console.error
+  console.error(`❌ [ORDERS API ${requestId || 'unknown'}] Error: ${msg}`, { status, requestId });
   if (status === 403) return apiErrors.forbidden(msg);
   if (status === 404) return apiErrors.notFound(msg);
   if (status === 500) return apiErrors.internal(msg);
   return apiErrors.badRequest(msg);
 }
 
-// Function to create KDS tickets for an order
+// Wrapper function for backward compatibility
 async function createKDSTickets(
   supabase: SupabaseClient,
-  order: { id: string; venue_id: string; items?: Array<Record<string, unknown>> }
+  order: { id: string; venue_id: string; items?: Array<Record<string, unknown>>; customer_name?: string; table_number?: number | null; table_id?: string }
 ) {
-  try {
-    // First, ensure KDS stations exist for this venue
-    const { data: existingStations } = await supabase
-      .from("kds_stations")
-      .select("id, station_type")
-      .eq("venue_id", order.venue_id)
-      .eq("is_active", true);
-
-    if (!existingStations || existingStations.length === 0) {
-      logger.debug("[KDS TICKETS] No stations found, creating default stations for venue", {
-        extra: { venueId: order.venue_id },
-      });
-
-      // Create default stations
-      const defaultStations = [
-        { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
-        { name: "Grill", type: "grill", order: 1, color: "#ef4444" },
-        { name: "Fryer", type: "fryer", order: 2, color: "#f59e0b" },
-        { name: "Barista", type: "barista", order: 3, color: "#8b5cf6" },
-        { name: "Cold Prep", type: "cold", order: 4, color: "#06b6d4" },
-      ];
-
-      for (const station of defaultStations) {
-        await supabase.from("kds_stations").upsert(
-          {
-            venue_id: order.venue_id,
-            station_name: station.name,
-            station_type: station.type,
-            display_order: station.order,
-            color_code: station.color,
-            is_active: true,
-          },
-          {
-            onConflict: "venue_id,station_name",
-          }
-        );
-      }
-
-      // Fetch stations again
-      const { data: stations } = await supabase
-        .from("kds_stations")
-        .select("id, station_type")
-        .eq("venue_id", order.venue_id)
-        .eq("is_active", true);
-
-      if (!stations || stations.length === 0) {
-        throw new Error("Failed to create KDS stations");
-      }
-
-      if (existingStations) {
-        existingStations.push(...stations);
-      }
-    }
-
-    // Get the expo station (default for all items)
-    if (!existingStations || existingStations.length === 0) {
-      throw new Error("No KDS stations available");
-    }
-
-    const expoStation =
-      existingStations.find(
-        (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "expo"
-      ) || existingStations[0];
-
-    if (!expoStation) {
-      throw new Error("No KDS station available");
-    }
-
-    // Get customer name from order
-    const customerName = (order as Record<string, unknown>).customer_name as string | undefined;
-    const tableNumber = (order as Record<string, unknown>).table_number as number | null;
-
-    // Get actual table label if table_id exists
-    let tableLabel = customerName || "Guest"; // Default to customer name
-    const tableId = (order as Record<string, unknown>).table_id as string | undefined;
-
-    if (tableId) {
-      const { data: tableData } = await supabase
-        .from("tables")
-        .select("label")
-        .eq("id", tableId)
-        .single();
-
-      if (tableData?.label) {
-        tableLabel = tableData.label;
-      }
-    } else if (tableNumber) {
-      tableLabel = `Table ${tableNumber}`;
-    }
-
-    // Create tickets for each order item
-    const items = Array.isArray(order.items) ? (order.items as Array<Record<string, unknown>>) : [];
-
-    for (const item of items) {
-      const itemData = item as {
-        item_name?: string;
-        quantity?: string | number;
-        specialInstructions?: string;
-      };
-
-      // Smart station routing based on item name
-      const itemName = (itemData.item_name || "").toLowerCase();
-      let assignedStation = expoStation;
-
-      // Route to appropriate station based on item keywords
-      if (
-        itemName.includes("coffee") ||
-        itemName.includes("latte") ||
-        itemName.includes("cappuccino") ||
-        itemName.includes("espresso") ||
-        itemName.includes("tea") ||
-        itemName.includes("drink")
-      ) {
-        const baristaStation = existingStations.find(
-          (s: Record<string, unknown>) =>
-            (s as { station_type?: string }).station_type === "barista"
-        );
-        if (baristaStation) assignedStation = baristaStation;
-      } else if (
-        itemName.includes("burger") ||
-        itemName.includes("steak") ||
-        itemName.includes("chicken") ||
-        itemName.includes("grill")
-      ) {
-        const grillStation = existingStations.find(
-          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "grill"
-        );
-        if (grillStation) assignedStation = grillStation;
-      } else if (
-        itemName.includes("fries") ||
-        itemName.includes("chips") ||
-        itemName.includes("fried") ||
-        itemName.includes("fryer")
-      ) {
-        const fryerStation = existingStations.find(
-          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "fryer"
-        );
-        if (fryerStation) assignedStation = fryerStation;
-      } else if (
-        itemName.includes("salad") ||
-        itemName.includes("sandwich") ||
-        itemName.includes("cold")
-      ) {
-        const coldStation = existingStations.find(
-          (s: Record<string, unknown>) => (s as { station_type?: string }).station_type === "cold"
-        );
-        if (coldStation) assignedStation = coldStation;
-      }
-
-      const ticketData = {
-        venue_id: order.venue_id,
-        order_id: order.id,
-        station_id: (assignedStation as { id: string }).id,
-        item_name: itemData.item_name || "Unknown Item",
-        quantity:
-          typeof itemData.quantity === "string"
-            ? parseInt(itemData.quantity)
-            : itemData.quantity || 1,
-        special_instructions: itemData.specialInstructions || null,
-        modifiers: (itemData as { modifiers?: unknown }).modifiers || null,
-        table_number: tableNumber,
-        table_label: tableLabel,
-        status: "new",
-      };
-
-      const { error: ticketError } = await supabase.from("kds_tickets").insert(ticketData);
-
-      if (ticketError) {
-        logger.error("[KDS TICKETS] Failed to create ticket for item:", {
-          error: { item, context: ticketError },
-        });
-        throw ticketError;
-      }
-    }
-
-    logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
-      data: { count: items.length, orderId: order.id },
-    });
-  } catch (_error) {
-    logger.error("[KDS TICKETS] Error creating KDS tickets:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
-    throw _error;
-  }
+  return createKDSTicketsWithAI(supabase, {
+    id: order.id,
+    venue_id: order.venue_id,
+    items: order.items as Array<{
+      item_name?: string;
+      quantity?: string | number;
+      specialInstructions?: string;
+      modifiers?: unknown;
+    }>,
+    customer_name: order.customer_name,
+    table_number: order.table_number,
+    table_id: order.table_id,
+  });
 }
 
 /**
@@ -418,14 +250,13 @@ async function createKDSTickets(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+export async function POST(req: NextRequest) {
     const requestId = Math.random().toString(36).substring(7);
     const startTime = Date.now();
 
     // Use logger.info (not logger.debug - that's stripped in production!)
 
-    logger.info(
+    console.log(
       `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
     );
 
@@ -445,18 +276,28 @@ export const POST = withUnifiedAuth(
 
       const body = (await req.json()) as Partial<OrderPayload>;
       
-      // Verify venue_id matches authenticated context (security check)
-      if (body.venue_id && body.venue_id !== context.venueId) {
-        logger.warn("[ORDERS POST] Venue ID mismatch", {
-          provided: body.venue_id,
-          authenticated: context.venueId,
-          userId: context.user.id,
-        });
-        return apiErrors.forbidden("Venue ID mismatch");
+      // Log received payload structure (for debugging 400 errors) - use console.log for Railway
+      console.log(`📥 [ORDERS API ${requestId}] Received request body:`, JSON.stringify({
+        hasVenueId: !!body.venue_id,
+        hasCustomerName: !!body.customer_name,
+        hasCustomerPhone: !!body.customer_phone,
+        hasItems: Array.isArray(body.items),
+        itemsCount: Array.isArray(body.items) ? body.items.length : 0,
+        hasTotalAmount: typeof body.total_amount === "number",
+        totalAmount: body.total_amount,
+        tableNumber: body.table_number,
+        paymentMode: (body as { payment_mode?: string }).payment_mode,
+        paymentStatus: (body as { payment_status?: string }).payment_status,
+        orderStatus: (body as { order_status?: string }).order_status,
+      }, null, 2));
+      
+      // Validate venue_id is provided
+      if (!body.venue_id) {
+        console.error(`❌ [ORDERS API ${requestId}] Missing venue_id in request`);
+        return apiErrors.badRequest("venue_id is required");
       }
       
-      // Use venueId from context (already verified by withUnifiedAuth)
-      const venueId = context.venueId;
+      const venueId = body.venue_id;
 
     // STEP 3: Validate input with Zod
     let validatedOrderBody: OrderPayload;
@@ -469,9 +310,30 @@ export const POST = withUnifiedAuth(
       // Use validated body for rest of function
       validatedOrderBody = validatedBody as OrderPayload;
     } catch (validationError) {
+      // Log validation errors in detail for debugging 400 errors - use console.error for Railway
       if (isZodError(validationError)) {
+        console.error(`❌ [ORDERS API ${requestId}] Validation error:`, JSON.stringify({
+          error: validationError.errors,
+          receivedPayload: {
+            venue_id: body.venue_id,
+            customer_name: body.customer_name,
+            customer_phone: body.customer_phone,
+            items: Array.isArray(body.items) ? body.items.map((item: unknown) => ({
+              hasMenuItemId: !!(item as { menu_item_id?: unknown }).menu_item_id,
+              hasItemName: !!(item as { item_name?: unknown }).item_name,
+              hasQuantity: typeof (item as { quantity?: unknown }).quantity === "number",
+              hasPrice: typeof (item as { price?: unknown }).price === "number",
+            })) : "not an array",
+            total_amount: body.total_amount,
+          },
+        }, null, 2));
         return handleZodError(validationError);
       }
+      console.error(`❌ [ORDERS API ${requestId}] Non-Zod validation error:`, JSON.stringify({
+        error: validationError instanceof Error ? validationError.message : String(validationError),
+        errorType: validationError instanceof Error ? validationError.constructor.name : typeof validationError,
+        requestId,
+      }, null, 2));
       return apiErrors.validation("Invalid order data");
     }
 
@@ -495,27 +357,25 @@ export const POST = withUnifiedAuth(
     const tn = validatedOrderBody.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
 
-    // Use authenticated client
-    const supabase = await createSupabaseClient();
+    // Use admin client for public customer orders (bypasses RLS)
+    // Customers placing orders via QR codes are not authenticated
+    const supabase = createAdminClient();
 
-    // Verify venue exists (venue access already verified by withUnifiedAuth)
+    // Verify venue exists
     const { data: venue, error: venueErr } = await supabase
       .from("venues")
       .select("venue_id")
       .eq("venue_id", venueId)
       .maybeSingle();
 
-    if (venueErr) {
-      return bad(`Failed to verify venue: ${venueErr.message}`, 500);
+      if (venueErr) {
+      console.error(`❌ [ORDERS API ${requestId}] Venue lookup error:`, JSON.stringify(venueErr, null, 2));
+      return bad(`Failed to verify venue: ${venueErr.message}`, 500, requestId);
     }
 
     if (!venue) {
-      // Venue should exist (verified by withUnifiedAuth), but if it doesn't, return error
-      logger.error("[ORDERS POST] Venue not found despite auth check", {
-        venueId,
-        userId: context.user.id,
-      });
-      return bad("Venue not found", 404);
+      console.error(`❌ [ORDERS API ${requestId}] Venue not found:`, { venueId, requestId });
+      return bad("Venue not found", 404, requestId);
     }
 
     // Auto-create table if it doesn't exist (for QR code scenarios)
@@ -531,7 +391,8 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (lookupError) {
-        return bad(`Failed to check existing tables: ${lookupError.message}`, 500);
+        console.error(`❌ [ORDERS API ${requestId}] Failed to check existing tables:`, { error: lookupError.message, requestId });
+        return bad(`Failed to check existing tables: ${lookupError.message}`, 500, requestId);
       }
 
       if (existingTable) {
@@ -585,10 +446,12 @@ export const POST = withUnifiedAuth(
             if (existingTableAfterError) {
               tableId = existingTableAfterError.id;
             } else {
-              return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+              console.error(`❌ [ORDERS API ${requestId}] Failed to create table:`, { error: tableCreateErr.message, requestId });
+              return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
             }
           } else {
-            return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+            console.error(`❌ [ORDERS API ${requestId}] Failed to create table:`, { error: tableCreateErr.message, requestId });
+            return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
           }
         } else {
           tableId = newTable.id;
@@ -659,12 +522,22 @@ export const POST = withUnifiedAuth(
       items: safeItems,
       total_amount: finalTotal,
       notes: (body as { notes?: string }).notes ?? null,
-      order_status: ((body as { order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED" }).order_status) || "IN_PREP", // Default to IN_PREP so it shows in Live Orders immediately
+      order_status: ((body as { order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED" }).order_status) || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
       payment_status: ((body as { payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED" }).payment_status) || "UNPAID", // Use provided status or default to 'UNPAID'
       payment_mode: validatedOrderBody.payment_mode || "online", // New field for payment mode
-      payment_method: ((body as { payment_method?: "demo" | "stripe" | "till" | null }).payment_method ?? null) as "demo" | "stripe" | "till" | null,
+      payment_method: (() => {
+        const method = ((body as { payment_method?: string }).payment_method);
+        // Map old values to standardized values
+        if (!method) return "PAY_NOW"; // Default fallback
+        const upperMethod = (method || "").toUpperCase();
+        if (upperMethod === "DEMO" || upperMethod === "STRIPE" || upperMethod === "PAY_NOW") return "PAY_NOW";
+        if (upperMethod === "TILL" || upperMethod === "PAY_AT_TILL") return "PAY_AT_TILL";
+        if (upperMethod === "LATER" || upperMethod === "PAY_LATER") return "PAY_LATER";
+        return "PAY_NOW"; // Default fallback
+      })(),
       // NOTE: session_id is NOT a database column - don't include in payload
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
+      // NOTE: is_active is a generated column in the database, don't include it in insert
     };
 
     // Check for duplicate orders (idempotency check)
@@ -722,31 +595,120 @@ export const POST = withUnifiedAuth(
       },
     });
 
+    // Clean payload: remove undefined values, ensure nulls, add timestamps
+    // Database might require created_at/updated_at or have NOT NULL constraints
+    const now = new Date().toISOString();
+    const cleanPayload: Record<string, unknown> = {
+      venue_id: payload.venue_id,
+      table_number: payload.table_number ?? null,
+      table_id: payload.table_id ?? null,
+      customer_name: payload.customer_name,
+      customer_phone: payload.customer_phone,
+      customer_email: (validatedOrderBody as { customer_email?: string | null }).customer_email ?? null, // Include customer_email if provided
+      items: payload.items,
+      total_amount: payload.total_amount,
+      notes: payload.notes ?? null,
+      order_status: payload.order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
+      payment_status: payload.payment_status || "UNPAID",
+      payment_method: payload.payment_method || "PAY_NOW", // Ensure payment_method is always set (required by constraint)
+      payment_mode: (() => {
+        // Ensure payment_mode matches payment_method for constraint consistency
+        const method = payload.payment_method || "PAY_NOW";
+        const upperMethod = (method || "").toUpperCase();
+        if (upperMethod === "PAY_NOW") return "online";
+        if (upperMethod === "PAY_AT_TILL") return "offline";
+        if (upperMethod === "PAY_LATER") return "deferred";
+        // Default fallback
+        return payload.payment_mode || "online";
+      })(),
+      source: payload.source || "qr",
+      // NOTE: is_active is a GENERATED column in the database - computed automatically, DO NOT include in insert
+      created_at: now,
+      updated_at: now,
+    };
+    
+    // Remove undefined fields (they break JSON serialization)
+    Object.keys(cleanPayload).forEach(key => {
+      if (cleanPayload[key] === undefined) {
+        delete cleanPayload[key];
+      }
+    });
+
+    // Log the EXACT payload being inserted before database insert (use console.log for Railway)
+    console.log(`📤 [ORDERS API ${requestId}] ===== PAYLOAD BEFORE DATABASE INSERT =====`, JSON.stringify({
+      payload: JSON.stringify(cleanPayload, null, 2),
+      payloadKeys: Object.keys(cleanPayload),
+      itemsCount: Array.isArray(cleanPayload.items) ? (cleanPayload.items as unknown[]).length : 0,
+      payment_status: cleanPayload.payment_status,
+      payment_mode: cleanPayload.payment_mode,
+      payment_method: cleanPayload.payment_method,
+      order_status: cleanPayload.order_status,
+      venue_id: cleanPayload.venue_id,
+      customer_name: cleanPayload.customer_name,
+      customer_phone: cleanPayload.customer_phone,
+      table_number: cleanPayload.table_number,
+      table_id: cleanPayload.table_id,
+      total_amount: cleanPayload.total_amount,
+      source: cleanPayload.source,
+      // is_active is a generated column, not included in payload
+      created_at: cleanPayload.created_at,
+      updated_at: cleanPayload.updated_at,
+      requestId,
+    }, null, 2));
+    console.error("[ORDER CREATION DEBUG] Full cleaned payload:", JSON.stringify(cleanPayload, null, 2));
+
     const { data: inserted, error: insertErr } = await supabase
       .from("orders")
-      .insert(payload)
+      .insert(cleanPayload)
       .select("*");
 
     if (insertErr) {
-      logger.error("[ORDER CREATION DEBUG] ===== INSERT FAILED =====");
-      logger.error("[ORDER CREATION DEBUG] Error details:", { value: insertErr });
+      console.error(`❌ [ORDERS API ${requestId}] ===== DATABASE INSERT FAILED =====`, JSON.stringify({
+        errorCode: insertErr.code,
+        errorMessage: insertErr.message,
+        errorDetails: insertErr.details,
+        errorHint: insertErr.hint,
+        fullError: JSON.stringify(insertErr, null, 2),
+        payload: JSON.stringify(cleanPayload, null, 2),
+      }, null, 2));
+      logger.error(`❌ [ORDERS API ${requestId}] Database error code:`, insertErr.code);
+      logger.error(`❌ [ORDERS API ${requestId}] Database error message:`, insertErr.message);
+      logger.error(`❌ [ORDERS API ${requestId}] Database error details:`, insertErr.details);
+      logger.error(`❌ [ORDERS API ${requestId}] Database error hint:`, insertErr.hint);
+      
+      console.error("[ORDER CREATION DEBUG] ===== DATABASE INSERT ERROR =====");
+      console.error("Error Code:", insertErr.code);
+      console.error("Error Message:", insertErr.message);
+      console.error("Error Details:", insertErr.details);
+      console.error("Error Hint:", insertErr.hint);
+      console.error("Full Error:", JSON.stringify(insertErr, null, 2));
+      console.error("Payload that failed:", JSON.stringify(cleanPayload, null, 2));
 
       // Try to provide more specific error messages
-      let errorMessage = insertErr.message;
+      let errorMessage = insertErr.message || "Database insert failed";
       if (insertErr.code === "23505") {
         errorMessage = "Order already exists with this ID";
       } else if (insertErr.code === "23503") {
-        errorMessage = "Referenced venue or table does not exist";
+        errorMessage = `Referenced venue or table does not exist: ${insertErr.message}`;
       } else if (insertErr.code === "23514") {
-        errorMessage = "Data validation failed - check required fields";
+        errorMessage = `Data validation failed: ${insertErr.message || "Check required fields"}`;
+      } else if (insertErr.code === "23502") {
+        errorMessage = `Required field is missing: ${insertErr.message || insertErr.hint || "Check all required fields"}`;
+      } else if (insertErr.message) {
+        errorMessage = insertErr.message;
+        if (insertErr.hint) {
+          errorMessage += ` (${insertErr.hint})`;
+        }
       }
 
-      return bad(`Insert failed: ${errorMessage}`, 400);
+      console.error(`❌ [ORDERS API ${requestId}] Insert failed:`, { errorMessage, requestId });
+      return bad(`Insert failed: ${errorMessage}`, 400, requestId);
     }
 
     if (!inserted || inserted.length === 0) {
       logger.error("❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌", { requestId });
-      return bad("Order creation failed - no data returned", 500);
+      console.error(`❌ [ORDERS API ${requestId}] Order creation failed - no data returned from database`);
+      return bad("Order creation failed - no data returned", 500, requestId);
     }
     logger.info("🎉🎉🎉 ORDER CREATED IN DATABASE 🎉🎉🎉", {
       orderId: inserted[0].id,
@@ -826,7 +788,8 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (fetchError || !fetchedOrder) {
-        return bad("Order creation failed: No order data returned from database", 500);
+        console.error(`❌ [ORDERS API ${requestId}] Order creation failed: No order data returned from database`, { fetchError, requestId });
+        return bad("Order creation failed: No order data returned from database", 500, requestId);
       }
 
       createdOrder = fetchedOrder;
@@ -850,12 +813,37 @@ export const POST = withUnifiedAuth(
 
     // Create KDS tickets for the order
     try {
-      await createKDSTickets(supabase, inserted[0]);
-    } catch (kdsError) {
-      logger.warn("[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical):", {
-        value: kdsError,
+      logger.info("[ORDER CREATION DEBUG] Creating KDS tickets for order:", {
+        orderId: inserted[0].id,
+        itemCount: Array.isArray(inserted[0].items) ? inserted[0].items.length : 0,
+        venueId: inserted[0].venue_id,
+        requestId,
       });
-      // Don't fail the order creation if KDS tickets fail
+      await createKDSTickets(supabase, inserted[0]);
+      logger.info("[ORDER CREATION DEBUG] ✅ KDS tickets created successfully", {
+        orderId: inserted[0].id,
+        requestId,
+      });
+    } catch (kdsError) {
+      // Log detailed error but don't fail order creation
+      const errorMessage = kdsError instanceof Error ? kdsError.message : JSON.stringify(kdsError);
+      const errorStack = kdsError instanceof Error ? kdsError.stack : undefined;
+      logger.error("[ORDER CREATION DEBUG] ❌ KDS ticket creation failed (non-critical):", {
+        orderId: inserted[0].id,
+        error: errorMessage,
+        stack: errorStack,
+        orderItems: Array.isArray(inserted[0].items) ? inserted[0].items.length : 0,
+        venueId: inserted[0].venue_id,
+        requestId,
+        fullError: kdsError,
+      });
+      console.error(`❌ [ORDERS API ${requestId}] KDS ticket creation failed:`, {
+        orderId: inserted[0].id,
+        error: errorMessage,
+        stack: errorStack,
+        fullError: JSON.stringify(kdsError, Object.getOwnPropertyNames(kdsError)),
+      });
+      // Don't fail the order creation if KDS tickets fail - order is already created
     }
 
     const duration = Date.now() - startTime;
@@ -876,14 +864,12 @@ export const POST = withUnifiedAuth(
       const errorStack = _error instanceof Error ? _error.stack : undefined;
       const duration = Date.now() - startTime;
 
-      logger.error("❌❌❌ ORDER CREATION FAILED ❌❌❌", {
+      console.error(`❌ [ORDERS API ${requestId}] ORDER CREATION FAILED`, JSON.stringify({
         error: errorMessage,
         stack: errorStack,
         duration: `${duration}ms`,
         requestId,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
+      }, null, 2));
 
       // Check if it's an authentication/authorization error
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
@@ -903,16 +889,4 @@ export const POST = withUnifiedAuth(
         isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
       );
     }
-  },
-  {
-    // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
-        const body = await req.json();
-        return body?.venue_id || body?.venueId || null;
-      } catch {
-        return null;
-      }
-    },
-  }
-);
+}

@@ -38,14 +38,16 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
   // Determine payment mode and status
   const determinePaymentInfo = (order: LegacyOrder): OrderForCard['payment'] => {
     const paymentStatus = (order.payment_status || 'UNPAID').toUpperCase();
-    const paymentMethod = order.payment_method;
+    const paymentMethod = order.payment_method || '';
 
-    // Determine mode
+    // Determine mode based on payment_method first, then fallback to payment_status
     let mode: OrderForCard['payment']['mode'] = 'online';
-    if (paymentMethod === 'till' || paymentStatus === 'TILL') {
+    if (paymentMethod.toUpperCase() === 'PAY_AT_TILL' || paymentMethod === 'till' || paymentStatus === 'TILL') {
       mode = 'pay_at_till';
-    } else if (paymentStatus === 'PAY_LATER') {
+    } else if (paymentMethod.toUpperCase() === 'PAY_LATER' || paymentStatus === 'PAY_LATER') {
       mode = 'pay_later';  
+    } else if (paymentMethod.toUpperCase() === 'PAY_NOW') {
+      mode = 'online';
     }
 
     // Determine status
@@ -65,7 +67,11 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
         status = 'unpaid';
     }
 
-    return { mode, status };
+    return { 
+      mode, 
+      status,
+      method: paymentMethod || undefined, // Include payment_method in payment object
+    };
   };
 
   // Generate items preview
@@ -149,6 +155,7 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     total_amount: legacyOrder.total_amount,
     currency,
     payment: determinePaymentInfo(legacyOrder),
+    payment_method: legacyOrder.payment_method, // Include raw payment_method for display
     table_id: legacyOrder.table_id || null,
     table_label,
     table: legacyOrder.table,

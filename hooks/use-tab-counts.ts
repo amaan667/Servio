@@ -48,28 +48,8 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchCounts = useCallback(
-    async (forceRefresh = false) => {
+    async (_forceRefresh = false) => {
       if (!venueId || !tz) return;
-
-      // If cache is fresh and not forcing refresh, skip fetch
-      if (!forceRefresh && isCacheFresh(venueId)) {
-        const cached = getCachedCounts(venueId);
-        if (cached) {
-          setData({
-            live_count: cached.live_count || 0,
-            earlier_today_count: cached.earlier_today_count || 0,
-            history_count: cached.history_count || 0,
-            today_orders_count: cached.today_orders_count || 0,
-            active_tables_count: cached.active_tables_count || 0,
-            tables_set_up: cached.tables_set_up || 0,
-            in_use_now: cached.in_use_now || 0,
-            reserved_now: cached.reserved_now || 0,
-            reserved_later: cached.reserved_later || 0,
-            waiting: cached.waiting || 0,
-          });
-          return;
-        }
-      }
 
       setIsLoading(true);
       setError(null);
@@ -110,8 +90,26 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
 
   // Always fetch on mount to ensure counts are visible, regardless of cache freshness
   useEffect(() => {
-    fetchCounts(false);
-  }, [venueId]); // Only depend on venueId, not fetchCounts
+    // 1) Use cached counts immediately (if present) to prevent flicker
+    const cached = getCachedCounts(venueId);
+    if (cached) {
+      setData({
+        live_count: cached.live_count || 0,
+        earlier_today_count: cached.earlier_today_count || 0,
+        history_count: cached.history_count || 0,
+        today_orders_count: cached.today_orders_count || 0,
+        active_tables_count: cached.active_tables_count || 0,
+        tables_set_up: cached.tables_set_up || 0,
+        in_use_now: cached.in_use_now || 0,
+        reserved_now: cached.reserved_now || 0,
+        reserved_later: cached.reserved_later || 0,
+        waiting: cached.waiting || 0,
+      });
+    }
+
+    // 2) Always force a fresh fetch on mount so counts are never stale
+    void fetchCounts(true);
+  }, [venueId, fetchCounts]);
 
   // Set up periodic refresh to keep counts updated even when tab is not active
   useEffect(() => {

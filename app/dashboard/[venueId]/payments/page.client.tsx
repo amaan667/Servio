@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
-import ReceiptsClient from "./ReceiptsClient";
+import PaymentsClient from "./PaymentsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 import { isValidUserRole } from "@/lib/utils/userRole";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
 
-export default function ReceiptsClientPage({ venueId }: { venueId: string }) {
+export default function PaymentsClientPage({ venueId }: { venueId: string }) {
   const { user, isLoading: authLoading } = useAuthRedirect();
 
   // Cache user role to prevent flicker
@@ -83,11 +83,11 @@ export default function ReceiptsClientPage({ venueId }: { venueId: string }) {
         )}
 
         <div className="mb-8 mt-4">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Receipts</h1>
-          <p className="text-lg text-foreground mt-2">View and manage order receipts</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Payments</h1>
+          <p className="text-lg text-foreground mt-2">Manage payments, split bills, and view receipts</p>
         </div>
 
-        <ReceiptsClient venueId={venueId} />
+        <PaymentsClient venueId={venueId} />
       </div>
     </div>
   );

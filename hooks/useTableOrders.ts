@@ -13,6 +13,8 @@ export interface TableOrder {
   customer_phone: string | null;
   order_status: string;
   payment_status: string;
+  payment_mode?: string;
+  payment_method?: string;
   total_amount: number;
   created_at: string;
   updated_at: string;
@@ -85,15 +87,41 @@ export function useTableOrders(venueId: string) {
             tableLabel = tableData?.label || defaultLabel;
           }
 
+          // Always ensure we have a proper table label
+          let finalTableLabel = tableLabel;
+          
+          if (!finalTableLabel && order.table_number) {
+            finalTableLabel = order.source === "counter"
+              ? `Counter ${order.table_number}`
+              : `Table ${order.table_number}`;
+          }
+          
+          // If still no label, try to get from table_id or use a default
+          if (!finalTableLabel) {
+            if (order.table_id) {
+              // Try to get table label from table_id
+              const { data: tableFromId } = await supabase
+                .from("tables")
+                .select("table_number")
+                .eq("id", order.table_id)
+                .single();
+              
+              if (tableFromId?.table_number) {
+                finalTableLabel = `Table ${tableFromId.table_number}`;
+              }
+            }
+          }
+          
+          // Last resort: use order ID or a generic label
+          if (!finalTableLabel) {
+            finalTableLabel = order.source === "counter" 
+              ? `Counter Order` 
+              : `Table Order`;
+          }
+          
           return {
             ...order,
-            table_label:
-              tableLabel ||
-              (order.table_number
-                ? order.source === "counter"
-                  ? `Counter ${order.table_number}`
-                  : `Table ${order.table_number}`
-                : "Unknown Table"),
+            table_label: finalTableLabel,
           } as TableOrder;
         })
       );

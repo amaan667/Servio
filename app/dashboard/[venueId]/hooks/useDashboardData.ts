@@ -34,10 +34,26 @@ export function useDashboardData(
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
 
   // Initialize with server data if available, otherwise defaults
+  // CRITICAL: Use server data immediately to prevent showing 0 on first load
   const [counts, setCounts] = useState<DashboardCounts>(() => {
     if (initialCounts) {
+      console.log("🟡 [USE_DASHBOARD_DATA] Initializing counts from server data:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        initialCounts: {
+          live_count: initialCounts.live_count,
+          earlier_today_count: initialCounts.earlier_today_count,
+          history_count: initialCounts.history_count,
+          today_orders_count: initialCounts.today_orders_count,
+          active_tables_count: initialCounts.active_tables_count,
+          tables_set_up: initialCounts.tables_set_up,
+          tables_in_use: initialCounts.tables_in_use,
+          tables_reserved_now: initialCounts.tables_reserved_now,
+        },
+      });
       return initialCounts;
     }
+    console.log("🟡 [USE_DASHBOARD_DATA] No initial counts, using defaults (zeros)");
     return {
       live_count: 0,
       earlier_today_count: 0,
@@ -52,28 +68,55 @@ export function useDashboardData(
 
   const [stats, setStats] = useState<DashboardStats>(() => {
     if (initialStats) {
+      console.log("🟡 [USE_DASHBOARD_DATA] Initializing stats from server data:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        initialStats: {
+          revenue: initialStats.revenue,
+          menuItems: initialStats.menuItems,
+          unpaid: initialStats.unpaid,
+        },
+      });
       return initialStats;
     }
+    console.log("🟡 [USE_DASHBOARD_DATA] No initial stats, using defaults (zeros)");
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
 
   // CRITICAL: Update state immediately when server props change
   // This ensures we always use the latest server data
+  // Run synchronously on mount if initialCounts exists to prevent showing 0
   useEffect(() => {
     if (initialCounts) {
+      console.log("🔵 [USE_DASHBOARD_DATA] useEffect: Updating counts from initialCounts:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        newCounts: initialCounts,
+        previousCounts: counts,
+      });
       setCounts(initialCounts);
+      setLoading(false);
     }
   }, [initialCounts]);
 
   useEffect(() => {
     if (initialStats) {
+      console.log("🔵 [USE_DASHBOARD_DATA] useEffect: Updating stats from initialStats:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        newStats: initialStats,
+        previousStats: stats,
+      });
       setStats(initialStats);
+      setLoading(false);
     }
   }, [initialStats]);
 
   // Fetch all counts directly from database
   const fetchCounts = useCallback(async (force = false) => {
-    if (!force && initialCounts) {
+    // Always fetch when force=true to ensure fresh data
+    // This ensures real-time updates and correct initial state
+    if (!force) {
       return;
     }
 
@@ -132,6 +175,12 @@ export function useDashboardData(
           tables_in_use: activeSessions?.length || 0,
           tables_reserved_now: currentReservations?.length || 0,
         };
+        console.log("🟠 [USE_DASHBOARD_DATA] Fresh counts fetched from DB:", {
+          timestamp: new Date().toISOString(),
+          venueId,
+          freshCounts: finalCounts,
+          previousCounts: counts,
+        });
         setCounts(finalCounts);
       }
     } catch (err) {
@@ -142,7 +191,9 @@ export function useDashboardData(
 
   // Fetch stats (revenue, menu items, unpaid) directly from database
   const fetchStats = useCallback(async (force = false) => {
-    if (!force && initialStats) {
+    // Always fetch when force=true to ensure fresh data
+    // This ensures real-time updates and correct initial state
+    if (!force) {
       return;
     }
 
@@ -168,7 +219,14 @@ export function useDashboardData(
       const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
       const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
 
-      setStats({ revenue, menuItems, unpaid });
+      const freshStats = { revenue, menuItems, unpaid };
+      console.log("🟠 [USE_DASHBOARD_DATA] Fresh stats fetched from DB:", {
+        timestamp: new Date().toISOString(),
+        venueId,
+        freshStats,
+        previousStats: stats,
+      });
+      setStats(freshStats);
     } catch (err) {
       logger.error("[Dashboard] Error fetching stats:", err);
       setError("Failed to fetch dashboard stats");
@@ -185,18 +243,35 @@ export function useDashboardData(
       endUtcISO: window.endUtcISO || "",
     });
 
-    // If we have initial data, use it - don't fetch (server data is always correct)
-    if (initialCounts && initialStats) {
-      setLoading(false);
-      return;
-    } else {
-      // No initial data - fetch immediately
-      const loadData = async () => {
-        await Promise.all([fetchCounts(true), fetchStats(true)]);
-        setLoading(false);
-      };
-      loadData();
+    console.log("🟣 [USE_DASHBOARD_DATA] Mount effect triggered:", {
+      timestamp: new Date().toISOString(),
+      venueId,
+      hasInitialCounts: !!initialCounts,
+      hasInitialStats: !!initialStats,
+      initialCountsValue: initialCounts,
+      initialStatsValue: initialStats,
+    });
+
+    // Always use initial data immediately to prevent showing 0 values
+    // But then always fetch fresh data to ensure we have the latest state
+    if (initialCounts) {
+      console.log("🟣 [USE_DASHBOARD_DATA] Setting counts from initial data:", initialCounts);
+      setCounts(initialCounts);
     }
+    if (initialStats) {
+      console.log("🟣 [USE_DASHBOARD_DATA] Setting stats from initial data:", initialStats);
+      setStats(initialStats);
+    }
+    setLoading(false);
+
+    // Always fetch fresh data on mount to ensure correct state
+    // This ensures the dashboard always shows current data, not stale cached data
+    const loadData = async () => {
+      console.log("🟣 [USE_DASHBOARD_DATA] Starting fresh data fetch...");
+      await Promise.all([fetchCounts(true), fetchStats(true)]);
+      console.log("🟣 [USE_DASHBOARD_DATA] Fresh data fetch completed");
+    };
+    loadData();
   }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
 
   // Set up real-time subscriptions for live updates
@@ -207,21 +282,22 @@ export function useDashboardData(
     const supabase = createClient();
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-    // Debounce to prevent immediate firing
-    let debounceTimeout: NodeJS.Timeout | null = null;
+    // Separate debounce timeouts for counts and stats to prevent conflicts
+    let countsDebounceTimeout: NodeJS.Timeout | null = null;
+    let statsDebounceTimeout: NodeJS.Timeout | null = null;
 
     const debouncedFetchCounts = () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
+      if (countsDebounceTimeout) clearTimeout(countsDebounceTimeout);
+      countsDebounceTimeout = setTimeout(() => {
         fetchCounts(true);
-      }, 500);
+      }, 300);
     };
 
     const debouncedFetchStats = () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
+      if (statsDebounceTimeout) clearTimeout(statsDebounceTimeout);
+      statsDebounceTimeout = setTimeout(() => {
         fetchStats(true);
-      }, 500);
+      }, 300);
     };
 
     // Subscribe to orders changes
@@ -316,7 +392,8 @@ export function useDashboardData(
       .subscribe();
 
     return () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
+      if (countsDebounceTimeout) clearTimeout(countsDebounceTimeout);
+      if (statsDebounceTimeout) clearTimeout(statsDebounceTimeout);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(menuChannel);
       supabase.removeChannel(tablesChannel);

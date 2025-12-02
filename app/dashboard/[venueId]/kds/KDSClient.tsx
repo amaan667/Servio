@@ -91,8 +91,8 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       const response = await apiClient.get("/api/kds/stations", { params: { venueId } });
       const data = await response.json();
 
-      if (data.ok) {
-        const fetchedStations = data.stations || [];
+      if (data.success) {
+        const fetchedStations = data.data?.stations || [];
         setStations(fetchedStations);
         // Cache stations to prevent flicker
         if (typeof window !== "undefined") {
@@ -107,7 +107,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
           }
         }
       } else {
-        setError(data.error || "Failed to load stations");
+        setError(data.error?.message || "Failed to load stations");
       }
     } catch {
       setError("Failed to load stations");
@@ -122,7 +122,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         params: {
           venueId,
           ...(selectedStation
-            ? { stationId: selectedStation }
+            ? { station_id: selectedStation }
             : {
                 /* Empty */
               }),
@@ -130,17 +130,20 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       });
       const data = await response.json();
 
-      if (data.ok) {
-        setTickets(data.tickets || []);
+      if (data.success) {
+        setTickets(data.data?.tickets || []);
+        setError(null); // Clear any previous errors
         // Cache tickets
         if (typeof window !== "undefined") {
-          sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.tickets || []));
+          sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.data?.tickets || []));
         }
       } else {
-        setError(data.error || "Failed to load tickets");
+        setError(data.error?.message || "Failed to load tickets");
+        console.error("[KDS] Tickets API error:", data);
       }
-    } catch (_error) {
-      setError("Failed to load tickets");
+    } catch (error) {
+      console.error("[KDS] Tickets fetch error:", error);
+      setError(error instanceof Error ? error.message : "Failed to load tickets");
     } finally {
       setLoading(false);
     }
@@ -149,17 +152,66 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   // Update ticket status
   const updateTicketStatus = useCallback(async (ticketId: string, status: string) => {
     try {
+      console.log("[KDS CLIENT] ===== UPDATING TICKET STATUS =====", {
+        ticketId,
+        status,
+        timestamp: new Date().toISOString(),
+      });
+
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.patch("/api/kds/tickets", { ticketId, status });
+      const payload = { ticket_id: ticketId, status };
+      
+      console.log("[KDS CLIENT] Sending PATCH request:", {
+        url: "/api/kds/tickets",
+        payload: JSON.stringify(payload, null, 2),
+      });
+
+      const response = await apiClient.patch("/api/kds/tickets", payload);
+
+      console.log("[KDS CLIENT] Response received:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[KDS CLIENT] ❌ HTTP Error Response:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error("[KDS CLIENT] ❌ Parsed Error:", JSON.stringify(errorData, null, 2));
+        } catch {
+          console.error("[KDS CLIENT] ❌ Could not parse error response as JSON");
+        }
+        return;
+      }
 
       const data = await response.json();
 
-      if (data.ok) {
-        // Update local state
-        setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.ticket } : t)));
+      console.log("[KDS CLIENT] Response data:", JSON.stringify(data, null, 2));
+
+      if (data.success) {
+        console.log("[KDS CLIENT] ✅ Ticket updated successfully", { ticketId, newStatus: status });
+        // Update local state immediately for instant feedback
+        setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t)));
+        // Refetch tickets after a short delay to ensure consistency
+        setTimeout(() => {
+          fetchTickets();
+        }, 500);
+      } else {
+        console.error("[KDS CLIENT] ❌ Update failed:", JSON.stringify(data, null, 2));
       }
-    } catch {
-      // Silently fail
+    } catch (error) {
+      console.error("[KDS CLIENT] ❌ Exception during ticket update:", {
+        error: error instanceof Error ? error.message : String(error),
+        ticketId,
+        status,
+      });
     }
   }, []);
 
@@ -174,7 +226,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
 
       const data = await response.json();
 
-      if (data.ok) {
+      if (data.success) {
         // REMOVE bumped tickets from KDS entirely
         setTickets((prev) => prev.filter((t) => t.order_id !== orderId));
       } else {
@@ -219,6 +271,39 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
     });
     return grouped;
   }, [tickets]);
+
+  // Trigger backfill if no tickets found after initial load
+  useEffect(() => {
+    const triggerBackfill = async () => {
+      // Wait a bit for initial fetch to complete
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      // If still no tickets, trigger backfill
+      if (tickets.length === 0 && !loading) {
+        try {
+          console.log("[KDS CLIENT] No tickets found, triggering backfill...");
+          const { apiClient } = await import("@/lib/api-client");
+          const response = await apiClient.post("/api/kds/backfill", {
+            venueId,
+            scope: "today",
+          });
+          const data = await response.json();
+          
+          if (data.ok && data.tickets_created > 0) {
+            console.log("[KDS CLIENT] Backfill created tickets, refreshing...");
+            // Wait a moment then refresh tickets
+            setTimeout(() => {
+              fetchTickets();
+            }, 1000);
+          }
+        } catch (error) {
+          console.error("[KDS CLIENT] Backfill error:", error);
+        }
+      }
+    };
+
+    triggerBackfill();
+  }, [tickets.length, loading, venueId, fetchTickets]);
 
   // Initial load
   useEffect(() => {
@@ -343,7 +428,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   });
 
   const activeTickets = sortedTickets.filter((t) => t.status !== "bumped");
-  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress"); // Treat both as "preparing"
+  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress"); // Treat all as "preparing"
   const readyTickets = activeTickets.filter((t) => t.status === "ready");
   const bumpedTickets = sortedTickets.filter((t) => t.status === "bumped");
 
@@ -523,92 +608,59 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
             <CheckCircle2 className="h-5 w-5 text-green-600" />
           </div>
           <div className="space-y-3">
-            {/* Group ready tickets by order */}
-            {Array.from(ticketsByOrder.entries())
-              .filter(([, tickets]) => tickets.some((t) => t.status === "ready"))
-              .map(([orderId, orderTickets]) => {
-                const readyOrderTickets = orderTickets.filter((t) => t.status === "ready");
-                const allReady = orderTickets.every((t) => t.status === "ready");
-                const firstTicket = readyOrderTickets[0];
-
-                return (
-                  <Card key={orderId} className="transition-all hover:shadow-lg">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        {/* Order Info */}
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="font-semibold">
-                              {firstTicket.table_label || `Table ${firstTicket.table_number}`}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {firstTicket.orders?.customer_name}
-                            </div>
-                          </div>
-                          <Badge
-                            variant={allReady ? "default" : "secondary"}
-                            className="bg-green-600"
-                          >
-                            {readyOrderTickets.length} ready
-                          </Badge>
+            {/* Show individual ready tickets with Mark Bumped button */}
+            {readyTickets.map((ticket) => (
+              <Card
+                key={ticket.id}
+                className="transition-all hover:shadow-lg cursor-pointer border-l-4 border-green-500"
+              >
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-lg">{ticket.item_name}</div>
+                        <div className="text-sm text-gray-600 font-medium">
+                          {ticket.orders?.customer_name ||
+                            ticket.table_label ||
+                            `Table ${ticket.table_number}`}
                         </div>
-
-                        {/* Items */}
-                        <div className="space-y-1">
-                          {readyOrderTickets.map((ticket) => {
-                            const modifiers = (ticket as { modifiers?: Record<string, string[]> }).modifiers;
-                            const modifierText = modifiers 
-                              ? Object.entries(modifiers)
-                                  .map(([modName, options]) => `${modName}: ${options.join(", ")}`)
-                                  .join("; ")
-                              : null;
-                            
-                            return (
-                            <div
-                              key={ticket.id}
-                              className="flex flex-col gap-1 text-sm"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span>
-                                  {ticket.quantity}x {ticket.item_name}
-                                </span>
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              </div>
-                              {modifierText && (
-                                <p className="text-xs text-muted-foreground pl-2 border-l-2 border-purple-300">
-                                  {modifierText}
-                                </p>
-                              )}
-                              {ticket.special_instructions && (
-                                <p className="text-xs text-yellow-700 pl-2 border-l-2 border-yellow-300">
-                                  Note: {ticket.special_instructions}
-                                </p>
-                              )}
-                            </div>
-                          );
-                          })}
-                        </div>
-
-                        {/* Time */}
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {getTimeElapsed(firstTicket.ready_at || firstTicket.created_at)}
-                        </div>
-
-                        {/* Actions */}
-                        <Button
-                          onClick={() => bumpOrder(orderId)}
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          size="sm"
-                        >
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          Bump Order
-                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      <div className="text-right">
+                        <Badge className="bg-green-600 text-white">
+                          {ticket.quantity}x
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Special Instructions */}
+                    {ticket.special_instructions && (
+                      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Note:</strong> {ticket.special_instructions}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Time Elapsed */}
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {getTimeElapsed(ticket.ready_at || ticket.created_at)}
+                    </div>
+
+                    {/* Bump Item Button */}
+                    <Button
+                      onClick={() => updateTicketStatus(ticket.id, "bumped")}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                      size="sm"
+                    >
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                      Bump Item
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
             {readyTickets.length === 0 && (
               <div className="text-center text-gray-400 py-8">No ready tickets</div>
             )}

@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+export async function POST(req: NextRequest) {
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -23,15 +21,20 @@ export const POST = withUnifiedAuth(
         );
       }
 
-      const user = context.user;
       const body = await req.json();
 
-    const { order_id, sessionId } = body;
+    const { order_id, venue_id, sessionId } = body;
 
+    console.log("⏰ [PAY LATER API] ===== REQUEST RECEIVED =====", {
+      orderId: order_id,
+      venueId: venue_id,
+      sessionId,
+      timestamp: new Date().toISOString(),
+      fullBody: JSON.stringify(body, null, 2),
+    });
     logger.info("⏰ [PAY LATER] Pay later requested", {
       orderId: order_id,
       sessionId,
-      userId: user.id,
       fullBody: body,
       timestamp: new Date().toISOString(),
     });
@@ -48,21 +51,41 @@ export const POST = withUnifiedAuth(
       );
     }
 
-    // Create authenticated Supabase client
-    const supabase = await createServerSupabase();
+    if (!venue_id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Venue ID is required",
+        },
+        { status: 400 }
+      );
+    }
 
-    // Verify order belongs to authenticated venue (withUnifiedAuth already verified venue access)
+    // Create Supabase admin client (bypasses RLS - order was created with admin client)
+    const supabase = createAdminClient();
+
+    // Verify order belongs to venue (security check)
     const { data: orderCheck, error: checkError } = await supabase
       .from("orders")
       .select("venue_id")
       .eq("id", order_id)
-      .eq("venue_id", context.venueId) // Security: ensure order belongs to authenticated venue
+      .eq("venue_id", venue_id) // Security: ensure order belongs to venue
       .single();
 
     if (checkError || !orderCheck) {
+      console.error("⏰ [PAY LATER API] ❌ ORDER NOT FOUND", {
+        orderId: order_id,
+        venueId: venue_id,
+        checkError: checkError ? {
+          message: checkError.message,
+          code: checkError.code,
+          details: checkError.details,
+        } : null,
+        orderCheckResult: orderCheck,
+      });
       logger.error("[PAY LATER] Order not found or venue mismatch:", {
         order_id,
-        venueId: context.venueId,
+        venueId: venue_id,
         error: checkError,
       });
       return NextResponse.json(
@@ -72,11 +95,11 @@ export const POST = withUnifiedAuth(
     }
 
     // Step 3: Attempt to update order
-    // IMPORTANT: payment_status should remain "UNPAID", only payment_mode changes to "pay_later"
+    // IMPORTANT: payment_status should remain "UNPAID", only payment_mode changes to "deferred"
     const updateData = {
-      payment_mode: "pay_later", // Set payment mode to pay_later
+      payment_mode: "deferred", // Standardized payment mode for Pay Later
       payment_status: "UNPAID", // Keep as UNPAID (not PAY_LATER)
-      payment_method: null, // No payment method yet
+      payment_method: "PAY_LATER", // Standardized payment method
       updated_at: new Date().toISOString(),
     };
 
@@ -84,7 +107,7 @@ export const POST = withUnifiedAuth(
       .from("orders")
       .update(updateData)
       .eq("id", order_id)
-      .eq("venue_id", context.venueId) // Security: ensure venue matches
+      .eq("venue_id", venue_id) // Security: ensure venue matches
       .select()
       .single();
 
@@ -109,6 +132,13 @@ export const POST = withUnifiedAuth(
       );
     }
 
+    console.log("⏰ [PAY LATER API] ✅ SUCCESS - Order updated", {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      paymentStatus: order.payment_status,
+      paymentMethod: order.payment_method,
+      total: order.total_amount,
+    });
     logger.info("✅ [PAY LATER] Order marked as pay later successfully", {
       orderId: order.id,
       tableNumber: order.table_number,
@@ -123,11 +153,13 @@ export const POST = withUnifiedAuth(
       data: {
         order_id: order.id,
         payment_status: "UNPAID",
-        payment_mode: "pay_later",
+        payment_mode: "deferred", // Standardized payment mode
+        payment_method: "PAY_LATER", // Standardized payment method
         total_amount: order.total_amount,
       },
     };
 
+      console.log("⏰ [PAY LATER API] Returning response:", JSON.stringify(response, null, 2));
       return NextResponse.json(response);
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
@@ -136,7 +168,6 @@ export const POST = withUnifiedAuth(
       logger.error("[PAY LATER] 💥 EXCEPTION CAUGHT:", {
         error: errorMessage,
         stack: errorStack,
-        venueId: context.venueId,
       });
 
       // Check if it's an authentication/authorization error
@@ -161,17 +192,4 @@ export const POST = withUnifiedAuth(
         { status: 500 }
       );
     }
-  },
-  {
-    // Extract venueId from order lookup or body
-    extractVenueId: async (req) => {
-      try {
-        const body = await req.json();
-        // If venue_id provided, use it; otherwise we'll verify via order lookup in handler
-        return body?.venue_id || body?.venueId || null;
-      } catch {
-        return null;
-      }
-    },
-  }
-);
+}

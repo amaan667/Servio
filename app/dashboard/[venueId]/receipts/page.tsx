@@ -1,11 +1,7 @@
-import ReceiptsClientPage from "./page.client";
-import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { redirect } from "next/navigation";
 
-export default async function ReceiptsPage({ params }: { params: { venueId: string } }) {
+export default async function ReceiptsRedirectPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
-
-  // Server-side auth check
-  const auth = await requirePageAuth(venueId).catch(() => null);
-
-  return <ReceiptsClientPage venueId={venueId} />;
+  redirect(`/dashboard/${venueId}/payments`);
 }
+

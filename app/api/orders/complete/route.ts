@@ -65,10 +65,11 @@ export const POST = withUnifiedAuth(
         );
       }
 
-      // Verify payment status
-      if (orderData.payment_status !== "PAID") {
+      // Verify payment status - must be in a paid state
+      const paidStatuses = ["PAID", "TILL"];
+      if (!paidStatuses.includes(orderData.payment_status?.toUpperCase() || "")) {
         return apiErrors.badRequest(
-          `Cannot complete order: payment status is ${orderData.payment_status}. Order must be PAID before completion.`
+          `Cannot complete order: payment status is ${orderData.payment_status}. Order must be PAID or TILL before completion.`
         );
       }
 

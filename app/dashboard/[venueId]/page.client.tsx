@@ -29,6 +29,16 @@ import { AIInsights } from "./components/AIInsights";
 import { TodayAtAGlance } from "./components/TodayAtAGlance";
 import { FeatureSections } from "./components/FeatureSections";
 
+type DashboardLogLevel = "info" | "warn" | "error";
+
+interface DashboardLogPayload {
+  level: DashboardLogLevel;
+  event: string;
+  venueId: string;
+  timestamp: string;
+  details: Record<string, unknown>;
+}
+
 /**
  * Modern Venue Dashboard Client Component
  *
@@ -91,15 +101,208 @@ const DashboardClient = React.memo(function DashboardClient({
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
 
+  const sendDashboardLog = (payload: DashboardLogPayload) => {
+    if (typeof window === "undefined") return;
+
+    // Fire-and-forget - we don't await this so it never blocks UI
+    void fetch("/api/log-dashboard", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }).catch(() => {
+      // Swallow logging errors
+    });
+  };
+
   // Custom hooks for dashboard data and realtime (call before any returns)
   const venueTz = "Europe/London"; // Default timezone
+  
+  // LOG: What server passed to client
+  useEffect(() => {
+    const timestamp = new Date().toISOString();
+    const details = {
+      timestamp: new Date().toISOString(),
+      venueId,
+      initialCounts: initialCounts ? {
+        live_count: initialCounts.live_count,
+        earlier_today_count: initialCounts.earlier_today_count,
+        history_count: initialCounts.history_count,
+        today_orders_count: initialCounts.today_orders_count,
+        active_tables_count: initialCounts.active_tables_count,
+        tables_set_up: initialCounts.tables_set_up,
+        tables_in_use: initialCounts.tables_in_use,
+        tables_reserved_now: initialCounts.tables_reserved_now,
+      } : null,
+      initialStats: initialStats ? {
+        revenue: initialStats.revenue,
+        menuItems: initialStats.menuItems,
+        unpaid: initialStats.unpaid,
+      } : null,
+    };
+
+    console.log("🔵 [DASHBOARD CLIENT] Initial data received from server:", details);
+
+    sendDashboardLog({
+      level: "info",
+      event: "initial_server_data",
+      venueId,
+      timestamp,
+      details,
+    });
+  }, [venueId, initialCounts, initialStats]);
+  
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
   
-  // Simple display values - directly from dashboardData state (which updates from DB)
+  // Simple display values - use client state which is synced from server data
+  // The useDashboardData hook ensures initialCounts/initialStats are used immediately
   const displayMenuItems = dashboardData.stats.menuItems;
   const displayTables = dashboardData.counts.tables_set_up;
+  
+  // LOG: What client is actually displaying
+  useEffect(() => {
+    const timestamp = new Date().toISOString();
 
-  // Removed complex logging - counts now update directly from database via real-time subscriptions
+    const displayedCounts = {
+      live_count: dashboardData.counts.live_count,
+      earlier_today_count: dashboardData.counts.earlier_today_count,
+      history_count: dashboardData.counts.history_count,
+      today_orders_count: dashboardData.counts.today_orders_count,
+      active_tables_count: dashboardData.counts.active_tables_count,
+      tables_set_up: dashboardData.counts.tables_set_up,
+      tables_in_use: dashboardData.counts.tables_in_use,
+      tables_reserved_now: dashboardData.counts.tables_reserved_now,
+    };
+    const displayedStats = {
+      revenue: dashboardData.stats.revenue,
+      menuItems: dashboardData.stats.menuItems,
+      unpaid: dashboardData.stats.unpaid,
+    };
+    
+    const details = {
+      timestamp,
+      venueId,
+      counts: displayedCounts,
+      stats: displayedStats,
+      loading: dashboardData.loading,
+    };
+
+    console.log("🟢 [DASHBOARD CLIENT] Current displayed values:", details);
+
+    sendDashboardLog({
+      level: "info",
+      event: "client_display_state",
+      venueId,
+      timestamp,
+      details,
+    });
+    
+    // COMPARISON: Check if displayed values match initial server values
+    if (initialCounts && initialStats) {
+      const countsMatch = JSON.stringify(displayedCounts) === JSON.stringify({
+        live_count: initialCounts.live_count,
+        earlier_today_count: initialCounts.earlier_today_count,
+        history_count: initialCounts.history_count,
+        today_orders_count: initialCounts.today_orders_count,
+        active_tables_count: initialCounts.active_tables_count,
+        tables_set_up: initialCounts.tables_set_up,
+        tables_in_use: initialCounts.tables_in_use,
+        tables_reserved_now: initialCounts.tables_reserved_now,
+      });
+      const statsMatch = JSON.stringify(displayedStats) === JSON.stringify({
+        revenue: initialStats.revenue,
+        menuItems: initialStats.menuItems,
+        unpaid: initialStats.unpaid,
+      });
+      
+      if (!countsMatch || !statsMatch) {
+        const mismatchDetails = {
+          timestamp,
+          venueId,
+          countsMatch,
+          statsMatch,
+          serverCounts: initialCounts,
+          displayedCounts,
+          serverStats: initialStats,
+          displayedStats,
+        };
+
+        console.warn("⚠️ [DASHBOARD CLIENT] MISMATCH DETECTED!", mismatchDetails);
+
+        sendDashboardLog({
+          level: "warn",
+          event: "client_server_mismatch",
+          venueId,
+          timestamp,
+          details: mismatchDetails,
+        });
+      } else {
+        console.log("✅ [DASHBOARD CLIENT] Displayed values match server values");
+
+        sendDashboardLog({
+          level: "info",
+          event: "client_server_match",
+          venueId,
+          timestamp,
+          details: {
+            timestamp,
+            venueId,
+          },
+        });
+      }
+    }
+  }, [venueId, dashboardData.counts, dashboardData.stats, dashboardData.loading, initialCounts, initialStats]);
+
+  // Listen to custom events for instant updates when menu items or tables change
+  useEffect(() => {
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    
+    const handleMenuItemsChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
+      const eventVenueId = customEvent.detail?.venueId;
+      // Match both formats: venue-xxx and xxx
+      if (
+        eventVenueId === venueId ||
+        eventVenueId === normalizedVenueId ||
+        eventVenueId === venueId.replace("venue-", "") ||
+        normalizedVenueId === eventVenueId.replace("venue-", "")
+      ) {
+        // Update menu items count immediately
+        dashboardData.setStats((prev) => ({
+          ...prev,
+          menuItems: customEvent.detail.count,
+        }));
+      }
+    };
+
+    const handleTablesChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
+      const eventVenueId = customEvent.detail?.venueId;
+      // Match both formats: venue-xxx and xxx
+      if (
+        eventVenueId === venueId ||
+        eventVenueId === normalizedVenueId ||
+        eventVenueId === venueId.replace("venue-", "") ||
+        normalizedVenueId === eventVenueId.replace("venue-", "")
+      ) {
+        // Update tables count immediately
+        dashboardData.setCounts((prev) => ({
+          ...prev,
+          tables_set_up: customEvent.detail.count,
+          active_tables_count: customEvent.detail.count,
+        }));
+      }
+    };
+
+    window.addEventListener("menuItemsChanged", handleMenuItemsChanged);
+    window.addEventListener("tablesChanged", handleTablesChanged);
+
+    return () => {
+      window.removeEventListener("menuItemsChanged", handleMenuItemsChanged);
+      window.removeEventListener("tablesChanged", handleTablesChanged);
+    };
+  }, [venueId, dashboardData.setStats, dashboardData.setCounts]);
 
   // Fetch live analytics data for charts
   const analyticsData = useAnalyticsData(venueId);
@@ -140,19 +343,37 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [handleRefresh]);
 
   // Auto-refresh when user navigates back to dashboard
-  // Only refresh if cache is stale - prevents unnecessary refreshes
+  // Always refresh on focus to ensure counts are up-to-date
   useEffect(() => {
     const handleFocus = () => {
-      // Only refresh if cache is stale (older than 5 minutes)
-      // This prevents flicker and unnecessary API calls
-      if (!isCacheFresh(venueId)) {
+      // Always refresh when page gains focus to ensure counts are accurate
+      handleRefresh();
+    };
+
+    const handleVisibilityChange = () => {
+      // Refresh when page becomes visible
+      if (!document.hidden) {
         handleRefresh();
       }
     };
 
     window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [venueId, handleRefresh]);
+
+  // Periodic refresh as fallback (every 30 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleRefresh();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [handleRefresh]);
 
   // Use live analytics data or fallback to empty data
   const ordersByHour = useMemo(() => {
@@ -400,7 +621,7 @@ const DashboardClient = React.memo(function DashboardClient({
         )}
 
         {/* Enhanced KPI Cards - Responsive Grid (Always 4 Cards) */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {/* Card 1: Today's Orders */}
           <Link href={`/dashboard/${venueId}/live-orders?since=today`} className="block">
             <EnhancedStatCard
@@ -455,7 +676,6 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 3: Tables Set Up */}
           <Link href={`/dashboard/${venueId}/tables`} className="block">
             <EnhancedStatCard
-              key={`tables-${displayTables}`}
               title="Tables Set Up"
               value={displayTables}
               icon={Table}
@@ -469,7 +689,6 @@ const DashboardClient = React.memo(function DashboardClient({
           {/* Card 4: Menu Items */}
           <Link href={`/dashboard/${venueId}/menu-management`} className="block">
             <EnhancedStatCard
-              key={`menu-items-${displayMenuItems}`}
               title="Menu Items"
               value={displayMenuItems}
               icon={ShoppingBag}

@@ -21,6 +21,8 @@ export interface PendingOrderData {
   customerPhone: string;
   orderId?: string;
   isDemo?: boolean;
+  paymentMethod?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL";
+  paymentMode?: "online" | "offline" | "deferred";
 }
 
 export function useOrderSummary() {

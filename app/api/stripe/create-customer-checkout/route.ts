@@ -5,16 +5,13 @@ import { env } from '@/lib/env';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 import { z } from 'zod';
 import { validateBody } from '@/lib/api/validation-schemas';
+import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(env('STRIPE_SECRET_KEY')!, {
-  apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion,
-});
-
 const createCustomerCheckoutSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
-  customerEmail: z.string().email("Invalid email address").optional(),
+  customerEmail: z.string().email("Invalid email address").optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
   customerName: z.string().min(1).max(100).optional(),
   venueName: z.string().min(1).max(100).optional(),
   orderId: z.string().uuid("Invalid order ID"),
@@ -26,13 +23,29 @@ const createCustomerCheckoutSchema = z.object({
  */
 export async function POST(req: Request) {
   try {
-    const body = await validateBody(createCustomerCheckoutSchema, await req.json());
+    const rawBody = await req.json();
+    console.log("💳 [STRIPE CHECKOUT API] ===== REQUEST RECEIVED =====", {
+      timestamp: new Date().toISOString(),
+      rawBody: JSON.stringify(rawBody, null, 2),
+    });
 
+    const body = await validateBody(createCustomerCheckoutSchema, rawBody);
+
+    console.log("💳 [STRIPE CHECKOUT API] Validation passed, creating session...", {
+      amount: body.amount,
+      orderId: body.orderId,
+      hasEmail: !!body.customerEmail,
+    });
     logger.info("💳 Creating Stripe customer checkout session", {
       amount: body.amount,
       customerName: body.customerName,
       venueName: body.venueName,
       orderId: body.orderId,
+    });
+
+    // Initialize Stripe client inside function to avoid build-time errors
+    const stripe = new Stripe(env('STRIPE_SECRET_KEY')!, {
+      apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion,
     });
 
     // Create Stripe checkout session for order payment
@@ -59,18 +72,61 @@ export async function POST(req: Request) {
         orderId: body.orderId,
         paymentType: "order_payment",
       },
-      customer_email: body.customerEmail,
+      customer_email: body.customerEmail || undefined,
     });
 
+    console.log("💳 [STRIPE CHECKOUT API] ✅ Stripe session created successfully", {
+      sessionId: session.id,
+      orderId: body.orderId,
+      url: session.url?.substring(0, 50) + "...",
+    });
     logger.info("✅ Stripe checkout session created", {
       sessionId: session.id,
       orderId: body.orderId,
     });
 
-    return success({
+    // Update the order with the session ID so the webhook can find it
+    // This is important for webhook reliability
+    try {
+      const supabaseAdmin = createAdminClient();
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({
+          stripe_session_id: session.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", body.orderId);
+
+      if (updateError) {
+        logger.warn("[STRIPE CHECKOUT] Failed to update order with session ID (non-critical):", {
+          orderId: body.orderId,
+          sessionId: session.id,
+          error: updateError.message,
+        });
+        // Don't fail the request - webhook can still find order by orderId in metadata
+      } else {
+        logger.debug("[STRIPE CHECKOUT] Updated order with session ID", {
+          orderId: body.orderId,
+          sessionId: session.id,
+        });
+      }
+    } catch (updateError) {
+      logger.warn("[STRIPE CHECKOUT] Error updating order with session ID (non-critical):", {
+        orderId: body.orderId,
+        error: updateError instanceof Error ? updateError.message : "Unknown error",
+      });
+      // Don't fail the request - webhook can still find order by orderId in metadata
+    }
+
+    const responseData = {
       sessionId: session.id,
       url: session.url,
-    });
+    };
+    console.log("💳 [STRIPE CHECKOUT API] Returning response:", JSON.stringify({
+      success: true,
+      data: responseData,
+    }, null, 2));
+    return success(responseData);
   } catch (error) {
     logger.error("❌ Error creating Stripe checkout session:", {
       error: error instanceof Error ? error.message : String(error),

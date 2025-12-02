@@ -26,12 +26,22 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
     notFound();
   }
 
-  // Get venue info
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown")
-    .eq("venue_id", order.venue_id)
-    .single();
+  // Get venue info - handle RLS gracefully
+  let venue = null;
+  try {
+    const { data: venueData, error: venueError } = await supabase
+      .from("venues")
+      .select("venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown")
+      .eq("venue_id", order.venue_id)
+      .maybeSingle();
+    
+    if (!venueError && venueData) {
+      venue = venueData;
+    }
+  } catch (error) {
+    // Log but continue - venue info is optional for receipt display
+    // Log but continue - venue info is optional
+  }
 
   return (
     <ReceiptPageClient

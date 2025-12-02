@@ -42,11 +42,11 @@ export default function Page() {
 
         <p className="description">
           Click the button below, and view the sample error on the Sentry{" "}
-          <a target="_blank" href="https://servio-hx.sentry.io/issues/?project=4510442493313104">
+          <a target="_blank" href="https://servio-hx.sentry.io/issues/?project=4510442493313104" rel="noreferrer">
             Issues Page
           </a>
           . For more details about setting up Sentry,{" "}
-          <a target="_blank" href="https://docs.sentry.io/platforms/javascript/guides/nextjs/">
+          <a target="_blank" href="https://docs.sentry.io/platforms/javascript/guides/nextjs/" rel="noreferrer">
             read our docs
           </a>
           .

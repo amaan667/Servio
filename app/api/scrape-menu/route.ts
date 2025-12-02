@@ -4,8 +4,6 @@ import { logger } from "@/lib/logger";
 import OpenAI from "openai";
 import { env } from '@/lib/env';
 
-const openai = new OpenAI({ apiKey: env('OPENAI_API_KEY') });
-
 // Force Node.js runtime (required for Playwright)
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -360,6 +358,9 @@ Return ONLY valid JSON:
 }`;
 
     const aiStart = Date.now();
+
+    // Initialize OpenAI client inside function to avoid build-time errors
+    const openai = new OpenAI({ apiKey: env('OPENAI_API_KEY') });
 
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o",

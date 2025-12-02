@@ -592,7 +592,20 @@ export function useDeleteTable(venueId: string) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete table");
+        // Extract error message properly - handle nested error objects
+        let errorMessage = "Failed to delete table";
+        
+        if (errorData.error) {
+          if (typeof errorData.error === "string") {
+            errorMessage = errorData.error;
+          } else if (errorData.error.message) {
+            errorMessage = errorData.error.message;
+          } else if (errorData.error.code) {
+            errorMessage = `Error code: ${errorData.error.code}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return await response.json();
