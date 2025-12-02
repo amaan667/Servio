@@ -67,17 +67,6 @@ export async function createKDSTicketsWithAI(
     // Step 4: Create tickets for each order item with AI assignment
     const items = Array.isArray(order.items) ? order.items : [];
 
-    // Get the next ticket number for this venue
-    const { data: lastTicket } = await supabase
-      .from("kds_tickets")
-      .select("ticket_number")
-      .eq("venue_id", order.venue_id)
-      .order("ticket_number", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    let nextTicketNumber = (lastTicket?.ticket_number || 0) + 1;
-
     for (const item of items) {
       const itemName = item.item_name || "Unknown Item";
       
@@ -132,7 +121,6 @@ export async function createKDSTicketsWithAI(
         venue_id: order.venue_id,
         order_id: order.id,
         station_id: assignedStation.id,
-        ticket_number: nextTicketNumber++,
         item_name: itemName,
         quantity:
           typeof item.quantity === "string"
