@@ -658,43 +658,74 @@ export function usePaymentProcessing() {
         }
       } else if (action === "till") {
         console.log("🧾 [PAY AT TILL] ===== STARTING PAY AT TILL FLOW =====");
-        console.log("🧾 [PAY AT TILL] Step 1: Saving payment choice and redirecting to summary...");
+        console.log("🧾 [PAY AT TILL] Step 1: Creating order IMMEDIATELY...");
         logger.info("🧾 [PAYMENT PROCESSING] Processing PAY AT TILL payment...");
         
-        // Save payment method choice to localStorage
-        const pendingOrder = {
-          ...checkoutData,
+        // IMMEDIATELY create order in DB (per spec)
+        const orderResult = await createOrder();
+        const orderId = orderResult.order?.id;
+
+        if (!orderId) {
+          console.error("🧾 [PAY AT TILL] ❌ No order ID returned");
+          throw new Error("Failed to create order");
+        }
+
+        console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", { 
+          orderId,
           paymentMethod: "PAY_AT_TILL",
-          paymentMode: "offline",
-        };
-        
-        localStorage.setItem("servio-pending-order", JSON.stringify(pendingOrder));
+          paymentStatus: "UNPAID",
+        });
+
+        // Clear cart
         localStorage.removeItem("servio-order-cart");
+        localStorage.removeItem("servio-checkout-data");
         
-        console.log("🧾 [PAY AT TILL] Step 2: Redirecting to order summary (order will be created there)");
+        console.log("🧾 [PAY AT TILL] Step 3: Redirecting to order summary", { orderId });
         
-        // Redirect to order summary page - it will create the order
-        window.location.href = "/order-summary";
+        // Redirect to order summary with orderId
+        window.location.href = `/order-summary?orderId=${orderId}`;
         return;
       } else if (action === "later") {
         console.log("⏰ [PAY LATER] ===== STARTING PAY LATER FLOW =====");
-        console.log("⏰ [PAY LATER] Step 1: Saving payment choice and redirecting to summary...");
+        console.log("⏰ [PAY LATER] Step 1: Creating order IMMEDIATELY...");
         logger.info("⏰ [PAYMENT PROCESSING] Processing PAY LATER payment...");
         
-        // Save payment method choice to localStorage
-        const pendingOrder = {
-          ...checkoutData,
+        // IMMEDIATELY create order in DB (per spec)
+        const orderResult = await createOrder();
+        const orderId = orderResult.order?.id;
+
+        if (!orderId) {
+          console.error("⏰ [PAY LATER] ❌ No order ID returned");
+          throw new Error("Failed to create order");
+        }
+
+        console.log("⏰ [PAY LATER] Step 2: ✅ Order created (UNPAID, PAY_LATER)", { 
+          orderId,
           paymentMethod: "PAY_LATER",
-          paymentMode: "deferred",
-        };
-        
-        localStorage.setItem("servio-pending-order", JSON.stringify(pendingOrder));
+          paymentStatus: "UNPAID",
+        });
+
+        // Store session for QR re-scan logic
+        const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
+        localStorage.setItem("servio-current-session", sessionId);
+        localStorage.setItem(
+          `servio-order-${sessionId}`,
+          JSON.stringify({
+            orderId,
+            venueId: checkoutData.venueId,
+            tableNumber: checkoutData.tableNumber,
+            total: checkoutData.total,
+          })
+        );
+
+        // Clear cart
         localStorage.removeItem("servio-order-cart");
+        localStorage.removeItem("servio-checkout-data");
         
-        console.log("⏰ [PAY LATER] Step 2: Redirecting to order summary (order will be created there)");
+        console.log("⏰ [PAY LATER] Step 3: Redirecting to order summary", { orderId });
         
-        // Redirect to order summary page - it will create the order
-        window.location.href = "/order-summary";
+        // Redirect to order summary with orderId  
+        window.location.href = `/order-summary?orderId=${orderId}`;
         return;
       }
 
