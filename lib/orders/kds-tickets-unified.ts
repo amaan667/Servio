@@ -93,12 +93,11 @@ export async function createKDSTicketsWithAI(
       
       console.log(`[KDS TICKETS] Processing item ${i + 1}/${items.length}: ${itemName}`);
       
-      // Use AI to assign station, fallback to keyword matching
-      const assignedStation = await assignStationWithAI(
+      // Use smart keyword categorization to assign station
+      const assignedStation = assignStationByKeywords(
         itemName,
         existingStations,
-        expoStation,
-        order.venue_id
+        expoStation
       );
 
       console.log(`[KDS TICKETS] Assigned to station:`, { 
@@ -311,105 +310,105 @@ async function getTableLabel(
 }
 
 /**
- * Assigns a station to an item using AI, with keyword fallback
+ * Assigns a station to an item using smart keyword categorization
  */
-async function assignStationWithAI(
+function assignStationByKeywords(
   itemName: string,
   stations: KDSStation[],
-  defaultStation: KDSStation,
-  venueId: string
-): Promise<KDSStation> {
-  let assignedStation = defaultStation;
-
-  // Try AI-based assignment (with timeout to prevent blocking)
-  try {
-    const stationTypes = stations.map((s) => s.station_type || "expo");
-    const stationNames = stations.map((s) => s.station_name || "Expo");
-
-    // Call LLM API with timeout
-    const llmPromise = fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/ai/simple-chat`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: `Menu item: "${itemName}". Available stations: ${stationNames.join(", ")} (types: ${stationTypes.join(", ")}). Return ONLY the station type (barista/grill/fryer/cold/expo) - no other text.`,
-          venueId,
-        }),
-      }
-    );
-
-    const timeoutPromise = new Promise<Response>((_, reject) =>
-      setTimeout(() => reject(new Error("LLM timeout")), 2000)
-    );
-
-    const llmResponse = await Promise.race([llmPromise, timeoutPromise]);
-
-    if (llmResponse.ok) {
-      const llmResult = await llmResponse.json();
-      const suggestedType = (llmResult.response || "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z]/g, "");
-
-      // Find station matching LLM suggestion
-      const suggestedStation = stations.find(
-        (s) => (s.station_type || "").toLowerCase() === suggestedType
-      );
-
-      if (suggestedStation) {
-        assignedStation = suggestedStation;
-        logger.debug("[KDS TICKETS] LLM assigned station", {
-          item: itemName,
-          station: assignedStation.station_type,
-        });
-        return assignedStation;
-      }
-    }
-  } catch (llmError) {
-    // LLM failed or timed out - will use keyword fallback
-    logger.debug("[KDS TICKETS] LLM unavailable, using keyword fallback", {
-      item: itemName,
-    });
-  }
-
-  // Fallback: Keyword-based routing if AI didn't assign
+  defaultStation: KDSStation
+): KDSStation {
   const itemNameLower = itemName.toLowerCase();
 
+  // Barista Station - Drinks & Beverages
   if (
     itemNameLower.includes("coffee") ||
     itemNameLower.includes("latte") ||
     itemNameLower.includes("cappuccino") ||
     itemNameLower.includes("espresso") ||
+    itemNameLower.includes("mocha") ||
+    itemNameLower.includes("americano") ||
+    itemNameLower.includes("macchiato") ||
     itemNameLower.includes("tea") ||
-    itemNameLower.includes("drink")
+    itemNameLower.includes("chai") ||
+    itemNameLower.includes("hot chocolate") ||
+    itemNameLower.includes("smoothie") ||
+    itemNameLower.includes("juice") ||
+    itemNameLower.includes("shake") ||
+    itemNameLower.includes("drink") ||
+    itemNameLower.includes("beverage")
   ) {
     const baristaStation = stations.find((s) => s.station_type === "barista");
-    if (baristaStation) return baristaStation;
-  } else if (
+    if (baristaStation) {
+      console.log(`[KDS CATEGORIZATION] ${itemName} → Barista (drinks)`);
+      return baristaStation;
+    }
+  }
+
+  // Grill Station - Hot grilled items
+  if (
     itemNameLower.includes("burger") ||
     itemNameLower.includes("steak") ||
     itemNameLower.includes("chicken") ||
-    itemNameLower.includes("grill")
+    itemNameLower.includes("beef") ||
+    itemNameLower.includes("lamb") ||
+    itemNameLower.includes("pork") ||
+    itemNameLower.includes("sausage") ||
+    itemNameLower.includes("kebab") ||
+    itemNameLower.includes("grill") ||
+    itemNameLower.includes("bbq") ||
+    itemNameLower.includes("ribs") ||
+    itemNameLower.includes("halloumi")
   ) {
     const grillStation = stations.find((s) => s.station_type === "grill");
-    if (grillStation) return grillStation;
-  } else if (
+    if (grillStation) {
+      console.log(`[KDS CATEGORIZATION] ${itemName} → Grill (hot grilled)`);
+      return grillStation;
+    }
+  }
+
+  // Fryer Station - Fried items
+  if (
     itemNameLower.includes("fries") ||
     itemNameLower.includes("chips") ||
     itemNameLower.includes("fried") ||
-    itemNameLower.includes("fryer")
+    itemNameLower.includes("fryer") ||
+    itemNameLower.includes("wings") ||
+    itemNameLower.includes("nuggets") ||
+    itemNameLower.includes("crispy") ||
+    itemNameLower.includes("tempura") ||
+    itemNameLower.includes("calamari") ||
+    itemNameLower.includes("onion rings")
   ) {
     const fryerStation = stations.find((s) => s.station_type === "fryer");
-    if (fryerStation) return fryerStation;
-  } else if (
-    itemNameLower.includes("salad") ||
-    itemNameLower.includes("sandwich") ||
-    itemNameLower.includes("cold")
-  ) {
-    const coldStation = stations.find((s) => s.station_type === "cold");
-    if (coldStation) return coldStation;
+    if (fryerStation) {
+      console.log(`[KDS CATEGORIZATION] ${itemName} → Fryer (fried)`);
+      return fryerStation;
+    }
   }
 
-  return assignedStation;
+  // Cold Prep Station - Salads, sandwiches, cold items
+  if (
+    itemNameLower.includes("salad") ||
+    itemNameLower.includes("sandwich") ||
+    itemNameLower.includes("wrap") ||
+    itemNameLower.includes("cold") ||
+    itemNameLower.includes("sushi") ||
+    itemNameLower.includes("poke") ||
+    itemNameLower.includes("bowl") ||
+    itemNameLower.includes("hummus") ||
+    itemNameLower.includes("mezze") ||
+    itemNameLower.includes("dip") ||
+    itemNameLower.includes("labneh") ||
+    itemNameLower.includes("tzatziki")
+  ) {
+    const coldStation = stations.find((s) => s.station_type === "cold");
+    if (coldStation) {
+      console.log(`[KDS CATEGORIZATION] ${itemName} → Cold Prep (cold items)`);
+      return coldStation;
+    }
+  }
+
+  // Default to Expo if no match
+  console.log(`[KDS CATEGORIZATION] ${itemName} → Expo (default/no match)`);
+  return defaultStation;
 }
