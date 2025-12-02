@@ -559,92 +559,59 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
             <CheckCircle2 className="h-5 w-5 text-green-600" />
           </div>
           <div className="space-y-3">
-            {/* Group ready tickets by order */}
-            {Array.from(ticketsByOrder.entries())
-              .filter(([, tickets]) => tickets.some((t) => t.status === "ready"))
-              .map(([orderId, orderTickets]) => {
-                const readyOrderTickets = orderTickets.filter((t) => t.status === "ready");
-                const allReady = orderTickets.every((t) => t.status === "ready");
-                const firstTicket = readyOrderTickets[0];
-
-                return (
-                  <Card key={orderId} className="transition-all hover:shadow-lg">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        {/* Order Info */}
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="font-semibold">
-                              {firstTicket.table_label || `Table ${firstTicket.table_number}`}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {firstTicket.orders?.customer_name}
-                            </div>
-                          </div>
-                          <Badge
-                            variant={allReady ? "default" : "secondary"}
-                            className="bg-green-600"
-                          >
-                            {readyOrderTickets.length} ready
-                          </Badge>
+            {/* Show individual ready tickets with Mark Bumped button */}
+            {readyTickets.map((ticket) => (
+              <Card
+                key={ticket.id}
+                className="transition-all hover:shadow-lg cursor-pointer border-l-4 border-green-500"
+              >
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-lg">{ticket.item_name}</div>
+                        <div className="text-sm text-gray-600 font-medium">
+                          {ticket.orders?.customer_name ||
+                            ticket.table_label ||
+                            `Table ${ticket.table_number}`}
                         </div>
-
-                        {/* Items */}
-                        <div className="space-y-1">
-                          {readyOrderTickets.map((ticket) => {
-                            const modifiers = (ticket as { modifiers?: Record<string, string[]> }).modifiers;
-                            const modifierText = modifiers 
-                              ? Object.entries(modifiers)
-                                  .map(([modName, options]) => `${modName}: ${options.join(", ")}`)
-                                  .join("; ")
-                              : null;
-                            
-                            return (
-                            <div
-                              key={ticket.id}
-                              className="flex flex-col gap-1 text-sm"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span>
-                                  {ticket.quantity}x {ticket.item_name}
-                                </span>
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              </div>
-                              {modifierText && (
-                                <p className="text-xs text-muted-foreground pl-2 border-l-2 border-purple-300">
-                                  {modifierText}
-                                </p>
-                              )}
-                              {ticket.special_instructions && (
-                                <p className="text-xs text-yellow-700 pl-2 border-l-2 border-yellow-300">
-                                  Note: {ticket.special_instructions}
-                                </p>
-                              )}
-                            </div>
-                          );
-                          })}
-                        </div>
-
-                        {/* Time */}
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {getTimeElapsed(firstTicket.ready_at || firstTicket.created_at)}
-                        </div>
-
-                        {/* Actions */}
-                        <Button
-                          onClick={() => bumpOrder(orderId)}
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          size="sm"
-                        >
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          Bump Order
-                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      <div className="text-right">
+                        <Badge className="bg-green-600 text-white">
+                          {ticket.quantity}x
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Special Instructions */}
+                    {ticket.special_instructions && (
+                      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Note:</strong> {ticket.special_instructions}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Time Elapsed */}
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {getTimeElapsed(ticket.ready_at || ticket.created_at)}
+                    </div>
+
+                    {/* Mark Bumped Button */}
+                    <Button
+                      onClick={() => updateTicketStatus(ticket.id, "bumped")}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                      size="sm"
+                    >
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                      Mark Bumped
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
             {readyTickets.length === 0 && (
               <div className="text-center text-gray-400 py-8">No ready tickets</div>
             )}
