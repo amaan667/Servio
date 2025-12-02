@@ -3,7 +3,6 @@ import Stripe from "stripe";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { getStripeClient } from "@/lib/stripe-client";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
@@ -12,44 +11,65 @@ export const runtime = "nodejs";
 
 const stripe = getStripeClient();
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+// PUBLIC ENDPOINT - No auth required for QR orders
+export async function POST(req: NextRequest) {
+  try {
+    console.log("💳 [CHECKOUT API] ===== PUBLIC STRIPE CHECKOUT REQUEST =====", {
+      timestamp: new Date().toISOString(),
+    });
 
-      const body = await req.json();
-      const {
-        amount,
-        tableNumber,
-        customerName,
-        customerPhone,
-        orderId,
-        items,
-        source,
-        venueName,
-        customerEmail,
-      } = body;
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests',
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
 
-      // Use venueId from context
-      const finalVenueId = context.venueId || body.venueId;
+    const body = await req.json();
+    const {
+      amount,
+      tableNumber,
+      customerName,
+      customerPhone,
+      orderId,
+      items,
+      source,
+      venueName,
+      customerEmail,
+      venueId,
+    } = body;
+
+    console.log("💳 [CHECKOUT API] Request payload:", {
+      venueId,
+      amount,
+      tableNumber,
+      itemCount: items?.length || 0,
+      hasEmail: !!customerEmail,
+    });
+
+    // Use venueId from body (QR orders provide it directly)
+    const finalVenueId = venueId;
 
     if (!finalVenueId) {
+      console.error("💳 [CHECKOUT API] ❌ Missing venueId");
       return apiErrors.badRequest('venueId is required');
     }
 
     if (!amount || amount < 0.5) {
+      console.error("💳 [CHECKOUT API] ❌ Invalid amount", { amount });
       return apiErrors.badRequest('Amount must be at least £0.50');
     }
+
+    console.log("💳 [CHECKOUT API] Creating Stripe session...", {
+      venueId: finalVenueId,
+      amount,
+      amountInPence: Math.round(amount * 100),
+    });
 
     // Convert to pence (Stripe uses smallest currency unit)
     const amountInPence = Math.round(amount * 100);
@@ -99,6 +119,11 @@ export const POST = withUnifiedAuth(
       { maxRetries: 3 }
     );
 
+    console.log("💳 [CHECKOUT API] ✅ Stripe session created successfully", {
+      sessionId: session.id,
+      url: session.url ? session.url.substring(0, 50) + "..." : null,
+      venueId: finalVenueId,
+    });
     logger.info("[CHECKOUT] Created Stripe session:", {
       sessionId: session.id,
       orderId,
@@ -106,16 +131,19 @@ export const POST = withUnifiedAuth(
       venue: finalVenueId,
     });
 
-      return NextResponse.json({ id: session.id, url: session.url });
-    } catch (_error) {
-      logger.error("[CHECKOUT] Error creating checkout session:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
+    return NextResponse.json({ id: session.id, url: session.url });
+  } catch (_error) {
+    console.error("💳 [CHECKOUT API] ❌ Error creating checkout session:", {
+      error: _error instanceof Error ? _error.message : String(_error),
+      stack: _error instanceof Error ? _error.stack : undefined,
+    });
+    logger.error("[CHECKOUT] Error creating checkout session:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
 
-      return NextResponse.json(
-        { error: _error instanceof Error ? _error.message : "An _error occurred" },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { error: _error instanceof Error ? _error.message : "An _error occurred" },
+      { status: 500 }
+    );
   }
-);
+}

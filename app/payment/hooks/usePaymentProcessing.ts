@@ -543,11 +543,19 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
         console.log("💳 [PAY NOW - STRIPE] ===== STARTING STRIPE PAYMENT FLOW =====");
-        console.log("💳 [PAY NOW] Step 1: Creating Stripe checkout session (NO order yet)");
+        console.log("💳 [PAY NOW] Step 1: Creating order...");
         logger.info("💳 [PAYMENT PROCESSING] Processing STRIPE payment...");
         
-        // IMPORTANT: Do NOT create order yet - order created AFTER Stripe payment succeeds
-        // Stripe webhook will create the order when payment completes
+        // Create order first with UNPAID status
+        const orderResult = await createOrder();
+        const orderId = orderResult.order?.id;
+
+        if (!orderId) {
+          console.error("💳 [PAY NOW] ❌ No order ID returned");
+          throw new Error("Failed to create order before Stripe checkout");
+        }
+
+        console.log("💳 [PAY NOW] Step 2: Order created, creating Stripe session...", { orderId });
         
         let result;
         try {
@@ -556,6 +564,7 @@ export function usePaymentProcessing() {
             tableNumber: checkoutData.tableNumber,
             customerName: checkoutData.customerName,
             customerPhone: checkoutData.customerPhone,
+            orderId: orderId,
             items: checkoutData.cart,
             source: checkoutData.source || "qr",
             venueName: checkoutData.venueName || "Restaurant",
@@ -563,10 +572,10 @@ export function usePaymentProcessing() {
             venueId: checkoutData.venueId,
           };
 
-          console.log("💳 [PAY NOW] Step 2: Calling /api/checkout (no orderId, cart in metadata)", {
+          console.log("💳 [PAY NOW] Step 3: Calling /api/checkout with orderId", {
+            orderId,
             amount: checkoutPayload.amount,
             itemCount: checkoutPayload.items.length,
-            tableNumber: checkoutPayload.tableNumber,
           });
 
           logger.info("💳 [PAYMENT PROCESSING] Sending Stripe checkout request:", {
@@ -607,7 +616,8 @@ export function usePaymentProcessing() {
           // Redirect to Stripe checkout
           if (result?.url || result?.data?.url) {
             const checkoutUrl = result.url || result.data?.url;
-            console.log("💳 [PAY NOW] Step 3: ✅ SUCCESS - Redirecting to Stripe (order will be created AFTER payment)", {
+            console.log("💳 [PAY NOW] Step 4: ✅ Redirecting to Stripe (webhook will mark as PAID)", {
+              orderId,
               url: checkoutUrl.substring(0, 50) + "...",
               sessionId: result?.id || result?.data?.sessionId,
             });
@@ -621,7 +631,7 @@ export function usePaymentProcessing() {
             localStorage.removeItem("servio-checkout-data");
             
             window.location.href = checkoutUrl;
-            return; // Exit - order will be created by Stripe webhook after successful payment
+            return; // Order created, webhook will mark as PAID after payment
           } else {
             console.error("💳 [PAY NOW] ❌ FAILED: No Stripe URL in response", { 
               result,
