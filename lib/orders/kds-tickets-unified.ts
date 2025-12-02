@@ -37,6 +37,15 @@ export async function createKDSTicketsWithAI(
   order: OrderForKDSTickets
 ): Promise<void> {
   try {
+    logger.debug("[KDS TICKETS] Starting KDS ticket creation", {
+      orderId: order.id,
+      venueId: order.venue_id,
+      itemCount: Array.isArray(order.items) ? order.items.length : 0,
+      tableNumber: order.table_number,
+      tableId: order.table_id,
+      customerName: order.customer_name,
+    });
+
     // Step 1: Ensure KDS stations exist for this venue
     let existingStations = await ensureKDSStations(supabase, order.venue_id);
 
@@ -92,8 +101,19 @@ export async function createKDSTicketsWithAI(
           error: { item, context: ticketError },
           orderId: order.id,
           venueId: order.venue_id,
+          ticketData,
+          errorDetails: {
+            code: ticketError.code,
+            message: ticketError.message,
+            details: ticketError.details,
+            hint: ticketError.hint,
+          },
         });
-        throw ticketError;
+        // Convert to proper Error with details
+        const errorMsg = `KDS ticket insert failed: ${ticketError.message || ticketError.code || 'Unknown error'}`;
+        const error = new Error(errorMsg);
+        (error as unknown as { details: unknown }).details = ticketError;
+        throw error;
       }
     }
 
@@ -102,9 +122,11 @@ export async function createKDSTicketsWithAI(
     });
   } catch (error) {
     logger.error("[KDS TICKETS] Error creating KDS tickets:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : JSON.stringify(error),
       orderId: order.id,
       venueId: order.venue_id,
+      fullError: error,
+      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }
