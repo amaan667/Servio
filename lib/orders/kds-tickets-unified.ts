@@ -100,7 +100,6 @@ export async function createKDSTicketsWithAI(
             ? parseInt(item.quantity)
             : item.quantity || 1,
         special_instructions: item.specialInstructions || null,
-        modifiers: item.modifiers || null,
         table_number: order.table_number,
         table_label: tableLabel,
         status: "new",

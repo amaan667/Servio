@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
@@ -53,8 +53,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create Supabase client
-    const supabase = await createServerSupabase();
+    // Create Supabase admin client (bypasses RLS - order was created with admin client)
+    const supabase = createAdminClient();
 
     // Verify order belongs to venue (security check)
     const { data: orderCheck, error: checkError } = await supabase
