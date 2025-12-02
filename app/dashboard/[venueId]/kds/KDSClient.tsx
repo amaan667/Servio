@@ -174,20 +174,33 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         ok: response.ok,
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[KDS CLIENT] ❌ HTTP Error Response:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error("[KDS CLIENT] ❌ Parsed Error:", JSON.stringify(errorData, null, 2));
+        } catch {
+          console.error("[KDS CLIENT] ❌ Could not parse error response as JSON");
+        }
+        return;
+      }
+
       const data = await response.json();
 
-      console.log("[KDS CLIENT] Response data:", {
-        success: data.success,
-        data: data.data,
-        error: data.error,
-      });
+      console.log("[KDS CLIENT] Response data:", JSON.stringify(data, null, 2));
 
       if (data.success) {
         console.log("[KDS CLIENT] ✅ Ticket updated successfully", { ticketId, newStatus: status });
         // Update local state
         setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t)));
       } else {
-        console.error("[KDS CLIENT] ❌ Update failed:", { error: data.error, data });
+        console.error("[KDS CLIENT] ❌ Update failed:", JSON.stringify(data, null, 2));
       }
     } catch (error) {
       console.error("[KDS CLIENT] ❌ Exception during ticket update:", {
