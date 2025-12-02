@@ -152,17 +152,49 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   // Update ticket status
   const updateTicketStatus = useCallback(async (ticketId: string, status: string) => {
     try {
+      console.log("[KDS CLIENT] ===== UPDATING TICKET STATUS =====", {
+        ticketId,
+        status,
+        timestamp: new Date().toISOString(),
+      });
+
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.patch("/api/kds/tickets", { ticket_id: ticketId, status });
+      const payload = { ticket_id: ticketId, status };
+      
+      console.log("[KDS CLIENT] Sending PATCH request:", {
+        url: "/api/kds/tickets",
+        payload: JSON.stringify(payload, null, 2),
+      });
+
+      const response = await apiClient.patch("/api/kds/tickets", payload);
+
+      console.log("[KDS CLIENT] Response received:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
 
       const data = await response.json();
 
+      console.log("[KDS CLIENT] Response data:", {
+        success: data.success,
+        data: data.data,
+        error: data.error,
+      });
+
       if (data.success) {
+        console.log("[KDS CLIENT] ✅ Ticket updated successfully", { ticketId, newStatus: status });
         // Update local state
         setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t)));
+      } else {
+        console.error("[KDS CLIENT] ❌ Update failed:", { error: data.error, data });
       }
-    } catch {
-      // Silently fail
+    } catch (error) {
+      console.error("[KDS CLIENT] ❌ Exception during ticket update:", {
+        error: error instanceof Error ? error.message : String(error),
+        ticketId,
+        status,
+      });
     }
   }, []);
 
