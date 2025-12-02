@@ -122,7 +122,7 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
 
 const updateTicketSchema = z.object({
   ticket_id: z.string().uuid("Invalid ticket ID"),
-  status: z.enum(["new", "preparing", "ready", "bumped", "served", "cancelled"]),
+  status: z.enum(["new", "in_progress", "preparing", "ready", "bumped", "served", "cancelled"]),
 });
 
 // GET - Fetch KDS tickets for a venue or station
@@ -283,13 +283,53 @@ export const PATCH = withUnifiedAuth(
 
       // STEP 4: Business logic - Update ticket
       const supabase = await createClient();
+      const now = new Date().toISOString();
+
+      // Get the ticket first to check its order_id
+      const { data: currentTicket, error: fetchError } = await supabase
+        .from("kds_tickets")
+        .select("order_id, status")
+        .eq("id", body.ticket_id)
+        .eq("venue_id", venueId)
+        .single();
+
+      if (fetchError || !currentTicket) {
+        logger.error("[KDS TICKETS] Error fetching ticket:", {
+          error: fetchError?.message,
+          ticketId: body.ticket_id,
+          venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to fetch ticket",
+          isDevelopment() ? fetchError?.message : undefined
+        );
+      }
+
+      // Prepare update object with status-specific timestamps
+      const updateData: {
+        status: string;
+        updated_at: string;
+        ready_at?: string;
+        started_at?: string;
+        bumped_at?: string;
+      } = {
+        status: body.status,
+        updated_at: now,
+      };
+
+      // Set timestamps based on status
+      if (body.status === "ready") {
+        updateData.ready_at = now;
+      } else if (body.status === "preparing" || body.status === "in_progress") {
+        updateData.started_at = now;
+      } else if (body.status === "bumped") {
+        updateData.bumped_at = now;
+      }
 
       const { data: updatedTicket, error: updateError } = await supabase
         .from("kds_tickets")
-        .update({
-          status: body.status,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", body.ticket_id)
         .eq("venue_id", venueId)
         .select()
@@ -308,6 +348,75 @@ export const PATCH = withUnifiedAuth(
         );
       }
 
+      // STEP 5: If bumping ticket, check if ALL tickets for this order are now bumped
+      if (body.status === "bumped" && currentTicket.order_id) {
+        const { data: allOrderTickets } = await supabase
+          .from("kds_tickets")
+          .select("id, status")
+          .eq("order_id", currentTicket.order_id)
+          .eq("venue_id", venueId);
+
+        const allBumped = allOrderTickets?.every((t) => t.status === "bumped") || false;
+
+        logger.debug("[KDS TICKETS] Checking if all tickets bumped", {
+          orderId: currentTicket.order_id,
+          totalTickets: allOrderTickets?.length,
+          bumpedTickets: allOrderTickets?.filter((t) => t.status === "bumped").length,
+          allBumped,
+        });
+
+        // Only update order status if ALL tickets are bumped
+        if (allBumped) {
+          const { data: currentOrder } = await supabase
+            .from("orders")
+            .select("order_status")
+            .eq("id", currentTicket.order_id)
+            .eq("venue_id", venueId)
+            .single();
+
+          logger.debug("[KDS TICKETS] All tickets bumped - updating order status", {
+            orderId: currentTicket.order_id,
+            currentStatus: currentOrder?.order_status,
+            updatingTo: "READY",
+          });
+
+          const { error: orderUpdateError } = await supabase
+            .from("orders")
+            .update({
+              order_status: "READY",
+              updated_at: now,
+            })
+            .eq("id", currentTicket.order_id)
+            .eq("venue_id", venueId);
+
+          if (orderUpdateError) {
+            logger.error("[KDS TICKETS] Error updating order status after bump:", {
+              error: orderUpdateError.message,
+              orderId: currentTicket.order_id,
+              currentStatus: currentOrder?.order_status,
+              venueId,
+              userId: context.user.id,
+            });
+          } else {
+            logger.info(
+              "[KDS TICKETS] Order status updated to READY - all items bumped",
+              {
+                orderId: currentTicket.order_id,
+                previousStatus: currentOrder?.order_status,
+                venueId,
+                userId: context.user.id,
+              }
+            );
+          }
+        } else {
+          logger.debug("[KDS TICKETS] Not all tickets bumped yet - order status unchanged", {
+            orderId: currentTicket.order_id,
+            bumpedCount: allOrderTickets?.filter((t) => t.status === "bumped").length,
+            totalCount: allOrderTickets?.length,
+          });
+        }
+      }
+
       logger.info("[KDS TICKETS] Ticket updated successfully", {
         ticketId: body.ticket_id,
         newStatus: body.status,
@@ -315,7 +424,7 @@ export const PATCH = withUnifiedAuth(
         userId: context.user.id,
       });
 
-      // STEP 5: Return success response
+      // STEP 6: Return success response
       return success({ ticket: updatedTicket });
     } catch (error) {
       logger.error("[KDS TICKETS] Unexpected error:", {

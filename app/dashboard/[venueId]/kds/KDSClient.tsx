@@ -197,8 +197,12 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
 
       if (data.success) {
         console.log("[KDS CLIENT] ✅ Ticket updated successfully", { ticketId, newStatus: status });
-        // Update local state
+        // Update local state immediately for instant feedback
         setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t)));
+        // Refetch tickets after a short delay to ensure consistency
+        setTimeout(() => {
+          fetchTickets();
+        }, 500);
       } else {
         console.error("[KDS CLIENT] ❌ Update failed:", JSON.stringify(data, null, 2));
       }
@@ -424,7 +428,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   });
 
   const activeTickets = sortedTickets.filter((t) => t.status !== "bumped");
-  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress"); // Treat both as "preparing"
+  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress" || t.status === "preparing"); // Treat all as "preparing"
   const readyTickets = activeTickets.filter((t) => t.status === "ready");
   const bumpedTickets = sortedTickets.filter((t) => t.status === "bumped");
 
@@ -644,14 +648,14 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
                       {getTimeElapsed(ticket.ready_at || ticket.created_at)}
                     </div>
 
-                    {/* Mark Bumped Button */}
+                    {/* Bump Item Button */}
                     <Button
                       onClick={() => updateTicketStatus(ticket.id, "bumped")}
                       className="w-full bg-purple-600 hover:bg-purple-700"
                       size="sm"
                     >
                       <ArrowRight className="h-4 w-4 mr-2" />
-                      Mark Bumped
+                      Bump Item
                     </Button>
                   </div>
                 </CardContent>
