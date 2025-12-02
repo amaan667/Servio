@@ -266,7 +266,13 @@ export const PATCH = withUnifiedAuth(
       }
 
       // STEP 2: Validate input
-      const body = await validateBody(updateTicketSchema, await req.json());
+      const rawBody = await req.json();
+      console.log("[KDS TICKETS PATCH] ===== UPDATE REQUEST =====", {
+        rawBody: JSON.stringify(rawBody, null, 2),
+        timestamp: new Date().toISOString(),
+      });
+
+      const body = await validateBody(updateTicketSchema, rawBody);
 
       // STEP 3: Get venueId from context
       const venueId = context.venueId;
