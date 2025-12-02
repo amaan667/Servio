@@ -543,56 +543,38 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
         console.log("💳 [PAY NOW - STRIPE] ===== STARTING STRIPE PAYMENT FLOW =====");
-        console.log("💳 [PAY NOW] Step 1: Creating order in database...");
+        console.log("💳 [PAY NOW] Step 1: Creating Stripe checkout session (NO order yet)");
         logger.info("💳 [PAYMENT PROCESSING] Processing STRIPE payment...");
-        // Stripe payment - CREATE ORDER FIRST, then redirect to Stripe
-
-        // Create order first with UNPAID status
-        const orderResult = await createOrder();
-        const orderId = orderResult.order?.id;
-
-        console.log("💳 [PAY NOW] Step 2: Order created successfully", { 
-          orderId,
-          status: orderResult.order?.order_status,
-          paymentStatus: orderResult.order?.payment_status 
-        });
-        logger.info("💳 [PAYMENT PROCESSING] Order created for Stripe:", { orderId });
-
-        if (!orderId) {
-          console.error("💳 [PAY NOW] ❌ FAILED: No order ID returned");
-          logger.error("💳 [PAYMENT PROCESSING] ❌ No order ID returned from order creation");
-          throw new Error("Failed to create order before Stripe checkout");
-        }
-
-        console.log("💳 [PAY NOW] Step 3: Creating Stripe checkout session...", {
-          orderId,
-          amount: checkoutData.total,
-          customerEmail: checkoutData.customerEmail || "(no email provided)",
-        });
-        // Create Stripe checkout session with just the order ID
-        logger.info("💳 [PAYMENT PROCESSING] Creating Stripe checkout session...", {
-          orderId,
-          amount: checkoutData.total,
-          customerEmail: checkoutData.customerEmail || "(not provided)",
-          customerName: checkoutData.customerName,
-        });
-
+        
+        // IMPORTANT: Do NOT create order yet - order created AFTER Stripe payment succeeds
+        // Stripe webhook will create the order when payment completes
+        
         let result;
         try {
           const checkoutPayload = {
             amount: checkoutData.total,
-            ...(checkoutData.customerEmail && { customerEmail: checkoutData.customerEmail }),
+            tableNumber: checkoutData.tableNumber,
             customerName: checkoutData.customerName,
+            customerPhone: checkoutData.customerPhone,
+            items: checkoutData.cart,
+            source: checkoutData.source || "qr",
             venueName: checkoutData.venueName || "Restaurant",
-            orderId: orderId, // Just pass order ID (small!)
+            ...(checkoutData.customerEmail && { customerEmail: checkoutData.customerEmail }),
+            venueId: checkoutData.venueId,
           };
 
+          console.log("💳 [PAY NOW] Step 2: Calling /api/checkout (no orderId, cart in metadata)", {
+            amount: checkoutPayload.amount,
+            itemCount: checkoutPayload.items.length,
+            tableNumber: checkoutPayload.tableNumber,
+          });
+
           logger.info("💳 [PAYMENT PROCESSING] Sending Stripe checkout request:", {
-            url: "/api/stripe/create-customer-checkout",
+            url: "/api/checkout",
             payload: checkoutPayload,
           });
 
-          const response = await fetch("/api/stripe/create-customer-checkout", {
+          const response = await fetch("/api/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(checkoutPayload),
@@ -623,18 +605,23 @@ export function usePaymentProcessing() {
           }
 
           // Redirect to Stripe checkout
-          if (result?.data?.url || result?.url) {
-            const checkoutUrl = result.data?.url || result.url;
-            console.log("💳 [PAY NOW] Step 4: ✅ SUCCESS - Stripe URL received, redirecting to checkout", {
+          if (result?.url || result?.data?.url) {
+            const checkoutUrl = result.url || result.data?.url;
+            console.log("💳 [PAY NOW] Step 3: ✅ SUCCESS - Redirecting to Stripe (order will be created AFTER payment)", {
               url: checkoutUrl.substring(0, 50) + "...",
-              sessionId: result?.data?.sessionId || result?.sessionId,
+              sessionId: result?.id || result?.data?.sessionId,
             });
             logger.info("💳 [PAYMENT PROCESSING] ✅ Stripe checkout URL received, redirecting...", {
               url: checkoutUrl,
-              sessionId: result?.data?.sessionId || result?.sessionId,
+              sessionId: result?.id || result?.data?.sessionId,
             });
+            
+            // Clear cart before redirect
+            localStorage.removeItem("servio-order-cart");
+            localStorage.removeItem("servio-checkout-data");
+            
             window.location.href = checkoutUrl;
-            return; // Exit early on redirect
+            return; // Exit - order will be created by Stripe webhook after successful payment
           } else {
             console.error("💳 [PAY NOW] ❌ FAILED: No Stripe URL in response", { 
               result,
@@ -661,221 +648,44 @@ export function usePaymentProcessing() {
         }
       } else if (action === "till") {
         console.log("🧾 [PAY AT TILL] ===== STARTING PAY AT TILL FLOW =====");
-        console.log("🧾 [PAY AT TILL] Step 1: Creating order in database...");
+        console.log("🧾 [PAY AT TILL] Step 1: Saving payment choice and redirecting to summary...");
         logger.info("🧾 [PAYMENT PROCESSING] Processing PAY AT TILL payment...");
-        // Till payment - create order immediately, show "Order Confirmed!"
-        const orderResult = await createOrder();
-        const orderId = orderResult.order?.id;
-
-        console.log("🧾 [PAY AT TILL] Step 2: Order created successfully", { 
-          orderId,
-          status: orderResult.order?.order_status,
-          paymentStatus: orderResult.order?.payment_status,
-          paymentMethod: orderResult.order?.payment_method
-        });
-        logger.info("🧾 [PAYMENT PROCESSING] Order created for till payment:", { orderId });
-
-        const tillPayload = {
-          order_id: orderId,
-          venue_id: checkoutData.venueId,
-          tableNumber: checkoutData.tableNumber,
-          customerName: checkoutData.customerName,
-          customerPhone: checkoutData.customerPhone,
+        
+        // Save payment method choice to localStorage
+        const pendingOrder = {
+          ...checkoutData,
+          paymentMethod: "PAY_AT_TILL",
+          paymentMode: "offline",
         };
-
-        console.log("🧾 [PAY AT TILL] Step 3: Confirming payment at till endpoint...", {
-          orderId,
-          venueId: checkoutData.venueId,
-        });
-        logger.info("🧾 [PAYMENT PROCESSING] Sending till payment confirmation...", {
-          url: "/api/pay/till",
-          payload: tillPayload,
-        });
-
-        // Till payment (with offline support)
-        // Note: Order is already created, so even if this fails, we redirect to order summary
-        try {
-          let result;
-          if (!navigator.onLine) {
-            await queuePayment(tillPayload, "/api/pay/till");
-            toast({
-              title: "Payment Queued",
-              description: "Till payment will be processed when you're back online.",
-            });
-            // Create mock result for offline flow
-            result = { order_number: `QUEUED-${Date.now()}` };
-          } else {
-            const response = await fetch("/api/pay/till", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(tillPayload),
-            });
-
-            logger.info("🧾 [PAYMENT PROCESSING] Till payment response:", {
-              status: response.status,
-              statusText: response.statusText,
-              ok: response.ok,
-            });
-
-            if (!response.ok) {
-              // Queue if network error
-              if (!navigator.onLine || response.status === 0) {
-                await queuePayment(tillPayload, "/api/pay/till");
-                toast({
-                  title: "Payment Queued",
-                  description: "Till payment will be processed when you're back online.",
-                });
-                result = { order_number: `QUEUED-${Date.now()}` };
-              } else {
-                // Non-critical: order is already created, just log warning and continue
-                logger.warn("[PAYMENT] ⚠️ Pay till endpoint failed, but order already created:", {
-                  status: response.status,
-                  orderId,
-                });
-                // Continue to redirect - order exists in database
-              }
-            } else {
-              result = await response.json();
-              console.log("🧾 [PAY AT TILL] Step 4: ✅ SUCCESS - Payment confirmed", { 
-                orderId,
-                status: response.status 
-              });
-              logger.info("🧾 [PAYMENT PROCESSING] ✅ Till payment confirmed:", { result });
-            }
-          }
-        } catch (tillError) {
-          // Non-critical error - order is already created
-          logger.warn("[PAYMENT] ⚠️ Error calling pay/till endpoint (order already created):", {
-            error: tillError instanceof Error ? tillError.message : String(tillError),
-            orderId,
-          });
-          // Continue to redirect - order exists in database
-        }
-
-        // Clear cart after successful order (keep checkout-data for order summary page)
-        logger.info("🧾 [PAYMENT PROCESSING] Clearing cart and redirecting to order summary...", { orderId });
+        
+        localStorage.setItem("servio-pending-order", JSON.stringify(pendingOrder));
         localStorage.removeItem("servio-order-cart");
-
-        // Redirect to order summary page - order is already created
-        window.location.href = `/order-summary?orderId=${orderId}`;
+        
+        console.log("🧾 [PAY AT TILL] Step 2: Redirecting to order summary (order will be created there)");
+        
+        // Redirect to order summary page - it will create the order
+        window.location.href = "/order-summary";
+        return;
       } else if (action === "later") {
         console.log("⏰ [PAY LATER] ===== STARTING PAY LATER FLOW =====");
-        console.log("⏰ [PAY LATER] Step 1: Creating order in database...");
+        console.log("⏰ [PAY LATER] Step 1: Saving payment choice and redirecting to summary...");
         logger.info("⏰ [PAYMENT PROCESSING] Processing PAY LATER payment...");
-        // Pay later - create order immediately, show "Order Confirmed!"
-        const orderResult = await createOrder();
-        const orderId = orderResult.order?.id;
-
-        console.log("⏰ [PAY LATER] Step 2: Order created successfully", { 
-          orderId,
-          status: orderResult.order?.order_status,
-          paymentStatus: orderResult.order?.payment_status,
-          paymentMethod: orderResult.order?.payment_method
-        });
-        logger.info("⏰ [PAYMENT PROCESSING] Order created for pay later:", { orderId });
-
-        const laterPayload = {
-          order_id: orderId,
-          venue_id: checkoutData.venueId,
-          tableNumber: checkoutData.tableNumber,
-          customerName: checkoutData.customerName,
-          customerPhone: checkoutData.customerPhone,
-          sessionId: checkoutData.sessionId || `session_${Date.now()}`,
+        
+        // Save payment method choice to localStorage
+        const pendingOrder = {
+          ...checkoutData,
+          paymentMethod: "PAY_LATER",
+          paymentMode: "deferred",
         };
-
-        console.log("⏰ [PAY LATER] Step 3: Confirming payment later endpoint...", {
-          orderId,
-          venueId: checkoutData.venueId,
-        });
-        logger.info("⏰ [PAYMENT PROCESSING] Sending pay later confirmation...", {
-          url: "/api/pay/later",
-          payload: laterPayload,
-        });
-
-        // Pay later (with offline support)
-        // Note: Order is already created, so even if this fails, we redirect to order summary
-        try {
-          let result;
-          if (!navigator.onLine) {
-            await queuePayment(laterPayload, "/api/pay/later");
-            toast({
-              title: "Payment Queued",
-              description: "Pay later will be processed when you're back online.",
-            });
-            // Create mock result for offline flow
-            result = { order_number: `QUEUED-${Date.now()}` };
-          } else {
-            const response = await fetch("/api/pay/later", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(laterPayload),
-            });
-
-            logger.info("⏰ [PAYMENT PROCESSING] Pay later response:", {
-              status: response.status,
-              statusText: response.statusText,
-              ok: response.ok,
-            });
-
-            if (!response.ok) {
-              // Queue if network error
-              if (!navigator.onLine || response.status === 0) {
-                await queuePayment(laterPayload, "/api/pay/later");
-                toast({
-                  title: "Payment Queued",
-                  description: "Pay later will be processed when you're back online.",
-                });
-                result = { order_number: `QUEUED-${Date.now()}` };
-              } else {
-                // Non-critical: order is already created, just log warning and continue
-                logger.warn("[PAYMENT] ⚠️ Pay later endpoint failed, but order already created:", {
-                  status: response.status,
-                  orderId,
-                });
-                // Continue to redirect - order exists in database
-              }
-            } else {
-              result = await response.json();
-              console.log("⏰ [PAY LATER] Step 4: ✅ SUCCESS - Payment later confirmed", { 
-                orderId,
-                status: response.status 
-              });
-              logger.info("⏰ [PAYMENT PROCESSING] ✅ Pay later confirmed:", { result });
-            }
-          }
-        } catch (laterError) {
-          // Non-critical error - order is already created
-          logger.warn("[PAYMENT] ⚠️ Error calling pay/later endpoint (order already created):", {
-            error: laterError instanceof Error ? laterError.message : String(laterError),
-            orderId,
-          });
-          // Continue to redirect - order exists in database
-        }
-
-        // Store session for re-scanning
-        const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
-        logger.info("⏰ [PAYMENT PROCESSING] Storing session for QR re-scan...", { sessionId });
-        localStorage.setItem("servio-current-session", sessionId);
-        localStorage.setItem(
-          `servio-order-${sessionId}`,
-          JSON.stringify({
-            orderId: orderId,
-            venueId: checkoutData.venueId,
-            tableNumber: checkoutData.tableNumber,
-            customerName: checkoutData.customerName,
-            customerPhone: checkoutData.customerPhone,
-            cart: checkoutData.cart,
-            total: checkoutData.total,
-            orderNumber: orderId.slice(-6).toUpperCase(), // Use short order ID as order number
-          })
-        );
-
-        // Clear cart after successful order (keep checkout-data for order summary page)
-        logger.info("⏰ [PAYMENT PROCESSING] Clearing cart and redirecting to order summary...", { orderId });
+        
+        localStorage.setItem("servio-pending-order", JSON.stringify(pendingOrder));
         localStorage.removeItem("servio-order-cart");
-
-        // Redirect to order summary page
-        window.location.href = `/order-summary?orderId=${orderId}`;
+        
+        console.log("⏰ [PAY LATER] Step 2: Redirecting to order summary (order will be created there)");
+        
+        // Redirect to order summary page - it will create the order
+        window.location.href = "/order-summary";
+        return;
       }
 
       logger.info("✅ [PAYMENT PROCESSING] Payment processing completed successfully", {

@@ -21,6 +21,8 @@ export interface PendingOrderData {
   customerPhone: string;
   orderId?: string;
   isDemo?: boolean;
+  paymentMethod?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL";
+  paymentMode?: "online" | "offline" | "deferred";
 }
 
 export function useOrderSummary() {
@@ -37,6 +39,12 @@ export function useOrderSummary() {
       try {
         const data = JSON.parse(storedData);
         setOrderData(data);
+        
+        // If payment method is already chosen (Pay Later/Till), create order automatically
+        if (data.paymentMethod === "PAY_LATER" || data.paymentMethod === "PAY_AT_TILL") {
+          console.log(`📝 [ORDER SUMMARY] Payment method ${data.paymentMethod} detected, creating order...`);
+          createOrderForPaymentMethod(data);
+        }
       } catch (_error) {
         // Don't redirect - let the parent component handle it
         logger.error("[ORDER SUMMARY] Failed to parse pending order data", _error);
@@ -45,6 +53,76 @@ export function useOrderSummary() {
     // Don't redirect if no data - the page will show "No order data found" message
     setLoading(false);
   }, [router]);
+
+  const createOrderForPaymentMethod = async (data: PendingOrderData) => {
+    setIsCreatingOrder(true);
+    
+    try {
+      console.log(`📝 [ORDER SUMMARY] Creating ${data.paymentMethod} order...`, {
+        venueId: data.venueId,
+        tableNumber: data.tableNumber,
+        total: data.total,
+        paymentMethod: data.paymentMethod,
+      });
+
+      const orderPayload = {
+        venue_id: data.venueId,
+        customer_name: data.customerName,
+        customer_phone: data.customerPhone,
+        customer_email: null,
+        table_number: data.tableNumber ? String(data.tableNumber) : null,
+        table_id: null,
+        items: data.cart.map((item) => ({
+          menu_item_id: item.id && item.id !== "unknown" ? item.id : null,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+          special_instructions: item.specialInstructions || null,
+        })),
+        total_amount: data.total,
+        notes: data.cart
+          .filter((item) => item.specialInstructions)
+          .map((item) => `${item.name}: ${item.specialInstructions}`)
+          .join("; ") || null,
+        order_status: "IN_PREP",
+        payment_status: "UNPAID",
+        payment_mode: data.paymentMode || (data.paymentMethod === "PAY_AT_TILL" ? "offline" : "deferred"),
+        payment_method: data.paymentMethod,
+        source: "qr",
+      };
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error(`📝 [ORDER SUMMARY] ${data.paymentMethod} order creation failed`, result);
+        throw new Error(result.error || "Failed to create order");
+      }
+
+      const orderId = result.order?.id;
+      console.log(`📝 [ORDER SUMMARY] ✅ ${data.paymentMethod} order created successfully`, { orderId });
+
+      localStorage.removeItem("servio-pending-order");
+      localStorage.setItem("servio-last-order-id", orderId);
+
+      setOrderPlaced(true);
+
+      // Redirect to order confirmation with orderId
+      setTimeout(() => {
+        router.push(`/order-summary?orderId=${orderId}`);
+      }, 1500);
+    } catch (_error) {
+      console.error("📝 [ORDER SUMMARY] Order creation error:", _error);
+      alert("Error creating order. Please try again.");
+    } finally {
+      setIsCreatingOrder(false);
+    }
+  };
 
   const handlePayNow = async () => {
     if (!orderData) {
