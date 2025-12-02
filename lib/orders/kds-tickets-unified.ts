@@ -89,6 +89,45 @@ export async function createKDSTicketsWithAI(
         order.venue_id
       );
 
+      // Combine special instructions and modifiers for kitchen display
+      let combinedInstructions = item.specialInstructions || "";
+      
+      // If modifiers exist, format them and add to instructions
+      if (item.modifiers) {
+        let modifiersText = "";
+        try {
+          // Handle modifiers as object or array
+          if (typeof item.modifiers === "object" && item.modifiers !== null) {
+            if (Array.isArray(item.modifiers)) {
+              // Array of modifiers: ["Extra Cheese", "No Onions"]
+              modifiersText = item.modifiers.join(", ");
+            } else {
+              // Object modifiers: { size: "Large", toppings: ["Pepperoni"] }
+              const modParts: string[] = [];
+              for (const [key, value] of Object.entries(item.modifiers)) {
+                if (Array.isArray(value)) {
+                  modParts.push(`${key}: ${value.join(", ")}`);
+                } else if (value) {
+                  modParts.push(`${key}: ${value}`);
+                }
+              }
+              modifiersText = modParts.join(" | ");
+            }
+          } else if (typeof item.modifiers === "string") {
+            modifiersText = item.modifiers;
+          }
+        } catch (error) {
+          logger.warn("[KDS TICKETS] Failed to parse modifiers:", { error });
+        }
+        
+        // Combine instructions and modifiers
+        if (modifiersText) {
+          combinedInstructions = combinedInstructions
+            ? `${combinedInstructions} | ${modifiersText}`
+            : modifiersText;
+        }
+      }
+
       const ticketData = {
         venue_id: order.venue_id,
         order_id: order.id,
@@ -99,7 +138,7 @@ export async function createKDSTicketsWithAI(
           typeof item.quantity === "string"
             ? parseInt(item.quantity)
             : item.quantity || 1,
-        special_instructions: item.specialInstructions || null,
+        special_instructions: combinedInstructions || null,
         table_number: order.table_number,
         table_label: tableLabel,
         status: "new",
