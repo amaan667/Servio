@@ -211,9 +211,7 @@ export default function CustomerOrderPage() {
                 venueId={venueSlug}
                 menuItems={menuItems}
                 categoryOrder={categoryOrder}
-                onAddToCart={(item, selectedModifiers, modifierPrice, specialInstructions) => 
-                  addToCart(item, selectedModifiers, modifierPrice, specialInstructions)
-                }
+                onAddToCart={(item) => addToCart(item)}
                 cart={cart}
                 onRemoveFromCart={(itemId) => removeFromCart(itemId)}
                 onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}

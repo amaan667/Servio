@@ -85,7 +85,6 @@ export function usePaymentProcessing() {
           price: number;
           item_name: string;
           special_instructions: string | null;
-          modifiers?: unknown;
         }
         
         interface OrderPayload {
@@ -132,7 +131,6 @@ export function usePaymentProcessing() {
               price: item.price,
               item_name: item.name,
               special_instructions: item.specialInstructions || null,
-              modifiers: (item as { modifiers?: unknown }).modifiers || null,
             };
           }),
           total_amount: checkoutData.total,
