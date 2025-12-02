@@ -557,7 +557,7 @@ export function usePaymentProcessing() {
         try {
           const checkoutPayload = {
             amount: checkoutData.total,
-            customerEmail: checkoutData.customerEmail || "",
+            ...(checkoutData.customerEmail && { customerEmail: checkoutData.customerEmail }),
             customerName: checkoutData.customerName,
             venueName: checkoutData.venueName || "Restaurant",
             orderId: orderId, // Just pass order ID (small!)

@@ -15,7 +15,7 @@ const stripe = new Stripe(env('STRIPE_SECRET_KEY')!, {
 
 const createCustomerCheckoutSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
-  customerEmail: z.string().email("Invalid email address").optional(),
+  customerEmail: z.string().email("Invalid email address").optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
   customerName: z.string().min(1).max(100).optional(),
   venueName: z.string().min(1).max(100).optional(),
   orderId: z.string().uuid("Invalid order ID"),
