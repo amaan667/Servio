@@ -8,6 +8,11 @@
 set -e
 
 echo "🚀 Starting Railway deployment..."
+echo ""
+echo "⚠️  IMPORTANT: Make sure Metal Builds are DISABLED in Railway Dashboard"
+echo "   Settings > Build > Metal Builds: OFF"
+echo "   Metal builds are NOT ready for production and will skip deployments"
+echo ""
 
 # Update deployment trigger file with timestamp and commit hash to force a new deployment
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")

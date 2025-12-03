@@ -1,0 +1,16 @@
+# Nixpacks configuration
+# IMPORTANT: Metal builds must be DISABLED in Railway Dashboard
+# Go to Settings > Build > Turn OFF "Metal Builds"
+# Metal builds are NOT ready for production and will cause deployments to be skipped
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["NODE_NO_WARNINGS=1 pnpm run build"]
+
+[start]
+cmd = "pnpm start"
