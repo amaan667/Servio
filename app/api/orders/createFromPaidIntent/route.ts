@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       customer_name,
       customer_phone: customer_phone || null,
       total_amount: orderAmount,
-      order_status: "PLACED",
+      order_status: "PLACED", // Start as PLACED to show "waiting on kitchen"
       payment_status: "PAID",
       payment_intent_id: paymentIntentId,
       payment_method: "PAY_NOW", // Standardized payment method for Stripe payments

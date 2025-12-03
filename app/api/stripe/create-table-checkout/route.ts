@@ -8,14 +8,15 @@ import { apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
-const stripe = getStripeClient();
-
 /**
  * Create Stripe checkout session for multiple orders (table-level payment)
  * Used when customer wants to pay all unpaid orders for a table at once
  */
 export async function POST(req: Request) {
   try {
+    // Initialize Stripe client inside function to avoid build-time errors
+    const stripe = getStripeClient();
+
     const { orderIds, amount, customerEmail, customerName, venueName, tableNumber } =
       await req.json();
 

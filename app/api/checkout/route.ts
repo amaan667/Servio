@@ -9,11 +9,12 @@ import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standa
 
 export const runtime = "nodejs";
 
-const stripe = getStripeClient();
-
 // PUBLIC ENDPOINT - No auth required for QR orders
 export async function POST(req: NextRequest) {
   try {
+    // Initialize Stripe client inside function to avoid build-time errors
+    const stripe = getStripeClient();
+
     console.log("💳 [CHECKOUT API] ===== PUBLIC STRIPE CHECKOUT REQUEST =====", {
       timestamp: new Date().toISOString(),
     });

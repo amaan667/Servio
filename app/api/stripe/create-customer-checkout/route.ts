@@ -9,10 +9,6 @@ import { createAdminClient } from '@/lib/supabase';
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(env('STRIPE_SECRET_KEY')!, {
-  apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion,
-});
-
 const createCustomerCheckoutSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
   customerEmail: z.string().email("Invalid email address").optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
@@ -45,6 +41,11 @@ export async function POST(req: Request) {
       customerName: body.customerName,
       venueName: body.venueName,
       orderId: body.orderId,
+    });
+
+    // Initialize Stripe client inside function to avoid build-time errors
+    const stripe = new Stripe(env('STRIPE_SECRET_KEY')!, {
+      apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion,
     });
 
     // Create Stripe checkout session for order payment
