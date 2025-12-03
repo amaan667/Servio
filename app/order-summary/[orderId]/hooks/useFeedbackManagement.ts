@@ -38,7 +38,27 @@ export function useFeedbackManagement(venueId: string) {
 
         if (error) throw error;
 
-        setFeedbackQuestions(data || []);
+        // Transform questions to match frontend expectations (prompt, type, choices)
+        const transformedQuestions = (data || []).map((q: {
+          id: string;
+          question_text: string;
+          question_type: string;
+          options: string[] | null;
+          is_active: boolean;
+          sort_index: number;
+          created_at?: string;
+          updated_at?: string;
+          venue_id: string;
+        }) => ({
+          id: q.id,
+          prompt: q.question_text, // Map 'question_text' to 'prompt'
+          type: q.question_type as 'stars' | 'paragraph' | 'multiple_choice', // Map 'question_type' to 'type'
+          choices: q.options || [], // Map 'options' to 'choices'
+          is_active: q.is_active,
+          sort_index: q.sort_index,
+        }));
+
+        setFeedbackQuestions(transformedQuestions);
       } catch (_err) {
       // Error silently handled
     }

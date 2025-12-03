@@ -61,12 +61,12 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         .order("label");
       if (tableError) throw tableError;
 
-      // Get all active table sessions for this venue (including FREE status)
+      // Get all active table sessions for this venue (including FREE and OCCUPIED status)
       const { data: tableSessions, error: sessionsError } = await supabase
         .from("table_sessions")
         .select("*")
         .eq("venue_id", venueId)
-        .in("status", ["FREE", "ORDERING", "IN_PREP", "READY", "SERVED", "AWAITING_BILL"]) // Include FREE status
+        .in("status", ["FREE", "OCCUPIED", "ORDERING", "IN_PREP", "READY", "SERVED", "AWAITING_BILL"]) // Include FREE and OCCUPIED status
         .order("opened_at", { ascending: false });
       if (sessionsError) throw sessionsError;
 
@@ -142,8 +142,8 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         let paymentStatus = null;
         let orderUpdatedAt = null;
 
-        // Priority 1: If there's an active table session with non-FREE status, table is OCCUPIED
-        if (activeSession && activeSession.status !== "FREE") {
+        // Priority 1: If there's an active table session with OCCUPIED status or non-FREE status, table is OCCUPIED
+        if (activeSession && (activeSession.status === "OCCUPIED" || activeSession.status !== "FREE")) {
           sessionStatus = "OCCUPIED";
           openedAt = activeSession.opened_at;
           orderId = activeSession.order_id;

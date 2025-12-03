@@ -11,15 +11,16 @@ import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
 // Validation schemas
 const createQuestionSchema = z.object({
   venue_id: z.string().uuid(),
-  question_text: z.string().min(1).max(500),
-  question_type: z.enum(["stars", "multiple_choice", "paragraph"]),
+  prompt: z.string().min(1).max(500), // Frontend uses 'prompt', map to 'question_text' for DB
+  type: z.enum(["stars", "multiple_choice", "paragraph"]), // Frontend uses 'type', map to 'question_type' for DB
   is_active: z.boolean().default(true),
   sort_index: z.number().int().nonnegative().optional(),
-  options: z.array(z.string()).optional(),
+  choices: z.array(z.string()).optional(), // Frontend uses 'choices', map to 'options' for DB
 });
 
 const updateQuestionSchema = createQuestionSchema.partial().extend({
   id: z.string().uuid(),
+  venue_id: z.string().uuid().optional(), // Allow venue_id in updates
 });
 
 const deleteQuestionSchema = z.object({
@@ -68,9 +69,31 @@ export const GET = withUnifiedAuth(
       const totalCount = questions?.length || 0;
       const activeCount = questions?.filter((q) => q.is_active).length || 0;
 
-      // STEP 4: Return success response
+      // STEP 4: Transform questions to match frontend expectations (prompt, type, choices)
+      const transformedQuestions = (questions || []).map((q: {
+        id: string;
+        question_text: string;
+        question_type: string;
+        options: string[] | null;
+        is_active: boolean;
+        sort_index: number;
+        created_at: string;
+        updated_at: string;
+      }) => ({
+        id: q.id,
+        prompt: q.question_text, // Map 'question_text' to 'prompt' for frontend
+        type: q.question_type, // Map 'question_type' to 'type' for frontend
+        choices: q.options || [], // Map 'options' to 'choices' for frontend
+        is_active: q.is_active,
+        sort_index: q.sort_index,
+        created_at: q.created_at,
+        updated_at: q.updated_at,
+        venue_id: venueId,
+      }));
+
+      // STEP 5: Return success response
       return success({
-        questions: questions || [],
+        questions: transformedQuestions,
         totalCount,
         activeCount,
       });
@@ -143,11 +166,11 @@ export const POST = withUnifiedAuth(
         .from("feedback_questions")
         .insert({
           venue_id: venueId,
-          question_text: body.question_text,
-          question_type: body.question_type,
+          question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
+          question_type: body.type, // Map 'type' to 'question_type' for DB
           is_active: body.is_active ?? true,
           sort_index: body.sort_index ?? nextSortIndex,
-          options: body.options || null,
+          options: body.choices || null, // Map 'choices' to 'options' for DB
         })
         .select()
         .single();
@@ -170,8 +193,21 @@ export const POST = withUnifiedAuth(
         userId: context.user.id,
       });
 
-      // STEP 5: Return success response
-      return success({ question });
+      // STEP 5: Transform question to match frontend expectations
+      const transformedQuestion = {
+        id: question.id,
+        prompt: question.question_text, // Map 'question_text' to 'prompt'
+        type: question.question_type, // Map 'question_type' to 'type'
+        choices: question.options || [], // Map 'options' to 'choices'
+        is_active: question.is_active,
+        sort_index: question.sort_index,
+        created_at: question.created_at,
+        updated_at: question.updated_at,
+        venue_id: question.venue_id,
+      };
+
+      // STEP 6: Return success response
+      return success({ question: transformedQuestion });
     } catch (error) {
       logger.error("[FEEDBACK QUESTIONS POST] Unexpected error:", {
         error: error instanceof Error ? error.message : String(error),
@@ -240,13 +276,13 @@ export const PATCH = withUnifiedAuth(
         return apiErrors.notFound("Question not found or access denied");
       }
 
-      // STEP 5: Business logic - Update question
+      // STEP 5: Business logic - Update question (map frontend fields to DB fields)
       const updateData: Record<string, unknown> = {};
-      if (body.question_text !== undefined) updateData.question_text = body.question_text;
-      if (body.question_type !== undefined) updateData.question_type = body.question_type;
+      if (body.prompt !== undefined) updateData.question_text = body.prompt; // Map 'prompt' to 'question_text'
+      if (body.type !== undefined) updateData.question_type = body.type; // Map 'type' to 'question_type'
       if (body.is_active !== undefined) updateData.is_active = body.is_active;
       if (body.sort_index !== undefined) updateData.sort_index = body.sort_index;
-      if (body.options !== undefined) updateData.options = body.options;
+      if (body.choices !== undefined) updateData.options = body.choices; // Map 'choices' to 'options'
 
       const { data: question, error } = await supabase
         .from("feedback_questions")
@@ -275,8 +311,21 @@ export const PATCH = withUnifiedAuth(
         userId: context.user.id,
       });
 
-      // STEP 6: Return success response
-      return success({ question });
+      // STEP 6: Transform question to match frontend expectations
+      const transformedQuestion = {
+        id: question.id,
+        prompt: question.question_text, // Map 'question_text' to 'prompt'
+        type: question.question_type, // Map 'question_type' to 'type'
+        choices: question.options || [], // Map 'options' to 'choices'
+        is_active: question.is_active,
+        sort_index: question.sort_index,
+        created_at: question.created_at,
+        updated_at: question.updated_at,
+        venue_id: question.venue_id,
+      };
+
+      // STEP 7: Return success response
+      return success({ question: transformedQuestion });
     } catch (error) {
       logger.error("[FEEDBACK QUESTIONS PATCH] Unexpected error:", {
         error: error instanceof Error ? error.message : String(error),

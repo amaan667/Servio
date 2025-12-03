@@ -29,9 +29,32 @@ export async function GET(req: Request) {
       return apiErrors.internal('Failed to fetch questions');
     }
 
+    // Transform questions to match frontend expectations (prompt, type, choices)
+    const transformedQuestions = (questions || []).map((q: {
+      id: string;
+      question_text: string;
+      question_type: string;
+      options: string[] | null;
+      is_active: boolean;
+      sort_index: number;
+      created_at: string;
+      updated_at: string;
+      venue_id: string;
+    }) => ({
+      id: q.id,
+      prompt: q.question_text, // Map 'question_text' to 'prompt' for frontend
+      type: q.question_type, // Map 'question_type' to 'type' for frontend
+      choices: q.options || [], // Map 'options' to 'choices' for frontend
+      is_active: q.is_active,
+      sort_index: q.sort_index,
+      created_at: q.created_at,
+      updated_at: q.updated_at,
+      venue_id: q.venue_id,
+    }));
+
     return NextResponse.json({ 
-      questions: questions || [],
-      count: questions?.length || 0
+      questions: transformedQuestions,
+      count: transformedQuestions.length
     });
 
   } catch (_error) {

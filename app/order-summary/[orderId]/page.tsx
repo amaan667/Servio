@@ -222,13 +222,14 @@ export default function OrderDetailsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {feedback.feedbackQuestions.map((question) => (
-                <div key={question.id}>
+                <div key={question.id} className="space-y-2">
                   <Label className="text-sm font-medium">{question.prompt}</Label>
                   {question.type === "stars" && (
                     <div className="flex gap-2 mt-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
+                          type="button"
                           onClick={() =>
                             feedback.updateFeedbackResponse(question.id, {
                               answer_stars: star,
@@ -248,6 +249,47 @@ export default function OrderDetailsPage() {
                         </button>
                       ))}
                     </div>
+                  )}
+                  {question.type === "multiple_choice" && question.choices && (
+                    <div className="space-y-2 mt-2">
+                      {question.choices.map((choice) => (
+                        <button
+                          key={choice}
+                          type="button"
+                          onClick={() =>
+                            feedback.updateFeedbackResponse(question.id, {
+                              answer_choice: choice,
+                              type: "multiple_choice",
+                            })
+                          }
+                          className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
+                            feedback.feedbackResponses.find((r) => r.question_id === question.id)
+                              ?.answer_choice === choice
+                              ? "border-purple-600 bg-purple-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                        >
+                          {choice}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {question.type === "paragraph" && (
+                    <textarea
+                      className="w-full mt-2 p-3 border border-gray-300 rounded-lg resize-none"
+                      rows={4}
+                      placeholder="Enter your feedback..."
+                      value={
+                        feedback.feedbackResponses.find((r) => r.question_id === question.id)
+                          ?.answer_text || ""
+                      }
+                      onChange={(e) =>
+                        feedback.updateFeedbackResponse(question.id, {
+                          answer_text: e.target.value,
+                          type: "paragraph",
+                        })
+                      }
+                    />
                   )}
                 </div>
               ))}
