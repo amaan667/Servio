@@ -9,8 +9,6 @@ export const runtime = "nodejs";
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
-      console.log("[CHECK-IN RESERVATION] Starting check-in for reservation");
-      
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
@@ -25,8 +23,6 @@ export const POST = withUnifiedAuth(
 
       const body = await req.json();
       const { reservationId, tableId } = body;
-
-      console.log("[CHECK-IN RESERVATION] Request data:", { reservationId, tableId, venueId: context.venueId });
 
     if (!reservationId || !tableId) {
       return NextResponse.json(
@@ -49,10 +45,7 @@ export const POST = withUnifiedAuth(
       .eq("venue_id", context.venueId)
       .single();
 
-    console.log("[CHECK-IN RESERVATION] Reservation lookup:", { reservation, reservationError: reservationError?.message });
-
     if (reservationError || !reservation) {
-      console.log("[CHECK-IN RESERVATION] Reservation not found");
       return NextResponse.json(
         {
           ok: false,
@@ -62,7 +55,6 @@ export const POST = withUnifiedAuth(
       );
     }
 
-    console.log("[CHECK-IN RESERVATION] Updating reservation status to CHECKED_IN");
     // Update reservation status to CHECKED_IN
     const { data: updatedReservation, error: updateError } = await supabase
       .from("reservations")
@@ -73,8 +65,6 @@ export const POST = withUnifiedAuth(
       .eq("id", reservationId)
       .select()
       .single();
-
-    console.log("[CHECK-IN RESERVATION] Update result:", { updatedReservation, updateError: updateError?.message });
 
     if (updateError) {
       logger.error("[CHECKIN] Error updating reservation:", updateError);
@@ -87,7 +77,6 @@ export const POST = withUnifiedAuth(
       );
     }
 
-    console.log("[CHECK-IN RESERVATION] Updating table session to OCCUPIED");
     // Also update the table session to OCCUPIED if it's not already
     const { error: tableError } = await supabase.from("table_sessions").upsert(
       {
@@ -101,8 +90,6 @@ export const POST = withUnifiedAuth(
       }
     );
 
-    console.log("[CHECK-IN RESERVATION] Table session update result:", { tableError: tableError?.message });
-
     if (tableError) {
       logger.error("[CHECKIN] Error updating table session:", {
         error: tableError instanceof Error ? tableError.message : "Unknown error",
@@ -110,7 +97,6 @@ export const POST = withUnifiedAuth(
       // Don't fail the request, just log the error
     }
 
-    console.log("[CHECK-IN RESERVATION] Successfully checked in reservation");
       return NextResponse.json({
         ok: true,
         reservation: updatedReservation,
