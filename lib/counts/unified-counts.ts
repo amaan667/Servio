@@ -98,15 +98,7 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
         const count = menuItems?.length || 0;
         
         // CRITICAL LOG: Use stdout.write which Railway ALWAYS captures
-        if (typeof process !== 'undefined' && process.stdout) {
-          process.stdout.write(`[RAILWAY] [UNIFIED COUNTS] fetchMenuItemCount Query Result\n`);
-          process.stdout.write(`[RAILWAY]   Venue ID: ${normalizedVenueId}\n`);
-          process.stdout.write(`[RAILWAY]   Query returned ${menuItems?.length || 0} items\n`);
-          process.stdout.write(`[RAILWAY]   First 3 item IDs: ${menuItems?.slice(0, 3).map(m => m.id).join(", ") || "none"}\n`);
-          process.stdout.write(`[RAILWAY]   Final count returned: ${count}\n`);
-        }
-        
-        console.info(`[RAILWAY] fetchMenuItemCount: ${count} items for venue ${normalizedVenueId}`);
+        // Logging disabled
         
         logger.debug("[UNIFIED COUNTS] Menu items count fetched:", {
           venueId: normalizedVenueId,

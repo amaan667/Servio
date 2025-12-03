@@ -101,19 +101,9 @@ const DashboardClient = React.memo(function DashboardClient({
   // Enable intelligent prefetching for dashboard routes
   useDashboardPrefetch(venueId);
 
-  const sendDashboardLog = (payload: DashboardLogPayload) => {
-    if (typeof window === "undefined") return;
-
-    // Fire-and-forget - we don't await this so it never blocks UI
-    void fetch("/api/log-dashboard", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    }).catch(() => {
-      // Swallow logging errors
-    });
+  const sendDashboardLog = (_payload: DashboardLogPayload) => {
+    // Dashboard logging disabled
+    return;
   };
 
   // Custom hooks for dashboard data and realtime (call before any returns)
@@ -141,8 +131,6 @@ const DashboardClient = React.memo(function DashboardClient({
         unpaid: initialStats.unpaid,
       } : null,
     };
-
-    console.log("🔵 [DASHBOARD CLIENT] Initial data received from server:", details);
 
     sendDashboardLog({
       level: "info",
@@ -188,8 +176,6 @@ const DashboardClient = React.memo(function DashboardClient({
       loading: dashboardData.loading,
     };
 
-    console.log("🟢 [DASHBOARD CLIENT] Current displayed values:", details);
-
     sendDashboardLog({
       level: "info",
       event: "client_display_state",
@@ -228,8 +214,6 @@ const DashboardClient = React.memo(function DashboardClient({
           displayedStats,
         };
 
-        console.warn("⚠️ [DASHBOARD CLIENT] MISMATCH DETECTED!", mismatchDetails);
-
         sendDashboardLog({
           level: "warn",
           event: "client_server_mismatch",
@@ -238,8 +222,6 @@ const DashboardClient = React.memo(function DashboardClient({
           details: mismatchDetails,
         });
       } else {
-        console.log("✅ [DASHBOARD CLIENT] Displayed values match server values");
-
         sendDashboardLog({
           level: "info",
           event: "client_server_match",
