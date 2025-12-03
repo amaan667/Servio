@@ -3,6 +3,8 @@ builder = "nixpacks"
 buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build"
 # Removed watchPaths - let Railway use defaults (watches entire repo)
 # If watchPaths is set in Railway dashboard UI, it will override this file
+# Explicitly disable metal build environment to ensure deployments trigger
+nixpacksPlan = "./nixpacks.toml"
 
 [deploy]
 startCommand = "pnpm start"
