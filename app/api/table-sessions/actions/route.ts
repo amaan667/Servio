@@ -38,11 +38,12 @@ export const POST = withUnifiedAuth(
         );
       }
 
-      // STEP 2: Get venueId from context (already verified)
-      const venueId = context.venueId;
-
-      // STEP 3: Parse request
+      // STEP 2: Parse request BEFORE accessing venueId from context
+      // (venueId extraction happens after body is parsed)
       const body = await req.json();
+
+      // STEP 3: Get venueId from context (already verified)
+      const venueId = context.venueId;
       const {
         action,
         table_id,
@@ -55,8 +56,12 @@ export const POST = withUnifiedAuth(
       } = body;
 
       // STEP 4: Validate inputs
-      if (!action || !table_id || !venueId) {
-        return apiErrors.badRequest("action, table_id, and venue_id are required");
+      if (!action || !table_id) {
+        return apiErrors.badRequest("action and table_id are required");
+      }
+
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -148,10 +153,12 @@ export const POST = withUnifiedAuth(
     }
   },
   {
-    // Extract venueId from body
+    // Extract venueId from body - use cloned request to avoid consuming the stream
     extractVenueId: async (req) => {
       try {
-        const body = await req.json().catch(() => ({}));
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
+        const body = await clonedReq.json().catch(() => ({}));
         return (body as { venue_id?: string; venueId?: string })?.venue_id || 
                (body as { venue_id?: string; venueId?: string })?.venueId || 
                null;

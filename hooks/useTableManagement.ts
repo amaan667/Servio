@@ -32,9 +32,28 @@ export function useTableManagement() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.error || "Failed to create table";
-        const errorDetails = data.details || "";
-        const errorCode = data.code || "";
+        // Extract error message from standardized API response format
+        let errorMessage = "Failed to create table";
+        
+        // Priority 1: Check for data.error.message (standard format)
+        if (data.error && typeof data.error === "object" && "message" in data.error) {
+          errorMessage = String(data.error.message);
+        } 
+        // Priority 2: Check if data.error is a string
+        else if (typeof data.error === "string" && data.error) {
+          errorMessage = data.error;
+        }
+        // Priority 3: Check for data.message
+        else if (data.message && typeof data.message === "string") {
+          errorMessage = data.message;
+        }
+        // Priority 4: If data.error is an object without message, try to extract useful info
+        else if (data.error && typeof data.error === "object") {
+          errorMessage = JSON.stringify(data.error);
+        }
+        
+        const errorDetails = data.error?.details || "";
+        const errorCode = data.error?.code || "";
 
         const error = new Error(errorMessage);
         (error as unknown as Record<string, unknown>).details = errorDetails;

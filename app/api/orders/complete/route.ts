@@ -164,7 +164,9 @@ export const POST = withUnifiedAuth(
     // Extract venueId from order lookup
     extractVenueId: async (req) => {
       try {
-        const body = await req.json();
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
+        const body = await clonedReq.json();
         const orderId = body?.orderId;
         if (orderId) {
           const { createAdminClient } = await import("@/lib/supabase");

@@ -276,7 +276,9 @@ export const POST = withUnifiedAuth(
         const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
         if (!venueId) {
-          const body = await req.json();
+          // Clone the request so we don't consume the original body
+          const clonedReq = req.clone();
+          const body = await clonedReq.json();
           venueId = body?.venueId || body?.venue_id;
         }
         return venueId;

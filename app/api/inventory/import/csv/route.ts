@@ -223,7 +223,9 @@ export const POST = withUnifiedAuth(
     // Extract venueId from formData
     extractVenueId: async (req) => {
       try {
-        const formData = await req.formData();
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
+        const formData = await clonedReq.formData();
         return (formData.get("venue_id") as string) || null;
       } catch {
         return null;

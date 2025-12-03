@@ -452,68 +452,78 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
     return apiErrors.internal('Failed to check table status');
   }
 
+  // Get venue_id from table first
+  const { data: table, error: tableError } = await supabase
+    .from("tables")
+    .select("venue_id")
+    .eq("id", table_id)
+    .single();
+
+  if (tableError) {
+    logger.error("[TABLE ACTIONS] Error getting table info:", {
+      error: tableError instanceof Error ? tableError.message : "Unknown error",
+    });
+    if (tableError.code === "PGRST116") {
+      const { data: allTables } = await supabase
+        .from("tables")
+        .select("id, label, venue_id")
+        .limit(10);
+
+      return NextResponse.json(
+        {
+          error: "Table not found in database",
+          debug: {
+            requestedTableId: table_id,
+            availableTables: allTables,
+            errorCode: tableError.code,
+            errorMessage: tableError.message,
+          },
+        },
+        { status: 404 }
+      );
+    }
+    return apiErrors.internal('Failed to get table info');
+  }
+
+  if (!table) {
+    logger.error("[TABLE ACTIONS] Table not found for ID:", { value: table_id });
+    return apiErrors.notFound('Table not found');
+  }
+
   if (existingSession) {
+    // Update existing session to OCCUPIED
     const { error: updateError } = await supabase
       .from("table_sessions")
       .update({
-        status: "ORDERING",
+        status: "OCCUPIED",
         updated_at: new Date().toISOString(),
       })
       .eq("id", existingSession.id);
 
     if (updateError) {
-      logger.error("[TABLE ACTIONS] Error updating session to ORDERING:", { value: updateError });
+      logger.error("[TABLE ACTIONS] Error updating session to OCCUPIED:", { value: updateError });
       return apiErrors.internal('Failed to occupy table');
     }
   } else {
-    // Get venue_id from table
-    const { data: table, error: tableError } = await supabase
-      .from("tables")
-      .select("venue_id")
-      .eq("id", table_id)
-      .single();
-
-    if (tableError) {
-      logger.error("[TABLE ACTIONS] Error getting table info:", {
-        error: tableError instanceof Error ? tableError.message : "Unknown error",
-      });
-      if (tableError.code === "PGRST116") {
-        const { data: allTables } = await supabase
-          .from("tables")
-          .select("id, label, venue_id")
-          .limit(10);
-
-        return NextResponse.json(
-          {
-            error: "Table not found in database",
-            debug: {
-              requestedTableId: table_id,
-              availableTables: allTables,
-              errorCode: tableError.code,
-              errorMessage: tableError.message,
-            },
-          },
-          { status: 404 }
-        );
-      }
-      return apiErrors.internal('Failed to get table info');
-    }
-
-    if (!table) {
-      logger.error("[TABLE ACTIONS] Table not found for ID:", { value: table_id });
-      return apiErrors.notFound('Table not found');
-    }
-
+    // Create new session with OCCUPIED status
     const { error: createError } = await supabase.from("table_sessions").insert({
       table_id: table_id,
       venue_id: table.venue_id,
-      status: "ORDERING",
+      status: "OCCUPIED",
       opened_at: new Date().toISOString(),
     });
 
     if (createError) {
-      logger.error("[TABLE ACTIONS] Error creating new ORDERING session:", { value: createError });
-      return apiErrors.internal('Failed to occupy table');
+      logger.error("[TABLE ACTIONS] Error creating new OCCUPIED session:", { 
+        value: createError,
+        code: createError.code,
+        message: createError.message,
+        details: createError.details,
+        hint: createError.hint,
+        tableId: table_id,
+        venueId: table.venue_id
+      });
+      return apiErrors.internal(`Failed to occupy table: ${createError.message || 'Unknown error'}`);
     }
   }
 
