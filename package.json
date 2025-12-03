@@ -1,6 +1,6 @@
 {
   "name": "servio-mvp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "_deploy_trigger": "2025-11-26-14-25",
   "packageManager": "pnpm@9.15.9",
