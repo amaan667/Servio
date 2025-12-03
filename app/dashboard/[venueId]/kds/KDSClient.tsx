@@ -155,11 +155,12 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       console.log("[KDS CLIENT] ===== UPDATING TICKET STATUS =====", {
         ticketId,
         status,
+        venueId,
         timestamp: new Date().toISOString(),
       });
 
       const { apiClient } = await import("@/lib/api-client");
-      const payload = { ticket_id: ticketId, status };
+      const payload = { ticket_id: ticketId, status, venueId };
       
       console.log("[KDS CLIENT] Sending PATCH request:", {
         url: "/api/kds/tickets",
@@ -209,7 +210,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         status,
       });
     }
-  }, []);
+  }, [venueId]);
 
   // Bump all ready tickets for an order
   const bumpOrder = useCallback(async (orderId: string) => {
@@ -218,6 +219,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       const response = await apiClient.patch("/api/kds/tickets/bulk-update", {
         orderId,
         status: "bumped",
+        venueId,
       });
 
       const data = await response.json();

@@ -123,6 +123,7 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
 const updateTicketSchema = z.object({
   ticket_id: z.string().uuid("Invalid ticket ID"),
   status: z.enum(["new", "preparing", "ready", "bumped", "served", "cancelled"]),
+  venueId: z.string().optional(), // Optional - will use from context if not provided
 });
 
 // GET - Fetch KDS tickets for a venue or station
@@ -274,11 +275,21 @@ export const PATCH = withUnifiedAuth(
 
       const body = await validateBody(updateTicketSchema, rawBody);
 
-      // STEP 3: Get venueId from context
-      const venueId = context.venueId;
+      // STEP 3: Get venueId from context or body
+      const venueId = context.venueId || body.venueId;
+
+      console.log("[KDS TICKETS PATCH] VenueId resolution:", {
+        fromContext: context.venueId,
+        fromBody: body.venueId,
+        final: venueId,
+      });
 
       if (!venueId) {
-        return apiErrors.badRequest("venue_id is required");
+        console.error("[KDS TICKETS PATCH] ❌ No venueId available", {
+          context: context,
+          body: body,
+        });
+        return apiErrors.badRequest("venueId is required");
       }
 
       // STEP 4: Business logic - Update ticket
