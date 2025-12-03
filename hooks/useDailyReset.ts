@@ -60,12 +60,13 @@ export function useDailyReset(venueId: string) {
     }
   };
 
-  // Check for daily reset when the hook is first used
-  useEffect(() => {
-    if (venueId) {
-      checkAndReset();
-    }
-  }, [venueId]);
+  // Disabled automatic check - daily reset happens via cron job at midnight
+  // Manual reset can still be triggered via the checkAndReset function if needed
+  // useEffect(() => {
+  //   if (venueId) {
+  //     checkAndReset();
+  //   }
+  // }, [venueId]);
 
   return {
     isChecking,
