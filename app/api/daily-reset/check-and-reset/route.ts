@@ -320,5 +320,20 @@ export const POST = withUnifiedAuth(
         isDevelopment() ? error : undefined
       );
     }
+  },
+  {
+    // Extract venueId from body
+    extractVenueId: async (req) => {
+      try {
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
+        const body = await clonedReq.json().catch(() => ({}));
+        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
+               (body as { venue_id?: string; venueId?: string })?.venueId || 
+               null;
+      } catch {
+        return null;
+      }
+    },
   }
 );
