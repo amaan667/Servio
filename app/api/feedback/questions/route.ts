@@ -79,6 +79,7 @@ export const GET = withUnifiedAuth(
         sort_index: number;
         created_at: string;
         updated_at: string;
+        venue_id: string;
       }) => ({
         id: q.id,
         prompt: q.question_text, // Map 'question_text' to 'prompt' for frontend
@@ -88,7 +89,7 @@ export const GET = withUnifiedAuth(
         sort_index: q.sort_index,
         created_at: q.created_at,
         updated_at: q.updated_at,
-        venue_id: venueId,
+        venue_id: q.venue_id,
       }));
 
       // STEP 5: Return success response
@@ -229,7 +230,9 @@ export const POST = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-        const body = await req.json().catch(() => ({}));
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
+        const body = await clonedReq.json().catch(() => ({}));
         return (body as { venue_id?: string; venueId?: string })?.venue_id || 
                (body as { venue_id?: string; venueId?: string })?.venueId || 
                null;
@@ -347,7 +350,9 @@ export const PATCH = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-        const body = await req.json().catch(() => ({}));
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
+        const body = await clonedReq.json().catch(() => ({}));
         return (body as { venue_id?: string; venueId?: string })?.venue_id || 
                (body as { venue_id?: string; venueId?: string })?.venueId || 
                null;
