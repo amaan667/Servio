@@ -439,6 +439,8 @@ export async function handleReserveTable(
 }
 
 export async function handleOccupyTable(supabase: SupabaseClient, table_id: string) {
+  console.log("[OCCUPY TABLE] Starting - table_id:", table_id);
+  
   // First, check if there's an existing open session
   const { data: existingSession, error: checkError } = await supabase
     .from("table_sessions")
@@ -447,7 +449,10 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
     .is("closed_at", null)
     .single();
 
+  console.log("[OCCUPY TABLE] Session check:", { existingSession, error: checkError?.message });
+
   if (checkError && checkError.code !== "PGRST116") {
+    console.log("[OCCUPY TABLE] ERROR checking session:", checkError);
     logger.error("[TABLE ACTIONS] Error checking existing session:", { value: checkError });
     return apiErrors.internal('Failed to check table status');
   }
@@ -458,6 +463,8 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
     .select("venue_id")
     .eq("id", table_id)
     .single();
+
+  console.log("[OCCUPY TABLE] Table lookup:", { table, error: tableError?.message });
 
   if (tableError) {
     logger.error("[TABLE ACTIONS] Error getting table info:", {
@@ -491,6 +498,7 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
   }
 
   if (existingSession) {
+    console.log("[OCCUPY TABLE] Updating existing session to OCCUPIED");
     // Update existing session to OCCUPIED
     const { error: updateError } = await supabase
       .from("table_sessions")
@@ -500,11 +508,15 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
       })
       .eq("id", existingSession.id);
 
+    console.log("[OCCUPY TABLE] Update result:", { error: updateError?.message, success: !updateError });
+
     if (updateError) {
+      console.log("[OCCUPY TABLE] ERROR updating session:", updateError);
       logger.error("[TABLE ACTIONS] Error updating session to OCCUPIED:", { value: updateError });
       return apiErrors.internal('Failed to occupy table');
     }
   } else {
+    console.log("[OCCUPY TABLE] Creating new OCCUPIED session");
     // Create new session with OCCUPIED status
     const { error: createError } = await supabase.from("table_sessions").insert({
       table_id: table_id,
@@ -513,7 +525,10 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
       opened_at: new Date().toISOString(),
     });
 
+    console.log("[OCCUPY TABLE] Create result:", { error: createError?.message, success: !createError });
+
     if (createError) {
+      console.log("[OCCUPY TABLE] ERROR creating session:", createError);
       logger.error("[TABLE ACTIONS] Error creating new OCCUPIED session:", { 
         value: createError,
         code: createError.code,
@@ -527,6 +542,7 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
     }
   }
 
+  console.log("[OCCUPY TABLE] SUCCESS - Returning success response");
   return NextResponse.json({ success: true });
 }
 
