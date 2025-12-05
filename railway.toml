@@ -1,6 +1,8 @@
 [build]
 builder = "nixpacks"
 buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build"
+# Explicitly disable any experimental build systems
+nixpacksPlan = "./nixpacks.toml"
 # Removed watchPaths - let Railway use defaults (watches entire repo)
 # If watchPaths is set in Railway dashboard UI, it will override this file
 
@@ -8,6 +10,7 @@ buildCommand = "pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run bu
 # Metal builds are NOT ready for production and will cause deployments to be skipped
 # To disable: Go to Railway Dashboard > Settings > Build > Turn OFF "Metal Builds"
 # This cannot be controlled via config files - it's a dashboard-only setting
+# Status: Config files are clean - NO metal settings present
 
 [deploy]
 startCommand = "pnpm start"
