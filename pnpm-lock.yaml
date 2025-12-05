@@ -11,9 +11,6 @@ importers:
       '@hello-pangea/dnd':
         specifier: ^18.0.1
         version: 18.0.1(@types/react@18.3.24)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@next/swc-darwin-arm64':
-        specifier: 14.2.16
-        version: 14.2.16
       '@radix-ui/react-accordion':
         specifier: 1.2.2
         version: 1.2.2(@types/react-dom@18.3.7(@types/react@18.3.24))(@types/react@18.3.24)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -9653,7 +9650,8 @@ snapshots:
 
   '@next/env@14.2.16': {}
 
-  '@next/swc-darwin-arm64@14.2.16': {}
+  '@next/swc-darwin-arm64@14.2.16':
+    optional: true
 
   '@next/swc-darwin-x64@14.2.16':
     optional: true
