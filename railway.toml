@@ -1,6 +1,9 @@
 # Railway Configuration
 # This file disables Metal builds and forces Railway to use Railpack builder
-# Railpack will auto-detect the build and start commands from package.json
 
 [build]
 builder = "RAILPACK"
+buildCommand = "pnpm install --frozen-lockfile && pnpm run build"
+
+[deploy]
+startCommand = "pnpm start"
