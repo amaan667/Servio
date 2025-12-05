@@ -153,7 +153,20 @@ export const POST = withUnifiedAuth(
 
       // STEP 3: Validate input
       // withUnifiedAuth reconstructs the body, so we can read it normally
-      const body = await validateBody(createQuestionSchema, await req.json());
+      let body;
+      try {
+        body = await validateBody(createQuestionSchema, await req.json());
+      } catch (error) {
+        logger.error("[FEEDBACK QUESTIONS POST] Body validation error:", {
+          error: error instanceof Error ? error.message : String(error),
+          venueId,
+          userId: context.user.id,
+        });
+        if (isZodError(error)) {
+          return handleZodError(error);
+        }
+        throw error;
+      }
 
       // Verify venue_id matches context
       if (body.venue_id !== venueId) {

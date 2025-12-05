@@ -221,7 +221,11 @@ export default function QuestionsClient({
         is_active: formData.is_active,
       };
 
-      const response = await fetch("/api/feedback/questions", {
+      // Add venueId to query string to help withUnifiedAuth extract it
+      const url = new URL("/api/feedback/questions", window.location.origin);
+      url.searchParams.set("venueId", venueId);
+      
+      const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -308,7 +312,11 @@ export default function QuestionsClient({
             : undefined,
       };
 
-      const response = await fetch("/api/feedback/questions", {
+      // Add venueId to query string to help withUnifiedAuth extract it
+      const url = new URL("/api/feedback/questions", window.location.origin);
+      url.searchParams.set("venueId", venueId);
+      
+      const response = await fetch(url.toString(), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
