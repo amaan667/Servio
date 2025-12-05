@@ -56,32 +56,57 @@ export function useStaffManagement(
   // Load staff data on component mount - Always fetch from database to ensure accuracy
   useEffect(() => {
     const loadStaff = async () => {
+      console.log("=".repeat(80));
+      console.log("[STAFF PAGE LOAD] Starting staff load process");
+      console.log("[STAFF PAGE LOAD] Raw venueId from props:", venueId);
+      console.log("[STAFF PAGE LOAD] initialStaff provided:", initialStaff ? `${initialStaff.length} members` : "none");
+      
       setLoading(true);
       try {
         const supabase = supabaseBrowser();
         // Normalize venueId - database stores with venue- prefix
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        console.log("[STAFF PAGE LOAD] Normalized venueId:", normalizedVenueId);
+        console.log("[STAFF PAGE LOAD] Querying database: staff table, venue_id =", normalizedVenueId);
         
+        const queryStart = Date.now();
         const { data: staffData, error } = await supabase
           .from("staff")
           .select("*")
           .eq("venue_id", normalizedVenueId)
           .order("created_at", { ascending: false });
+        const queryTime = Date.now() - queryStart;
 
+        console.log("[STAFF PAGE LOAD] Query completed in", queryTime, "ms");
+        console.log("[STAFF PAGE LOAD] Query error:", error ? JSON.stringify(error, null, 2) : "none");
+        console.log("[STAFF PAGE LOAD] Query returned data:", staffData ? `${staffData.length} rows` : "null");
+        
         if (error) {
-          console.error("[STAFF MANAGEMENT] Error loading staff:", error);
+          console.error("[STAFF PAGE LOAD] ERROR - Database query failed:");
+          console.error("[STAFF PAGE LOAD] Error code:", error.code);
+          console.error("[STAFF PAGE LOAD] Error message:", error.message);
+          console.error("[STAFF PAGE LOAD] Error details:", JSON.stringify(error, null, 2));
           setError(error.message || "Failed to load staff");
         } else if (staffData) {
-          console.log("[STAFF MANAGEMENT] Loaded staff:", staffData.length, "members");
+          console.log("[STAFF PAGE LOAD] SUCCESS - Loaded", staffData.length, "staff members");
+          console.log("[STAFF PAGE LOAD] Staff data:", JSON.stringify(staffData, null, 2));
           setStaff(staffData);
         } else {
-          console.log("[STAFF MANAGEMENT] No staff found for venue:", normalizedVenueId);
+          console.log("[STAFF PAGE LOAD] WARNING - Query returned null/undefined data");
+          console.log("[STAFF PAGE LOAD] This might mean no staff exists for venue:", normalizedVenueId);
+          setStaff([]);
         }
+        console.log("[STAFF PAGE LOAD] Load process completed");
+        console.log("=".repeat(80));
       } catch (e) {
-        console.error("[STAFF MANAGEMENT] Exception loading staff:", e);
+        console.error("[STAFF PAGE LOAD] EXCEPTION - Unexpected error:");
+        console.error("[STAFF PAGE LOAD] Exception type:", e instanceof Error ? e.constructor.name : typeof e);
+        console.error("[STAFF PAGE LOAD] Exception message:", e instanceof Error ? e.message : String(e));
+        console.error("[STAFF PAGE LOAD] Exception stack:", e instanceof Error ? e.stack : "no stack");
         setError(e instanceof Error ? e.message : "Failed to load staff");
       } finally {
         setLoading(false);
+        console.log("[STAFF PAGE LOAD] Loading state set to false");
       }
     };
 
@@ -143,7 +168,7 @@ export function useStaffManagement(
         if (error) {
           // Silently handle 404 - table might not exist yet
           if (error.code !== 'PGRST116') {
-            console.error("[STAFF MANAGEMENT] Error loading shifts:", error);
+            // Error logged but not critical
           }
         } else if (shiftsData && shiftsData.length > 0) {
           // Transform to match LegacyShift format
@@ -165,7 +190,7 @@ export function useStaffManagement(
         }
       } catch (e) {
         // Silently handle errors - shifts are optional
-        console.error("[STAFF MANAGEMENT] Exception loading shifts:", e);
+        // Error handled silently
       }
     };
 
@@ -198,18 +223,15 @@ export function useStaffManagement(
         .single();
 
       if (error) {
-        console.error("[STAFF MANAGEMENT] Error adding staff:", error);
         throw new Error(error.message || "Failed to add staff member");
       }
 
       if (newStaff) {
-        console.log("[STAFF MANAGEMENT] Added staff member:", newStaff);
         setStaff((prev) => [...prev, newStaff]);
         setName("");
         setRole("Server");
       }
     } catch (err) {
-      console.error("[STAFF MANAGEMENT] Exception adding staff:", err);
       setError(err instanceof Error ? err.message : "Failed to perform action");
     } finally {
       setAdding(false);

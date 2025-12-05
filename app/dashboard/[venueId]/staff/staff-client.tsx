@@ -113,20 +113,31 @@ export default function StaffClient({
               venueId={venueId}
               staff={staffManagement.staff || []}
             onStaffAdded={async () => {
+              console.log("[STAFF CLIENT] onStaffAdded callback triggered - reloading staff list");
               // Reload staff from database to ensure accuracy
               const supabase = supabaseBrowser();
               // Normalize venueId - database stores with venue- prefix
               const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-              const { data: staffData } = await supabase
+              console.log("[STAFF CLIENT] Reloading staff for venue:", normalizedVenueId);
+              
+              const reloadStart = Date.now();
+              const { data: staffData, error } = await supabase
                 .from("staff")
                 .select("*")
                 .eq("venue_id", normalizedVenueId)
                 .order("created_at", { ascending: false });
+              const reloadTime = Date.now() - reloadStart;
+              
+              console.log("[STAFF CLIENT] Reload query completed in", reloadTime, "ms");
+              console.log("[STAFF CLIENT] Reload error:", error ? JSON.stringify(error, null, 2) : "none");
+              console.log("[STAFF CLIENT] Reloaded staff data:", staffData ? `${staffData.length} members` : "null");
+              
               if (staffData) {
-                console.log("[STAFF CLIENT] Reloaded staff:", staffData.length, "members");
+                console.log("[STAFF CLIENT] Setting staff state with", staffData.length, "members");
                 staffManagement.setStaff(staffData);
+                console.log("[STAFF CLIENT] Staff state updated successfully");
               } else {
-                console.log("[STAFF CLIENT] No staff found for venue:", normalizedVenueId);
+                console.log("[STAFF CLIENT] WARNING - No staff data returned from reload");
               }
             }}
               onStaffToggle={staffManagement.toggleStaffActive}

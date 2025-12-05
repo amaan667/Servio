@@ -43,7 +43,7 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
         if (error) {
           // Silently handle 404 - table might not exist yet
           if (error.code !== 'PGRST116') {
-            console.error("[SHIFT MANAGEMENT] Error loading shifts:", error);
+            // Error handled silently
           }
         } else if (shiftsData) {
           // Transform to match LegacyShift format
@@ -61,7 +61,7 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
         }
       } catch (e) {
         // Silently handle errors - shifts are optional
-        console.error("[SHIFT MANAGEMENT] Exception loading shifts:", e);
+        // Error handled silently
       }
     };
 
