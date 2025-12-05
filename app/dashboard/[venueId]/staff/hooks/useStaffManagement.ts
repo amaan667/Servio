@@ -50,11 +50,12 @@ export function useStaffManagement(
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
-  const [staffLoaded, setStaffLoaded] = useState(!!initialStaff && initialStaff.length > 0);
+  const [staffLoaded, setStaffLoaded] = useState(false);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
   const [loading, setLoading] = useState(false); // Start with false to prevent flicker
 
   // Load staff data on component mount - Direct Supabase query
+  // Always fetch from database to ensure we have the latest data
   useEffect(() => {
     const loadStaff = async () => {
       if (staffLoaded) return;
@@ -76,14 +77,15 @@ export function useStaffManagement(
       }
     };
 
-    if (!staffLoaded) {
-      loadStaff();
-    }
-  }, [venueId, staffLoaded]);
+    loadStaff();
+  }, [venueId]);
 
   // Load shifts on component mount - Direct Supabase query
+  // Always fetch from database to ensure we have the latest data
   useEffect(() => {
     const loadShifts = async () => {
+      if (shiftsLoaded) return;
+
       try {
         const supabase = supabaseBrowser();
         const { data: shiftsData, error } = await supabase
@@ -119,10 +121,8 @@ export function useStaffManagement(
       }
     };
 
-    if (!shiftsLoaded) {
-      loadShifts();
-    }
-  }, [venueId, shiftsLoaded]);
+    loadShifts();
+  }, [venueId]);
 
   const addStaff = async () => {
     if (!name.trim()) {
