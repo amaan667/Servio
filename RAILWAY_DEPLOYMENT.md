@@ -6,31 +6,33 @@ If deployments are being skipped on Railway, check the following:
 
 ### 1. Disable Metal Builds (CRITICAL)
 
-**Metal builds can cause deployment issues.** The project is configured to use Railpack builder instead.
+**Metal builds can cause deployment issues.** The project does NOT use Metal builds.
 
 **Configuration:**
-- The `railway.toml` file explicitly sets `builder = "RAILPACK"` to disable Metal builds
-- This ensures Railway uses Railpack builder instead of Metal build infrastructure
+- The `railway.toml` file has been **removed** to allow Railway UI to control the builder/Metal toggle directly
+- Railway will use the standard Nixpacks builder by default
+- This prevents Railway from reading config files that might force Metal builds
 
-**To also disable in Dashboard (optional but recommended):**
+**To disable Metal Builds in Dashboard (REQUIRED):**
 1. Go to [Railway Dashboard](https://railway.app)
 2. Select your project
 3. Navigate to **Settings** > **Build**
-4. Find **"Metal Builds"** toggle
+4. Find **"Use Metal Build Environment"** toggle
 5. **Turn it OFF**
 6. Save settings
+7. Clear build cache and redeploy
 
-**Note:** The `railway.toml` file should prevent Metal builds from being used, but disabling in the dashboard provides an extra safeguard.
+**Note:** Without `railway.toml`, Railway will respect the dashboard toggle settings. Make sure Metal builds are disabled in the dashboard.
 
 ### 2. Verify Build Configuration
 
-The project uses `railway.toml` to configure the build:
+The project uses `nixpacks.toml` to configure the build:
 
-- **Builder:** `RAILPACK` (configured in `railway.toml`)
+- **Builder:** Nixpacks (default, configured in `nixpacks.toml`)
 - **Build Command:** `pnpm install --frozen-lockfile && pnpm run build`
 - **Start Command:** `pnpm start`
 
-The `nixpacks.toml` file is also present for compatibility, but `railway.toml` takes precedence.
+**Note:** `railway.toml` has been removed to prevent Railway from forcing Metal builds. The build configuration is now controlled via Railway Dashboard settings.
 
 ### 3. Check Deployment Triggers
 
@@ -90,9 +92,10 @@ This script:
 
 ## Configuration Files
 
-- `railway.toml` - Railway build and deploy configuration
-- `nixpacks.toml` - Nixpacks build configuration
+- `nixpacks.toml` - Nixpacks build configuration (used by default)
 - `.railwayignore` - Files to ignore during deployment
+
+**Note:** `railway.toml` has been removed. Railway now uses dashboard settings to control build configuration, preventing forced Metal builds.
 
 ## Environment Variables
 
