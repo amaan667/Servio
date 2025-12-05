@@ -8,9 +8,21 @@ import { isDevelopment } from '@/lib/env';
 import { z } from 'zod';
 import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
 
+// Venue ID validation - accepts UUID or "venue-" prefixed format
+const venueIdSchema = z.string().refine(
+  (val) => {
+    // Accept UUID format
+    if (z.string().uuid().safeParse(val).success) return true;
+    // Accept "venue-" prefix format
+    if (val.startsWith("venue-") && val.length > 6) return true;
+    return false;
+  },
+  { message: "Invalid venue ID format. Must be a UUID or start with 'venue-'" }
+);
+
 // Validation schemas
 const createQuestionSchema = z.object({
-  venue_id: z.string().uuid(),
+  venue_id: venueIdSchema,
   prompt: z.string().min(1).max(500), // Frontend uses 'prompt', map to 'question_text' for DB
   type: z.enum(["stars", "multiple_choice", "paragraph"]), // Frontend uses 'type', map to 'question_type' for DB
   is_active: z.boolean().default(true),
@@ -20,7 +32,7 @@ const createQuestionSchema = z.object({
 
 const updateQuestionSchema = createQuestionSchema.partial().extend({
   id: z.string().uuid(),
-  venue_id: z.string().uuid().optional(), // Allow venue_id in updates
+  venue_id: venueIdSchema.optional(), // Allow venue_id in updates
 });
 
 const deleteQuestionSchema = z.object({
@@ -140,8 +152,7 @@ export const POST = withUnifiedAuth(
       const venueId = context.venueId;
 
       // STEP 3: Validate input
-      // unified-auth already parsed the body, but we need to parse it again for validation
-      // This is a limitation - we'll need to read from the request context if available
+      // withUnifiedAuth reconstructs the body, so we can read it normally
       const body = await validateBody(createQuestionSchema, await req.json());
 
       // Verify venue_id matches context
@@ -229,7 +240,6 @@ export const POST = withUnifiedAuth(
       );
     }
   }
-  // unified-auth automatically extracts venueId from request body (venue_id or venueId field)
 );
 
 // PATCH - Update question
@@ -335,20 +345,6 @@ export const PATCH = withUnifiedAuth(
         isDevelopment() ? error : undefined
       );
     }
-  },
-  {
-    extractVenueId: async (req) => {
-      try {
-        // Clone the request so we don't consume the original body
-        const clonedReq = req.clone();
-        const body = await clonedReq.json().catch(() => ({}));
-        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
-               (body as { venue_id?: string; venueId?: string })?.venueId || 
-               null;
-      } catch {
-        return null;
-      }
-    },
   }
 );
 
