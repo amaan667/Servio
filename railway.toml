@@ -1,12 +1,10 @@
 # Railway Configuration
-# Explicitly disable Metal builds and force Nixpacks
-# This prevents Railway from auto-enabling Metal builds
+# Explicitly use NIXPACKS builder to prevent Metal builds
+# Railway will respect this and not auto-enable Metal builds
 
 [build]
 builder = "NIXPACKS"
 buildCommand = "pnpm install --frozen-lockfile && pnpm run build"
-# Explicitly disable Metal build environment
-useMetalBuild = false
 
 [deploy]
 startCommand = "pnpm start"
