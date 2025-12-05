@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Calendar } from "lucide-react";
@@ -11,6 +11,19 @@ import { supabaseBrowser } from "@/lib/supabase";
 // Hooks
 import { useStaffManagement, type StaffRow } from "./hooks/useStaffManagement";
 import { useShiftManagement } from "./hooks/useShiftManagement";
+
+// Immediate logging when module loads - these should appear in browser console
+if (typeof window !== 'undefined') {
+  console.log("=".repeat(80));
+  console.log("[STAFF CLIENT] Module loaded - component file executed");
+  console.log("[STAFF CLIENT] Timestamp:", new Date().toISOString());
+  console.log("[STAFF CLIENT] Window object available:", !!window);
+  console.log("[STAFF CLIENT] Console object available:", !!console);
+  console.log("=".repeat(80));
+  
+  // Also log to window for debugging
+  (window as any).__STAFF_LOGGING_ENABLED__ = true;
+}
 
 /**
  * Staff Client Component
@@ -29,6 +42,16 @@ export default function StaffClient({
   initialStaff?: StaffRow[];
   initialCounts?: unknown;
 }) {
+  // Log when component renders
+  useEffect(() => {
+    console.log("=".repeat(80));
+    console.log("[STAFF CLIENT] Component mounted/rendered");
+    console.log("[STAFF CLIENT] Props - venueId:", venueId);
+    console.log("[STAFF CLIENT] Props - initialStaff:", initialStaff ? `${initialStaff.length} members` : "none");
+    console.log("[STAFF CLIENT] Component render timestamp:", new Date().toISOString());
+    console.log("=".repeat(80));
+  }, []);
+
   const [activeTab, setActiveTab] = useState("staff");
 
   const staffManagement = useStaffManagement(

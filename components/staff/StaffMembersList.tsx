@@ -1,6 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+// Immediate logging when module loads
+if (typeof window !== 'undefined') {
+  console.log("=".repeat(80));
+  console.log("[STAFF MEMBERS LIST] Module loaded - component file executed");
+  console.log("[STAFF MEMBERS LIST] Timestamp:", new Date().toISOString());
+  console.log("=".repeat(80));
+}
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,6 +54,16 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   onStaffAdded,
   onStaffToggle,
 }) => {
+  // Log when component renders
+  useEffect(() => {
+    console.log("=".repeat(80));
+    console.log("[STAFF MEMBERS LIST] Component rendered/mounted");
+    console.log("[STAFF MEMBERS LIST] Props - venueId:", venueId);
+    console.log("[STAFF MEMBERS LIST] Props - staff count:", staff?.length || 0);
+    console.log("[STAFF MEMBERS LIST] Render timestamp:", new Date().toISOString());
+    console.log("=".repeat(80));
+  }, []);
+
   const [name, setName] = useState("");
   const [role, setRole] = useState("Server");
   const [adding, setAdding] = useState(false);

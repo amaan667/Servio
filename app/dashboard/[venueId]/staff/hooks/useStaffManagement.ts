@@ -43,6 +43,16 @@ export function useStaffManagement(
   initialStaff?: StaffRow[],
   _initialCounts?: StaffCounts
 ) {
+  // Immediate logging when hook is called
+  if (typeof window !== 'undefined') {
+    console.log("=".repeat(80));
+    console.log("[STAFF HOOK] useStaffManagement hook called");
+    console.log("[STAFF HOOK] venueId parameter:", venueId);
+    console.log("[STAFF HOOK] initialStaff parameter:", initialStaff ? `${initialStaff.length} members` : "none");
+    console.log("[STAFF HOOK] Hook call timestamp:", new Date().toISOString());
+    console.log("=".repeat(80));
+  }
+
   // Use initialStaff as initial state, but always fetch from database to ensure accuracy
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
   const [name, setName] = useState("");
@@ -55,6 +65,7 @@ export function useStaffManagement(
 
   // Load staff data on component mount - Always fetch from database to ensure accuracy
   useEffect(() => {
+    console.log("[STAFF HOOK] useEffect for loadStaff triggered");
     const loadStaff = async () => {
       console.log("=".repeat(80));
       console.log("[STAFF PAGE LOAD] Starting staff load process");
