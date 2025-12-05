@@ -25,8 +25,9 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
     const loadShifts = async () => {
       try {
         const supabase = supabaseBrowser();
+        // Use staff_shifts table (not shifts)
         const { data: shiftsData, error } = await supabase
-          .from("shifts")
+          .from("staff_shifts")
           .select(
             `
             *,
@@ -39,7 +40,12 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
           .eq("venue_id", venueId)
           .order("start_time", { ascending: false });
 
-        if (!error && shiftsData) {
+        if (error) {
+          // Silently handle 404 - table might not exist yet
+          if (error.code !== 'PGRST116') {
+            console.error("[SHIFT MANAGEMENT] Error loading shifts:", error);
+          }
+        } else if (shiftsData) {
           // Transform to match LegacyShift format
           const shifts = shiftsData.map((shift: ShiftWithStaff) => ({
             id: shift.id,
@@ -53,8 +59,9 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
           setAllShifts(shifts);
           setShiftsLoaded(true);
         }
-      } catch (_e) {
-        // Error silently handled
+      } catch (e) {
+        // Silently handle errors - shifts are optional
+        console.error("[SHIFT MANAGEMENT] Exception loading shifts:", e);
       }
     };
 
@@ -66,8 +73,9 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
   const addShift = async (staffId: string, startTime: string, endTime: string, area?: string) => {
     try {
       const supabase = supabaseBrowser();
+      // Use staff_shifts table (not shifts)
       const { data: newShift, error } = await supabase
-        .from("shifts")
+        .from("staff_shifts")
         .insert({
           venue_id: venueId,
           staff_id: staffId,
@@ -112,7 +120,8 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
   const deleteShift = async (shiftId: string) => {
     try {
       const supabase = supabaseBrowser();
-      const { error } = await supabase.from("shifts").delete().eq("id", shiftId);
+      // Use staff_shifts table (not shifts)
+      const { error } = await supabase.from("staff_shifts").delete().eq("id", shiftId);
 
       if (error) {
         throw new Error(error.message || "Failed to delete shift");

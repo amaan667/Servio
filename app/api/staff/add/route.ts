@@ -25,17 +25,27 @@ export const POST = withUnifiedAuth(
         return apiErrors.badRequest('name is required');
       }
 
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = context.venueId.startsWith("venue-") 
+        ? context.venueId 
+        : `venue-${context.venueId}`;
+
       const admin = createAdminClient();
       const { data, error } = await admin
         .from("staff")
-        .insert([{ venue_id: context.venueId, name, role: role || "Server" }])
+        .insert([{ venue_id: normalizedVenueId, name, role: role || "Server", active: true }])
         .select("*");
       
       if (error) {
-        return apiErrors.badRequest(error.message);
+        console.error("[STAFF ADD API] Error:", error);
+        return apiErrors.badRequest(error.message || "Failed to add staff member");
       }
       
-      return success({ data: data ?? [] });
+      if (!data || data.length === 0) {
+        return apiErrors.internal("Failed to create staff member - no data returned");
+      }
+      
+      return success({ data: data[0] });
     } catch (_e) {
       return apiErrors.internal(
         _e instanceof Error ? _e.message : "Unknown error"

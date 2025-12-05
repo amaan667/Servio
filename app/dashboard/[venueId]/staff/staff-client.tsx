@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Calendar } from "lucide-react";
 import StaffMembersList from "@/components/staff/StaffMembersList";
 import SimpleStaffGrid from "@/components/staff/SimpleStaffGrid";
+import { supabaseBrowser } from "@/lib/supabase";
 
 // Hooks
 import { useStaffManagement, type StaffRow } from "./hooks/useStaffManagement";
@@ -98,19 +99,39 @@ export default function StaffClient({
         </TabsList>
 
         <TabsContent value="staff" className="mt-6">
-          <StaffMembersList
-            venueId={venueId}
-            staff={staffManagement.staff || []}
+          {staffManagement.loading ? (
+            <Card>
+              <CardContent className="py-8">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <span className="ml-3 text-gray-600">Loading staff members...</span>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <StaffMembersList
+              venueId={venueId}
+              staff={staffManagement.staff || []}
             onStaffAdded={async () => {
-              // Refetch staff data without reload
-              const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
-              const data = await res.json();
-              if (data.ok && data.staff) {
-                staffManagement.setStaff(data.staff);
+              // Reload staff from database to ensure accuracy
+              const supabase = supabaseBrowser();
+              // Normalize venueId - database stores with venue- prefix
+              const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+              const { data: staffData } = await supabase
+                .from("staff")
+                .select("*")
+                .eq("venue_id", normalizedVenueId)
+                .order("created_at", { ascending: false });
+              if (staffData) {
+                console.log("[STAFF CLIENT] Reloaded staff:", staffData.length, "members");
+                staffManagement.setStaff(staffData);
+              } else {
+                console.log("[STAFF CLIENT] No staff found for venue:", normalizedVenueId);
               }
             }}
-            onStaffToggle={staffManagement.toggleStaffActive}
-          />
+              onStaffToggle={staffManagement.toggleStaffActive}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-6">

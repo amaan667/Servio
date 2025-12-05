@@ -72,23 +72,37 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
     setError(null);
 
     try {
-      const res = await fetch("/api/staff/add", {
+      // Add venueId to query string for withUnifiedAuth
+      // Normalize venueId - ensure it has venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const url = new URL("/api/staff/add", window.location.origin);
+      url.searchParams.set("venueId", normalizedVenueId);
+      
+      const res = await fetch(url.toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ venue_id: venueId, name, role }),
+        credentials: "include",
+        body: JSON.stringify({ venue_id: normalizedVenueId, name, role }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to add staff member");
+        const errorMessage = data.error?.message || data.error || data.message || "Failed to add staff member";
+        console.error("[STAFF MEMBERS LIST] Add staff error:", data);
+        throw new Error(errorMessage);
       }
 
+      console.log("[STAFF MEMBERS LIST] Staff added successfully:", data);
       setName("");
       setRole("Server");
-      if (onStaffAdded) onStaffAdded();
-    } catch (_err) {
-      setError(_err instanceof Error ? _err.message : "Failed to add staff member");
+      if (onStaffAdded) {
+        await onStaffAdded();
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to add staff member";
+      setError(errorMessage);
+      console.error("[STAFF MEMBERS LIST] Error adding staff:", err);
     } finally {
       setAdding(false);
     }

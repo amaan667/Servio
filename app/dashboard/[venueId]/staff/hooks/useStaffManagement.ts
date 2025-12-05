@@ -43,40 +43,49 @@ export function useStaffManagement(
   initialStaff?: StaffRow[],
   _initialCounts?: StaffCounts
 ) {
-  // Use initialStaff directly, no empty array fallback to prevent flicker
+  // Use initialStaff as initial state, but always fetch from database to ensure accuracy
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
   const [name, setName] = useState("");
   const [role, setRole] = useState("Server");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
-  const [staffLoaded, setStaffLoaded] = useState(false);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
-  const [loading, setLoading] = useState(false); // Start with false to prevent flicker
+  const [loading, setLoading] = useState(true); // Start with true to show loading state
 
-  // Load staff data on component mount - Direct Supabase query
-  // Always fetch from database to ensure we have the latest data
+  // Load staff data on component mount - Always fetch from database to ensure accuracy
   useEffect(() => {
     const loadStaff = async () => {
-      if (staffLoaded) return;
-
+      setLoading(true);
       try {
         const supabase = supabaseBrowser();
+        // Normalize venueId - database stores with venue- prefix
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        
         const { data: staffData, error } = await supabase
           .from("staff")
           .select("*")
-          .eq("venue_id", venueId)
+          .eq("venue_id", normalizedVenueId)
           .order("created_at", { ascending: false });
 
-        if (!error && staffData) {
+        if (error) {
+          console.error("[STAFF MANAGEMENT] Error loading staff:", error);
+          setError(error.message || "Failed to load staff");
+        } else if (staffData) {
+          console.log("[STAFF MANAGEMENT] Loaded staff:", staffData.length, "members");
           setStaff(staffData);
-          setStaffLoaded(true);
+        } else {
+          console.log("[STAFF MANAGEMENT] No staff found for venue:", normalizedVenueId);
         }
-      } catch (_e) {
-        // Error silently handled
+      } catch (e) {
+        console.error("[STAFF MANAGEMENT] Exception loading staff:", e);
+        setError(e instanceof Error ? e.message : "Failed to load staff");
+      } finally {
+        setLoading(false);
       }
     };
 
+    // Always load staff on mount, regardless of initialStaff
     loadStaff();
   }, [venueId]);
 
@@ -84,12 +93,18 @@ export function useStaffManagement(
   // Always fetch from database to ensure we have the latest data
   useEffect(() => {
     const loadShifts = async () => {
-      if (shiftsLoaded) return;
-
       try {
         const supabase = supabaseBrowser();
-        const { data: shiftsData, error } = await supabase
-          .from("shifts")
+        // Normalize venueId - database stores with venue- prefix
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        
+        // Try staff_shifts first, fallback to shifts if it doesn't exist
+        let shiftsData = null;
+        let error = null;
+        
+        // Try staff_shifts table first
+        const { data: staffShiftsData, error: staffShiftsError } = await supabase
+          .from("staff_shifts")
           .select(
             `
             *,
@@ -99,10 +114,38 @@ export function useStaffManagement(
             )
           `
           )
-          .eq("venue_id", venueId)
+          .eq("venue_id", normalizedVenueId)
           .order("start_time", { ascending: false });
+        
+        if (staffShiftsError && staffShiftsError.code === 'PGRST116') {
+          // Table doesn't exist, try shifts table as fallback
+          const { data: shiftsDataFallback, error: shiftsError } = await supabase
+            .from("shifts")
+            .select(
+              `
+              *,
+              staff:staff_id (
+                name,
+                role
+              )
+            `
+            )
+            .eq("venue_id", normalizedVenueId)
+            .order("start_time", { ascending: false });
+          
+          shiftsData = shiftsDataFallback;
+          error = shiftsError;
+        } else {
+          shiftsData = staffShiftsData;
+          error = staffShiftsError;
+        }
 
-        if (!error && shiftsData) {
+        if (error) {
+          // Silently handle 404 - table might not exist yet
+          if (error.code !== 'PGRST116') {
+            console.error("[STAFF MANAGEMENT] Error loading shifts:", error);
+          }
+        } else if (shiftsData && shiftsData.length > 0) {
           // Transform to match LegacyShift format
           const shifts = shiftsData.map((shift: ShiftWithStaff) => ({
             id: shift.id,
@@ -115,9 +158,14 @@ export function useStaffManagement(
           }));
           setAllShifts(shifts);
           setShiftsLoaded(true);
+        } else {
+          // No shifts found - this is OK
+          setAllShifts([]);
+          setShiftsLoaded(true);
         }
-      } catch (_e) {
-        // Error silently handled
+      } catch (e) {
+        // Silently handle errors - shifts are optional
+        console.error("[STAFF MANAGEMENT] Exception loading shifts:", e);
       }
     };
 
@@ -135,10 +183,13 @@ export function useStaffManagement(
 
     try {
       const supabase = supabaseBrowser();
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      
       const { data: newStaff, error } = await supabase
         .from("staff")
         .insert({
-          venue_id: venueId,
+          venue_id: normalizedVenueId,
           name: name.trim(),
           role,
           active: true,
@@ -147,14 +198,19 @@ export function useStaffManagement(
         .single();
 
       if (error) {
+        console.error("[STAFF MANAGEMENT] Error adding staff:", error);
         throw new Error(error.message || "Failed to add staff member");
       }
 
-      setStaff((prev) => [...prev, newStaff]);
-      setName("");
-      setRole("Server");
-    } catch (_err) {
-      setError(_err instanceof Error ? _err.message : "Failed to perform action");
+      if (newStaff) {
+        console.log("[STAFF MANAGEMENT] Added staff member:", newStaff);
+        setStaff((prev) => [...prev, newStaff]);
+        setName("");
+        setRole("Server");
+      }
+    } catch (err) {
+      console.error("[STAFF MANAGEMENT] Exception adding staff:", err);
+      setError(err instanceof Error ? err.message : "Failed to perform action");
     } finally {
       setAdding(false);
     }
