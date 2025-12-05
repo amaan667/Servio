@@ -6,9 +6,13 @@ If deployments are being skipped on Railway, check the following:
 
 ### 1. Disable Metal Builds (CRITICAL)
 
-**Metal builds are NOT ready for production** and will cause deployments to be skipped.
+**Metal builds can cause deployment issues.** The project is configured to use Railpack builder instead.
 
-**To disable:**
+**Configuration:**
+- The `railway.toml` file explicitly sets `builder = "RAILPACK"` to disable Metal builds
+- This ensures Railway uses Railpack builder instead of Metal build infrastructure
+
+**To also disable in Dashboard (optional but recommended):**
 1. Go to [Railway Dashboard](https://railway.app)
 2. Select your project
 3. Navigate to **Settings** > **Build**
@@ -16,15 +20,17 @@ If deployments are being skipped on Railway, check the following:
 5. **Turn it OFF**
 6. Save settings
 
-**Note:** Metal builds cannot be disabled via config files - this is a dashboard-only setting.
+**Note:** The `railway.toml` file should prevent Metal builds from being used, but disabling in the dashboard provides an extra safeguard.
 
 ### 2. Verify Build Configuration
 
-The project uses `nixpacks` builder with the following configuration:
+The project uses `railway.toml` to configure the build:
 
-- **Builder:** `nixpacks`
-- **Build Command:** `pnpm install --frozen-lockfile && NODE_NO_WARNINGS=1 pnpm run build`
+- **Builder:** `RAILPACK` (configured in `railway.toml`)
+- **Build Command:** `pnpm install --frozen-lockfile && pnpm run build`
 - **Start Command:** `pnpm start`
+
+The `nixpacks.toml` file is also present for compatibility, but `railway.toml` takes precedence.
 
 ### 3. Check Deployment Triggers
 
