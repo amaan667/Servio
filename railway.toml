@@ -1,8 +1,9 @@
 # Railway Configuration
-# Minimal config - ensures build runs before start
-# No Metal build settings - controlled via Railway Dashboard
+# Explicitly use NIXPACKS builder to prevent Metal builds
+# Metal builds are disabled by specifying NIXPACKS builder
 
 [build]
+builder = "NIXPACKS"
 buildCommand = "pnpm install --frozen-lockfile && pnpm run build"
 
 [deploy]

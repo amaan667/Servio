@@ -237,4 +237,4 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
 });
-/* Deployment timestamp: 2025-11-26T14:03:15Z - Build ID: 1764165795 */
+/* Deployment timestamp: 2025-12-05T23:14:48Z - Build ID: 1764976488 */
