@@ -1,0 +1,9 @@
+# Railway Configuration
+# Minimal config - ensures build runs before start
+# No Metal build settings - controlled via Railway Dashboard
+
+[build]
+buildCommand = "pnpm install --frozen-lockfile && pnpm run build"
+
+[deploy]
+startCommand = "pnpm start"
