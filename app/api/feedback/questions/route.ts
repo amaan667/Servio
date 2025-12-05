@@ -140,6 +140,8 @@ export const POST = withUnifiedAuth(
       const venueId = context.venueId;
 
       // STEP 3: Validate input
+      // unified-auth already parsed the body, but we need to parse it again for validation
+      // This is a limitation - we'll need to read from the request context if available
       const body = await validateBody(createQuestionSchema, await req.json());
 
       // Verify venue_id matches context
@@ -226,21 +228,8 @@ export const POST = withUnifiedAuth(
         isDevelopment() ? error : undefined
       );
     }
-  },
-  {
-    extractVenueId: async (req) => {
-      try {
-        // Clone the request so we don't consume the original body
-        const clonedReq = req.clone();
-        const body = await clonedReq.json().catch(() => ({}));
-        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
-               (body as { venue_id?: string; venueId?: string })?.venueId || 
-               null;
-      } catch {
-        return null;
-      }
-    },
   }
+  // unified-auth automatically extracts venueId from request body (venue_id or venueId field)
 );
 
 // PATCH - Update question

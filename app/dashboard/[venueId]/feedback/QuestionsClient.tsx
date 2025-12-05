@@ -230,9 +230,9 @@ export default function QuestionsClient({
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        const result = await response.json();
+      const responseData = await response.json();
 
+      if (response.ok && responseData.success) {
         toast({
           title: "Success",
           description: "Question added successfully",
@@ -250,12 +250,14 @@ export default function QuestionsClient({
           window.dispatchEvent(new CustomEvent("feedbackQuestionsUpdated"));
         }
       } else {
+        // Handle API error response format: { success: false, error: { message: "..." } }
         let errorMessage = "Couldn't save question";
-        try {
-          const error = await response.json();
-          errorMessage = error.error || errorMessage;
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        if (responseData.error?.message) {
+          errorMessage = responseData.error.message;
+        } else if (responseData.message) {
+          errorMessage = responseData.message;
+        } else if (typeof responseData.error === "string") {
+          errorMessage = responseData.error;
         }
 
         toast({
@@ -264,10 +266,17 @@ export default function QuestionsClient({
           variant: "destructive",
         });
       }
-    } catch (_error) {
+    } catch (error) {
+      // Catch network errors or JSON parsing errors
+      const errorMessage = error instanceof Error 
+        ? `Network error: ${error.message}` 
+        : "Couldn't save question. Please check your connection and try again.";
+      
+      console.error("[QuestionsClient] Error creating question:", error);
+      
       toast({
         title: "Error",
-        description: "Couldn't save question",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
