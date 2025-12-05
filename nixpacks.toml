@@ -7,8 +7,8 @@
 nixpkgsArchive = "23f9169c4ccce521379e602cc82ed873a1f1b52b"
 
 [phases.setup]
-# Use nodejs-20_x (underscore instead of dash for version)
-nixPkgs = ["nodejs-20_x"]
+# Use nodejs_20 (correct nix package name)
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
 cmds = ["corepack enable pnpm", "pnpm install --frozen-lockfile"]
