@@ -104,7 +104,9 @@ export default function UnifiedFeedbackForm({
   const fetchQuestions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/feedback/questions/public?venueId=${venueId}`);
+      // Normalize venueId - ensure it has venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const response = await fetch(`/api/feedback/questions/public?venueId=${normalizedVenueId}`);
 
       if (response.ok) {
         const data = await response.json();

@@ -13,13 +13,16 @@ export async function GET(req: Request) {
       return apiErrors.badRequest('venueId required');
     }
 
+    // Normalize venueId - database stores with venue- prefix
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
     const serviceClient = await createAdminClient();
 
     // Get active questions for the venue
     const { data: questions, error } = await serviceClient
       .from('feedback_questions')
       .select('*')
-      .eq('venue_id', venueId)
+      .eq('venue_id', normalizedVenueId)
       .eq('is_active', true)
       .order('sort_index', { ascending: true })
       .order('created_at', { ascending: true });

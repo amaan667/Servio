@@ -93,12 +93,15 @@ export default function QuestionsClient({
     try {
       setLoading(true);
 
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      
       // Fetch directly from Supabase like other pages do (menu, etc)
       const supabase = supabaseBrowser();
       const { data: questions, error } = await supabase
         .from("feedback_questions")
         .select("*")
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .order("sort_index", { ascending: true })
         .order("created_at", { ascending: true });
 
@@ -245,9 +248,9 @@ export default function QuestionsClient({
         // Refresh questions list first to show the new question
         await fetchQuestions();
 
-        // Then reset form and switch to questions tab
+        // Then reset form and switch to overview tab to show the new question
         resetForm();
-        setActiveTab("questions");
+        setActiveTab("overview");
 
         // Dispatch event to notify other components
         if (typeof window !== "undefined") {
