@@ -195,7 +195,14 @@ export default function MobileNav({
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className="h-5 w-5 text-[#7c3aed]" />
+                <item.icon 
+                  className={`h-5 w-5 transition-colors ${
+                    item.isActive ? "text-purple-700" : "text-purple-600"
+                  }`}
+                  style={{
+                    color: item.isActive ? "#6d28d9" : "#7c3aed",
+                  }}
+                />
                 {item.badge && item.badge > 0 && (
                   <Badge
                     variant="destructive"
@@ -206,8 +213,15 @@ export default function MobileNav({
                 )}
               </div>
               <span
-                className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate text-[#7c3aed]"
-                style={{ lineHeight: "1.2", fontSize: "10px" }}
+                className={`text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate transition-colors ${
+                  item.isActive ? "text-purple-700" : "text-purple-600"
+                }`}
+                style={{ 
+                  lineHeight: "1.2", 
+                  fontSize: "10px",
+                  color: item.isActive ? "#6d28d9" : "#7c3aed",
+                  fontWeight: item.isActive ? 700 : 600,
+                }}
               >
                 {item.label}
               </span>

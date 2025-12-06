@@ -287,11 +287,20 @@ export default function GlobalBottomNav({
                   width: "100%",
                 }}
               >
-                <item.icon className="h-6 w-6 text-[#7c3aed]" />
+                <item.icon 
+                  className={`h-6 w-6 transition-colors ${
+                    item.isActive ? "text-purple-700" : "text-purple-600"
+                  }`}
+                  style={{
+                    color: item.isActive ? "#6d28d9" : "#7c3aed",
+                  }}
+                />
               </div>
               <span
-                className={`font-semibold text-center px-0.5 transition-colors w-full text-[#7c3aed] flex-shrink-0 ${
-                  item.isActive ? "font-bold" : ""
+                className={`font-semibold text-center px-0.5 transition-colors w-full flex-shrink-0 ${
+                  item.isActive 
+                    ? "font-bold text-purple-700" 
+                    : "text-purple-600"
                 }`}
                 style={{
                   fontSize: "11px",
@@ -303,8 +312,8 @@ export default function GlobalBottomNav({
                   minHeight: "16px",
                   maxHeight: "none",
                   overflow: "visible",
-                  color: "#7c3aed",
-                  fontWeight: 600,
+                  color: item.isActive ? "#6d28d9" : "#7c3aed",
+                  fontWeight: item.isActive ? 700 : 600,
                   textIndent: 0,
                   clip: "auto",
                   clipPath: "none",

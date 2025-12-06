@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { UserPlus, Calendar, Users, Mail } from "lucide-react";
+import { UserPlus, Calendar, Users, Mail, X } from "lucide-react";
 import { AddShiftModal } from "./AddShiftModal";
 import {
   Dialog,
@@ -73,6 +73,9 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
     id: string;
     name: string;
   } | null>(null);
+  const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<{ id: string; name: string } | null>(null);
   const invitation = useStaffInvitation({
     venueId,
     onSuccess: () => {
@@ -158,6 +161,48 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
     }
   };
 
+  const handleDeleteClick = (member: StaffMember) => {
+    setStaffToDelete({ id: member.id, name: member.name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!staffToDelete) return;
+
+    setDeletingStaffId(staffToDelete.id);
+    try {
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const url = new URL("/api/staff/delete", window.location.origin);
+      url.searchParams.set("venueId", normalizedVenueId);
+      
+      const res = await fetch(url.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id: staffToDelete.id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error?.message || data.error || data.message || "Failed to delete staff member");
+      }
+
+      // Reload staff list
+      if (onStaffAdded) {
+        await onStaffAdded();
+      }
+      
+      setDeleteConfirmOpen(false);
+      setStaffToDelete(null);
+    } catch (err) {
+      console.error("[DELETE STAFF] Error:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete staff member");
+    } finally {
+      setDeletingStaffId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Add Staff Form */}
@@ -234,19 +279,29 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
               {staff.map((member) => (
                 <div
                   key={member.id}
-                  className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow"
+                  className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow relative"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <div>
+                    <div className="flex-1 pr-2">
                       <h3 className="font-semibold text-gray-900">{member.name}</h3>
                       <p className="text-sm text-gray-600">{member.role}</p>
                     </div>
-                    <Badge
-                      variant={member.active ? "default" : "secondary"}
-                      className={member.active ? "bg-green-500" : "bg-gray-400"}
-                    >
-                      {member.active ? "Active" : "Inactive"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={member.active ? "default" : "secondary"}
+                        className={member.active ? "bg-green-500" : "bg-gray-400"}
+                      >
+                        {member.active ? "Active" : "Inactive"}
+                      </Badge>
+                      <button
+                        onClick={() => handleDeleteClick(member)}
+                        disabled={deletingStaffId === member.id}
+                        className="p-1 rounded-full hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label={`Delete ${member.name}`}
+                      >
+                        <X className="h-5 w-5 text-red-600" />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-3 pt-3 border-t space-y-3">
                     <div className="flex items-center gap-2">
@@ -358,6 +413,37 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Staff Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete {staffToDelete?.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setStaffToDelete(null);
+              }}
+              disabled={deletingStaffId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              disabled={deletingStaffId !== null}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {deletingStaffId ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
