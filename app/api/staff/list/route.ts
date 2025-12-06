@@ -26,10 +26,16 @@ export const GET = withUnifiedAuth(
 
       // STEP 3: Business logic
       const admin = await createAdminClient();
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = context.venueId.startsWith("venue-") 
+        ? context.venueId 
+        : `venue-${context.venueId}`;
+      
       const { data: staff, error } = await admin
         .from("staff")
         .select("*")
-        .eq("venue_id", context.venueId)
+        .eq("venue_id", normalizedVenueId)
+        .is("deleted_at", null) // Exclude soft-deleted staff members
         .order("created_at", { ascending: false });
 
       if (error) {
