@@ -73,7 +73,7 @@ export const POST = withUnifiedAuth(
       console.log("[STAFF ADD API] Created staff data:", JSON.stringify(data[0], null, 2));
       console.log("[STAFF ADD API] Returning success response");
       console.log("=".repeat(80));
-      return success({ data: data[0] });
+      return success(data[0]);
     } catch (e) {
       console.error("[STAFF ADD API] EXCEPTION - Unexpected error:");
       console.error("[STAFF ADD API] Exception type:", e instanceof Error ? e.constructor.name : typeof e);

@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Calendar } from "lucide-react";
 import StaffMembersList from "@/components/staff/StaffMembersList";
 import SimpleStaffGrid from "@/components/staff/SimpleStaffGrid";
-import { supabaseBrowser } from "@/lib/supabase";
 
 // Hooks
 import { useStaffManagement, type StaffRow } from "./hooks/useStaffManagement";
@@ -135,34 +134,16 @@ export default function StaffClient({
             <StaffMembersList
               venueId={venueId}
               staff={staffManagement.staff || []}
-            onStaffAdded={async () => {
-              console.log("[STAFF CLIENT] onStaffAdded callback triggered - reloading staff list");
-              // Reload staff from database to ensure accuracy
-              const supabase = supabaseBrowser();
-              // Normalize venueId - database stores with venue- prefix
-              const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-              console.log("[STAFF CLIENT] Reloading staff for venue:", normalizedVenueId);
-              
-              const reloadStart = Date.now();
-              const { data: staffData, error } = await supabase
-                .from("staff")
-                .select("*")
-                .eq("venue_id", normalizedVenueId)
-                .order("created_at", { ascending: false });
-              const reloadTime = Date.now() - reloadStart;
-              
-              console.log("[STAFF CLIENT] Reload query completed in", reloadTime, "ms");
-              console.log("[STAFF CLIENT] Reload error:", error ? JSON.stringify(error, null, 2) : "none");
-              console.log("[STAFF CLIENT] Reloaded staff data:", staffData ? `${staffData.length} members` : "null");
-              
-              if (staffData) {
-                console.log("[STAFF CLIENT] Setting staff state with", staffData.length, "members");
-                staffManagement.setStaff(staffData);
-                console.log("[STAFF CLIENT] Staff state updated successfully");
-              } else {
-                console.log("[STAFF CLIENT] WARNING - No staff data returned from reload");
-              }
-            }}
+              onStaffAdded={async () => {
+                console.log("[STAFF CLIENT] onStaffAdded callback triggered - reloading staff list");
+                // Use the reloadStaff function from the hook which uses the API route
+                if (staffManagement.reloadStaff) {
+                  await staffManagement.reloadStaff();
+                  console.log("[STAFF CLIENT] Staff list reloaded successfully");
+                } else {
+                  console.error("[STAFF CLIENT] ERROR - reloadStaff function not available");
+                }
+              }}
               onStaffToggle={staffManagement.toggleStaffActive}
             />
           )}
