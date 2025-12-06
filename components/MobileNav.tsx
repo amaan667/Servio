@@ -199,9 +199,6 @@ export default function MobileNav({
                   className={`h-5 w-5 transition-colors ${
                     item.isActive ? "text-purple-700" : "text-purple-600"
                   }`}
-                  style={{
-                    color: item.isActive ? "#6d28d9" : "#7c3aed",
-                  }}
                 />
                 {item.badge && item.badge > 0 && (
                   <Badge

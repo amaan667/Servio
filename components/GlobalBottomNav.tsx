@@ -291,9 +291,6 @@ export default function GlobalBottomNav({
                   className={`h-6 w-6 transition-colors ${
                     item.isActive ? "text-purple-700" : "text-purple-600"
                   }`}
-                  style={{
-                    color: item.isActive ? "#6d28d9" : "#7c3aed",
-                  }}
                 />
               </div>
               <span
