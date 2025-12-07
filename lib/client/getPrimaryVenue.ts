@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase";
 
 export async function getPrimaryVenue() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getSession();
-  const user = data?.session?.user;
-  if (!user) return null;
+  // Use getUser() instead of getSession() for secure authentication
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
 
   const { data: venueData, error } = await supabase
     .from("venues")

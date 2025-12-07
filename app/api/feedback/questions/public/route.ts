@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       .select('*')
       .eq('venue_id', normalizedVenueId)
       .eq('is_active', true)
-      .order('sort_index', { ascending: true })
+      .order('display_order', { ascending: true })
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -35,21 +35,21 @@ export async function GET(req: Request) {
     // Transform questions to match frontend expectations (prompt, type, choices)
     const transformedQuestions = (questions || []).map((q: {
       id: string;
-      question_text: string;
+      question: string;
       question_type: string;
       options: string[] | null;
       is_active: boolean;
-      sort_index: number;
+      display_order: number;
       created_at: string;
       updated_at: string;
       venue_id: string;
     }) => ({
       id: q.id,
-      prompt: q.question_text, // Map 'question_text' to 'prompt' for frontend
+      prompt: q.question, // Map 'question' to 'prompt' for frontend
       type: q.question_type, // Map 'question_type' to 'type' for frontend
       choices: q.options || [], // Map 'options' to 'choices' for frontend
       is_active: q.is_active,
-      sort_index: q.sort_index,
+      sort_index: q.display_order, // Map 'display_order' to 'sort_index' for frontend
       created_at: q.created_at,
       updated_at: q.updated_at,
       venue_id: q.venue_id,

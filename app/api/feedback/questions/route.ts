@@ -70,7 +70,7 @@ export const GET = withUnifiedAuth(
         .from("feedback_questions")
         .select("*")
         .eq("venue_id", normalizedVenueId)
-        .order("sort_index", { ascending: true })
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
 
       if (error) {
@@ -92,21 +92,21 @@ export const GET = withUnifiedAuth(
       // STEP 4: Transform questions to match frontend expectations (prompt, type, choices)
       const transformedQuestions = (questions || []).map((q: {
         id: string;
-        question_text: string;
+        question: string;
         question_type: string;
         options: string[] | null;
         is_active: boolean;
-        sort_index: number;
+        display_order: number;
         created_at: string;
         updated_at: string;
         venue_id: string;
       }) => ({
         id: q.id,
-        prompt: q.question_text, // Map 'question_text' to 'prompt' for frontend
+        prompt: q.question, // Map 'question' to 'prompt' for frontend
         type: q.question_type, // Map 'question_type' to 'type' for frontend
         choices: q.options || [], // Map 'options' to 'choices' for frontend
         is_active: q.is_active,
-        sort_index: q.sort_index,
+        sort_index: q.display_order, // Map 'display_order' to 'sort_index' for frontend
         created_at: q.created_at,
         updated_at: q.updated_at,
         venue_id: q.venue_id,
@@ -327,29 +327,29 @@ export const POST = withUnifiedAuth(
       const supabase = createAdminClient();
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Admin client created`);
 
-      // Get current max sort_index for this venue
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4a: Getting max sort_index`);
+      // Get current max display_order for this venue
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4a: Getting max display_order`);
       const { data: existingQuestions, error: sortIndexError } = await supabase
         .from("feedback_questions")
-        .select("sort_index")
+        .select("display_order")
         .eq("venue_id", normalizedVenueId)
-        .order("sort_index", { ascending: false })
+        .order("display_order", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (sortIndexError) {
-        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Error fetching existing questions for sort_index`, {
+        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Error fetching existing questions for display_order`, {
           error: sortIndexError.message,
         });
       }
 
-      const nextSortIndex = existingQuestions?.sort_index !== undefined
-        ? (existingQuestions.sort_index + 1)
+      const nextDisplayOrder = existingQuestions?.display_order !== undefined
+        ? (existingQuestions.display_order + 1)
         : 0;
       
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Sort index calculated`, {
-        existingMax: existingQuestions?.sort_index,
-        nextSortIndex,
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Display order calculated`, {
+        existingMax: existingQuestions?.display_order,
+        nextDisplayOrder,
       });
 
       // Prepare insert data
@@ -357,10 +357,10 @@ export const POST = withUnifiedAuth(
       // If it doesn't exist, we'll insert without it
       const insertDataBase = {
         venue_id: normalizedVenueId,
-        question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
+        question: body.prompt, // Map 'prompt' to 'question' for DB
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
-        sort_index: body.sort_index ?? nextSortIndex,
+        display_order: body.sort_index ?? nextDisplayOrder, // Map 'sort_index' to 'display_order' for DB
       };
       
       const insertData: Record<string, unknown> = {
@@ -388,10 +388,10 @@ export const POST = withUnifiedAuth(
       logger.info(`${logPrefix} Insert data prepared`, {
         insertData: {
           venue_id: insertDataBase.venue_id,
-          question_text: insertDataBase.question_text.substring(0, 50) + "...",
+          question: insertDataBase.question.substring(0, 50) + "...",
           question_type: insertDataBase.question_type,
           is_active: insertDataBase.is_active,
-          sort_index: insertDataBase.sort_index,
+          display_order: insertDataBase.display_order,
           optionsCount: Array.isArray(insertData.options) ? insertData.options.length : 0,
         },
       });
@@ -478,10 +478,10 @@ export const POST = withUnifiedAuth(
           userId: context.user?.id,
           insertData: {
             venue_id: insertDataBase.venue_id,
-            question_text_length: insertDataBase.question_text.length,
+            question_length: insertDataBase.question.length,
             question_type: insertDataBase.question_type,
             is_active: insertDataBase.is_active,
-            sort_index: insertDataBase.sort_index,
+            display_order: insertDataBase.display_order,
             hasOptions: !!insertData.options,
           },
         });
@@ -519,7 +519,7 @@ export const POST = withUnifiedAuth(
         questionId: question.id,
         venueId: normalizedVenueId,
         userId: context.user?.id,
-        questionText: question.question_text?.substring(0, 50) + "...",
+        questionText: question.question?.substring(0, 50) + "...",
         questionType: question.question_type,
         duration: Date.now() - startTime,
       });
@@ -532,11 +532,11 @@ export const POST = withUnifiedAuth(
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 5: Transforming question for frontend`);
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question_text, // Map 'question_text' to 'prompt'
+        prompt: question.question, // Map 'question' to 'prompt'
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
-        sort_index: question.sort_index,
+        sort_index: question.display_order, // Map 'display_order' to 'sort_index'
         created_at: question.created_at,
         updated_at: question.updated_at,
         venue_id: question.venue_id,
@@ -664,10 +664,10 @@ export const PATCH = withUnifiedAuth(
 
       // STEP 5: Business logic - Update question (map frontend fields to DB fields)
       const updateData: Record<string, unknown> = {};
-      if (body.prompt !== undefined) updateData.question_text = body.prompt; // Map 'prompt' to 'question_text'
+      if (body.prompt !== undefined) updateData.question = body.prompt; // Map 'prompt' to 'question'
       if (body.type !== undefined) updateData.question_type = body.type; // Map 'type' to 'question_type'
       if (body.is_active !== undefined) updateData.is_active = body.is_active;
-      if (body.sort_index !== undefined) updateData.sort_index = body.sort_index;
+      if (body.sort_index !== undefined) updateData.display_order = body.sort_index; // Map 'sort_index' to 'display_order'
       // Only include options if choices are provided (column might not exist)
       if (body.choices !== undefined && Array.isArray(body.choices)) {
         updateData.options = body.choices; // Map 'choices' to 'options'
@@ -730,11 +730,11 @@ export const PATCH = withUnifiedAuth(
       // STEP 6: Transform question to match frontend expectations
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question_text, // Map 'question_text' to 'prompt'
+        prompt: question.question, // Map 'question' to 'prompt'
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
-        sort_index: question.sort_index,
+        sort_index: question.display_order, // Map 'display_order' to 'sort_index'
         created_at: question.created_at,
         updated_at: question.updated_at,
         venue_id: question.venue_id,
