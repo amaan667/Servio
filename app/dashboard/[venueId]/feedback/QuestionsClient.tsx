@@ -284,11 +284,11 @@ export default function QuestionsClient({
         } else if (!response.ok) {
           // If response is not ok, check status code
           if (response.status === 500) {
-            errorMessage = "Server error. Please try again or contact support.";
-          } else if (response.status === 403) {
-            errorMessage = "Permission denied. Please check your access.";
-          } else if (response.status === 400) {
-            errorMessage = "Invalid request. Please check your input.";
+          errorMessage = "Server error. Please try again or contact support.";
+        } else if (response.status === 403) {
+          errorMessage = "Permission denied. Please check your access.";
+        } else if (response.status === 400) {
+          errorMessage = "Invalid request. Please check your input.";
           } else if (response.status === 429) {
             errorMessage = "Too many requests. Please wait a moment and try again.";
           }

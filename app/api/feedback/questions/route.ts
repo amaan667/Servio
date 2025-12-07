@@ -369,10 +369,16 @@ export const POST = withUnifiedAuth(
       
       // Try to include options if we have choices
       // If the column doesn't exist, Supabase will ignore it or we'll catch the error
-      if (body.choices && Array.isArray(body.choices)) {
-        // Include options even if empty (for multiple_choice questions)
-        insertData.options = body.choices.length > 0 ? body.choices : [];
+      // For now, let's NOT include options by default since the column doesn't exist
+      // Only include it if explicitly needed (but we'll handle the error if it fails)
+      // Actually, let's just not include it at all since the column doesn't exist
+      // The retry logic will handle it if we do include it
+      // For stars and paragraph types, we don't need options anyway
+      if (body.type === "multiple_choice" && body.choices && Array.isArray(body.choices) && body.choices.length > 0) {
+        // Only include options for multiple_choice questions with choices
+        insertData.options = body.choices;
       }
+      // For stars and paragraph types, don't include options at all
       
       logger.info(`${logPrefix} Step 4b: Inserting question into database`);
       if (typeof process !== 'undefined' && process.stdout) {
@@ -403,15 +409,41 @@ export const POST = withUnifiedAuth(
       question = insertResult.data;
       error = insertResult.error;
       
-      // If error is about missing 'options' column, retry without it
-      if (error && error.message?.includes("options") && error.message?.includes("column")) {
-        logger.warn(`${logPrefix} Options column not found, retrying insert without options column`);
+      // Log error details for debugging
+      if (error) {
+        logger.info(`${logPrefix} Initial insert error: ${error.message}`, {
+          errorMessage: error.message,
+          errorCode: error.code,
+          hasOptions: 'options' in insertData,
+        });
         if (typeof process !== 'undefined' && process.stdout) {
-          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Options column not found, retrying without it\n`);
+          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Initial insert error: ${error.message}\n`);
+        }
+      }
+      
+      // If error is about missing 'options' column, retry without it
+      // Check multiple possible error message patterns
+      const isOptionsColumnError = error && (
+        (error.message?.toLowerCase().includes("options") && error.message?.toLowerCase().includes("column")) ||
+        error.message?.toLowerCase().includes("could not find") ||
+        error.code === "PGRST116" || // PostgREST error code for missing column
+        error.code === "42703" // PostgreSQL error code for undefined column
+      );
+      
+      if (isOptionsColumnError && 'options' in insertData) {
+        const retryMsg = `${logPrefix} Options column not found, retrying insert without options column`;
+        logger.warn(retryMsg);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${retryMsg}\n`);
         }
         
         const insertDataWithoutOptions = { ...insertData };
         delete insertDataWithoutOptions.options;
+        
+        logger.info(`${logPrefix} Retrying insert without options column`);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retrying insert without options column\n`);
+        }
         
         const retryResult = await supabase
           .from("feedback_questions")
@@ -421,6 +453,18 @@ export const POST = withUnifiedAuth(
         
         question = retryResult.data;
         error = retryResult.error;
+        
+        if (error) {
+          logger.error(`${logPrefix} Retry insert also failed: ${error.message}`);
+          if (typeof process !== 'undefined' && process.stdout) {
+            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message}\n`);
+          }
+        } else {
+          logger.info(`${logPrefix} Retry insert succeeded without options column`);
+          if (typeof process !== 'undefined' && process.stdout) {
+            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert succeeded without options column\n`);
+          }
+        }
       }
 
       if (error) {
