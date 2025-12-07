@@ -268,8 +268,8 @@ export const PATCH = withUnifiedAuth(
 
       // STEP 2: Validate input
       const rawBody = await req.json();
-      console.log("[KDS TICKETS PATCH] ===== UPDATE REQUEST =====", {
-        rawBody: JSON.stringify(rawBody, null, 2),
+      logger.debug("[KDS TICKETS PATCH] Update request", {
+        rawBody,
         timestamp: new Date().toISOString(),
       });
 
@@ -278,14 +278,14 @@ export const PATCH = withUnifiedAuth(
       // STEP 3: Get venueId from context or body
       const venueId = context.venueId || body.venueId;
 
-      console.log("[KDS TICKETS PATCH] VenueId resolution:", {
+      logger.debug("[KDS TICKETS PATCH] VenueId resolution", {
         fromContext: context.venueId,
         fromBody: body.venueId,
         final: venueId,
       });
 
       if (!venueId) {
-        console.error("[KDS TICKETS PATCH] ❌ No venueId available", {
+        logger.error("[KDS TICKETS PATCH] No venueId available", {
           context: context,
           body: body,
         });

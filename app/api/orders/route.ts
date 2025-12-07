@@ -164,8 +164,8 @@ type OrderPayload = {
 
 // Legacy helper - use apiErrors instead
 function bad(msg: string, status = 400, requestId?: string) {
-  // Log error to Railway using console.error
-  console.error(`❌ [ORDERS API ${requestId || 'unknown'}] Error: ${msg}`, { status, requestId });
+  // Log error using structured logger (Railway captures via next.config.mjs)
+  logger.error(`[ORDERS API ${requestId || 'unknown'}] Error`, { msg, status, requestId });
   if (status === 403) return apiErrors.forbidden(msg);
   if (status === 404) return apiErrors.notFound(msg);
   if (status === 500) return apiErrors.internal(msg);
@@ -254,11 +254,11 @@ export async function POST(req: NextRequest) {
     const requestId = Math.random().toString(36).substring(7);
     const startTime = Date.now();
 
-    // Use logger.info (not logger.debug - that's stripped in production!)
-
-    console.log(
-      `🎯🎯🎯 [ORDERS API ${requestId}] NEW ORDER SUBMISSION at ${new Date().toISOString()} 🎯🎯🎯`
-    );
+    // Use logger.info for structured logging (Railway captures console.info via next.config.mjs)
+    logger.info(`[ORDERS API ${requestId}] NEW ORDER SUBMISSION`, {
+      timestamp: new Date().toISOString(),
+      requestId,
+    });
 
     try {
       // CRITICAL: Rate limiting
@@ -276,8 +276,9 @@ export async function POST(req: NextRequest) {
 
       const body = (await req.json()) as Partial<OrderPayload>;
       
-      // Log received payload structure (for debugging 400 errors) - use console.log for Railway
-      console.log(`📥 [ORDERS API ${requestId}] Received request body:`, JSON.stringify({
+      // Log received payload structure (for debugging 400 errors)
+      logger.info(`[ORDERS API ${requestId}] Received request body`, {
+        requestId,
         hasVenueId: !!body.venue_id,
         hasCustomerName: !!body.customer_name,
         hasCustomerPhone: !!body.customer_phone,
@@ -289,11 +290,11 @@ export async function POST(req: NextRequest) {
         paymentMode: (body as { payment_mode?: string }).payment_mode,
         paymentStatus: (body as { payment_status?: string }).payment_status,
         orderStatus: (body as { order_status?: string }).order_status,
-      }, null, 2));
+      });
       
       // Validate venue_id is provided
       if (!body.venue_id) {
-        console.error(`❌ [ORDERS API ${requestId}] Missing venue_id in request`);
+        logger.error(`[ORDERS API ${requestId}] Missing venue_id in request`);
         return apiErrors.badRequest("venue_id is required");
       }
       
@@ -310,9 +311,9 @@ export async function POST(req: NextRequest) {
       // Use validated body for rest of function
       validatedOrderBody = validatedBody as OrderPayload;
     } catch (validationError) {
-      // Log validation errors in detail for debugging 400 errors - use console.error for Railway
+      // Log validation errors in detail for debugging 400 errors
       if (isZodError(validationError)) {
-        console.error(`❌ [ORDERS API ${requestId}] Validation error:`, JSON.stringify({
+        logger.error(`[ORDERS API ${requestId}] Validation error`, {
           error: validationError.errors,
           receivedPayload: {
             venue_id: body.venue_id,
@@ -326,14 +327,14 @@ export async function POST(req: NextRequest) {
             })) : "not an array",
             total_amount: body.total_amount,
           },
-        }, null, 2));
+        });
         return handleZodError(validationError);
       }
-      console.error(`❌ [ORDERS API ${requestId}] Non-Zod validation error:`, JSON.stringify({
+      logger.error(`[ORDERS API ${requestId}] Non-Zod validation error`, {
         error: validationError instanceof Error ? validationError.message : String(validationError),
         errorType: validationError instanceof Error ? validationError.constructor.name : typeof validationError,
         requestId,
-      }, null, 2));
+      });
       return apiErrors.validation("Invalid order data");
     }
 
@@ -369,12 +370,12 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
       if (venueErr) {
-      console.error(`❌ [ORDERS API ${requestId}] Venue lookup error:`, JSON.stringify(venueErr, null, 2));
+      logger.error(`[ORDERS API ${requestId}] Venue lookup error`, { error: venueErr, requestId });
       return bad(`Failed to verify venue: ${venueErr.message}`, 500, requestId);
     }
 
     if (!venue) {
-      console.error(`❌ [ORDERS API ${requestId}] Venue not found:`, { venueId, requestId });
+      logger.error(`[ORDERS API ${requestId}] Venue not found`, { venueId, requestId });
       return bad("Venue not found", 404, requestId);
     }
 
@@ -391,7 +392,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (lookupError) {
-        console.error(`❌ [ORDERS API ${requestId}] Failed to check existing tables:`, { error: lookupError.message, requestId });
+        logger.error(`[ORDERS API ${requestId}] Failed to check existing tables`, { error: lookupError.message, requestId });
         return bad(`Failed to check existing tables: ${lookupError.message}`, 500, requestId);
       }
 
@@ -446,11 +447,11 @@ export async function POST(req: NextRequest) {
             if (existingTableAfterError) {
               tableId = existingTableAfterError.id;
             } else {
-              console.error(`❌ [ORDERS API ${requestId}] Failed to create table:`, { error: tableCreateErr.message, requestId });
+              logger.error(`[ORDERS API ${requestId}] Failed to create table`, { error: tableCreateErr.message, requestId });
               return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
             }
           } else {
-            console.error(`❌ [ORDERS API ${requestId}] Failed to create table:`, { error: tableCreateErr.message, requestId });
+            logger.error(`[ORDERS API ${requestId}] Failed to create table`, { error: tableCreateErr.message, requestId });
             return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
           }
         } else {
@@ -634,9 +635,9 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Log the EXACT payload being inserted before database insert (use console.log for Railway)
-    console.log(`📤 [ORDERS API ${requestId}] ===== PAYLOAD BEFORE DATABASE INSERT =====`, JSON.stringify({
-      payload: JSON.stringify(cleanPayload, null, 2),
+    // Log the EXACT payload being inserted before database insert
+    logger.info(`[ORDERS API ${requestId}] PAYLOAD BEFORE DATABASE INSERT`, {
+      requestId,
       payloadKeys: Object.keys(cleanPayload),
       itemsCount: Array.isArray(cleanPayload.items) ? (cleanPayload.items as unknown[]).length : 0,
       payment_status: cleanPayload.payment_status,
@@ -653,9 +654,8 @@ export async function POST(req: NextRequest) {
       // is_active is a generated column, not included in payload
       created_at: cleanPayload.created_at,
       updated_at: cleanPayload.updated_at,
-      requestId,
-    }, null, 2));
-    console.error("[ORDER CREATION DEBUG] Full cleaned payload:", JSON.stringify(cleanPayload, null, 2));
+    });
+    logger.debug("[ORDER CREATION DEBUG] Full cleaned payload", { payload: cleanPayload, requestId });
 
     const { data: inserted, error: insertErr } = await supabase
       .from("orders")
@@ -663,26 +663,15 @@ export async function POST(req: NextRequest) {
       .select("*");
 
     if (insertErr) {
-      console.error(`❌ [ORDERS API ${requestId}] ===== DATABASE INSERT FAILED =====`, JSON.stringify({
+      logger.error(`[ORDERS API ${requestId}] Database insert failed`, {
         errorCode: insertErr.code,
         errorMessage: insertErr.message,
         errorDetails: insertErr.details,
         errorHint: insertErr.hint,
-        fullError: JSON.stringify(insertErr, null, 2),
-        payload: JSON.stringify(cleanPayload, null, 2),
-      }, null, 2));
-      logger.error(`❌ [ORDERS API ${requestId}] Database error code:`, insertErr.code);
-      logger.error(`❌ [ORDERS API ${requestId}] Database error message:`, insertErr.message);
-      logger.error(`❌ [ORDERS API ${requestId}] Database error details:`, insertErr.details);
-      logger.error(`❌ [ORDERS API ${requestId}] Database error hint:`, insertErr.hint);
-      
-      console.error("[ORDER CREATION DEBUG] ===== DATABASE INSERT ERROR =====");
-      console.error("Error Code:", insertErr.code);
-      console.error("Error Message:", insertErr.message);
-      console.error("Error Details:", insertErr.details);
-      console.error("Error Hint:", insertErr.hint);
-      console.error("Full Error:", JSON.stringify(insertErr, null, 2));
-      console.error("Payload that failed:", JSON.stringify(cleanPayload, null, 2));
+        fullError: insertErr,
+        payload: cleanPayload,
+        requestId,
+      });
 
       // Try to provide more specific error messages
       let errorMessage = insertErr.message || "Database insert failed";
@@ -701,13 +690,12 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      console.error(`❌ [ORDERS API ${requestId}] Insert failed:`, { errorMessage, requestId });
+      logger.error(`[ORDERS API ${requestId}] Insert failed`, { errorMessage, requestId });
       return bad(`Insert failed: ${errorMessage}`, 400, requestId);
     }
 
     if (!inserted || inserted.length === 0) {
-      logger.error("❌❌❌ NO DATA RETURNED FROM INSERT ❌❌❌", { requestId });
-      console.error(`❌ [ORDERS API ${requestId}] Order creation failed - no data returned from database`);
+      logger.error("[ORDERS API] No data returned from insert", { requestId });
       return bad("Order creation failed - no data returned", 500, requestId);
     }
     logger.info("🎉🎉🎉 ORDER CREATED IN DATABASE 🎉🎉🎉", {
@@ -788,7 +776,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (fetchError || !fetchedOrder) {
-        console.error(`❌ [ORDERS API ${requestId}] Order creation failed: No order data returned from database`, { fetchError, requestId });
+        logger.error(`[ORDERS API ${requestId}] Order creation failed: No order data returned from database`, { fetchError, requestId });
         return bad("Order creation failed: No order data returned from database", 500, requestId);
       }
 
@@ -828,7 +816,7 @@ export async function POST(req: NextRequest) {
       // Log detailed error but don't fail order creation
       const errorMessage = kdsError instanceof Error ? kdsError.message : JSON.stringify(kdsError);
       const errorStack = kdsError instanceof Error ? kdsError.stack : undefined;
-      logger.error("[ORDER CREATION DEBUG] ❌ KDS ticket creation failed (non-critical):", {
+      logger.error("[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical)", {
         orderId: inserted[0].id,
         error: errorMessage,
         stack: errorStack,
@@ -836,12 +824,6 @@ export async function POST(req: NextRequest) {
         venueId: inserted[0].venue_id,
         requestId,
         fullError: kdsError,
-      });
-      console.error(`❌ [ORDERS API ${requestId}] KDS ticket creation failed:`, {
-        orderId: inserted[0].id,
-        error: errorMessage,
-        stack: errorStack,
-        fullError: JSON.stringify(kdsError, Object.getOwnPropertyNames(kdsError)),
       });
       // Don't fail the order creation if KDS tickets fail - order is already created
     }
@@ -864,23 +846,19 @@ export async function POST(req: NextRequest) {
       const errorStack = _error instanceof Error ? _error.stack : undefined;
       const duration = Date.now() - startTime;
 
-      console.error(`❌ [ORDERS API ${requestId}] ORDER CREATION FAILED`, JSON.stringify({
+      logger.error(`[ORDERS API ${requestId}] ORDER CREATION FAILED`, {
         error: errorMessage,
         stack: errorStack,
         duration: `${duration}ms`,
         requestId,
-      }, null, 2));
+      });
 
       // Check if it's an authentication/authorization error
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+      if (errorMessage.includes("Unauthorized")) {
+        return apiErrors.unauthorized(errorMessage);
+      }
+      if (errorMessage.includes("Forbidden")) {
+        return apiErrors.forbidden(errorMessage);
       }
 
       // Return generic error in production, detailed in development

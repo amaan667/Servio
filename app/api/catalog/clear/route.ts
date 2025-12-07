@@ -16,7 +16,7 @@ export const POST = withUnifiedAuth(
         return apiErrors.rateLimit();
       }
 
-      return NextResponse.json({ ok: true, message: "All menu items cleared" });
+      return success({ message: "All menu items cleared" });
     } catch (_error) {
       logger.error("[CATALOG CLEAR] Unexpected error:", {
         error: _error instanceof Error ? _error.message : "Unknown _error",

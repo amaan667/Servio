@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -36,8 +36,8 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ itemId: string }> }
 ) {
+  const { itemId } = await context.params;
   try {
-    const { itemId } = await context.params;
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
 
@@ -71,16 +71,21 @@ export async function GET(
       .single();
 
     if (fetchError) {
-      logger.error("[MODIFIERS GET] Error fetching modifiers:", { error: fetchError });
-      return apiErrors.internal('Failed to fetch modifiers');
+      logger.error("[MODIFIERS GET] Error fetching modifiers", {
+        error: fetchError.message,
+        itemId,
+      });
+      return apiErrors.database('Failed to fetch modifiers');
     }
 
     const modifiers = (itemWithModifiers?.modifiers as MenuItemModifier[]) || [];
 
-    return NextResponse.json({ modifiers });
+    return success({ modifiers });
   } catch (error) {
-    logger.error("[MODIFIERS GET] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logger.error("[MODIFIERS GET] Unexpected error", {
+      error: errorMessage,
+      itemId,
     });
     return apiErrors.internal('Internal server error');
   }
@@ -90,15 +95,14 @@ export async function POST(
   req: NextRequest,
   context: { params: Promise<{ itemId: string }> }
 ) {
+  const { itemId } = await context.params;
   try {
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized("Unauthorized");
     }
-
-    const { itemId } = await context.params;
     const body = await req.json();
     const { modifiers } = body as { modifiers: MenuItemModifier[] };
 
@@ -135,7 +139,7 @@ export async function POST(
       .maybeSingle();
 
     if (!venueAccess && (!staffAccess || !["owner", "manager"].includes(staffAccess.role))) {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden("Forbidden");
     }
 
     // Validate modifiers structure
@@ -145,24 +149,19 @@ export async function POST(
 
     for (const modifier of modifiers) {
       if (!modifier.name || !modifier.type || !Array.isArray(modifier.options)) {
-        return NextResponse.json(
-          { error: "Invalid modifier structure. Each modifier must have name, type, and options array." },
-          { status: 400 }
+        return apiErrors.badRequest(
+          "Invalid modifier structure. Each modifier must have name, type, and options array."
         );
       }
 
       if (!["single", "multiple"].includes(modifier.type)) {
-        return NextResponse.json(
-          { error: "Modifier type must be 'single' or 'multiple'" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("Modifier type must be 'single' or 'multiple'");
       }
 
       for (const option of modifier.options) {
         if (!option.name || typeof option.price_modifier !== "number") {
-          return NextResponse.json(
-            { error: "Invalid option structure. Each option must have name and price_modifier." },
-            { status: 400 }
+          return apiErrors.badRequest(
+            "Invalid option structure. Each option must have name and price_modifier."
           );
         }
       }
@@ -187,10 +186,12 @@ export async function POST(
       modifierCount: modifiers.length,
     });
 
-    return NextResponse.json({ success: true, modifiers });
+    return success({ modifiers });
   } catch (error) {
-    logger.error("[MODIFIERS POST] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logger.error("[MODIFIERS POST] Unexpected error", {
+      error: errorMessage,
+      itemId,
     });
     return apiErrors.internal('Internal server error');
   }
@@ -200,15 +201,14 @@ export async function DELETE(
   _req: NextRequest,
   context: { params: Promise<{ itemId: string }> }
 ) {
+  const { itemId } = await context.params;
   try {
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized("Unauthorized");
     }
-
-    const { itemId } = await context.params;
 
     if (!itemId) {
       return apiErrors.badRequest('Item ID is required');
@@ -243,7 +243,7 @@ export async function DELETE(
       .maybeSingle();
 
     if (!venueAccess && (!staffAccess || !["owner", "manager"].includes(staffAccess.role))) {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden("Forbidden");
     }
 
     // Remove modifiers
@@ -256,14 +256,19 @@ export async function DELETE(
       .eq("id", itemId);
 
     if (updateError) {
-      logger.error("[MODIFIERS DELETE] Error removing modifiers:", { error: updateError });
-      return apiErrors.internal('Failed to remove modifiers');
+      logger.error("[MODIFIERS DELETE] Error removing modifiers", {
+        error: updateError.message,
+        itemId,
+      });
+      return apiErrors.database('Failed to remove modifiers');
     }
 
-    return NextResponse.json({ success: true });
+    return success({});
   } catch (error) {
-    logger.error("[MODIFIERS DELETE] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logger.error("[MODIFIERS DELETE] Unexpected error", {
+      error: errorMessage,
+      itemId,
     });
     return apiErrors.internal('Internal server error');
   }

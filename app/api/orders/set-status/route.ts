@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { apiLogger as logger } from "@/lib/logger";
 import { validateOrderCompletion } from "@/lib/orders/payment-validation";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -46,12 +45,9 @@ export const POST = withUnifiedAuth(
             error: validation.error,
             paymentStatus: validation.paymentStatus,
           });
-          return NextResponse.json(
-            {
-              error: validation.error || "Cannot complete unpaid order",
-              payment_status: validation.paymentStatus,
-            },
-            { status: 400 }
+          return apiErrors.badRequest(
+            validation.error || "Cannot complete unpaid order",
+            { payment_status: validation.paymentStatus }
           );
         }
       }
@@ -88,15 +84,13 @@ export const POST = withUnifiedAuth(
         }
       }
 
-      return NextResponse.json({ success: true });
+      return success({});
     } catch (_error) {
-      logger.error("Set status error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+      const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+      logger.error("Set status error", {
+        error: errorMessage,
       });
-      return NextResponse.json(
-        { error: _error instanceof Error ? _error.message : "Unknown _error" },
-        { status: 500 }
-      );
+      return apiErrors.internal(errorMessage);
     }
   },
   {

@@ -1,12 +1,12 @@
 // Tier Check API - Check if user can perform an action
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -14,12 +14,8 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
@@ -58,7 +54,7 @@ export const POST = withUnifiedAuth(
         const limitCheck = await checkLimit(user.id, resource, currentCount);
 
         if (!limitCheck.allowed) {
-          return NextResponse.json({
+          return success({
             allowed: false,
             tier: limitCheck.currentTier,
             limit: limitCheck.limit,
@@ -68,7 +64,7 @@ export const POST = withUnifiedAuth(
           });
         }
 
-        return NextResponse.json({
+        return success({
           allowed: true,
           tier: limitCheck.currentTier,
           limit: limitCheck.limit,
@@ -81,7 +77,7 @@ export const POST = withUnifiedAuth(
         const featureCheck = await checkFeatureAccess(user.id, resource);
 
         if (!featureCheck.allowed) {
-          return NextResponse.json({
+          return success({
             allowed: false,
             tier: featureCheck.currentTier,
             requiredTier: featureCheck.requiredTier,
@@ -90,7 +86,7 @@ export const POST = withUnifiedAuth(
           });
         }
 
-        return NextResponse.json({
+        return success({
           allowed: true,
           tier: featureCheck.currentTier,
         });
@@ -107,7 +103,7 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       // STEP 7: Return success response
-      return NextResponse.json({
+      return success({
         allowed: true,
         limits,
         tier: org?.subscription_tier || "starter",
@@ -123,23 +119,16 @@ export const POST = withUnifiedAuth(
         userId: context.user.id,
       });
       
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+      if (errorMessage.includes("Unauthorized")) {
+        return apiErrors.unauthorized(errorMessage);
+      }
+      if (errorMessage.includes("Forbidden")) {
+        return apiErrors.forbidden(errorMessage);
       }
       
-      return NextResponse.json(
-        {
-          error: "Tier check failed",
-          message: isDevelopment() ? errorMessage : "Request processing failed",
-          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+      return apiErrors.internal(
+        isDevelopment() ? errorMessage : "Request processing failed",
+        isDevelopment() && errorStack ? { stack: errorStack } : undefined
       );
     }
   },

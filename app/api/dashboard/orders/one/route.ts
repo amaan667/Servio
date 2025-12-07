@@ -1,8 +1,8 @@
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 type OrderRow = {
   id: string;
@@ -17,12 +17,12 @@ type OrderRow = {
 };
 
 export async function GET(req: Request) {
-  try {
-    const url = new URL(req.url);
-    const venueId = url.searchParams.get("venueId");
-    // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
-    const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
+  const url = new URL(req.url);
+  const venueId = url.searchParams.get("venueId");
+  // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
+  const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
 
+  try {
     if (!venueId) {
       return apiErrors.badRequest('venueId required');
     }
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     // Authenticate using Authorization header
     const auth = await authenticateRequest(req);
     if (!auth.success || !auth.user || !auth.supabase) {
-      return NextResponse.json({ ok: false, error: auth.error }, { status: 401 });
+      return apiErrors.unauthorized(auth.error || "Authentication required");
     }
 
     const { user, supabase } = auth;
@@ -82,7 +82,12 @@ export async function GET(req: Request) {
 
     const { data, error } = await q;
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      logger.error("[DASHBOARD ORDERS ONE] Database error", {
+        error: error.message,
+        venueId,
+        scope,
+      });
+      return apiErrors.database(error.message);
     }
 
     // Transform orders to include table_label
@@ -119,15 +124,16 @@ export async function GET(req: Request) {
     //
     // }
 
-    return NextResponse.json({
-      ok: true,
-      meta: { scope, zone, count: transformedOrders?.length ?? 0 },
+    return success({
       orders: transformedOrders || [],
+      meta: { scope, zone, count: transformedOrders?.length ?? 0 },
     });
   } catch (_e) {
-    return NextResponse.json(
-      { ok: false, error: _e instanceof Error ? _e.message : "Unknown error" },
-      { status: 500 }
-    );
+    const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
+    logger.error("[DASHBOARD ORDERS ONE] Unexpected error", {
+      error: errorMessage,
+      venueId,
+    });
+    return apiErrors.internal(errorMessage);
   }
 }

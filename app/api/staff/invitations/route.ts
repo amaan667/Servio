@@ -276,16 +276,18 @@ export async function POST(_request: NextRequest) {
         to: email,
       });
       // Email sent successfully
-      return NextResponse.json({
+      return success({
         invitation,
         message: "Invitation created and email sent successfully",
         emailSent: true,
       });
     } catch (emailError) {
-      logger.error("[STAFF INVITATION] Failed to send email:", emailError);
+      logger.error("[STAFF INVITATION] Failed to send email", {
+        error: emailError instanceof Error ? emailError.message : String(emailError),
+      });
       // Don't fail the whole request if email fails
       // The invitation is created, user can be notified manually
-      return NextResponse.json({
+      return success({
         invitation,
         message: "Invitation created but email failed to send",
         emailSent: false,
@@ -356,7 +358,7 @@ export async function DELETE(_request: NextRequest) {
       return apiErrors.internal(error.message || 'Internal server error');
     }
 
-    return NextResponse.json({ success: true });
+    return success({});
   } catch (error) {
     logger.error("[STAFF INVITATIONS] DELETE unexpected error:", error);
     return apiErrors.internal('Internal server error');

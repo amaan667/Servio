@@ -37,23 +37,10 @@ export function useDashboardData(
   // CRITICAL: Use server data immediately to prevent showing 0 on first load
   const [counts, setCounts] = useState<DashboardCounts>(() => {
     if (initialCounts) {
-      console.log("🟡 [USE_DASHBOARD_DATA] Initializing counts from server data:", {
-        timestamp: new Date().toISOString(),
-        venueId,
-        initialCounts: {
-          live_count: initialCounts.live_count,
-          earlier_today_count: initialCounts.earlier_today_count,
-          history_count: initialCounts.history_count,
-          today_orders_count: initialCounts.today_orders_count,
-          active_tables_count: initialCounts.active_tables_count,
-          tables_set_up: initialCounts.tables_set_up,
-          tables_in_use: initialCounts.tables_in_use,
-          tables_reserved_now: initialCounts.tables_reserved_now,
-        },
-      });
+      // Initialize from server data (no logging - removed in production)
       return initialCounts;
     }
-    console.log("🟡 [USE_DASHBOARD_DATA] No initial counts, using defaults (zeros)");
+    // Default to zeros if no initial data
     return {
       live_count: 0,
       earlier_today_count: 0,
@@ -68,18 +55,10 @@ export function useDashboardData(
 
   const [stats, setStats] = useState<DashboardStats>(() => {
     if (initialStats) {
-      console.log("🟡 [USE_DASHBOARD_DATA] Initializing stats from server data:", {
-        timestamp: new Date().toISOString(),
-        venueId,
-        initialStats: {
-          revenue: initialStats.revenue,
-          menuItems: initialStats.menuItems,
-          unpaid: initialStats.unpaid,
-        },
-      });
+      // Initialize from server data (no logging - removed in production)
       return initialStats;
     }
-    console.log("🟡 [USE_DASHBOARD_DATA] No initial stats, using defaults (zeros)");
+    // Default to zeros if no initial data
     return { revenue: 0, menuItems: 0, unpaid: 0 };
   });
 
@@ -88,12 +67,7 @@ export function useDashboardData(
   // Run synchronously on mount if initialCounts exists to prevent showing 0
   useEffect(() => {
     if (initialCounts) {
-      console.log("🔵 [USE_DASHBOARD_DATA] useEffect: Updating counts from initialCounts:", {
-        timestamp: new Date().toISOString(),
-        venueId,
-        newCounts: initialCounts,
-        previousCounts: counts,
-      });
+      // Update counts from server data (no logging - removed in production)
       setCounts(initialCounts);
       setLoading(false);
     }

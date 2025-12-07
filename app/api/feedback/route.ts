@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -11,13 +11,7 @@ export async function POST(req: Request) {
 
     // Validate required fields
     if (!rating || rating < 1 || rating > 5) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Valid rating (1-5) is required",
-        },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Valid rating (1-5) is required");
     }
 
     // Validate comment length
@@ -33,29 +27,18 @@ export async function POST(req: Request) {
     const { error } = await admin.from("order_feedback").insert(feedbackData);
 
     if (error) {
-      logger.error("[AUTH DEBUG] Feedback submission error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error("[FEEDBACK] Feedback submission error", {
+        error: error.message,
       });
-      return NextResponse.json(
-        {
-          ok: false,
-          error: error.message,
-        },
-        { status: 500 }
-      );
+      return apiErrors.database(error.message);
     }
 
-    return NextResponse.json({ ok: true });
+    return success({});
   } catch (_e) {
-    logger.error("[AUTH DEBUG] Feedback submission exception:", {
-      error: _e instanceof Error ? _e.message : "Unknown error",
+    const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
+    logger.error("[FEEDBACK] Feedback submission exception", {
+      error: errorMessage,
     });
-    return NextResponse.json(
-      {
-        ok: false,
-        error: _e instanceof Error ? _e.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return apiErrors.internal(errorMessage);
   }
 }

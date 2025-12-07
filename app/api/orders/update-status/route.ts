@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors, success } from '@/lib/api/standard-response';
 import { createServerSupabase } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
@@ -20,10 +19,7 @@ export async function POST(req: Request) {
     const { orderId, status } = await req.json();
 
     if (!orderId || !status) {
-      return NextResponse.json(
-        { ok: false, error: "orderId and status required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("orderId and status required");
     }
 
     // Create authenticated supabase client (respects RLS)
@@ -72,26 +68,18 @@ export async function POST(req: Request) {
       }
 
       if (currentOrder.payment_status !== "PAID") {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID before completion.`,
-            payment_status: currentOrder.payment_status,
-          },
-          { status: 400 }
+        return apiErrors.badRequest(
+          `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID before completion.`,
+          { payment_status: currentOrder.payment_status }
         );
       }
 
       // Also verify order is in a completable state
       const completableStatuses = ["SERVED", "READY", "SERVING"];
       if (!completableStatuses.includes(currentOrder.order_status)) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: `Cannot complete order: current status is ${currentOrder.order_status}. Order must be SERVED, READY, or SERVING before completion.`,
-            current_status: currentOrder.order_status,
-          },
-          { status: 400 }
+        return apiErrors.badRequest(
+          `Cannot complete order: current status is ${currentOrder.order_status}. Order must be SERVED, READY, or SERVING before completion.`,
+          { current_status: currentOrder.order_status }
         );
       }
     }
@@ -103,10 +91,10 @@ export async function POST(req: Request) {
       .select();
 
     if (error) {
-      logger.error("[UPDATE STATUS] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error("[UPDATE STATUS] Error", {
+        error: error.message,
       });
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return apiErrors.internal(error.message);
     }
 
     // Deduct inventory stock when order is completed
@@ -173,7 +161,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, order: data?.[0] });
+    return success({ order: data?.[0] });
   } catch (_error) {
     logger.error("[UPDATE STATUS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",

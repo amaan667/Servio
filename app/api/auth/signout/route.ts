@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { isProduction } from '@/lib/env';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export async function POST() {
   try {
@@ -14,18 +15,12 @@ export async function POST() {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      logger.error("[SIGNOUT API] Supabase signout error:", { error: error.message });
-      return NextResponse.json(
-        {
-          ok: false,
-          error: error.message,
-        },
-        { status: 500 }
-      );
+      logger.error("[SIGNOUT API] Supabase signout error", { error: error.message });
+      return apiErrors.internal(error.message);
     }
 
     // Create a response that clears cookies
-    const response = NextResponse.json({ ok: true });
+    const response = success({});
 
     // Explicitly clear auth cookies to ensure they're removed
     const authCookieNames = [
@@ -47,16 +42,11 @@ export async function POST() {
 
     return response;
   } catch (_error) {
-    logger.error("[SIGNOUT API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    logger.error("[SIGNOUT API] Unexpected error", {
+      error: errorMessage,
     });
-    return NextResponse.json(
-      {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "Internal server _error",
-      },
-      { status: 500 }
-    );
+    return apiErrors.internal(errorMessage);
   }
 }
 

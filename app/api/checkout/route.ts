@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { getStripeClient } from "@/lib/stripe-client";
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
+import { isDevelopment } from '@/lib/env';
 
 export const runtime = "nodejs";
 
@@ -15,19 +15,15 @@ export async function POST(req: NextRequest) {
     // Initialize Stripe client inside function to avoid build-time errors
     const stripe = getStripeClient();
 
-    console.log("💳 [CHECKOUT API] ===== PUBLIC STRIPE CHECKOUT REQUEST =====", {
+    logger.info("[CHECKOUT API] Public Stripe checkout request", {
       timestamp: new Date().toISOString(),
     });
 
     // CRITICAL: Rate limiting
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
+      return apiErrors.rateLimit(
+        Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
       );
     }
 
@@ -45,7 +41,7 @@ export async function POST(req: NextRequest) {
       venueId,
     } = body;
 
-    console.log("💳 [CHECKOUT API] Request payload:", {
+    logger.debug("[CHECKOUT API] Request payload", {
       venueId,
       amount,
       tableNumber,
@@ -57,16 +53,16 @@ export async function POST(req: NextRequest) {
     const finalVenueId = venueId;
 
     if (!finalVenueId) {
-      console.error("💳 [CHECKOUT API] ❌ Missing venueId");
+      logger.error("[CHECKOUT API] Missing venueId");
       return apiErrors.badRequest('venueId is required');
     }
 
     if (!amount || amount < 0.5) {
-      console.error("💳 [CHECKOUT API] ❌ Invalid amount", { amount });
+      logger.error("[CHECKOUT API] Invalid amount", { amount });
       return apiErrors.badRequest('Amount must be at least £0.50');
     }
 
-    console.log("💳 [CHECKOUT API] Creating Stripe session...", {
+    logger.debug("[CHECKOUT API] Creating Stripe session", {
       venueId: finalVenueId,
       amount,
       amountInPence: Math.round(amount * 100),
@@ -120,7 +116,7 @@ export async function POST(req: NextRequest) {
       { maxRetries: 3 }
     );
 
-    console.log("💳 [CHECKOUT API] ✅ Stripe session created successfully", {
+    logger.info("[CHECKOUT API] Stripe session created successfully", {
       sessionId: session.id,
       url: session.url ? session.url.substring(0, 50) + "..." : null,
       venueId: finalVenueId,
@@ -132,19 +128,17 @@ export async function POST(req: NextRequest) {
       venue: finalVenueId,
     });
 
-    return NextResponse.json({ id: session.id, url: session.url });
+    return success({ id: session.id, url: session.url });
   } catch (_error) {
-    console.error("💳 [CHECKOUT API] ❌ Error creating checkout session:", {
-      error: _error instanceof Error ? _error.message : String(_error),
-      stack: _error instanceof Error ? _error.stack : undefined,
-    });
-    logger.error("[CHECKOUT] Error creating checkout session:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    const errorStack = _error instanceof Error ? _error.stack : undefined;
+    logger.error("[CHECKOUT] Error creating checkout session", {
+      error: errorMessage,
+      stack: errorStack,
     });
 
-    return NextResponse.json(
-      { error: _error instanceof Error ? _error.message : "An _error occurred" },
-      { status: 500 }
+    return apiErrors.internal(
+      isDevelopment() ? errorMessage : "Failed to create checkout session"
     );
   }
 }

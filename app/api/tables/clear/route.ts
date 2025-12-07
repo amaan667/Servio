@@ -14,7 +14,7 @@ export const POST = withUnifiedAuth(
         return apiErrors.rateLimit();
       }
 
-      return NextResponse.json({ ok: true, message: "All table sessions cleared" });
+      return success({ message: "All table sessions cleared" });
     } catch (_error) {
       logger.error("[TABLES CLEAR] Unexpected error:", {
         error: _error instanceof Error ? _error.message : "Unknown _error",

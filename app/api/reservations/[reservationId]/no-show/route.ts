@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export async function POST(
   _request: NextRequest,
@@ -21,16 +21,17 @@ export async function POST(
     });
 
     if (error) {
-      logger.error("Error marking reservation as no-show:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error("Error marking reservation as no-show", {
+        error: error.message,
       });
       return apiErrors.internal(error.message || 'Internal server error');
     }
 
-    return NextResponse.json({ success: true });
+    return success({});
   } catch (_error) {
-    logger.error("Error in no-show reservation API:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    logger.error("Error in no-show reservation API", {
+      error: errorMessage,
     });
     return apiErrors.internal('Internal server error');
   }

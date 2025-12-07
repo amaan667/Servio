@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { redisCache } from '@/lib/cache/redis';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = 'nodejs';
 
@@ -38,12 +39,14 @@ export async function GET() {
     overallStatus = 'not_ready';
   }
 
-  return NextResponse.json({
-    status: overallStatus,
-    checks,
-    timestamp: new Date().toISOString(),
-  }, { 
-    status: overallStatus === 'ready' ? 200 : 503,
-  });
+  if (overallStatus === 'ready') {
+    return success({
+      status: overallStatus,
+      checks,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return apiErrors.serviceUnavailable('Service health checks failed');
 }
 

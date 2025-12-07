@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 import { createClient } from "@/lib/supabase";
-import { cache, cacheKeys, cacheTTL } from "@/lib/cache";
+import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -15,12 +14,8 @@ export const POST = withUnifiedAuth(
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
@@ -30,10 +25,7 @@ export const POST = withUnifiedAuth(
       const user = context.user;
 
       if (!finalVenueId || !name || !business_type) {
-        return NextResponse.json(
-          { ok: false, error: "finalVenueId, name, and business_type required" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("finalVenueId, name, and business_type required");
       }
 
     const admin = await createClient();
@@ -72,8 +64,11 @@ export const POST = withUnifiedAuth(
       // Invalidate venue cache
       await cache.invalidate(`venue:${finalVenueId}`);
 
-      if (error) throw error;
-      return NextResponse.json({ ok: true, venue: data });
+      if (error) {
+        logger.error("[VENUES UPSERT] Database error", { error: error.message });
+        return apiErrors.database(error.message);
+      }
+      return success({ venue: data });
     } else {
       // Create new venue
       const newVenueData = {
@@ -82,17 +77,18 @@ export const POST = withUnifiedAuth(
       };
       const { data, error } = await admin.from("venues").insert(newVenueData).select().single();
 
-      if (error) throw error;
-      return NextResponse.json({ ok: true, venue: data });
+      if (error) {
+        logger.error("[VENUES UPSERT] Database error", { error: error.message });
+        return apiErrors.database(error.message);
+      }
+      return success({ venue: data });
     }
     } catch (_error) {
-      logger.error("[VENUES UPSERT] Error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+      const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+      logger.error("[VENUES UPSERT] Error", {
+        error: errorMessage,
       });
-      return NextResponse.json(
-        { ok: false, error: _error instanceof Error ? _error.message : "Failed to upsert venue" },
-        { status: 500 }
-      );
+      return apiErrors.internal(errorMessage);
     }
   }
 );

@@ -12,7 +12,13 @@ interface InvoiceWithSubscription extends Stripe.Invoice {
   subscription?: string | Stripe.Subscription | null;
 }
 
-const webhookSecret = env('STRIPE_WEBHOOK_SECRET')!;
+function getWebhookSecret(): string {
+  const secret = env('STRIPE_WEBHOOK_SECRET');
+  if (!secret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET environment variable is required");
+  }
+  return secret;
+}
 
 export async function POST(_request: NextRequest) {
   try {
@@ -24,9 +30,28 @@ export async function POST(_request: NextRequest) {
     }
 
     // Verify webhook signature
+    const webhookSecret = getWebhookSecret();
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
 
     apiLogger.debug("[STRIPE WEBHOOK] Event:", { type: event.type, id: event.id });
+
+    // Idempotency check: verify event hasn't been processed
+    // Use subscription_history table which tracks all subscription events
+    const supabase = await createClient();
+    const { data: existingEvent } = await supabase
+      .from("subscription_history")
+      .select("id, event_type")
+      .eq("stripe_event_id", event.id)
+      .maybeSingle();
+
+    if (existingEvent) {
+      apiLogger.debug("[STRIPE WEBHOOK] Event already processed:", {
+        eventId: event.id,
+        eventType: event.type,
+        existingEventType: existingEvent.event_type,
+      });
+      return NextResponse.json({ received: true, alreadyProcessed: true });
+    }
 
     // Handle the event
     switch (event.type) {
@@ -58,7 +83,7 @@ export async function POST(_request: NextRequest) {
         apiLogger.debug(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
     }
 
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ received: true }, { status: 200 });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });

@@ -14,7 +14,7 @@ interface MatchCorrection {
   wasMatched: boolean;
   shouldMatch: boolean;
   correctedBy: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface CategoryCorrection {
@@ -24,7 +24,7 @@ interface CategoryCorrection {
   userAssignedCategory: string;
   confidenceScore: number;
   correctedBy: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -205,7 +205,7 @@ export async function recordAIPerformanceMetric(
   success: boolean,
   confidence: number,
   processingTimeMs: number,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ) {
   try {
     const supabase = createAdminClient();

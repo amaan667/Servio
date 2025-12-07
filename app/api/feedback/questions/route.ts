@@ -54,7 +54,12 @@ export const GET = withUnifiedAuth(
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
       
+      if (!venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
+      
       // Normalize venueId - database stores with venue- prefix
+      // Check if it already has the prefix to avoid double-prefixing
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Business logic
@@ -154,7 +159,12 @@ export const POST = withUnifiedAuth(
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
       
+      if (!venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
+      
       // Normalize venueId - database stores with venue- prefix
+      // Check if it already has the prefix to avoid double-prefixing
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Validate input
@@ -209,18 +219,31 @@ export const POST = withUnifiedAuth(
         .select()
         .single();
 
-      if (error || !question) {
-        logger.error("[FEEDBACK QUESTIONS POST] Error creating question:", {
-          error: error?.message,
-          errorCode: error?.code,
-          errorDetails: error?.details,
+      if (error) {
+        logger.error("[FEEDBACK QUESTIONS POST] Error creating question", {
+          error: error.message,
+          errorCode: error.code,
+          errorDetails: error.details,
           venueId: normalizedVenueId,
           userId: context.user.id,
+          body: {
+            prompt: body.prompt,
+            type: body.type,
+            choices: body.choices,
+          },
         });
         return apiErrors.database(
           "Failed to create question",
-          isDevelopment() ? error?.message : undefined
+          isDevelopment() ? error.message : undefined
         );
+      }
+
+      if (!question) {
+        logger.error("[FEEDBACK QUESTIONS POST] Question insert returned no data", {
+          venueId: normalizedVenueId,
+          userId: context.user.id,
+        });
+        return apiErrors.database("Failed to create question - no data returned");
       }
 
       logger.info("[FEEDBACK QUESTIONS POST] Question created successfully", {
@@ -285,7 +308,12 @@ export const PATCH = withUnifiedAuth(
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
       
+      if (!venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
+      
       // Normalize venueId - database stores with venue- prefix
+      // Check if it already has the prefix to avoid double-prefixing
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Validate input
@@ -402,7 +430,12 @@ export const DELETE = withUnifiedAuth(
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
       
+      if (!venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
+      
       // Normalize venueId - database stores with venue- prefix
+      // Check if it already has the prefix to avoid double-prefixing
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Validate input

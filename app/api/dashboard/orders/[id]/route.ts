@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import { apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 import { createClient } from '@/lib/supabase';
 import { cleanupTableOnOrderCompletion } from '@/lib/table-cleanup';
 import { logger } from '@/lib/logger';
@@ -35,26 +34,18 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     }
 
     if (currentOrder.payment_status !== 'PAID') {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID before completion.`,
-          payment_status: currentOrder.payment_status,
-        },
-        { status: 400 }
+      return apiErrors.badRequest(
+        `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID before completion.`,
+        { payment_status: currentOrder.payment_status }
       );
     }
 
     // Also verify order is in a completable state
     const completableStatuses = ['SERVED', 'READY', 'SERVING'];
     if (!completableStatuses.includes(currentOrder.order_status)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Cannot complete order: current status is ${currentOrder.order_status}. Order must be SERVED, READY, or SERVING before completion.`,
-          current_status: currentOrder.order_status,
-        },
-        { status: 400 }
+      return apiErrors.badRequest(
+        `Cannot complete order: current status is ${currentOrder.order_status}. Order must be SERVED, READY, or SERVING before completion.`,
+        { current_status: currentOrder.order_status }
       );
     }
   }
@@ -70,7 +61,13 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     .eq('id', id)
     .select('*')
     .maybeSingle();
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  if (error) {
+    logger.error("[DASHBOARD ORDER UPDATE] Database error", {
+      error: error.message,
+      orderId: id,
+    });
+    return apiErrors.database(error.message);
+  }
 
   // Deduct inventory stock when order is completed
   if (order_status === 'COMPLETED' && data) {
@@ -105,15 +102,29 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     }
   }
 
-  return NextResponse.json({ ok: true, order: data });
+  return success({ order: data });
 }
 
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  if (!id) return apiErrors.badRequest('id required');
-  const supa = await admin();
-  const { error } = await supa.from('orders').delete().eq('id', id);
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true });
+  try {
+    const { id } = await context.params;
+    if (!id) return apiErrors.badRequest('id required');
+    const supa = await admin();
+    const { error } = await supa.from('orders').delete().eq('id', id);
+    if (error) {
+      logger.error("[DASHBOARD ORDER DELETE] Database error", {
+        error: error.message,
+        orderId: id,
+      });
+      return apiErrors.database(error.message);
+    }
+    return success({});
+  } catch (_error) {
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    logger.error("[DASHBOARD ORDER DELETE] Unexpected error", {
+      error: errorMessage,
+    });
+    return apiErrors.internal(errorMessage);
+  }
 }
 

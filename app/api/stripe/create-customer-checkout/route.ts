@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import Stripe from "stripe";
 import { env } from '@/lib/env';
@@ -24,19 +23,19 @@ const createCustomerCheckoutSchema = z.object({
 export async function POST(req: Request) {
   try {
     const rawBody = await req.json();
-    console.log("💳 [STRIPE CHECKOUT API] ===== REQUEST RECEIVED =====", {
+    logger.debug("[STRIPE CHECKOUT API] Request received", {
       timestamp: new Date().toISOString(),
-      rawBody: JSON.stringify(rawBody, null, 2),
+      rawBody,
     });
 
     const body = await validateBody(createCustomerCheckoutSchema, rawBody);
 
-    console.log("💳 [STRIPE CHECKOUT API] Validation passed, creating session...", {
+    logger.debug("[STRIPE CHECKOUT API] Validation passed, creating session", {
       amount: body.amount,
       orderId: body.orderId,
       hasEmail: !!body.customerEmail,
     });
-    logger.info("💳 Creating Stripe customer checkout session", {
+    logger.info("[STRIPE CHECKOUT] Creating Stripe customer checkout session", {
       amount: body.amount,
       customerName: body.customerName,
       venueName: body.venueName,
@@ -75,12 +74,7 @@ export async function POST(req: Request) {
       customer_email: body.customerEmail || undefined,
     });
 
-    console.log("💳 [STRIPE CHECKOUT API] ✅ Stripe session created successfully", {
-      sessionId: session.id,
-      orderId: body.orderId,
-      url: session.url?.substring(0, 50) + "...",
-    });
-    logger.info("✅ Stripe checkout session created", {
+    logger.info("[STRIPE CHECKOUT] Stripe checkout session created successfully", {
       sessionId: session.id,
       orderId: body.orderId,
     });
@@ -118,15 +112,10 @@ export async function POST(req: Request) {
       // Don't fail the request - webhook can still find order by orderId in metadata
     }
 
-    const responseData = {
+    return success({
       sessionId: session.id,
       url: session.url,
-    };
-    console.log("💳 [STRIPE CHECKOUT API] Returning response:", JSON.stringify({
-      success: true,
-      data: responseData,
-    }, null, 2));
-    return success(responseData);
+    });
   } catch (error) {
     logger.error("❌ Error creating Stripe checkout session:", {
       error: error instanceof Error ? error.message : String(error),

@@ -2,13 +2,22 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
+import { env } from "@/lib/env";
 
-function getSupabaseUrl() {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL!;
+function getSupabaseUrl(): string {
+  const url = env("NEXT_PUBLIC_SUPABASE_URL");
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is required");
+  }
+  return url;
 }
 
-function getSupabaseAnonKey() {
-  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+function getSupabaseAnonKey(): string {
+  const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!key) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is required");
+  }
+  return key;
 }
 
 // Paths that require authentication
@@ -69,7 +78,6 @@ export async function middleware(request: NextRequest) {
   // Get session
   const {
     data: { session },
-    error: sessionError,
   } = await supabase.auth.getSession();
 
   // For API routes, inject user info into headers if session exists

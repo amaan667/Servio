@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getStripeClient } from "@/lib/stripe-client";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import type Stripe from "stripe";
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,7 @@ export async function POST(
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     const { orderId } = await context.params;
@@ -27,7 +28,7 @@ export async function POST(
     const { amount, reason } = body as { amount?: number; reason?: string };
 
     if (!orderId) {
-      return NextResponse.json({ success: false, error: "Order ID is required" }, { status: 400 });
+      return apiErrors.badRequest("Order ID is required");
     }
 
     const supabase = createAdminClient();
@@ -41,7 +42,7 @@ export async function POST(
       .single();
 
     if (orderError || !order) {
-      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+      return apiErrors.notFound("Order not found");
     }
 
     // Verify venue access
@@ -60,27 +61,20 @@ export async function POST(
       .maybeSingle();
 
     if (!venueAccess && !staffAccess) {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden("Forbidden");
     }
 
     // Check if order was paid via Stripe
     if (!order.stripe_payment_intent_id && !order.stripe_session_id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Order was not paid via Stripe. Cannot process refund.",
-          payment_method: order.payment_method,
-        },
-        { status: 400 }
+      return apiErrors.badRequest(
+        "Order was not paid via Stripe. Cannot process refund.",
+        { payment_method: order.payment_method }
       );
     }
 
     // Check if order is already refunded
     if (order.payment_status === "REFUNDED") {
-      return NextResponse.json(
-        { success: false, error: "Order is already refunded" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Order is already refunded");
     }
 
     // Determine refund amount (full or partial)
@@ -88,10 +82,7 @@ export async function POST(
     const orderAmount = Math.round((order.total_amount || 0) * 100);
 
     if (refundAmount && refundAmount > orderAmount) {
-      return NextResponse.json(
-        { success: false, error: "Refund amount cannot exceed order total" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Refund amount cannot exceed order total");
     }
 
     // Get payment intent ID
@@ -106,21 +97,15 @@ export async function POST(
         );
         paymentIntentId = session.payment_intent as string | null;
       } catch (sessionError) {
-        logger.error("[REFUND] Failed to retrieve Stripe session:", {
+        logger.error("[REFUND] Failed to retrieve Stripe session", {
           error: sessionError instanceof Error ? sessionError.message : "Unknown error",
         });
-        return NextResponse.json(
-          { success: false, error: "Failed to retrieve payment information" },
-          { status: 500 }
-        );
+        return apiErrors.internal("Failed to retrieve payment information");
       }
     }
 
     if (!paymentIntentId) {
-      return NextResponse.json(
-        { success: false, error: "No payment intent found for this order" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("No payment intent found for this order");
     }
 
     // Create refund via Stripe
@@ -163,22 +148,17 @@ export async function POST(
         .eq("id", orderId);
 
       if (updateError) {
-        logger.error("[REFUND] Failed to update order:", { error: updateError });
+        logger.error("[REFUND] Failed to update order", { error: updateError.message });
         // Refund was successful in Stripe, but DB update failed
         // This is a critical issue - log it but don't fail the request
-        return NextResponse.json(
-          {
-            success: true,
-            warning: "Refund processed but order update failed",
-            refund_id: refund.id,
-            error: updateError.message,
-          },
-          { status: 200 }
-        );
+        return success({
+          warning: "Refund processed but order update failed",
+          refund_id: refund.id,
+          error: updateError.message,
+        });
       }
 
-      return NextResponse.json({
-        success: true,
+      return success({
         refund: {
           id: refund.id,
           amount: refund.amount / 100,
@@ -205,32 +185,18 @@ export async function POST(
           })
           .eq("id", orderId);
 
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Order was already refunded in Stripe",
-          },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("Order was already refunded in Stripe");
       }
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to process refund",
-          details: stripeError instanceof Error ? stripeError.message : "Unknown error",
-        },
-        { status: 500 }
-      );
+      const errorMessage = stripeError instanceof Error ? stripeError.message : "Unknown error";
+      return apiErrors.internal("Failed to process refund", errorMessage);
     }
   } catch (error) {
-    logger.error("[REFUND] Unexpected error:", {
-      error: error instanceof Error ? error.message : "Unknown error",
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logger.error("[REFUND] Unexpected error", {
+      error: errorMessage,
     });
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Internal server error");
   }
 }
 

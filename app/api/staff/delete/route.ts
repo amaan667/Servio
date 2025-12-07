@@ -1,35 +1,35 @@
-import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 import { success, apiErrors } from '@/lib/api/standard-response';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
-    console.log("=".repeat(80));
-    console.log("[STAFF DELETE API] Request received");
-    console.log("[STAFF DELETE API] Context venueId:", context.venueId);
-    console.log("[STAFF DELETE API] Request URL:", req.url);
+    logger.debug("[STAFF DELETE API] Request received", {
+      venueId: context.venueId,
+      url: req.url,
+    });
     
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        console.log("[STAFF DELETE API] Rate limit exceeded");
+        logger.warn("[STAFF DELETE API] Rate limit exceeded");
         return apiErrors.rateLimit(
           Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       const body = await req.json().catch(() => ({}));
-      console.log("[STAFF DELETE API] Request body:", JSON.stringify(body, null, 2));
+      logger.debug("[STAFF DELETE API] Request body", { body });
       const { id } = body;
 
       if (!id) {
-        console.log("[STAFF DELETE API] VALIDATION FAILED - id is required");
+        logger.warn("[STAFF DELETE API] Validation failed - id is required");
         return apiErrors.badRequest('id required');
       }
 
@@ -37,8 +37,7 @@ export const POST = withUnifiedAuth(
       const normalizedVenueId = context.venueId.startsWith("venue-") 
         ? context.venueId 
         : `venue-${context.venueId}`;
-      console.log("[STAFF DELETE API] Normalized venueId:", normalizedVenueId);
-      console.log("[STAFF DELETE API] Staff ID to delete:", id);
+      logger.debug("[STAFF DELETE API] Normalized venueId and staff ID", { normalizedVenueId, staffId: id });
 
       const admin = createAdminClient();
 
@@ -52,39 +51,41 @@ export const POST = withUnifiedAuth(
         .select(); // Select to verify deletion
       const deleteTime = Date.now() - deleteStart;
       
-      console.log("[STAFF DELETE API] Delete query completed in", deleteTime, "ms");
-      console.log("[STAFF DELETE API] Query error:", error ? JSON.stringify(error, null, 2) : "none");
-      console.log("[STAFF DELETE API] Rows affected:", data ? data.length : 0);
+      logger.debug("[STAFF DELETE API] Delete query completed", {
+        queryTime: `${deleteTime}ms`,
+        hasError: !!error,
+        rowsAffected: data?.length || 0,
+      });
         
       if (error) {
-        console.error("[STAFF DELETE API] ERROR - Database update failed:");
-        console.error("[STAFF DELETE API] Error code:", error.code);
-        console.error("[STAFF DELETE API] Error message:", error.message);
-        console.error("[STAFF DELETE API] Error details:", error.details);
-        console.log("=".repeat(80));
+        logger.error("[STAFF DELETE API] Database update failed", {
+          errorCode: error.code,
+          errorMessage: error.message,
+          errorDetails: error.details,
+          error,
+        });
         return apiErrors.badRequest(error.message);
       }
       
       if (!data || data.length === 0) {
-        console.error("[STAFF DELETE API] ERROR - No rows updated (staff member not found or already deleted)");
-        console.log("=".repeat(80));
-        return apiErrors.badRequest("Staff member not found or already deleted");
+        logger.warn("[STAFF DELETE API] No rows updated (staff member not found or already deleted)");
+        return apiErrors.notFound("Staff member not found or already deleted");
       }
       
-      console.log("[STAFF DELETE API] SUCCESS - Staff member soft-deleted");
-      console.log("[STAFF DELETE API] Deleted staff data:", JSON.stringify(data[0], null, 2));
-      console.log("[STAFF DELETE API] Returning success response");
-      console.log("=".repeat(80));
+      logger.info("[STAFF DELETE API] Staff member soft-deleted successfully", {
+        staffId: id,
+        deletedAt: data[0].deleted_at,
+      });
       return success({ success: true });
     } catch (e) {
-      console.error("[STAFF DELETE API] EXCEPTION - Unexpected error:");
-      console.error("[STAFF DELETE API] Exception type:", e instanceof Error ? e.constructor.name : typeof e);
-      console.error("[STAFF DELETE API] Exception message:", e instanceof Error ? e.message : String(e));
-      console.error("[STAFF DELETE API] Exception stack:", e instanceof Error ? e.stack : "no stack");
-      console.log("=".repeat(80));
-      return apiErrors.internal(
-        e instanceof Error ? e.message : "Unknown error"
-      );
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      const errorStack = e instanceof Error ? e.stack : undefined;
+      logger.error("[STAFF DELETE API] Unexpected error", {
+        errorType: e instanceof Error ? e.constructor.name : typeof e,
+        errorMessage,
+        errorStack,
+      });
+      return apiErrors.internal(errorMessage);
     }
   }
 );

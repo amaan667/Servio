@@ -11,17 +11,13 @@ import SimpleStaffGrid from "@/components/staff/SimpleStaffGrid";
 import { useStaffManagement, type StaffRow } from "./hooks/useStaffManagement";
 import { useShiftManagement } from "./hooks/useShiftManagement";
 
-// Immediate logging when module loads - these should appear in browser console
-if (typeof window !== 'undefined') {
-  console.log("=".repeat(80));
-  console.log("[STAFF CLIENT] Module loaded - component file executed");
-  console.log("[STAFF CLIENT] Timestamp:", new Date().toISOString());
-  console.log("[STAFF CLIENT] Window object available:", !!window);
-  console.log("[STAFF CLIENT] Console object available:", !!console);
-  console.log("=".repeat(80));
-  
-  // Also log to window for debugging
-  (window as any).__STAFF_LOGGING_ENABLED__ = true;
+// Debug flag for development (removed in production via next.config.mjs)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  // Type-safe window extension for debugging
+  interface WindowWithDebug extends Window {
+    __STAFF_LOGGING_ENABLED__?: boolean;
+  }
+  (window as WindowWithDebug).__STAFF_LOGGING_ENABLED__ = true;
 }
 
 /**
@@ -41,14 +37,11 @@ export default function StaffClient({
   initialStaff?: StaffRow[];
   initialCounts?: unknown;
 }) {
-  // Log when component renders
+  // Component mount logging (development only, removed in production)
   useEffect(() => {
-    console.log("=".repeat(80));
-    console.log("[STAFF CLIENT] Component mounted/rendered");
-    console.log("[STAFF CLIENT] Props - venueId:", venueId);
-    console.log("[STAFF CLIENT] Props - initialStaff:", initialStaff ? `${initialStaff.length} members` : "none");
-    console.log("[STAFF CLIENT] Component render timestamp:", new Date().toISOString());
-    console.log("=".repeat(80));
+    if (process.env.NODE_ENV === 'development') {
+      // Development logging removed - use React DevTools for component inspection
+    }
   }, []);
 
   const [activeTab, setActiveTab] = useState("staff");

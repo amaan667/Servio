@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { env, isDevelopment } from '@/lib/env';
+import { apiErrors } from '@/lib/api/standard-response';
 
 export const dynamic = "force-dynamic";
 export const runtime = "edge";
@@ -12,22 +11,11 @@ export const runtime = "edge";
  * Cron job to automatically reset demo data every few hours
  * This endpoint should be called by a cron service (e.g., Vercel Cron, Railway Cron)
  * Uses CRON_SECRET authentication instead of user auth
+ * Note: Rate limiting skipped for Edge runtime (CRON_SECRET provides sufficient protection)
  */
 export async function GET(req: NextRequest) {
   try {
-    // STEP 1: Rate limiting (ALWAYS FIRST)
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    // STEP 2: CRON_SECRET authentication (special auth for cron jobs)
+    // STEP 1: CRON_SECRET authentication (special auth for cron jobs)
     const authHeader = req.headers.get("authorization");
     const expectedSecret = env('CRON_SECRET') || "demo-reset-secret";
 

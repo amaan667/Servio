@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 import { createClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import { env } from '@/lib/env';
@@ -24,10 +23,7 @@ export async function GET(req: Request) {
     });
 
     if (!venueId || !tableNumber) {
-      return NextResponse.json(
-        { ok: false, error: "venueId and tableNumber are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("venueId and tableNumber are required");
     }
 
     // Use service role to bypass RLS (customers don't need to be authenticated)
@@ -56,23 +52,22 @@ export async function GET(req: Request) {
       .in("payment_status", ["UNPAID", "IN_PROGRESS"]);
 
     if (error) {
-      logger.error("❌ [CHECK ACTIVE ORDERS] Database error", {
+      logger.error("[CHECK ACTIVE ORDERS] Database error", {
         venueId,
         tableNumber,
         error: error.message,
         code: error.code,
       });
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return apiErrors.database(error.message);
     }
 
-    logger.info("✅ [CHECK ACTIVE ORDERS] Query successful", {
+    logger.info("[CHECK ACTIVE ORDERS] Query successful", {
       venueId,
       tableNumber,
       count: activeOrders?.length || 0,
     });
 
-    return NextResponse.json({
-      ok: true,
+    return success({
       orders: activeOrders || [],
     });
   } catch (_error) {

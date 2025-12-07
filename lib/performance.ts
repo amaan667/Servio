@@ -9,7 +9,7 @@ interface PerformanceMetric {
   operation: string;
   duration: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 const metrics: PerformanceMetric[] = [];
@@ -30,7 +30,7 @@ const SLOW_THRESHOLDS = {
 export async function trackPerformance<T>(
   operation: string,
   fn: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<T> {
   const start = performance.now();
 
@@ -53,7 +53,7 @@ export async function trackPerformance<T>(
 export function trackPerformanceSync<T>(
   operation: string,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): T {
   const start = performance.now();
 
@@ -73,7 +73,7 @@ export function trackPerformanceSync<T>(
 /**
  * Record performance metric
  */
-function recordMetric(operation: string, duration: number, metadata?: Record<string, any>) {
+function recordMetric(operation: string, duration: number, metadata?: Record<string, unknown>) {
   const metric: PerformanceMetric = {
     operation,
     duration,

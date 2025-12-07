@@ -79,7 +79,7 @@ export function useAuthRedirect() {
           }
         } catch (error) {
           // If refresh fails, continue to redirect after all retries
-          console.error("[AUTH REDIRECT] Session refresh attempt failed:", error);
+          // Error logged silently - session refresh failures are expected in some cases
         }
       }
 

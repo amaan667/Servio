@@ -1,35 +1,35 @@
-import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
 import { success, apiErrors } from '@/lib/api/standard-response';
+import { logger } from '@/lib/logger';
 
 export const runtime = "nodejs";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
-    console.log("=".repeat(80));
-    console.log("[STAFF ADD API] Request received");
-    console.log("[STAFF ADD API] Context venueId:", context.venueId);
-    console.log("[STAFF ADD API] Request URL:", req.url);
+    logger.debug("[STAFF ADD API] Request received", {
+      venueId: context.venueId,
+      url: req.url,
+    });
     
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        console.log("[STAFF ADD API] Rate limit exceeded");
+        logger.warn("[STAFF ADD API] Rate limit exceeded");
         return apiErrors.rateLimit(
           Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
       const body = await req.json().catch(() => ({}));
-      console.log("[STAFF ADD API] Request body:", JSON.stringify(body, null, 2));
+      logger.debug("[STAFF ADD API] Request body", { body });
       const { name, role } = body || {};
 
       if (!name) {
-        console.log("[STAFF ADD API] VALIDATION FAILED - name is required");
+        logger.warn("[STAFF ADD API] Validation failed - name is required");
         return apiErrors.badRequest('name is required');
       }
 
@@ -37,10 +37,10 @@ export const POST = withUnifiedAuth(
       const normalizedVenueId = context.venueId.startsWith("venue-") 
         ? context.venueId 
         : `venue-${context.venueId}`;
-      console.log("[STAFF ADD API] Normalized venueId:", normalizedVenueId);
+      logger.debug("[STAFF ADD API] Normalized venueId", { normalizedVenueId });
 
       const insertData = { venue_id: normalizedVenueId, name, role: role || "Server", active: true };
-      console.log("[STAFF ADD API] Insert data:", JSON.stringify(insertData, null, 2));
+      logger.debug("[STAFF ADD API] Insert data", { insertData });
 
       const admin = createAdminClient();
       const queryStart = Date.now();
@@ -50,39 +50,43 @@ export const POST = withUnifiedAuth(
         .select("*");
       const queryTime = Date.now() - queryStart;
       
-      console.log("[STAFF ADD API] Database query completed in", queryTime, "ms");
-      console.log("[STAFF ADD API] Query error:", error ? JSON.stringify(error, null, 2) : "none");
-      console.log("[STAFF ADD API] Query returned data:", data ? `${data.length} rows` : "null");
+      logger.debug("[STAFF ADD API] Database query completed", {
+        queryTime: `${queryTime}ms`,
+        hasError: !!error,
+        dataRows: data?.length || 0,
+      });
       
       if (error) {
-        console.error("[STAFF ADD API] ERROR - Database insert failed:");
-        console.error("[STAFF ADD API] Error code:", error.code);
-        console.error("[STAFF ADD API] Error message:", error.message);
-        console.error("[STAFF ADD API] Error details:", error.details);
-        console.error("[STAFF ADD API] Error hint:", error.hint);
-        console.error("[STAFF ADD API] Full error:", JSON.stringify(error, null, 2));
+        logger.error("[STAFF ADD API] Database insert failed", {
+          errorCode: error.code,
+          errorMessage: error.message,
+          errorDetails: error.details,
+          errorHint: error.hint,
+          error,
+        });
         return apiErrors.badRequest(error.message || "Failed to add staff member");
       }
       
       if (!data || data.length === 0) {
-        console.error("[STAFF ADD API] ERROR - No data returned from insert");
+        logger.error("[STAFF ADD API] No data returned from insert");
         return apiErrors.internal("Failed to create staff member - no data returned");
       }
       
-      console.log("[STAFF ADD API] SUCCESS - Staff member created");
-      console.log("[STAFF ADD API] Created staff data:", JSON.stringify(data[0], null, 2));
-      console.log("[STAFF ADD API] Returning success response");
-      console.log("=".repeat(80));
+      logger.info("[STAFF ADD API] Staff member created successfully", {
+        staffId: data[0].id,
+        name: data[0].name,
+        role: data[0].role,
+      });
       return success(data[0]);
     } catch (e) {
-      console.error("[STAFF ADD API] EXCEPTION - Unexpected error:");
-      console.error("[STAFF ADD API] Exception type:", e instanceof Error ? e.constructor.name : typeof e);
-      console.error("[STAFF ADD API] Exception message:", e instanceof Error ? e.message : String(e));
-      console.error("[STAFF ADD API] Exception stack:", e instanceof Error ? e.stack : "no stack");
-      console.log("=".repeat(80));
-      return apiErrors.internal(
-        e instanceof Error ? e.message : "Unknown error"
-      );
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      const errorStack = e instanceof Error ? e.stack : undefined;
+      logger.error("[STAFF ADD API] Unexpected error", {
+        errorType: e instanceof Error ? e.constructor.name : typeof e,
+        errorMessage,
+        errorStack,
+      });
+      return apiErrors.internal(errorMessage);
     }
   }
 );

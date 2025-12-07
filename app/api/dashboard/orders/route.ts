@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from "@/lib/dates";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { isDevelopment } from '@/lib/env';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -15,13 +16,8 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
+        return apiErrors.rateLimit(
+          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
 
@@ -36,10 +32,7 @@ export const GET = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!venueId) {
-        return NextResponse.json(
-          { ok: false, error: "venueId is required" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("venueId is required");
       }
 
   // Try to get from cache first (1 minute TTL for dashboard orders)
@@ -47,7 +40,7 @@ export const GET = withUnifiedAuth(
   const cachedOrders = await cache.get(cacheKey);
 
   if (cachedOrders) {
-    return NextResponse.json(cachedOrders);
+    return success(cachedOrders);
   }
 
   // Use authenticated client instead of admin client
@@ -94,10 +87,10 @@ export const GET = withUnifiedAuth(
   const { data: orders, error } = await query;
 
   if (error) {
-    logger.error("[DASHBOARD ORDERS] Error:", {
+    logger.error("[DASHBOARD ORDERS] Error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return apiErrors.internal(error instanceof Error ? error.message : "Unknown error");
   }
 
   // Transform orders to include table_label
@@ -174,7 +167,7 @@ export const GET = withUnifiedAuth(
       await cache.set(cacheKey, response, { ttl: 60 });
 
       // STEP 7: Return success response
-      return NextResponse.json(response);
+      return success(response);
       
     } catch (_error) {
       // STEP 8: Consistent error handling
@@ -188,25 +181,16 @@ export const GET = withUnifiedAuth(
         userId: context.user.id,
       });
       
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
+      if (errorMessage.includes("Unauthorized")) {
+        return apiErrors.unauthorized(errorMessage);
+      }
+      if (errorMessage.includes("Forbidden")) {
+        return apiErrors.forbidden(errorMessage);
       }
       
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Internal Server Error",
-          message: isDevelopment() ? errorMessage : "Request processing failed",
-          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+      return apiErrors.internal(
+        isDevelopment() ? errorMessage : "Request processing failed",
+        isDevelopment() && errorStack ? { stack: errorStack } : undefined
       );
     }
   },

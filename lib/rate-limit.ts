@@ -1,10 +1,12 @@
 /**
  * Rate Limiting Utilities
  * Provides rate limiting for API endpoints to prevent abuse
+ * Uses Redis when available, falls back to in-memory store
  */
 
 import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 interface RateLimitOptions {
   limit: number; // Maximum number of requests
@@ -19,11 +21,52 @@ interface RateLimitResult {
   limit: number;
 }
 
-// In-memory rate limit store (for single-instance deployments)
-// For multi-instance, use Redis or similar
+// In-memory rate limit store (fallback when Redis unavailable)
 const rateLimitStore = new Map<string, { count: number; reset: number }>();
 
-// Cleanup expired entries every 5 minutes
+// Redis client (lazy initialized)
+// Using unknown type for Redis client to avoid type issues with dynamic import
+// The client is only used for its methods (incr, expire) which we verify exist
+let redisClient: { incr: (key: string) => Promise<number>; expire: (key: string, seconds: number) => Promise<number> } | null = null;
+let redisInitialized = false;
+
+async function getRedisClient() {
+  if (redisClient) return redisClient;
+  if (redisInitialized) return null;
+
+  redisInitialized = true;
+  const redisUrl = env("REDIS_URL");
+
+  if (!redisUrl) {
+    logger.debug("[RATE LIMIT] Redis not configured, using in-memory store");
+    return null;
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Redis = require("ioredis");
+    const client = new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      lazyConnect: true,
+    });
+
+    await client.connect();
+    redisClient = client;
+    logger.debug("[RATE LIMIT] Redis connected successfully");
+    return client;
+  } catch (error) {
+    logger.warn("[RATE LIMIT] Failed to connect to Redis, using in-memory store", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+// Cleanup expired entries every 5 minutes (in-memory only)
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of rateLimitStore.entries()) {
@@ -53,16 +96,59 @@ function getClientIdentifier(req: NextRequest): string {
 
 /**
  * Rate limit check
+ * Uses Redis when available, falls back to in-memory store
  */
 export async function rateLimit(
   req: NextRequest,
   options: RateLimitOptions
 ): Promise<RateLimitResult> {
   const identifier = options.identifier || getClientIdentifier(req);
-  const key = `${identifier}:${options.limit}:${options.window}`;
+  const key = `ratelimit:${identifier}:${options.limit}:${options.window}`;
   const now = Date.now();
   const reset = now + options.window * 1000;
 
+  // Try Redis first
+  const redis = await getRedisClient();
+  if (redis) {
+    try {
+      // Use sliding window with Redis
+      const bucket = Math.floor(now / 1000 / options.window);
+      const bucketKey = `${key}:${bucket}`;
+      
+      // Increment counter for current bucket
+      const count = await redis.incr(bucketKey);
+      await redis.expire(bucketKey, options.window * 2); // Keep for 2 windows
+
+      if (count > options.limit) {
+        logger.warn("[RATE LIMIT] Rate limit exceeded (Redis)", {
+          identifier,
+          limit: options.limit,
+          window: options.window,
+          count,
+        });
+        return {
+          success: false,
+          remaining: 0,
+          reset,
+          limit: options.limit,
+        };
+      }
+
+      return {
+        success: true,
+        remaining: Math.max(0, options.limit - count),
+        reset,
+        limit: options.limit,
+      };
+    } catch (error) {
+      // Redis error - fall back to in-memory
+      logger.warn("[RATE LIMIT] Redis error, falling back to in-memory", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  // Fallback to in-memory store
   const current = rateLimitStore.get(key);
 
   if (!current || current.reset < now) {
@@ -78,7 +164,7 @@ export async function rateLimit(
 
   if (current.count >= options.limit) {
     // Rate limit exceeded
-    logger.warn("[RATE LIMIT] Rate limit exceeded", {
+    logger.warn("[RATE LIMIT] Rate limit exceeded (in-memory)", {
       identifier,
       limit: options.limit,
       window: options.window,

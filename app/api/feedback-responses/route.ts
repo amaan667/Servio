@@ -24,15 +24,27 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 2: Get venueId from context (already verified)
-      const venueId = context.venueId;
+      let venueId = context.venueId;
+
+      if (!venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
 
       // STEP 3: Validate input
       const body = await validateBody(submitFeedbackSchema, await req.json());
 
+      // Normalize venue IDs for comparison (database may store with venue- prefix)
+      const normalizeVenueId = (id: string) => id.startsWith("venue-") ? id : `venue-${id}`;
+      const normalizedContextVenueId = normalizeVenueId(venueId);
+      const normalizedBodyVenueId = normalizeVenueId(body.venue_id);
+
       // Verify venue_id matches context
-      if (body.venue_id !== venueId) {
+      if (normalizedBodyVenueId !== normalizedContextVenueId) {
         return apiErrors.forbidden('Venue ID mismatch');
       }
+
+      // Use normalized venueId for database operations
+      venueId = normalizedContextVenueId;
 
       // STEP 4: Security - Verify order belongs to venue if order_id provided
       if (body.order_id) {

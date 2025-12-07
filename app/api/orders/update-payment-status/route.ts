@@ -1,17 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export async function POST(req: NextRequest) {
   try {
     const { orderId, paymentStatus, paymentMethod } = await req.json();
 
     if (!orderId || !paymentStatus) {
-      return NextResponse.json(
-        { error: "Order ID and payment status are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Order ID and payment status are required");
     }
 
     const supabase = await createClient();
@@ -34,20 +31,18 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      logger.error("[UPDATE PAYMENT STATUS] Failed to update payment status:", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error("[UPDATE PAYMENT STATUS] Failed to update payment status", {
+        error: error.message,
       });
       return apiErrors.internal(error.message || 'Internal server error');
     }
 
-    return NextResponse.json({ success: true, data });
+    return success({ data });
   } catch (_error) {
-    logger.error("[UPDATE PAYMENT STATUS] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    logger.error("[UPDATE PAYMENT STATUS] Error", {
+      error: errorMessage,
     });
-    return NextResponse.json(
-      { error: _error instanceof Error ? _error.message : "Internal server _error" },
-      { status: 500 }
-    );
+    return apiErrors.internal(errorMessage);
   }
 }

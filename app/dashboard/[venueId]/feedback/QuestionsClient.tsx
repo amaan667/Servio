@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackType } from "@/types/feedback";
 import { supabaseBrowser } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface QuestionsClientProps {
   venueId: string;
@@ -251,7 +252,8 @@ export default function QuestionsClient({
         return;
       }
 
-      if (response.ok && responseData.success) {
+      // Check if response is successful and has the expected structure
+      if (response.ok && responseData.success && responseData.data?.question) {
         toast({
           title: "Success",
           description: "Question added successfully",
@@ -271,24 +273,39 @@ export default function QuestionsClient({
       } else {
         // Handle API error response format: { success: false, error: { message: "..." } }
         let errorMessage = "Couldn't save question";
+        
+        // Check for error in standard API response format
         if (responseData?.error?.message) {
           errorMessage = responseData.error.message;
         } else if (responseData?.message) {
           errorMessage = responseData.message;
         } else if (typeof responseData?.error === "string") {
           errorMessage = responseData.error;
-        } else if (response.status === 500) {
-          errorMessage = "Server error. Please try again or contact support.";
-        } else if (response.status === 403) {
-          errorMessage = "Permission denied. Please check your access.";
-        } else if (response.status === 400) {
-          errorMessage = "Invalid request. Please check your input.";
+        } else if (!response.ok) {
+          // If response is not ok, check status code
+          if (response.status === 500) {
+            errorMessage = "Server error. Please try again or contact support.";
+          } else if (response.status === 403) {
+            errorMessage = "Permission denied. Please check your access.";
+          } else if (response.status === 400) {
+            errorMessage = "Invalid request. Please check your input.";
+          } else if (response.status === 429) {
+            errorMessage = "Too many requests. Please wait a moment and try again.";
+          }
+        } else if (response.ok && !responseData.success) {
+          // Response is ok but success is false
+          errorMessage = responseData?.error?.message || "Failed to create question";
+        } else if (response.ok && responseData.success && !responseData.data?.question) {
+          // Response is ok and success is true, but missing question data
+          errorMessage = "Question created but response format is invalid. Please refresh the page.";
         }
 
-        console.error("[QuestionsClient] API error:", {
+        // Use console.error for client-side debugging (logger is server-side)
+        console.error("[QuestionsClient] API error", {
           status: response.status,
           statusText: response.statusText,
           data: responseData,
+          hasQuestion: !!responseData?.data?.question,
         });
 
         toast({

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 /**
  * Payment API Route - No authentication required for ordering UI
@@ -12,10 +13,7 @@ export async function POST(req: NextRequest) {
     const { orderId, venue_id, payment_method, payment_status } = body;
 
     if (!orderId || !venue_id) {
-      return NextResponse.json(
-        { error: "Order ID and venue ID are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Order ID and venue ID are required");
     }
 
     // Use admin client - no auth required for payment processing
@@ -30,15 +28,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
-      logger.error("[ORDERS PAYMENT] Order not found:", {
+      logger.error("[ORDERS PAYMENT] Order not found", {
         error: checkError?.message,
         orderId,
         venue_id,
       });
-      return NextResponse.json(
-        { error: "Order not found" },
-        { status: 404 }
-      );
+      return apiErrors.notFound("Order not found");
     }
 
     // Update payment status
@@ -64,15 +59,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError || !updatedOrder) {
-      logger.error("[ORDERS PAYMENT] Failed to update payment:", {
+      logger.error("[ORDERS PAYMENT] Failed to update payment", {
         error: updateError?.message,
         orderId,
         venue_id,
       });
-      return NextResponse.json(
-        { error: "Failed to update payment status" },
-        { status: 500 }
-      );
+      return apiErrors.internal("Failed to update payment status");
     }
 
     logger.info("[ORDERS PAYMENT] Payment updated successfully", {
@@ -82,15 +74,13 @@ export async function POST(req: NextRequest) {
       venue_id,
     });
 
-    return NextResponse.json({ success: true, order: updatedOrder });
+    return success({ order: updatedOrder });
   } catch (error) {
-    logger.error("[ORDERS PAYMENT] Unexpected error:", {
-      error: error instanceof Error ? error.message : String(error),
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logger.error("[ORDERS PAYMENT] Unexpected error", {
+      error: errorMessage,
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Internal server error");
   }
 }
 

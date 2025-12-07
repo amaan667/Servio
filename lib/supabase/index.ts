@@ -12,6 +12,7 @@ import { createServerClient as createSSRServerClient, type CookieOptions } from 
 import { createClient as createBrowserClient } from "@supabase/supabase-js";
 
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 /**
  * Gets the Supabase URL from environment variables
@@ -42,8 +43,7 @@ export function getSupabaseAnonKey(): string {
   if (typeof window !== "undefined") {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!key) {
-      console.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in browser environment");
-      console.error("[SUPABASE] Available env vars:", {
+      logger.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in browser environment", {
         hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
         hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
         nodeEnv: process.env.NODE_ENV,
@@ -52,13 +52,13 @@ export function getSupabaseAnonKey(): string {
     }
     // Validate key format (should start with eyJ)
     if (!key.startsWith("eyJ")) {
-      console.warn("[SUPABASE] Anon key format looks unusual (should start with 'eyJ')");
+      logger.warn("[SUPABASE] Anon key format looks unusual (should start with 'eyJ')");
     }
     return key;
   }
   const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   if (!key) {
-    console.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in server environment");
+    logger.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in server environment");
     throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables.");
   }
   return key;
@@ -82,7 +82,9 @@ export function supabaseBrowser() {
     anonKey = getSupabaseAnonKey();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[SUPABASE] Failed to get Supabase credentials:", errorMessage);
+    logger.error("[SUPABASE] Failed to get Supabase credentials", {
+      error: errorMessage,
+    });
     throw new Error(`Supabase configuration error: ${errorMessage}. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.`);
   }
 
@@ -170,7 +172,7 @@ export function supabaseBrowser() {
 
     // Log client creation for debugging (only in development)
     if (process.env.NODE_ENV === "development") {
-      console.log("[SUPABASE] Creating browser client:", {
+      logger.debug("[SUPABASE] Creating browser client", {
         url: url.substring(0, 30) + "...",
         hasAnonKey: !!anonKey,
         anonKeyLength: anonKey?.length || 0,

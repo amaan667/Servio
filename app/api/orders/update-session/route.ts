@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
 
@@ -9,12 +9,7 @@ export async function POST(req: Request) {
     const { orderId, sessionId, venueId } = await req.json();
 
     if (!orderId || !sessionId || !venueId) {
-      return NextResponse.json(
-        {
-          error: "orderId, sessionId, and venueId are required",
-        },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("orderId, sessionId, and venueId are required");
     }
 
     const supabase = await createClient();
@@ -31,13 +26,12 @@ export async function POST(req: Request) {
       .single();
 
     if (findError || !order) {
-      logger.error("[UPDATE SESSION] Order not found:", findError);
-      return NextResponse.json(
-        {
-          error: "Order not found",
-        },
-        { status: 404 }
-      );
+      logger.error("[UPDATE SESSION] Order not found", {
+        error: findError?.message,
+        venueId,
+        orderId,
+      });
+      return apiErrors.notFound("Order not found");
     }
 
     // Update the order with the session ID
@@ -50,25 +44,19 @@ export async function POST(req: Request) {
       .eq("id", order.id);
 
     if (updateError) {
-      logger.error("[UPDATE SESSION] Error updating order:", updateError);
-      return NextResponse.json(
-        {
-          error: "Failed to update order",
-        },
-        { status: 500 }
-      );
+      logger.error("[UPDATE SESSION] Error updating order", {
+        error: updateError.message,
+        orderId: order.id,
+      });
+      return apiErrors.database("Failed to update order");
     }
 
-    return NextResponse.json({ success: true, orderId: order.id });
+    return success({ orderId: order.id });
   } catch (_error) {
-    logger.error("[UPDATE SESSION] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    logger.error("[UPDATE SESSION] Unexpected error", {
+      error: errorMessage,
     });
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-      },
-      { status: 500 }
-    );
+    return apiErrors.internal("Internal server error");
   }
 }

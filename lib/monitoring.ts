@@ -11,7 +11,7 @@ export interface MonitoringEvent {
   name: string;
   level: AlertLevel;
   message: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: number;
 }
 
@@ -26,7 +26,7 @@ class MonitoringService {
     name: string,
     level: AlertLevel = "info",
     message: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ) {
     const event: MonitoringEvent = {
       name,
@@ -193,16 +193,16 @@ const monitoring = new MonitoringService();
  * Quick alert helpers
  */
 export const alerts = {
-  info: (name: string, message: string, metadata?: Record<string, any>) =>
+  info: (name: string, message: string, metadata?: Record<string, unknown>) =>
     monitoring.trackEvent(name, "info", message, metadata),
 
-  warning: (name: string, message: string, metadata?: Record<string, any>) =>
+  warning: (name: string, message: string, metadata?: Record<string, unknown>) =>
     monitoring.trackEvent(name, "warning", message, metadata),
 
-  error: (name: string, message: string, metadata?: Record<string, any>) =>
+  error: (name: string, message: string, metadata?: Record<string, unknown>) =>
     monitoring.trackEvent(name, "error", message, metadata),
 
-  critical: (name: string, message: string, metadata?: Record<string, any>) =>
+  critical: (name: string, message: string, metadata?: Record<string, unknown>) =>
     monitoring.trackEvent(name, "critical", message, metadata),
 };
 

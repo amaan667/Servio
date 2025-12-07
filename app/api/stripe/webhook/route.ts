@@ -13,7 +13,13 @@ export const revalidate = 0;
 // Get this from: Stripe Dashboard → Webhooks → "Servio" endpoint → Signing secret
 import { env } from '@/lib/env';
 
-const webhookSecret = env("STRIPE_CUSTOMER_WEBHOOK_SECRET")!;
+function getWebhookSecret(): string {
+  const secret = env("STRIPE_CUSTOMER_WEBHOOK_SECRET");
+  if (!secret) {
+    throw new Error("STRIPE_CUSTOMER_WEBHOOK_SECRET environment variable is required");
+  }
+  return secret;
+}
 
 /**
  * Stripe Webhook for CUSTOMER ORDER PAYMENTS
@@ -42,6 +48,7 @@ export async function POST(_request: NextRequest) {
   let event: Stripe.Event;
   try {
     // Use EXACT same method as subscriptions webhook (no trimming!)
+    const webhookSecret = getWebhookSecret();
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (_err) {
     const errorMessage = _err instanceof Error ? _err.message : "Unknown error";
@@ -51,12 +58,12 @@ export async function POST(_request: NextRequest) {
   }
 
   if (event.type !== "checkout.session.completed") {
-    return NextResponse.json({ ok: true, ignored: true });
+    return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
 
-  // Check if already processed (idempotency)
+  // Idempotency check: Check by session ID (most reliable for order payments)
   const { data: existing } = await supabaseAdmin
     .from("orders")
     .select("id, stripe_session_id, payment_status")
@@ -64,7 +71,8 @@ export async function POST(_request: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ ok: true, already: true, orderId: existing.id });
+    apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Order already processed for session:", session.id);
+    return NextResponse.json({ ok: true, already: true, orderId: existing.id }, { status: 200 });
   }
 
   // Check if this is a table-level payment (multiple orders) or single order
@@ -79,6 +87,7 @@ export async function POST(_request: NextRequest) {
     const orderIds = orderIdsStr.split(",").filter(Boolean);
 
     if (orderIds.length === 0) {
+      apiLogger.error("[CUSTOMER ORDER WEBHOOK] No orderIds in table payment metadata");
       return NextResponse.json(
         { ok: false, error: "No orderIds in table payment metadata" },
         { status: 400 }
@@ -205,6 +214,8 @@ export async function POST(_request: NextRequest) {
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
+
+  // Event is idempotent by session ID check above - no need for separate tracking table
 
   return NextResponse.json({
     ok: true,

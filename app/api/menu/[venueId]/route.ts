@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { cache, cacheKeys, cacheTTL } from "@/lib/cache/index";
+import { cache, cacheKeys } from "@/lib/cache/index";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from '@/lib/api/standard-response';
 
 export async function GET(
   _request: NextRequest,
@@ -30,7 +30,7 @@ export async function GET(
     const cachedMenu = await cache.get(cacheKey);
 
     if (cachedMenu) {
-      return NextResponse.json(cachedMenu);
+      return success(cachedMenu);
     }
 
     // Use admin client to bypass RLS for public menu access
@@ -61,13 +61,12 @@ export async function GET(
     }
 
     if (venueError || !venue) {
-      logger.error("[MENU API] Venue not found:", {
-        error: { rawVenueId, transformedVenueId: venueId, error: venueError },
+      logger.error("[MENU API] Venue not found", {
+        rawVenueId,
+        transformedVenueId: venueId,
+        error: venueError,
       });
-      return NextResponse.json(
-        { error: "Venue not found", venueId: rawVenueId, searchedAs: venueId },
-        { status: 404 }
-      );
+      return apiErrors.notFound("Venue not found");
     }
 
     // Fetch menu items for the venue using the same venue_id that was found
@@ -81,26 +80,23 @@ export async function GET(
 
     const menuItemCount = menuItems?.length || 0;
 
-    console.log("[CUSTOMER UI API] Menu items query:", {
+    logger.debug("[MENU API] Menu items query", {
       rawVenueId,
       transformedVenueId: venueId,
       actualVenueId: venue.venue_id,
       count: menuItemCount,
       error: menuError?.message || null,
       errorCode: menuError?.code || null,
-      sampleItems: menuItems?.slice(0, 3).map((m) => ({ id: m.id, name: m.name })) || [],
-      timestamp: new Date().toISOString(),
     });
 
     if (menuError) {
-      console.error("[CUSTOMER UI API] Error fetching menu items:", {
+      logger.error("[MENU API] Error fetching menu items", {
         error: menuError.message,
         code: menuError.code,
         details: menuError.details,
         venueId: venue.venue_id,
       });
-      logger.error("[MENU API] Error fetching menu items:", { value: menuError });
-      return apiErrors.internal('Failed to load menu items');
+      return apiErrors.database('Failed to load menu items');
     }
 
     // Return menu items with venue info
@@ -113,38 +109,25 @@ export async function GET(
       totalItems: menuItemCount,
     };
 
-    console.log("[CUSTOMER UI API] Returning response:", {
+    logger.debug("[MENU API] Returning response", {
       venueId: venue.venue_id,
       totalItems: menuItemCount,
       hasItems: menuItemCount > 0,
     });
 
-    // Log summary for comparison
-    console.log("[CUSTOMER UI API] SUMMARY:", {
-      rawVenueId,
-      transformedVenueId: venueId,
-      actualVenueId: venue.venue_id,
-      totalMenuItems: menuItemCount,
-      timestamp: new Date().toISOString(),
-    });
+    // Cache the response for 5 minutes (300 seconds)
+    await cache.set(cacheKey, response, { ttl: 300 });
 
-    // Cache the response for 5 minutes
-    await cache.set(cacheKey, response, { ttl: cacheTTL.medium });
-
-    return NextResponse.json(response);
+    return success(response);
   } catch (_error) {
-    logger.error("[MENU API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-      stack: _error instanceof Error ? _error.stack : undefined,
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    const errorStack = _error instanceof Error ? _error.stack : undefined;
+    logger.error("[MENU API] Unexpected error", {
+      error: errorMessage,
+      stack: errorStack,
       venueId: rawVenueId,
     });
 
-    return NextResponse.json(
-      {
-        error: "Internal server _error",
-        details: _error instanceof Error ? _error.message : "Unknown _error",
-      },
-      { status: 500 }
-    );
+    return apiErrors.internal(errorMessage);
   }
 }
