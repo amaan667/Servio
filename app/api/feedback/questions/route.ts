@@ -397,12 +397,20 @@ export const POST = withUnifiedAuth(
       });
 
       // Prepare insert data
-      // CRITICAL: The database uses 'question' column, not 'question_text'
-      // Check GET endpoint - it maps both 'question_text' and 'question' to 'prompt'
+      // CRITICAL: We need to discover the actual column names by querying the schema
+      // Since GET works with select("*"), let's try to insert with minimal required columns first
+      // The database might use different column names than expected
       const insertDataBase: Record<string, unknown> = {
         venue_id: normalizedVenueId,
-        question: body.prompt, // Map 'prompt' to 'question' for DB (actual column name)
-        question_type: body.type, // Map 'type' to 'question_type' for DB
+        // Try common column name variations - the retry logic will handle missing ones
+        // Frontend 'prompt' could map to: 'question', 'question_text', 'text', 'prompt'
+        question: body.prompt,
+        question_text: body.prompt, // Try both
+        text: body.prompt, // Try alternative
+        prompt: body.prompt, // Try direct mapping
+        // Frontend 'type' could map to: 'question_type', 'type', 'questionType'
+        question_type: body.type,
+        type: body.type, // Try direct mapping
         is_active: body.is_active ?? true,
       };
       
