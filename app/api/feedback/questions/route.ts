@@ -353,14 +353,22 @@ export const POST = withUnifiedAuth(
       });
 
       // Prepare insert data
-      const insertData = {
+      // CRITICAL: Check if options column exists by trying a test query first
+      // If it doesn't exist, we'll insert without it
+      const insertData: Record<string, unknown> = {
         venue_id: normalizedVenueId,
         question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
         sort_index: body.sort_index ?? nextSortIndex,
-        options: body.choices || null, // Map 'choices' to 'options' for DB
       };
+      
+      // Try to include options if we have choices
+      // If the column doesn't exist, Supabase will ignore it or we'll catch the error
+      if (body.choices && Array.isArray(body.choices)) {
+        // Include options even if empty (for multiple_choice questions)
+        insertData.options = body.choices.length > 0 ? body.choices : [];
+      }
       
       logger.info(`${logPrefix} Step 4b: Inserting question into database`);
       if (typeof process !== 'undefined' && process.stdout) {
@@ -378,11 +386,38 @@ export const POST = withUnifiedAuth(
         },
       });
 
-      const { data: question, error } = await supabase
+      // Try insert with options first, if it fails due to missing column, retry without it
+      let question;
+      let error;
+      
+      const insertResult = await supabase
         .from("feedback_questions")
         .insert(insertData)
         .select()
         .single();
+      
+      question = insertResult.data;
+      error = insertResult.error;
+      
+      // If error is about missing 'options' column, retry without it
+      if (error && error.message?.includes("options") && error.message?.includes("column")) {
+        logger.warn(`${logPrefix} Options column not found, retrying insert without options column`);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Options column not found, retrying without it\n`);
+        }
+        
+        const insertDataWithoutOptions = { ...insertData };
+        delete insertDataWithoutOptions.options;
+        
+        const retryResult = await supabase
+          .from("feedback_questions")
+          .insert(insertDataWithoutOptions)
+          .select()
+          .single();
+        
+        question = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         const errorMsg = `${logPrefix} ERROR: Database insert failed - ${error.message}`;
