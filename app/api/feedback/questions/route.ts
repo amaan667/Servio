@@ -147,53 +147,96 @@ export const GET = withUnifiedAuth(
 // POST - Create question
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestId = Math.random().toString(36).substring(7);
+    const startTime = Date.now();
+    
+    logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] ===== ADD QUESTION CLICKED =====`);
+    logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Request started`, {
+      timestamp: new Date().toISOString(),
+      requestId,
+      url: req.url,
+      method: req.method,
+    });
+    
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 1: Checking rate limit`);
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
+        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Rate limit exceeded`);
         return apiErrors.rateLimit(
           Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Rate limit check passed`);
 
       // STEP 2: Get venueId from context (already verified)
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 2: Getting venueId from context`);
       const venueId = context.venueId;
       
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Context venueId:`, {
+        venueId: venueId || "MISSING",
+        userId: context.user?.id || "MISSING",
+        hasUser: !!context.user,
+      });
+      
       if (!venueId) {
+        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ERROR: venueId is missing from context`);
         return apiErrors.badRequest("venueId is required");
       }
       
       // Normalize venueId - database stores with venue- prefix
       // Check if it already has the prefix to avoid double-prefixing
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Normalized venueId:`, {
+        original: venueId,
+        normalized: normalizedVenueId,
+      });
 
       // STEP 3: Validate input
       // withUnifiedAuth reconstructs the body, so we can read it normally
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 3: Parsing request body`);
       let body;
       try {
         const rawBody = await req.json().catch((parseError) => {
-          logger.error("[FEEDBACK QUESTIONS POST] Failed to parse request body", {
+          logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] Failed to parse request body`, {
             error: parseError instanceof Error ? parseError.message : String(parseError),
+            errorName: parseError instanceof Error ? parseError.name : typeof parseError,
             venueId: normalizedVenueId,
           });
           throw new Error("Invalid JSON in request body");
         });
         
-        logger.debug("[FEEDBACK QUESTIONS POST] Raw body received", {
+        logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Raw body parsed successfully`, {
           hasPrompt: !!rawBody?.prompt,
           hasType: !!rawBody?.type,
           hasVenueId: !!rawBody?.venue_id,
-          venueId: normalizedVenueId,
+          hasChoices: !!rawBody?.choices,
+          hasIsActive: rawBody?.is_active !== undefined,
+          promptLength: rawBody?.prompt?.length || 0,
+          type: rawBody?.type,
+          venue_id: rawBody?.venue_id,
+          choicesCount: Array.isArray(rawBody?.choices) ? rawBody.choices.length : 0,
+          rawBodyKeys: Object.keys(rawBody || {}),
         });
         
+        logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Validating body against schema`);
         body = await validateBody(createQuestionSchema, rawBody);
+        logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Body validation passed`, {
+          prompt: body.prompt,
+          type: body.type,
+          venue_id: body.venue_id,
+          is_active: body.is_active,
+          choicesCount: body.choices?.length || 0,
+        });
       } catch (error) {
-        logger.error("[FEEDBACK QUESTIONS POST] Body validation error", {
+        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] Body validation error`, {
           error: error instanceof Error ? error.message : String(error),
           errorName: error instanceof Error ? error.name : typeof error,
           venueId: normalizedVenueId,
           userId: context.user?.id,
           isZodError: isZodError(error),
+          errorDetails: isZodError(error) ? (error as z.ZodError).errors : undefined,
         });
         if (isZodError(error)) {
           return handleZodError(error);
@@ -204,16 +247,30 @@ export const POST = withUnifiedAuth(
       }
 
       // Verify venue_id matches context (normalize both for comparison)
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 3b: Verifying venue ID match`);
       const bodyVenueId = body.venue_id.startsWith("venue-") ? body.venue_id : `venue-${body.venue_id}`;
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Venue ID comparison`, {
+        bodyVenueId,
+        normalizedVenueId,
+        match: bodyVenueId === normalizedVenueId,
+      });
+      
       if (bodyVenueId !== normalizedVenueId) {
+        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ERROR: Venue ID mismatch`, {
+          bodyVenueId,
+          normalizedVenueId,
+        });
         return apiErrors.forbidden('Venue ID mismatch');
       }
 
       // STEP 4: Business logic
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4: Creating admin client`);
       const supabase = createAdminClient();
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Admin client created`);
 
       // Get current max sort_index for this venue
-      const { data: existingQuestions } = await supabase
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4a: Getting max sort_index`);
+      const { data: existingQuestions, error: sortIndexError } = await supabase
         .from("feedback_questions")
         .select("sort_index")
         .eq("venue_id", normalizedVenueId)
@@ -221,34 +278,63 @@ export const POST = withUnifiedAuth(
         .limit(1)
         .maybeSingle();
 
+      if (sortIndexError) {
+        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Error fetching existing questions for sort_index`, {
+          error: sortIndexError.message,
+        });
+      }
+
       const nextSortIndex = existingQuestions?.sort_index !== undefined
         ? (existingQuestions.sort_index + 1)
         : 0;
+      
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Sort index calculated`, {
+        existingMax: existingQuestions?.sort_index,
+        nextSortIndex,
+      });
+
+      // Prepare insert data
+      const insertData = {
+        venue_id: normalizedVenueId,
+        question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
+        question_type: body.type, // Map 'type' to 'question_type' for DB
+        is_active: body.is_active ?? true,
+        sort_index: body.sort_index ?? nextSortIndex,
+        options: body.choices || null, // Map 'choices' to 'options' for DB
+      };
+      
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4b: Inserting question into database`, {
+        insertData: {
+          venue_id: insertData.venue_id,
+          question_text: insertData.question_text.substring(0, 50) + "...",
+          question_type: insertData.question_type,
+          is_active: insertData.is_active,
+          sort_index: insertData.sort_index,
+          optionsCount: Array.isArray(insertData.options) ? insertData.options.length : 0,
+        },
+      });
 
       const { data: question, error } = await supabase
         .from("feedback_questions")
-        .insert({
-          venue_id: normalizedVenueId,
-          question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
-          question_type: body.type, // Map 'type' to 'question_type' for DB
-          is_active: body.is_active ?? true,
-          sort_index: body.sort_index ?? nextSortIndex,
-          options: body.choices || null, // Map 'choices' to 'options' for DB
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) {
-        logger.error("[FEEDBACK QUESTIONS POST] Error creating question", {
+        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ERROR: Database insert failed`, {
           error: error.message,
           errorCode: error.code,
           errorDetails: error.details,
+          errorHint: error.hint,
           venueId: normalizedVenueId,
-          userId: context.user.id,
-          body: {
-            prompt: body.prompt,
-            type: body.type,
-            choices: body.choices,
+          userId: context.user?.id,
+          insertData: {
+            venue_id: insertData.venue_id,
+            question_text_length: insertData.question_text.length,
+            question_type: insertData.question_type,
+            is_active: insertData.is_active,
+            sort_index: insertData.sort_index,
+            hasOptions: !!insertData.options,
           },
         });
         return apiErrors.database(
@@ -258,20 +344,28 @@ export const POST = withUnifiedAuth(
       }
 
       if (!question) {
-        logger.error("[FEEDBACK QUESTIONS POST] Question insert returned no data", {
+        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ERROR: Question insert returned no data`, {
           venueId: normalizedVenueId,
-          userId: context.user.id,
+          userId: context.user?.id,
+          insertData: {
+            venue_id: insertData.venue_id,
+            question_type: insertData.question_type,
+          },
         });
         return apiErrors.database("Failed to create question - no data returned");
       }
 
-      logger.info("[FEEDBACK QUESTIONS POST] Question created successfully", {
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] ✅ Question created successfully`, {
         questionId: question.id,
         venueId: normalizedVenueId,
-        userId: context.user.id,
+        userId: context.user?.id,
+        questionText: question.question_text?.substring(0, 50) + "...",
+        questionType: question.question_type,
+        duration: Date.now() - startTime,
       });
 
       // STEP 5: Transform question to match frontend expectations
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 5: Transforming question for frontend`);
       const transformedQuestion = {
         id: question.id,
         prompt: question.question_text, // Map 'question_text' to 'prompt'
@@ -283,25 +377,52 @@ export const POST = withUnifiedAuth(
         updated_at: question.updated_at,
         venue_id: question.venue_id,
       };
+      
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Question transformed`, {
+        questionId: transformedQuestion.id,
+        promptLength: transformedQuestion.prompt.length,
+        type: transformedQuestion.type,
+        choicesCount: transformedQuestion.choices.length,
+      });
 
       // STEP 6: Return success response
-      return success({ question: transformedQuestion });
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 6: Returning success response`, {
+        hasQuestion: !!transformedQuestion,
+        questionId: transformedQuestion.id,
+        totalDuration: Date.now() - startTime,
+      });
+      
+      const response = success({ question: transformedQuestion });
+      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] ===== SUCCESS - Question created =====`, {
+        questionId: transformedQuestion.id,
+        duration: Date.now() - startTime,
+      });
+      
+      return response;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
+      const duration = Date.now() - startTime;
       
-      logger.error("[FEEDBACK QUESTIONS POST] Unexpected error", {
+      logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ===== UNEXPECTED ERROR =====`, {
         error: errorMessage,
         errorName: error instanceof Error ? error.name : typeof error,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user?.id,
+        duration,
+        url: req.url,
+        method: req.method,
       });
 
       if (isZodError(error)) {
+        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] Zod validation error`, {
+          errors: (error as z.ZodError).errors,
+        });
         return handleZodError(error);
       }
 
+      logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] Returning internal error response`);
       return apiErrors.internal(
         "Request processing failed",
         isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
