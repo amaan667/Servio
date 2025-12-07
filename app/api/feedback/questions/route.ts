@@ -355,12 +355,16 @@ export const POST = withUnifiedAuth(
       // Prepare insert data
       // CRITICAL: Check if options column exists by trying a test query first
       // If it doesn't exist, we'll insert without it
-      const insertData: Record<string, unknown> = {
+      const insertDataBase = {
         venue_id: normalizedVenueId,
         question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
         sort_index: body.sort_index ?? nextSortIndex,
+      };
+      
+      const insertData: Record<string, unknown> = {
+        ...insertDataBase,
       };
       
       // Try to include options if we have choices
@@ -377,11 +381,11 @@ export const POST = withUnifiedAuth(
       
       logger.info(`${logPrefix} Insert data prepared`, {
         insertData: {
-          venue_id: insertData.venue_id,
-          question_text: insertData.question_text.substring(0, 50) + "...",
-          question_type: insertData.question_type,
-          is_active: insertData.is_active,
-          sort_index: insertData.sort_index,
+          venue_id: insertDataBase.venue_id,
+          question_text: insertDataBase.question_text.substring(0, 50) + "...",
+          question_type: insertDataBase.question_type,
+          is_active: insertDataBase.is_active,
+          sort_index: insertDataBase.sort_index,
           optionsCount: Array.isArray(insertData.options) ? insertData.options.length : 0,
         },
       });
@@ -429,11 +433,11 @@ export const POST = withUnifiedAuth(
           venueId: normalizedVenueId,
           userId: context.user?.id,
           insertData: {
-            venue_id: insertData.venue_id,
-            question_text_length: insertData.question_text.length,
-            question_type: insertData.question_type,
-            is_active: insertData.is_active,
-            sort_index: insertData.sort_index,
+            venue_id: insertDataBase.venue_id,
+            question_text_length: insertDataBase.question_text.length,
+            question_type: insertDataBase.question_type,
+            is_active: insertDataBase.is_active,
+            sort_index: insertDataBase.sort_index,
             hasOptions: !!insertData.options,
           },
         });
