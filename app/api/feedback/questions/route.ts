@@ -66,12 +66,36 @@ export const GET = withUnifiedAuth(
       const supabase = createAdminClient();
 
       // Get questions (all questions since we don't have soft delete yet)
-      const { data: questions, error } = await supabase
+      // Try to order by display_order first, fall back to created_at if column doesn't exist
+      let questions;
+      let error;
+      
+      const resultWithDisplayOrder = await supabase
         .from("feedback_questions")
         .select("*")
         .eq("venue_id", normalizedVenueId)
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
+      
+      questions = resultWithDisplayOrder.data;
+      error = resultWithDisplayOrder.error;
+      
+      // If error is about missing display_order column, retry without it
+      if (error && error.message?.toLowerCase().includes("display_order") && 
+          (error.message?.toLowerCase().includes("column") || error.message?.toLowerCase().includes("could not find"))) {
+        logger.warn("[FEEDBACK QUESTIONS GET] display_order column not found, ordering by created_at only", {
+          error: error.message,
+        });
+        
+        const resultWithoutDisplayOrder = await supabase
+          .from("feedback_questions")
+          .select("*")
+          .eq("venue_id", normalizedVenueId)
+          .order("created_at", { ascending: true });
+        
+        questions = resultWithoutDisplayOrder.data;
+        error = resultWithoutDisplayOrder.error;
+      }
 
       if (error) {
         logger.error("[FEEDBACK QUESTIONS GET] Error fetching questions:", {
@@ -95,9 +119,9 @@ export const GET = withUnifiedAuth(
         question_text?: string;
         question?: string;
         question_type: string;
-        options: string[] | null;
+        options?: string[] | null;
         is_active: boolean;
-        display_order: number;
+        display_order?: number;
         created_at: string;
         updated_at: string;
         venue_id: string;
@@ -107,7 +131,7 @@ export const GET = withUnifiedAuth(
         type: q.question_type, // Map 'question_type' to 'type' for frontend
         choices: q.options || [], // Map 'options' to 'choices' for frontend
         is_active: q.is_active,
-        sort_index: q.display_order, // Map 'display_order' to 'sort_index' for frontend
+        sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
         created_at: q.created_at,
         updated_at: q.updated_at,
         venue_id: q.venue_id,
@@ -329,7 +353,11 @@ export const POST = withUnifiedAuth(
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Admin client created`);
 
       // Get current max display_order for this venue
+      // Handle case where display_order column might not exist
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4a: Getting max display_order`);
+      let nextDisplayOrder = body.sort_index ?? 0;
+      let displayOrderColumnExists = false;
+      
       const { data: existingQuestions, error: sortIndexError } = await supabase
         .from("feedback_questions")
         .select("display_order")
@@ -339,30 +367,49 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (sortIndexError) {
-        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Error fetching existing questions for display_order`, {
-          error: sortIndexError.message,
-        });
+        // Check if error is about missing column
+        const isDisplayOrderColumnError = sortIndexError.message?.toLowerCase().includes("display_order") &&
+          (sortIndexError.message?.toLowerCase().includes("column") || 
+           sortIndexError.message?.toLowerCase().includes("could not find"));
+        
+        if (isDisplayOrderColumnError) {
+          logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] display_order column not found, will insert without it`, {
+            error: sortIndexError.message,
+          });
+          displayOrderColumnExists = false;
+        } else {
+          logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Error fetching existing questions for display_order`, {
+            error: sortIndexError.message,
+          });
+        }
+      } else {
+        // Column exists, calculate next display order
+        displayOrderColumnExists = true;
+        nextDisplayOrder = existingQuestions?.display_order !== undefined
+          ? (existingQuestions.display_order + 1)
+          : (body.sort_index ?? 0);
       }
-
-      const nextDisplayOrder = existingQuestions?.display_order !== undefined
-        ? (existingQuestions.display_order + 1)
-        : 0;
       
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Display order calculated`, {
         existingMax: existingQuestions?.display_order,
         nextDisplayOrder,
+        displayOrderColumnExists,
       });
 
       // Prepare insert data
       // CRITICAL: Check if options column exists by trying a test query first
       // If it doesn't exist, we'll insert without it
-      const insertDataBase = {
+      const insertDataBase: Record<string, unknown> = {
         venue_id: normalizedVenueId,
         question_text: body.prompt, // Map 'prompt' to 'question_text' for DB (Supabase expects snake_case)
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
-        display_order: body.sort_index ?? nextDisplayOrder, // Map 'sort_index' to 'display_order' for DB
       };
+      
+      // Only include display_order if the column exists
+      if (displayOrderColumnExists) {
+        insertDataBase.display_order = body.sort_index ?? nextDisplayOrder; // Map 'sort_index' to 'display_order' for DB
+      }
       
       const insertData: Record<string, unknown> = {
         ...insertDataBase,
@@ -416,54 +463,66 @@ export const POST = withUnifiedAuth(
           errorMessage: error.message,
           errorCode: error.code,
           hasOptions: 'options' in insertData,
+          hasDisplayOrder: 'display_order' in insertData,
         });
         if (typeof process !== 'undefined' && process.stdout) {
           process.stdout.write(`${new Date().toISOString()} ${logPrefix} Initial insert error: ${error.message}\n`);
         }
       }
       
-      // If error is about missing 'options' column, retry without it
+      // If error is about missing column(s), retry without them
       // Check multiple possible error message patterns
-      const isOptionsColumnError = error && (
-        (error.message?.toLowerCase().includes("options") && error.message?.toLowerCase().includes("column")) ||
+      const isColumnError = error && (
+        (error.message?.toLowerCase().includes("column") && error.message?.toLowerCase().includes("could not find")) ||
         error.message?.toLowerCase().includes("could not find") ||
         error.code === "PGRST116" || // PostgREST error code for missing column
         error.code === "42703" // PostgreSQL error code for undefined column
       );
       
-      if (isOptionsColumnError && 'options' in insertData) {
-        const retryMsg = `${logPrefix} Options column not found, retrying insert without options column`;
-        logger.warn(retryMsg);
-        if (typeof process !== 'undefined' && process.stdout) {
-          process.stdout.write(`${new Date().toISOString()} ${retryMsg}\n`);
-        }
+      if (isColumnError) {
+        // Determine which column(s) are missing
+        const isOptionsColumnError = error.message?.toLowerCase().includes("options");
+        const isDisplayOrderColumnError = error.message?.toLowerCase().includes("display_order");
         
-        const insertDataWithoutOptions = { ...insertData };
-        delete insertDataWithoutOptions.options;
-        
-        logger.info(`${logPrefix} Retrying insert without options column`);
-        if (typeof process !== 'undefined' && process.stdout) {
-          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retrying insert without options column\n`);
-        }
-        
-        const retryResult = await supabase
-          .from("feedback_questions")
-          .insert(insertDataWithoutOptions)
-          .select()
-          .single();
-        
-        question = retryResult.data;
-        error = retryResult.error;
-        
-        if (error) {
-          logger.error(`${logPrefix} Retry insert also failed: ${error.message}`);
+        if (isOptionsColumnError || isDisplayOrderColumnError) {
+          const retryMsg = `${logPrefix} Column(s) not found (options: ${isOptionsColumnError}, display_order: ${isDisplayOrderColumnError}), retrying insert without missing columns`;
+          logger.warn(retryMsg);
           if (typeof process !== 'undefined' && process.stdout) {
-            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message}\n`);
+            process.stdout.write(`${new Date().toISOString()} ${retryMsg}\n`);
           }
-        } else {
-          logger.info(`${logPrefix} Retry insert succeeded without options column`);
+          
+          const insertDataRetry = { ...insertData };
+          if (isOptionsColumnError && 'options' in insertDataRetry) {
+            delete insertDataRetry.options;
+          }
+          if (isDisplayOrderColumnError && 'display_order' in insertDataRetry) {
+            delete insertDataRetry.display_order;
+          }
+          
+          logger.info(`${logPrefix} Retrying insert without missing columns`);
           if (typeof process !== 'undefined' && process.stdout) {
-            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert succeeded without options column\n`);
+            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retrying insert without missing columns\n`);
+          }
+          
+          const retryResult = await supabase
+            .from("feedback_questions")
+            .insert(insertDataRetry)
+            .select()
+            .single();
+          
+          question = retryResult.data;
+          error = retryResult.error;
+          
+          if (error) {
+            logger.error(`${logPrefix} Retry insert also failed: ${error.message}`);
+            if (typeof process !== 'undefined' && process.stdout) {
+              process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message}\n`);
+            }
+          } else {
+            logger.info(`${logPrefix} Retry insert succeeded without missing columns`);
+            if (typeof process !== 'undefined' && process.stdout) {
+              process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert succeeded without missing columns\n`);
+            }
           }
         }
       }
@@ -479,10 +538,10 @@ export const POST = withUnifiedAuth(
           userId: context.user?.id,
           insertData: {
             venue_id: insertDataBase.venue_id,
-            question_text_length: insertDataBase.question_text.length,
+            question_text_length: typeof insertDataBase.question_text === 'string' ? insertDataBase.question_text.length : 0,
             question_type: insertDataBase.question_type,
             is_active: insertDataBase.is_active,
-            display_order: insertDataBase.display_order,
+            display_order: 'display_order' in insertDataBase ? insertDataBase.display_order : 'not included',
             hasOptions: !!insertData.options,
           },
         });
@@ -537,7 +596,7 @@ export const POST = withUnifiedAuth(
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
-        sort_index: question.display_order, // Map 'display_order' to 'sort_index'
+        sort_index: (question as { display_order?: number }).display_order ?? 0, // Map 'display_order' to 'sort_index', default to 0 if missing
         created_at: question.created_at,
         updated_at: question.updated_at,
         venue_id: question.venue_id,
@@ -674,7 +733,7 @@ export const PATCH = withUnifiedAuth(
         updateData.options = body.choices; // Map 'choices' to 'options'
       }
 
-      // Try update with options first, if it fails due to missing column, retry without it
+      // Try update with all fields first, if it fails due to missing column, retry without it
       let question;
       let error;
       
@@ -689,22 +748,44 @@ export const PATCH = withUnifiedAuth(
       question = updateResult.data;
       error = updateResult.error;
       
-      // If error is about missing 'options' column, retry without it
-      if (error && error.message?.includes("options") && error.message?.includes("column")) {
-        logger.warn("[FEEDBACK QUESTIONS PATCH] Options column not found, retrying update without options column");
-        const updateDataWithoutOptions = { ...updateData };
-        delete updateDataWithoutOptions.options;
+      // If error is about missing column(s), retry without them
+      const isColumnError = error && (
+        (error.message?.toLowerCase().includes("column") && error.message?.toLowerCase().includes("could not find")) ||
+        error.message?.toLowerCase().includes("could not find") ||
+        error.code === "PGRST116" || // PostgREST error code for missing column
+        error.code === "42703" // PostgreSQL error code for undefined column
+      );
+      
+      if (isColumnError) {
+        // Determine which column(s) are missing
+        const isOptionsColumnError = error.message?.toLowerCase().includes("options");
+        const isDisplayOrderColumnError = error.message?.toLowerCase().includes("display_order");
         
-        const retryResult = await supabase
-          .from("feedback_questions")
-          .update(updateDataWithoutOptions)
-          .eq("id", body.id)
-          .eq("venue_id", normalizedVenueId)
-          .select()
-          .single();
-        
-        question = retryResult.data;
-        error = retryResult.error;
+        if (isOptionsColumnError || isDisplayOrderColumnError) {
+          logger.warn("[FEEDBACK QUESTIONS PATCH] Column(s) not found, retrying update without missing columns", {
+            isOptionsColumnError,
+            isDisplayOrderColumnError,
+          });
+          
+          const updateDataRetry = { ...updateData };
+          if (isOptionsColumnError && 'options' in updateDataRetry) {
+            delete updateDataRetry.options;
+          }
+          if (isDisplayOrderColumnError && 'display_order' in updateDataRetry) {
+            delete updateDataRetry.display_order;
+          }
+          
+          const retryResult = await supabase
+            .from("feedback_questions")
+            .update(updateDataRetry)
+            .eq("id", body.id)
+            .eq("venue_id", normalizedVenueId)
+            .select()
+            .single();
+          
+          question = retryResult.data;
+          error = retryResult.error;
+        }
       }
 
       if (error || !question) {
@@ -735,7 +816,7 @@ export const PATCH = withUnifiedAuth(
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
-        sort_index: question.display_order, // Map 'display_order' to 'sort_index'
+        sort_index: (question as { display_order?: number }).display_order ?? 0, // Map 'display_order' to 'sort_index', default to 0 if missing
         created_at: question.created_at,
         updated_at: question.updated_at,
         venue_id: question.venue_id,
