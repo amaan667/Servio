@@ -40,7 +40,8 @@ class ProductionLogger {
       this.level = LogLevel.DEBUG;
     } else {
       // Default: INFO in production, DEBUG in development
-      this.level = process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG;
+      // Force INFO level to ensure logs are visible in Railway
+      this.level = LogLevel.INFO;
     }
   }
 
@@ -61,21 +62,33 @@ class ProductionLogger {
 
     // ALWAYS output to console for Railway logs
     // Railway captures stdout/stderr for log viewing
+    // Also use process.stdout.write as backup for Railway
     if (level === LogLevel.ERROR) {
+      console.error(formattedMessage);
+      // Also write to stdout for Railway
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${formattedMessage}\n`);
+      }
       // In production, send to external logging service
-      // For now, use structured logging
       if (process.env.NODE_ENV === "production") {
         // Send to external service (Sentry, Datadog, etc.)
       }
     } else if (level === LogLevel.WARN) {
       console.warn(formattedMessage);
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${formattedMessage}\n`);
+      }
     } else if (level === LogLevel.INFO) {
       console.info(formattedMessage);
+      // Also write to stdout for Railway (Railway captures console.info)
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${formattedMessage}\n`);
+      }
     } else {
       console.debug(formattedMessage);
-
-      // Block handled
-
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${formattedMessage}\n`);
+      }
     }
 
     // Sentry integration for errors and warnings in production
