@@ -112,7 +112,18 @@ export default function QuestionsClient({
         throw new Error("Invalid response format");
       }
 
-      const transformedQuestions = data.data.questions as FeedbackQuestion[];
+      // Ensure all questions have required fields with defaults
+      const transformedQuestions = (data.data.questions as FeedbackQuestion[]).map((q: FeedbackQuestion) => ({
+        ...q,
+        type: (q.type || "stars") as FeedbackType, // Ensure type is always valid
+        prompt: q.prompt || "", // Ensure prompt exists
+        is_active: q.is_active ?? true, // Default to active
+        sort_index: q.sort_index ?? 0, // Default sort_index
+        choices: q.choices || [], // Ensure choices is an array
+        created_at: q.created_at || new Date().toISOString(),
+        updated_at: q.updated_at || new Date().toISOString(),
+        venue_id: q.venue_id || venueId,
+      }));
 
       // Sort questions by sort_index and created_at to ensure proper order
       const sortedQuestions = transformedQuestions.sort((a: FeedbackQuestion, b: FeedbackQuestion) => {
@@ -522,13 +533,15 @@ export default function QuestionsClient({
     }));
   };
 
-  const getTypeBadge = (type: FeedbackType) => {
+  const getTypeBadge = (type: FeedbackType | string | undefined) => {
     const variants = {
       stars: { label: "Star Rating", variant: "default" as const },
       multiple_choice: { label: "Multiple Choice", variant: "secondary" as const },
       paragraph: { label: "Paragraph", variant: "outline" as const },
     };
-    const config = variants[type];
+    // Safety check: if type is invalid or missing, default to "stars"
+    const validType = (type && variants[type as FeedbackType]) ? (type as FeedbackType) : "stars";
+    const config = variants[validType];
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -582,12 +595,12 @@ export default function QuestionsClient({
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground">{question.prompt}</p>
+                          <p className="font-medium text-foreground">{question.prompt || "Untitled Question"}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {getTypeBadge(question.type)}
-                            {getStatusBadge(question.is_active)}
+                            {getTypeBadge(question?.type)}
+                            {getStatusBadge(question?.is_active ?? true)}
                           </div>
-                          {question.type === "multiple_choice" && question.choices && (
+                          {question?.type === "multiple_choice" && question?.choices && question.choices.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {question.choices.map((choice, idx) => (
                                 <Badge key={idx} variant="secondary" className="text-xs">
