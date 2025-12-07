@@ -27,41 +27,24 @@ export function useFeedbackManagement(venueId: string) {
   useEffect(() => {
     const fetchFeedbackQuestions = async () => {
       try {
-        const supabase = await createClient();
+        // Normalize venueId - ensure it has venue- prefix
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
         
-        const { data, error } = await supabase
-          .from('feedback_questions')
-          .select('*')
-          .eq('venue_id', venueId)
-          .eq('is_active', true)
-          .order('sort_index', { ascending: true });
+        // Use public API endpoint to get properly mapped questions
+        const response = await fetch(`/api/feedback/questions/public?venueId=${normalizedVenueId}`);
 
-        if (error) throw error;
+        if (!response.ok) {
+          throw new Error(`Failed to fetch questions: ${response.statusText}`);
+        }
 
-        // Transform questions to match frontend expectations (prompt, type, choices)
-        const transformedQuestions = (data || []).map((q: {
-          id: string;
-          question_text: string;
-          question_type: string;
-          options: string[] | null;
-          is_active: boolean;
-          sort_index: number;
-          created_at?: string;
-          updated_at?: string;
-          venue_id: string;
-        }) => ({
-          id: q.id,
-          prompt: q.question_text, // Map 'question_text' to 'prompt'
-          type: q.question_type as 'stars' | 'paragraph' | 'multiple_choice', // Map 'question_type' to 'type'
-          choices: q.options || [], // Map 'options' to 'choices'
-          is_active: q.is_active,
-          sort_index: q.sort_index,
-        }));
+        const data = await response.json();
+        const questions = (data.questions || []) as FeedbackQuestion[];
 
-        setFeedbackQuestions(transformedQuestions);
+        setFeedbackQuestions(questions);
       } catch (_err) {
-      // Error silently handled
-    }
+        // Error silently handled - questions will remain empty
+        console.error("[useFeedbackManagement] Error fetching questions:", _err);
+      }
     };
 
     if (venueId) {

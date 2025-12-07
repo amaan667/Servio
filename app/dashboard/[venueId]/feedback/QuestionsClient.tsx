@@ -97,46 +97,22 @@ export default function QuestionsClient({
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
       
-      // Fetch directly from Supabase like other pages do (menu, etc)
-      const supabase = supabaseBrowser();
-      const { data: questions, error } = await supabase
-        .from("feedback_questions")
-        .select("*")
-        .eq("venue_id", normalizedVenueId)
-        .order("sort_index", { ascending: true })
-        .order("created_at", { ascending: true });
+      // Use API endpoint instead of direct Supabase query to get properly mapped data
+      const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
+        credentials: "include",
+      });
 
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message || "Couldn't load questions",
-          variant: "destructive",
-        });
-        return;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch questions: ${response.statusText}`);
       }
 
-      // Transform questions to match frontend expectations (prompt, type, choices)
-      const transformedQuestions = (questions || []).map((q: {
-        id: string;
-        question_text: string;
-        question_type: string;
-        options: string[] | null;
-        is_active: boolean;
-        sort_index: number;
-        created_at: string;
-        updated_at: string;
-        venue_id: string;
-      }) => ({
-        id: q.id,
-        prompt: q.question_text, // Map 'question_text' to 'prompt'
-        type: q.question_type as FeedbackType, // Map 'question_type' to 'type'
-        choices: q.options || [], // Map 'options' to 'choices'
-        is_active: q.is_active,
-        sort_index: q.sort_index,
-        created_at: q.created_at,
-        updated_at: q.updated_at,
-        venue_id: q.venue_id,
-      }));
+      const data = await response.json();
+      
+      if (!data.success || !data.data?.questions) {
+        throw new Error("Invalid response format");
+      }
+
+      const transformedQuestions = data.data.questions as FeedbackQuestion[];
 
       // Sort questions by sort_index and created_at to ensure proper order
       const sortedQuestions = transformedQuestions.sort((a: FeedbackQuestion, b: FeedbackQuestion) => {
@@ -147,11 +123,12 @@ export default function QuestionsClient({
       });
 
       setQuestions(sortedQuestions);
-      setTotalCount(sortedQuestions.length);
-    } catch (_error) {
+      setTotalCount(data.data.totalCount || sortedQuestions.length);
+    } catch (error) {
+      console.error("[QuestionsClient] Error fetching questions:", error);
       toast({
         title: "Error",
-        description: "Couldn't load questions",
+        description: error instanceof Error ? error.message : "Couldn't load questions",
         variant: "destructive",
       });
     } finally {
