@@ -328,57 +328,71 @@ export const POST = withUnifiedAuth(
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Admin client created`);
 
       // Get current max sort_index for this venue
+      // Try to get sort_index, but if the column doesn't exist, we'll skip it
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4a: Getting max sort_index`);
-      const { data: existingQuestions, error: sortIndexError } = await supabase
-        .from("feedback_questions")
-        .select("sort_index")
-        .eq("venue_id", normalizedVenueId)
-        .order("sort_index", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      let nextSortIndex = 0;
+      
+      try {
+        const { data: existingQuestions, error: sortIndexError } = await supabase
+          .from("feedback_questions")
+          .select("sort_index")
+          .eq("venue_id", normalizedVenueId)
+          .order("sort_index", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (sortIndexError) {
-        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Error fetching existing questions for sort_index`, {
-          error: sortIndexError.message,
-        });
+        if (sortIndexError) {
+          // If sort_index column doesn't exist, that's okay - we'll skip it
+          if (sortIndexError.message?.toLowerCase().includes("sort_index") || 
+              sortIndexError.message?.toLowerCase().includes("column")) {
+            logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] sort_index column may not exist, will skip it`, {
+              error: sortIndexError.message,
+            });
+            nextSortIndex = 0; // Default value
+          } else {
+            logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Error fetching existing questions for sort_index`, {
+              error: sortIndexError.message,
+            });
+          }
+        } else {
+          nextSortIndex = existingQuestions?.sort_index !== undefined
+            ? (existingQuestions.sort_index + 1)
+            : 0;
+        }
+      } catch (err) {
+        // If sort_index doesn't exist, just use 0
+        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Could not fetch sort_index, using default 0`);
+        nextSortIndex = 0;
       }
-
-      const nextSortIndex = existingQuestions?.sort_index !== undefined
-        ? (existingQuestions.sort_index + 1)
-        : 0;
       
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Sort index calculated`, {
-        existingMax: existingQuestions?.sort_index,
         nextSortIndex,
       });
 
-      // Prepare insert data
-      // CRITICAL: Check if options column exists by trying a test query first
-      // If it doesn't exist, we'll insert without it
+      // Prepare insert data with only required columns
+      // We'll add optional columns conditionally and handle errors if they don't exist
       const insertDataBase = {
         venue_id: normalizedVenueId,
         question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
-        sort_index: body.sort_index ?? nextSortIndex,
       };
       
       const insertData: Record<string, unknown> = {
         ...insertDataBase,
       };
       
-      // Try to include options if we have choices
-      // If the column doesn't exist, Supabase will ignore it or we'll catch the error
-      // For now, let's NOT include options by default since the column doesn't exist
-      // Only include it if explicitly needed (but we'll handle the error if it fails)
-      // Actually, let's just not include it at all since the column doesn't exist
-      // The retry logic will handle it if we do include it
-      // For stars and paragraph types, we don't need options anyway
+      // Only include sort_index if we calculated it (column might not exist)
+      // Don't include it if the column doesn't exist - the retry logic will handle it
+      if (nextSortIndex !== undefined) {
+        insertData.sort_index = body.sort_index ?? nextSortIndex;
+      }
+      
+      // Only include options for multiple_choice questions with choices
+      // The retry logic will remove it if the column doesn't exist
       if (body.type === "multiple_choice" && body.choices && Array.isArray(body.choices) && body.choices.length > 0) {
-        // Only include options for multiple_choice questions with choices
         insertData.options = body.choices;
       }
-      // For stars and paragraph types, don't include options at all
       
       logger.info(`${logPrefix} Step 4b: Inserting question into database`);
       if (typeof process !== 'undefined' && process.stdout) {
@@ -421,49 +435,83 @@ export const POST = withUnifiedAuth(
         }
       }
       
-      // If error is about missing 'options' column, retry without it
+      // If error is about missing column, retry without problematic columns
       // Check multiple possible error message patterns
-      const isOptionsColumnError = error && (
-        (error.message?.toLowerCase().includes("options") && error.message?.toLowerCase().includes("column")) ||
+      const isColumnError = error && (
         error.message?.toLowerCase().includes("could not find") ||
+        error.message?.toLowerCase().includes("column") ||
         error.code === "PGRST116" || // PostgREST error code for missing column
         error.code === "42703" // PostgreSQL error code for undefined column
       );
       
-      if (isOptionsColumnError && 'options' in insertData) {
-        const retryMsg = `${logPrefix} Options column not found, retrying insert without options column`;
-        logger.warn(retryMsg);
-        if (typeof process !== 'undefined' && process.stdout) {
-          process.stdout.write(`${new Date().toISOString()} ${retryMsg}\n`);
-        }
+      if (isColumnError) {
+        // Identify which column is missing from error message
+        const errorMsg = error.message?.toLowerCase() || "";
+        const missingColumn = 
+          errorMsg.includes("options") ? "options" :
+          errorMsg.includes("display_order") ? "display_order" :
+          errorMsg.includes("sort_index") ? "sort_index" :
+          null;
         
-        const insertDataWithoutOptions = { ...insertData };
-        delete insertDataWithoutOptions.options;
-        
-        logger.info(`${logPrefix} Retrying insert without options column`);
-        if (typeof process !== 'undefined' && process.stdout) {
-          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retrying insert without options column\n`);
-        }
-        
-        const retryResult = await supabase
-          .from("feedback_questions")
-          .insert(insertDataWithoutOptions)
-          .select()
-          .single();
-        
-        question = retryResult.data;
-        error = retryResult.error;
-        
-        if (error) {
-          logger.error(`${logPrefix} Retry insert also failed: ${error.message}`);
+        if (missingColumn) {
+          const retryMsg = `${logPrefix} ${missingColumn} column not found, retrying insert without it`;
+          logger.warn(retryMsg);
           if (typeof process !== 'undefined' && process.stdout) {
-            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message}\n`);
+            process.stdout.write(`${new Date().toISOString()} ${retryMsg}\n`);
+          }
+          
+          const insertDataRetry = { ...insertData };
+          delete insertDataRetry[missingColumn];
+          
+          logger.info(`${logPrefix} Retrying insert without ${missingColumn} column`);
+          if (typeof process !== 'undefined' && process.stdout) {
+            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retrying insert without ${missingColumn} column\n`);
+          }
+          
+          const retryResult = await supabase
+            .from("feedback_questions")
+            .insert(insertDataRetry)
+            .select()
+            .single();
+          
+          question = retryResult.data;
+          error = retryResult.error;
+          
+          if (error) {
+            logger.error(`${logPrefix} Retry insert also failed: ${error.message}`);
+            if (typeof process !== 'undefined' && process.stdout) {
+              process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message}\n`);
+            }
+          } else {
+            logger.info(`${logPrefix} Retry insert succeeded without ${missingColumn} column`);
+            if (typeof process !== 'undefined' && process.stdout) {
+              process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert succeeded without ${missingColumn} column\n`);
+            }
           }
         } else {
-          logger.info(`${logPrefix} Retry insert succeeded without options column`);
+          // Unknown column error - try removing all optional columns
+          logger.warn(`${logPrefix} Unknown column error, retrying with minimal required columns only`);
           if (typeof process !== 'undefined' && process.stdout) {
-            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert succeeded without options column\n`);
+            process.stdout.write(`${new Date().toISOString()} ${logPrefix} Unknown column error, retrying with minimal columns\n`);
           }
+          
+          const minimalInsertData = {
+            venue_id: insertDataBase.venue_id,
+            question_text: insertDataBase.question_text,
+            question_type: insertDataBase.question_type,
+            is_active: insertDataBase.is_active,
+            // Only include sort_index if it's not the problematic column
+            ...(errorMsg.includes("sort_index") ? {} : { sort_index: insertDataBase.sort_index }),
+          };
+          
+          const retryResult = await supabase
+            .from("feedback_questions")
+            .insert(minimalInsertData)
+            .select()
+            .single();
+          
+          question = retryResult.data;
+          error = retryResult.error;
         }
       }
 
