@@ -1,6 +1,7 @@
 import MenuManagementClientPage from "./page.client";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
+import { logger } from "@/lib/logger";
 
 // Force dynamic rendering to prevent caching
 export const dynamic = "force-dynamic";
@@ -21,9 +22,11 @@ export default async function MenuManagementPage({
   let initialMenuItemCount = 0;
   try {
     initialMenuItemCount = await fetchMenuItemCount(venueId);
-    console.info(`[RAILWAY] Menu Management Server - Menu Items Count: ${initialMenuItemCount}`);
   } catch (error) {
-    console.info(`[RAILWAY] Menu Management Server - Error: ${error instanceof Error ? error.message : String(error)}`);
+    logger.error("[MENU MANAGEMENT] Error fetching menu item count", {
+      error: error instanceof Error ? error.message : String(error),
+      venueId,
+    });
   }
 
   return <MenuManagementClientPage venueId={venueId} initialMenuItemCount={initialMenuItemCount} />;
