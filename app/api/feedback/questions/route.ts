@@ -428,10 +428,10 @@ export const POST = withUnifiedAuth(
       
       logger.info(`${logPrefix} Insert data prepared`, {
         insertData: {
-          venue_id: insertDataBase.venue_id,
-          question_text: insertDataBase.question_text.substring(0, 50) + "...",
-          question_type: insertDataBase.question_type,
-          is_active: insertDataBase.is_active,
+          venue_id: insertDataBase.venue_id as string,
+          question_text: (insertDataBase.question_text as string)?.substring(0, 50) + "...",
+          question_type: insertDataBase.question_type as string,
+          is_active: insertDataBase.is_active as boolean,
           display_order: insertDataBase.display_order,
           optionsCount: Array.isArray(insertData.options) ? insertData.options.length : 0,
         },
@@ -772,10 +772,11 @@ export const PATCH = withUnifiedAuth(
         error.code === "42703" // PostgreSQL error code for undefined column
       );
       
-      if (isColumnError) {
+      if (isColumnError && error) {
         // Determine which column(s) are missing
-        const isOptionsColumnError = error.message?.toLowerCase().includes("options");
-        const isDisplayOrderColumnError = error.message?.toLowerCase().includes("display_order");
+        const errorMsg = error.message?.toLowerCase() || "";
+        const isOptionsColumnError = errorMsg.includes("options");
+        const isDisplayOrderColumnError = errorMsg.includes("display_order");
         
         if (isOptionsColumnError || isDisplayOrderColumnError) {
           logger.warn("[FEEDBACK QUESTIONS PATCH] Column(s) not found, retrying update without missing columns", {
