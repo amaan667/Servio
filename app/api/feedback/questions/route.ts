@@ -150,35 +150,68 @@ export const POST = withUnifiedAuth(
     const requestId = Math.random().toString(36).substring(7);
     const startTime = Date.now();
     
-    logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] ===== ADD QUESTION CLICKED =====`);
-    logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Request started`, {
+    // CRITICAL: Use both logger AND direct stdout for Railway
+    const logPrefix = `[FEEDBACK QUESTIONS POST ${requestId}]`;
+    const logMessage = `${logPrefix} ===== ADD QUESTION CLICKED =====`;
+    
+    // Log to both logger and stdout for Railway
+    logger.info(logMessage);
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`${new Date().toISOString()} ${logMessage}\n`);
+    }
+    
+    logger.info(`${logPrefix} Request started`, {
       timestamp: new Date().toISOString(),
       requestId,
       url: req.url,
       method: req.method,
     });
     
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`${new Date().toISOString()} ${logPrefix} Request started - URL: ${req.url}, Method: ${req.method}\n`);
+    }
+    
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 1: Checking rate limit`);
+      logger.info(`${logPrefix} Step 1: Checking rate limit`);
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Step 1: Checking rate limit\n`);
+      }
+      
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        logger.warn(`[FEEDBACK QUESTIONS POST ${requestId}] Rate limit exceeded`);
+        const rateLimitMsg = `${logPrefix} Rate limit exceeded`;
+        logger.warn(rateLimitMsg);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${rateLimitMsg}\n`);
+        }
         return apiErrors.rateLimit(
           Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
         );
       }
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Rate limit check passed`);
+      
+      logger.info(`${logPrefix} Rate limit check passed`);
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Rate limit check passed\n`);
+      }
 
       // STEP 2: Get venueId from context (already verified)
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 2: Getting venueId from context`);
+      logger.info(`${logPrefix} Step 2: Getting venueId from context`);
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Step 2: Getting venueId from context\n`);
+      }
+      
       const venueId = context.venueId;
       
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Context venueId:`, {
+      logger.info(`${logPrefix} Context venueId: ${venueId || "MISSING"}`, {
         venueId: venueId || "MISSING",
         userId: context.user?.id || "MISSING",
         hasUser: !!context.user,
       });
+      
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Context venueId: ${venueId || "MISSING"}, UserId: ${context.user?.id || "MISSING"}\n`);
+      }
       
       if (!venueId) {
         logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ERROR: venueId is missing from context`);
@@ -195,19 +228,27 @@ export const POST = withUnifiedAuth(
 
       // STEP 3: Validate input
       // withUnifiedAuth reconstructs the body, so we can read it normally
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 3: Parsing request body`);
+      logger.info(`${logPrefix} Step 3: Parsing request body`);
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Step 3: Parsing request body\n`);
+      }
+      
       let body;
       try {
         const rawBody = await req.json().catch((parseError) => {
-          logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] Failed to parse request body`, {
+          const errorMsg = `${logPrefix} Failed to parse request body: ${parseError instanceof Error ? parseError.message : String(parseError)}`;
+          logger.error(errorMsg, {
             error: parseError instanceof Error ? parseError.message : String(parseError),
             errorName: parseError instanceof Error ? parseError.name : typeof parseError,
             venueId: normalizedVenueId,
           });
+          if (typeof process !== 'undefined' && process.stdout) {
+            process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
+          }
           throw new Error("Invalid JSON in request body");
         });
         
-        logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Raw body parsed successfully`, {
+        logger.info(`${logPrefix} Raw body parsed successfully`, {
           hasPrompt: !!rawBody?.prompt,
           hasType: !!rawBody?.type,
           hasVenueId: !!rawBody?.venue_id,
@@ -220,17 +261,30 @@ export const POST = withUnifiedAuth(
           rawBodyKeys: Object.keys(rawBody || {}),
         });
         
-        logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Validating body against schema`);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Raw body parsed - prompt: ${rawBody?.prompt?.substring(0, 30)}..., type: ${rawBody?.type}, venue_id: ${rawBody?.venue_id}\n`);
+        }
+        
+        logger.info(`${logPrefix} Validating body against schema`);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Validating body against schema\n`);
+        }
+        
         body = await validateBody(createQuestionSchema, rawBody);
-        logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Body validation passed`, {
+        logger.info(`${logPrefix} Body validation passed`, {
           prompt: body.prompt,
           type: body.type,
           venue_id: body.venue_id,
           is_active: body.is_active,
           choicesCount: body.choices?.length || 0,
         });
+        
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Body validation passed - prompt: ${body.prompt.substring(0, 30)}..., type: ${body.type}\n`);
+        }
       } catch (error) {
-        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] Body validation error`, {
+        const errorMsg = `${logPrefix} Body validation error: ${error instanceof Error ? error.message : String(error)}`;
+        logger.error(errorMsg, {
           error: error instanceof Error ? error.message : String(error),
           errorName: error instanceof Error ? error.name : typeof error,
           venueId: normalizedVenueId,
@@ -238,6 +292,11 @@ export const POST = withUnifiedAuth(
           isZodError: isZodError(error),
           errorDetails: isZodError(error) ? (error as z.ZodError).errors : undefined,
         });
+        
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
+        }
+        
         if (isZodError(error)) {
           return handleZodError(error);
         }
@@ -303,7 +362,12 @@ export const POST = withUnifiedAuth(
         options: body.choices || null, // Map 'choices' to 'options' for DB
       };
       
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 4b: Inserting question into database`, {
+      logger.info(`${logPrefix} Step 4b: Inserting question into database`);
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Step 4b: Inserting question into database\n`);
+      }
+      
+      logger.info(`${logPrefix} Insert data prepared`, {
         insertData: {
           venue_id: insertData.venue_id,
           question_text: insertData.question_text.substring(0, 50) + "...",
@@ -321,7 +385,8 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (error) {
-        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ERROR: Database insert failed`, {
+        const errorMsg = `${logPrefix} ERROR: Database insert failed - ${error.message}`;
+        logger.error(errorMsg, {
           error: error.message,
           errorCode: error.code,
           errorDetails: error.details,
@@ -337,6 +402,11 @@ export const POST = withUnifiedAuth(
             hasOptions: !!insertData.options,
           },
         });
+        
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
+        }
+        
         return apiErrors.database(
           "Failed to create question",
           isDevelopment() ? error.message : undefined
@@ -344,7 +414,8 @@ export const POST = withUnifiedAuth(
       }
 
       if (!question) {
-        logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ERROR: Question insert returned no data`, {
+        const errorMsg = `${logPrefix} ERROR: Question insert returned no data`;
+        logger.error(errorMsg, {
           venueId: normalizedVenueId,
           userId: context.user?.id,
           insertData: {
@@ -352,10 +423,16 @@ export const POST = withUnifiedAuth(
             question_type: insertData.question_type,
           },
         });
+        
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
+        }
+        
         return apiErrors.database("Failed to create question - no data returned");
       }
 
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] ✅ Question created successfully`, {
+      const successMessage = `${logPrefix} ✅ Question created successfully - ID: ${question.id}, Duration: ${Date.now() - startTime}ms`;
+      logger.info(successMessage, {
         questionId: question.id,
         venueId: normalizedVenueId,
         userId: context.user?.id,
@@ -363,6 +440,10 @@ export const POST = withUnifiedAuth(
         questionType: question.question_type,
         duration: Date.now() - startTime,
       });
+      
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${successMessage}\n`);
+      }
 
       // STEP 5: Transform question to match frontend expectations
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 5: Transforming question for frontend`);
@@ -386,17 +467,26 @@ export const POST = withUnifiedAuth(
       });
 
       // STEP 6: Return success response
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 6: Returning success response`, {
+      logger.info(`${logPrefix} Step 6: Returning success response`, {
         hasQuestion: !!transformedQuestion,
         questionId: transformedQuestion.id,
         totalDuration: Date.now() - startTime,
       });
       
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Step 6: Returning success response - Question ID: ${transformedQuestion.id}\n`);
+      }
+      
       const response = success({ question: transformedQuestion });
-      logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] ===== SUCCESS - Question created =====`, {
+      const finalSuccessMsg = `${logPrefix} ===== SUCCESS - Question created ===== ID: ${transformedQuestion.id}, Duration: ${Date.now() - startTime}ms`;
+      logger.info(finalSuccessMsg, {
         questionId: transformedQuestion.id,
         duration: Date.now() - startTime,
       });
+      
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${finalSuccessMsg}\n`);
+      }
       
       return response;
     } catch (error) {
@@ -404,7 +494,8 @@ export const POST = withUnifiedAuth(
       const errorStack = error instanceof Error ? error.stack : undefined;
       const duration = Date.now() - startTime;
       
-      logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] ===== UNEXPECTED ERROR =====`, {
+      const errorMsg = `${logPrefix} ===== UNEXPECTED ERROR ===== ${errorMessage}`;
+      logger.error(errorMsg, {
         error: errorMessage,
         errorName: error instanceof Error ? error.name : typeof error,
         stack: errorStack,
@@ -414,6 +505,13 @@ export const POST = withUnifiedAuth(
         url: req.url,
         method: req.method,
       });
+      
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
+        if (errorStack) {
+          process.stdout.write(`${new Date().toISOString()} ${logPrefix} Stack: ${errorStack.substring(0, 500)}\n`);
+        }
+      }
 
       if (isZodError(error)) {
         logger.error(`[FEEDBACK QUESTIONS POST ${requestId}] Zod validation error`, {
