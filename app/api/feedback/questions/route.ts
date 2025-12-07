@@ -935,9 +935,22 @@ export const DELETE = withUnifiedAuth(
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Validate input
+      // Support both query params and body for DELETE (frontend sends in body)
       const { searchParams } = new URL(req.url);
+      let deleteId = searchParams.get("id");
+      
+      // If not in query params, try to get from body
+      if (!deleteId) {
+        try {
+          const body = await req.json().catch(() => ({}));
+          deleteId = body.id;
+        } catch {
+          // Body parsing failed, continue with query param only
+        }
+      }
+      
       const query = validateQuery(deleteQuestionSchema, {
-        id: searchParams.get("id"),
+        id: deleteId,
       });
 
       // STEP 4: Security - Verify question belongs to venue

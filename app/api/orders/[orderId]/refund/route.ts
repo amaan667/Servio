@@ -152,9 +152,9 @@ export async function POST(
         // Refund was successful in Stripe, but DB update failed
         // This is a critical issue - log it but don't fail the request
         return success({
-          warning: "Refund processed but order update failed",
-          refund_id: refund.id,
-          error: updateError.message,
+            warning: "Refund processed but order update failed",
+            refund_id: refund.id,
+            error: updateError.message,
         });
       }
 

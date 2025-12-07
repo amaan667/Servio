@@ -93,11 +93,11 @@ export async function POST(req: NextRequest) {
 
     return success({
       order_number: order.order_number,
-      order_id: order.id,
-      payment_status: "UNPAID", // Keep as UNPAID so it shows in Payments page
-      payment_mode: "offline", // Standardized payment mode
-      payment_method: "PAY_AT_TILL", // Standardized payment method
-      total_amount: order.total_amount,
+        order_id: order.id,
+        payment_status: "UNPAID", // Keep as UNPAID so it shows in Payments page
+        payment_mode: "offline", // Standardized payment mode
+        payment_method: "PAY_AT_TILL", // Standardized payment method
+        total_amount: order.total_amount,
     });
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";

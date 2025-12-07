@@ -614,10 +614,10 @@ export default function QuestionsClient({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleToggleActive(question.id, !question.is_active)}
-                            title={question.is_active ? "Deactivate" : "Activate"}
+                            onClick={() => handleToggleActive(question.id, !(question?.is_active ?? true))}
+                            title={(question?.is_active ?? true) ? "Deactivate" : "Activate"}
                           >
-                            {question.is_active ? (
+                            {(question?.is_active ?? true) ? (
                               <EyeOff className="h-4 w-4" />
                             ) : (
                               <Eye className="h-4 w-4" />
@@ -807,7 +807,7 @@ export default function QuestionsClient({
       >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="questions">All Questions</TabsTrigger>
+          <TabsTrigger value="questions">All Feedback</TabsTrigger>
           <TabsTrigger value="create">Create Question</TabsTrigger>
         </TabsList>
 
@@ -826,7 +826,7 @@ export default function QuestionsClient({
                         key={question.id}
                         className="flex items-center justify-between p-2 bg-green-50 rounded"
                       >
-                        <span className="text-sm">{question.prompt}</span>
+                        <span className="text-sm">{question.prompt || question.question || "Untitled Question"}</span>
                         {getTypeBadge(question.type)}
                       </div>
                     ))}
@@ -854,7 +854,7 @@ export default function QuestionsClient({
         <TabsContent value="questions" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Current Questions ({questions.length})</CardTitle>
+              <CardTitle>All Feedback Questions ({questions.length})</CardTitle>
               <Button
                 onClick={() => {
                   setShowAddForm(true);
@@ -889,7 +889,7 @@ export default function QuestionsClient({
                                 <span className="font-medium">{index + 1}.</span>
                               </div>
                               <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                                {question.prompt}
+                                {question.prompt || question.question || "Untitled Question"}
                               </h4>
                             </div>
 
