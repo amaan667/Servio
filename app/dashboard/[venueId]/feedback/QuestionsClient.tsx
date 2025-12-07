@@ -116,7 +116,7 @@ export default function QuestionsClient({
       const transformedQuestions = (data.data.questions as FeedbackQuestion[]).map((q: FeedbackQuestion) => ({
         ...q,
         type: (q.type || "stars") as FeedbackType, // Ensure type is always valid
-        prompt: q.prompt || "", // Ensure prompt exists
+        prompt: q.prompt || "Untitled Question", // Ensure prompt exists with fallback
         is_active: q.is_active ?? true, // Default to active
         sort_index: q.sort_index ?? 0, // Default sort_index
         choices: q.choices || [], // Ensure choices is an array
@@ -826,7 +826,7 @@ export default function QuestionsClient({
                         key={question.id}
                         className="flex items-center justify-between p-2 bg-green-50 rounded"
                       >
-                        <span className="text-sm">{question.prompt || question.question || "Untitled Question"}</span>
+                        <span className="text-sm">{question.prompt || "Untitled Question"}</span>
                         {getTypeBadge(question.type)}
                       </div>
                     ))}
@@ -889,7 +889,7 @@ export default function QuestionsClient({
                                 <span className="font-medium">{index + 1}.</span>
                               </div>
                               <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                                {question.prompt || question.question || "Untitled Question"}
+                                {question.prompt || "Untitled Question"}
                               </h4>
                             </div>
 
