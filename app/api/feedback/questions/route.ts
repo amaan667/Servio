@@ -171,20 +171,28 @@ export const POST = withUnifiedAuth(
       // withUnifiedAuth reconstructs the body, so we can read it normally
       let body;
       try {
-        const rawBody = await req.json();
+        const rawBody = await req.json().catch((parseError) => {
+          logger.error("[FEEDBACK QUESTIONS POST] Failed to parse request body", {
+            error: parseError instanceof Error ? parseError.message : String(parseError),
+            venueId: normalizedVenueId,
+          });
+          throw new Error("Invalid JSON in request body");
+        });
+        
         logger.debug("[FEEDBACK QUESTIONS POST] Raw body received", {
-          hasPrompt: !!rawBody.prompt,
-          hasType: !!rawBody.type,
-          hasVenueId: !!rawBody.venue_id,
+          hasPrompt: !!rawBody?.prompt,
+          hasType: !!rawBody?.type,
+          hasVenueId: !!rawBody?.venue_id,
           venueId: normalizedVenueId,
         });
+        
         body = await validateBody(createQuestionSchema, rawBody);
       } catch (error) {
         logger.error("[FEEDBACK QUESTIONS POST] Body validation error", {
           error: error instanceof Error ? error.message : String(error),
           errorName: error instanceof Error ? error.name : typeof error,
           venueId: normalizedVenueId,
-          userId: context.user.id,
+          userId: context.user?.id,
           isZodError: isZodError(error),
         });
         if (isZodError(error)) {
