@@ -376,17 +376,12 @@ export const POST = withUnifiedAuth(
         question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
+        sort_index: body.sort_index ?? nextSortIndex, // Include sort_index, retry will remove if column doesn't exist
       };
       
       const insertData: Record<string, unknown> = {
         ...insertDataBase,
       };
-      
-      // Only include sort_index if we calculated it (column might not exist)
-      // Don't include it if the column doesn't exist - the retry logic will handle it
-      if (nextSortIndex !== undefined) {
-        insertData.sort_index = body.sort_index ?? nextSortIndex;
-      }
       
       // Only include options for multiple_choice questions with choices
       // The retry logic will remove it if the column doesn't exist
@@ -444,7 +439,7 @@ export const POST = withUnifiedAuth(
         error.code === "42703" // PostgreSQL error code for undefined column
       );
       
-      if (isColumnError) {
+      if (isColumnError && error) {
         // Identify which column is missing from error message
         const errorMsg = error.message?.toLowerCase() || "";
         const missingColumn = 
@@ -478,9 +473,9 @@ export const POST = withUnifiedAuth(
           error = retryResult.error;
           
           if (error) {
-            logger.error(`${logPrefix} Retry insert also failed: ${error.message}`);
+            logger.error(`${logPrefix} Retry insert also failed: ${error.message || 'Unknown error'}`);
             if (typeof process !== 'undefined' && process.stdout) {
-              process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message}\n`);
+              process.stdout.write(`${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message || 'Unknown error'}\n`);
             }
           } else {
             logger.info(`${logPrefix} Retry insert succeeded without ${missingColumn} column`);
@@ -495,7 +490,7 @@ export const POST = withUnifiedAuth(
             process.stdout.write(`${new Date().toISOString()} ${logPrefix} Unknown column error, retrying with minimal columns\n`);
           }
           
-          const minimalInsertData = {
+          const minimalInsertData: Record<string, unknown> = {
             venue_id: insertDataBase.venue_id,
             question_text: insertDataBase.question_text,
             question_type: insertDataBase.question_type,
