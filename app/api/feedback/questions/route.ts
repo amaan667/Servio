@@ -396,36 +396,72 @@ export const POST = withUnifiedAuth(
         displayOrderColumnExists,
       });
 
-      // Prepare insert data
-      // CRITICAL: We need to discover the actual column names by querying the schema
-      // Since GET works with select("*"), let's try to insert with minimal required columns first
-      // The database might use different column names than expected
+      // STEP 4b: Discover actual schema by querying an existing row
+      // This will tell us what columns actually exist
+      logger.info(`${logPrefix} Step 4b: Discovering schema by querying existing row`);
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Step 4b: Discovering schema\n`);
+      }
+      
+      const { data: sampleQuestion, error: sampleError } = await supabase
+        .from("feedback_questions")
+        .select("*")
+        .eq("venue_id", normalizedVenueId)
+        .limit(1)
+        .maybeSingle();
+      
+      if (sampleError && !sampleError.message?.toLowerCase().includes("no rows")) {
+        logger.warn(`${logPrefix} Could not query sample row for schema discovery`, {
+          error: sampleError.message,
+        });
+      }
+      
+      // Determine actual column names from sample or use defaults
+      const actualColumns = {
+        questionText: sampleQuestion ? Object.keys(sampleQuestion).find(k => 
+          k === 'question' || k === 'question_text' || k === 'text' || k === 'prompt'
+        ) || 'question' : 'question',
+        questionType: sampleQuestion ? Object.keys(sampleQuestion).find(k => 
+          k === 'question_type' || k === 'type'
+        ) || 'question_type' : 'question_type',
+        hasOptions: sampleQuestion ? 'options' in sampleQuestion : false,
+        hasDisplayOrder: sampleQuestion ? 'display_order' in sampleQuestion || 'sort_index' in sampleQuestion : false,
+        displayOrderColumn: sampleQuestion ? (Object.keys(sampleQuestion).find(k => 
+          k === 'display_order' || k === 'sort_index'
+        ) || 'display_order') : 'display_order',
+      };
+      
+      logger.info(`${logPrefix} Schema discovered`, {
+        questionTextColumn: actualColumns.questionText,
+        questionTypeColumn: actualColumns.questionType,
+        hasOptions: actualColumns.hasOptions,
+        hasDisplayOrder: actualColumns.hasDisplayOrder,
+        displayOrderColumn: actualColumns.displayOrderColumn,
+      });
+      
+      if (typeof process !== 'undefined' && process.stdout) {
+        process.stdout.write(`${new Date().toISOString()} ${logPrefix} Schema: questionText=${actualColumns.questionText}, questionType=${actualColumns.questionType}\n`);
+      }
+      
+      // Prepare insert data using discovered column names
       const insertDataBase: Record<string, unknown> = {
         venue_id: normalizedVenueId,
-        // Try common column name variations - the retry logic will handle missing ones
-        // Frontend 'prompt' could map to: 'question', 'question_text', 'text', 'prompt'
-        question: body.prompt,
-        question_text: body.prompt, // Try both
-        text: body.prompt, // Try alternative
-        prompt: body.prompt, // Try direct mapping
-        // Frontend 'type' could map to: 'question_type', 'type', 'questionType'
-        question_type: body.type,
-        type: body.type, // Try direct mapping
+        [actualColumns.questionText]: body.prompt,
+        [actualColumns.questionType]: body.type,
         is_active: body.is_active ?? true,
       };
       
-      // Only include display_order if the column exists
-      if (displayOrderColumnExists) {
-        insertDataBase.display_order = body.sort_index ?? nextDisplayOrder; // Map 'sort_index' to 'display_order' for DB
+      // Only include display_order if the column exists (from schema discovery or previous check)
+      if (actualColumns.hasDisplayOrder || displayOrderColumnExists) {
+        insertDataBase[actualColumns.displayOrderColumn] = body.sort_index ?? nextDisplayOrder;
       }
       
       const insertData: Record<string, unknown> = {
         ...insertDataBase,
       };
       
-      // Only include options for multiple_choice questions with choices
-      // The retry logic will remove it if the column doesn't exist
-      if (body.type === "multiple_choice" && body.choices && Array.isArray(body.choices) && body.choices.length > 0) {
+      // Only include options for multiple_choice questions with choices, and only if column exists
+      if (actualColumns.hasOptions && body.type === "multiple_choice" && body.choices && Array.isArray(body.choices) && body.choices.length > 0) {
         insertData.options = body.choices;
       }
       
