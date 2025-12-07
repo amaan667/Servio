@@ -171,17 +171,28 @@ export const POST = withUnifiedAuth(
       // withUnifiedAuth reconstructs the body, so we can read it normally
       let body;
       try {
-        body = await validateBody(createQuestionSchema, await req.json());
+        const rawBody = await req.json();
+        logger.debug("[FEEDBACK QUESTIONS POST] Raw body received", {
+          hasPrompt: !!rawBody.prompt,
+          hasType: !!rawBody.type,
+          hasVenueId: !!rawBody.venue_id,
+          venueId: normalizedVenueId,
+        });
+        body = await validateBody(createQuestionSchema, rawBody);
       } catch (error) {
-        logger.error("[FEEDBACK QUESTIONS POST] Body validation error:", {
+        logger.error("[FEEDBACK QUESTIONS POST] Body validation error", {
           error: error instanceof Error ? error.message : String(error),
+          errorName: error instanceof Error ? error.name : typeof error,
           venueId: normalizedVenueId,
           userId: context.user.id,
+          isZodError: isZodError(error),
         });
         if (isZodError(error)) {
           return handleZodError(error);
         }
-        throw error;
+        return apiErrors.badRequest(
+          error instanceof Error ? error.message : "Invalid request body"
+        );
       }
 
       // Verify venue_id matches context (normalize both for comparison)
@@ -268,11 +279,15 @@ export const POST = withUnifiedAuth(
       // STEP 6: Return success response
       return success({ question: transformedQuestion });
     } catch (error) {
-      logger.error("[FEEDBACK QUESTIONS POST] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      logger.error("[FEEDBACK QUESTIONS POST] Unexpected error", {
+        error: errorMessage,
+        errorName: error instanceof Error ? error.name : typeof error,
+        stack: errorStack,
         venueId: context.venueId,
-        userId: context.user.id,
+        userId: context.user?.id,
       });
 
       if (isZodError(error)) {
@@ -281,7 +296,7 @@ export const POST = withUnifiedAuth(
 
       return apiErrors.internal(
         "Request processing failed",
-        isDevelopment() ? error : undefined
+        isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
       );
     }
   },
