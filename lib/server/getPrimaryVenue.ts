@@ -4,9 +4,9 @@ import { createServerSupabase } from "@/lib/supabase";
 export async function getPrimaryVenueId(): Promise<string | null> {
   const supa = await createServerSupabase();
 
-  const { data } = await supa.auth.getSession();
-  const user = data?.session?.user;
-  if (!user) return null;
+  // Use getUser() instead of getSession() for secure authentication
+  const { data: { user }, error } = await supa.auth.getUser();
+  if (error || !user) return null;
 
   const { data: venueData } = await supa
     .from("venues")

@@ -33,6 +33,7 @@ export async function hasServerAuthCookie() {
 /**
  * Safe server-side auth helper that only calls getUser if auth cookies exist
  * Returns { user: null, error: null } if no auth cookies
+ * Uses getUser() instead of getSession() for secure authentication
  */
 export async function safeGetUser() {
   const hasAuthCookie = await hasServerAuthCookie();
@@ -42,5 +43,5 @@ export async function safeGetUser() {
 
   const { createServerSupabase } = await import("@/lib/supabase");
   const supabase = await createServerSupabase();
-  return await supabase.auth.getSession();
+  return await supabase.auth.getUser();
 }

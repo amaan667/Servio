@@ -10,6 +10,7 @@ import type { User } from "@supabase/supabase-js";
 /**
  * Safely get the current authenticated user on the server
  * Returns null if no valid session exists (never throws)
+ * Uses getUser() instead of getSession() for secure authentication
  *
  * @returns Promise<User | null>
  */
@@ -17,9 +18,16 @@ export async function getServerUser(): Promise<User | null> {
   try {
     const supabase = await createServerSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.user || null;
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    
+    // Silently handle auth errors (expired tokens, etc.)
+    if (error || !user) {
+      return null;
+    }
+    
+    return user;
   } catch {
     // Silently handle all auth errors
     return null;

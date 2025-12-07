@@ -75,10 +75,15 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Get session
+  // Get user - use getUser() instead of getSession() for secure authentication
+  // getUser() authenticates the data by contacting the Supabase Auth server
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  
+  // If getUser() fails, treat as unauthenticated
+  const session = user ? { user } : null;
 
   // For API routes, inject user info into headers if session exists
   // Middleware does ALL auth checks - routes just read headers
