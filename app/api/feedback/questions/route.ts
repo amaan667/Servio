@@ -740,7 +740,7 @@ export const PATCH = withUnifiedAuth(
 
       // STEP 5: Business logic - Update question (map frontend fields to DB fields)
       const updateData: Record<string, unknown> = {};
-      if (body.prompt !== undefined) updateData.question_text = body.prompt; // Map 'prompt' to 'question_text'
+      if (body.prompt !== undefined) updateData.question = body.prompt; // Map 'prompt' to 'question' (actual DB column)
       if (body.type !== undefined) updateData.question_type = body.type; // Map 'type' to 'question_type'
       if (body.is_active !== undefined) updateData.is_active = body.is_active;
       if (body.sort_index !== undefined) updateData.display_order = body.sort_index; // Map 'sort_index' to 'display_order'
@@ -829,7 +829,7 @@ export const PATCH = withUnifiedAuth(
       // STEP 6: Transform question to match frontend expectations
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question_text || question.question || "", // Map 'question_text' or 'question' to 'prompt'
+        prompt: question.question || question.question_text || "", // Map 'question' or 'question_text' to 'prompt'
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
