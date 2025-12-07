@@ -34,6 +34,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyVenueAccess, type AuthorizedContext } from "@/lib/middleware/authorization";
 import { checkFeatureAccess, checkLimit, getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
+import { apiErrors } from "@/lib/api/standard-response";
 import type { User } from "@supabase/supabase-js";
 
 // ============================================================================
@@ -725,22 +726,18 @@ export function withUnifiedAuth(
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
       
-      logger.error("[UNIFIED AUTH] Error in wrapper:", {
+      logger.error("[UNIFIED AUTH] Error in wrapper", {
         timestamp: new Date().toISOString(),
-        errorMessage,
+        error: errorMessage,
         stack: errorStack,
         url: req.url,
         method: req.method,
       });
       
-      // Return detailed error in development, generic in production
-      return NextResponse.json(
-        { 
-          error: "Internal Server Error", 
-          message: process.env.NODE_ENV === "development" ? errorMessage : "Request processing failed",
-          ...(process.env.NODE_ENV === "development" && errorStack ? { stack: errorStack } : {}),
-        },
-        { status: 500 }
+      // Use standard error response format
+      return apiErrors.internal(
+        "Request processing failed",
+        process.env.NODE_ENV === "development" ? { message: errorMessage, stack: errorStack } : undefined
       );
     }
   };
