@@ -1,37 +1,48 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export async function POST() {
   try {
-    const { session, error } = await getSession();
+    const supabase = await createServerSupabase();
+    
+    // SECURE: Use getUser() instead of getSession() for authentication check
+    // This authenticates the data by contacting the Supabase Auth server
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (error) {
-      logger.error("[REFRESH API] Error getting session:", { error });
+    if (userError) {
+      logger.error("[REFRESH API] Error getting user:", { error: userError.message });
       return NextResponse.json(
         {
           ok: false,
-          error,
+          error: userError.message,
         },
         { status: 401 }
       );
     }
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json(
         {
           ok: false,
-          error: "No session available",
+          error: "No authenticated user",
         },
         { status: 401 }
       );
+    }
+
+    // Get session for expires_at if needed
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError && !sessionError.message?.includes("refresh_token_not_found")) {
+      logger.warn("[REFRESH API] Error getting session (non-critical):", { error: sessionError.message });
     }
 
     return NextResponse.json({
       ok: true,
       session: {
-        user: session.user,
-        expires_at: session.expires_at,
+        user: user, // Use authenticated user from getUser()
+        expires_at: session?.expires_at || null,
       },
     });
   } catch (_error) {

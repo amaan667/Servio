@@ -92,7 +92,8 @@ export const GET = withUnifiedAuth(
       // STEP 4: Transform questions to match frontend expectations (prompt, type, choices)
       const transformedQuestions = (questions || []).map((q: {
         id: string;
-        question: string;
+        question_text?: string;
+        question?: string;
         question_type: string;
         options: string[] | null;
         is_active: boolean;
@@ -102,7 +103,7 @@ export const GET = withUnifiedAuth(
         venue_id: string;
       }) => ({
         id: q.id,
-        prompt: q.question, // Map 'question' to 'prompt' for frontend
+        prompt: q.question_text || q.question || "", // Map 'question_text' or 'question' to 'prompt' for frontend
         type: q.question_type, // Map 'question_type' to 'type' for frontend
         choices: q.options || [], // Map 'options' to 'choices' for frontend
         is_active: q.is_active,
@@ -357,7 +358,7 @@ export const POST = withUnifiedAuth(
       // If it doesn't exist, we'll insert without it
       const insertDataBase = {
         venue_id: normalizedVenueId,
-        question: body.prompt, // Map 'prompt' to 'question' for DB
+        question_text: body.prompt, // Map 'prompt' to 'question_text' for DB (Supabase expects snake_case)
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
         display_order: body.sort_index ?? nextDisplayOrder, // Map 'sort_index' to 'display_order' for DB
@@ -388,7 +389,7 @@ export const POST = withUnifiedAuth(
       logger.info(`${logPrefix} Insert data prepared`, {
         insertData: {
           venue_id: insertDataBase.venue_id,
-          question: insertDataBase.question.substring(0, 50) + "...",
+          question_text: insertDataBase.question_text.substring(0, 50) + "...",
           question_type: insertDataBase.question_type,
           is_active: insertDataBase.is_active,
           display_order: insertDataBase.display_order,
@@ -478,7 +479,7 @@ export const POST = withUnifiedAuth(
           userId: context.user?.id,
           insertData: {
             venue_id: insertDataBase.venue_id,
-            question_length: insertDataBase.question.length,
+            question_text_length: insertDataBase.question_text.length,
             question_type: insertDataBase.question_type,
             is_active: insertDataBase.is_active,
             display_order: insertDataBase.display_order,
@@ -519,7 +520,7 @@ export const POST = withUnifiedAuth(
         questionId: question.id,
         venueId: normalizedVenueId,
         userId: context.user?.id,
-        questionText: question.question?.substring(0, 50) + "...",
+        questionText: (question.question_text || question.question || "")?.substring(0, 50) + "...",
         questionType: question.question_type,
         duration: Date.now() - startTime,
       });
@@ -532,7 +533,7 @@ export const POST = withUnifiedAuth(
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 5: Transforming question for frontend`);
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question, // Map 'question' to 'prompt'
+        prompt: question.question_text || question.question, // Map 'question_text' or 'question' to 'prompt'
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
@@ -664,7 +665,7 @@ export const PATCH = withUnifiedAuth(
 
       // STEP 5: Business logic - Update question (map frontend fields to DB fields)
       const updateData: Record<string, unknown> = {};
-      if (body.prompt !== undefined) updateData.question = body.prompt; // Map 'prompt' to 'question'
+      if (body.prompt !== undefined) updateData.question_text = body.prompt; // Map 'prompt' to 'question_text'
       if (body.type !== undefined) updateData.question_type = body.type; // Map 'type' to 'question_type'
       if (body.is_active !== undefined) updateData.is_active = body.is_active;
       if (body.sort_index !== undefined) updateData.display_order = body.sort_index; // Map 'sort_index' to 'display_order'
@@ -730,7 +731,7 @@ export const PATCH = withUnifiedAuth(
       // STEP 6: Transform question to match frontend expectations
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question, // Map 'question' to 'prompt'
+        prompt: question.question_text || question.question || "", // Map 'question_text' or 'question' to 'prompt'
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,

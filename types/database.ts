@@ -388,10 +388,11 @@ export interface FeedbackRow {
 export interface FeedbackQuestionRow {
   id: string;
   venue_id: string;
-  question: string;
-  question_type: "rating" | "text" | "multiple_choice" | "yes_no";
-  options: string[];
-  is_required: boolean;
+  question_text?: string; // Database column name (snake_case)
+  question?: string; // Legacy/alternative column name
+  question_type: "rating" | "text" | "multiple_choice" | "yes_no" | "stars" | "paragraph";
+  options?: string[];
+  is_required?: boolean;
   display_order: number;
   is_active: boolean;
   created_at: string;
