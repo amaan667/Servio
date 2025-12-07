@@ -624,15 +624,43 @@ export const PATCH = withUnifiedAuth(
       if (body.type !== undefined) updateData.question_type = body.type; // Map 'type' to 'question_type'
       if (body.is_active !== undefined) updateData.is_active = body.is_active;
       if (body.sort_index !== undefined) updateData.sort_index = body.sort_index;
-      if (body.choices !== undefined) updateData.options = body.choices; // Map 'choices' to 'options'
+      // Only include options if choices are provided (column might not exist)
+      if (body.choices !== undefined && Array.isArray(body.choices)) {
+        updateData.options = body.choices; // Map 'choices' to 'options'
+      }
 
-      const { data: question, error } = await supabase
+      // Try update with options first, if it fails due to missing column, retry without it
+      let question;
+      let error;
+      
+      const updateResult = await supabase
         .from("feedback_questions")
         .update(updateData)
         .eq("id", body.id)
         .eq("venue_id", normalizedVenueId)
         .select()
         .single();
+      
+      question = updateResult.data;
+      error = updateResult.error;
+      
+      // If error is about missing 'options' column, retry without it
+      if (error && error.message?.includes("options") && error.message?.includes("column")) {
+        logger.warn("[FEEDBACK QUESTIONS PATCH] Options column not found, retrying update without options column");
+        const updateDataWithoutOptions = { ...updateData };
+        delete updateDataWithoutOptions.options;
+        
+        const retryResult = await supabase
+          .from("feedback_questions")
+          .update(updateDataWithoutOptions)
+          .eq("id", body.id)
+          .eq("venue_id", normalizedVenueId)
+          .select()
+          .single();
+        
+        question = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error || !question) {
         logger.error("[FEEDBACK QUESTIONS PATCH] Error updating question:", {
