@@ -397,11 +397,11 @@ export const POST = withUnifiedAuth(
       });
 
       // Prepare insert data
-      // CRITICAL: Check if options column exists by trying a test query first
-      // If it doesn't exist, we'll insert without it
+      // CRITICAL: The database uses 'question' column, not 'question_text'
+      // Check GET endpoint - it maps both 'question_text' and 'question' to 'prompt'
       const insertDataBase: Record<string, unknown> = {
         venue_id: normalizedVenueId,
-        question_text: body.prompt, // Map 'prompt' to 'question_text' for DB (Supabase expects snake_case)
+        question: body.prompt, // Map 'prompt' to 'question' for DB (actual column name)
         question_type: body.type, // Map 'type' to 'question_type' for DB
         is_active: body.is_active ?? true,
       };
@@ -429,7 +429,7 @@ export const POST = withUnifiedAuth(
       logger.info(`${logPrefix} Insert data prepared`, {
         insertData: {
           venue_id: insertDataBase.venue_id as string,
-          question_text: (insertDataBase.question_text as string)?.substring(0, 50) + "...",
+          question: (insertDataBase.question as string)?.substring(0, 50) + "...",
           question_type: insertDataBase.question_type as string,
           is_active: insertDataBase.is_active as boolean,
           display_order: insertDataBase.display_order,
@@ -554,7 +554,7 @@ export const POST = withUnifiedAuth(
           userId: context.user?.id,
           insertData: {
             venue_id: insertDataBase.venue_id,
-            question_text_length: typeof insertDataBase.question_text === 'string' ? insertDataBase.question_text.length : 0,
+            question_length: typeof insertDataBase.question === 'string' ? insertDataBase.question.length : 0,
             question_type: insertDataBase.question_type,
             is_active: insertDataBase.is_active,
             display_order: 'display_order' in insertDataBase ? insertDataBase.display_order : 'not included',
@@ -595,7 +595,7 @@ export const POST = withUnifiedAuth(
         questionId: question.id,
         venueId: normalizedVenueId,
         userId: context.user?.id,
-        questionText: (question.question_text || question.question || "")?.substring(0, 50) + "...",
+        questionText: (question.question || question.question_text || "")?.substring(0, 50) + "...",
         questionType: question.question_type,
         duration: Date.now() - startTime,
       });
@@ -608,7 +608,7 @@ export const POST = withUnifiedAuth(
       logger.info(`[FEEDBACK QUESTIONS POST ${requestId}] Step 5: Transforming question for frontend`);
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question_text || question.question, // Map 'question_text' or 'question' to 'prompt'
+        prompt: question.question || question.question_text || "", // Map 'question' or 'question_text' to 'prompt'
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
