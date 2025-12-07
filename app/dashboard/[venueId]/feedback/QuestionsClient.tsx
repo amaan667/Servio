@@ -237,7 +237,19 @@ export default function QuestionsClient({
         body: JSON.stringify(payload),
       });
 
-      const responseData = await response.json();
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, it's likely a server error
+        console.error("[QuestionsClient] Failed to parse response:", parseError);
+        toast({
+          title: "Error",
+          description: `Server error (${response.status}). Please try again.`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (response.ok && responseData.success) {
         toast({
@@ -259,13 +271,25 @@ export default function QuestionsClient({
       } else {
         // Handle API error response format: { success: false, error: { message: "..." } }
         let errorMessage = "Couldn't save question";
-        if (responseData.error?.message) {
+        if (responseData?.error?.message) {
           errorMessage = responseData.error.message;
-        } else if (responseData.message) {
+        } else if (responseData?.message) {
           errorMessage = responseData.message;
-        } else if (typeof responseData.error === "string") {
+        } else if (typeof responseData?.error === "string") {
           errorMessage = responseData.error;
+        } else if (response.status === 500) {
+          errorMessage = "Server error. Please try again or contact support.";
+        } else if (response.status === 403) {
+          errorMessage = "Permission denied. Please check your access.";
+        } else if (response.status === 400) {
+          errorMessage = "Invalid request. Please check your input.";
         }
+
+        console.error("[QuestionsClient] API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          data: responseData,
+        });
 
         toast({
           title: "Error",

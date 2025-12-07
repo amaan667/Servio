@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -53,15 +53,18 @@ export const GET = withUnifiedAuth(
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
+      
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Business logic
-      const supabase = await createClient();
+      const supabase = createAdminClient();
 
       // Get questions (all questions since we don't have soft delete yet)
       const { data: questions, error } = await supabase
         .from("feedback_questions")
         .select("*")
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .order("sort_index", { ascending: true })
         .order("created_at", { ascending: true });
 
@@ -150,6 +153,9 @@ export const POST = withUnifiedAuth(
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
+      
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Validate input
       // withUnifiedAuth reconstructs the body, so we can read it normally
@@ -159,7 +165,7 @@ export const POST = withUnifiedAuth(
       } catch (error) {
         logger.error("[FEEDBACK QUESTIONS POST] Body validation error:", {
           error: error instanceof Error ? error.message : String(error),
-          venueId,
+          venueId: normalizedVenueId,
           userId: context.user.id,
         });
         if (isZodError(error)) {
@@ -168,19 +174,20 @@ export const POST = withUnifiedAuth(
         throw error;
       }
 
-      // Verify venue_id matches context
-      if (body.venue_id !== venueId) {
+      // Verify venue_id matches context (normalize both for comparison)
+      const bodyVenueId = body.venue_id.startsWith("venue-") ? body.venue_id : `venue-${body.venue_id}`;
+      if (bodyVenueId !== normalizedVenueId) {
         return apiErrors.forbidden('Venue ID mismatch');
       }
 
       // STEP 4: Business logic
-      const supabase = await createClient();
+      const supabase = createAdminClient();
 
       // Get current max sort_index for this venue
       const { data: existingQuestions } = await supabase
         .from("feedback_questions")
         .select("sort_index")
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .order("sort_index", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -192,7 +199,7 @@ export const POST = withUnifiedAuth(
       const { data: question, error } = await supabase
         .from("feedback_questions")
         .insert({
-          venue_id: venueId,
+          venue_id: normalizedVenueId,
           question_text: body.prompt, // Map 'prompt' to 'question_text' for DB
           question_type: body.type, // Map 'type' to 'question_type' for DB
           is_active: body.is_active ?? true,
@@ -205,7 +212,9 @@ export const POST = withUnifiedAuth(
       if (error || !question) {
         logger.error("[FEEDBACK QUESTIONS POST] Error creating question:", {
           error: error?.message,
-          venueId,
+          errorCode: error?.code,
+          errorDetails: error?.details,
+          venueId: normalizedVenueId,
           userId: context.user.id,
         });
         return apiErrors.database(
@@ -216,7 +225,7 @@ export const POST = withUnifiedAuth(
 
       logger.info("[FEEDBACK QUESTIONS POST] Question created successfully", {
         questionId: question.id,
-        venueId,
+        venueId: normalizedVenueId,
         userId: context.user.id,
       });
 
@@ -252,6 +261,12 @@ export const POST = withUnifiedAuth(
         isDevelopment() ? error : undefined
       );
     }
+  },
+  {
+    extractVenueId: async (req) => {
+      const { searchParams } = new URL(req.url);
+      return searchParams.get("venueId");
+    },
   }
 );
 
@@ -269,23 +284,26 @@ export const PATCH = withUnifiedAuth(
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
+      
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Validate input
       const body = await validateBody(updateQuestionSchema, await req.json());
 
       // STEP 4: Security - Verify question belongs to venue
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       const { data: existingQuestion, error: checkError } = await supabase
         .from("feedback_questions")
         .select("venue_id")
         .eq("id", body.id)
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .single();
 
       if (checkError || !existingQuestion) {
         logger.warn("[FEEDBACK QUESTIONS PATCH] Question not found or access denied", {
           questionId: body.id,
-          venueId,
+          venueId: normalizedVenueId,
           userId: context.user.id,
         });
         return apiErrors.notFound("Question not found or access denied");
@@ -303,15 +321,17 @@ export const PATCH = withUnifiedAuth(
         .from("feedback_questions")
         .update(updateData)
         .eq("id", body.id)
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .select()
         .single();
 
       if (error || !question) {
         logger.error("[FEEDBACK QUESTIONS PATCH] Error updating question:", {
           error: error?.message,
+          errorCode: error?.code,
+          errorDetails: error?.details,
           questionId: body.id,
-          venueId,
+          venueId: normalizedVenueId,
           userId: context.user.id,
         });
         return apiErrors.database(
@@ -322,7 +342,7 @@ export const PATCH = withUnifiedAuth(
 
       logger.info("[FEEDBACK QUESTIONS PATCH] Question updated successfully", {
         questionId: body.id,
-        venueId,
+        venueId: normalizedVenueId,
         userId: context.user.id,
       });
 
@@ -358,6 +378,12 @@ export const PATCH = withUnifiedAuth(
         isDevelopment() ? error : undefined
       );
     }
+  },
+  {
+    extractVenueId: async (req) => {
+      const { searchParams } = new URL(req.url);
+      return searchParams.get("venueId");
+    },
   }
 );
 
@@ -375,6 +401,9 @@ export const DELETE = withUnifiedAuth(
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
+      
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
       // STEP 3: Validate input
       const { searchParams } = new URL(req.url);
@@ -383,18 +412,18 @@ export const DELETE = withUnifiedAuth(
       });
 
       // STEP 4: Security - Verify question belongs to venue
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       const { data: existingQuestion, error: checkError } = await supabase
         .from("feedback_questions")
         .select("venue_id")
         .eq("id", query.id)
-        .eq("venue_id", venueId)
+        .eq("venue_id", normalizedVenueId)
         .single();
 
       if (checkError || !existingQuestion) {
         logger.warn("[FEEDBACK QUESTIONS DELETE] Question not found or access denied", {
           questionId: query.id,
-          venueId,
+          venueId: normalizedVenueId,
           userId: context.user.id,
         });
         return apiErrors.notFound("Question not found or access denied");
@@ -405,13 +434,15 @@ export const DELETE = withUnifiedAuth(
         .from("feedback_questions")
         .delete()
         .eq("id", query.id)
-        .eq("venue_id", venueId);
+        .eq("venue_id", normalizedVenueId);
 
       if (error) {
         logger.error("[FEEDBACK QUESTIONS DELETE] Error deleting question:", {
           error: error.message,
+          errorCode: error.code,
+          errorDetails: error.details,
           questionId: query.id,
-          venueId,
+          venueId: normalizedVenueId,
           userId: context.user.id,
         });
         return apiErrors.database(
@@ -422,7 +453,7 @@ export const DELETE = withUnifiedAuth(
 
       logger.info("[FEEDBACK QUESTIONS DELETE] Question deleted successfully", {
         questionId: query.id,
-        venueId,
+        venueId: normalizedVenueId,
         userId: context.user.id,
       });
 
