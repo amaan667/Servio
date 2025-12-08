@@ -162,11 +162,36 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Continue without initial data - client will load it
   }
 
+  // Log server-side render completion
+  if (typeof process !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardPage] Server-side render complete", {
+      venueId,
+      hasInitialCounts: !!initialCounts,
+      hasInitialStats: !!initialStats,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   return (
-    <DashboardClient
-      venueId={venueId}
-      initialCounts={initialCounts}
-      initialStats={initialStats}
-    />
+    <>
+      {/* Log immediately when page HTML loads */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            console.log("[DashboardPage] PAGE HTML LOADED", {
+              venueId: "${venueId}",
+              timestamp: new Date().toISOString(),
+            });
+            console.log("[DashboardPage] ⚡ Page script executed - component will mount next");
+          `,
+        }}
+      />
+      <DashboardClient
+        venueId={venueId}
+        initialCounts={initialCounts}
+        initialStats={initialStats}
+      />
+    </>
   );
 }

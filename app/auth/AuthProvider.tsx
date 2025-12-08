@@ -58,8 +58,22 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[AuthProvider] 🔐 useEffect triggered", {
+      hasInitialSession: !!initialSession,
+      hasSession: !!session,
+      hasUser: !!user,
+      loading,
+      timestamp: new Date().toISOString(),
+    });
+
     // If we have initialSession from server, use it immediately and skip client fetch
     if (initialSession) {
+      // eslint-disable-next-line no-console
+      console.log("[AuthProvider] ✅ Using initialSession from server", {
+        hasUser: !!initialSession.user,
+        userId: initialSession.user?.id,
+      });
       // Ensure state is set (in case of hydration mismatch)
       if (session !== initialSession) {
         setSession(initialSession);
@@ -145,18 +159,30 @@ export default function AuthProvider({
 
       // Fetch session from client
       const getInitialSession = async () => {
+        // eslint-disable-next-line no-console
+        console.log("[AuthProvider] 🔄 Fetching session from client");
         setLoading(true);
         try {
           const {
             data: { session: currentSession },
           } = await supabase.auth.getSession();
+          // eslint-disable-next-line no-console
+          console.log("[AuthProvider] 📥 getSession result", {
+            hasSession: !!currentSession,
+            hasUser: !!currentSession?.user,
+            userId: currentSession?.user?.id,
+          });
           setSession(currentSession);
           setUser(currentSession?.user || null);
-        } catch {
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error("[AuthProvider] ❌ getSession error", error);
           setSession(null);
           setUser(null);
         } finally {
           setLoading(false);
+          // eslint-disable-next-line no-console
+          console.log("[AuthProvider] ✅ Auth loading complete");
         }
       };
 

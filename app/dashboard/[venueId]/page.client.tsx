@@ -61,6 +61,15 @@ const DashboardClient = React.memo(function DashboardClient({
   initialCounts?: DashboardCounts;
   initialStats?: DashboardStats;
 }) {
+  // Log component mount immediately
+  // eslint-disable-next-line no-console
+  console.log("[DashboardClient] 🚀 COMPONENT MOUNTING", {
+    venueId,
+    hasInitialCounts: !!initialCounts,
+    hasInitialStats: !!initialStats,
+    timestamp: new Date().toISOString(),
+  });
+
   const router = useRouter();
 
   // Get cached user/venue data to prevent flicker
@@ -87,6 +96,22 @@ const DashboardClient = React.memo(function DashboardClient({
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole());
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
+
+  // Log initial state immediately
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardClient] 📊 INITIAL STATE", {
+      venueId,
+      hasCachedUser: !!user,
+      hasCachedVenue: !!venue,
+      hasCachedRole: !!userRole,
+      hasInitialCounts: !!initialCounts,
+      hasInitialStats: !!initialStats,
+      authRedirectLoading,
+      hasAuthUser: !!authUser,
+      timestamp: new Date().toISOString(),
+    });
+  }, []); // Only run once on mount
 
   // Sync authUser to local user state if needed
   useEffect(() => {
