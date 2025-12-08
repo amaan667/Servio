@@ -570,9 +570,7 @@ const DashboardClient = React.memo(function DashboardClient({
         // If queries failed but we have a cached venue, allow access
         // Empty block removed - no action needed
 
-        // Set venue data and track the role that was set
-        let finalRole: string | null = null;
-
+        // Set venue data and role
         if (venueData) {
           setVenue(venueData);
           dashboardData.setVenue(venueData);
@@ -580,7 +578,6 @@ const DashboardClient = React.memo(function DashboardClient({
             sessionStorage.setItem(`dashboard_venue_${venueId}`, JSON.stringify(venueData));
           }
           setUserRole("owner");
-          finalRole = "owner";
           if (typeof window !== "undefined") {
             sessionStorage.setItem(`user_role_${venueId}`, "owner");
           }
@@ -596,7 +593,6 @@ const DashboardClient = React.memo(function DashboardClient({
             dashboardData.setVenue(staffVenue);
             const role = roleData?.role || "staff";
             setUserRole(role);
-            finalRole = role;
             if (typeof window !== "undefined") {
               sessionStorage.setItem(`user_role_${venueId}`, role);
             }
@@ -607,7 +603,7 @@ const DashboardClient = React.memo(function DashboardClient({
         // No role assigned - continue without blocking
 
         setAuthCheckComplete(true);
-      } catch (_error) {
+      } catch {
         setAuthCheckComplete(true);
       }
     }
