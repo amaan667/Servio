@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat, HelpCircle, MoreVertical, Lightbulb, Bug } from "lucide-react";
+import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat, HelpCircle, MoreVertical, Lightbulb, Bug, MessageSquare, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import RoleManagementPopup from "@/components/role-management-popup";
@@ -81,6 +81,20 @@ export function QuickActionsToolbar({
       icon: BarChart,
       description: "View insights",
       color: "bg-indigo-600 hover:bg-indigo-700",
+    });
+    actions.push({
+      label: "Feedback",
+      href: `/dashboard/${venueId}/feedback`,
+      icon: MessageSquare,
+      description: "Customer feedback",
+      color: "bg-pink-600 hover:bg-pink-700",
+    });
+    actions.push({
+      label: "Settings",
+      href: `/dashboard/${venueId}/settings`,
+      icon: Settings,
+      description: "Venue settings",
+      color: "bg-gray-600 hover:bg-gray-700",
     });
   } else {
     // Block handled

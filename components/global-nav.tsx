@@ -175,7 +175,11 @@ export default function GlobalNav() {
                   // On dashboard root page: Home, Settings, Dark Mode (no border), Sign Out (purple border)
                   <>
                     <Link
-                      href="/"
+                      href={
+                        venueId || primaryVenueId
+                          ? `/dashboard/${venueId || primaryVenueId}`
+                          : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                     >
                       <Home className="mr-3 h-5 w-5" />
@@ -209,8 +213,13 @@ export default function GlobalNav() {
                     <Button
                       variant="outline"
                       onClick={async () => {
-                        await signOut();
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium"
                     >
@@ -258,8 +267,13 @@ export default function GlobalNav() {
                     <Button
                       variant="outline"
                       onClick={async () => {
-                        await signOut();
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium"
                     >
@@ -341,8 +355,13 @@ export default function GlobalNav() {
                     <Button
                       variant="outline"
                       onClick={async () => {
-                        await signOut();
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium"
                     >
@@ -408,7 +427,11 @@ export default function GlobalNav() {
                 {isDashboardRoot ? (
                   <>
                     <Link
-                      href="/"
+                      href={
+                        venueId || primaryVenueId
+                          ? `/dashboard/${venueId || primaryVenueId}`
+                          : "/"
+                      }
                       className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -455,9 +478,14 @@ export default function GlobalNav() {
                     <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
-                        await signOut();
                         setMobileMenuOpen(false);
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Mobile sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
@@ -517,9 +545,14 @@ export default function GlobalNav() {
                     <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
-                        await signOut();
                         setMobileMenuOpen(false);
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Mobile sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
@@ -573,9 +606,14 @@ export default function GlobalNav() {
                     <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
-                        await signOut();
                         setMobileMenuOpen(false);
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Mobile sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple text-white hover:bg-white hover:text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
@@ -617,9 +655,14 @@ export default function GlobalNav() {
                     <div className="w-full h-px bg-border my-4"></div>
                     <button
                       onClick={async () => {
-                        await signOut();
                         setMobileMenuOpen(false);
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Mobile sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center w-full px-4 py-3 text-base font-semibold bg-servio-purple !text-white hover:bg-white hover:!text-servio-purple rounded-xl transition-all duration-200 min-h-[48px] justify-start border-2 border-servio-purple"
                     >
