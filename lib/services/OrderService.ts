@@ -140,33 +140,54 @@ export class OrderService extends BaseService {
   }
 
   /**
-   * Create order
+   * Create order using transactional RPC function
+   * This ensures atomicity: order + table (if needed) + table session
    */
   async createOrder(
     venueId: string,
     orderData: Omit<
       Order,
       "id" | "venue_id" | "created_at" | "updated_at" | "order_status" | "payment_status"
-    >
-  ): Promise<Order> {
+    > & {
+      table_number?: number | null;
+      seat_count?: number;
+      source?: "qr" | "counter";
+    }
+  ): Promise<Order & { table_auto_created?: boolean; session_id?: string }> {
     const supabase = await createSupabaseClient();
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        ...orderData,
-        venue_id: venueId,
-        order_status: "PLACED",
-        payment_status: "UNPAID",
-      })
-      .select()
-      .single();
+    
+    // Use RPC function for transactional order creation
+    const { data, error } = await supabase.rpc("create_order_with_session", {
+      p_venue_id: venueId,
+      p_table_number: orderData.table_number ?? null,
+      p_customer_name: orderData.customer_name ?? "",
+      p_customer_phone: orderData.customer_phone ?? "",
+      p_customer_email: orderData.customer_email ?? null,
+      p_items: orderData.items as unknown as Record<string, unknown>,
+      p_total_amount: orderData.total_amount,
+      p_notes: orderData.notes ?? null,
+      p_order_status: orderData.order_status ?? "PLACED",
+      p_payment_status: orderData.payment_status ?? "UNPAID",
+      p_payment_method: orderData.payment_method ?? "PAY_NOW",
+      p_payment_mode: (() => {
+        const method = orderData.payment_method ?? "PAY_NOW";
+        if (method === "PAY_NOW") return "online";
+        if (method === "PAY_AT_TILL") return "offline";
+        if (method === "PAY_LATER") return "deferred";
+        return "online";
+      })(),
+      p_source: orderData.source ?? "qr",
+      p_seat_count: orderData.seat_count ?? 4,
+    });
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(`Order creation failed: ${error.message}`);
+    }
 
     // Invalidate cache
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);
 
-    return data;
+    return data as Order & { table_auto_created?: boolean; session_id?: string };
   }
 
   /**

@@ -75,6 +75,18 @@ const DashboardClient = React.memo(function DashboardClient({
   }
 
   const router = useRouter();
+  
+  // Log router state
+  useEffect(() => {
+    console.log("[DashboardClient] 🔄 ROUTER STATE", {
+      venueId,
+      routerReady: !!router,
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Note: Next.js App Router doesn't expose router.events like Pages Router
+    // Navigation is tracked via Link onClick handlers in global-nav.tsx
+  }, [router, venueId]);
 
   // Get cached user/venue data to prevent flicker
   const getCachedUser = () => {

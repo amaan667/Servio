@@ -16,11 +16,32 @@ export const runtime = "nodejs"; // Ensure Node.js runtime
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
+  // Log dashboard page load attempt
+  logger.info("[DASHBOARD PAGE] 🏠 PAGE LOAD STARTED", {
+    venueId,
+    timestamp: new Date().toISOString(),
+    params: JSON.stringify(params),
+  });
+
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
   // Auth check is optional - client will handle auth display
   // Dashboard ALWAYS loads - client handles authentication
-  await requirePageAuth(venueId).catch(() => null);
+  try {
+    await requirePageAuth(venueId).catch((error) => {
+      logger.warn("[DASHBOARD PAGE] ⚠️ Auth check failed (non-critical)", {
+        venueId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    });
+    logger.info("[DASHBOARD PAGE] ✅ Auth check completed", { venueId });
+  } catch (error) {
+    logger.error("[DASHBOARD PAGE] ❌ Auth check error", {
+      venueId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   // STEP 2: Fetch initial dashboard data on server (even without auth)
   // Always fetch data - don't block on auth
@@ -214,3 +235,8 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     </>
   );
 }
+
+// Log when this module is loaded
+logger.info("[DASHBOARD PAGE] 📦 MODULE LOADED", {
+  timestamp: new Date().toISOString(),
+});

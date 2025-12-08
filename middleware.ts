@@ -106,7 +106,16 @@ export async function middleware(request: NextRequest) {
   // For dashboard pages, NO REDIRECTS - User requested ZERO sign-in redirects
   // Allow dashboard to load even without session - client-side will handle auth
   if (pathname.startsWith("/dashboard")) {
-    // Dashboard page access - logging removed for production
+    // Log dashboard navigation attempt
+    console.log("[MIDDLEWARE] 🏠 DASHBOARD NAVIGATION", {
+      pathname,
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      timestamp: new Date().toISOString(),
+      url: request.url,
+    });
+    
     // Don't redirect - let dashboard component handle auth client-side
   }
 

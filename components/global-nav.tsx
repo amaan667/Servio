@@ -246,6 +246,43 @@ export default function GlobalNav() {
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
+                      onClick={(e) => {
+                        const href = venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/";
+                        console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (feature page)", {
+                          venueId,
+                          primaryVenueId,
+                          href,
+                          pathname,
+                          isOnFeaturePage,
+                          isOnQRPage,
+                          timestamp: new Date().toISOString(),
+                          event: e,
+                        });
+                        
+                        // Track navigation attempt
+                        const startTime = Date.now();
+                        const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                        
+                        // Log navigation start
+                        console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
+                          navigationId,
+                          href,
+                          startTime,
+                        });
+                        
+                        // Monitor if navigation actually happens
+                        setTimeout(() => {
+                          const elapsed = Date.now() - startTime;
+                          const currentPath = window.location.pathname;
+                          console.log("[GlobalNav] ⏱️ NAVIGATION CHECK", {
+                            navigationId,
+                            elapsed,
+                            expectedPath: href,
+                            actualPath: currentPath,
+                            navigationHappened: currentPath === href || currentPath.startsWith(href),
+                          });
+                        }, 100);
+                      }}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -300,6 +337,41 @@ export default function GlobalNav() {
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
+                      onClick={(e) => {
+                        const href = venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/";
+                        console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (settings page)", {
+                          venueId,
+                          primaryVenueId,
+                          href,
+                          pathname,
+                          isOnSettings,
+                          timestamp: new Date().toISOString(),
+                          event: e,
+                        });
+                        
+                        // Track navigation attempt
+                        const startTime = Date.now();
+                        const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                        
+                        console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
+                          navigationId,
+                          href,
+                          startTime,
+                        });
+                        
+                        // Monitor if navigation actually happens
+                        setTimeout(() => {
+                          const elapsed = Date.now() - startTime;
+                          const currentPath = window.location.pathname;
+                          console.log("[GlobalNav] ⏱️ NAVIGATION CHECK", {
+                            navigationId,
+                            elapsed,
+                            expectedPath: href,
+                            actualPath: currentPath,
+                            navigationHappened: currentPath === href || currentPath.startsWith(href),
+                          });
+                        }, 100);
+                      }}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
@@ -348,14 +420,66 @@ export default function GlobalNav() {
                       <Link
                         href={`/dashboard/${venueId || primaryVenueId}`}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
-                        onClick={() => {
-                          // eslint-disable-next-line no-console
+                        onClick={(e) => {
+                          const href = `/dashboard/${venueId || primaryVenueId}`;
                           console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (home page)", {
                             venueId,
                             primaryVenueId,
-                            href: `/dashboard/${venueId || primaryVenueId}`,
+                            href,
+                            pathname,
+                            isHomePage,
+                            isAuthenticated,
+                            hasSession: !!session,
+                            userId: session?.user?.id,
                             timestamp: new Date().toISOString(),
+                            event: e,
                           });
+                          
+                          // Track navigation attempt
+                          const startTime = Date.now();
+                          const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                          
+                          console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
+                            navigationId,
+                            href,
+                            startTime,
+                            routerAvailable: !!router,
+                          });
+                          
+                          // Monitor if navigation actually happens
+                          setTimeout(() => {
+                            const elapsed = Date.now() - startTime;
+                            const currentPath = window.location.pathname;
+                            console.log("[GlobalNav] ⏱️ NAVIGATION CHECK", {
+                              navigationId,
+                              elapsed,
+                              expectedPath: href,
+                              actualPath: currentPath,
+                              navigationHappened: currentPath === href || currentPath.startsWith(href),
+                            });
+                            
+                            // If navigation didn't happen, log warning
+                            if (currentPath !== href && !currentPath.startsWith(href)) {
+                              console.warn("[GlobalNav] ⚠️ NAVIGATION FAILED", {
+                                navigationId,
+                                expectedPath: href,
+                                actualPath: currentPath,
+                                elapsed,
+                              });
+                            }
+                          }, 100);
+                          
+                          // Also check after longer delay
+                          setTimeout(() => {
+                            const currentPath = window.location.pathname;
+                            if (currentPath !== href && !currentPath.startsWith(href)) {
+                              console.error("[GlobalNav] ❌ NAVIGATION STILL FAILED AFTER 1s", {
+                                navigationId,
+                                expectedPath: href,
+                                actualPath: currentPath,
+                              });
+                            }
+                          }, 1000);
                         }}
                       >
                         <LayoutDashboard className="mr-3 h-5 w-5" />
