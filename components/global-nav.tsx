@@ -315,8 +315,13 @@ export default function GlobalNav() {
                     <Button
                       variant="outline"
                       onClick={async () => {
-                        await signOut();
-                        router.replace("/");
+                        try {
+                          await signOut();
+                          window.location.href = "/";
+                        } catch (error) {
+                          console.error("[GlobalNav] Sign out error", error);
+                          window.location.href = "/";
+                        }
                       }}
                       className="flex items-center px-4 py-3 text-base font-medium"
                     >
