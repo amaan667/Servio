@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { todayWindowForTZ } from "@/lib/time";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
-import { fetchMenuItemCount, fetchUnifiedCounts } from "@/lib/counts/unified-counts";
+import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
 // Force dynamic rendering to prevent stale cached menu counts
@@ -20,7 +20,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   // NO REDIRECTS - User requested ZERO sign-in redirects
   // Auth check is optional - client will handle auth display
   // Dashboard ALWAYS loads - client handles authentication
-  const auth = await requirePageAuth(venueId).catch(() => null);
+  await requirePageAuth(venueId).catch(() => null);
 
   // STEP 2: Fetch initial dashboard data on server (even without auth)
   // Always fetch data - don't block on auth
@@ -104,7 +104,6 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         // Merge real counts into initialCounts
         if (initialCounts) {
           const activeTables = allTables?.filter((t) => t.is_active) || [];
-          const totalTables = allTables?.length || 0;
           const tablesInUse = activeSessions?.length || 0;
           const tablesReserved = currentReservations?.length || 0;
           
@@ -128,22 +127,21 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         .neq("order_status", "CANCELLED")
         .neq("order_status", "REFUNDED");
 
-      if (ordersError) {
+      // Use unified count function - single source of truth
+      const actualMenuItemCount = await fetchMenuItemCount(venueId);
+
+      let revenue = 0;
+      let unpaid = 0;
+      
+      if (!ordersError && orders) {
+        revenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+        unpaid = orders.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length;
+      } else if (ordersError) {
         logger.error("[DASHBOARD] Error fetching orders", {
           error: ordersError.message,
           venueId: normalizedVenueId,
         });
-      } else {
-        const totalOrders = orders?.length || 0;
-        const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-        const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
       }
-
-      // Use unified count function - single source of truth
-      const actualMenuItemCount = await fetchMenuItemCount(venueId);
-
-      const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-      const unpaid = orders?.filter((o) => o.order_status === "UNPAID").length || 0;
 
       // CRITICAL: Create initialStats object
       initialStats = {
@@ -184,6 +182,27 @@ export default async function VenuePage({ params }: { params: { venueId: string 
               timestamp: new Date().toISOString(),
             });
             console.log("[DashboardPage] ⚡ Page script executed - component will mount next");
+            
+            // Catch any JavaScript errors that might prevent component mounting
+            window.addEventListener('error', function(e) {
+              console.error("[DashboardPage] ❌ JAVASCRIPT ERROR:", e.error);
+              console.error("[DashboardPage] Error message:", e.message);
+              console.error("[DashboardPage] Error filename:", e.filename);
+              console.error("[DashboardPage] Error lineno:", e.lineno);
+            });
+            
+            // Catch unhandled promise rejections
+            window.addEventListener('unhandledrejection', function(e) {
+              console.error("[DashboardPage] ❌ UNHANDLED PROMISE REJECTION:", e.reason);
+            });
+            
+            // Log when React starts hydrating
+            if (typeof window !== 'undefined' && window.__NEXT_DATA__) {
+              console.log("[DashboardPage] ✅ Next.js data available", {
+                page: window.__NEXT_DATA__.page,
+                props: !!window.__NEXT_DATA__.props,
+              });
+            }
           `,
         }}
       />

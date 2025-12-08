@@ -10,7 +10,6 @@ import { useConnectionMonitor } from "@/lib/connection-monitor";
 import { supabaseBrowser } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
 import { useAuthRedirect } from "./hooks/useAuthRedirect";
-import { isCacheFresh } from "@/lib/cache/count-cache";
 
 // Removed PullToRefresh - not needed, causes build issues
 
@@ -61,14 +60,19 @@ const DashboardClient = React.memo(function DashboardClient({
   initialCounts?: DashboardCounts;
   initialStats?: DashboardStats;
 }) {
-  // Log component mount immediately
-  // eslint-disable-next-line no-console
-  console.log("[DashboardClient] 🚀 COMPONENT MOUNTING", {
-    venueId,
-    hasInitialCounts: !!initialCounts,
-    hasInitialStats: !!initialStats,
-    timestamp: new Date().toISOString(),
-  });
+  // Log component mount immediately - this should fire as soon as component is called
+  try {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardClient] 🚀 COMPONENT MOUNTING", {
+      venueId,
+      hasInitialCounts: !!initialCounts,
+      hasInitialStats: !!initialStats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[DashboardClient] ❌ ERROR IN MOUNT LOG", error);
+  }
 
   const router = useRouter();
 
@@ -91,16 +95,33 @@ const DashboardClient = React.memo(function DashboardClient({
     return sessionStorage.getItem(`user_role_${venueId}`);
   };
 
+  // Log before hooks to catch if hooks are the issue
+  // eslint-disable-next-line no-console
+  console.log("[DashboardClient] 🔧 BEFORE HOOKS", {
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Hooks must be called unconditionally - can't be in try-catch
   const { user: authUser, isLoading: authRedirectLoading } = useAuthRedirect();
   const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole());
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
+  // eslint-disable-next-line no-console
+  console.log("[DashboardClient] ✅ All hooks completed", {
+    hasUser: !!user,
+    hasVenue: !!venue,
+    hasUserRole: !!userRole,
+    hasAuthUser: !!authUser,
+    authRedirectLoading,
+  });
+
   // Log initial state immediately
   useEffect(() => {
     // eslint-disable-next-line no-console
-    console.log("[DashboardClient] 📊 INITIAL STATE", {
+    console.log("[DashboardClient] 📊 INITIAL STATE (useEffect)", {
       venueId,
       hasCachedUser: !!user,
       hasCachedVenue: !!venue,
@@ -121,9 +142,11 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [authUser, user]);
 
   // Monitor connection status (must be at top before any returns)
+  // Hooks must be called unconditionally
   useConnectionMonitor();
 
   // Enable intelligent prefetching for dashboard routes
+  // Hooks must be called unconditionally
   useDashboardPrefetch(venueId);
 
   const sendDashboardLog = (_payload: DashboardLogPayload) => {
@@ -166,7 +189,17 @@ const DashboardClient = React.memo(function DashboardClient({
     });
   }, [venueId, initialCounts, initialStats]);
   
+  // Hooks must be called unconditionally - can't be in try-catch
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
+  
+  // Log after hook completes
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardClient] ✅ useDashboardData hook completed", {
+      hasData: !!dashboardData,
+      loading: dashboardData?.loading,
+    });
+  }, [dashboardData]);
   
   // Simple display values - use client state which is synced from server data
   // The useDashboardData hook ensures initialCounts/initialStats are used immediately
@@ -312,7 +345,17 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [venueId, dashboardData.setStats, dashboardData.setCounts]);
 
   // Fetch live analytics data for charts
+  // Hooks must be called unconditionally
   const analyticsData = useAnalyticsData(venueId);
+  
+  // Log after hook completes
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardClient] ✅ useAnalyticsData hook completed", {
+      hasData: !!analyticsData.data,
+      loading: analyticsData.loading,
+    });
+  }, [analyticsData]);
 
   // Handle venue change
   const handleVenueChange = useCallback(
@@ -582,6 +625,18 @@ const DashboardClient = React.memo(function DashboardClient({
   const hasCachedData = !!(user || venue || userRole || initialCounts || initialStats);
   const shouldBlockOnAuth = false; // Never block - render immediately
   
+  // eslint-disable-next-line no-console
+  console.log("[DashboardClient] 🎯 REACHED RENDER DECISION", {
+    hasCachedData,
+    shouldBlockOnAuth,
+    authRedirectLoading,
+    hasUser: !!user,
+    hasVenue: !!venue,
+    hasUserRole: !!userRole,
+    hasInitialCounts: !!initialCounts,
+    hasInitialStats: !!initialStats,
+  });
+  
   // Log auth state for debugging (must be before any returns)
   useEffect(() => {
     // eslint-disable-next-line no-console
@@ -601,7 +656,7 @@ const DashboardClient = React.memo(function DashboardClient({
   // Log if we're rendering the dashboard (must be before any returns)
   useEffect(() => {
     // eslint-disable-next-line no-console
-    console.log("[DashboardClient] Rendering dashboard", {
+    console.log("[DashboardClient] ✅ Rendering dashboard", {
       venueId,
       hasUser: !!user,
       hasVenue: !!venue,
@@ -616,7 +671,7 @@ const DashboardClient = React.memo(function DashboardClient({
   
   if (shouldShowSpinner) {
     // eslint-disable-next-line no-console
-    console.log("[DashboardClient] Showing spinner - no cached data and auth loading");
+    console.log("[DashboardClient] ⏳ Showing spinner - no cached data and auth loading");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -626,6 +681,12 @@ const DashboardClient = React.memo(function DashboardClient({
       </div>
     );
   }
+  
+  // eslint-disable-next-line no-console
+  console.log("[DashboardClient] 🎨 RENDERING DASHBOARD CONTENT", {
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
 
   // Don't render if no authenticated user (will redirect) (AFTER all hooks)
   if (!authUser) {
