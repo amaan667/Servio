@@ -348,6 +348,15 @@ export default function GlobalNav() {
                       <Link
                         href={`/dashboard/${venueId || primaryVenueId}`}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
+                        onClick={() => {
+                          // eslint-disable-next-line no-console
+                          console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (home page)", {
+                            venueId,
+                            primaryVenueId,
+                            href: `/dashboard/${venueId || primaryVenueId}`,
+                            timestamp: new Date().toISOString(),
+                          });
+                        }}
                       >
                         <LayoutDashboard className="mr-3 h-5 w-5" />
                         Dashboard
