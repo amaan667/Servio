@@ -552,8 +552,46 @@ const DashboardClient = React.memo(function DashboardClient({
   // Log whenever userRole changes for dashboard rendering
   useEffect(() => {}, [userRole]);
 
-  // Show loading while checking auth redirect (AFTER all hooks)
-  if (authRedirectLoading) {
+  // CRITICAL: Render immediately - don't block on auth loading
+  // Auth check happens in background, page renders with cached data
+  const hasCachedData = !!(user || venue || userRole || initialCounts || initialStats);
+  const shouldBlockOnAuth = false; // Never block - render immediately
+  
+  // Log auth state for debugging (must be before any returns)
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardClient] Auth state", {
+      authRedirectLoading,
+      hasUser: !!authUser,
+      hasCachedUser: !!user,
+      hasVenue: !!venue,
+      hasUserRole: !!userRole,
+      hasCachedData,
+      hasInitialCounts: !!initialCounts,
+      hasInitialStats: !!initialStats,
+      timestamp: new Date().toISOString(),
+    });
+  }, [authRedirectLoading, authUser, user, venue, userRole, hasCachedData, initialCounts, initialStats]);
+
+  // Log if we're rendering the dashboard (must be before any returns)
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardClient] Rendering dashboard", {
+      venueId,
+      hasUser: !!user,
+      hasVenue: !!venue,
+      hasUserRole: !!userRole,
+      timestamp: new Date().toISOString(),
+    });
+  }, [venueId, user, venue, userRole]);
+
+  // Only show spinner if we have NO cached data AND auth is still loading
+  // This allows instant rendering when we have cached data
+  const shouldShowSpinner = shouldBlockOnAuth && authRedirectLoading && !hasCachedData;
+  
+  if (shouldShowSpinner) {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardClient] Showing spinner - no cached data and auth loading");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
