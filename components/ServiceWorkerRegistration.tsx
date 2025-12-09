@@ -10,46 +10,13 @@ interface ServiceWorkerRegistrationProps {
 }
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
-  // Feature flag to control service worker registration. Default: enabled for offline support.
-  // Set NEXT_PUBLIC_ENABLE_SW=false to disable.
-  const enableServiceWorker = process.env.NEXT_PUBLIC_ENABLE_SW !== "false";
-  const cacheVersion = process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v1";
+  // Always enable service worker for offline support. Versioned cache to avoid stale assets.
+  const cacheVersion = process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v-current";
 
   const [isOnline, setIsOnline] = useState(true);
   const [queueCount, setQueueCount] = useState(0);
 
   useEffect(() => {
-    // If SW is disabled, proactively unregister any existing SW + clear caches once
-    const unregisterAndClearCaches = async () => {
-      if (!("serviceWorker" in navigator)) return;
-      try {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((reg) => reg.unregister()));
-      } catch {
-        /* ignore */
-      }
-      try {
-        const cacheNames = await caches.keys();
-        await Promise.all(
-          cacheNames
-            .filter(
-              (name) =>
-                name.startsWith(cacheVersion) ||
-                name.startsWith("next") ||
-                name.startsWith("_next") ||
-                name.includes("static")
-            )
-            .map((name) => caches.delete(name))
-        );
-      } catch {
-        /* ignore */
-      }
-    };
-
-    if (!enableServiceWorker && typeof window !== "undefined") {
-      unregisterAndClearCaches();
-    }
-
     // Initialize online status - default to true to avoid false offline warnings
     setIsOnline(true);
 
@@ -105,7 +72,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     const queueInterval = setInterval(updateQueueStatus, 5000);
 
     // Register service worker for offline support (only if enabled)
-    if (enableServiceWorker && "serviceWorker" in navigator) {
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register(`/sw.js?ver=${cacheVersion}`, { scope: "/" })
         .then((registration) => {
