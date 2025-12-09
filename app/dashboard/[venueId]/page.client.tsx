@@ -696,14 +696,8 @@ const DashboardClient = React.memo(function DashboardClient({
     timestamp: new Date().toISOString(),
   });
 
-  // Don't render if no authenticated user (will redirect) (AFTER all hooks)
-  if (!authUser) {
-    return null;
-  }
-
-  // NO AUTH REDIRECTS - User requested ZERO sign-in redirects
-  // If there's truly no user data (after trying cache), just render anyway
-  // Dashboard will handle gracefully
+  // Always render even if authUser isn't available yet.
+  // Background auth check + cached data avoid blocking initial paint.
 
   return (
     <div className="min-h-screen bg-gray-50/50">
