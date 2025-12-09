@@ -74,7 +74,9 @@ export function QuickActionsToolbar({
     },
   ];
 
-  if (userRole === "owner" || userRole === "manager") {
+  const isPrivileged = userRole === "owner" || userRole === "manager" || !userRole;
+
+  if (isPrivileged) {
     actions.push({
       label: "Analytics",
       href: `/dashboard/${venueId}/analytics`,
@@ -100,7 +102,7 @@ export function QuickActionsToolbar({
     // Block handled
   }
 
-  if (userRole === "owner" || userRole === "manager" || userRole === "kitchen") {
+  if (isPrivileged || userRole === "kitchen") {
     actions.push({
       label: "Kitchen",
       href: `/dashboard/${venueId}/kds`,

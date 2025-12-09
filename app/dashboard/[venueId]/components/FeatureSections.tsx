@@ -16,7 +16,6 @@ import {
   QrCode,
   Receipt,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
 
 interface Feature {
@@ -126,8 +125,10 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
     },
   ];
 
-  // Add Insights section for owners/managers
-  if (userRole === "owner" || userRole === "manager") {
+  // Add Insights section for owners/managers (fail open if role unknown so users still see features)
+  const isPrivileged = userRole === "owner" || userRole === "manager" || !userRole;
+
+  if (isPrivileged) {
     sections.push({
       title: "Insights",
       description: "Analytics and customer feedback",
