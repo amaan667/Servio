@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { ENV as _ENV } from "@/lib/env";
 import { v4 as uuidv4 } from "uuid";
-import { executeStripeOperation } from "@/lib/stripe-client";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
@@ -68,14 +67,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Retrieve payment intent from Stripe with retry
-    const paymentIntent = await executeStripeOperation(
-      async () => {
-        const { stripe } = await import("@/lib/stripe-client");
-        return await stripe.paymentIntents.retrieve(paymentIntentId);
-      },
-      "retrieve_payment_intent"
-    );
+    // Retrieve payment intent from Stripe
+    const { stripe } = await import("@/lib/stripe-client");
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     // Verify payment succeeded
     if (paymentIntent.status !== "succeeded") {
