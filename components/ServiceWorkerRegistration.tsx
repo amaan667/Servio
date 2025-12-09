@@ -17,6 +17,31 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
   const [queueCount, setQueueCount] = useState(0);
 
   useEffect(() => {
+    // If SW is disabled, proactively unregister any existing SW + clear caches once
+    const unregisterAndClearCaches = async () => {
+      if (!("serviceWorker" in navigator)) return;
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((reg) => reg.unregister()));
+      } catch {
+        /* ignore */
+      }
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames
+            .filter((name) => name.startsWith("next") || name.startsWith("_next") || name.includes("static"))
+            .map((name) => caches.delete(name))
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+
+    if (!enableServiceWorker && typeof window !== "undefined") {
+      unregisterAndClearCaches();
+    }
+
     // Initialize online status - default to true to avoid false offline warnings
     setIsOnline(true);
 

@@ -27,6 +27,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         }
         sessionStorage.setItem("chunk-retry-done", "true");
 
+        // Clear relevant caches to force fresh assets
+        if (typeof caches !== "undefined") {
+          caches.keys().then((names) => {
+            names
+              .filter((name) => name.startsWith("next") || name.startsWith("_next") || name.includes("static"))
+              .forEach((name) => caches.delete(name));
+          });
+        }
+
         const url = new URL(window.location.href);
         url.searchParams.set("cache-bust", Date.now().toString());
         window.location.replace(url.toString());
