@@ -54,30 +54,30 @@ export async function middleware(request: NextRequest) {
   let supabase: ReturnType<typeof createServerClient> | null = null;
   try {
     supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({ name, value: "", ...options });
-        },
+    cookies: {
+      get(name: string) {
+        return request.cookies.get(name)?.value;
       },
-    });
+      set(name: string, value: string, options: CookieOptions) {
+        request.cookies.set({ name, value, ...options });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({ name, value, ...options });
+      },
+      remove(name: string, options: CookieOptions) {
+        request.cookies.set({ name, value: "", ...options });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({ name, value: "", ...options });
+      },
+    },
+  });
   } catch (error) {
     logger.error("[middleware] Supabase disabled - env missing or invalid", {
       error: error instanceof Error ? error.message : String(error),
@@ -125,7 +125,7 @@ export async function middleware(request: NextRequest) {
       timestamp: new Date().toISOString(),
       url: request.url,
     });
-  
+    
     // Don't redirect - let dashboard component handle auth client-side
   }
 
