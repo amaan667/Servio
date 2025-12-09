@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { isDevelopment } from '@/lib/env';
@@ -8,6 +8,11 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
+/**
+ * Get staff list for a venue
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only access staff for venues they have access to.
+ */
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -25,13 +30,16 @@ export const GET = withUnifiedAuth(
       }
 
       // STEP 3: Business logic
-      const admin = await createAdminClient();
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only access staff for venues they have access to
+      const supabase = await createClient();
+      
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = context.venueId.startsWith("venue-") 
         ? context.venueId 
         : `venue-${context.venueId}`;
       
-      const { data: staff, error } = await admin
+      const { data: staff, error } = await supabase
         .from("staff")
         .select("*")
         .eq("venue_id", normalizedVenueId)

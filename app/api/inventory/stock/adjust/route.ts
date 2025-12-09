@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -17,7 +17,11 @@ const stockAdjustmentSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
-// POST /api/inventory/stock/adjust
+/**
+ * Adjust inventory stock for an ingredient
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only adjust stock for ingredients in venues they have access to.
+ */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -32,12 +36,16 @@ export const POST = withUnifiedAuth(
       // STEP 2: Validate input
       const body = await validateBody(stockAdjustmentSchema, await req.json());
 
-      // STEP 3: Get venueId from ingredient
-      const adminSupabase = createAdminClient();
-      const { data: ingredient, error: ingredientError } = await adminSupabase
+      // STEP 3: Get venueId from ingredient and verify access
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only access ingredients for venues they have access to
+      const supabase = await createClient();
+      
+      const { data: ingredient, error: ingredientError } = await supabase
         .from("ingredients")
         .select("venue_id, name")
         .eq("id", body.ingredient_id)
+        .eq("venue_id", context.venueId) // Explicit venue check (RLS also enforces this)
         .single();
 
       if (ingredientError || !ingredient) {
@@ -51,8 +59,20 @@ export const POST = withUnifiedAuth(
 
       const venueId = ingredient.venue_id;
 
+      // Verify venue matches context (double-check for security)
+      if (venueId !== context.venueId) {
+        logger.error("[INVENTORY STOCK ADJUST] Venue mismatch:", {
+          ingredientVenueId: venueId,
+          contextVenueId: context.venueId,
+          ingredientId: body.ingredient_id,
+          userId: context.user.id,
+        });
+        return apiErrors.forbidden("Ingredient does not belong to your venue");
+      }
+
       // STEP 4: Business logic - Create stock ledger entry
-      const { data: ledgerEntry, error: ledgerError } = await adminSupabase
+      // RLS ensures user can only create ledger entries for venues they have access to
+      const { data: ledgerEntry, error: ledgerError } = await supabase
         .from("stock_ledgers")
         .insert({
           ingredient_id: body.ingredient_id,
@@ -114,10 +134,14 @@ export const POST = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       // Get venueId from ingredient in body
+      // Note: This extractor uses admin client temporarily to read ingredient venue_id
+      // The main handler will verify venue access using authenticated client
       try {
         const body = await req.json().catch(() => ({}));
         const ingredientId = (body as { ingredient_id?: string })?.ingredient_id;
         if (ingredientId) {
+          // SECURITY: Using admin client here only to extract venue_id for routing
+          // The main handler will use authenticated client and verify venue access
           const { createAdminClient } = await import("@/lib/supabase");
           const supabase = createAdminClient();
           const { data: ingredient } = await supabase

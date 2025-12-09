@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth, enforceResourceLimit } from '@/lib/auth/unified-auth';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { isDevelopment } from '@/lib/env';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 
 export const runtime = "nodejs";
@@ -18,6 +17,8 @@ interface TableRow {
 }
 
 // GET /api/tables?venueId=xxx - Get table runtime state for a venue
+// SECURITY: Uses authenticated client that respects RLS (not admin client)
+// This ensures venue isolation is enforced at the database level
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -27,10 +28,12 @@ export const GET = withUnifiedAuth(
         return apiErrors.rateLimit();
       }
 
-      const adminSupabase = createAdminClient();
+      // Use authenticated client that respects RLS (not admin client)
+      const supabase = await createClient();
 
       // Fetch all active tables for the venue
-      const { data: tables, error: tablesError } = await adminSupabase
+      // RLS ensures user can only access tables for venues they have access to
+      const { data: tables, error: tablesError } = await supabase
         .from("tables")
         .select("*")
         .eq("venue_id", context.venueId)
@@ -46,7 +49,8 @@ export const GET = withUnifiedAuth(
       }
 
       // Get current sessions for each table (only active sessions)
-      const { data: sessions, error: sessionsError } = await adminSupabase
+      // RLS ensures user can only access sessions for venues they have access to
+      const { data: sessions, error: sessionsError } = await supabase
         .from("table_sessions")
         .select("*")
         .eq("venue_id", context.venueId)
@@ -112,7 +116,8 @@ export const GET = withUnifiedAuth(
         for (const table of tablesWithoutSessions) {
           const tableWithId = table as { table_id?: string; id?: string };
           const tableId = tableWithId.table_id || tableWithId.id;
-          const { error: sessionError } = await adminSupabase.from("table_sessions").insert({
+          // RLS ensures user can only create sessions for venues they have access to
+          const { error: sessionError } = await supabase.from("table_sessions").insert({
             venue_id: context.venueId,
             table_id: tableId,
             status: "FREE",
@@ -129,7 +134,8 @@ export const GET = withUnifiedAuth(
         }
 
         // Refetch sessions after creating missing ones
-        const { data: updatedSessions } = await adminSupabase
+        // RLS ensures user can only access sessions for venues they have access to
+        const { data: updatedSessions } = await supabase
           .from("table_sessions")
           .select("*")
           .eq("venue_id", context.venueId)
@@ -204,13 +210,16 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 3: Business logic
-      const adminSupabase = createAdminClient();
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only create tables for venues they have access to
+      const supabase = await createClient();
 
       // Check if a table with the same label already exists
-      const { data: existingTable } = await adminSupabase
+      // RLS ensures user can only access tables for venues they have access to
+      const { data: existingTable } = await supabase
         .from("tables")
         .select("id, label")
-        .eq("venue_id", context.venueId)
+        .eq("venue_id", context.venueId) // Explicit venue check (RLS also enforces this)
         .eq("label", label)
         .eq("is_active", true)
         .maybeSingle();
@@ -221,7 +230,8 @@ export const POST = withUnifiedAuth(
       }
 
       // Create table
-      const { data: table, error: tableError } = await adminSupabase
+      // RLS ensures user can only create tables for venues they have access to
+      const { data: table, error: tableError } = await supabase
         .from("tables")
         .insert({
           venue_id: context.venueId,
@@ -246,17 +256,19 @@ export const POST = withUnifiedAuth(
 
       // Check if session already exists for this table
       logger.debug("[TABLES POST] Step 6: Checking for existing session", { tableId: table.id });
-      const { data: existingSession } = await adminSupabase
+      // RLS ensures user can only access sessions for venues they have access to
+      const { data: existingSession } = await supabase
         .from("table_sessions")
         .select("id")
         .eq("table_id", table.id)
-        .eq("venue_id", context.venueId)
+        .eq("venue_id", context.venueId) // Explicit venue check (RLS also enforces this)
         .maybeSingle();
 
       // Only create session if one doesn't already exist
       if (!existingSession) {
         logger.debug("[TABLES POST] Step 7: Creating table session", { tableId: table.id });
-        const { error: sessionError } = await adminSupabase.from("table_sessions").insert({
+        // RLS ensures user can only create sessions for venues they have access to
+        const { error: sessionError } = await supabase.from("table_sessions").insert({
           venue_id: context.venueId,
           table_id: table.id,
           status: "FREE",

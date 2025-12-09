@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -15,8 +15,12 @@ const stockDeductionSchema = z.object({
   venue_id: z.string().uuid("Invalid venue ID").optional(),
 });
 
-// POST /api/inventory/stock/deduct
-// Deducts stock for an order using the SQL function
+/**
+ * Deduct stock for an order using SQL function
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only deduct stock for orders in venues they have access to.
+ * RPC calls respect RLS policies defined in the database function.
+ */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -36,10 +40,23 @@ export const POST = withUnifiedAuth(
         return apiErrors.badRequest("venue_id is required");
       }
 
-      // STEP 3: Business logic - Deduct stock via SQL function
-      const adminSupabase = createAdminClient();
+      // Verify venue matches context (double-check for security)
+      if (body.venue_id && body.venue_id !== context.venueId) {
+        logger.error("[INVENTORY STOCK DEDUCT] Venue mismatch:", {
+          bodyVenueId: body.venue_id,
+          contextVenueId: context.venueId,
+          orderId: body.order_id,
+          userId: context.user.id,
+        });
+        return apiErrors.forbidden("Order does not belong to your venue");
+      }
 
-      const { data, error } = await adminSupabase.rpc("deduct_stock_for_order", {
+      // STEP 3: Business logic - Deduct stock via SQL function
+      // Use authenticated client that respects RLS (not admin client)
+      // RPC functions should respect RLS policies defined in the database
+      const supabase = await createClient();
+
+      const { data, error } = await supabase.rpc("deduct_stock_for_order", {
         p_order_id: body.order_id,
         p_venue_id: venueId,
       });

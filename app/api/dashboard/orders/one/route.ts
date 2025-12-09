@@ -1,50 +1,31 @@
 export const runtime = "nodejs";
 
 import { success, apiErrors } from '@/lib/api/standard-response';
-import { authenticateRequest, verifyVenueAccess } from "@/lib/api-auth";
-import { logger } from "@/lib/logger";
+import { createClient } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
+import { withUnifiedAuth } from '@/lib/auth/unified-auth';
+import { NextRequest } from 'next/server';
 
-type OrderRow = {
-  id: string;
-  venue_id: string;
-  table_number: number | null;
-  customer_name: string | null;
-  items: unknown[]; // jsonb[]
-  total_amount: number;
-  created_at: string; // timestamptz
-  order_status: "pending" | "preparing" | "served" | "delivered" | "cancelled";
-  payment_status: "paid" | "unpaid" | null;
-};
+/**
+ * Get orders for a venue with scope filtering
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only access orders for venues they have access to.
+ */
+export const GET = withUnifiedAuth(
+  async (req: NextRequest, context) => {
+    const url = new URL(req.url);
+    // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
+    const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const venueId = url.searchParams.get("venueId");
-  // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
-  const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
+    // venueId comes from context (already verified by withUnifiedAuth)
+    const venueId = context.venueId;
 
-  try {
-    if (!venueId) {
-      return apiErrors.badRequest('venueId required');
-    }
+    try {
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only access orders for venues they have access to
+      const supabase = await createClient();
 
-    // Authenticate using Authorization header
-    const auth = await authenticateRequest(req);
-    if (!auth.success || !auth.user || !auth.supabase) {
-      return apiErrors.unauthorized(auth.error || "Authentication required");
-    }
-
-    const { user, supabase } = auth;
-
-    // Verify venue access
-    const access = await verifyVenueAccess(supabase, user.id, venueId);
-    if (!access.hasAccess) {
-      return apiErrors.forbidden('Access denied');
-    }
-
-    // Use default timezone since venues table doesn't have timezone column
-    const zone = "Europe/London";
-
-    // base query: always sort by created_at DESC  ✅ (Requirement #2)
+      // base query: always sort by created_at DESC  ✅ (Requirement #2)
     let q = supabase
       .from("orders")
       .select(
@@ -124,16 +105,18 @@ export async function GET(req: Request) {
     //
     // }
 
-    return success({
-      orders: transformedOrders || [],
-      meta: { scope, zone, count: transformedOrders?.length ?? 0 },
-    });
-  } catch (_e) {
-    const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
-    logger.error("[DASHBOARD ORDERS ONE] Unexpected error", {
-      error: errorMessage,
-      venueId,
-    });
-    return apiErrors.internal(errorMessage);
+      return success({
+        orders: transformedOrders || [],
+        meta: { scope, zone: "Europe/London", count: transformedOrders?.length ?? 0 },
+      });
+    } catch (_e) {
+      const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
+      logger.error("[DASHBOARD ORDERS ONE] Unexpected error", {
+        error: errorMessage,
+        venueId,
+        userId: context.user.id,
+      });
+      return apiErrors.internal(errorMessage);
+    }
   }
-}
+);

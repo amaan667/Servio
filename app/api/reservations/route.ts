@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -22,7 +22,11 @@ const createReservationSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-// GET /api/reservations?venueId=xxx - Get reservations for a venue
+/**
+ * Get reservations for a venue
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only access reservations for venues they have access to.
+ */
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -34,7 +38,7 @@ export const GET = withUnifiedAuth(
         );
       }
 
-      // STEP 2: Get venueId from context
+      // STEP 2: Get venueId from context (already verified by withUnifiedAuth)
       const venueId = context.venueId;
 
       if (!venueId) {
@@ -47,12 +51,15 @@ export const GET = withUnifiedAuth(
       const date = searchParams.get("date");
 
       // STEP 4: Business logic - Fetch reservations
-      const supabase = createAdminClient();
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only access reservations for venues they have access to
+      const supabase = await createClient();
 
+      // RLS ensures user can only access reservations for venues they have access to
       let query = supabase
         .from("reservations")
         .select("*")
-        .eq("venue_id", venueId)
+        .eq("venue_id", venueId) // Explicit venue check (RLS also enforces this)
         .order("start_at", { ascending: true });
 
       if (status) {
@@ -109,7 +116,11 @@ export const GET = withUnifiedAuth(
   }
 );
 
-// POST /api/reservations - Create a new reservation
+/**
+ * Create a new reservation
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only create reservations for venues they have access to.
+ */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     try {
@@ -129,9 +140,22 @@ export const POST = withUnifiedAuth(
         return apiErrors.badRequest("venue_id is required");
       }
 
-      // STEP 3: Business logic - Create reservation
-      const supabase = createAdminClient();
+      // Verify venue matches context (double-check for security)
+      if (body.venue_id && body.venue_id !== context.venueId) {
+        logger.error("[RESERVATIONS POST] Venue mismatch:", {
+          bodyVenueId: body.venue_id,
+          contextVenueId: context.venueId,
+          userId: context.user.id,
+        });
+        return apiErrors.forbidden("Reservation must be created for your venue");
+      }
 
+      // STEP 3: Business logic - Create reservation
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only create reservations for venues they have access to
+      const supabase = await createClient();
+
+      // RLS ensures user can only create reservations for venues they have access to
       const { data: reservation, error: createError } = await supabase
         .from("reservations")
         .insert({

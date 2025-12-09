@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
@@ -7,6 +7,11 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
+/**
+ * Delete (soft-delete) staff member from a venue
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only delete staff from venues they have access to.
+ */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     logger.debug("[STAFF DELETE API] Request received", {
@@ -39,15 +44,18 @@ export const POST = withUnifiedAuth(
         : `venue-${context.venueId}`;
       logger.debug("[STAFF DELETE API] Normalized venueId and staff ID", { normalizedVenueId, staffId: id });
 
-      const admin = createAdminClient();
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only delete staff from venues they have access to
+      const supabase = await createClient();
 
       // Use soft deletion instead of hard deletion for forever count
+      // RLS ensures user can only update staff for venues they have access to
       const deleteStart = Date.now();
-      const { data, error } = await admin
+      const { data, error } = await supabase
         .from('staff')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', id)
-        .eq('venue_id', normalizedVenueId)
+        .eq('venue_id', normalizedVenueId) // Explicit venue check (RLS also enforces this)
         .select(); // Select to verify deletion
       const deleteTime = Date.now() - deleteStart;
       

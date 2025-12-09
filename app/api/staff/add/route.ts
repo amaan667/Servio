@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest } from 'next/server';
@@ -7,6 +7,11 @@ import { logger } from '@/lib/logger';
 
 export const runtime = "nodejs";
 
+/**
+ * Add staff member to a venue
+ * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
+ * The authenticated client ensures users can only add staff to venues they have access to.
+ */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     logger.debug("[STAFF ADD API] Request received", {
@@ -42,9 +47,11 @@ export const POST = withUnifiedAuth(
       const insertData = { venue_id: normalizedVenueId, name, role: role || "Server", active: true };
       logger.debug("[STAFF ADD API] Insert data", { insertData });
 
-      const admin = createAdminClient();
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only add staff to venues they have access to
+      const supabase = await createClient();
       const queryStart = Date.now();
-      const { data, error } = await admin
+      const { data, error } = await supabase
         .from("staff")
         .insert([insertData])
         .select("*");

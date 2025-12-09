@@ -11,8 +11,15 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 // Function to automatically backfill missing KDS tickets for orders
 // Returns true if tickets were created, false otherwise
+// SECURITY: This function is called from within withUnifiedAuth context, so venue access is already verified
+// However, it uses admin client for backfill operations which may need system-level access
+// TODO: Consider if this can use authenticated client instead
 async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
   try {
+    // SECURITY NOTE: Using admin client for backfill operations
+    // This is called from within withUnifiedAuth context where venue access is verified
+    // Admin client is used here because backfill may need to create tickets for historical orders
+    // Consider migrating to authenticated client if RLS policies allow
     const adminSupabase = createAdminClient();
 
     // CRITICAL: Get ALL orders - NO date restrictions, NO status filters, NO subquery limitations
@@ -151,7 +158,9 @@ export const GET = withUnifiedAuth(
       const status = searchParams.get("status");
 
       // STEP 4: Business logic - Fetch tickets
-      const supabase = createAdminClient();
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only access tickets for venues they have access to
+      const supabase = await createClient();
 
       // CRITICAL: Fetch ALL tickets - no status or date restrictions
       // User wants ALL items from EVERY order to always be visible

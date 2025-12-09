@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient, createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from '@/lib/auth/unified-auth';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -45,14 +45,17 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
         }
 
         // STEP 5: Business logic - Update table
-        const adminSupabase = createAdminClient();
+        // Use authenticated client that respects RLS (not admin client)
+        // RLS policies ensure users can only access tables for venues they have access to
+        const supabase = await createClient();
 
         // Verify table exists and belongs to venue
-        const { data: existingTable, error: checkError } = await adminSupabase
+        // RLS ensures user can only access tables for venues they have access to
+        const { data: existingTable, error: checkError } = await supabase
           .from("tables")
           .select("venue_id")
           .eq("id", tableId)
-          .eq("venue_id", venueId)
+          .eq("venue_id", venueId) // Explicit venue check (RLS also enforces this)
           .single();
 
         if (checkError || !existingTable) {
@@ -90,11 +93,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
         }
 
         // Update table
-        const { data: table, error: updateError } = await adminSupabase
+        // RLS ensures user can only update tables for venues they have access to
+        const { data: table, error: updateError } = await supabase
           .from("tables")
           .update(updateData)
           .eq("id", tableId)
-          .eq("venue_id", venueId)
+          .eq("venue_id", venueId) // Explicit venue check (RLS also enforces this)
           .select()
           .single();
 
@@ -175,14 +179,17 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         const url = new URL(req.url);
         const forceRemove = url.searchParams.get("force") === "true";
 
-        const adminSupabase = createAdminClient();
+        // Use authenticated client that respects RLS (not admin client)
+        // RLS policies ensure users can only access tables for venues they have access to
+        const supabase = await createClient();
 
         // First check if table exists
-        const { data: existingTable, error: checkError } = await adminSupabase
+        // RLS ensures user can only access tables for venues they have access to
+        const { data: existingTable, error: checkError } = await supabase
           .from("tables")
           .select("id, label, venue_id")
           .eq("id", tableId)
-          .eq("venue_id", authContext.venueId)
+          .eq("venue_id", authContext.venueId) // Explicit venue check (RLS also enforces this)
           .single();
 
         if (checkError || !existingTable) {
@@ -198,11 +205,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         let ordersError: unknown = null;
 
         try {
-          const ordersResult = await adminSupabase
+          // RLS ensures user can only access orders for venues they have access to
+          const ordersResult = await supabase
             .from("orders")
             .select("id")
             .eq("table_id", tableId)
-            .eq("venue_id", table.venue_id)
+            .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
             .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
           activeOrders = ordersResult.data || [];
@@ -221,11 +229,15 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
           );
 
           // Try a simpler fallback query
+          // SECURITY NOTE: Using admin client for fallback query only
+          // This is safe because venue access is already verified above
           try {
+            const adminSupabase = createAdminClient();
             const fallbackResult = await adminSupabase
               .from("orders")
               .select("id")
               .eq("table_id", tableId)
+              .eq("venue_id", table.venue_id) // Explicit venue check
               .limit(1);
 
             if (fallbackResult.data && fallbackResult.data.length > 0) {
@@ -243,11 +255,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         let reservationsError: unknown = null;
 
         try {
-          const reservationsResult = await adminSupabase
+          // RLS ensures user can only access reservations for venues they have access to
+          const reservationsResult = await supabase
             .from("reservations")
             .select("id")
             .eq("table_id", tableId)
-            .eq("venue_id", table.venue_id)
+            .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
             .eq("status", "BOOKED");
 
           activeReservations = reservationsResult.data || [];
@@ -276,14 +289,15 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
           );
 
           if (!ordersError && activeOrders && activeOrders.length > 0) {
-            const { error: completeOrdersError } = await adminSupabase
+            // RLS ensures user can only update orders for venues they have access to
+            const { error: completeOrdersError } = await supabase
               .from("orders")
               .update({
                 order_status: "COMPLETED",
                 updated_at: new Date().toISOString(),
               })
               .eq("table_id", tableId)
-              .eq("venue_id", table.venue_id)
+              .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
               .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
             if (completeOrdersError) {
@@ -299,14 +313,15 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
             logger.info(
               `[TABLES API] Force canceling ${activeReservations.length} active reservations`
             );
-            const { error: cancelReservationsError } = await adminSupabase
+            // RLS ensures user can only update reservations for venues they have access to
+            const { error: cancelReservationsError } = await supabase
               .from("reservations")
               .update({
                 status: "CANCELLED",
                 updated_at: new Date().toISOString(),
               })
               .eq("table_id", tableId)
-              .eq("venue_id", table.venue_id)
+              .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
               .eq("status", "BOOKED");
 
             if (cancelReservationsError) {
@@ -342,11 +357,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         }
 
         // Clear table_id references in orders to avoid foreign key constraint issues
-        const { error: clearTableRefsError } = await adminSupabase
+        // RLS ensures user can only update orders for venues they have access to
+        const { error: clearTableRefsError } = await supabase
           .from("orders")
           .update({ table_id: null })
           .eq("table_id", tableId)
-          .eq("venue_id", table.venue_id);
+          .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (clearTableRefsError) {
           logger.error("[TABLES API] Error clearing table references in orders:", {
@@ -358,11 +374,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         }
 
         // Delete table sessions first (if they exist)
-        const { error: deleteSessionsError } = await adminSupabase
+        // RLS ensures user can only delete sessions for venues they have access to
+        const { error: deleteSessionsError } = await supabase
           .from("table_sessions")
           .delete()
           .eq("table_id", tableId)
-          .eq("venue_id", table.venue_id);
+          .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (deleteSessionsError) {
           logger.error("[TABLES API] Error deleting table sessions:", { value: deleteSessionsError });
@@ -370,11 +387,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         }
 
         // Delete group sessions for this table
-        const { error: deleteGroupSessionError } = await adminSupabase
+        // RLS ensures user can only delete group sessions for venues they have access to
+        const { error: deleteGroupSessionError } = await supabase
           .from("table_group_sessions")
           .delete()
           .eq("table_number", table.label)
-          .eq("venue_id", table.venue_id);
+          .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (deleteGroupSessionError) {
           logger.error("[TABLES API] Error deleting group sessions:", {
@@ -385,12 +403,13 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
           );
         }
 
-        // Finally, delete the table itself using admin client to bypass RLS
-        const { error } = await adminSupabase
+        // Finally, delete the table itself
+        // RLS ensures user can only delete tables for venues they have access to
+        const { error } = await supabase
           .from("tables")
           .delete()
           .eq("id", tableId)
-          .eq("venue_id", table.venue_id);
+          .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (error) {
           logger.error("[TABLES API] Error deleting table:", {
