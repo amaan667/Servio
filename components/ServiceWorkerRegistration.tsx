@@ -136,6 +136,17 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           </div>
         )}
 
+      {/* Online/Offline badge (always visible) */}
+      {typeof window !== "undefined" && (
+        <div
+          className={`fixed bottom-4 left-4 z-50 px-3 py-1 rounded-full text-sm font-medium shadow ${
+            isOnline ? "bg-green-600 text-white" : "bg-red-600 text-white"
+          }`}
+        >
+          {isOnline ? "Online" : `Offline${queueCount > 0 ? ` • ${queueCount} queued` : ""}`}
+        </div>
+      )}
+
       {/* All update UI removed - updates happen silently in background */}
     </>
   );
