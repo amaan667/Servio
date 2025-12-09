@@ -99,6 +99,72 @@ export async function verifyVenueAccess(
 }
 
 /**
+ * Verify venue exists and is valid (for public routes)
+ * This is a lightweight check that doesn't require user authentication
+ * but ensures the venue exists and is accessible
+ */
+export async function verifyVenueExists(venueId: string): Promise<{ valid: boolean; venue?: Venue; error?: string }> {
+  try {
+    const supabase = await createSupabaseClient();
+    
+    // Use authenticated client which respects RLS
+    // For public routes, this will still work if RLS allows public read access
+    const { data: venue, error: venueError } = await supabase
+      .from("venues")
+      .select("venue_id, owner_user_id, name, created_at, updated_at")
+      .eq("venue_id", venueId)
+      .maybeSingle();
+
+    if (venueError) {
+      logger.warn("[VENUE VERIFY] Venue lookup error", { venueId, error: venueError.message });
+      return { valid: false, error: venueError.message };
+    }
+
+    if (!venue) {
+      logger.warn("[VENUE VERIFY] Venue not found", { venueId });
+      return { valid: false, error: "Venue not found" };
+    }
+
+    return { valid: true, venue };
+  } catch (error) {
+    logger.error("[VENUE VERIFY] Error verifying venue", { venueId, error });
+    return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+/**
+ * Verify order belongs to venue (for public routes)
+ * Ensures cross-venue access is prevented
+ */
+export async function verifyOrderVenueAccess(orderId: string, venueId: string): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const supabase = await createSupabaseClient();
+    
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select("id, venue_id")
+      .eq("id", orderId)
+      .eq("venue_id", venueId)
+      .maybeSingle();
+
+    if (orderError) {
+      logger.warn("[ORDER VENUE VERIFY] Order lookup error", { orderId, venueId, error: orderError.message });
+      return { valid: false, error: orderError.message };
+    }
+
+    if (!order) {
+      logger.warn("[ORDER VENUE VERIFY] Order not found or doesn't belong to venue", { orderId, venueId });
+      return { valid: false, error: "Order not found or access denied" };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    logger.error("[ORDER VENUE VERIFY] Error verifying order venue access", { orderId, venueId, error });
+    return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+/**
  * Get authenticated user from request
  * STANDARDIZED: Uses getAuthenticatedUser from @/lib/supabase for consistency
  */
