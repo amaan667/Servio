@@ -1,9 +1,11 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { Crown, Check, ExternalLink, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
-import { PRICING_TIERS, getTierDisplayName } from "@/lib/pricing-tiers";
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
 import { useToast } from "@/hooks/use-toast";
 
 interface PlanCardProps {

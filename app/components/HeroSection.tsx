@@ -1,7 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, ArrowRight, CheckCircle } from "lucide-react";
-import Image from "next/image";
 
 interface HeroSectionProps {
   isSignedIn: boolean;

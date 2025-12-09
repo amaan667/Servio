@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { QrCode, ArrowRight } from "lucide-react";
 

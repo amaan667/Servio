@@ -1,3 +1,5 @@
+"use client";
+
 import { Calendar, CalendarIcon, Download } from "lucide-react";
 import {
   Select,

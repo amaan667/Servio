@@ -1,6 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ShoppingCart, CreditCard, Plus, Minus, X } from "lucide-react";
+import { CreditCard, Plus, Minus, X } from "lucide-react";
 import { CartItem } from "../types";
 
 interface MobileCartProps {
