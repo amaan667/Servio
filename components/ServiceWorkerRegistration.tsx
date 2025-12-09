@@ -10,8 +10,10 @@ interface ServiceWorkerRegistrationProps {
 }
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
-  // Feature flag to control service worker registration. Default: disabled to avoid stale asset caches.
-  const enableServiceWorker = process.env.NEXT_PUBLIC_ENABLE_SW === "true";
+  // Feature flag to control service worker registration. Default: enabled for offline support.
+  // Set NEXT_PUBLIC_ENABLE_SW=false to disable.
+  const enableServiceWorker = process.env.NEXT_PUBLIC_ENABLE_SW !== "false";
+  const cacheVersion = process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v1";
 
   const [isOnline, setIsOnline] = useState(true);
   const [queueCount, setQueueCount] = useState(0);
@@ -30,7 +32,13 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         const cacheNames = await caches.keys();
         await Promise.all(
           cacheNames
-            .filter((name) => name.startsWith("next") || name.startsWith("_next") || name.includes("static"))
+            .filter(
+              (name) =>
+                name.startsWith(cacheVersion) ||
+                name.startsWith("next") ||
+                name.startsWith("_next") ||
+                name.includes("static")
+            )
             .map((name) => caches.delete(name))
         );
       } catch {
@@ -99,7 +107,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     // Register service worker for offline support (only if enabled)
     if (enableServiceWorker && "serviceWorker" in navigator) {
       navigator.serviceWorker
-        .register("/sw.js", { scope: "/" })
+        .register(`/sw.js?ver=${cacheVersion}`, { scope: "/" })
         .then((registration) => {
           logger.info("[SW] Service worker registered:", registration.scope);
           

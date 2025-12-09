@@ -31,7 +31,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         if (typeof caches !== "undefined") {
           caches.keys().then((names) => {
             names
-              .filter((name) => name.startsWith("next") || name.startsWith("_next") || name.includes("static"))
+              .filter(
+                (name) =>
+                  name.startsWith("next") ||
+                  name.startsWith("_next") ||
+                  name.includes("static") ||
+                  name.includes(process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v1")
+              )
               .forEach((name) => caches.delete(name));
           });
         }
