@@ -2,40 +2,65 @@
 -- This prevents duplicate orders/charges for the same payment intent or session
 -- CRITICAL for financial safety in production
 
--- 1. Add UNIQUE constraint on payment_intent_id
+-- 1. Add UNIQUE constraint on payment_intent_id (or stripe_payment_intent_id)
 -- This ensures no duplicate orders can be created for the same payment intent
 -- NULL values are allowed (for orders without payment intents, e.g., PAY_AT_TILL)
+-- NOTE: Checks for both payment_intent_id and stripe_payment_intent_id column names
 DO $$
+DECLARE
+  payment_intent_column TEXT;
 BEGIN
-  -- First, handle any existing duplicates by keeping only the first order per payment_intent_id
-  -- This is a one-time cleanup for existing data
-  WITH duplicates AS (
-    SELECT 
-      payment_intent_id,
-      id,
-      ROW_NUMBER() OVER (PARTITION BY payment_intent_id ORDER BY created_at ASC) as rn
-    FROM orders
-    WHERE payment_intent_id IS NOT NULL
-  )
-  UPDATE orders
-  SET payment_intent_id = NULL
-  WHERE id IN (
-    SELECT id FROM duplicates WHERE rn > 1
-  )
-  AND payment_intent_id IS NOT NULL;
+  -- Determine which column exists: payment_intent_id or stripe_payment_intent_id
+  SELECT column_name INTO payment_intent_column
+  FROM information_schema.columns
+  WHERE table_name = 'orders'
+    AND column_name IN ('payment_intent_id', 'stripe_payment_intent_id')
+  LIMIT 1;
   
-  -- Now add the UNIQUE constraint
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint 
-    WHERE conname = 'orders_payment_intent_id_unique'
-  ) THEN
-    -- Use partial unique index to allow NULL values (PostgreSQL allows multiple NULLs in UNIQUE constraints)
-    CREATE UNIQUE INDEX orders_payment_intent_id_unique 
-    ON orders (payment_intent_id) 
-    WHERE payment_intent_id IS NOT NULL;
+  -- If column exists, add unique constraint
+  IF payment_intent_column IS NOT NULL THEN
+    -- First, handle any existing duplicates by keeping only the first order per payment_intent_id
+    -- This is a one-time cleanup for existing data
+    EXECUTE format('
+      WITH duplicates AS (
+        SELECT 
+          %I,
+          id,
+          ROW_NUMBER() OVER (PARTITION BY %I ORDER BY created_at ASC) as rn
+        FROM orders
+        WHERE %I IS NOT NULL
+      )
+      UPDATE orders
+      SET %I = NULL
+      WHERE id IN (
+        SELECT id FROM duplicates WHERE rn > 1
+      )
+      AND %I IS NOT NULL',
+      payment_intent_column, payment_intent_column, payment_intent_column,
+      payment_intent_column, payment_intent_column
+    );
     
-    COMMENT ON INDEX orders_payment_intent_id_unique IS 
-    'Ensures no duplicate orders for the same payment_intent_id. NULL values are allowed for orders without payment intents (e.g., PAY_AT_TILL).';
+    -- Now add the UNIQUE constraint
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_indexes 
+      WHERE indexname = 'orders_payment_intent_id_unique'
+    ) THEN
+      -- Use partial unique index to allow NULL values
+      EXECUTE format('
+        CREATE UNIQUE INDEX orders_payment_intent_id_unique 
+        ON orders (%I) 
+        WHERE %I IS NOT NULL',
+        payment_intent_column, payment_intent_column
+      );
+      
+      EXECUTE format('
+        COMMENT ON INDEX orders_payment_intent_id_unique IS 
+        ''Ensures no duplicate orders for the same %I. NULL values are allowed for orders without payment intents (e.g., PAY_AT_TILL).''',
+        payment_intent_column
+      );
+    END IF;
+  ELSE
+    RAISE NOTICE 'Neither payment_intent_id nor stripe_payment_intent_id column found in orders table. Skipping unique constraint.';
   END IF;
 END $$;
 
