@@ -22,10 +22,35 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
   const { user } = useAuth();
 
   // Cache trial status to prevent flicker
+  // BUT: Validate cached status to ensure trial hasn't expired
   const getCachedTrialStatus = () => {
     if (typeof window === "undefined" || !user?.id) return null;
     const cached = sessionStorage.getItem(`trial_status_${user.id}`);
-    return cached ? JSON.parse(cached) : null;
+    if (!cached) return null;
+    
+    try {
+      const status = JSON.parse(cached) as TrialStatus;
+      // Validate cached status - if trial has expired, don't use cache
+      if (status.trialEndsAt) {
+        const endDate = new Date(status.trialEndsAt);
+        const now = new Date();
+        if (endDate <= now || status.daysRemaining !== null && status.daysRemaining <= 0) {
+          // Trial expired, clear cache
+          sessionStorage.removeItem(`trial_status_${user.id}`);
+          return null;
+        }
+      }
+      // Only use cache if subscription status is still "trialing"
+      if (status.subscriptionStatus !== "trialing") {
+        sessionStorage.removeItem(`trial_status_${user.id}`);
+        return null;
+      }
+      return status;
+    } catch {
+      // Invalid cache, clear it
+      sessionStorage.removeItem(`trial_status_${user.id}`);
+      return null;
+    }
   };
 
   const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(getCachedTrialStatus());
@@ -59,8 +84,14 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
         // Days calculation
 
-        // Trial is active if we have days remaining and status is trialing
-        isTrialing = subscriptionStatus === "trialing" && daysRemaining > 0;
+        // Trial is active ONLY if:
+        // 1. Status is "trialing" (not "active" or other statuses)
+        // 2. Days remaining is greater than 0 (trial hasn't expired)
+        // 3. Trial end date is in the future
+        isTrialing = 
+          subscriptionStatus === "trialing" && 
+          daysRemaining > 0 && 
+          endDateStart > nowStart;
       }
 
       // Final trial status calculated
@@ -100,25 +131,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         .maybeSingle();
 
       if (orgError) {
-        // Show a default trial status if query fails (better than nothing)
-        const userCreatedAt = new Date(user.created_at);
-        const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
-        const daysRemaining = Math.max(
-          0,
-          Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        );
-
-        const defaultStatus = {
-          isTrialing: true,
-          subscriptionStatus: "trialing",
-          tier: "starter",
-          trialEndsAt: trialEndsAt.toISOString(),
-          daysRemaining,
-        };
-        setTrialStatus(defaultStatus);
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(defaultStatus));
-        }
+        // If query fails, don't show trial banner (better to hide than show incorrect info)
+        logger.warn("[TRIAL BANNER] Failed to fetch organization, hiding banner", {
+          error: orgError.message,
+        });
+        setTrialStatus(null);
         setLoading(false);
         return;
       }
@@ -138,53 +155,17 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           trial_ends_at: organization.trial_ends_at,
         });
       } else {
-        // Show default trial status based on user creation date
-        const userCreatedAt = new Date(user.created_at);
-        const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
-        const daysRemaining = Math.max(
-          0,
-          Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        );
-
-        const status = {
-          isTrialing: true,
-          subscriptionStatus: "trialing",
-          tier: "starter",
-          trialEndsAt: trialEndsAt.toISOString(),
-          daysRemaining,
-        };
-        setTrialStatus(status);
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
-        }
+        // No organization found - don't show trial banner
+        // User might not have an organization yet, or subscription is managed elsewhere
+        logger.debug("[TRIAL BANNER] No organization found, hiding banner");
+        setTrialStatus(null);
       }
     } catch (_error) {
-      // Show default trial status as fallback
-      const userCreatedAt = user.created_at ? new Date(user.created_at) : new Date();
-      const trialEndsAt = new Date(userCreatedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-      // Validate date
-      if (isNaN(trialEndsAt.getTime())) {
-        // Invalid date, use 14 days from now
-        trialEndsAt.setTime(Date.now() + 14 * 24 * 60 * 60 * 1000);
-      }
-
-      const daysRemaining = Math.max(
-        0,
-        Math.floor((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-      );
-
-      const status = {
-        isTrialing: true,
-        subscriptionStatus: "trialing",
-        tier: "starter",
-        trialEndsAt: trialEndsAt.toISOString(),
-        daysRemaining,
-      };
-      setTrialStatus(status);
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(`trial_status_${user.id}`, JSON.stringify(status));
-      }
+      // On error, don't show trial banner (better to hide than show incorrect info)
+      logger.warn("[TRIAL BANNER] Error fetching trial status, hiding banner", {
+        error: _error instanceof Error ? _error.message : "Unknown error",
+      });
+      setTrialStatus(null);
     } finally {
       setLoading(false);
     }
