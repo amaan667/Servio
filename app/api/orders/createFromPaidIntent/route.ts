@@ -203,13 +203,13 @@ export async function POST(req: NextRequest) {
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone || "",
           customer_email: orderData.customer_email || null,
-          items: orderData.items as Array<{
-            menu_item_id: string | null;
-            quantity: number;
-            price: number;
-            item_name: string;
-            specialInstructions?: string | null;
-          }>,
+          items: orderData.items.map((item) => ({
+            menu_item_id: item.menu_item_id ?? "custom-item",
+            quantity: item.quantity,
+            price: item.price,
+            item_name: item.item_name,
+            specialInstructions: item.specialInstructions ?? undefined,
+          })),
           total_amount: orderData.total_amount,
           notes: orderData.notes || null,
           order_status: orderData.order_status,
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
         };
 
         // Use admin client for public route (customer payment flow)
-        const order = await orderService.createOrder(venue_id, serviceOrderData, true);
+        const order = await orderService.createOrder(venue_id, serviceOrderData);
 
         if (!order) {
           logger.error("[ORDER CREATION] OrderService returned null", { 

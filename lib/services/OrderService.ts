@@ -152,6 +152,9 @@ export class OrderService extends BaseService {
       table_number?: number | null;
       seat_count?: number;
       source?: "qr" | "counter";
+      order_status?: Order["order_status"];
+      payment_status?: Order["payment_status"];
+      payment_method?: Order["payment_method"];
     }
   ): Promise<Order & { table_auto_created?: boolean; session_id?: string }> {
     const supabase = await createSupabaseClient();
