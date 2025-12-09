@@ -10,6 +10,7 @@ import {
   withIdempotency,
   checkIdempotency 
 } from "@/lib/db/idempotency";
+import { verifyVenueExists } from "@/lib/middleware/authorization";
 import crypto from "crypto";
 import type StripeNamespace from "stripe";
 
@@ -133,7 +134,6 @@ export async function POST(req: NextRequest) {
 
     // Verify venue exists and is valid (prevents cross-venue access)
     // NOTE: This is a public customer route, so we verify venue without requiring authentication
-    const { verifyVenueExists } = await import("@/lib/middleware/authorization");
     const venueCheck = await verifyVenueExists(venue_id);
     
     if (!venueCheck.valid) {
