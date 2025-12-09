@@ -10,6 +10,9 @@ interface ServiceWorkerRegistrationProps {
 }
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
+  // Feature flag to control service worker registration. Default: disabled to avoid stale asset caches.
+  const enableServiceWorker = process.env.NEXT_PUBLIC_ENABLE_SW === "true";
+
   const [isOnline, setIsOnline] = useState(true);
   const [queueCount, setQueueCount] = useState(0);
 
@@ -68,8 +71,8 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     // Update queue status periodically
     const queueInterval = setInterval(updateQueueStatus, 5000);
 
-    // Register service worker for offline support
-    if ("serviceWorker" in navigator) {
+    // Register service worker for offline support (only if enabled)
+    if (enableServiceWorker && "serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js", { scope: "/" })
         .then((registration) => {
@@ -83,10 +86,8 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         .catch((error) => {
           logger.error("[SW] Service worker registration failed:", error);
         });
-    }
 
-    // Listen for messages from service worker
-    if ("serviceWorker" in navigator) {
+      // Listen for messages from service worker
       navigator.serviceWorker.addEventListener("message", (event) => {
         if (event.data && event.data.type === "SKIP_WAITING") {
           window.location.reload();
