@@ -4,10 +4,12 @@
 
 import * as Sentry from "@sentry/nextjs";
 
-// Avoid double-initializing on the client. Instrumentation-client.ts already
+// Avoid double-initializing on the client. instrumentation-client.ts already
 // calls Sentry.init, so only initialize here if no client exists (e.g. when
 // instrumentation-client is removed). This prevents the runtime warning.
-if (!Sentry.getCurrentHub().getClient()) {
+const hasClientInit = typeof window !== "undefined" && (window as unknown as { __sentryInitialized?: boolean }).__sentryInitialized;
+
+if (!hasClientInit) {
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
     environment: process.env.NODE_ENV || "development",
@@ -25,5 +27,9 @@ if (!Sentry.getCurrentHub().getClient()) {
       return event;
     },
   });
+
+  if (typeof window !== "undefined") {
+    (window as unknown as { __sentryInitialized?: boolean }).__sentryInitialized = true;
+  }
 }
 
