@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 function getSupabaseUrl(): string {
   const url = env("NEXT_PUBLIC_SUPABASE_URL");
@@ -49,37 +50,47 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value;
+  // If Supabase env is misconfigured, fail open so the dashboard still loads
+  let supabase: ReturnType<typeof createServerClient> | null = null;
+  try {
+    supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({ name, value: "", ...options });
+        },
       },
-      set(name: string, value: string, options: CookieOptions) {
-        request.cookies.set({ name, value, ...options });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({ name, value, ...options });
-      },
-      remove(name: string, options: CookieOptions) {
-        request.cookies.set({ name, value: "", ...options });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({ name, value: "", ...options });
-      },
-    },
-  });
+    });
+  } catch (error) {
+    logger.error("[middleware] Supabase disabled - env missing or invalid", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Fail open: allow request to continue without auth to avoid 500s
+    return response;
+  }
 
   // Get user - use getUser() instead of getSession() for secure authentication
   // getUser() authenticates the data by contacting the Supabase Auth server
   const {
     data: { user },
-    error: authError,
+    error: _authError,
   } = await supabase.auth.getUser();
   
   // If getUser() fails, treat as unauthenticated
@@ -106,8 +117,7 @@ export async function middleware(request: NextRequest) {
   // For dashboard pages, NO REDIRECTS - User requested ZERO sign-in redirects
   // Allow dashboard to load even without session - client-side will handle auth
   if (pathname.startsWith("/dashboard")) {
-    // Log dashboard navigation attempt
-    console.log("[MIDDLEWARE] 🏠 DASHBOARD NAVIGATION", {
+    logger.info("[middleware] dashboard navigation", {
       pathname,
       hasUser: !!user,
       userId: user?.id,
@@ -115,7 +125,7 @@ export async function middleware(request: NextRequest) {
       timestamp: new Date().toISOString(),
       url: request.url,
     });
-    
+  
     // Don't redirect - let dashboard component handle auth client-side
   }
 
