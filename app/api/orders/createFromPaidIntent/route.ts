@@ -12,6 +12,7 @@ import {
   checkIdempotency 
 } from "@/lib/db/idempotency";
 import crypto from "crypto";
+import type StripeNamespace from "stripe";
 
 interface CreateOrderRequest {
   paymentIntentId: string;
@@ -159,8 +160,12 @@ export async function POST(req: NextRequest) {
 
     // Create order structure with items from payment intent metadata
     const orderAmount = paymentIntent.amount_received || paymentIntent.amount;
+    type PaymentIntentWithCharges = StripeNamespace.PaymentIntent & {
+      charges?: StripeNamespace.ApiList<StripeNamespace.Charge>;
+    };
+    const paymentIntentWithCharges = paymentIntent as PaymentIntentWithCharges;
     const billingEmail =
-      paymentIntent.charges?.data?.[0]?.billing_details?.email ?? null;
+      paymentIntentWithCharges.charges?.data?.[0]?.billing_details?.email ?? null;
 
     const orderData = {
       id: uuidv4(),

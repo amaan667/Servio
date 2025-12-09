@@ -22,7 +22,7 @@ import { verifyVenueAccess } from "@/lib/middleware/authorization";
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
-  let logContext: { requestId: string; venueId?: string; menuUrl?: string } = {
+  let logContext: { requestId: string; venueId?: string; menuUrl?: string; userId?: string } = {
     requestId,
   };
 
