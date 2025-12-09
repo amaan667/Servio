@@ -11,6 +11,7 @@ import {
   checkIdempotency 
 } from "@/lib/db/idempotency";
 import { verifyVenueExists } from "@/lib/middleware/authorization";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import crypto from "crypto";
 import type StripeNamespace from "stripe";
 
@@ -21,6 +22,29 @@ interface CreateOrderRequest {
 
 export async function POST(req: NextRequest) {
   const correlationId = getCorrelationIdFromRequest(req);
+  
+  // CRITICAL: Rate limiting on public payment route to prevent spam/abuse
+  const rateLimitResult = await rateLimit(req, RATE_LIMITS.STRICT);
+  if (!rateLimitResult.success) {
+    logger.warn("[ORDER FROM INTENT] Rate limit exceeded", {
+      correlationId,
+      reset: rateLimitResult.reset,
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+      },
+      { 
+        status: 429,
+        headers: {
+          "Retry-After": Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
+          "X-RateLimit-Limit": rateLimitResult.limit.toString(),
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+        },
+      }
+    );
+  }
   
   try {
     // Use authenticated client - this is a public route but we still want RLS for safety

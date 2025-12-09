@@ -191,15 +191,15 @@ jobs:
         
       - name: Run security audit
         run: pnpm audit --audit-level=high
-        continue-on-error: true
+        # CRITICAL: Removed continue-on-error to block deployment on security vulnerabilities
         
       - name: Check for outdated dependencies
         run: pnpm outdated
-        continue-on-error: true
+        continue-on-error: true  # Non-blocking informational check
         
       - name: Run Snyk security scan
         uses: snyk/actions/node@master
-        continue-on-error: true
+        # CRITICAL: Removed continue-on-error to block deployment on security vulnerabilities
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -260,7 +260,7 @@ jobs:
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           service: servio-staging
-        continue-on-error: true
+        # CRITICAL: Removed continue-on-error to fail fast on deployment errors
 
   # Deploy to Production (on push to main)
   deploy-production:
@@ -280,4 +280,4 @@ jobs:
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           service: servio-production
-        continue-on-error: true
+        # CRITICAL: Removed continue-on-error to fail fast on deployment errors

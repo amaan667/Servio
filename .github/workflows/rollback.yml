@@ -1,0 +1,59 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      service:
+        description: 'Railway service name'
+        required: true
+        default: 'servio-production'
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    name: Rollback ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    
+    steps:
+      - name: Log rollback reason
+        run: |
+          echo "🚨 ROLLBACK INITIATED"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Service: ${{ inputs.service }}"
+          echo "Reason: ${{ inputs.reason }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+      
+      - name: Rollback via Railway CLI
+        run: |
+          echo "⚠️ Manual rollback required"
+          echo ""
+          echo "To rollback on Railway:"
+          echo "1. Go to Railway Dashboard: https://railway.app"
+          echo "2. Select service: ${{ inputs.service }}"
+          echo "3. Go to 'Deployments' tab"
+          echo "4. Find the previous working deployment"
+          echo "5. Click 'Redeploy' on that deployment"
+          echo ""
+          echo "OR use Railway CLI:"
+          echo "  railway rollback --service ${{ inputs.service }}"
+          echo ""
+          echo "Reason: ${{ inputs.reason }}"
+      
+      - name: Verify rollback
+        run: |
+          echo "After rollback, verify:"
+          echo "1. Health check: curl https://servio-${{ inputs.environment }}.up.railway.app/api/health"
+          echo "2. Readiness check: curl https://servio-${{ inputs.environment }}.up.railway.app/api/ready"
+          echo "3. Check application logs in Railway dashboard"

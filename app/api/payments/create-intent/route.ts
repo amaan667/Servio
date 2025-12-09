@@ -8,6 +8,7 @@ import { isDevelopment } from '@/lib/env';
 import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
 import { z } from 'zod';
 import { validateBody } from '@/lib/api/validation-schemas';
+import { getCorrelationIdFromRequest } from '@/lib/middleware/correlation-id';
 
 export const runtime = "nodejs";
 
@@ -30,6 +31,8 @@ const createIntentSchema = z.object({
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const correlationId = getCorrelationIdFromRequest(req);
+    
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -62,6 +65,7 @@ export const POST = withUnifiedAuth(
       const itemsSummary = items.map((item) => `${item.name} x${item.quantity}`).join(", ");
 
       // Create payment intent with idempotency key
+      // CRITICAL: Include correlation_id in metadata for traceability
       const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
         amount: totalAmount,
         currency: "gbp",
@@ -75,6 +79,7 @@ export const POST = withUnifiedAuth(
           item_count: items.length.toString(),
           items_summary: itemsSummary.substring(0, 500), // Limit metadata size
           total_amount: totalAmount.toString(),
+          correlation_id: correlationId, // CRITICAL: For tracing payments to orders
         },
         description: `Order for ${customerName} at table ${tableNumber}`,
       };
@@ -93,6 +98,7 @@ export const POST = withUnifiedAuth(
         venueId: finalVenueId,
         amount: totalAmount,
         userId: context.user.id,
+        correlationId, // CRITICAL: Include correlation ID in logs
       });
 
       // STEP 4: Return success response

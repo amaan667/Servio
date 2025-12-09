@@ -71,6 +71,17 @@ export const GET = withUnifiedAuth(
 
       const { searchParams } = new URL(req.url);
       const status = searchParams.get("status");
+      const limitParam = searchParams.get("limit");
+      const offsetParam = searchParams.get("offset");
+
+      // CRITICAL: Bound query to prevent unbounded data fetches
+      // Default limit: 100 orders (reasonable for pilot scale)
+      // Max limit: 500 orders (hard cap to prevent abuse)
+      const limit = Math.min(
+        limitParam ? parseInt(limitParam, 10) : 100,
+        500
+      );
+      const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
 
       // venueId comes from context (already verified by withUnifiedAuth)
       const venueId = context.venueId;
@@ -81,7 +92,8 @@ export const GET = withUnifiedAuth(
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1); // CRITICAL: Bound query with pagination
 
       if (status) {
         query = query.eq("order_status", status);
@@ -358,11 +370,18 @@ export async function POST(req: NextRequest) {
     const tn = validatedOrderBody.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
 
-    // Use admin client for public customer orders (bypasses RLS)
-    // Customers placing orders via QR codes are not authenticated
+    // SECURITY: Public customer route for QR code orders
+    // This route is intentionally public (customers are not authenticated)
+    // We use admin client because RLS would block unauthenticated inserts
+    // SAFETY MEASURES:
+    // 1. Venue is verified to exist before any operations
+    // 2. ALL queries explicitly filter by venue_id to prevent cross-venue access
+    // 3. Rate limiting is applied to prevent abuse
+    // 4. Input validation ensures venue_id matches the verified venue
     const supabase = createAdminClient();
 
-    // Verify venue exists
+    // CRITICAL: Verify venue exists and is valid before proceeding
+    // This prevents orders from being created for non-existent or invalid venues
     const { data: venue, error: venueErr } = await supabase
       .from("venues")
       .select("venue_id")
@@ -543,11 +562,12 @@ export async function POST(req: NextRequest) {
 
     // Check for duplicate orders (idempotency check)
     // Look for orders with same customer, table, venue, and recent timestamp (within 5 minutes)
+    // CRITICAL: All queries MUST filter by venue_id to prevent cross-venue data access
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data: existingOrder, error: duplicateCheckError } = await supabase
       .from("orders")
       .select("id, created_at, order_status, payment_status")
-      .eq("venue_id", venueId)
+      .eq("venue_id", venueId) // CRITICAL: Explicit venue filter
       .eq("customer_name", payload.customer_name)
       .eq("customer_phone", payload.customer_phone)
       .eq("table_number", payload.table_number)

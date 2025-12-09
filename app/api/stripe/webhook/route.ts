@@ -4,6 +4,7 @@ import { apiErrors } from '@/lib/api/standard-response';
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
+import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,9 +33,14 @@ function getWebhookSecret(): string {
  */
 export async function POST(_request: NextRequest) {
   const supabaseAdmin = createAdminClient();
+  
+  // CRITICAL: Extract correlation ID from request or Stripe event metadata
+  const correlationId = getCorrelationIdFromRequest(_request);
 
-  apiLogger.debug("[CUSTOMER ORDER WEBHOOK] ===== WEBHOOK RECEIVED =====");
-  apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Timestamp:", new Date().toISOString());
+  apiLogger.debug("[CUSTOMER ORDER WEBHOOK] ===== WEBHOOK RECEIVED =====", {
+    correlationId,
+    timestamp: new Date().toISOString(),
+  });
 
   const signature = _request.headers.get("stripe-signature");
   if (!signature) {
@@ -62,6 +68,16 @@ export async function POST(_request: NextRequest) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
+  
+  // CRITICAL: Extract correlation ID from Stripe event metadata if available
+  // This allows tracing webhook events back to original payment requests
+  const eventCorrelationId = session.metadata?.correlation_id || correlationId;
+
+  apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Processing checkout session", {
+    sessionId: session.id,
+    correlationId: eventCorrelationId,
+    eventId: event.id,
+  });
 
   // Idempotency check: Check by session ID (most reliable for order payments)
   const { data: existing } = await supabaseAdmin
@@ -71,7 +87,11 @@ export async function POST(_request: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Order already processed for session:", session.id);
+    apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Order already processed for session", {
+      sessionId: session.id,
+      orderId: existing.id,
+      correlationId: eventCorrelationId,
+    });
     return NextResponse.json({ ok: true, already: true, orderId: existing.id }, { status: 200 });
   }
 
@@ -127,6 +147,8 @@ export async function POST(_request: NextRequest) {
     apiLogger.info("[CUSTOMER ORDER WEBHOOK] Updated table payment", {
       orderCount: updatedOrders.length,
       orderIds,
+      correlationId: eventCorrelationId,
+      sessionId: session.id,
     });
   } else if (orderId) {
     // Single order payment: update one order
@@ -156,7 +178,17 @@ export async function POST(_request: NextRequest) {
     }
 
     updatedOrders = updatedOrder ? [updatedOrder] : [];
+    apiLogger.info("[CUSTOMER ORDER WEBHOOK] Updated single order payment", {
+      orderId: updatedOrder?.id,
+      correlationId: eventCorrelationId,
+      sessionId: session.id,
+    });
   } else {
+    apiLogger.error("[CUSTOMER ORDER WEBHOOK] No orderId or orderIds in session metadata", {
+      correlationId: eventCorrelationId,
+      sessionId: session.id,
+      metadata: session.metadata,
+    });
     return NextResponse.json(
       { ok: false, error: "No orderId or orderIds in session metadata" },
       { status: 400 }
