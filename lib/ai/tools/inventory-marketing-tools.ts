@@ -423,7 +423,7 @@ interface BulkUpdateResult {
 interface AutoReportResult {
   reportType: string;
   period: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   summary: string;
   downloadLink?: string;
 }

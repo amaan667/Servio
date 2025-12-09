@@ -36,54 +36,57 @@ export async function createKDSTicketsWithAI(
   supabase: SupabaseClient,
   order: OrderForKDSTickets
 ): Promise<void> {
+  const baseContext = {
+    orderId: order.id,
+    venueId: order.venue_id,
+    tableNumber: order.table_number,
+    tableId: order.table_id,
+    customerName: order.customer_name,
+  };
+
   try {
-    console.log("[KDS TICKETS] ===== STARTING KDS TICKET CREATION =====", {
-      orderId: order.id,
-      venueId: order.venue_id,
+    logger.info("[KDS TICKETS] Starting KDS ticket creation", {
+      ...baseContext,
       itemCount: Array.isArray(order.items) ? order.items.length : 0,
-      tableNumber: order.table_number,
-      tableId: order.table_id,
-    });
-    logger.debug("[KDS TICKETS] Starting KDS ticket creation", {
-      orderId: order.id,
-      venueId: order.venue_id,
-      itemCount: Array.isArray(order.items) ? order.items.length : 0,
-      tableNumber: order.table_number,
-      tableId: order.table_id,
-      customerName: order.customer_name,
     });
 
     // Step 1: Ensure KDS stations exist for this venue
-    console.log("[KDS TICKETS] Step 1: Ensuring KDS stations exist...");
+    logger.debug("[KDS TICKETS] Step 1: ensuring KDS stations exist", baseContext);
     let existingStations = await ensureKDSStations(supabase, order.venue_id);
 
     if (!existingStations || existingStations.length === 0) {
-      console.error("[KDS TICKETS] ❌ No KDS stations available for venue", { venueId: order.venue_id });
+      logger.error("[KDS TICKETS] No KDS stations available for venue", baseContext);
       throw new Error("No KDS stations available");
     }
 
-    console.log("[KDS TICKETS] Step 2: Found stations", { count: existingStations.length });
+    logger.debug("[KDS TICKETS] Step 2: stations found", {
+      ...baseContext,
+      stationCount: existingStations.length,
+    });
 
     // Step 2: Get expo station as default
     const expoStation =
       existingStations.find((s) => s.station_type === "expo") || existingStations[0];
 
     if (!expoStation) {
-      console.error("[KDS TICKETS] ❌ No expo station available");
+      logger.error("[KDS TICKETS] No expo station available", baseContext);
       throw new Error("No KDS station available");
     }
 
     // Step 3: Get table label
-    console.log("[KDS TICKETS] Step 3: Getting table label...");
+    logger.debug("[KDS TICKETS] Step 3: resolving table label", baseContext);
     const tableLabel = await getTableLabel(supabase, order);
-    console.log("[KDS TICKETS] Table label:", { tableLabel });
+    logger.info("[KDS TICKETS] Table label resolved", { ...baseContext, tableLabel });
 
     // Step 4: Create tickets for each order item with AI assignment
     const items = Array.isArray(order.items) ? order.items : [];
-    console.log("[KDS TICKETS] Step 4: Creating tickets for items", { itemCount: items.length });
+    logger.info("[KDS TICKETS] Creating tickets for items", {
+      ...baseContext,
+      itemCount: items.length,
+    });
 
     if (items.length === 0) {
-      console.warn("[KDS TICKETS] ⚠️ No items in order, skipping ticket creation");
+      logger.warn("[KDS TICKETS] No items in order, skipping ticket creation", baseContext);
       return;
     }
 
@@ -91,7 +94,12 @@ export async function createKDSTicketsWithAI(
       const item = items[i];
       const itemName = item.item_name || "Unknown Item";
       
-      console.log(`[KDS TICKETS] Processing item ${i + 1}/${items.length}: ${itemName}`);
+      logger.debug("[KDS TICKETS] Processing item", {
+        ...baseContext,
+        itemName,
+        itemIndex: i + 1,
+        totalItems: items.length,
+      });
       
       // Use smart keyword categorization to assign station
       const assignedStation = assignStationByKeywords(
@@ -100,9 +108,11 @@ export async function createKDSTicketsWithAI(
         expoStation
       );
 
-      console.log(`[KDS TICKETS] Assigned to station:`, { 
+      logger.debug("[KDS TICKETS] Assigned station", {
+        ...baseContext,
+        itemName,
         station: assignedStation.station_type,
-        stationName: assignedStation.station_name 
+        stationName: assignedStation.station_name,
       });
 
       // Combine special instructions and modifiers for kitchen display
@@ -159,21 +169,15 @@ export async function createKDSTicketsWithAI(
         status: "new",
       };
 
-      console.log(`[KDS TICKETS] Inserting ticket for item: ${itemName}`, {
-        ticketData: JSON.stringify(ticketData, null, 2),
+      logger.info("[KDS TICKETS] Inserting ticket for item", {
+        ...baseContext,
+        itemName,
+        ticketData,
       });
 
       const { error: ticketError } = await supabase.from("kds_tickets").insert(ticketData);
 
       if (ticketError) {
-        console.error(`[KDS TICKETS] ❌ Failed to insert ticket for item: ${itemName}`, {
-          errorCode: ticketError.code,
-          errorMessage: ticketError.message,
-          errorDetails: ticketError.details,
-          errorHint: ticketError.hint,
-          ticketData: JSON.stringify(ticketData, null, 2),
-          fullError: JSON.stringify(ticketError, null, 2),
-        });
         logger.error("[KDS TICKETS] Failed to create ticket for item:", {
           error: { item, context: ticketError },
           orderId: order.id,
@@ -193,24 +197,18 @@ export async function createKDSTicketsWithAI(
         throw error;
       }
 
-      console.log(`[KDS TICKETS] ✅ Ticket created successfully for: ${itemName}`);
+      logger.info("[KDS TICKETS] Ticket created successfully", {
+        ...baseContext,
+        itemName,
+        stationId: assignedStation.id,
+      });
     }
 
-    console.log("[KDS TICKETS] ===== ✅ ALL TICKETS CREATED SUCCESSFULLY =====", {
-      count: items.length,
-      orderId: order.id,
-    });
-    logger.debug("[KDS TICKETS] Successfully created KDS tickets", {
-      data: { count: items.length, orderId: order.id },
+    logger.info("[KDS TICKETS] All tickets created successfully", {
+      ...baseContext,
+      itemCount: items.length,
     });
   } catch (error) {
-    console.error("[KDS TICKETS] ===== ❌ KDS TICKET CREATION FAILED =====", {
-      error: error instanceof Error ? error.message : JSON.stringify(error),
-      orderId: order.id,
-      venueId: order.venue_id,
-      stack: error instanceof Error ? error.stack : undefined,
-      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-    });
     logger.error("[KDS TICKETS] Error creating KDS tickets:", {
       error: error instanceof Error ? error.message : JSON.stringify(error),
       orderId: order.id,
@@ -339,7 +337,10 @@ function assignStationByKeywords(
   ) {
     const baristaStation = stations.find((s) => s.station_type === "barista");
     if (baristaStation) {
-      console.log(`[KDS CATEGORIZATION] ${itemName} → Barista (drinks)`);
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: "barista",
+      });
       return baristaStation;
     }
   }
@@ -361,7 +362,10 @@ function assignStationByKeywords(
   ) {
     const grillStation = stations.find((s) => s.station_type === "grill");
     if (grillStation) {
-      console.log(`[KDS CATEGORIZATION] ${itemName} → Grill (hot grilled)`);
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: "grill",
+      });
       return grillStation;
     }
   }
@@ -381,7 +385,10 @@ function assignStationByKeywords(
   ) {
     const fryerStation = stations.find((s) => s.station_type === "fryer");
     if (fryerStation) {
-      console.log(`[KDS CATEGORIZATION] ${itemName} → Fryer (fried)`);
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: "fryer",
+      });
       return fryerStation;
     }
   }
@@ -403,12 +410,18 @@ function assignStationByKeywords(
   ) {
     const coldStation = stations.find((s) => s.station_type === "cold");
     if (coldStation) {
-      console.log(`[KDS CATEGORIZATION] ${itemName} → Cold Prep (cold items)`);
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: "cold",
+      });
       return coldStation;
     }
   }
 
   // Default to Expo if no match
-  console.log(`[KDS CATEGORIZATION] ${itemName} → Expo (default/no match)`);
+  logger.debug("[KDS CATEGORIZATION] Station fallback", {
+    itemName,
+    station: "expo",
+  });
   return defaultStation;
 }

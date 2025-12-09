@@ -10,6 +10,7 @@
  */
 
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 // Comprehensive environment variable schema
 const envSchema = z.object({
@@ -120,7 +121,7 @@ function validateEnv(): Env {
         STRIPE_STANDARD_PRICE_ID: process.env.STRIPE_STANDARD_PRICE_ID,
         STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
       } as Env;
-      return validatedEnv;
+      return validatedEnv!;
     }
 
     // At runtime, validate with graceful error handling
@@ -135,43 +136,41 @@ function validateEnv(): Env {
         .join(", ");
       
       if (missing) {
-        console.error(`[ENV] Missing required environment variables: ${missing}`);
-        console.error(`[ENV] Full validation errors:`, result.error.errors);
+        logger.error("[ENV] Missing required environment variables", {
+          missing,
+          issues: result.error.errors,
+        });
       }
       
-      // In production, use partial env with defaults to prevent crashes
-      // Only throw in development for better debugging
+      // FAIL FAST: In production, throw on missing required environment variables
+      // This prevents misconfigured deployments from starting
       if (process.env.NODE_ENV === "production") {
-        // Return partial env with defaults for missing required vars
-        validatedEnv = {
-          NODE_ENV: (process.env.NODE_ENV as "development" | "production" | "test") || "production",
-          NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-          SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-          NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN || process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app",
-          DATABASE_URL: process.env.DATABASE_URL,
-          NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
-          NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-          APP_URL: process.env.APP_URL,
-          STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-          STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-          STRIPE_CUSTOMER_WEBHOOK_SECRET: process.env.STRIPE_CUSTOMER_WEBHOOK_SECRET,
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-          REDIS_URL: process.env.REDIS_URL,
-          REDIS_HOST: process.env.REDIS_HOST,
-          REDIS_PORT: process.env.REDIS_PORT,
-          REDIS_PASSWORD: process.env.REDIS_PASSWORD,
-          OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-          CRON_SECRET: process.env.CRON_SECRET,
-          SENTRY_DSN: process.env.SENTRY_DSN,
-          SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
-          RAILWAY_PUBLIC_DOMAIN: process.env.RAILWAY_PUBLIC_DOMAIN,
-          LOG_LEVEL: process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error" | undefined,
-          RESEND_API_KEY: process.env.RESEND_API_KEY,
-          STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
-          STRIPE_STANDARD_PRICE_ID: process.env.STRIPE_STANDARD_PRICE_ID,
-          STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
-        } as Env;
+        // Required environment variables for production
+        const requiredVars = [
+          "NEXT_PUBLIC_SUPABASE_URL",
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+          "SUPABASE_SERVICE_ROLE_KEY",
+        ] as const;
+
+        const missingVars: string[] = [];
+        for (const varName of requiredVars) {
+          if (!process.env[varName]) {
+            missingVars.push(varName);
+          }
+        }
+
+        if (missingVars.length > 0) {
+          const errorMessage = `Missing required environment variables in production: ${missingVars.join(", ")}. Application cannot start without these variables.`;
+          validationError = new Error(errorMessage);
+          throw validationError;
+        }
+
+        // All required vars present, proceed with validation
+        const data = result.data as Env | undefined;
+        if (!data) {
+          throw new Error("Env validation returned undefined data");
+        }
+        validatedEnv = data;
         return validatedEnv;
       } else {
         // In development, throw to see errors immediately
@@ -199,6 +198,9 @@ function validateEnv(): Env {
     }
     throw error;
   }
+
+  // Fallback (should never reach here)
+  return validatedEnv!;
 }
 
 /**
