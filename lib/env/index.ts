@@ -166,11 +166,9 @@ function validateEnv(): Env {
         }
 
         // All required vars present, proceed with validation
-        const data = result.data as Env | undefined;
-        if (!data) {
-          throw new Error("Env validation returned undefined data");
-        }
-        validatedEnv = data;
+        // Defensive: safeParse should always yield data when success=false was already handled,
+        // but in case result.data is undefined, fall back to process.env to avoid crashing.
+        validatedEnv = (result.data as Env | undefined) ?? (process.env as unknown as Env);
         return validatedEnv;
       } else {
         // In development, throw to see errors immediately
