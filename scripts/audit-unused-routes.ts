@@ -2,7 +2,6 @@
  * Audit script to find unused/redundant API routes
  */
 
-/* eslint-disable no-console */
 import { readFileSync } from "fs";
 import { relative } from "path";
 import { glob } from "glob";

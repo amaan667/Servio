@@ -565,7 +565,7 @@ export function withUnifiedAuth(
       }
 
       const isTestEnv = process.env.NODE_ENV === "test";
-      const testAuthMode = req.headers.get("x-test-auth");
+      const testAuthMode = req.headers.get("x-test-auth") ?? "auto";
 
       if (isTestEnv && testAuthMode === "none") {
         logger.debug("[UNIFIED AUTH] Test mode forced unauthorized response");
@@ -575,7 +575,7 @@ export function withUnifiedAuth(
         );
       }
 
-      if (isTestEnv && testAuthMode !== "none") {
+      if (isTestEnv && testAuthMode === "auto") {
         logger.debug("[UNIFIED AUTH] Test mode auto-auth enabled");
         const fallbackVenueId = venueId || req.headers.get("x-test-venue-id") || "test-venue";
         const testUserId = req.headers.get("x-user-id") || "test-user";
