@@ -16,14 +16,16 @@ export interface TestContext {
 /**
  * Create a mock NextRequest for API route testing
  */
+type MockRequestOptions = {
+  body?: unknown;
+  headers?: Record<string, string>;
+  cookies?: Record<string, string>;
+};
+
 export function createMockRequest(
   method: string,
   url: string,
-  options?: {
-    body?: unknown;
-    headers?: Record<string, string>;
-    cookies?: Record<string, string>;
-  }
+  options?: MockRequestOptions
 ): NextRequest {
   const headers = new Headers(options?.headers || {});
   if (options?.cookies) {

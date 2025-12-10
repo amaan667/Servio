@@ -1,17 +1,20 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
-export async function POST(
-  _request: NextRequest,
-  context: { params: Promise<{ reservationId: string }> }
-) {
+type ReservationRouteContext = {
+  params?: {
+    reservationId?: string;
+  };
+};
+
+export async function POST(_request: NextRequest, context?: ReservationRouteContext) {
   try {
-    const { reservationId } = await context.params;
+    const reservationId = context?.params?.reservationId;
 
     if (!reservationId) {
-      return apiErrors.badRequest('reservationId is required');
+      return apiErrors.badRequest("reservationId is required");
     }
 
     const supabase = await createClient();

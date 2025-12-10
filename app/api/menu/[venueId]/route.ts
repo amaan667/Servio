@@ -2,20 +2,22 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cache, cacheKeys } from "@/lib/cache/index";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ venueId: string }> }
-) {
+type MenuRouteContext = {
+  params?: {
+    venueId?: string;
+  };
+};
+
+export async function GET(_request: NextRequest, context?: MenuRouteContext) {
   let rawVenueId = "unknown";
 
   try {
-    const params = await context.params;
-    rawVenueId = params.venueId;
+    rawVenueId = context?.params?.venueId || "unknown";
 
     if (!rawVenueId) {
-      return apiErrors.badRequest('Venue ID is required');
+      return apiErrors.badRequest("Venue ID is required");
     }
 
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup

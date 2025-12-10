@@ -2,16 +2,23 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import type { UpdateIngredientRequest } from "@/types/inventory";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
+
+type IngredientRouteContext = {
+  params?: {
+    id?: string;
+  };
+};
 
 // PATCH /api/inventory/ingredients/[id]
-export async function PATCH(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(_request: NextRequest, context?: IngredientRouteContext) {
   try {
     const supabase = await createClient();
-    const { id } = await params;
+    const id = context?.params?.id;
+
+    if (!id) {
+      return apiErrors.badRequest("id is required");
+    }
     const body: UpdateIngredientRequest = await _request.json();
 
     const { data, error } = await supabase
@@ -39,13 +46,14 @@ export async function PATCH(
 }
 
 // DELETE /api/inventory/ingredients/[id]
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: NextRequest, context?: IngredientRouteContext) {
   try {
     const supabase = await createClient();
-    const { id } = await params;
+    const id = context?.params?.id;
+
+    if (!id) {
+      return apiErrors.badRequest("id is required");
+    }
 
     const { error } = await supabase.from("ingredients").delete().eq("id", id);
 

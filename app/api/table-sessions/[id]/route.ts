@@ -1,10 +1,20 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
-export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+type TableSessionRouteContext = {
+  params?: {
+    id?: string;
+  };
+};
+
+export async function PUT(req: NextRequest, context?: TableSessionRouteContext) {
+  const id = context?.params?.id;
+
+  if (!id) {
+    return apiErrors.badRequest("Table session ID is required");
+  }
   try {
     const body = await req.json();
     const { status, order_id, closed_at } = body;
@@ -58,8 +68,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
   }
 }
 
-export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+export async function DELETE(_req: NextRequest, context?: TableSessionRouteContext) {
+  const id = context?.params?.id;
+
+  if (!id) {
+    return apiErrors.badRequest("Table session ID is required");
+  }
   try {
 
     const supabase = await createClient();

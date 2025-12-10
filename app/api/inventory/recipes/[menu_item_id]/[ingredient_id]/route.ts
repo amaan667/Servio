@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 // DELETE /api/inventory/recipes/[menu_item_id]/[ingredient_id]
 // Remove a single ingredient from a recipe
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ menu_item_id: string; ingredient_id: string }> }
-) {
+type RecipeIngredientRouteContext = {
+  params?: {
+    menu_item_id?: string;
+    ingredient_id?: string;
+  };
+};
+
+export async function DELETE(_request: NextRequest, context?: RecipeIngredientRouteContext) {
   try {
     const supabase = await createClient();
-    const { menu_item_id, ingredient_id } = await params;
+    const menu_item_id = context?.params?.menu_item_id;
+    const ingredient_id = context?.params?.ingredient_id;
+
+    if (!menu_item_id || !ingredient_id) {
+      return apiErrors.badRequest("menu_item_id and ingredient_id are required");
+    }
 
     const { error } = await supabase
       .from("menu_item_ingredients")

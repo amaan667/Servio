@@ -30,7 +30,10 @@ describe("Staff API Routes", () => {
     it("should require authentication", async () => {
       const request = createMockRequest(
         "GET",
-        `http://localhost:3000/api//staff/list?venueId=${testContext.venueId}`
+        `http://localhost:3000/api//staff/list?venueId=${testContext.venueId}`,
+        {
+          headers: { "x-test-auth": "none" },
+        }
       );
       const response = await listGet(request);
 
@@ -65,6 +68,7 @@ describe("Staff API Routes", () => {
   describe("POST /api/staff/add", () => {
     it("should require authentication", async () => {
       const request = createMockRequest("POST", "http://localhost:3000/api//staff/add", {
+        headers: { "x-test-auth": "none" },
         body: {
           venueId: testContext.venueId,
           name: "Test Staff",
@@ -97,6 +101,7 @@ describe("Staff API Routes", () => {
   describe("DELETE /api/staff/delete", () => {
     it("should require authentication", async () => {
       const request = createMockRequest("DELETE", "http://localhost:3000/api//staff/delete", {
+        headers: { "x-test-auth": "none" },
         body: {
           venueId: testContext.venueId,
           staffId: "test-id",

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,11 +12,18 @@ export const dynamic = "force-dynamic";
  * Mark payment as collected for "pay_at_till" orders
  * Staff uses this after processing payment via card reader/cash register
  */
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
-) {
-  const { orderId } = await params;
+type CollectPaymentRouteContext = {
+  params?: {
+    orderId?: string;
+  };
+};
+
+export async function POST(_request: NextRequest, context?: CollectPaymentRouteContext) {
+  const orderId = context?.params?.orderId;
+
+  if (!orderId) {
+    return apiErrors.badRequest("Order ID is required");
+  }
 
   try {
     const body = await _request.json();

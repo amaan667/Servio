@@ -64,7 +64,9 @@ describe("Auth API Routes", () => {
 
   describe("POST /api/auth/refresh", () => {
     it("should require authentication", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/api//auth/refresh");
+      const request = createMockRequest("POST", "http://localhost:3000/api//auth/refresh", {
+        headers: { "x-test-auth": "none" },
+      });
       const response = await refreshPost(request);
 
       expect([401, 400]).toContain(response.status);

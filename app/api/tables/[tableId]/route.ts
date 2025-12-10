@@ -15,7 +15,10 @@ const updateTableSchema = z.object({
   qr_version: z.number().int().nonnegative().optional(),
 });
 
-export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
+type TableRouteParams = { tableId?: string };
+type TableRouteContext = { params: Promise<TableRouteParams> };
+
+export async function PUT(req: NextRequest, context?: TableRouteContext) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext) => {
       try {
@@ -28,7 +31,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
         }
 
         // STEP 2: Get tableId from route params
-        const { tableId } = await context.params;
+        const params = (await context?.params) ?? {};
+        const tableId = params.tableId;
+
+        if (!tableId) {
+          return apiErrors.badRequest("tableId is required");
+        }
 
         if (!tableId) {
           return apiErrors.badRequest("tableId is required");
@@ -169,11 +177,16 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
   return handler(req, context);
 }
 
-export async function DELETE(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
+export async function DELETE(req: NextRequest, context?: TableRouteContext) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext) => {
       try {
-        const { tableId } = await context.params;
+        const params = (await context?.params) ?? {};
+        const tableId = params.tableId;
+
+        if (!tableId) {
+          return apiErrors.badRequest("tableId is required");
+        }
 
         // Check if force=true is passed as query parameter
         const url = new URL(req.url);

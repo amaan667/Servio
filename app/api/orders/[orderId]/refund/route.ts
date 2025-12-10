@@ -5,14 +5,17 @@ import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import type Stripe from "stripe";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ orderId: string }> }
-) {
+type OrderRouteContext = {
+  params?: {
+    orderId?: string;
+  };
+};
+
+export async function POST(req: NextRequest, context?: OrderRouteContext) {
   try {
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();
@@ -21,7 +24,7 @@ export async function POST(
       return apiErrors.unauthorized("Unauthorized");
     }
 
-    const { orderId } = await context.params;
+    const orderId = context?.params?.orderId;
     const body = await req.json().catch(() => {
       return {};
     });

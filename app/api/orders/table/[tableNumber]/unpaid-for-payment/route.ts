@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,12 +13,15 @@ export const dynamic = "force-dynamic";
  * This is used when customer rescans QR code to pay for pay_later orders
  * Returns orders in a format suitable for payment screen
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ tableNumber: string }> }
-) {
+type UnpaidForPaymentContext = {
+  params?: {
+    tableNumber?: string;
+  };
+};
+
+export async function GET(_request: NextRequest, context?: UnpaidForPaymentContext) {
   try {
-    const { tableNumber } = await params;
+    const tableNumber = context?.params?.tableNumber;
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venue_id");
 

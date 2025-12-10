@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ venueId: string }> }) {
+type CategoryOrderRouteContext = {
+  params?: {
+    venueId?: string;
+  };
+};
+
+export async function GET(_req: NextRequest, context?: CategoryOrderRouteContext) {
   try {
-    const { venueId } = await params;
+    const venueId = context?.params?.venueId;
 
     if (!venueId) {
       return apiErrors.badRequest('Venue ID is required');
