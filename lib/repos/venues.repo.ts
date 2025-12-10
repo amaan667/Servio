@@ -1,14 +1,15 @@
 /**
- * Venues Repository
+ * _Venues Repository
  * Centralized data access for venues
  */
 
 import { createServerSupabase } from "@/lib/supabase";
 import type { Database } from "@/types/database";
 
-type Venue = unknown; // Database['public']['Tables']['venues']['Row'];
-type VenueInsert = unknown; // Database['public']['Tables']['venues']['Insert'];
-type VenueUpdate = unknown; // Database['public']['Tables']['venues']['Update'];
+type VenueInsert = Database["public"]["Tables"]["venues"]["Insert"];
+type VenueUpdate = Database["public"]["Tables"]["venues"]["Update"] & {
+  settings?: Record<string, unknown> | null;
+};
 
 export class VenuesRepo {
   /**

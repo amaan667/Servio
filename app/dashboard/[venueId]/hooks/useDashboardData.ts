@@ -31,7 +31,9 @@ export function useDashboardData(
   const [venue, setVenue] = useState<unknown>(initialVenue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
+  const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
+    null
+  );
 
   // Initialize with server data if available, otherwise defaults
   // CRITICAL: Use server data immediately to prevent showing 0 on first load
@@ -75,137 +77,127 @@ export function useDashboardData(
 
   useEffect(() => {
     if (initialStats) {
-      console.log("🔵 [USE_DASHBOARD_DATA] useEffect: Updating stats from initialStats:", {
-        timestamp: new Date().toISOString(),
-        venueId,
-        newStats: initialStats,
-        previousStats: stats,
-      });
       setStats(initialStats);
       setLoading(false);
     }
   }, [initialStats]);
 
   // Fetch all counts directly from database
-  const fetchCounts = useCallback(async (force = false) => {
-    // Always fetch when force=true to ensure fresh data
-    // This ensures real-time updates and correct initial state
-    if (!force) {
-      return;
-    }
-
-    try {
-      setError(null);
-      const supabase = createClient();
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-
-      // Fetch dashboard counts using RPC
-      const { data: countsData, error: countsError } = await supabase
-        .rpc("dashboard_counts", {
-          p_venue_id: normalizedVenueId,
-          p_tz: venueTz,
-          p_live_window_mins: 30,
-        })
-        .single();
-
-      if (countsError) {
-        logger.error("[Dashboard] Error fetching counts:", countsError);
-        setError("Failed to fetch dashboard counts");
+  const fetchCounts = useCallback(
+    async (force = false) => {
+      // Always fetch when force=true to ensure fresh data
+      // This ensures real-time updates and correct initial state
+      if (!force) {
         return;
       }
 
-      // Fetch table counts directly
-      const { data: allTables } = await supabase
-        .from("tables")
-        .select("id, is_active")
-        .eq("venue_id", normalizedVenueId);
+      try {
+        setError(null);
+        const supabase = createClient();
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-      const { data: activeSessions } = await supabase
-        .from("table_sessions")
-        .select("id")
-        .eq("venue_id", normalizedVenueId)
-        .eq("status", "OCCUPIED")
-        .is("closed_at", null);
+        // Fetch dashboard counts using RPC
+        const { data: countsData, error: countsError } = await supabase
+          .rpc("dashboard_counts", {
+            p_venue_id: normalizedVenueId,
+            p_tz: venueTz,
+            p_live_window_mins: 30,
+          })
+          .single();
 
-      const now = new Date();
-      const { data: currentReservations } = await supabase
-        .from("reservations")
-        .select("id")
-        .eq("venue_id", normalizedVenueId)
-        .eq("status", "BOOKED")
-        .lte("start_at", now.toISOString())
-        .gte("end_at", now.toISOString());
+        if (countsError) {
+          logger.error("[Dashboard] Error fetching counts:", countsError);
+          setError("Failed to fetch dashboard counts");
+          return;
+        }
 
-      if (countsData && typeof countsData === "object") {
-        const activeTables = allTables?.filter((t) => t.is_active) || [];
-        const counts = countsData as Record<string, unknown>;
-        const finalCounts: DashboardCounts = {
-          live_count: (counts.live_count as number) || 0,
-          earlier_today_count: (counts.earlier_today_count as number) || 0,
-          history_count: (counts.history_count as number) || 0,
-          today_orders_count: (counts.today_orders_count as number) || 0,
-          active_tables_count: activeTables.length,
-          tables_set_up: activeTables.length,
-          tables_in_use: activeSessions?.length || 0,
-          tables_reserved_now: currentReservations?.length || 0,
-        };
-        console.log("🟠 [USE_DASHBOARD_DATA] Fresh counts fetched from DB:", {
-          timestamp: new Date().toISOString(),
-          venueId,
-          freshCounts: finalCounts,
-          previousCounts: counts,
-        });
-        setCounts(finalCounts);
+        // Fetch table counts directly
+        const { data: allTables } = await supabase
+          .from("tables")
+          .select("id, is_active")
+          .eq("venue_id", normalizedVenueId);
+
+        const { data: activeSessions } = await supabase
+          .from("table_sessions")
+          .select("id")
+          .eq("venue_id", normalizedVenueId)
+          .eq("status", "OCCUPIED")
+          .is("closed_at", null);
+
+        const now = new Date();
+        const { data: currentReservations } = await supabase
+          .from("reservations")
+          .select("id")
+          .eq("venue_id", normalizedVenueId)
+          .eq("status", "BOOKED")
+          .lte("start_at", now.toISOString())
+          .gte("end_at", now.toISOString());
+
+        if (countsData && typeof countsData === "object") {
+          const activeTables = allTables?.filter((t) => t.is_active) || [];
+          const counts = countsData as Record<string, unknown>;
+          const finalCounts: DashboardCounts = {
+            live_count: (counts.live_count as number) || 0,
+            earlier_today_count: (counts.earlier_today_count as number) || 0,
+            history_count: (counts.history_count as number) || 0,
+            today_orders_count: (counts.today_orders_count as number) || 0,
+            active_tables_count: activeTables.length,
+            tables_set_up: activeTables.length,
+            tables_in_use: activeSessions?.length || 0,
+            tables_reserved_now: currentReservations?.length || 0,
+          };
+          setCounts(finalCounts);
+        }
+      } catch (err) {
+        logger.error("[Dashboard] Error fetching counts:", err);
+        setError("Failed to fetch dashboard counts");
       }
-    } catch (err) {
-      logger.error("[Dashboard] Error fetching counts:", err);
-      setError("Failed to fetch dashboard counts");
-    }
-  }, [venueId, venueTz, initialCounts]);
+    },
+    [venueId, venueTz, initialCounts]
+  );
 
   // Fetch stats (revenue, menu items, unpaid) directly from database
-  const fetchStats = useCallback(async (force = false) => {
-    // Always fetch when force=true to ensure fresh data
-    // This ensures real-time updates and correct initial state
-    if (!force) {
-      return;
-    }
+  const fetchStats = useCallback(
+    async (force = false) => {
+      // Always fetch when force=true to ensure fresh data
+      // This ensures real-time updates and correct initial state
+      if (!force) {
+        return;
+      }
 
-    try {
-      setError(null);
-      const supabase = createClient();
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      const window = todayWindowForTZ(venueTz);
+      try {
+        setError(null);
+        const supabase = createClient();
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        const window = todayWindowForTZ(venueTz);
 
-      // Fetch menu items count
-      const menuItems = await fetchMenuItemCount(venueId);
+        // Fetch menu items count
+        const menuItems = await fetchMenuItemCount(venueId);
 
-      // Fetch orders for revenue and unpaid
-      const { data: orders } = await supabase
-        .from("orders")
-        .select("total_amount, order_status, payment_status")
-        .eq("venue_id", normalizedVenueId)
-        .gte("created_at", window.startUtcISO || "")
-        .lt("created_at", window.endUtcISO || "")
-        .neq("order_status", "CANCELLED")
-        .neq("order_status", "REFUNDED");
+        // Fetch orders for revenue and unpaid
+        const { data: orders } = await supabase
+          .from("orders")
+          .select("total_amount, order_status, payment_status")
+          .eq("venue_id", normalizedVenueId)
+          .gte("created_at", window.startUtcISO || "")
+          .lt("created_at", window.endUtcISO || "")
+          .neq("order_status", "CANCELLED")
+          .neq("order_status", "REFUNDED");
 
-      const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-      const unpaid = orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length || 0;
+        const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+        const unpaid =
+          orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER")
+            .length || 0;
 
-      const freshStats = { revenue, menuItems, unpaid };
-      console.log("🟠 [USE_DASHBOARD_DATA] Fresh stats fetched from DB:", {
-        timestamp: new Date().toISOString(),
-        venueId,
-        freshStats,
-        previousStats: stats,
-      });
-      setStats(freshStats);
-    } catch (err) {
-      logger.error("[Dashboard] Error fetching stats:", err);
-      setError("Failed to fetch dashboard stats");
-    }
-  }, [venueId, venueTz, initialStats]);
+        const freshStats = { revenue, menuItems, unpaid };
+        setStats(freshStats);
+      } catch (err) {
+        logger.error("[Dashboard] Error fetching stats:", err);
+        setError("Failed to fetch dashboard stats");
+      }
+    },
+    [venueId, venueTz, initialStats]
+  );
 
   // Initial data fetch on mount
   useEffect(() => {
@@ -217,23 +209,12 @@ export function useDashboardData(
       endUtcISO: window.endUtcISO || "",
     });
 
-    console.log("🟣 [USE_DASHBOARD_DATA] Mount effect triggered:", {
-      timestamp: new Date().toISOString(),
-      venueId,
-      hasInitialCounts: !!initialCounts,
-      hasInitialStats: !!initialStats,
-      initialCountsValue: initialCounts,
-      initialStatsValue: initialStats,
-    });
-
     // Always use initial data immediately to prevent showing 0 values
     // But then always fetch fresh data to ensure we have the latest state
     if (initialCounts) {
-      console.log("🟣 [USE_DASHBOARD_DATA] Setting counts from initial data:", initialCounts);
       setCounts(initialCounts);
     }
     if (initialStats) {
-      console.log("🟣 [USE_DASHBOARD_DATA] Setting stats from initial data:", initialStats);
       setStats(initialStats);
     }
     setLoading(false);
@@ -241,9 +222,7 @@ export function useDashboardData(
     // Always fetch fresh data on mount to ensure correct state
     // This ensures the dashboard always shows current data, not stale cached data
     const loadData = async () => {
-      console.log("🟣 [USE_DASHBOARD_DATA] Starting fresh data fetch...");
       await Promise.all([fetchCounts(true), fetchStats(true)]);
-      console.log("🟣 [USE_DASHBOARD_DATA] Fresh data fetch completed");
     };
     loadData();
   }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
@@ -254,6 +233,9 @@ export function useDashboardData(
     if (!venueId || loading) return;
 
     const supabase = createClient();
+    if (!supabase || typeof (supabase as unknown as { channel?: unknown }).channel !== "function") {
+      return;
+    }
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
     // Separate debounce timeouts for counts and stats to prevent conflicts

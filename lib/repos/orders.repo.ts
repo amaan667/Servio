@@ -1,14 +1,16 @@
 /**
- * Orders Repository
+ * _OrderRepos Repository
  * Centralized data access for orders
  */
 
 import { createServerSupabase } from "@/lib/supabase";
 import type { Database } from "@/types/database";
 
-type Order = unknown; // Database['public']['Tables']['orders']['Row'];
-type OrderInsert = unknown; // Database['public']['Tables']['orders']['Insert'];
-type OrderUpdate = unknown; // Database['public']['Tables']['orders']['Update'];
+type OrderInsert = Database["public"]["Tables"]["orders"]["Insert"];
+type OrderUpdate = Database["public"]["Tables"]["orders"]["Update"] & {
+  order_status?: string | null;
+};
+type OrderPaymentStatus = Database["public"]["Tables"]["orders"]["Update"]["payment_status"];
 
 export class OrdersRepo {
   /**
@@ -103,7 +105,7 @@ export class OrdersRepo {
   /**
    * Update payment status
    */
-  static async updatePaymentStatus(orderId: string, paymentStatus: string) {
+  static async updatePaymentStatus(orderId: string, paymentStatus: OrderPaymentStatus) {
     return this.update(orderId, { payment_status: paymentStatus });
   }
 

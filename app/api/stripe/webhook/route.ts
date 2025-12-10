@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+// apiErrors intentionally unused in this module
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
@@ -12,7 +12,7 @@ export const revalidate = 0;
 
 // Customer orders webhook uses its OWN signing secret from Stripe Dashboard
 // Get this from: Stripe Dashboard → Webhooks → "Servio" endpoint → Signing secret
-import { env } from '@/lib/env';
+import { env } from "@/lib/env";
 
 function getWebhookSecret(): string {
   const secret = env("STRIPE_CUSTOMER_WEBHOOK_SECRET");
@@ -33,7 +33,7 @@ function getWebhookSecret(): string {
  */
 export async function POST(_request: NextRequest) {
   const supabaseAdmin = createAdminClient();
-  
+
   // CRITICAL: Extract correlation ID from request or Stripe event metadata
   const correlationId = getCorrelationIdFromRequest(_request);
 
@@ -63,26 +63,135 @@ export async function POST(_request: NextRequest) {
     return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });
   }
 
-  if (event.type !== "checkout.session.completed") {
-    return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
+  // Idempotency + DLQ guard using stripe_webhook_events table
+  const nowIso = new Date().toISOString();
+  const { data: existingEvent, error: existingEventError } = await supabaseAdmin
+    .from("stripe_webhook_events")
+    .select("id, status, attempts")
+    .eq("event_id", event.id)
+    .maybeSingle();
+
+  if (existingEventError) {
+    apiLogger.error("[CUSTOMER ORDER WEBHOOK] Failed to read webhook event record", {
+      error: existingEventError.message,
+      eventId: event.id,
+      correlationId,
+    });
   }
 
-  const session = event.data.object as Stripe.Checkout.Session;
-  
-  // CRITICAL: Extract correlation ID from Stripe event metadata if available
-  // This allows tracing webhook events back to original payment requests
-  const eventCorrelationId = session.metadata?.correlation_id || correlationId;
+  if (existingEvent?.status === "succeeded") {
+    apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Event already processed", {
+      eventId: event.id,
+      correlationId,
+    });
+    return NextResponse.json({ ok: true, already: true }, { status: 200 });
+  }
 
-  apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Processing checkout session", {
-    sessionId: session.id,
-    correlationId: eventCorrelationId,
-    eventId: event.id,
-  });
+  // Mark as processing (upsert to allow first insert or retry)
+  const attempts = (existingEvent?.attempts ?? 0) + 1;
+  const { error: upsertError } = await supabaseAdmin
+    .from("stripe_webhook_events")
+    .upsert(
+      {
+        event_id: event.id,
+        type: event.type,
+        status: "processing",
+        attempts,
+        payload: event as unknown as Record<string, unknown>,
+        updated_at: nowIso,
+      },
+      { onConflict: "event_id" }
+    )
+    .select("id")
+    .maybeSingle();
 
-  // Idempotency check: Check by session ID (most reliable for order payments)
+  if (upsertError) {
+    apiLogger.error("[CUSTOMER ORDER WEBHOOK] Failed to mark event processing", {
+      error: upsertError.message,
+      eventId: event.id,
+      correlationId,
+    });
+    return NextResponse.json({ ok: false, error: "Failed to reserve event" }, { status: 500 });
+  }
+
+  try {
+    if (event.type !== "checkout.session.completed") {
+      await finalizeEventStatus(supabaseAdmin, event.id, "succeeded");
+      return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
+    }
+
+    const session = event.data.object as Stripe.Checkout.Session;
+    const eventCorrelationId = session.metadata?.correlation_id || correlationId;
+
+    apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Processing checkout session", {
+      sessionId: session.id,
+      correlationId: eventCorrelationId,
+      eventId: event.id,
+    });
+
+    const { updatedOrders, paymentType } = await processCustomerCheckoutSession(
+      session,
+      supabaseAdmin,
+      eventCorrelationId
+    );
+
+    await finalizeEventStatus(supabaseAdmin, event.id, "succeeded");
+
+    return NextResponse.json({
+      ok: true,
+      orderId:
+        paymentType === "table_payment" ? updatedOrders.map((o) => o.id) : updatedOrders[0]?.id,
+      orderCount: updatedOrders.length,
+    });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    const errorStack = err instanceof Error ? err.stack : undefined;
+    apiLogger.error("[CUSTOMER ORDER WEBHOOK] Unexpected failure", {
+      error: errorMessage,
+      correlationId,
+    });
+    await finalizeEventStatus(supabaseAdmin, event.id, "failed", {
+      message: errorMessage,
+      stack: errorStack,
+    });
+    return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
+  }
+}
+
+// Ensure final status update even on unexpected errors
+export async function finalizeEventStatus(
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  status: "succeeded" | "failed",
+  error?: { message: string; stack?: string }
+) {
+  const nowIso = new Date().toISOString();
+  await supabaseAdmin
+    .from("stripe_webhook_events")
+    .update({
+      status,
+      processed_at: status === "succeeded" ? nowIso : null,
+      last_error: error ?? null,
+      updated_at: nowIso,
+    })
+    .eq("event_id", eventId);
+}
+
+export async function processCustomerCheckoutSession(
+  session: Stripe.Checkout.Session,
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  correlationId?: string
+): Promise<{
+  updatedOrders: Array<{ id: string; venue_id: string; customer_email?: string | null }>;
+  paymentType?: string;
+}> {
+  const paymentType = session.metadata?.paymentType;
+  const orderIdsStr = session.metadata?.orderIds;
+  const orderId = session.metadata?.orderId;
+
   const { data: existing } = await supabaseAdmin
     .from("orders")
-    .select("id, stripe_session_id, payment_status")
+    .select("id, venue_id, customer_email, stripe_session_id, payment_status")
     .eq("stripe_session_id", session.id)
     .maybeSingle();
 
@@ -90,45 +199,32 @@ export async function POST(_request: NextRequest) {
     apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Order already processed for session", {
       sessionId: session.id,
       orderId: existing.id,
-      correlationId: eventCorrelationId,
+      correlationId,
     });
-    return NextResponse.json({ ok: true, already: true, orderId: existing.id }, { status: 200 });
+    return { updatedOrders: [existing], paymentType };
   }
-
-  // Check if this is a table-level payment (multiple orders) or single order
-  const paymentType = session.metadata?.paymentType;
-  const orderIdsStr = session.metadata?.orderIds; // Comma-separated for table payments
-  const orderId = session.metadata?.orderId; // Single order ID
 
   let updatedOrders: Array<{ id: string; venue_id: string; customer_email?: string | null }> = [];
 
   if (paymentType === "table_payment" && orderIdsStr) {
-    // Table-level payment: update multiple orders
     const orderIds = orderIdsStr.split(",").filter(Boolean);
 
     if (orderIds.length === 0) {
-      apiLogger.error("[CUSTOMER ORDER WEBHOOK] No orderIds in table payment metadata");
-      return NextResponse.json(
-        { ok: false, error: "No orderIds in table payment metadata" },
-        { status: 400 }
-      );
+      throw new Error("No orderIds in table payment metadata");
     }
 
-    // Update all orders in the table payment
-    // Update email from Stripe session if not already set
     const updateData: Record<string, unknown> = {
       payment_status: "PAID",
-      payment_method: "PAY_NOW", // Use standardized payment method value
+      payment_method: "PAY_NOW",
       stripe_session_id: session.id,
       stripe_payment_intent_id: String(session.payment_intent ?? ""),
       updated_at: new Date().toISOString(),
     };
-    
-    // Update email from Stripe session if available
+
     if (session.customer_email) {
       updateData.customer_email = session.customer_email;
     }
-    
+
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("orders")
       .update(updateData)
@@ -136,36 +232,29 @@ export async function POST(_request: NextRequest) {
       .select("id, venue_id, customer_email");
 
     if (updateError) {
-      apiLogger.error("[CUSTOMER ORDER WEBHOOK] Failed to update table orders", {
-        error: updateError.message,
-        orderIds,
-      });
-      return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+      throw new Error(updateError.message);
     }
 
     updatedOrders = updated || [];
     apiLogger.info("[CUSTOMER ORDER WEBHOOK] Updated table payment", {
       orderCount: updatedOrders.length,
       orderIds,
-      correlationId: eventCorrelationId,
+      correlationId,
       sessionId: session.id,
     });
   } else if (orderId) {
-    // Single order payment: update one order
-    // Update email from Stripe session if not already set
     const updateData: Record<string, unknown> = {
       payment_status: "PAID",
-      payment_method: "PAY_NOW", // Use standardized payment method value
+      payment_method: "PAY_NOW",
       stripe_session_id: session.id,
       stripe_payment_intent_id: String(session.payment_intent ?? ""),
       updated_at: new Date().toISOString(),
     };
-    
-    // Update email from Stripe session if available and order doesn't have one
+
     if (session.customer_email) {
       updateData.customer_email = session.customer_email;
     }
-    
+
     const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from("orders")
       .update(updateData)
@@ -174,36 +263,25 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (updateError) {
-      return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+      throw new Error(updateError.message);
     }
 
     updatedOrders = updatedOrder ? [updatedOrder] : [];
     apiLogger.info("[CUSTOMER ORDER WEBHOOK] Updated single order payment", {
       orderId: updatedOrder?.id,
-      correlationId: eventCorrelationId,
+      correlationId,
       sessionId: session.id,
     });
   } else {
-    apiLogger.error("[CUSTOMER ORDER WEBHOOK] No orderId or orderIds in session metadata", {
-      correlationId: eventCorrelationId,
-      sessionId: session.id,
-      metadata: session.metadata,
-    });
-    return NextResponse.json(
-      { ok: false, error: "No orderId or orderIds in session metadata" },
-      { status: 400 }
-    );
+    throw new Error("No orderId or orderIds in session metadata");
   }
 
   if (updatedOrders.length === 0) {
-    return apiErrors.internal('No orders updated');
+    throw new Error("No orders updated");
   }
 
-  // Use first order for venue lookup (all should be same venue)
   const firstOrder = updatedOrders[0];
 
-  // Auto-send receipt if enabled and customer email is available
-  // For table payments, send receipt for first order (or could send combined receipt)
   try {
     const { data: venue } = await supabaseAdmin
       .from("venues")
@@ -214,25 +292,19 @@ export async function POST(_request: NextRequest) {
     const customerEmail = session.customer_email || firstOrder.customer_email;
 
     if (venue?.auto_email_receipts && customerEmail) {
-      // For table payments, send receipt for the first order
-      // Future enhancement: Combined receipt for multiple orders
       const receiptOrderId =
         paymentType === "table_payment" ? updatedOrders[0]?.id : updatedOrders[0]?.id;
 
       if (receiptOrderId) {
-        // Send receipt email asynchronously (don't wait for it)
-        fetch(
-          `${env("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000"}/api/receipts/send-email`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: receiptOrderId,
-              email: customerEmail,
-              venueId: firstOrder.venue_id,
-            }),
-          }
-        ).catch((err) => {
+        fetch(`${env("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000"}/api/receipts/send-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: receiptOrderId,
+            email: customerEmail,
+            venueId: firstOrder.venue_id,
+          }),
+        }).catch((err) => {
           apiLogger.error("[CUSTOMER ORDER WEBHOOK] Failed to auto-send receipt", {
             error: err instanceof Error ? err.message : "Unknown error",
             orderId: receiptOrderId,
@@ -241,17 +313,10 @@ export async function POST(_request: NextRequest) {
       }
     }
   } catch (error) {
-    // Don't fail webhook if receipt sending fails
     apiLogger.error("[CUSTOMER ORDER WEBHOOK] Error checking auto-send receipt", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 
-  // Event is idempotent by session ID check above - no need for separate tracking table
-
-  return NextResponse.json({
-    ok: true,
-    orderId: paymentType === "table_payment" ? updatedOrders.map((o) => o.id) : updatedOrders[0]?.id,
-    orderCount: updatedOrders.length,
-  });
+  return { updatedOrders, paymentType };
 }

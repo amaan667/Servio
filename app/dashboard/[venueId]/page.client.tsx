@@ -60,33 +60,7 @@ const DashboardClient = React.memo(function DashboardClient({
   initialCounts?: DashboardCounts;
   initialStats?: DashboardStats;
 }) {
-  // Log component mount immediately - this should fire as soon as component is called
-  try {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardClient] 🚀 COMPONENT MOUNTING", {
-      venueId,
-      hasInitialCounts: !!initialCounts,
-      hasInitialStats: !!initialStats,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error("[DashboardClient] ❌ ERROR IN MOUNT LOG", error);
-  }
-
   const router = useRouter();
-  
-  // Log router state
-  useEffect(() => {
-    console.log("[DashboardClient] 🔄 ROUTER STATE", {
-      venueId,
-      routerReady: !!router,
-      timestamp: new Date().toISOString(),
-    });
-    
-    // Note: Next.js App Router doesn't expose router.events like Pages Router
-    // Navigation is tracked via Link onClick handlers in global-nav.tsx
-  }, [router, venueId]);
 
   // Get cached user/venue data to prevent flicker
   const getCachedUser = () => {
@@ -107,44 +81,12 @@ const DashboardClient = React.memo(function DashboardClient({
     return sessionStorage.getItem(`user_role_${venueId}`);
   };
 
-  // Log before hooks to catch if hooks are the issue
-  // eslint-disable-next-line no-console
-  console.log("[DashboardClient] 🔧 BEFORE HOOKS", {
-    venueId,
-    timestamp: new Date().toISOString(),
-  });
-
   // Hooks must be called unconditionally - can't be in try-catch
   const { user: authUser, isLoading: authRedirectLoading } = useAuthRedirect();
   const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole());
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
-
-  // eslint-disable-next-line no-console
-  console.log("[DashboardClient] ✅ All hooks completed", {
-    hasUser: !!user,
-    hasVenue: !!venue,
-    hasUserRole: !!userRole,
-    hasAuthUser: !!authUser,
-    authRedirectLoading,
-  });
-
-  // Log initial state immediately
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardClient] 📊 INITIAL STATE (useEffect)", {
-      venueId,
-      hasCachedUser: !!user,
-      hasCachedVenue: !!venue,
-      hasCachedRole: !!userRole,
-      hasInitialCounts: !!initialCounts,
-      hasInitialStats: !!initialStats,
-      authRedirectLoading,
-      hasAuthUser: !!authUser,
-      timestamp: new Date().toISOString(),
-    });
-  }, []); // Only run once on mount
 
   // Sync authUser to local user state if needed
   useEffect(() => {
@@ -168,28 +110,32 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Custom hooks for dashboard data and realtime (call before any returns)
   const venueTz = "Europe/London"; // Default timezone
-  
+
   // LOG: What server passed to client
   useEffect(() => {
     const timestamp = new Date().toISOString();
     const details = {
       timestamp: new Date().toISOString(),
       venueId,
-      initialCounts: initialCounts ? {
-        live_count: initialCounts.live_count,
-        earlier_today_count: initialCounts.earlier_today_count,
-        history_count: initialCounts.history_count,
-        today_orders_count: initialCounts.today_orders_count,
-        active_tables_count: initialCounts.active_tables_count,
-        tables_set_up: initialCounts.tables_set_up,
-        tables_in_use: initialCounts.tables_in_use,
-        tables_reserved_now: initialCounts.tables_reserved_now,
-      } : null,
-      initialStats: initialStats ? {
-        revenue: initialStats.revenue,
-        menuItems: initialStats.menuItems,
-        unpaid: initialStats.unpaid,
-      } : null,
+      initialCounts: initialCounts
+        ? {
+            live_count: initialCounts.live_count,
+            earlier_today_count: initialCounts.earlier_today_count,
+            history_count: initialCounts.history_count,
+            today_orders_count: initialCounts.today_orders_count,
+            active_tables_count: initialCounts.active_tables_count,
+            tables_set_up: initialCounts.tables_set_up,
+            tables_in_use: initialCounts.tables_in_use,
+            tables_reserved_now: initialCounts.tables_reserved_now,
+          }
+        : null,
+      initialStats: initialStats
+        ? {
+            revenue: initialStats.revenue,
+            menuItems: initialStats.menuItems,
+            unpaid: initialStats.unpaid,
+          }
+        : null,
     };
 
     sendDashboardLog({
@@ -200,24 +146,15 @@ const DashboardClient = React.memo(function DashboardClient({
       details,
     });
   }, [venueId, initialCounts, initialStats]);
-  
+
   // Hooks must be called unconditionally - can't be in try-catch
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
-  
-  // Log after hook completes
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardClient] ✅ useDashboardData hook completed", {
-      hasData: !!dashboardData,
-      loading: dashboardData?.loading,
-    });
-  }, [dashboardData]);
-  
+
   // Simple display values - use client state which is synced from server data
   // The useDashboardData hook ensures initialCounts/initialStats are used immediately
   const displayMenuItems = dashboardData.stats.menuItems;
   const displayTables = dashboardData.counts.tables_set_up;
-  
+
   // LOG: What client is actually displaying
   useEffect(() => {
     const timestamp = new Date().toISOString();
@@ -237,7 +174,7 @@ const DashboardClient = React.memo(function DashboardClient({
       menuItems: dashboardData.stats.menuItems,
       unpaid: dashboardData.stats.unpaid,
     };
-    
+
     const details = {
       timestamp,
       venueId,
@@ -253,25 +190,29 @@ const DashboardClient = React.memo(function DashboardClient({
       timestamp,
       details,
     });
-    
+
     // COMPARISON: Check if displayed values match initial server values
     if (initialCounts && initialStats) {
-      const countsMatch = JSON.stringify(displayedCounts) === JSON.stringify({
-        live_count: initialCounts.live_count,
-        earlier_today_count: initialCounts.earlier_today_count,
-        history_count: initialCounts.history_count,
-        today_orders_count: initialCounts.today_orders_count,
-        active_tables_count: initialCounts.active_tables_count,
-        tables_set_up: initialCounts.tables_set_up,
-        tables_in_use: initialCounts.tables_in_use,
-        tables_reserved_now: initialCounts.tables_reserved_now,
-      });
-      const statsMatch = JSON.stringify(displayedStats) === JSON.stringify({
-        revenue: initialStats.revenue,
-        menuItems: initialStats.menuItems,
-        unpaid: initialStats.unpaid,
-      });
-      
+      const countsMatch =
+        JSON.stringify(displayedCounts) ===
+        JSON.stringify({
+          live_count: initialCounts.live_count,
+          earlier_today_count: initialCounts.earlier_today_count,
+          history_count: initialCounts.history_count,
+          today_orders_count: initialCounts.today_orders_count,
+          active_tables_count: initialCounts.active_tables_count,
+          tables_set_up: initialCounts.tables_set_up,
+          tables_in_use: initialCounts.tables_in_use,
+          tables_reserved_now: initialCounts.tables_reserved_now,
+        });
+      const statsMatch =
+        JSON.stringify(displayedStats) ===
+        JSON.stringify({
+          revenue: initialStats.revenue,
+          menuItems: initialStats.menuItems,
+          unpaid: initialStats.unpaid,
+        });
+
       if (!countsMatch || !statsMatch) {
         const mismatchDetails = {
           timestamp,
@@ -304,12 +245,19 @@ const DashboardClient = React.memo(function DashboardClient({
         });
       }
     }
-  }, [venueId, dashboardData.counts, dashboardData.stats, dashboardData.loading, initialCounts, initialStats]);
+  }, [
+    venueId,
+    dashboardData.counts,
+    dashboardData.stats,
+    dashboardData.loading,
+    initialCounts,
+    initialStats,
+  ]);
 
   // Listen to custom events for instant updates when menu items or tables change
   useEffect(() => {
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-    
+
     const handleMenuItemsChanged = (event: Event) => {
       const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
       const eventVenueId = customEvent.detail?.venueId;
@@ -359,15 +307,9 @@ const DashboardClient = React.memo(function DashboardClient({
   // Fetch live analytics data for charts
   // Hooks must be called unconditionally
   const analyticsData = useAnalyticsData(venueId);
-  
+
   // Log after hook completes
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardClient] ✅ useAnalyticsData hook completed", {
-      hasData: !!analyticsData.data,
-      loading: analyticsData.loading,
-    });
-  }, [analyticsData]);
+  useEffect(() => {}, [analyticsData]);
 
   // Handle venue change
   const handleVenueChange = useCallback(
@@ -421,7 +363,7 @@ const DashboardClient = React.memo(function DashboardClient({
 
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    
+
     return () => {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -462,7 +404,6 @@ const DashboardClient = React.memo(function DashboardClient({
   // Check authentication and venue access (must be before early returns)
   useEffect(() => {
     async function checkAuth() {
-
       // ALWAYS fetch role if we don't have it, regardless of cache
       // This ensures fresh sign-ins get the correct role immediately
       if (userRole && authCheckComplete) {
@@ -480,7 +421,6 @@ const DashboardClient = React.memo(function DashboardClient({
         const maxRetries = 3;
 
         while (retries < maxRetries) {
-
           // Try getSession first
           const sessionResult = await supabase.auth.getSession();
           sessionError = sessionResult.error;
@@ -496,7 +436,7 @@ const DashboardClient = React.memo(function DashboardClient({
               const retrySession = await supabase.auth.getSession();
               session = retrySession.data.session;
               sessionError = retrySession.error;
-                // Session check complete
+              // Session check complete
             }
           }
 
@@ -511,7 +451,7 @@ const DashboardClient = React.memo(function DashboardClient({
         }
 
         if (sessionError) {
-            // Session error logged
+          // Session error logged
           // NO REDIRECTS - User requested ZERO sign-in redirects
           // Just log and continue - might be a temporary error
         }
@@ -545,11 +485,11 @@ const DashboardClient = React.memo(function DashboardClient({
           .eq("owner_user_id", userId)
           .maybeSingle();
 
-          // Venue data fetched
+        // Venue data fetched
 
         // If venue query fails with 406 or other errors, log but don't block
         if (venueError) {
-            // Venue error logged
+          // Venue error logged
           // Don't redirect - might be a temporary Supabase issue
           // The user might still have access via staff role or cached data
         }
@@ -564,11 +504,11 @@ const DashboardClient = React.memo(function DashboardClient({
           .eq("venue_id", venueId)
           .maybeSingle();
 
-          // Role data fetched
+        // Role data fetched
 
         // If role query fails, log but don't block
         if (roleError) {
-            // Role error logged
+          // Role error logged
         }
 
         const isStaff = !!roleData;
@@ -632,54 +572,29 @@ const DashboardClient = React.memo(function DashboardClient({
   // Auth check happens in background, page renders with cached data
   const hasCachedData = !!(user || venue || userRole || initialCounts || initialStats);
   const shouldBlockOnAuth = false; // Never block - render immediately
-  
-  // eslint-disable-next-line no-console
-  console.log("[DashboardClient] 🎯 REACHED RENDER DECISION", {
-    hasCachedData,
-    shouldBlockOnAuth,
-    authRedirectLoading,
-    hasUser: !!user,
-    hasVenue: !!venue,
-    hasUserRole: !!userRole,
-    hasInitialCounts: !!initialCounts,
-    hasInitialStats: !!initialStats,
-  });
-  
-  // Log auth state for debugging (must be before any returns)
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardClient] Auth state", {
-      authRedirectLoading,
-      hasUser: !!authUser,
-      hasCachedUser: !!user,
-      hasVenue: !!venue,
-      hasUserRole: !!userRole,
-      hasCachedData,
-      hasInitialCounts: !!initialCounts,
-      hasInitialStats: !!initialStats,
-      timestamp: new Date().toISOString(),
-    });
-  }, [authRedirectLoading, authUser, user, venue, userRole, hasCachedData, initialCounts, initialStats]);
-
-  // Log if we're rendering the dashboard (must be before any returns)
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardClient] ✅ Rendering dashboard", {
-      venueId,
-      hasUser: !!user,
-      hasVenue: !!venue,
-      hasUserRole: !!userRole,
-      timestamp: new Date().toISOString(),
-    });
-  }, [venueId, user, venue, userRole]);
 
   // Only show spinner if we have NO cached data AND auth is still loading
   // This allows instant rendering when we have cached data
   const shouldShowSpinner = shouldBlockOnAuth && authRedirectLoading && !hasCachedData;
-  
+
+  if (authRedirectLoading) {
+    return (
+      <div role="status" className="p-4 text-sm text-muted-foreground">
+        Loading dashboard...
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    router.push("/sign-in");
+    return (
+      <div role="status" className="p-4 text-sm text-muted-foreground">
+        Redirecting to sign-in...
+      </div>
+    );
+  }
+
   if (shouldShowSpinner) {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardClient] ⏳ Showing spinner - no cached data and auth loading");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -689,12 +604,6 @@ const DashboardClient = React.memo(function DashboardClient({
       </div>
     );
   }
-  
-  // eslint-disable-next-line no-console
-  console.log("[DashboardClient] 🎨 RENDERING DASHBOARD CONTENT", {
-    venueId,
-    timestamp: new Date().toISOString(),
-  });
 
   // Always render even if authUser isn't available yet.
   // Background auth check + cached data avoid blocking initial paint.
@@ -722,7 +631,7 @@ const DashboardClient = React.memo(function DashboardClient({
               </div>
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-red-900">Error Loading Dashboard</p>
+              <p className="text-sm font-medium text-red-900">Error loading data</p>
               <p className="text-xs text-red-700">{dashboardData.error}</p>
             </div>
           </div>

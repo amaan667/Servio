@@ -1,11 +1,11 @@
 // Stripe Webhooks - Handle subscription events
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
-import { env } from '@/lib/env';
-import { apiErrors } from '@/lib/api/standard-response';
+import { env } from "@/lib/env";
+import { apiErrors } from "@/lib/api/standard-response";
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {
@@ -13,7 +13,7 @@ interface InvoiceWithSubscription extends Stripe.Invoice {
 }
 
 function getWebhookSecret(): string {
-  const secret = env('STRIPE_WEBHOOK_SECRET');
+  const secret = env("STRIPE_WEBHOOK_SECRET");
   if (!secret) {
     throw new Error("STRIPE_WEBHOOK_SECRET environment variable is required");
   }
@@ -21,36 +21,64 @@ function getWebhookSecret(): string {
 }
 
 export async function POST(_request: NextRequest) {
+  let eventId = "";
   try {
     const body = await _request.text();
     const signature = _request.headers.get("stripe-signature");
 
     if (!signature) {
-      return apiErrors.badRequest('No signature');
+      return apiErrors.badRequest("No signature");
     }
 
     // Verify webhook signature
     const webhookSecret = getWebhookSecret();
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    eventId = event.id;
 
     apiLogger.debug("[STRIPE WEBHOOK] Event:", { type: event.type, id: event.id });
 
-    // Idempotency check: verify event hasn't been processed
-    // Use subscription_history table which tracks all subscription events
-    const supabase = await createClient();
+    const supabase = createAdminClient();
+    const nowIso = new Date().toISOString();
     const { data: existingEvent } = await supabase
-      .from("subscription_history")
-      .select("id, event_type")
-      .eq("stripe_event_id", event.id)
+      .from("stripe_webhook_events")
+      .select("status, attempts")
+      .eq("event_id", event.id)
       .maybeSingle();
 
-    if (existingEvent) {
+    if (existingEvent?.status === "succeeded") {
       apiLogger.debug("[STRIPE WEBHOOK] Event already processed:", {
         eventId: event.id,
         eventType: event.type,
-        existingEventType: existingEvent.event_type,
       });
       return NextResponse.json({ received: true, alreadyProcessed: true });
+    }
+
+    const attempts = (existingEvent?.attempts ?? 0) + 1;
+    const { error: reserveError } = await supabase
+      .from("stripe_webhook_events")
+      .upsert(
+        {
+          event_id: event.id,
+          type: event.type,
+          status: "processing",
+          attempts,
+          payload: event as unknown as Record<string, unknown>,
+          updated_at: nowIso,
+        },
+        { onConflict: "event_id" }
+      )
+      .select("event_id")
+      .maybeSingle();
+
+    if (reserveError) {
+      apiLogger.error("[STRIPE WEBHOOK] Failed to reserve event", {
+        eventId: event.id,
+        error: reserveError.message,
+      });
+      return NextResponse.json(
+        { received: false, error: "Failed to reserve event" },
+        { status: 500 }
+      );
     }
 
     // Handle the event
@@ -83,15 +111,25 @@ export async function POST(_request: NextRequest) {
         apiLogger.debug(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
     }
 
+    await finalizeStripeEvent(supabase, event.id, "succeeded");
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });
+    try {
+      const supabase = createAdminClient();
+      await finalizeStripeEvent(supabase, eventId, "failed", {
+        message: errorMessage,
+        stack: _error instanceof Error ? _error.stack : undefined,
+      });
+    } catch {
+      /* swallow finalize errors */
+    }
     return apiErrors.badRequest(errorMessage);
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] ===== CHECKOUT COMPLETED =====");
   apiLogger.debug("[SUBSCRIPTION WEBHOOK] handleCheckoutCompleted called with session:", {
     id: session.id,
@@ -102,7 +140,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   });
 
   // This webhook ONLY handles SUBSCRIPTION payments
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const organizationId = session.metadata?.organization_id;
   const tier = session.metadata?.tier;
   const userId = session.metadata?.user_id;
@@ -182,7 +220,7 @@ async function handleCheckoutWithOrg(
   organizationId: string,
   tier: string,
   existingOrg: Record<string, unknown>,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: ReturnType<typeof createAdminClient>
 ) {
   apiLogger.debug("[STRIPE WEBHOOK] ✅ Processing update for organization:", {
     id: existingOrg.id,
@@ -191,20 +229,20 @@ async function handleCheckoutWithOrg(
   });
 
   // Determine trial status - only set to trialing if trial hasn't ended yet
-  const existingTrialEndsAt = existingOrg.trial_ends_at 
+  const existingTrialEndsAt = existingOrg.trial_ends_at
     ? new Date(existingOrg.trial_ends_at as string)
     : null;
   const now = new Date();
   const trialHasEnded = existingTrialEndsAt && existingTrialEndsAt < now;
   const currentStatus = existingOrg.subscription_status as string;
-  
+
   // If trial has already ended or subscription is already active, don't restart trial
   const shouldBeTrialing = !trialHasEnded && currentStatus !== "active";
-  
+
   // Use existing trial_ends_at if available and trial hasn't ended
   // Otherwise, if this is a new subscription and trial hasn't ended, calculate from user creation
   let trialEndsAt = existingTrialEndsAt?.toISOString() || null;
-  
+
   if (!trialEndsAt && shouldBeTrialing) {
     // If no existing trial end date and we should be trialing, use the user's creation date + 14 days
     const createdAt = existingOrg.created_at;
@@ -217,9 +255,12 @@ async function handleCheckoutWithOrg(
   // Determine subscription status
   // If trial has ended or subscription is already active, use active status
   // Otherwise, use trialing if we should be trialing
-  const subscriptionStatus = (trialHasEnded || currentStatus === "active") 
-    ? "active" 
-    : (shouldBeTrialing ? "trialing" : currentStatus || "active");
+  const subscriptionStatus =
+    trialHasEnded || currentStatus === "active"
+      ? "active"
+      : shouldBeTrialing
+        ? "trialing"
+        : currentStatus || "active";
 
   // Use tier directly from Stripe metadata (no normalization)
   // Tier should already be correct from Stripe product/price metadata
@@ -276,8 +317,8 @@ async function handleCheckoutWithOrg(
   );
 }
 
-async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
-  const supabase = await createClient();
+export async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
+  const supabase = createAdminClient();
   const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
 
   const organizationId = subscription.metadata?.organization_id;
@@ -315,7 +356,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   // This ensures tier matches what's actually in Stripe - no normalization
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
   const tier = await getTierFromStripeSubscription(subscription, stripe);
-  
+
   apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
     tier,
     subscriptionId: subscription.id,
@@ -348,14 +389,14 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   apiLogger.debug(`[STRIPE WEBHOOK] Subscription created for org: ${organizationId}`);
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+export async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   apiLogger.debug("[STRIPE WEBHOOK] handleSubscriptionUpdated called with subscription:", {
     id: subscription.id,
     status: subscription.status,
     metadata: subscription.metadata,
   });
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
 
   const organizationId = subscription.metadata?.organization_id;
@@ -411,7 +452,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // This ensures tier matches what's actually in Stripe - no normalization
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
   const tier = await getTierFromStripeSubscription(subscription, stripe);
-  
+
   apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
     tier,
     subscriptionId: subscription.id,
@@ -481,8 +522,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   apiLogger.debug(`[STRIPE WEBHOOK] Subscription updated for org: ${organizationId}`);
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const supabase = await createClient();
+export async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const supabase = createAdminClient();
 
   const organizationId = subscription.metadata?.organization_id;
 
@@ -520,8 +561,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   apiLogger.debug(`[STRIPE] Subscription deleted for org: ${organizationId}`);
 }
 
-async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-  const supabase = await createClient();
+export async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  const supabase = createAdminClient();
 
   // Access subscription - can be string (ID) or expanded Subscription object
   const invoiceWithSub = invoice as InvoiceWithSubscription;
@@ -553,8 +594,8 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   apiLogger.debug(`[STRIPE] Payment succeeded for org: ${organizationId}`);
 }
 
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const supabase = await createClient();
+export async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  const supabase = createAdminClient();
 
   // Access subscription - can be string (ID) or expanded Subscription object
   const invoiceWithSub = invoice as InvoiceWithSubscription;
@@ -584,4 +625,48 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     .eq("id", organizationId);
 
   apiLogger.debug(`[STRIPE] Payment failed for org: ${organizationId}`);
+}
+
+export async function finalizeStripeEvent(
+  supabase: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  status: "succeeded" | "failed",
+  error?: { message: string; stack?: string }
+) {
+  if (!eventId) return;
+  const nowIso = new Date().toISOString();
+  await supabase
+    .from("stripe_webhook_events")
+    .update({
+      status,
+      processed_at: status === "succeeded" ? nowIso : null,
+      last_error: error ?? null,
+      updated_at: nowIso,
+    })
+    .eq("event_id", eventId);
+}
+
+export async function processSubscriptionEvent(event: Stripe.Event) {
+  switch (event.type) {
+    case "checkout.session.completed":
+      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+      break;
+    case "customer.subscription.created":
+      await handleSubscriptionCreated(event.data.object as Stripe.Subscription);
+      break;
+    case "customer.subscription.updated":
+      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+      break;
+    case "customer.subscription.deleted":
+      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+      break;
+    case "invoice.payment_succeeded":
+      await handlePaymentSucceeded(event.data.object as Stripe.Invoice);
+      break;
+    case "invoice.payment_failed":
+      await handlePaymentFailed(event.data.object as Stripe.Invoice);
+      break;
+    default:
+      apiLogger.debug(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
+  }
 }
