@@ -39,9 +39,20 @@ const protectedPaths = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // CRITICAL SECURITY: Always strip sensitive headers from the incoming request
+  // to prevent header spoofing attacks. These headers should ONLY be set by
+  // this middleware after successful authentication.
+  request.headers.delete("x-user-id");
+  request.headers.delete("x-user-email");
+
   // Skip middleware for health check and public paths
   if (pathname === "/api/health" || !protectedPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.next();
+    // Pass the request with STRIPPED headers
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
   }
 
   let response = NextResponse.next({
@@ -54,30 +65,30 @@ export async function middleware(request: NextRequest) {
   let supabase: ReturnType<typeof createServerClient> | null = null;
   try {
     supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value;
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({ name, value: "", ...options });
+        },
       },
-      set(name: string, value: string, options: CookieOptions) {
-        request.cookies.set({ name, value, ...options });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({ name, value, ...options });
-      },
-      remove(name: string, options: CookieOptions) {
-        request.cookies.set({ name, value: "", ...options });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({ name, value: "", ...options });
-      },
-    },
-  });
+    });
   } catch (error) {
     logger.error("[middleware] Supabase disabled - env missing or invalid", {
       error: error instanceof Error ? error.message : String(error),
@@ -92,7 +103,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
     error: _authError,
   } = await supabase.auth.getUser();
-  
+
   // If getUser() fails, treat as unauthenticated
   const session = user ? { user } : null;
 
@@ -100,7 +111,7 @@ export async function middleware(request: NextRequest) {
   // Middleware does ALL auth checks - routes just read headers
   if (pathname.startsWith("/api/")) {
     const requestHeaders = new Headers(request.headers);
-    
+
     // If session exists, inject user info - routes trust this completely
     if (session) {
       requestHeaders.set("x-user-id", session.user.id);
@@ -125,7 +136,7 @@ export async function middleware(request: NextRequest) {
       timestamp: new Date().toISOString(),
       url: request.url,
     });
-    
+
     // Don't redirect - let dashboard component handle auth client-side
   }
 
@@ -135,16 +146,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/api/catalog/:path*",
-    // "/api/menu/:path*" - PUBLIC: needed for customer ordering without auth
-    // "/api/orders/:path*" - PUBLIC: needed for customer order submission without auth
-    "/api/tables/:path*",
-    "/api/inventory/:path*",
-    "/api/staff/:path*",
-    "/api/ai/:path*",
-    // "/api/analytics/:path*" - REMOVED: vitals endpoint needs to be public
-    // "/api/auth/:path*" - PUBLIC: auth endpoints (sign-in, etc) must be accessible
-    "/api/qr/:path*",
+    "/api/:path*", // Run on ALL API routes to ensure header stripping
   ],
   // Explicitly exclude health check from middleware
   // This ensures health check is NEVER blocked

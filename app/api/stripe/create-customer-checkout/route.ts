@@ -1,16 +1,21 @@
 import { logger } from "@/lib/logger";
 import Stripe from "stripe";
-import { env } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody } from '@/lib/api/validation-schemas';
-import { createAdminClient } from '@/lib/supabase';
+import { env } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody } from "@/lib/api/validation-schemas";
+import { createAdminClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
 const createCustomerCheckoutSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
-  customerEmail: z.string().email("Invalid email address").optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
+  customerEmail: z
+    .string()
+    .email("Invalid email address")
+    .optional()
+    .or(z.literal(""))
+    .transform((val) => (val === "" ? undefined : val)),
   customerName: z.string().min(1).max(100).optional(),
   venueName: z.string().min(1).max(100).optional(),
   orderId: z.string().uuid("Invalid order ID"),
@@ -30,21 +35,69 @@ export async function POST(req: Request) {
 
     const body = await validateBody(createCustomerCheckoutSchema, rawBody);
 
-    logger.debug("[STRIPE CHECKOUT API] Validation passed, creating session", {
+    logger.debug("[STRIPE CHECKOUT API] Validation passed, processing request", {
       amount: body.amount,
       orderId: body.orderId,
       hasEmail: !!body.customerEmail,
     });
+
+    // P0 FIX: Check order status before creating session to prevent double payment
+    const supabaseAdmin = createAdminClient();
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("payment_status, stripe_session_id")
+      .eq("id", body.orderId)
+      .single();
+
+    if (orderError || !order) {
+      logger.error("[STRIPE CHECKOUT API] Order not found", {
+        orderId: body.orderId,
+        error: orderError,
+      });
+      return apiErrors.notFound("Order not found");
+    }
+
+    if (order.payment_status === "PAID") {
+      logger.warn("[STRIPE CHECKOUT API] Attempt to pay for already paid order", {
+        orderId: body.orderId,
+      });
+      return apiErrors.badRequest("Order is already paid");
+    }
+
+    // Initialize Stripe client inside function to avoid build-time errors
+    const stripe = new Stripe(env("STRIPE_SECRET_KEY")!, {
+      apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion,
+    });
+
+    // P0 FIX: Reuse existing open session if available (idempotency)
+    if (order.stripe_session_id) {
+      try {
+        const existingSession = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
+        if (existingSession.status === "open") {
+          logger.info("[STRIPE CHECKOUT] Reusing existing open session", {
+            sessionId: existingSession.id,
+            orderId: body.orderId,
+          });
+          return success({
+            sessionId: existingSession.id,
+            url: existingSession.url,
+          });
+        }
+      } catch (e) {
+        // Ignore error (session might be expired/invalid/deleted), create new one
+        logger.warn("[STRIPE CHECKOUT] Existing session invalid, creating new one", {
+          orderId: body.orderId,
+          oldSessionId: order.stripe_session_id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
     logger.info("[STRIPE CHECKOUT] Creating Stripe customer checkout session", {
       amount: body.amount,
       customerName: body.customerName,
       venueName: body.venueName,
       orderId: body.orderId,
-    });
-
-    // Initialize Stripe client inside function to avoid build-time errors
-    const stripe = new Stripe(env('STRIPE_SECRET_KEY')!, {
-      apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion,
     });
 
     // Create Stripe checkout session for order payment
@@ -81,35 +134,28 @@ export async function POST(req: Request) {
 
     // Update the order with the session ID so the webhook can find it
     // This is important for webhook reliability
-    try {
-      const supabaseAdmin = createAdminClient();
-      const { error: updateError } = await supabaseAdmin
-        .from("orders")
-        .update({
-          stripe_session_id: session.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", body.orderId);
+    const { error: updateError } = await supabaseAdmin
+      .from("orders")
+      .update({
+        stripe_session_id: session.id,
+        // Mark as PAY_NOW explicitly to track intent
+        payment_method: "PAY_NOW",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", body.orderId);
 
-      if (updateError) {
-        logger.warn("[STRIPE CHECKOUT] Failed to update order with session ID (non-critical):", {
-          orderId: body.orderId,
-          sessionId: session.id,
-          error: updateError.message,
-        });
-        // Don't fail the request - webhook can still find order by orderId in metadata
-      } else {
-        logger.debug("[STRIPE CHECKOUT] Updated order with session ID", {
-          orderId: body.orderId,
-          sessionId: session.id,
-        });
-      }
-    } catch (updateError) {
-      logger.warn("[STRIPE CHECKOUT] Error updating order with session ID (non-critical):", {
+    if (updateError) {
+      logger.warn("[STRIPE CHECKOUT] Failed to update order with session ID (non-critical):", {
         orderId: body.orderId,
-        error: updateError instanceof Error ? updateError.message : "Unknown error",
+        sessionId: session.id,
+        error: updateError.message,
       });
       // Don't fail the request - webhook can still find order by orderId in metadata
+    } else {
+      logger.debug("[STRIPE CHECKOUT] Updated order with session ID", {
+        orderId: body.orderId,
+        sessionId: session.id,
+      });
     }
 
     return success({
@@ -126,9 +172,6 @@ export async function POST(req: Request) {
       return handleZodError(error);
     }
 
-    return apiErrors.internal(
-      "Failed to create checkout session",
-      error
-    );
+    return apiErrors.internal("Failed to create checkout session", error);
   }
 }

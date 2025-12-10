@@ -70,7 +70,7 @@ export interface CreateOrderRequest {
   specialInstructions?: string;
 }
 
-export interface CreateOrderResponse extends ApiResponse<OrderRow> {}
+export type CreateOrderResponse = ApiResponse<OrderRow>;
 
 export interface GetOrdersRequest {
   venueId: string;
@@ -82,14 +82,14 @@ export interface GetOrdersRequest {
   limit?: number;
 }
 
-export interface GetOrdersResponse extends ApiResponse<OrderRow[]> {}
+export type GetOrdersResponse = ApiResponse<OrderRow[]>;
 
 export interface UpdateOrderStatusRequest {
   orderId: string;
   status: "pending" | "in_prep" | "ready" | "served" | "completed" | "cancelled";
 }
 
-export interface UpdateOrderStatusResponse extends ApiResponse<OrderRow> {}
+export type UpdateOrderStatusResponse = ApiResponse<OrderRow>;
 
 // ========================================
 // TABLE API
@@ -99,7 +99,7 @@ export interface GetTablesRequest {
   venueId: string;
 }
 
-export interface GetTablesResponse extends ApiResponse<TableRow[]> {}
+export type GetTablesResponse = ApiResponse<TableRow[]>;
 
 export interface CreateTableRequest {
   venueId: string;
@@ -108,7 +108,7 @@ export interface CreateTableRequest {
   section?: string;
 }
 
-export interface CreateTableResponse extends ApiResponse<TableRow> {}
+export type CreateTableResponse = ApiResponse<TableRow>;
 
 export interface UpdateTableRequest {
   tableId: string;
@@ -118,7 +118,7 @@ export interface UpdateTableRequest {
   status?: "available" | "occupied" | "reserved" | "inactive";
 }
 
-export interface UpdateTableResponse extends ApiResponse<TableRow> {}
+export type UpdateTableResponse = ApiResponse<TableRow>;
 
 // ========================================
 // MENU API
@@ -130,7 +130,7 @@ export interface GetMenuItemsRequest {
   isAvailable?: boolean;
 }
 
-export interface GetMenuItemsResponse extends ApiResponse<MenuItemRow[]> {}
+export type GetMenuItemsResponse = ApiResponse<MenuItemRow[]>;
 
 export interface CreateMenuItemRequest {
   venueId: string;
@@ -144,7 +144,7 @@ export interface CreateMenuItemRequest {
   allergens?: string[];
 }
 
-export interface CreateMenuItemResponse extends ApiResponse<MenuItemRow> {}
+export type CreateMenuItemResponse = ApiResponse<MenuItemRow>;
 
 export interface UpdateMenuItemRequest {
   menuItemId: string;
@@ -156,7 +156,7 @@ export interface UpdateMenuItemRequest {
   preparationTime?: number;
 }
 
-export interface UpdateMenuItemResponse extends ApiResponse<MenuItemRow> {}
+export type UpdateMenuItemResponse = ApiResponse<MenuItemRow>;
 
 // ========================================
 // RESERVATION API
@@ -175,7 +175,7 @@ export interface CreateReservationRequest {
   specialRequests?: string;
 }
 
-export interface CreateReservationResponse extends ApiResponse<ReservationRow> {}
+export type CreateReservationResponse = ApiResponse<ReservationRow>;
 
 export interface GetReservationsRequest {
   venueId: string;
@@ -184,7 +184,7 @@ export interface GetReservationsRequest {
   endDate?: string;
 }
 
-export interface GetReservationsResponse extends ApiResponse<ReservationRow[]> {}
+export type GetReservationsResponse = ApiResponse<ReservationRow[]>;
 
 // ========================================
 // STAFF API
@@ -200,13 +200,13 @@ export interface InviteStaffRequest {
   userName?: string;
 }
 
-export interface InviteStaffResponse extends ApiResponse<StaffInvitationRow> {}
+export type InviteStaffResponse = ApiResponse<StaffInvitationRow>;
 
 export interface GetStaffRequest {
   venueId: string;
 }
 
-export interface GetStaffResponse extends ApiResponse<UserVenueRoleRow[]> {}
+export type GetStaffResponse = ApiResponse<UserVenueRoleRow[]>;
 
 export interface UpdateStaffRoleRequest {
   userId: string;
@@ -215,7 +215,7 @@ export interface UpdateStaffRoleRequest {
   permissions?: Record<string, boolean>;
 }
 
-export interface UpdateStaffRoleResponse extends ApiResponse<UserVenueRoleRow> {}
+export type UpdateStaffRoleResponse = ApiResponse<UserVenueRoleRow>;
 
 // ========================================
 // VENUE API
@@ -225,7 +225,7 @@ export interface GetVenueRequest {
   venueId: string;
 }
 
-export interface GetVenueResponse extends ApiResponse<VenueRow> {}
+export type GetVenueResponse = ApiResponse<VenueRow>;
 
 export interface UpdateVenueRequest {
   venueId: string;
@@ -238,7 +238,7 @@ export interface UpdateVenueRequest {
   dailyResetTime?: string;
 }
 
-export interface UpdateVenueResponse extends ApiResponse<VenueRow> {}
+export type UpdateVenueResponse = ApiResponse<VenueRow>;
 
 // ========================================
 // PAYMENT API
@@ -251,7 +251,7 @@ export interface CreatePaymentRequest {
   stripePaymentIntentId?: string;
 }
 
-export interface CreatePaymentResponse extends ApiResponse<PaymentRow> {}
+export type CreatePaymentResponse = ApiResponse<PaymentRow>;
 
 export interface CreateStripeCheckoutRequest {
   orderId: string;
@@ -259,11 +259,10 @@ export interface CreateStripeCheckoutRequest {
   cancelUrl: string;
 }
 
-export interface CreateStripeCheckoutResponse
-  extends ApiResponse<{
-    sessionId: string;
-    url: string;
-  }> {}
+export type CreateStripeCheckoutResponse = ApiResponse<{
+  sessionId: string;
+  url: string;
+}>;
 
 // ========================================
 // KDS API
@@ -275,14 +274,14 @@ export interface GetKDSTicketsRequest {
   status?: string;
 }
 
-export interface GetKDSTicketsResponse extends ApiResponse<KDSTicketRow[]> {}
+export type GetKDSTicketsResponse = ApiResponse<KDSTicketRow[]>;
 
 export interface UpdateKDSTicketRequest {
   ticketId: string;
   status: "pending" | "in_progress" | "ready" | "completed" | "cancelled";
 }
 
-export interface UpdateKDSTicketResponse extends ApiResponse<KDSTicketRow> {}
+export type UpdateKDSTicketResponse = ApiResponse<KDSTicketRow>;
 
 // ========================================
 // FEEDBACK API
@@ -298,7 +297,7 @@ export interface SubmitFeedbackRequest {
   customerEmail?: string;
 }
 
-export interface SubmitFeedbackResponse extends ApiResponse<FeedbackRow> {}
+export type SubmitFeedbackResponse = ApiResponse<FeedbackRow>;
 
 export interface GetFeedbackRequest {
   venueId: string;
@@ -308,7 +307,7 @@ export interface GetFeedbackRequest {
   minRating?: number;
 }
 
-export interface GetFeedbackResponse extends ApiResponse<FeedbackRow[]> {}
+export type GetFeedbackResponse = ApiResponse<FeedbackRow[]>;
 
 // ========================================
 // ANALYTICS API
@@ -342,7 +341,7 @@ export interface AnalyticsMetrics {
   };
 }
 
-export interface GetAnalyticsResponse extends ApiResponse<AnalyticsMetrics> {}
+export type GetAnalyticsResponse = ApiResponse<AnalyticsMetrics>;
 
 // ========================================
 // TYPE GUARDS

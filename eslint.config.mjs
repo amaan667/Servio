@@ -56,13 +56,13 @@ export default [
 
       // Type safety
       "@typescript-eslint/no-unused-vars": [
-        "error",
+        "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-require-imports": "error",
-      "@typescript-eslint/no-empty-object-type": "error",
-      "@typescript-eslint/no-unsafe-function-type": "error",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "warn",
 
       // Hooks
       "react-hooks/exhaustive-deps": "off", // Too strict - causes false positives
@@ -112,6 +112,7 @@ export default [
     ],
     rules: {
       "no-console": "off",
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ];

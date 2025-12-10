@@ -3,6 +3,8 @@
  * Provides webhook management, delivery, and third-party integrations
  */
 
+import crypto from "crypto";
+
 interface Webhook {
   id: string;
   organization_id: string;
@@ -120,7 +122,6 @@ class WebhookService {
    * Generate webhook signature
    */
   private generateSignature(_payload: unknown, secret: string): string {
-    const crypto = require("crypto");
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(JSON.stringify(_payload));
     return hmac.digest("hex");
@@ -130,7 +131,6 @@ class WebhookService {
    * Generate webhook secret
    */
   private generateSecret(): string {
-    const crypto = require("crypto");
     return crypto.randomBytes(32).toString("hex");
   }
 
