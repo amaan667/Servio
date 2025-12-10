@@ -2,8 +2,6 @@
  * Script to extract and track TODO/FIXME comments
  * Generates a markdown file with all TODOs for tracking
  */
-/* eslint-disable no-console */
-
 import { readFileSync, writeFileSync, readdirSync, statSync } from "fs";
 import { join, extname, relative } from "path";
 import { logger } from "@/lib/logger";

@@ -16,16 +16,32 @@ export interface TestContext {
 /**
  * Create a mock NextRequest for API route testing
  */
+type MockRequestOptions = {
+  body?: unknown;
+  headers?: Record<string, string>;
+  cookies?: Record<string, string>;
+};
+
 export function createMockRequest(
   method: string,
   url: string,
-  options?: {
-    body?: unknown;
-    headers?: Record<string, string>;
-    cookies?: Record<string, string>;
-  }
+  options?: MockRequestOptions
 ): NextRequest {
   const headers = new Headers(options?.headers || {});
+  const authMode = headers.get("x-test-auth") ?? "auto";
+
+  if (authMode !== "none") {
+    if (!headers.has("x-user-id")) {
+      headers.set("x-user-id", "test-user");
+    }
+    if (!headers.has("x-user-email")) {
+      headers.set("x-user-email", "test-user@example.com");
+    }
+    if (authMode === "auto" && !headers.has("x-test-venue-id")) {
+      headers.set("x-test-venue-id", "test-venue");
+    }
+  }
+
   if (options?.cookies) {
     const cookieString = Object.entries(options.cookies)
       .map(([key, value]) => `${key}=${value}`)

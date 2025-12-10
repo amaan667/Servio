@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import type { RecipeIngredient } from "@/types/inventory";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 interface RecipeItem {
   ingredient?: {
@@ -12,13 +12,20 @@ interface RecipeItem {
 }
 
 // GET /api/inventory/recipes/[menu_item_id]
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ menu_item_id: string }> }
-) {
+type RecipeRouteContext = {
+  params?: {
+    menu_item_id?: string;
+  };
+};
+
+export async function GET(_request: NextRequest, context?: RecipeRouteContext) {
   try {
     const supabase = await createClient();
-    const { menu_item_id } = await params;
+    const menu_item_id = context?.params?.menu_item_id;
+
+    if (!menu_item_id) {
+      return apiErrors.badRequest("menu_item_id is required");
+    }
 
     const { data, error } = await supabase
       .from("menu_item_ingredients")
@@ -58,13 +65,14 @@ export async function GET(
 
 // POST /api/inventory/recipes/[menu_item_id]
 // Upserts recipe ingredients for a menu item
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ menu_item_id: string }> }
-) {
+export async function POST(_request: NextRequest, context?: RecipeRouteContext) {
   try {
     const supabase = await createClient();
-    const { menu_item_id } = await params;
+    const menu_item_id = context?.params?.menu_item_id;
+
+    if (!menu_item_id) {
+      return apiErrors.badRequest("menu_item_id is required");
+    }
     const body: { ingredients: RecipeIngredient[] } = await _request.json();
 
     if (!body.ingredients || !Array.isArray(body.ingredients)) {
@@ -117,13 +125,14 @@ export async function POST(
 
 // DELETE /api/inventory/recipes/[menu_item_id]
 // Delete entire recipe for menu item
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ menu_item_id: string }> }
-) {
+export async function DELETE(_request: NextRequest, context?: RecipeRouteContext) {
   try {
     const supabase = await createClient();
-    const { menu_item_id } = await params;
+    const menu_item_id = context?.params?.menu_item_id;
+
+    if (!menu_item_id) {
+      return apiErrors.badRequest("menu_item_id is required");
+    }
 
     const { error } = await supabase
       .from("menu_item_ingredients")

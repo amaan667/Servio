@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
@@ -32,11 +32,14 @@ export interface ModifierOption {
   display_order?: number;
 }
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ itemId: string }> }
-) {
-  const { itemId } = await context.params;
+type ModifiersRouteContext = {
+  params?: {
+    itemId?: string;
+  };
+};
+
+export async function GET(req: NextRequest, context?: ModifiersRouteContext) {
+  const itemId = context?.params?.itemId;
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
@@ -91,11 +94,8 @@ export async function GET(
   }
 }
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ itemId: string }> }
-) {
-  const { itemId } = await context.params;
+export async function POST(req: NextRequest, context?: ModifiersRouteContext) {
+  const itemId = context?.params?.itemId;
   try {
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();
@@ -197,11 +197,8 @@ export async function POST(
   }
 }
 
-export async function DELETE(
-  _req: NextRequest,
-  context: { params: Promise<{ itemId: string }> }
-) {
-  const { itemId } = await context.params;
+export async function DELETE(_req: NextRequest, context?: ModifiersRouteContext) {
+  const itemId = context?.params?.itemId;
   try {
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();

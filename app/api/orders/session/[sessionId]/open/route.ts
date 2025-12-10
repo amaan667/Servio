@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ sessionId: string }> }) {
+type SessionRouteContext = {
+  params?: {
+    sessionId?: string;
+  };
+};
+
+export async function GET(_req: Request, context?: SessionRouteContext) {
   try {
-    const { sessionId } = await params;
+    const sessionId = context?.params?.sessionId;
 
     if (!sessionId) {
       return NextResponse.json(

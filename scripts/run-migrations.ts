@@ -3,7 +3,6 @@
  * Runs pending Supabase migrations automatically on deployment
  */
 
-/* eslint-disable no-console */
 import { createClient } from "@supabase/supabase-js";
 import * as fs from "fs";
 import * as path from "path";

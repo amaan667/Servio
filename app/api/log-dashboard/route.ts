@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const dashboardLogSchema = z.object({
   level: z.enum(["info", "warn", "error"]).default("info"),
@@ -37,25 +38,18 @@ export async function POST(req: NextRequest) {
 
     const message = `[DASHBOARD] ${event}`;
 
-    // Use console.* so Railway always captures these logs from server runtime
     if (level === "error") {
-      // eslint-disable-next-line no-console
-      console.error(message, logPayload);
+      logger.error(message, logPayload);
     } else if (level === "warn") {
-      // eslint-disable-next-line no-console
-      console.warn(message, logPayload);
+      logger.warn(message, logPayload);
     } else {
-      // eslint-disable-next-line no-console
-      console.info(message, logPayload);
+      logger.info(message, logPayload);
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    // eslint-disable-next-line no-console
-    console.error("[DASHBOARD] Failed to write log", {
-      error: errorMessage,
-    });
+    logger.error("[DASHBOARD] Failed to write log", { error: errorMessage });
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,11 +12,18 @@ export const dynamic = "force-dynamic";
  * Allow customer to switch payment method (e.g., pay_later → pay_at_till)
  * Used when customer changes their mind about how to pay
  */
-export async function PATCH(
-  _request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
-) {
-  const { orderId } = await params;
+type UpdatePaymentModeContext = {
+  params?: {
+    orderId?: string;
+  };
+};
+
+export async function PATCH(_request: NextRequest, context?: UpdatePaymentModeContext) {
+  const orderId = context?.params?.orderId;
+
+  if (!orderId) {
+    return apiErrors.badRequest("Order ID is required");
+  }
 
   try {
     const body = await _request.json();

@@ -115,7 +115,6 @@ function processFile(filePath: string): void {
       logger.debug({ data: `✓ Processed: ${filePath}` });
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error(`Error processing ${filePath}:`, error);
   }
 }

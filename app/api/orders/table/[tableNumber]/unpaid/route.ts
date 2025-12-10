@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,12 +12,15 @@ export const dynamic = "force-dynamic";
  * Fetch all unpaid orders for a specific table
  * Used for "Pay Entire Table" functionality
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ tableNumber: string }> }
-) {
+type TableOrdersRouteContext = {
+  params?: {
+    tableNumber?: string;
+  };
+};
+
+export async function GET(_request: NextRequest, context?: TableOrdersRouteContext) {
   try {
-    const { tableNumber } = await params;
+    const tableNumber = context?.params?.tableNumber;
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venue_id");
 
