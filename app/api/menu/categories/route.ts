@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { cache, cacheKeys, cacheTTL } from "@/lib/cache";
+import { cache, cacheTTL } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { z } from "zod";
 
 export async function GET(_request: NextRequest) {
   try {
+    // Public endpoint: enforce strict rate limiting to prevent scraping
+    const rateLimitResult = await rateLimit(_request, RATE_LIMITS.STRICT);
+    if (!rateLimitResult.success) {
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+    }
+
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venueId");
+    const limit = z
+      .coerce.number()
+      .int()
+      .min(1)
+      .max(1000)
+      .catch(500)
+      .parse(searchParams.get("limit"));
 
     if (!venueId) {
       return apiErrors.badRequest("venueId is required");
@@ -41,7 +56,8 @@ export async function GET(_request: NextRequest) {
     const { data: menuItems, error: menuError } = await supabase
       .from("menu_items")
       .select("category")
-      .eq("venue_id", venueId);
+      .eq("venue_id", venueId)
+      .limit(limit);
 
     if (menuError) {
       logger.error("[CATEGORIES API] Error fetching menu items:", { value: menuError });

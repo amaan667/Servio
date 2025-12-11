@@ -52,6 +52,15 @@ export const GET = withUnifiedAuth(
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
+      const paginationSchema = z.object({
+        limit: z.coerce.number().int().min(1).max(500).default(200),
+        offset: z.coerce.number().int().min(0).default(0),
+      });
+      const { limit, offset } = validateQuery(paginationSchema, {
+        limit: req.nextUrl.searchParams.get("limit"),
+        offset: req.nextUrl.searchParams.get("offset"),
+      });
+
       if (!venueId) {
         return apiErrors.badRequest("venueId is required");
       }
@@ -73,7 +82,8 @@ export const GET = withUnifiedAuth(
         .select("*")
         .eq("venue_id", normalizedVenueId)
         .order("display_order", { ascending: true })
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .range(offset, offset + limit - 1);
 
       questions = resultWithDisplayOrder.data;
       error = resultWithDisplayOrder.error;
@@ -96,7 +106,8 @@ export const GET = withUnifiedAuth(
           .from("feedback_questions")
           .select("*")
           .eq("venue_id", normalizedVenueId)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: true })
+          .range(offset, offset + limit - 1);
 
         questions = resultWithoutDisplayOrder.data;
         error = resultWithoutDisplayOrder.error;
@@ -149,6 +160,12 @@ export const GET = withUnifiedAuth(
         questions: transformedQuestions,
         totalCount,
         activeCount,
+        pagination: {
+          limit,
+          offset,
+          returned: transformedQuestions.length,
+          hasMore: transformedQuestions.length === limit,
+        },
       });
     } catch (error) {
       logger.error("[FEEDBACK QUESTIONS GET] Unexpected error:", {
