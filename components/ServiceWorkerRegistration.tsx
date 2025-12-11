@@ -104,16 +104,18 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
 
   // const handleUpdate = () => { /* Empty */ };
 
+  const isBrowser = typeof window !== "undefined";
+  const pathname = isBrowser ? window.location.pathname : "";
+  const isDashboardOrOrderOrPayment =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/order") || pathname.startsWith("/payment");
+  const isKdsPage = pathname.includes("/dashboard") && pathname.includes("/kds");
+
   return (
     <>
       {children}
 
       {/* Offline Indicator - Show on dashboard and order pages */}
-      {!isOnline &&
-        typeof window !== "undefined" &&
-        (window.location.pathname.startsWith("/dashboard") ||
-          window.location.pathname.startsWith("/order") ||
-          window.location.pathname.startsWith("/payment")) && (
+      {!isOnline && isBrowser && isDashboardOrOrderOrPayment && (
           <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white p-2 text-center text-sm">
             <div className="flex items-center justify-center space-x-2">
               <WifiOff className="h-4 w-4" />
@@ -137,10 +139,10 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           </div>
         )}
 
-      {/* Online/Offline badge (always visible) */}
-      {typeof window !== "undefined" && (
+      {/* Online/Offline badge - top-right, hidden on KDS (has its own status) */}
+      {isBrowser && !isKdsPage && (
         <div
-          className={`fixed bottom-4 left-4 z-50 px-3 py-1 rounded-full text-sm font-medium shadow ${
+          className={`fixed top-4 right-4 z-50 px-3 py-1 rounded-full text-sm font-medium shadow ${
             isOnline ? "bg-green-600 text-white" : "bg-red-600 text-white"
           }`}
         >
