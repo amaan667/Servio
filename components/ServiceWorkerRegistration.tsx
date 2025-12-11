@@ -139,17 +139,6 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           </div>
         )}
 
-      {/* Online/Offline badge - hidden on dashboard (shown in layout) and KDS (has its own status) */}
-      {isBrowser && !isKdsPage && !pathname.startsWith("/dashboard") && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-3 py-1 rounded-full text-sm font-medium shadow ${
-            isOnline ? "bg-green-600 text-white" : "bg-red-600 text-white"
-          }`}
-        >
-          {isOnline ? "Online" : `Offline${queueCount > 0 ? ` • ${queueCount} queued` : ""}`}
-        </div>
-      )}
-
       {/* All update UI removed - updates happen silently in background */}
     </>
   );
