@@ -5,7 +5,7 @@
 import { createClient } from "@supabase/supabase-js";
 import * as fs from "fs";
 import * as path from "path";
-import { logger } from "@/lib/logger";
+import { logger } from "../lib/logger/production-logger";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -105,7 +105,7 @@ async function executeMigration(filename: string): Promise<boolean> {
       return false;
     }
 
-    logger.debug({ data: `✅ Migration successful: ${filename}` });
+    logger.debug(`✅ Migration successful: ${filename}`);
     return true;
   } catch (error) {
     logger.error(`❌ Migration error: ${filename}`, error);
@@ -144,7 +144,7 @@ async function runMigrations() {
       return;
     }
 
-    logger.debug({ data: `Pending migrations: ${pending.join(", ")}` });
+    logger.debug(`Pending migrations: ${pending.join(", ")}`);
 
     // Step 4: Execute pending migrations
     let successCount = 0;
@@ -165,8 +165,8 @@ async function runMigrations() {
 
     // Step 5: Summary
     logger.debug("📊 Migration Summary:");
-    logger.debug({ data: `  ✅ Successful: ${successCount}` });
-    logger.debug({ data: `  ❌ Failed: ${failCount}` });
+    logger.debug(`  ✅ Successful: ${successCount}`);
+    logger.debug(`  ❌ Failed: ${failCount}`);
 
     if (failCount > 0) {
       process.exit(1);
