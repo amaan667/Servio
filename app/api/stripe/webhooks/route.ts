@@ -6,6 +6,7 @@ import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
+import { trackError } from "@/lib/monitoring/error-tracking";
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {
@@ -116,6 +117,7 @@ export async function POST(_request: NextRequest) {
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });
+    trackError(_error, { action: "stripe_subscription_webhook", eventId }, "high");
     try {
       const supabase = createAdminClient();
       await finalizeStripeEvent(supabase, eventId, "failed", {

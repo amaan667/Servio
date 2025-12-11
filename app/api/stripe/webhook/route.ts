@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger } from "@/lib/logger";
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
+import { trackPaymentError } from "@/lib/monitoring/error-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +37,8 @@ export async function POST(_request: NextRequest) {
 
   // CRITICAL: Extract correlation ID from request or Stripe event metadata
   const correlationId = getCorrelationIdFromRequest(_request);
+  let eventMetadata: Record<string, unknown> | undefined;
+  let stripeSessionId: string | undefined;
 
   apiLogger.debug("[CUSTOMER ORDER WEBHOOK] ===== WEBHOOK RECEIVED =====", {
     correlationId,
@@ -56,6 +59,13 @@ export async function POST(_request: NextRequest) {
     // Use EXACT same method as subscriptions webhook (no trimming!)
     const webhookSecret = getWebhookSecret();
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    const eventObject = event.data?.object as { metadata?: Record<string, unknown>; id?: string };
+    if (eventObject && typeof eventObject.metadata === "object") {
+      eventMetadata = eventObject.metadata;
+    }
+    if (eventObject && typeof eventObject.id === "string") {
+      stripeSessionId = eventObject.id;
+    }
   } catch (_err) {
     const errorMessage = _err instanceof Error ? _err.message : "Unknown error";
 
@@ -111,6 +121,12 @@ export async function POST(_request: NextRequest) {
       eventId: event.id,
       correlationId,
     });
+    trackPaymentError(upsertError, {
+      orderId: session?.metadata?.orderId,
+      venueId: session?.metadata?.venue_id ?? session?.metadata?.venueId,
+      paymentMethod: session?.metadata?.paymentType,
+      stripeSessionId: session?.id,
+    });
     return NextResponse.json({ ok: false, error: "Failed to reserve event" }, { status: 500 });
   }
 
@@ -121,6 +137,9 @@ export async function POST(_request: NextRequest) {
     }
 
     const session = event.data.object as Stripe.Checkout.Session;
+    stripeSessionId = session.id;
+    eventMetadata =
+      typeof session.metadata === "object" && session.metadata ? session.metadata : undefined;
     const eventCorrelationId = session.metadata?.correlation_id || correlationId;
 
     apiLogger.debug("[CUSTOMER ORDER WEBHOOK] Processing checkout session", {
@@ -153,6 +172,14 @@ export async function POST(_request: NextRequest) {
     await finalizeEventStatus(supabaseAdmin, event.id, "failed", {
       message: errorMessage,
       stack: errorStack,
+    });
+    trackPaymentError(err, {
+      orderId: (eventMetadata?.orderId as string | undefined) ?? undefined,
+      venueId:
+        (eventMetadata?.venue_id as string | undefined) ??
+        (eventMetadata?.venueId as string | undefined),
+      paymentMethod: (eventMetadata?.paymentType as string | undefined) ?? undefined,
+      stripeSessionId,
     });
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }

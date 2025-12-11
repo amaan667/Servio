@@ -6,6 +6,7 @@ import { apiErrors, success } from "@/lib/api/standard-response";
 import { createAdminClient } from "@/lib/supabase";
 import { logger, apiLogger } from "@/lib/logger";
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
+import { trackError } from "@/lib/monitoring/error-tracking";
 import { processSubscriptionEvent, finalizeStripeEvent } from "@/app/api/stripe/webhooks/route";
 import {
   processCustomerCheckoutSession,
@@ -55,6 +56,7 @@ export async function runStripeReconcile({
       error: fetchError.message,
       requestId,
     });
+    trackError(fetchError, { action: "stripe_reconcile_fetch", requestId }, "high");
     throw new Error("Failed to fetch events");
   }
 
@@ -128,6 +130,14 @@ export async function runStripeReconcile({
         type: ev.type,
         error: message,
         requestId,
+      });
+      trackError(err, {
+        action: "stripe_reconcile_event",
+        requestId,
+        eventId: ev.event_id,
+        eventType: ev.type,
+        venueId: metadata?.venue_id ?? metadata?.venueId,
+        orderId: metadata?.order_id ?? metadata?.orderId,
       });
     }
   }
