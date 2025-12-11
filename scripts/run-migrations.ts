@@ -2,8 +2,6 @@
  * Automated Database Migration Runner
  * Runs pending Supabase migrations automatically on deployment
  */
-
-/* eslint-disable no-console */
 import { createClient } from "@supabase/supabase-js";
 import * as fs from "fs";
 import * as path from "path";
@@ -13,7 +11,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error("❌ Missing Supabase credentials");
+  logger.error("❌ Missing Supabase credentials");
   process.exit(1);
 }
 
@@ -37,7 +35,7 @@ async function ensureMigrationsTable() {
   });
 
   if (error) {
-    console.error("❌ Failed to create migrations table:", error);
+    logger.error("❌ Failed to create migrations table:", error);
     throw error;
   }
 
@@ -51,7 +49,7 @@ async function getAppliedMigrations(): Promise<string[]> {
   const { data, error } = await supabase.from("_migrations").select("name").order("name");
 
   if (error) {
-    console.error("❌ Failed to get applied migrations:", error);
+    logger.error("❌ Failed to get applied migrations:", error);
     return [];
   }
 
@@ -92,7 +90,7 @@ async function executeMigration(filename: string): Promise<boolean> {
     const { error } = await supabase.rpc("exec_sql", { sql });
 
     if (error) {
-      console.error(`❌ Migration failed: ${filename}`, error);
+      logger.error(`❌ Migration failed: ${filename}`, error);
       return false;
     }
 
@@ -103,14 +101,14 @@ async function executeMigration(filename: string): Promise<boolean> {
     });
 
     if (recordError) {
-      console.error(`❌ Failed to record migration: ${filename}`, recordError);
+      logger.error(`❌ Failed to record migration: ${filename}`, recordError);
       return false;
     }
 
     logger.debug({ data: `✅ Migration successful: ${filename}` });
     return true;
   } catch (error) {
-    console.error(`❌ Migration error: ${filename}`, error);
+    logger.error(`❌ Migration error: ${filename}`, error);
     return false;
   }
 }
@@ -146,7 +144,7 @@ async function runMigrations() {
       return;
     }
 
-    logger.debug({ data: `  - ${file}` });
+    logger.debug({ data: `Pending migrations: ${pending.join(", ")}` });
 
     // Step 4: Execute pending migrations
     let successCount = 0;
@@ -160,7 +158,7 @@ async function runMigrations() {
       } else {
         failCount++;
         // Stop on first failure to prevent cascading issues
-        console.error("\n❌ Migration failed - stopping execution");
+        logger.error("\n❌ Migration failed - stopping execution");
         break;
       }
     }
@@ -174,7 +172,7 @@ async function runMigrations() {
       process.exit(1);
     }
   } catch (error) {
-    console.error("\n❌ Migration runner failed:", error);
+    logger.error("\n❌ Migration runner failed:", error);
     process.exit(1);
   }
 }

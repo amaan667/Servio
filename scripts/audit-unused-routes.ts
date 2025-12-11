@@ -2,10 +2,10 @@
  * Audit script to find unused/redundant API routes
  */
 
-/* eslint-disable no-console */
 import { readFileSync } from "fs";
 import { relative } from "path";
 import { glob } from "glob";
+import { logger } from "@/lib/logger";
 
 interface RouteUsage {
   route: string;
@@ -66,10 +66,10 @@ async function findRouteUsage(routePath: string): Promise<string[]> {
 
 // Main execution
 async function main() {
-  console.log("Auditing API routes for usage...\n");
+  logger.info("Auditing API routes for usage...\n");
 
   const routeFiles = await getAllRoutes();
-  console.log(`Found ${routeFiles.length} route files\n`);
+  logger.info(`Found ${routeFiles.length} route files\n`);
 
   for (const routeFile of routeFiles) {
     const routePath = getRoutePath(routeFile);
@@ -92,29 +92,29 @@ async function main() {
     (r) => r.used && r.references.some((ref) => !ref.includes("__tests__"))
   );
 
-  console.log("=== ROUTE AUDIT RESULTS ===\n");
-  console.log(`Total routes: ${routes.length}`);
-  console.log(`Used in production: ${used.length}`);
-  console.log(`Test-only: ${testOnly.length}`);
-  console.log(`Unused: ${unused.length}\n`);
+  logger.info("=== ROUTE AUDIT RESULTS ===\n");
+  logger.info(`Total routes: ${routes.length}`);
+  logger.info(`Used in production: ${used.length}`);
+  logger.info(`Test-only: ${testOnly.length}`);
+  logger.info(`Unused: ${unused.length}\n`);
 
   if (unused.length > 0) {
-    console.log("=== UNUSED ROUTES (Candidates for removal) ===\n");
+    logger.warn("=== UNUSED ROUTES (Candidates for removal) ===\n");
     unused.forEach((r) => {
-      console.log(`❌ ${r.route}`);
-      console.log(`   File: ${r.file}`);
-      console.log(`   References: ${r.references.length}`);
-      console.log();
+      logger.warn(`❌ ${r.route}`);
+      logger.warn(`   File: ${r.file}`);
+      logger.warn(`   References: ${r.references.length}`);
+      logger.warn("");
     });
   }
 
   if (testOnly.length > 0) {
-    console.log("=== TEST-ONLY ROUTES (Consider removing if not needed) ===\n");
+    logger.info("=== TEST-ONLY ROUTES (Consider removing if not needed) ===\n");
     testOnly.forEach((r) => {
-      console.log(`⚠️  ${r.route}`);
-      console.log(`   File: ${r.file}`);
-      console.log(`   References: ${r.references.join(", ")}`);
-      console.log();
+      logger.info(`⚠️  ${r.route}`);
+      logger.info(`   File: ${r.file}`);
+      logger.info(`   References: ${r.references.join(", ")}`);
+      logger.info("");
     });
   }
 
@@ -130,13 +130,13 @@ async function main() {
 
   const duplicates = Array.from(routePaths.entries()).filter(([, files]) => files.length > 1);
   if (duplicates.length > 0) {
-    console.log("=== DUPLICATE ROUTES ===\n");
+    logger.warn("=== DUPLICATE ROUTES ===\n");
     duplicates.forEach(([route, files]) => {
-      console.log(`⚠️  ${route}`);
-      files.forEach((file) => console.log(`   - ${file}`));
-      console.log();
+      logger.warn(`⚠️  ${route}`);
+      files.forEach((file) => logger.warn(`   - ${file}`));
+      logger.warn("");
     });
   }
 }
 
-main().catch(console.error);
+main().catch((error) => logger.error("Route audit failed", error));

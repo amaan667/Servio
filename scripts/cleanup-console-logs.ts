@@ -5,6 +5,7 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from "fs";
 import { join, extname } from "path";
+import { logger } from "@/lib/logger";
 
 const EXCLUDE_DIRS = ["node_modules", ".next", "coverage", "dist", "build", "__tests__"];
 const INCLUDE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx"];
@@ -116,8 +117,7 @@ function processFile(filePath: string): void {
       logger.debug({ data: `✓ Processed: ${filePath}` });
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(`Error processing ${filePath}:`, error);
+    logger.error(`Error processing ${filePath}:`, error);
   }
 }
 

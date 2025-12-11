@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest as _NextRequest, NextResponse as _NextResponse } from "next/server";
 

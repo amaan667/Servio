@@ -2,7 +2,6 @@
  * Script to extract and track TODO/FIXME comments
  * Generates a markdown file with all TODOs for tracking
  */
-/* eslint-disable no-console */
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from "fs";
 import { join, extname, relative } from "path";
@@ -64,7 +63,7 @@ function processFile(filePath: string): void {
       }
     });
   } catch (error) {
-    console.error(`Error processing ${filePath}:`, error);
+    logger.error(`Error processing ${filePath}:`, error);
   }
 }
 

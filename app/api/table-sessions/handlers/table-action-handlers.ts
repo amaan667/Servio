@@ -439,7 +439,7 @@ export async function handleReserveTable(
 }
 
 export async function handleOccupyTable(supabase: SupabaseClient, table_id: string) {
-  console.log("[OCCUPY TABLE] Starting - table_id:", table_id);
+  logger.info("[TABLE ACTIONS] Occupy table start", { tableId: table_id });
 
   // First, check if there's an existing open session
   const { data: existingSession, error: checkError } = await supabase
@@ -449,10 +449,13 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
     .is("closed_at", null)
     .single();
 
-  console.log("[OCCUPY TABLE] Session check:", { existingSession, error: checkError?.message });
+  logger.info("[TABLE ACTIONS] Occupy table session check", {
+    tableId: table_id,
+    existingSessionId: existingSession?.id,
+    error: checkError?.message,
+  });
 
   if (checkError && checkError.code !== "PGRST116") {
-    console.log("[OCCUPY TABLE] ERROR checking session:", checkError);
     logger.error("[TABLE ACTIONS] Error checking existing session:", { value: checkError });
     return apiErrors.internal("Failed to check table status");
   }
@@ -464,7 +467,11 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
     .eq("id", table_id)
     .single();
 
-  console.log("[OCCUPY TABLE] Table lookup:", { table, error: tableError?.message });
+  logger.info("[TABLE ACTIONS] Occupy table lookup", {
+    tableId: table_id,
+    venueId: table?.venue_id,
+    error: tableError?.message,
+  });
 
   if (tableError) {
     logger.error("[TABLE ACTIONS] Error getting table info:", {
@@ -498,7 +505,9 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
   }
 
   if (existingSession) {
-    console.log("[OCCUPY TABLE] Updating existing session to OCCUPIED");
+    logger.info("[TABLE ACTIONS] Updating existing session to OCCUPIED", {
+      sessionId: existingSession.id,
+    });
     // Update existing session to OCCUPIED
     const { error: updateError } = await supabase
       .from("table_sessions")
@@ -508,18 +517,21 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
       })
       .eq("id", existingSession.id);
 
-    console.log("[OCCUPY TABLE] Update result:", {
-      error: updateError?.message,
+    logger.info("[TABLE ACTIONS] Occupy table update result", {
+      sessionId: existingSession.id,
       success: !updateError,
+      error: updateError?.message,
     });
 
     if (updateError) {
-      console.log("[OCCUPY TABLE] ERROR updating session:", updateError);
       logger.error("[TABLE ACTIONS] Error updating session to OCCUPIED:", { value: updateError });
       return apiErrors.internal("Failed to occupy table");
     }
   } else {
-    console.log("[OCCUPY TABLE] Creating new OCCUPIED session");
+    logger.info("[TABLE ACTIONS] Creating new OCCUPIED session", {
+      tableId: table_id,
+      venueId: table.venue_id,
+    });
     // Create new session with OCCUPIED status
     const { error: createError } = await supabase.from("table_sessions").insert({
       table_id: table_id,
@@ -528,13 +540,14 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
       opened_at: new Date().toISOString(),
     });
 
-    console.log("[OCCUPY TABLE] Create result:", {
-      error: createError?.message,
+    logger.info("[TABLE ACTIONS] Occupy table create result", {
+      tableId: table_id,
+      venueId: table.venue_id,
       success: !createError,
+      error: createError?.message,
     });
 
     if (createError) {
-      console.log("[OCCUPY TABLE] ERROR creating session:", createError);
       logger.error("[TABLE ACTIONS] Error creating new OCCUPIED session:", {
         value: createError,
         code: createError.code,
@@ -550,7 +563,7 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
     }
   }
 
-  console.log("[OCCUPY TABLE] SUCCESS - Returning success response");
+  logger.info("[TABLE ACTIONS] Occupy table success", { tableId: table_id });
   return NextResponse.json({ success: true });
 }
 

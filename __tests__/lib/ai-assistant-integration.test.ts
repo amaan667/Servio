@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, no-console */
 // AI Assistant Integration Test - Actual LLM execution
 // This test runs REAL queries through the AI assistant to verify accuracy
 

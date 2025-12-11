@@ -39,20 +39,16 @@ export async function POST(req: NextRequest) {
 
     // Use console.* so Railway always captures these logs from server runtime
     if (level === "error") {
-      // eslint-disable-next-line no-console
       console.error(message, logPayload);
     } else if (level === "warn") {
-      // eslint-disable-next-line no-console
       console.warn(message, logPayload);
     } else {
-      // eslint-disable-next-line no-console
       console.info(message, logPayload);
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    // eslint-disable-next-line no-console
     console.error("[DASHBOARD] Failed to write log", {
       error: errorMessage,
     });
