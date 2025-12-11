@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { apiErrors } from "@/lib/api/standard-response";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,13 +22,15 @@ export async function GET(
     const { tableNumber } = await params;
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venue_id");
+    const parsedTableNumber = z.coerce.number().int().positive().safeParse(tableNumber);
 
-    if (!venueId) {
-      return apiErrors.badRequest("venue_id is required");
+    const rateResult = await rateLimit(_request, RATE_LIMITS.STRICT);
+    if (!rateResult.success) {
+      return apiErrors.rateLimit(Math.ceil((rateResult.reset - Date.now()) / 1000));
     }
 
-    if (!tableNumber) {
-      return apiErrors.badRequest("tableNumber is required");
+    if (!venueId || !parsedTableNumber.success) {
+      return apiErrors.badRequest("venue_id is required");
     }
 
     const admin = createAdminClient();
@@ -60,7 +64,7 @@ export async function GET(
       `
       )
       .eq("venue_id", venueId)
-      .eq("table_number", parseInt(tableNumber))
+      .eq("table_number", parsedTableNumber.data)
       .in("payment_status", ["UNPAID"])
       .gte("created_at", todayStart.toISOString())
       .lte("created_at", todayEnd.toISOString())
