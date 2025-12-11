@@ -1,12 +1,19 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import type { StockLevel } from '@/types/inventory';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { StockLevel } from "@/types/inventory";
 
 interface StocktakeDialogProps {
   open: boolean;
@@ -15,10 +22,15 @@ interface StocktakeDialogProps {
   onSuccess: () => void;
 }
 
-export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: StocktakeDialogProps) {
+export function StocktakeDialog({
+  open,
+  onOpenChange,
+  ingredient,
+  onSuccess,
+}: StocktakeDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [actualCount, setActualCount] = useState('');
-  const [note, setNote] = useState('');
+  const [actualCount, setActualCount] = useState("");
+  const [note, setNote] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,9 +40,9 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
       const count = parseFloat(actualCount);
       if (isNaN(count)) return;
 
-      const response = await fetch('/api/inventory/stock/stocktake', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/inventory/stock/stocktake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ingredient_id: ingredient.ingredient_id,
           actual_count: count,
@@ -41,8 +53,8 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
       if (response.ok) {
         onSuccess();
         onOpenChange(false);
-        setActualCount('');
-        setNote('');
+        setActualCount("");
+        setNote("");
       }
     } catch (_error) {
       // Error silently handled
@@ -58,15 +70,14 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Stocktake - {ingredient.name}</DialogTitle>
-          <DialogDescription>
-            Record the actual physical count of this ingredient
-          </DialogDescription>
+          <DialogDescription>Record the actual physical count of this ingredient</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="bg-muted p-3 rounded-md">
               <p className="text-sm">
-                <span className="font-medium">System stock:</span> {ingredient.on_hand} {ingredient.unit}
+                <span className="font-medium">System stock:</span> {ingredient.on_hand}{" "}
+                {ingredient.unit}
               </p>
             </div>
             <div className="grid gap-2">
@@ -81,8 +92,9 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
                 required
               />
               {actualCount && !isNaN(parseFloat(actualCount)) && (
-                <p className={`text-sm ${delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  Difference: {delta >= 0 ? '+' : ''}{delta.toFixed(2)} {ingredient.unit}
+                <p className={`text-sm ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  Difference: {delta >= 0 ? "+" : ""}
+                  {delta.toFixed(2)} {ingredient.unit}
                 </p>
               )}
             </div>
@@ -101,7 +113,7 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Recording...' : 'Record Stocktake'}
+              {loading ? "Recording..." : "Record Stocktake"}
             </Button>
           </DialogFooter>
         </form>
@@ -109,4 +121,3 @@ export function StocktakeDialog({ open, onOpenChange, ingredient, onSuccess }: S
     </Dialog>
   );
 }
-

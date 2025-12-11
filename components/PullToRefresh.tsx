@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { RefreshCw, CheckCircle } from 'lucide-react';
-import { usePullToRefresh } from '@/hooks/useGestures';
+import React, { useState, useEffect } from "react";
+import { RefreshCw, CheckCircle } from "lucide-react";
+import { usePullToRefresh } from "@/hooks/useGestures";
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -11,11 +11,11 @@ interface PullToRefreshProps {
   className?: string;
 }
 
-export default function PullToRefresh({ 
-  onRefresh, 
-  children, 
+export default function PullToRefresh({
+  onRefresh,
+  children,
   threshold = 120,
-  className = ''
+  className = "",
 }: PullToRefreshProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
@@ -23,11 +23,11 @@ export default function PullToRefresh({
   const { progress, isPullToRefreshActive, canRefresh } = usePullToRefresh(async () => {
     setIsRefreshing(true);
     setRefreshSuccess(false);
-    
+
     try {
       await onRefresh();
       setRefreshSuccess(true);
-      
+
       // Show success state briefly
       setTimeout(() => {
         setRefreshSuccess(false);
@@ -46,26 +46,23 @@ export default function PullToRefresh({
   return (
     <div className={`relative ${className}`}>
       {/* Pull-to-refresh indicator */}
-      <div 
+      <div
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-center transition-all duration-200 ${
-          progress > 0 ? 'translate-y-0' : '-translate-y-full'
+          progress > 0 ? "translate-y-0" : "-translate-y-full"
         }`}
         style={{
           height: `${Math.min(progress * threshold, threshold)}px`,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.1)'
+          backgroundColor: "rgba(255, 255, 255, 0.95)",
+          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
         }}
       >
-        <div 
-          className="flex flex-col items-center justify-center space-y-2"
-          style={{ opacity }}
-        >
-          <div 
+        <div className="flex flex-col items-center justify-center space-y-2" style={{ opacity }}>
+          <div
             className="relative"
-            style={{ 
+            style={{
               transform: `scale(${scale})`,
-              transition: 'transform 0.2s ease-out'
+              transition: "transform 0.2s ease-out",
             }}
           >
             {isRefreshing ? (
@@ -73,16 +70,16 @@ export default function PullToRefresh({
             ) : refreshSuccess ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
-              <RefreshCw 
-                className="h-6 w-6 text-purple-600 transition-transform duration-200" 
-                style={{ 
+              <RefreshCw
+                className="h-6 w-6 text-purple-600 transition-transform duration-200"
+                style={{
                   transform: `rotate(${rotation}deg)`,
-                  transformOrigin: 'center'
+                  transformOrigin: "center",
                 }}
               />
             )}
           </div>
-          
+
           <div className="text-center">
             {isRefreshing ? (
               <p className="text-sm font-medium text-purple-600">Refreshing...</p>
@@ -98,19 +95,17 @@ export default function PullToRefresh({
       </div>
 
       {/* Progress bar */}
-      <div 
+      <div
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-purple-600 z-50 transition-all duration-200"
         style={{
           opacity: progress > 0 ? 1 : 0,
           transform: `scaleX(${progress})`,
-          transformOrigin: 'left'
+          transformOrigin: "left",
         }}
       />
 
       {/* Content */}
-      <div className="relative">
-        {children}
-      </div>
+      <div className="relative">{children}</div>
     </div>
   );
 }
@@ -121,7 +116,7 @@ export function usePullToRefreshWrapper(onRefresh: () => Promise<void>) {
 
   const handleRefresh = async () => {
     if (isRefreshing) return;
-    
+
     setIsRefreshing(true);
     try {
       await onRefresh();
@@ -134,6 +129,6 @@ export function usePullToRefreshWrapper(onRefresh: () => Promise<void>) {
 
   return {
     isRefreshing,
-    handleRefresh
+    handleRefresh,
   };
 }

@@ -1,9 +1,9 @@
 // Table Management Types
 // These types define the structure for the new table management system
 
-export type TableStatus = 'FREE' | 'OCCUPIED';
-export type ReservationStatus = 'BOOKED' | 'CHECKED_IN' | 'CANCELLED' | 'NO_SHOW';
-export type ReservationState = 'RESERVED_NOW' | 'RESERVED_LATER' | 'NONE';
+export type TableStatus = "FREE" | "OCCUPIED";
+export type ReservationStatus = "BOOKED" | "CHECKED_IN" | "CANCELLED" | "NO_SHOW";
+export type ReservationState = "RESERVED_NOW" | "RESERVED_LATER" | "NONE";
 
 export interface Table {
   id: string;
@@ -52,16 +52,16 @@ export interface TableRuntimeState {
   seat_count: number;
   area: string | null;
   is_active: boolean;
-  
+
   // Live session state
   session_id: string | null;
   primary_status: TableStatus | null;
   opened_at: string | null;
   server_id: string | null;
-  
+
   // Reservation state
   reservation_status: ReservationState;
-  
+
   // Current reservation (if any)
   reserved_now_id: string | null;
   reserved_now_start: string | null;
@@ -69,7 +69,7 @@ export interface TableRuntimeState {
   reserved_now_party_size: number | null;
   reserved_now_name: string | null;
   reserved_now_phone: string | null;
-  
+
   // Next reservation (if any)
   next_reservation_id: string | null;
   next_reservation_start: string | null;
@@ -132,14 +132,14 @@ export interface TableCardState {
   isFree: boolean;
   isOccupied: boolean;
   occupiedDuration?: string; // "2h 15m" format
-  
+
   // Secondary state (reservation)
   hasReservationNow: boolean;
   hasReservationLater: boolean;
   reservationTime?: string; // "19:30" format
   reservationPartySize?: number;
   reservationName?: string;
-  
+
   // Actions available
   canSeatParty: boolean;
   canCloseTable: boolean;
@@ -148,14 +148,14 @@ export interface TableCardState {
 }
 
 // Filter types for table management UI
-export type TableFilter = 
-  | 'all'
-  | 'free'
-  | 'occupied'
-  | 'reserved_now'
-  | 'reserved_later'
-  | 'unassigned'
-  | 'closed_today';
+export type TableFilter =
+  | "all"
+  | "free"
+  | "occupied"
+  | "reserved_now"
+  | "reserved_later"
+  | "unassigned"
+  | "closed_today";
 
 export interface TableManagementState {
   tables: TableRuntimeState[];

@@ -1,6 +1,6 @@
 /**
  * Idempotency Utilities
- * 
+ *
  * Ensures operations can be safely retried by storing idempotency keys
  * and returning cached results for duplicate requests.
  */
@@ -39,14 +39,14 @@ export async function checkIdempotency(
 ): Promise<{ exists: true; response: IdempotencyRecord } | { exists: false }> {
   try {
     const supabase = await createServerSupabase();
-    
+
     const { data, error } = await supabase
       .from("idempotency_keys")
       .select("*")
       .eq("idempotency_key", idempotencyKey)
       .gt("expires_at", new Date().toISOString())
       .single();
-    
+
     if (error) {
       if (error.code === "PGRST116") {
         // Not found - this is expected
@@ -58,7 +58,7 @@ export async function checkIdempotency(
       });
       return { exists: false };
     }
-    
+
     if (data) {
       logger.info("[IDEMPOTENCY] Found existing idempotency key", {
         key: idempotencyKey.substring(0, 20) + "...",
@@ -66,7 +66,7 @@ export async function checkIdempotency(
       });
       return { exists: true, response: data as IdempotencyRecord };
     }
-    
+
     return { exists: false };
   } catch (error) {
     logger.error("[IDEMPOTENCY] Exception checking idempotency", {
@@ -90,17 +90,15 @@ export async function storeIdempotency(
     const supabase = await createServerSupabase();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
-    
-    const { error } = await supabase
-      .from("idempotency_keys")
-      .insert({
-        idempotency_key: idempotencyKey,
-        request_hash: requestHash,
-        response_data: responseData,
-        status_code: statusCode,
-        expires_at: expiresAt.toISOString(),
-      });
-    
+
+    const { error } = await supabase.from("idempotency_keys").insert({
+      idempotency_key: idempotencyKey,
+      request_hash: requestHash,
+      response_data: responseData,
+      status_code: statusCode,
+      expires_at: expiresAt.toISOString(),
+    });
+
     if (error) {
       // If it's a unique constraint violation, that's okay - key already exists
       if (error.code === "23505") {
@@ -109,14 +107,14 @@ export async function storeIdempotency(
         });
         return;
       }
-      
+
       logger.error("[IDEMPOTENCY] Error storing idempotency key", {
         error: error.message,
         key: idempotencyKey.substring(0, 20) + "...",
       });
       throw error;
     }
-    
+
     logger.debug("[IDEMPOTENCY] Stored idempotency key", {
       key: idempotencyKey.substring(0, 20) + "...",
       expiresAt: expiresAt.toISOString(),
@@ -140,7 +138,7 @@ export async function withIdempotency<T>(
 ): Promise<{ data: T; statusCode: number; cached: boolean }> {
   // Check if key exists
   const existing = await checkIdempotency(idempotencyKey);
-  
+
   if (existing.exists) {
     return {
       data: existing.response.response_data as T,
@@ -148,19 +146,13 @@ export async function withIdempotency<T>(
       cached: true,
     };
   }
-  
+
   // Execute operation
   const result = await operation();
-  
+
   // Store result
-  await storeIdempotency(
-    idempotencyKey,
-    requestHash,
-    result.data,
-    result.statusCode,
-    ttlSeconds
-  );
-  
+  await storeIdempotency(idempotencyKey, requestHash, result.data, result.statusCode, ttlSeconds);
+
   return {
     ...result,
     cached: false,

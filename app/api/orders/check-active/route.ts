@@ -1,7 +1,7 @@
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
-import { env } from '@/lib/env';
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,8 +28,8 @@ export async function GET(req: Request) {
 
     // Use service role to bypass RLS (customers don't need to be authenticated)
     const supabase = createClient(
-      env('NEXT_PUBLIC_SUPABASE_URL')!,
-      env('SUPABASE_SERVICE_ROLE_KEY')!,
+      env("NEXT_PUBLIC_SUPABASE_URL")!,
+      env("SUPABASE_SERVICE_ROLE_KEY")!,
       {
         auth: {
           autoRefreshToken: false,
@@ -74,6 +74,6 @@ export async function GET(req: Request) {
     logger.error("❌ [CHECK ACTIVE ORDERS] Unexpected error", {
       error: _error instanceof Error ? _error.message : String(_error),
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

@@ -103,10 +103,12 @@ export async function verifyVenueAccess(
  * This is a lightweight check that doesn't require user authentication
  * but ensures the venue exists and is accessible
  */
-export async function verifyVenueExists(venueId: string): Promise<{ valid: boolean; venue?: Venue; error?: string }> {
+export async function verifyVenueExists(
+  venueId: string
+): Promise<{ valid: boolean; venue?: Venue; error?: string }> {
   try {
     const supabase = await createSupabaseClient();
-    
+
     // Use authenticated client which respects RLS
     // For public routes, this will still work if RLS allows public read access
     const { data: venue, error: venueError } = await supabase
@@ -136,10 +138,13 @@ export async function verifyVenueExists(venueId: string): Promise<{ valid: boole
  * Verify order belongs to venue (for public routes)
  * Ensures cross-venue access is prevented
  */
-export async function verifyOrderVenueAccess(orderId: string, venueId: string): Promise<{ valid: boolean; error?: string }> {
+export async function verifyOrderVenueAccess(
+  orderId: string,
+  venueId: string
+): Promise<{ valid: boolean; error?: string }> {
   try {
     const supabase = await createSupabaseClient();
-    
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select("id, venue_id")
@@ -148,18 +153,29 @@ export async function verifyOrderVenueAccess(orderId: string, venueId: string): 
       .maybeSingle();
 
     if (orderError) {
-      logger.warn("[ORDER VENUE VERIFY] Order lookup error", { orderId, venueId, error: orderError.message });
+      logger.warn("[ORDER VENUE VERIFY] Order lookup error", {
+        orderId,
+        venueId,
+        error: orderError.message,
+      });
       return { valid: false, error: orderError.message };
     }
 
     if (!order) {
-      logger.warn("[ORDER VENUE VERIFY] Order not found or doesn't belong to venue", { orderId, venueId });
+      logger.warn("[ORDER VENUE VERIFY] Order not found or doesn't belong to venue", {
+        orderId,
+        venueId,
+      });
       return { valid: false, error: "Order not found or access denied" };
     }
 
     return { valid: true };
   } catch (error) {
-    logger.error("[ORDER VENUE VERIFY] Error verifying order venue access", { orderId, venueId, error });
+    logger.error("[ORDER VENUE VERIFY] Error verifying order venue access", {
+      orderId,
+      venueId,
+      error,
+    });
     return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }

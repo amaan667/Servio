@@ -1,7 +1,7 @@
 // AI Assistant parameter types for all executors
 
 export interface AnalyticsInsightsParams {
-  timeRange: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
+  timeRange: "today" | "week" | "month" | "quarter" | "year" | "custom";
   itemId?: string;
   itemName?: string;
   customRange?: {
@@ -15,8 +15,8 @@ export interface AnalyticsInsightsParams {
 }
 
 export interface AnalyticsExportParams {
-  type: 'revenue' | 'items' | 'orders' | 'feedback';
-  format: 'csv' | 'pdf';
+  type: "revenue" | "items" | "orders" | "feedback";
+  format: "csv" | "pdf";
   timeRange?: string;
   startDate?: string;
   endDate?: string;
@@ -48,7 +48,7 @@ export interface InventoryParams {
   ingredientName?: string;
   quantity?: number;
   unit?: string;
-  action?: 'add' | 'remove' | 'adjust';
+  action?: "add" | "remove" | "adjust";
 }
 
 export interface OrderParams {
@@ -61,7 +61,6 @@ export interface OrderParams {
 export interface TableParams {
   tableId?: string;
   tableNumber?: string;
-  action?: 'merge' | 'split' | 'clear';
+  action?: "merge" | "split" | "clear";
   targetTableId?: string;
 }
-

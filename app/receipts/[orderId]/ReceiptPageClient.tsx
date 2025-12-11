@@ -310,7 +310,9 @@ export function ReceiptPageClient({
                     <div className="font-semibold">
                       £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                     </div>
-                    <div className="text-sm text-gray-600">£{(item.price || 0).toFixed(2)} each</div>
+                    <div className="text-sm text-gray-600">
+                      £{(item.price || 0).toFixed(2)} each
+                    </div>
                   </div>
                 </div>
               ))

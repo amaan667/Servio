@@ -3,8 +3,8 @@ import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { apiLogger as logger } from "@/lib/logger";
 import { validateOrderCompletion } from "@/lib/orders/payment-validation";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -12,13 +12,13 @@ export const POST = withUnifiedAuth(
       const { orderId, status } = await req.json();
 
       if (!orderId || !status) {
-        return apiErrors.badRequest('Order ID and status are required');
+        return apiErrors.badRequest("Order ID and status are required");
       }
 
       // Validate status
       const validStatuses = ["IN_PREP", "READY", "SERVING", "SERVED", "COMPLETED", "CANCELLED"];
       if (!validStatuses.includes(status)) {
-        return apiErrors.badRequest('Invalid status');
+        return apiErrors.badRequest("Invalid status");
       }
 
       const adminSupabase = createAdminClient();
@@ -33,7 +33,7 @@ export const POST = withUnifiedAuth(
 
       if (fetchError) {
         logger.error("Failed to fetch order:", { value: fetchError });
-        return apiErrors.internal('Internal server error');
+        return apiErrors.internal("Internal server error");
       }
 
       // CRITICAL: Validate payment before allowing COMPLETED status
@@ -45,10 +45,9 @@ export const POST = withUnifiedAuth(
             error: validation.error,
             paymentStatus: validation.paymentStatus,
           });
-          return apiErrors.badRequest(
-            validation.error || "Cannot complete unpaid order",
-            { payment_status: validation.paymentStatus }
-          );
+          return apiErrors.badRequest(validation.error || "Cannot complete unpaid order", {
+            payment_status: validation.paymentStatus,
+          });
         }
       }
 
@@ -63,7 +62,7 @@ export const POST = withUnifiedAuth(
         logger.error("Failed to set order status:", {
           error: error instanceof Error ? error.message : "Unknown error",
         });
-        return apiErrors.internal(error.message || 'Internal server error');
+        return apiErrors.internal(error.message || "Internal server error");
       }
 
       // Handle table clearing when order is completed or cancelled

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 
 export interface FeedbackQuestion {
   id: string;
   prompt: string;
-  type: 'stars' | 'paragraph' | 'multiple_choice';
+  type: "stars" | "paragraph" | "multiple_choice";
   choices?: string[];
   is_active: boolean;
   sort_index: number;
@@ -29,7 +29,7 @@ export function useFeedbackManagement(venueId: string) {
       try {
         // Normalize venueId - ensure it has venue- prefix
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-        
+
         // Use public API endpoint to get properly mapped questions
         const response = await fetch(`/api/feedback/questions/public?venueId=${normalizedVenueId}`);
 
@@ -66,16 +66,14 @@ export function useFeedbackManagement(venueId: string) {
 
     try {
       const supabase = await createClient();
-      
-      const { error } = await supabase
-        .from('feedback_responses')
-        .insert(
-          feedbackResponses.map(response => ({
-            order_id: orderId,
-            venue_id: venueId,
-            ...response
-          }))
-        );
+
+      const { error } = await supabase.from("feedback_responses").insert(
+        feedbackResponses.map((response) => ({
+          order_id: orderId,
+          venue_id: venueId,
+          ...response,
+        }))
+      );
 
       if (error) throw error;
 
@@ -86,7 +84,6 @@ export function useFeedbackManagement(venueId: string) {
 
       setFeedbackResponses([]);
     } catch (_err) {
-
       toast({
         title: "Error",
         description: "Failed to submit feedback",
@@ -98,12 +95,12 @@ export function useFeedbackManagement(venueId: string) {
   };
 
   const updateFeedbackResponse = (questionId: string, response: Partial<FeedbackResponse>) => {
-    setFeedbackResponses(prev => {
-      const existing = prev.find(r => r.question_id === questionId);
+    setFeedbackResponses((prev) => {
+      const existing = prev.find((r) => r.question_id === questionId);
       if (existing) {
-        return prev.map(r => r.question_id === questionId ? { ...r, ...response } : r);
+        return prev.map((r) => (r.question_id === questionId ? { ...r, ...response } : r));
       }
-      return [...prev, { question_id: questionId, type: '', ...response }];
+      return [...prev, { question_id: questionId, type: "", ...response }];
     });
   };
 
@@ -112,7 +109,6 @@ export function useFeedbackManagement(venueId: string) {
     feedbackResponses,
     submittingFeedback,
     submitFeedback,
-    updateFeedbackResponse
+    updateFeedbackResponse,
   };
 }
-

@@ -12,7 +12,11 @@ function findRouteFiles(dir: string): string[] {
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
-    if (entry.isDirectory() && !entry.name.includes("node_modules") && !entry.name.includes(".next")) {
+    if (
+      entry.isDirectory() &&
+      !entry.name.includes("node_modules") &&
+      !entry.name.includes(".next")
+    ) {
       files.push(...findRouteFiles(fullPath));
     } else if (entry.name === "route.ts" || entry.name === "table-action-handlers.ts") {
       files.push(fullPath);
@@ -22,13 +26,17 @@ function findRouteFiles(dir: string): string[] {
   return files;
 }
 
-function standardizeErrors(content: string, filePath: string): { content: string; fixes: string[] } {
+function standardizeErrors(
+  content: string,
+  filePath: string
+): { content: string; fixes: string[] } {
   const fixes: string[] = [];
   let newContent = content;
-  
+
   // Check if already has standard response imports
-  const hasStandardResponse = content.includes("from '@/lib/api/standard-response'") || 
-                             content.includes('from "@/lib/api/standard-response"');
+  const hasStandardResponse =
+    content.includes("from '@/lib/api/standard-response'") ||
+    content.includes('from "@/lib/api/standard-response"');
 
   // Pattern 1: Simple error with status 400
   newContent = newContent.replace(
@@ -81,8 +89,10 @@ function standardizeErrors(content: string, filePath: string): { content: string
     (match, message, status) => {
       const statusNum = parseInt(status, 10);
       fixes.push(`${statusNum}: ${message}`);
-      if (statusNum === 400) return `return apiErrors.badRequest('${message.replace(/'/g, "\\'")}')`;
-      if (statusNum === 401) return `return apiErrors.unauthorized('${message.replace(/'/g, "\\'")}')`;
+      if (statusNum === 400)
+        return `return apiErrors.badRequest('${message.replace(/'/g, "\\'")}')`;
+      if (statusNum === 401)
+        return `return apiErrors.unauthorized('${message.replace(/'/g, "\\'")}')`;
       if (statusNum === 403) return `return apiErrors.forbidden('${message.replace(/'/g, "\\'")}')`;
       if (statusNum === 404) return `return apiErrors.notFound('${message.replace(/'/g, "\\'")}')`;
       return `return apiErrors.internal('${message.replace(/'/g, "\\'")}')`;
@@ -100,23 +110,23 @@ function standardizeErrors(content: string, filePath: string): { content: string
 
   // Add import if needed
   if (fixes.length > 0 && !hasStandardResponse) {
-    const lines = newContent.split('\n');
+    const lines = newContent.split("\n");
     let lastImportIndex = -1;
     let foundNextServerImport = false;
-    
+
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('import ')) {
+      if (lines[i].trim().startsWith("import ")) {
         lastImportIndex = i;
         if (lines[i].includes("next/server")) {
           foundNextServerImport = true;
         }
       }
     }
-    
+
     if (lastImportIndex >= 0) {
       // Add apiErrors import
       const importLine = "import { apiErrors } from '@/lib/api/standard-response';";
-      
+
       // If NextResponse is imported from next/server, add after it
       if (foundNextServerImport) {
         for (let i = 0; i < lines.length; i++) {
@@ -128,7 +138,7 @@ function standardizeErrors(content: string, filePath: string): { content: string
       } else {
         lines.splice(lastImportIndex + 1, 0, importLine);
       }
-      newContent = lines.join('\n');
+      newContent = lines.join("\n");
     }
   }
 
@@ -147,7 +157,7 @@ const allFixes: Record<string, string[]> = {};
 for (const file of files) {
   const content = readFileSync(file, "utf-8");
   const result = standardizeErrors(content, file);
-  
+
   if (result.fixes.length > 0) {
     writeFileSync(file, result.content, "utf-8");
     fixed++;
@@ -156,5 +166,6 @@ for (const file of files) {
   }
 }
 
-console.log(`\n📊 Fixed ${fixed} files with ${Object.values(allFixes).flat().length} error responses\n`);
-
+console.log(
+  `\n📊 Fixed ${fixed} files with ${Object.values(allFixes).flat().length} error responses\n`
+);

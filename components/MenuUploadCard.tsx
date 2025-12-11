@@ -35,7 +35,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       try {
         // Normalize venueId format
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-        
+
         console.log("[MENU UPLOAD CARD] Checking for existing items:", {
           originalVenueId: venueId,
           normalizedVenueId,
@@ -82,7 +82,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
       // Get venue name - normalize venueId first
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      
+
       console.log("[MENU UPLOAD CARD] Fetching venue:", {
         originalVenueId: venueId,
         normalizedVenueId,
@@ -296,13 +296,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           }
 
           console.log("[PDF UPLOAD] Calling onSuccess callback...");
-          
+
           // Clear dashboard cache to force fresh count after upload
           if (typeof window !== "undefined" && venueId) {
             sessionStorage.removeItem(`dashboard_stats_${venueId}`);
             sessionStorage.removeItem(`dashboard_counts_${venueId}`);
             console.log("[PDF UPLOAD] Cleared dashboard cache after successful upload");
-            
+
             // Dispatch custom event to trigger dashboard refresh
             window.dispatchEvent(
               new CustomEvent("menuChanged", {
@@ -586,7 +586,6 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       setIsProcessing(false);
     }
   };
-
 
   return (
     <Card>

@@ -18,11 +18,9 @@ describe("Log Dashboard API", () => {
         },
       } as const;
 
-      const request = createMockRequest(
-        "POST",
-        "http://localhost:3000/api/log-dashboard",
-        { body }
-      );
+      const request = createMockRequest("POST", "http://localhost:3000/api/log-dashboard", {
+        body,
+      });
 
       const response = await postPOST(request);
       expect(response.status).toBe(200);
@@ -34,16 +32,12 @@ describe("Log Dashboard API", () => {
         level: "info",
       };
 
-      const request = createMockRequest(
-        "POST",
-        "http://localhost:3000/api/log-dashboard",
-        { body }
-      );
+      const request = createMockRequest("POST", "http://localhost:3000/api/log-dashboard", {
+        body,
+      });
 
       const response = await postPOST(request);
       expect(response.status).toBe(400);
     });
   });
 });
-
-

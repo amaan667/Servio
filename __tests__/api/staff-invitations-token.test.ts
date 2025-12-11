@@ -1,4 +1,3 @@
- 
 /**
  * Auto-generated test for staff/invitations/[token]
  * Generated: 2025-11-23T00:14:32.218Z
@@ -19,14 +18,16 @@ vi.mock("@/lib/supabase", () => ({
       delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
     })),
   })),
-  createServerSupabase: vi.fn(() => Promise.resolve({
-    from: vi.fn(() => ({
-      select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-    auth: {
-      getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
-    },
-  })),
+  createServerSupabase: vi.fn(() =>
+    Promise.resolve({
+      from: vi.fn(() => ({
+        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+      auth: {
+        getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
+      },
+    })
+  ),
 }));
 
 vi.mock("@/lib/api-auth", () => ({
@@ -45,27 +46,29 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Staff Invitations Token API", () => {
   describe("GET staff/invitations/[token]", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/api//staff/invitations/[token]");
+      const request = createMockRequest(
+        "GET",
+        "http://localhost:3000/api//staff/invitations/[token]"
+      );
 
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {
-
-    });
+    it("should validate request parameters", async () => {});
   });
 
   describe("POST staff/invitations/[token]", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/api//staff/invitations/[token]");
+      const request = createMockRequest(
+        "POST",
+        "http://localhost:3000/api//staff/invitations/[token]"
+      );
 
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {
-
-    });
+    it("should validate request parameters", async () => {});
   });
 });

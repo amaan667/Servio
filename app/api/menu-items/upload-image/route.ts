@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getAuthUserForAPI } from "@/lib/auth/server";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     const formData = await req.formData();
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const itemId = formData.get("itemId") as string | null;
 
     if (!file || !itemId) {
-      return apiErrors.badRequest('file and itemId are required');
+      return apiErrors.badRequest("file and itemId are required");
     }
 
     // Create authenticated Supabase client
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (menuItemError || !menuItem) {
-      return apiErrors.notFound('Menu item not found');
+      return apiErrors.notFound("Menu item not found");
     }
 
     // Verify venue access
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (!venueAccess && !staffAccess) {
-      return apiErrors.forbidden('Forbidden');
+      return apiErrors.forbidden("Forbidden");
     }
 
     // Ensure bucket exists
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     if (uploadError) {
       logger.error("Upload error:", uploadError);
-      return apiErrors.internal('Failed to upload image');
+      return apiErrors.internal("Failed to upload image");
     }
 
     // Get public URL
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       logger.error("Update error:", updateError);
-      return apiErrors.internal('Failed to update menu item');
+      return apiErrors.internal("Failed to update menu item");
     }
 
     return NextResponse.json({ imageUrl: publicUrl });

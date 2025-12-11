@@ -1,9 +1,9 @@
 /**
  * Cross-Venue Access Denial Tests
- * 
+ *
  * These tests verify that users cannot access data from venues they don't have access to.
  * This is critical for multi-tenant security.
- * 
+ *
  * Test Strategy:
  * 1. Mock two venues with different owners
  * 2. Create data (orders, tables) in venue A
@@ -75,7 +75,7 @@ describe("Cross-Venue Access Denial", () => {
     it("should deny access to orders from another venue via PATCH", async () => {
       // This test verifies that a user from venue B cannot update orders from venue A
       // The withUnifiedAuth wrapper should deny access when verifyVenueAccess returns null
-      
+
       // Attempt: User B (venue B) tries to update order from venue A
       // The request includes venueId from venue A, but user B only has access to venue B
       const request = createAuthenticatedRequest(
@@ -92,35 +92,37 @@ describe("Cross-Venue Access Denial", () => {
 
       // Mock Supabase client to simulate RLS behavior
       vi.mock("@/lib/supabase", () => ({
-        createClient: vi.fn(() => Promise.resolve({
-          from: vi.fn(() => ({
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
+        createClient: vi.fn(() =>
+          Promise.resolve({
+            from: vi.fn(() => ({
+              select: vi.fn(() => ({
                 eq: vi.fn(() => ({
-                  maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+                  eq: vi.fn(() => ({
+                    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+                  })),
+                })),
+              })),
+              update: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    select: vi.fn(() => Promise.resolve({ data: null, error: null })),
+                    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+                  })),
                 })),
               })),
             })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  select: vi.fn(() => Promise.resolve({ data: null, error: null })),
-                  maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
-                })),
-              })),
-            })),
-          })),
-        })),
+          })
+        ),
       }));
 
       // Note: withUnifiedAuth will call verifyVenueAccess which returns null for user B accessing venue A
       // This should result in a 403 Forbidden response
       const response = await orderPATCH(request, { params: Promise.resolve({ id: ORDER_A_ID }) });
-      
+
       // Assert: Access should be denied
       // withUnifiedAuth should return 403 Forbidden when venue access is denied
       expect([403, 401]).toContain(response.status);
-      
+
       if (response.status === 403) {
         const responseData = await response.json();
         expect(responseData.error).toBe("Forbidden");
@@ -133,20 +135,22 @@ describe("Cross-Venue Access Denial", () => {
     it("should deny access to staff from another venue via GET", async () => {
       // This test verifies that a user from venue B cannot list staff from venue A
       // The withUnifiedAuth wrapper should deny access when verifyVenueAccess returns null
-      
+
       // Mock Supabase client
       vi.mock("@/lib/supabase", () => ({
-        createClient: vi.fn(() => Promise.resolve({
-          from: vi.fn(() => ({
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                is: vi.fn(() => ({
-                  order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        createClient: vi.fn(() =>
+          Promise.resolve({
+            from: vi.fn(() => ({
+              select: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  is: vi.fn(() => ({
+                    order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+                  })),
                 })),
               })),
             })),
-          })),
-        })),
+          })
+        ),
       }));
 
       // Attempt: User B (venue B) tries to list staff from venue A
@@ -157,11 +161,11 @@ describe("Cross-Venue Access Denial", () => {
       );
 
       const response = await staffGET(request);
-      
+
       // Assert: Access should be denied (403 Forbidden)
       // verifyVenueAccess returns null for user B accessing venue A
       expect([403, 401]).toContain(response.status);
-      
+
       if (response.status === 403) {
         const responseData = await response.json();
         expect(responseData.error).toBe("Forbidden");
@@ -171,16 +175,18 @@ describe("Cross-Venue Access Denial", () => {
 
     it("should deny adding staff to another venue via POST", async () => {
       // This test verifies that a user from venue B cannot add staff to venue A
-      
+
       // Mock Supabase client
       vi.mock("@/lib/supabase", () => ({
-        createClient: vi.fn(() => Promise.resolve({
-          from: vi.fn(() => ({
-            insert: vi.fn(() => ({
-              select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        createClient: vi.fn(() =>
+          Promise.resolve({
+            from: vi.fn(() => ({
+              insert: vi.fn(() => ({
+                select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+              })),
             })),
-          })),
-        })),
+          })
+        ),
       }));
 
       // Attempt: User B (venue B) tries to add staff to venue A
@@ -198,11 +204,11 @@ describe("Cross-Venue Access Denial", () => {
       );
 
       const response = await staffPOST(request);
-      
+
       // Assert: Access should be denied (403 Forbidden)
       // verifyVenueAccess returns null for user B accessing venue A
       expect([403, 401]).toContain(response.status);
-      
+
       if (response.status === 403) {
         const responseData = await response.json();
         expect(responseData.error).toBe("Forbidden");
@@ -214,20 +220,22 @@ describe("Cross-Venue Access Denial", () => {
   describe("Staff Delete Access via API Routes", () => {
     it("should deny deleting staff from another venue via POST", async () => {
       // This test verifies that a user from venue B cannot delete staff from venue A
-      
+
       // Mock Supabase client
       vi.mock("@/lib/supabase", () => ({
-        createClient: vi.fn(() => Promise.resolve({
-          from: vi.fn(() => ({
-            update: vi.fn(() => ({
-              eq: vi.fn(() => ({
+        createClient: vi.fn(() =>
+          Promise.resolve({
+            from: vi.fn(() => ({
+              update: vi.fn(() => ({
                 eq: vi.fn(() => ({
-                  select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+                  eq: vi.fn(() => ({
+                    select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+                  })),
                 })),
               })),
             })),
-          })),
-        })),
+          })
+        ),
       }));
 
       // Attempt: User B (venue B) tries to delete staff from venue A
@@ -244,11 +252,11 @@ describe("Cross-Venue Access Denial", () => {
       );
 
       const response = await staffDeletePOST(request);
-      
+
       // Assert: Access should be denied (403 Forbidden)
       // verifyVenueAccess returns null for user B accessing venue A
       expect([403, 401]).toContain(response.status);
-      
+
       if (response.status === 403) {
         const responseData = await response.json();
         expect(responseData.error).toBe("Forbidden");
@@ -260,12 +268,16 @@ describe("Cross-Venue Access Denial", () => {
   describe("Stock Deduct Access via API Routes", () => {
     it("should deny deducting stock for orders from another venue via POST", async () => {
       // This test verifies that a user from venue B cannot deduct stock for orders from venue A
-      
+
       // Mock Supabase client
       vi.mock("@/lib/supabase", () => ({
-        createClient: vi.fn(() => Promise.resolve({
-          rpc: vi.fn(() => Promise.resolve({ data: null, error: { message: "Access denied", code: "42501" } })),
-        })),
+        createClient: vi.fn(() =>
+          Promise.resolve({
+            rpc: vi.fn(() =>
+              Promise.resolve({ data: null, error: { message: "Access denied", code: "42501" } })
+            ),
+          })
+        ),
       }));
 
       // Attempt: User B (venue B) tries to deduct stock for order from venue A
@@ -282,12 +294,12 @@ describe("Cross-Venue Access Denial", () => {
       );
 
       const response = await stockDeductPOST(request);
-      
+
       // Assert: Access should be denied (403 Forbidden)
       // verifyVenueAccess returns null for user B accessing venue A
       // OR venue mismatch check should catch it
       expect([403, 401]).toContain(response.status);
-      
+
       if (response.status === 403) {
         const responseData = await response.json();
         expect(responseData.error).toBe("Forbidden");
@@ -301,7 +313,7 @@ describe("Cross-Venue Access Denial", () => {
     it("should enforce venue isolation at database level", async () => {
       // This test verifies that RLS policies prevent cross-venue data access
       // even if application-level checks are bypassed
-      
+
       // Mock Supabase client to simulate RLS behavior
       // When user B queries for venue A's data, RLS should return empty/null
       const mockSupabaseClient = {
@@ -318,7 +330,10 @@ describe("Cross-Venue Access Denial", () => {
                 }
                 // User B can see venue B's data
                 if (column === "venue_id" && value === VENUE_B_ID) {
-                  return Promise.resolve({ data: [{ id: "test-id", venue_id: VENUE_B_ID }], error: null });
+                  return Promise.resolve({
+                    data: [{ id: "test-id", venue_id: VENUE_B_ID }],
+                    error: null,
+                  });
                 }
                 return Promise.resolve({ data: [], error: null });
               }),
@@ -337,7 +352,7 @@ describe("Cross-Venue Access Denial", () => {
 
 /**
  * Helper Functions (to be implemented)
- * 
+ *
  * These would be implemented in a real test environment:
  */
 

@@ -29,23 +29,31 @@ describe("Auth API Routes", () => {
 
   describe("POST /api/auth/sign-in-password", () => {
     it("should reject invalid email format", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/api//auth/sign-in-password", {
-        body: {
-          email: "invalid-email",
-          password: "password123",
-        },
-      });
+      const request = createMockRequest(
+        "POST",
+        "http://localhost:3000/api//auth/sign-in-password",
+        {
+          body: {
+            email: "invalid-email",
+            password: "password123",
+          },
+        }
+      );
 
       const response = await signInPost(request);
       expect(response.status).toBe(400);
     });
 
     it("should reject missing password", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/api//auth/sign-in-password", {
-        body: {
-          email: "test@example.com",
-        },
-      });
+      const request = createMockRequest(
+        "POST",
+        "http://localhost:3000/api//auth/sign-in-password",
+        {
+          body: {
+            email: "test@example.com",
+          },
+        }
+      );
 
       const response = await signInPost(request);
       expect(response.status).toBe(400);

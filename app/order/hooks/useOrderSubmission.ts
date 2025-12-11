@@ -152,7 +152,7 @@ export function useOrderSubmission() {
           checkoutData: {
             venueId: checkoutData.venueId,
             tableNumber: checkoutData.tableNumber,
-            cart: checkoutData.cart.map(item => ({
+            cart: checkoutData.cart.map((item) => ({
               id: item.id,
               name: item.name,
               price: item.price,

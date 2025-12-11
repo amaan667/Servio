@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { env } from '@/lib/env';
-import { z } from 'zod';
-import { validateBody } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { env } from "@/lib/env";
+import { z } from "zod";
+import { validateBody } from "@/lib/api/validation-schemas";
 
 export const runtime = "nodejs";
 
@@ -22,9 +22,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate input
@@ -69,7 +67,8 @@ export const POST = withUnifiedAuth(
             `${item.quantity || 1}x ${item.item_name || "Item"}`
         )
         .join(", ");
-      const moreItems = (order.items || []).length > 3 ? ` +${(order.items || []).length - 3} more` : "";
+      const moreItems =
+        (order.items || []).length > 3 ? ` +${(order.items || []).length - 3} more` : "";
 
       const receiptUrl = `${env("NEXT_PUBLIC_BASE_URL") || "https://servio.app"}/receipts/${body.orderId}`;
       const receiptText = `Receipt - ${venueName}\nOrder #${orderNumber}\n${itemsText}${moreItems}\nTotal: £${total}\n\nView receipt: ${receiptUrl}\n\nThank you for your order!`;
@@ -128,10 +127,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Failed to send SMS receipt",
-        error
-      );
+      return apiErrors.internal("Failed to send SMS receipt", error);
     }
   },
   {
@@ -139,9 +135,11 @@ export const POST = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         const body = await req.json().catch(() => ({}));
-        return (body as { venueId?: string; venue_id?: string })?.venueId || 
-               (body as { venueId?: string; venue_id?: string })?.venue_id || 
-               null;
+        return (
+          (body as { venueId?: string; venue_id?: string })?.venueId ||
+          (body as { venueId?: string; venue_id?: string })?.venue_id ||
+          null
+        );
       } catch {
         return null;
       }

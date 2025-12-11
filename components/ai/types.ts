@@ -45,4 +45,3 @@ export interface ChatState {
   executionResults: unknown[];
   undoing: string | null;
 }
-

@@ -3,8 +3,8 @@ import { logger } from "@/lib/logger";
 import Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe-client";
 import { withStripeRetry } from "@/lib/stripe-retry";
-import { env } from '@/lib/env';
-import { apiErrors } from '@/lib/api/standard-response';
+import { env } from "@/lib/env";
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
@@ -29,41 +29,42 @@ export async function POST(req: Request) {
     });
 
     if (!amount || amount <= 0) {
-      return apiErrors.badRequest('Invalid amount');
+      return apiErrors.badRequest("Invalid amount");
     }
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
-      return apiErrors.badRequest('orderIds array is required');
+      return apiErrors.badRequest("orderIds array is required");
     }
 
     // Create Stripe checkout session for table payment
     // Store order IDs in metadata (comma-separated)
     const session = await withStripeRetry(
-      () => stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "gbp",
-            product_data: {
-              name: `Table ${tableNumber || ""} - ${orderIds.length} order(s)`,
-              description: `${venueName || "Restaurant"} - Pay all unpaid orders`,
+      () =>
+        stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "gbp",
+                product_data: {
+                  name: `Table ${tableNumber || ""} - ${orderIds.length} order(s)`,
+                  description: `${venueName || "Restaurant"} - Pay all unpaid orders`,
+                },
+                unit_amount: Math.round(amount * 100), // Convert to pence
+              },
+              quantity: 1,
             },
-            unit_amount: Math.round(amount * 100), // Convert to pence
+          ],
+          mode: "payment",
+          success_url: `${env("NEXT_PUBLIC_SITE_URL")}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${env("NEXT_PUBLIC_SITE_URL")}/payment/cancel`,
+          customer_email: customerEmail,
+          metadata: {
+            orderIds: orderIds.join(","), // Comma-separated list of order IDs
+            tableNumber: tableNumber?.toString() || "",
+            paymentType: "table_payment",
           },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${env('NEXT_PUBLIC_SITE_URL')}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${env('NEXT_PUBLIC_SITE_URL')}/payment/cancel`,
-      customer_email: customerEmail,
-      metadata: {
-        orderIds: orderIds.join(","), // Comma-separated list of order IDs
-        tableNumber: tableNumber?.toString() || "",
-        paymentType: "table_payment",
-      },
-      }),
+        }),
       { maxRetries: 3 }
     );
 
@@ -83,7 +84,6 @@ export async function POST(req: Request) {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
 
-    return apiErrors.internal('Failed to create checkout session');
+    return apiErrors.internal("Failed to create checkout session");
   }
 }
-

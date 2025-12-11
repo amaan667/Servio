@@ -9,4 +9,3 @@ export function getOpenAI(): OpenAI {
   }
   return new OpenAI({ apiKey });
 }
-

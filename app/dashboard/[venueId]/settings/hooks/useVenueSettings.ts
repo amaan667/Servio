@@ -84,7 +84,7 @@ export function useVenueSettings(venue: Venue) {
   );
   const [latitude, setLatitude] = useState<number | undefined>(venue.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(venue.longitude);
-  
+
   // Receipt settings state
   const [autoEmailReceipts, setAutoEmailReceipts] = useState(
     (venue as { auto_email_receipts?: boolean }).auto_email_receipts ?? false
@@ -123,8 +123,10 @@ export function useVenueSettings(venue: Venue) {
       timezone !== (venue.timezone || "Europe/London") ||
       venueType !== (venue.venue_type || "restaurant") ||
       serviceType !== (venue.service_type || "table_service") ||
-      autoEmailReceipts !== ((venue as { auto_email_receipts?: boolean }).auto_email_receipts ?? false) ||
-      showVATBreakdown !== ((venue as { show_vat_breakdown?: boolean }).show_vat_breakdown ?? true) ||
+      autoEmailReceipts !==
+        ((venue as { auto_email_receipts?: boolean }).auto_email_receipts ?? false) ||
+      showVATBreakdown !==
+        ((venue as { show_vat_breakdown?: boolean }).show_vat_breakdown ?? true) ||
       allowEmailInput !== ((venue as { allow_email_input?: boolean }).allow_email_input ?? true) ||
       receiptLogoUrl !== ((venue as { receipt_logo_url?: string }).receipt_logo_url || "") ||
       receiptFooterText !== ((venue as { receipt_footer_text?: string }).receipt_footer_text || "");

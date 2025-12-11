@@ -39,11 +39,11 @@ function processFile(filePath: string): void {
     lines.forEach((line, index) => {
       // Match TODO, FIXME, HACK, XXX, NOTE comments
       const todoMatch = line.match(/(?:^|\s)(TODO|FIXME|HACK|XXX|NOTE):\s*(.+)/i);
-      
+
       if (todoMatch) {
         const type = todoMatch[1].toUpperCase() as TodoItem["type"];
         const message = todoMatch[2].trim();
-        
+
         // Get context (previous and next lines)
         const contextLines: string[] = [];
         for (let i = Math.max(0, index - 2); i <= Math.min(lines.length - 1, index + 2); i++) {
@@ -53,7 +53,7 @@ function processFile(filePath: string): void {
             contextLines.push(`  ${lines[i].trim()}`);
           }
         }
-        
+
         todos.push({
           file: relativePath,
           line: index + 1,
@@ -101,10 +101,7 @@ Total items: ${todos.length}
 ## Summary by Type
 
 ${["TODO", "FIXME", "HACK", "XXX", "NOTE"]
-  .map(
-    (type) =>
-      `- **${type}**: ${todos.filter((t) => t.type === type).length}`
-  )
+  .map((type) => `- **${type}**: ${todos.filter((t) => t.type === type).length}`)
   .join("\n")}
 
 ## Items by File
@@ -133,10 +130,7 @@ ${todo.context}
 ## Action Items
 
 ${todos
-  .map(
-    (todo) =>
-      `- [ ] ${todo.type} in \`${todo.file}:${todo.line}\`: ${todo.message}`
-  )
+  .map((todo) => `- [ ] ${todo.type} in \`${todo.file}:${todo.line}\`: ${todo.message}`)
   .join("\n")}
 
 ---
@@ -159,4 +153,3 @@ logger.debug("\nSummary by type:");
 byType.forEach((count, type) => {
   logger.debug({ data: `  ${type}: ${count}` });
 });
-

@@ -2,12 +2,12 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody } from "@/lib/api/validation-schemas";
 
 export const runtime = "nodejs";
 
@@ -23,9 +23,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate input
@@ -73,7 +71,7 @@ export const POST = withUnifiedAuth(
           (item: { item_name?: string; quantity?: number; price?: number }) =>
             `<tr>
               <td>${item.item_name || "Item"} × ${item.quantity || 1}</td>
-              <td style="text-align: right;">£${(((item.price || 0) * (item.quantity || 1)).toFixed(2))}</td>
+              <td style="text-align: right;">£${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
             </tr>`
         )
         .join("");
@@ -204,9 +202,11 @@ export const POST = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         const body = await req.json().catch(() => ({}));
-        return (body as { venueId?: string; venue_id?: string })?.venueId || 
-               (body as { venueId?: string; venue_id?: string })?.venue_id || 
-               null;
+        return (
+          (body as { venueId?: string; venue_id?: string })?.venueId ||
+          (body as { venueId?: string; venue_id?: string })?.venue_id ||
+          null
+        );
       } catch {
         return null;
       }

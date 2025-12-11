@@ -2,10 +2,10 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import type { IngredientUnit } from "@/types/inventory";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 interface CSVRow {
   name: string;
@@ -27,9 +27,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate input
@@ -119,7 +117,7 @@ export const POST = withUnifiedAuth(
       } = await supabase.auth.getUser();
 
       if (authError || !currentUser) {
-        return apiErrors.unauthorized('Unauthorized');
+        return apiErrors.unauthorized("Unauthorized");
       }
 
       const imported: string[] = [];
@@ -155,7 +153,8 @@ export const POST = withUnifiedAuth(
           }
 
           // If on_hand is provided and > 0, create a receive ledger entry
-          const onHandValue = typeof row.on_hand === "string" ? parseFloat(row.on_hand) : row.on_hand;
+          const onHandValue =
+            typeof row.on_hand === "string" ? parseFloat(row.on_hand) : row.on_hand;
           if (onHandValue && onHandValue > 0) {
             // Check if we need to set initial stock or adjust
             const { data: currentStock } = await supabase
@@ -182,7 +181,10 @@ export const POST = withUnifiedAuth(
 
           imported.push(ingredient.name);
         } catch (err: unknown) {
-          errors.push({ row: row.name, error: err instanceof Error ? err.message : "Unknown error" });
+          errors.push({
+            row: row.name,
+            error: err instanceof Error ? err.message : "Unknown error",
+          });
         }
       }
 
@@ -213,10 +215,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Failed to import CSV",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Failed to import CSV", isDevelopment() ? error : undefined);
     }
   },
   {

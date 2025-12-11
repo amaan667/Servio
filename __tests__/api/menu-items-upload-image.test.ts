@@ -1,4 +1,3 @@
- 
 /**
  * Auto-generated test for menu-items/upload-image
  * Generated: 2025-11-23T00:14:32.213Z
@@ -18,14 +17,16 @@ vi.mock("@/lib/supabase", () => ({
       delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
     })),
   })),
-  createServerSupabase: vi.fn(() => Promise.resolve({
-    from: vi.fn(() => ({
-      select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-    auth: {
-      getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
-    },
-  })),
+  createServerSupabase: vi.fn(() =>
+    Promise.resolve({
+      from: vi.fn(() => ({
+        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+      auth: {
+        getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
+      },
+    })
+  ),
 }));
 
 vi.mock("@/lib/api-auth", () => ({
@@ -44,14 +45,15 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Menu Items Upload Image API", () => {
   describe("POST menu-items/upload-image", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/api//menu-items/upload-image");
+      const request = createMockRequest(
+        "POST",
+        "http://localhost:3000/api//menu-items/upload-image"
+      );
 
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {
-
-    });
+    it("should validate request parameters", async () => {});
   });
 });

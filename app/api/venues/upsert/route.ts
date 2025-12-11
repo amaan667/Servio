@@ -1,32 +1,29 @@
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
-      }
+export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+    }
 
-      const body = await req.json();
-      const { name, business_type, address, phone, email  } = body;
-      const finalVenueId = context.venueId || body.venueId;
-      const user = context.user;
+    const body = await req.json();
+    const { name, business_type, address, phone, email } = body;
+    const finalVenueId = context.venueId || body.venueId;
+    const user = context.user;
 
-      if (!finalVenueId || !name || !business_type) {
-        return apiErrors.badRequest("finalVenueId, name, and business_type required");
-      }
+    if (!finalVenueId || !name || !business_type) {
+      return apiErrors.badRequest("finalVenueId, name, and business_type required");
+    }
 
     const admin = await createClient();
 
@@ -38,7 +35,7 @@ export const POST = withUnifiedAuth(
       .maybeSingle();
 
     if (existingVenue && existingVenue.owner_user_id !== user.id) {
-      return apiErrors.forbidden('Forbidden');
+      return apiErrors.forbidden("Forbidden");
     }
 
     const venueData = {
@@ -83,12 +80,11 @@ export const POST = withUnifiedAuth(
       }
       return success({ venue: data });
     }
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-      logger.error("[VENUES UPSERT] Error", {
-        error: errorMessage,
-      });
-      return apiErrors.internal(errorMessage);
-    }
+  } catch (_error) {
+    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
+    logger.error("[VENUES UPSERT] Error", {
+      error: errorMessage,
+    });
+    return apiErrors.internal(errorMessage);
   }
-);
+});

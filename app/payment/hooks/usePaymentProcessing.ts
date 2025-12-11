@@ -2,16 +2,15 @@ import { logger } from "@/lib/logger";
 import { toast } from "@/hooks/use-toast";
 import { PaymentAction } from "./usePaymentState";
 import { CheckoutData } from "@/types/payment";
-import {
-  queueOrder,
-  queuePayment,
-  queueStatusUpdate,
-  getOfflineQueue,
-} from "@/lib/offline-queue";
+import { queueOrder, queuePayment, queueStatusUpdate, getOfflineQueue } from "@/lib/offline-queue";
 
 // Helper function to log to server (appears in Railway logs)
 // Uses fetch with fire-and-forget to not block the payment flow
-const logToServer = (level: "info" | "warn" | "error", event: string, data: Record<string, unknown>) => {
+const logToServer = (
+  level: "info" | "warn" | "error",
+  event: string,
+  data: Record<string, unknown>
+) => {
   // Fire and forget - don't await, don't block
   fetch("/api/log-payment-flow", {
     method: "POST",
@@ -86,7 +85,7 @@ export function usePaymentProcessing() {
           item_name: string;
           special_instructions: string | null;
         }
-        
+
         interface OrderPayload {
           venue_id: string;
           customer_name: string;
@@ -103,7 +102,7 @@ export function usePaymentProcessing() {
           payment_method: string;
           // Note: is_active is a GENERATED column - do NOT include it in the payload
         }
-        
+
         const orderData: OrderPayload = {
           venue_id: checkoutData.venueId,
           customer_name: checkoutData.customerName?.trim() || "",
@@ -124,7 +123,7 @@ export function usePaymentProcessing() {
                 menuItemId = item.id;
               }
             }
-            
+
             return {
               menu_item_id: menuItemId,
               quantity: item.quantity,
@@ -138,7 +137,16 @@ export function usePaymentProcessing() {
           order_status: "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
           payment_status: "UNPAID", // All unpaid orders start as UNPAID, updated to PAID via webhook for Stripe
           payment_mode: action === "till" ? "offline" : action === "later" ? "deferred" : "online",
-          payment_method: action === "demo" ? "PAY_NOW" : action === "stripe" ? "PAY_NOW" : action === "till" ? "PAY_AT_TILL" : action === "later" ? "PAY_LATER" : "PAY_NOW",
+          payment_method:
+            action === "demo"
+              ? "PAY_NOW"
+              : action === "stripe"
+                ? "PAY_NOW"
+                : action === "till"
+                  ? "PAY_AT_TILL"
+                  : action === "later"
+                    ? "PAY_LATER"
+                    : "PAY_NOW",
           // Note: source field is handled by the API route based on table_number
           // Note: is_active is a GENERATED column - do NOT include it in the payload
         };
@@ -164,7 +172,7 @@ export function usePaymentProcessing() {
             price: item.price,
           })),
         });
-        
+
         logger.info("📤 [PAYMENT PROCESSING] Order data prepared:", {
           venue_id: orderData.venue_id,
           table_number: orderData.table_number,
@@ -190,7 +198,8 @@ export function usePaymentProcessing() {
           const queueId = await queueOrder(orderData, "/api/orders");
           toast({
             title: "Order Queued",
-            description: "Your order has been queued and will be processed when you're back online.",
+            description:
+              "Your order has been queued and will be processed when you're back online.",
           });
           // Return a mock result so the flow can continue
           return {
@@ -249,7 +258,10 @@ export function usePaymentProcessing() {
         });
 
         // Also log to browser console for debugging
-        console.log("📤 [PAYMENT PROCESSING] ===== SENDING ORDER CREATION REQUEST =====", logPayload.details);
+        console.log(
+          "📤 [PAYMENT PROCESSING] ===== SENDING ORDER CREATION REQUEST =====",
+          logPayload.details
+        );
 
         logger.info("🌐 [PAYMENT PROCESSING] Sending order creation request...", {
           url: "/api/orders",
@@ -279,7 +291,8 @@ export function usePaymentProcessing() {
             const queueId = await queueOrder(orderData, "/api/orders");
             toast({
               title: "Order Queued",
-              description: "Your order has been queued and will be processed when you're back online.",
+              description:
+                "Your order has been queued and will be processed when you're back online.",
             });
             return {
               order: {
@@ -293,17 +306,20 @@ export function usePaymentProcessing() {
           // Extract error message from response - LOG THE FULL ERROR FIRST
           let errorMessage = `Failed to create order (${createOrderResponse.status})`;
           let fullErrorResponse: unknown = null;
-          
+
           try {
             const responseText = await createOrderResponse.text();
             console.error("❌ [PAYMENT PROCESSING] Full error response text:", responseText);
-            
+
             if (responseText) {
               try {
                 const errorData = JSON.parse(responseText);
                 fullErrorResponse = errorData;
-                console.error("❌ [PAYMENT PROCESSING] Parsed error response:", JSON.stringify(errorData, null, 2));
-                
+                console.error(
+                  "❌ [PAYMENT PROCESSING] Parsed error response:",
+                  JSON.stringify(errorData, null, 2)
+                );
+
                 // Handle multiple possible error response formats
                 if (errorData.message && typeof errorData.message === "string") {
                   errorMessage = errorData.message;
@@ -317,11 +333,12 @@ export function usePaymentProcessing() {
                       return `${path}${detail.message || ""}`;
                     })
                     .filter(Boolean);
-                  errorMessage = messages.length > 0 ? `Validation error: ${messages.join("; ")}` : errorMessage;
+                  errorMessage =
+                    messages.length > 0 ? `Validation error: ${messages.join("; ")}` : errorMessage;
                 } else if (typeof errorData === "string") {
                   errorMessage = errorData;
                 }
-                
+
                 // Log validation errors in detail - SEND TO SERVER FOR RAILWAY LOGS
                 if (errorData.details && Array.isArray(errorData.details)) {
                   console.error("❌ [PAYMENT PROCESSING] Validation errors:", errorData.details);
@@ -329,7 +346,7 @@ export function usePaymentProcessing() {
                     details: errorData.details,
                     fullError: errorData,
                   });
-                  
+
                   // Send to server for Railway logs
                   fetch("/api/log-payment-flow", {
                     method: "POST",
@@ -351,7 +368,8 @@ export function usePaymentProcessing() {
               } catch {
                 // If not JSON, use the text directly (limit length)
                 console.error("❌ [PAYMENT PROCESSING] Error response is not JSON:", responseText);
-                errorMessage = responseText.length > 200 ? responseText.substring(0, 200) + "..." : responseText;
+                errorMessage =
+                  responseText.length > 200 ? responseText.substring(0, 200) + "..." : responseText;
               }
             }
           } catch (textError) {
@@ -359,7 +377,7 @@ export function usePaymentProcessing() {
             console.error("❌ [PAYMENT PROCESSING] Failed to read error response:", textError);
             // Keep default error message
           }
-          
+
           // SEND COMPREHENSIVE ERROR TO SERVER FOR RAILWAY LOGS
           fetch("/api/log-payment-flow", {
             method: "POST",
@@ -379,11 +397,13 @@ export function usePaymentProcessing() {
                   hasCustomerName: !!orderData.customer_name,
                   hasCustomerPhone: !!orderData.customer_phone,
                   hasItems: Array.isArray(orderData.items) && orderData.items.length > 0,
-                  hasTotal: typeof orderData.total_amount === "number" && orderData.total_amount > 0,
-                  itemsValid: orderData.items.every((item) => 
-                    typeof item.quantity === "number" && 
-                    typeof item.price === "number" && 
-                    typeof item.item_name === "string"
+                  hasTotal:
+                    typeof orderData.total_amount === "number" && orderData.total_amount > 0,
+                  itemsValid: orderData.items.every(
+                    (item) =>
+                      typeof item.quantity === "number" &&
+                      typeof item.price === "number" &&
+                      typeof item.item_name === "string"
                   ),
                 },
               },
@@ -391,7 +411,7 @@ export function usePaymentProcessing() {
           }).catch(() => {
             // Silently handle - error logging failed
           });
-          
+
           // Comprehensive error logging - send to server so it appears in Railway logs
           const errorLogPayload = {
             level: "error",
@@ -410,10 +430,11 @@ export function usePaymentProcessing() {
                 hasCustomerPhone: !!orderData.customer_phone,
                 hasItems: Array.isArray(orderData.items) && orderData.items.length > 0,
                 hasTotal: typeof orderData.total_amount === "number" && orderData.total_amount > 0,
-                itemsValid: orderData.items.every((item) => 
-                  typeof item.quantity === "number" && 
-                  typeof item.price === "number" && 
-                  typeof item.item_name === "string"
+                itemsValid: orderData.items.every(
+                  (item) =>
+                    typeof item.quantity === "number" &&
+                    typeof item.price === "number" &&
+                    typeof item.item_name === "string"
                 ),
               },
             },
@@ -429,8 +450,11 @@ export function usePaymentProcessing() {
           });
 
           // Also log to browser console for debugging
-          console.error("❌ [PAYMENT PROCESSING] ===== ORDER CREATION FAILED =====", errorLogPayload.details);
-          
+          console.error(
+            "❌ [PAYMENT PROCESSING] ===== ORDER CREATION FAILED =====",
+            errorLogPayload.details
+          );
+
           logger.error("[PAYMENT] ❌ Order creation failed:", {
             status: createOrderResponse.status,
             statusText: createOrderResponse.statusText,
@@ -439,19 +463,19 @@ export function usePaymentProcessing() {
             url: "/api/orders",
             orderData: JSON.stringify(orderData, null, 2),
           });
-          
+
           console.error("❌ [PAYMENT PROCESSING] Order creation failed with:", {
             status: createOrderResponse.status,
             errorMessage,
             fullError: fullErrorResponse,
           });
-          
+
           throw new Error(errorMessage);
         }
 
         logger.info("✅ [PAYMENT PROCESSING] Order creation successful, parsing response...");
         const orderResult = await createOrderResponse.json();
-        
+
         // Log success to server (appears in Railway)
         logToServer("info", "ORDER_CREATION_SUCCESS", {
           orderId: orderResult.order?.id,
@@ -460,14 +484,14 @@ export function usePaymentProcessing() {
           paymentStatus: orderResult.order?.payment_status,
           action,
         });
-        
+
         logger.info("📋 [PAYMENT PROCESSING] Order created:", {
           orderId: orderResult.order?.id,
           orderNumber: orderResult.order?.order_number,
           status: orderResult.order?.order_status,
           paymentStatus: orderResult.order?.payment_status,
         });
-        
+
         return orderResult;
       };
 
@@ -489,7 +513,7 @@ export function usePaymentProcessing() {
         // Create order immediately for demo
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
-        
+
         console.log("🎮 [DEMO PAYMENT] Step 2: Order created successfully", { orderId });
         logger.info("🎮 [PAYMENT PROCESSING] Demo order created:", { orderId });
         // Demo payment - just mark as paid (with offline support)
@@ -545,7 +569,7 @@ export function usePaymentProcessing() {
         console.log("💳 [PAY NOW - STRIPE] ===== STARTING STRIPE PAYMENT FLOW =====");
         console.log("💳 [PAY NOW] Step 1: Creating order...");
         logger.info("💳 [PAYMENT PROCESSING] Processing STRIPE payment...");
-        
+
         // Create order first with UNPAID status
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
@@ -556,7 +580,7 @@ export function usePaymentProcessing() {
         }
 
         console.log("💳 [PAY NOW] Step 2: Order created, creating Stripe session...", { orderId });
-        
+
         let result;
         try {
           const checkoutPayload = {
@@ -596,14 +620,19 @@ export function usePaymentProcessing() {
           });
 
           const responseText = await response.text();
-          
+
           if (!response.ok) {
             try {
               result = JSON.parse(responseText);
-              const errorMsg = result?.error || result?.message || `Failed to create checkout session (${response.status})`;
+              const errorMsg =
+                result?.error ||
+                result?.message ||
+                `Failed to create checkout session (${response.status})`;
               throw new Error(errorMsg);
             } catch (parseError) {
-              throw new Error(`Failed to create checkout session: ${response.status} ${response.statusText}`);
+              throw new Error(
+                `Failed to create checkout session: ${response.status} ${response.statusText}`
+              );
             }
           }
 
@@ -616,24 +645,27 @@ export function usePaymentProcessing() {
           // Redirect to Stripe checkout
           if (result?.url || result?.data?.url) {
             const checkoutUrl = result.url || result.data?.url;
-            console.log("💳 [PAY NOW] Step 4: ✅ Redirecting to Stripe (webhook will mark as PAID)", {
-              orderId,
-              url: checkoutUrl.substring(0, 50) + "...",
-              sessionId: result?.id || result?.data?.sessionId,
-            });
+            console.log(
+              "💳 [PAY NOW] Step 4: ✅ Redirecting to Stripe (webhook will mark as PAID)",
+              {
+                orderId,
+                url: checkoutUrl.substring(0, 50) + "...",
+                sessionId: result?.id || result?.data?.sessionId,
+              }
+            );
             logger.info("💳 [PAYMENT PROCESSING] ✅ Stripe checkout URL received, redirecting...", {
               url: checkoutUrl,
               sessionId: result?.id || result?.data?.sessionId,
             });
-            
+
             // Clear cart before redirect
             localStorage.removeItem("servio-order-cart");
             localStorage.removeItem("servio-checkout-data");
-            
+
             window.location.href = checkoutUrl;
             return; // Order created, webhook will mark as PAID after payment
           } else {
-            console.error("💳 [PAY NOW] ❌ FAILED: No Stripe URL in response", { 
+            console.error("💳 [PAY NOW] ❌ FAILED: No Stripe URL in response", {
               result,
               hasData: !!result?.data,
               hasUrl: !!result?.url,
@@ -647,7 +679,7 @@ export function usePaymentProcessing() {
           logger.error("[PAYMENT] ❌ Stripe checkout fetch error:", {
             error: fetchError instanceof Error ? fetchError.message : String(fetchError),
           });
-          
+
           if (fetchError instanceof TypeError && fetchError.message.includes("fetch")) {
             throw new Error("Network error. Please check your connection and try again.");
           } else if (fetchError instanceof Error) {
@@ -660,7 +692,7 @@ export function usePaymentProcessing() {
         console.log("🧾 [PAY AT TILL] ===== STARTING PAY AT TILL FLOW =====");
         console.log("🧾 [PAY AT TILL] Step 1: Creating order IMMEDIATELY...");
         logger.info("🧾 [PAYMENT PROCESSING] Processing PAY AT TILL payment...");
-        
+
         // IMMEDIATELY create order in DB (per spec)
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
@@ -670,7 +702,7 @@ export function usePaymentProcessing() {
           throw new Error("Failed to create order");
         }
 
-        console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", { 
+        console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", {
           orderId,
           paymentMethod: "PAY_AT_TILL",
           paymentStatus: "UNPAID",
@@ -679,9 +711,9 @@ export function usePaymentProcessing() {
         // Clear cart
         localStorage.removeItem("servio-order-cart");
         localStorage.removeItem("servio-checkout-data");
-        
+
         console.log("🧾 [PAY AT TILL] Step 3: Redirecting to order summary", { orderId });
-        
+
         // Redirect to order summary with orderId
         window.location.href = `/order-summary?orderId=${orderId}`;
         return;
@@ -689,7 +721,7 @@ export function usePaymentProcessing() {
         console.log("⏰ [PAY LATER] ===== STARTING PAY LATER FLOW =====");
         console.log("⏰ [PAY LATER] Step 1: Creating order IMMEDIATELY...");
         logger.info("⏰ [PAYMENT PROCESSING] Processing PAY LATER payment...");
-        
+
         // IMMEDIATELY create order in DB (per spec)
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
@@ -699,7 +731,7 @@ export function usePaymentProcessing() {
           throw new Error("Failed to create order");
         }
 
-        console.log("⏰ [PAY LATER] Step 2: ✅ Order created (UNPAID, PAY_LATER)", { 
+        console.log("⏰ [PAY LATER] Step 2: ✅ Order created (UNPAID, PAY_LATER)", {
           orderId,
           paymentMethod: "PAY_LATER",
           paymentStatus: "UNPAID",
@@ -721,10 +753,10 @@ export function usePaymentProcessing() {
         // Clear cart
         localStorage.removeItem("servio-order-cart");
         localStorage.removeItem("servio-checkout-data");
-        
+
         console.log("⏰ [PAY LATER] Step 3: Redirecting to order summary", { orderId });
-        
-        // Redirect to order summary with orderId  
+
+        // Redirect to order summary with orderId
         window.location.href = `/order-summary?orderId=${orderId}`;
         return;
       }
@@ -744,7 +776,7 @@ export function usePaymentProcessing() {
 
       // Properly extract error message to prevent "[object Object]"
       let errorMessage = "Payment failed. Please try again.";
-      
+
       try {
         if (_err instanceof Error) {
           errorMessage = _err.message || "An unexpected error occurred";
@@ -753,7 +785,7 @@ export function usePaymentProcessing() {
         } else if (_err && typeof _err === "object") {
           // Try to extract error message from error object
           const errObj = _err as Record<string, unknown>;
-          
+
           // Check common error message fields
           if (errObj.message && typeof errObj.message === "string") {
             errorMessage = errObj.message;
@@ -791,7 +823,7 @@ export function usePaymentProcessing() {
         // If error extraction itself fails, use default message
         logger.error("[PAYMENT] ❌ Error extracting error message:", extractionError);
       }
-      
+
       // Ensure we never show "[object Object]" - final check
       if (errorMessage.includes("[object Object]") || errorMessage.includes("[object")) {
         errorMessage = "An unexpected error occurred. Please try again.";
@@ -808,11 +840,16 @@ export function usePaymentProcessing() {
       }
 
       // Final safety check - ensure it's a valid string
-      const safeErrorMessage = String(errorMessage || "An unexpected error occurred. Please try again.").trim();
-      
+      const safeErrorMessage = String(
+        errorMessage || "An unexpected error occurred. Please try again."
+      ).trim();
+
       // Remove any "[object Object]" strings that might have slipped through
-      const cleanedErrorMessage = safeErrorMessage.replace(/\[object\s+Object\]/gi, "An unexpected error occurred");
-      
+      const cleanedErrorMessage = safeErrorMessage.replace(
+        /\[object\s+Object\]/gi,
+        "An unexpected error occurred"
+      );
+
       logger.error("❌ [PAYMENT PROCESSING] Final error details:", {
         originalError: _err instanceof Error ? _err.message : String(_err),
         extractedMessage: errorMessage,
@@ -826,7 +863,7 @@ export function usePaymentProcessing() {
         cleanedMessage: cleanedErrorMessage,
         timestamp: new Date().toISOString(),
       });
-      
+
       logger.info("❌ [PAYMENT PROCESSING] ===== ERROR HANDLING COMPLETE =====", {
         errorMessage: cleanedErrorMessage,
         timestamp: new Date().toISOString(),
@@ -834,12 +871,13 @@ export function usePaymentProcessing() {
 
       // Ensure we set a string, never an object
       setError(cleanedErrorMessage);
-      
+
       // Ensure toast description is always a string
-      const toastDescription = typeof cleanedErrorMessage === "string" 
-        ? cleanedErrorMessage 
-        : "An unexpected error occurred. Please try again.";
-      
+      const toastDescription =
+        typeof cleanedErrorMessage === "string"
+          ? cleanedErrorMessage
+          : "An unexpected error occurred. Please try again.";
+
       toast({
         title: "Payment Error",
         description: toastDescription,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/supabase";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const { code } = body;
 
     if (!code || typeof code !== "string") {
-      return apiErrors.badRequest('Code is required');
+      return apiErrors.badRequest("Code is required");
     }
 
     const supabase = await createClient();
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!data?.session) {
-        return apiErrors.internal('Failed to create session');
+        return apiErrors.internal("Failed to create session");
       }
 
       return NextResponse.json({
@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
       });
     } catch (err) {
       logger.error("[VERIFY RESET CODE] Exception during verification", err);
-      return apiErrors.internal('Failed to verify reset code');
+      return apiErrors.internal("Failed to verify reset code");
     }
   } catch (error) {
     logger.error("[VERIFY RESET CODE] Unexpected error:", error);
-    return apiErrors.internal('Failed to verify reset code');
+    return apiErrors.internal("Failed to verify reset code");
   }
 }

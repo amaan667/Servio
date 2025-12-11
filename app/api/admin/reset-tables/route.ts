@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody, validateQuery } from "@/lib/api/validation-schemas";
 
 const resetTablesSchema = z.object({
   venueId: z.string().uuid().optional(),
@@ -24,9 +24,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate input
@@ -96,10 +94,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {
@@ -110,9 +105,10 @@ export const POST = withUnifiedAuth(
         let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
         if (!venueId) {
           const body = await req.json().catch(() => ({}));
-          venueId = (body as { venueId?: string; venue_id?: string })?.venueId || 
-                   (body as { venueId?: string; venue_id?: string })?.venue_id || 
-                   null;
+          venueId =
+            (body as { venueId?: string; venue_id?: string })?.venueId ||
+            (body as { venueId?: string; venue_id?: string })?.venue_id ||
+            null;
         }
         return venueId;
       } catch {
@@ -129,9 +125,7 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate query parameters
@@ -174,10 +168,7 @@ export const GET = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {

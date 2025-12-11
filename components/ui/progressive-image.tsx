@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface ProgressiveImageProps {
   src: string;
@@ -18,7 +18,7 @@ export function ProgressiveImage({
   alt,
   width,
   height,
-  className = '',
+  className = "",
   priority = false,
   blurDataURL,
 }: ProgressiveImageProps) {
@@ -32,11 +32,11 @@ export function ProgressiveImage({
         width={width}
         height={height}
         priority={priority}
-        placeholder={blurDataURL ? 'blur' : 'empty'}
+        placeholder={blurDataURL ? "blur" : "empty"}
         blurDataURL={blurDataURL}
         className={`
           duration-700 ease-in-out
-          ${isLoading ? 'scale-110 blur-lg' : 'scale-100 blur-0'}
+          ${isLoading ? "scale-110 blur-lg" : "scale-100 blur-0"}
         `}
         onLoadingComplete={() => setIsLoading(false)}
       />
@@ -64,12 +64,9 @@ export function shimmer(w: number, h: number) {
 }
 
 export function toBase64(str: string) {
-  return typeof window === 'undefined'
-    ? Buffer.from(str).toString('base64')
-    : window.btoa(str);
+  return typeof window === "undefined" ? Buffer.from(str).toString("base64") : window.btoa(str);
 }
 
 export function getBlurDataURL(w: number, h: number) {
   return `data:image/svg+xml;base64,${toBase64(shimmer(w, h))}`;
 }
-

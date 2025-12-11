@@ -1,4 +1,3 @@
- 
 /**
  * Tests for Stripe Checkout API
  * Critical: Payment processing

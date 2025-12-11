@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ShoppingCart } from 'lucide-react';
-import { PendingOrderData } from '../hooks/useOrderSummary';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ShoppingCart } from "lucide-react";
+import { PendingOrderData } from "../hooks/useOrderSummary";
 
 interface CartItemsCardProps {
   orderData: PendingOrderData;
@@ -23,9 +23,7 @@ export function CartItemsCard({ orderData }: CartItemsCardProps) {
               <div className="flex-1">
                 <p className="font-medium">{item.name}</p>
                 {item.specialInstructions && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Note: {item.specialInstructions}
-                  </p>
+                  <p className="text-sm text-gray-600 mt-1">Note: {item.specialInstructions}</p>
                 )}
               </div>
               <div className="text-right ml-4">
@@ -47,4 +45,3 @@ export function CartItemsCard({ orderData }: CartItemsCardProps) {
     </Card>
   );
 }
-

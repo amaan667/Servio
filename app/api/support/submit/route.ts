@@ -19,9 +19,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate request body
@@ -29,10 +27,7 @@ export const POST = withUnifiedAuth(
       const validation = supportSubmissionSchema.safeParse(body);
 
       if (!validation.success) {
-        return apiErrors.badRequest(
-          "Invalid request data",
-          validation.error.errors
-        );
+        return apiErrors.badRequest("Invalid request data", validation.error.errors);
       }
 
       const { type, subject, description, steps } = validation.data;
@@ -44,7 +39,7 @@ export const POST = withUnifiedAuth(
       // STEP 3: Generate email content
       const isFeatureRequest = type === "feature";
       const emailSubject = `[${isFeatureRequest ? "FEATURE REQUEST" : "BUG REPORT"}] ${subject}`;
-      
+
       const emailHtml = `
         <!DOCTYPE html>
         <html>
@@ -83,12 +78,16 @@ export const POST = withUnifiedAuth(
                   <span class="label">${isFeatureRequest ? "Description" : "What happened?"}:</span>
                   <div class="value" style="white-space: pre-wrap;">${description}</div>
                 </div>
-                ${steps ? `
+                ${
+                  steps
+                    ? `
                 <div class="field">
                   <span class="label">Steps to Reproduce:</span>
                   <div class="value" style="white-space: pre-wrap;">${steps}</div>
                 </div>
-                ` : ""}
+                `
+                    : ""
+                }
                 <div class="field">
                   <span class="label">Submitted:</span>
                   <div class="value">${new Date().toLocaleString("en-GB", { dateStyle: "full", timeStyle: "long" })}</div>
@@ -160,4 +159,3 @@ Submitted: ${new Date().toLocaleString("en-GB", { dateStyle: "full", timeStyle: 
     extractVenueId: async () => null, // Support submissions don't require venue context
   }
 );
-

@@ -30,16 +30,16 @@ export function calculateOrderTotal(order: Order): number {
   if (order.total_amount && order.total_amount > 0) {
     return normalizePrice(order.total_amount);
   }
-  
+
   // Calculate from items if total_amount is missing or zero
   if (order.items && order.items.length > 0) {
     return order.items.reduce((sum, item) => {
       const itemPrice = normalizePrice(item.price);
       const quantity = Number(item.quantity) || 0;
-      return sum + (itemPrice * quantity);
+      return sum + itemPrice * quantity;
     }, 0);
   }
-  
+
   return 0;
 }
 
@@ -53,6 +53,6 @@ export function formatPrice(amount: number): string {
 /**
  * Format price with currency symbol
  */
-export function formatPriceWithCurrency(amount: number, currency = '£'): string {
+export function formatPriceWithCurrency(amount: number, currency = "£"): string {
   return `${currency}${formatPrice(amount)}`;
 }

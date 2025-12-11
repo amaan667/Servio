@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function SignInButton() {
   const [loading, setLoading] = useState(false);
@@ -10,12 +10,11 @@ export default function SignInButton() {
 
   const handleSignIn = async () => {
     if (loading) return;
-    
+
     setLoading(true);
     try {
-      router.push('/sign-in');
+      router.push("/sign-in");
     } catch (_error) {
-
       setLoading(false);
     }
   };
@@ -27,7 +26,7 @@ export default function SignInButton() {
       disabled={loading}
       className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
     >
-      {loading ? 'Loading...' : 'Sign In'}
+      {loading ? "Loading..." : "Sign In"}
     </Button>
   );
 }

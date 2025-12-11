@@ -42,7 +42,7 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
 
         if (error) {
           // Silently handle 404 - table might not exist yet
-          if (error.code !== 'PGRST116') {
+          if (error.code !== "PGRST116") {
             // Error handled silently
           }
         } else if (shiftsData) {

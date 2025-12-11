@@ -51,14 +51,14 @@ export default function SelectPlanPage() {
 
         // Check if user is coming from billing/settings to change plan
         const isChangingPlan = searchParams.get("change") === "true";
-        
+
         if (ownerVenuesData && ownerVenuesData.length > 0 && ownerVenuesData[0]?.venue_id) {
           // If user is changing plan, don't redirect - let them view plans
           if (isChangingPlan) {
             setIsChecking(false);
             return;
           }
-          
+
           // User has owner venues - redirect based on focus param
           const mainVenueId = ownerVenuesData[0].venue_id;
           let redirectPath = `/dashboard/${mainVenueId}`;
@@ -108,7 +108,9 @@ export default function SelectPlanPage() {
 
           if (organization?.subscription_tier) {
             // Use tier directly from database (should match Stripe)
-            setCurrentTier(organization.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise");
+            setCurrentTier(
+              organization.subscription_tier.toLowerCase() as "starter" | "pro" | "enterprise"
+            );
           }
         } else {
           // Try to get organization directly

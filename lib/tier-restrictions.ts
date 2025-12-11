@@ -99,16 +99,16 @@ export async function getUserTier(userId: string): Promise<string> {
   }
 
   const tier = org.subscription_tier || "starter";
-  
+
   // Use tier directly from database (should match Stripe exactly)
   // Validate it's a valid tier
   const tierLower = tier.toLowerCase().trim();
   if (["starter", "pro", "enterprise"].includes(tierLower)) {
     return tierLower as "starter" | "pro" | "enterprise";
   }
-  
+
   // If invalid, default to starter
-   
+
   logger.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
   return "starter";
 }
@@ -122,26 +122,25 @@ export async function checkFeatureAccess(
 
   // Safety check: if tier doesn't exist in TIER_LIMITS, default to starter
   if (!limits) {
-     
     logger.warn("[TIER RESTRICTIONS] Invalid tier, defaulting to starter:", { tier });
     const defaultLimits = TIER_LIMITS.starter;
-    
+
     // Special handling for analytics tier
     if (feature === "analytics") {
       return { allowed: true, currentTier: "starter" };
     }
-    
+
     // Special handling for support level
     if (feature === "supportLevel") {
       return { allowed: true, currentTier: "starter" };
     }
-    
+
     // Boolean features - check if starter has it
     const featureValue = defaultLimits.features[feature];
     if (typeof featureValue === "boolean" && featureValue) {
       return { allowed: true, currentTier: "starter" };
     }
-    
+
     return { allowed: false, currentTier: "starter", requiredTier: "pro" };
   }
 
@@ -210,26 +209,25 @@ export async function checkLimit(
 ): Promise<{ allowed: boolean; limit: number; currentTier: string }> {
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
-  
+
   // Safety check: if tier doesn't exist, default to starter
   if (!limits) {
-     
     logger.warn("[TIER RESTRICTIONS] Invalid tier, defaulting to starter:", { tier });
     const defaultLimits = TIER_LIMITS.starter;
     const limit = defaultLimits[limitType];
-    
+
     // -1 means unlimited
     if (limit === -1) {
       return { allowed: true, limit, currentTier: "starter" };
     }
-    
+
     return {
       allowed: currentCount < limit,
       limit,
       currentTier: "starter",
     };
   }
-  
+
   const limit = limits[limitType];
 
   // -1 means unlimited

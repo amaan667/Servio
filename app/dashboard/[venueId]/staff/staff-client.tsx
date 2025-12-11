@@ -12,7 +12,7 @@ import { useStaffManagement, type StaffRow } from "./hooks/useStaffManagement";
 import { useShiftManagement } from "./hooks/useShiftManagement";
 
 // Debug flag for development (removed in production via next.config.mjs)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   // Type-safe window extension for debugging
   interface WindowWithDebug extends Window {
     __STAFF_LOGGING_ENABLED__?: boolean;
@@ -39,7 +39,7 @@ export default function StaffClient({
 }) {
   // Component mount logging (development only, removed in production)
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       // Development logging removed - use React DevTools for component inspection
     }
   }, []);
@@ -128,7 +128,9 @@ export default function StaffClient({
               venueId={venueId}
               staff={staffManagement.staff || []}
               onStaffAdded={async () => {
-                console.log("[STAFF CLIENT] onStaffAdded callback triggered - reloading staff list");
+                console.log(
+                  "[STAFF CLIENT] onStaffAdded callback triggered - reloading staff list"
+                );
                 // Use the reloadStaff function from the hook which uses the API route
                 if (staffManagement.reloadStaff) {
                   await staffManagement.reloadStaff();

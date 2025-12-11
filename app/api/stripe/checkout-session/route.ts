@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function GET(_request: NextRequest) {
     const sessionId = searchParams.get("session_id");
 
     if (!sessionId) {
-      return apiErrors.badRequest('Session ID is required');
+      return apiErrors.badRequest("Session ID is required");
     }
 
     // Fetch session from Stripe with expanded customer data
@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
     });
 
     if (!session) {
-      return apiErrors.notFound('Session not found');
+      return apiErrors.notFound("Session not found");
     }
 
     // Get email from session or customer object
@@ -54,6 +54,6 @@ export async function GET(_request: NextRequest) {
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
     logger.error("[STRIPE SESSION] Error fetching session:", { error: errorMessage });
-    return apiErrors.internal('Failed to fetch session');
+    return apiErrors.internal("Failed to fetch session");
   }
 }

@@ -92,7 +92,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
           .select("venue_name, venue_email, venue_address, show_vat_breakdown")
           .eq("venue_id", venueId)
           .maybeSingle();
-        
+
         if (!venueError && venueData) {
           venue = venueData;
         }
@@ -520,8 +520,12 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Pay at Till Orders</h3>
-                    <p className="text-gray-600">No unpaid orders with pay at till payment method</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Pay at Till Orders
+                    </h3>
+                    <p className="text-gray-600">
+                      No unpaid orders with pay at till payment method
+                    </p>
                   </CardContent>
                 </Card>
               ) : (
@@ -554,9 +558,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No Receipt History
-                    </h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Receipt History</h3>
                     <p className="text-gray-600">No receipts from previous days</p>
                   </CardContent>
                 </Card>
@@ -610,12 +612,18 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               window.history.replaceState({}, "", url.toString());
             }
           }}
-          orders={[selectedOrderForSplit].map(order => ({
+          orders={[selectedOrderForSplit].map((order) => ({
             id: order.id,
             customer_name: order.customer_name || "Customer",
             total_amount: order.total_amount,
             items: (order.items || []).map((item: unknown) => {
-              const it = item as { menu_item_id?: string; quantity: number; price: number; item_name: string; specialInstructions?: string };
+              const it = item as {
+                menu_item_id?: string;
+                quantity: number;
+                price: number;
+                item_name: string;
+                specialInstructions?: string;
+              };
               return {
                 menu_item_id: it.menu_item_id || "",
                 quantity: it.quantity,

@@ -33,17 +33,16 @@ export default function NavigationBreadcrumb({
 
   // [NAV] Get venueId from localStorage/sessionStorage for pages without venueId in path
   const [storedVenueId, setStoredVenueId] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Try multiple sources for venueId
       let foundVenueId: string | null = null;
-      
+
       // 1. Check localStorage (common keys)
-      foundVenueId = localStorage.getItem("currentVenueId") || 
-                     localStorage.getItem("venueId") || 
-                     null;
-      
+      foundVenueId =
+        localStorage.getItem("currentVenueId") || localStorage.getItem("venueId") || null;
+
       // 2. Check sessionStorage for keys starting with "dashboard_venue_"
       // Format: dashboard_venue_${venueId}
       if (!foundVenueId) {
@@ -58,7 +57,7 @@ export default function NavigationBreadcrumb({
           }
         }
       }
-      
+
       // 3. Check sessionStorage for "venue_id_${userId}" pattern
       // We need to find any key matching this pattern and get its value
       if (!foundVenueId) {
@@ -73,7 +72,7 @@ export default function NavigationBreadcrumb({
           }
         }
       }
-      
+
       // 4. Try to extract from document.referrer if available
       if (!foundVenueId && document.referrer) {
         const referrerMatch = document.referrer.match(/\/dashboard\/([^/]+)/);
@@ -81,7 +80,7 @@ export default function NavigationBreadcrumb({
           foundVenueId = referrerMatch[1];
         }
       }
-      
+
       if (foundVenueId) {
         setStoredVenueId(foundVenueId);
       }

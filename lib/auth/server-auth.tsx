@@ -21,12 +21,12 @@ export async function getServerUser(): Promise<User | null> {
       data: { user },
       error,
     } = await supabase.auth.getUser();
-    
+
     // Silently handle auth errors (expired tokens, etc.)
     if (error || !user) {
       return null;
     }
-    
+
     return user;
   } catch {
     // Silently handle all auth errors

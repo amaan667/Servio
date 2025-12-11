@@ -12,7 +12,11 @@ function findRouteFiles(dir: string): string[] {
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
-    if (entry.isDirectory() && !entry.name.includes("node_modules") && !entry.name.includes(".next")) {
+    if (
+      entry.isDirectory() &&
+      !entry.name.includes("node_modules") &&
+      !entry.name.includes(".next")
+    ) {
       files.push(...findRouteFiles(fullPath));
     } else if (entry.name === "route.ts") {
       files.push(fullPath);
@@ -28,8 +32,9 @@ function standardizeFile(filePath: string): boolean {
   let changed = false;
 
   // Check if already has standard response imports
-  const hasStandardResponse = content.includes("from '@/lib/api/standard-response'") || 
-                             content.includes('from "@/lib/api/standard-response"');
+  const hasStandardResponse =
+    content.includes("from '@/lib/api/standard-response'") ||
+    content.includes('from "@/lib/api/standard-response"');
 
   // Replace rate limit errors
   content = content.replace(
@@ -37,7 +42,9 @@ function standardizeFile(filePath: string): boolean {
     (match) => {
       changed = true;
       const resetMatch = match.match(/reset.*?(\d+)/);
-      const seconds = resetMatch ? Math.ceil((parseInt(resetMatch[1]) - Date.now()) / 1000) : undefined;
+      const seconds = resetMatch
+        ? Math.ceil((parseInt(resetMatch[1]) - Date.now()) / 1000)
+        : undefined;
       return `return apiErrors.rateLimit(${seconds || ""})`;
     }
   );
@@ -91,18 +98,19 @@ function standardizeFile(filePath: string): boolean {
 
   // Add import if needed
   if (changed && !hasStandardResponse) {
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     let lastImportIndex = -1;
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('import ')) {
+      if (lines[i].trim().startsWith("import ")) {
         lastImportIndex = i;
       }
     }
-    
+
     if (lastImportIndex >= 0) {
-      const importLine = "import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';";
+      const importLine =
+        "import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';";
       lines.splice(lastImportIndex + 1, 0, importLine);
-      content = lines.join('\n');
+      content = lines.join("\n");
     }
   }
 
@@ -129,4 +137,3 @@ for (const file of files) {
 }
 
 console.log(`\n📊 Fixed ${fixed} files\n`);
-

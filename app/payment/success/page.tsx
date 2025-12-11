@@ -10,7 +10,6 @@ export default function PaymentSuccessPage() {
   const sessionId = searchParams?.get("session_id");
 
   useEffect(() => {
-
     if (!sessionId) {
       router.push("/");
       return;
@@ -18,13 +17,14 @@ export default function PaymentSuccessPage() {
 
     // Webhook updates the order - just look it up and redirect
     const lookupOrder = async () => {
-
       try {
         // Wait 1s for webhook to update order
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Look up order by session ID
-        const response = await fetch(`/api/orders/by-session?sessionId=${encodeURIComponent(sessionId)}`);
+        const response = await fetch(
+          `/api/orders/by-session?sessionId=${encodeURIComponent(sessionId)}`
+        );
 
         if (response.ok) {
           const data = await response.json();
@@ -40,7 +40,9 @@ export default function PaymentSuccessPage() {
         // Retry once more after a longer delay (webhook may take time)
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        const retryResponse = await fetch(`/api/orders/by-session?sessionId=${encodeURIComponent(sessionId)}`);
+        const retryResponse = await fetch(
+          `/api/orders/by-session?sessionId=${encodeURIComponent(sessionId)}`
+        );
 
         if (retryResponse.ok) {
           const retryData = await retryResponse.json();
@@ -62,7 +64,8 @@ export default function PaymentSuccessPage() {
 
         // Last resort: show user-friendly error
         alert(
-          "Payment was successful! However, we couldn't find your order details. Please contact support with this session ID: " + sessionId
+          "Payment was successful! However, we couldn't find your order details. Please contact support with this session ID: " +
+            sessionId
         );
         router.push("/");
       } catch (_error) {

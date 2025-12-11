@@ -1,4 +1,3 @@
- 
 /**
  * Auto-generated test for inventory/recipes/[menu_item_id]
  * Generated: 2025-11-23T00:14:32.211Z
@@ -20,14 +19,16 @@ vi.mock("@/lib/supabase", () => ({
       delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
     })),
   })),
-  createServerSupabase: vi.fn(() => Promise.resolve({
-    from: vi.fn(() => ({
-      select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-    auth: {
-      getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
-    },
-  })),
+  createServerSupabase: vi.fn(() =>
+    Promise.resolve({
+      from: vi.fn(() => ({
+        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+      auth: {
+        getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
+      },
+    })
+  ),
 }));
 
 vi.mock("@/lib/api-auth", () => ({
@@ -46,40 +47,43 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Inventory Recipes Menu_item_id API", () => {
   describe("GET inventory/recipes/[menu_item_id]", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/api//inventory/recipes/[menu_item_id]");
+      const request = createMockRequest(
+        "GET",
+        "http://localhost:3000/api//inventory/recipes/[menu_item_id]"
+      );
 
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {
-
-    });
+    it("should validate request parameters", async () => {});
   });
 
   describe("POST inventory/recipes/[menu_item_id]", () => {
     it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/api//inventory/recipes/[menu_item_id]");
+      const request = createMockRequest(
+        "POST",
+        "http://localhost:3000/api//inventory/recipes/[menu_item_id]"
+      );
 
       const response = await postPOST(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {
-
-    });
+    it("should validate request parameters", async () => {});
   });
 
   describe("DELETE inventory/recipes/[menu_item_id]", () => {
     it("should handle delete request", async () => {
-      const request = createMockRequest("DELETE", "http://localhost:3000/api//inventory/recipes/[menu_item_id]");
+      const request = createMockRequest(
+        "DELETE",
+        "http://localhost:3000/api//inventory/recipes/[menu_item_id]"
+      );
 
       const response = await deleteDELETE(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {
-
-    });
+    it("should validate request parameters", async () => {});
   });
 });

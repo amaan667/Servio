@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/app/auth/AuthProvider';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useAuth } from "@/app/auth/AuthProvider";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function SignOutPage() {
   const { signOut } = useAuth();
@@ -11,36 +11,33 @@ export default function SignOutPage() {
   useEffect(() => {
     const performSignOut = async () => {
       try {
-        
         // Call server-side sign out
-        const response = await fetch('/api/auth/signout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/auth/signout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
         });
-        
+
         if (!response.ok) {
-      // Empty block
-    } else {
-      // Intentionally empty
-    }
-        
+          // Empty block
+        } else {
+          // Intentionally empty
+        }
+
         // Clear client storage
         try {
-          const { clearAuthStorage } = await import('@/lib/supabase');
+          const { clearAuthStorage } = await import("@/lib/supabase");
           clearAuthStorage();
         } catch (_error) {
-      // Error silently handled
-    }
-        
+          // Error silently handled
+        }
+
         // Use auth provider's signOut method
         await signOut();
-        
-        // Redirect to home page
-        router.replace('/');
-        
-      } catch (_error) {
 
-        router.replace('/');
+        // Redirect to home page
+        router.replace("/");
+      } catch (_error) {
+        router.replace("/");
       }
     };
 

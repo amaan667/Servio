@@ -242,9 +242,8 @@ export async function executeAnalyticsGetStats(
         .gte("created_at", timeStart);
 
       // Generate revenue stats by default
-      const totalRevenue =
-        orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-      
+      const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+
       // Get top items
       const topItemsQuery = await supabase
         .from("order_items")

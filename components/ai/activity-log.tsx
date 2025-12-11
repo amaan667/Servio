@@ -149,13 +149,13 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
                             {(() => {
                               const resultObj = activity.result as Record<string, unknown>;
                               const parts: string[] = [];
-                              if (typeof resultObj.updatedCount === 'number') {
+                              if (typeof resultObj.updatedCount === "number") {
                                 parts.push(`${resultObj.updatedCount} items affected`);
                               }
-                              if (typeof resultObj.revenue === 'number') {
+                              if (typeof resultObj.revenue === "number") {
                                 parts.push(`Revenue: £${resultObj.revenue.toFixed(2)}`);
                               }
-                              return parts.join(' • ');
+                              return parts.join(" • ");
                             })()}
                           </span>
                         ) : (

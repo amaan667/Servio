@@ -7,18 +7,18 @@ export default function SessionClearer() {
     const clearSession = async () => {
       try {
         // Use server-side signout API instead of client-side auth.signOut()
-        await fetch('/api/auth/signout', {
-          method: 'POST',
+        await fetch("/api/auth/signout", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
       } catch (_error) {
-      // Error silently handled
-    }
-    }
-    clearSession()
-  }, [])
+        // Error silently handled
+      }
+    };
+    clearSession();
+  }, []);
 
-  return null
+  return null;
 }

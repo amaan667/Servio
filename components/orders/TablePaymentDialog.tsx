@@ -72,9 +72,7 @@ export function TablePaymentDialog({
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/orders/table/${tableNumber}/unpaid?venue_id=${venueId}`
-      );
+      const response = await fetch(`/api/orders/table/${tableNumber}/unpaid?venue_id=${venueId}`);
 
       if (!response.ok) {
         const data = await response.json();
@@ -91,7 +89,9 @@ export function TablePaymentDialog({
       setTotalAmount(data.totalAmount || 0);
 
       // Check for mixed payment modes
-      const paymentModes = [...new Set(data.orders.map((o: Order) => o.payment_mode).filter(Boolean))];
+      const paymentModes = [
+        ...new Set(data.orders.map((o: Order) => o.payment_mode).filter(Boolean)),
+      ];
       if (paymentModes.length > 1) {
         setWarning(
           `This table has orders with different payment modes: ${paymentModes.join(", ")}. All will be paid together.`
@@ -101,9 +101,7 @@ export function TablePaymentDialog({
       // Check if any orders are already paid (shouldn't happen but safety check)
       const alreadyPaid = data.orders.filter((o: Order) => o.payment_status === "PAID");
       if (alreadyPaid.length > 0) {
-        setWarning(
-          `${alreadyPaid.length} order(s) are already paid and will be skipped.`
-        );
+        setWarning(`${alreadyPaid.length} order(s) are already paid and will be skipped.`);
       }
     } catch (_err) {
       setError(_err instanceof Error ? _err.message : "Failed to load orders");
@@ -128,9 +126,7 @@ export function TablePaymentDialog({
 
     try {
       // Filter out already paid orders (safety check)
-      const unpaidOrderIds = orders
-        .filter((o) => o.payment_status !== "PAID")
-        .map((o) => o.id);
+      const unpaidOrderIds = orders.filter((o) => o.payment_status !== "PAID").map((o) => o.id);
 
       if (unpaidOrderIds.length === 0) {
         setError("All orders are already paid");
@@ -196,7 +192,9 @@ export function TablePaymentDialog({
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-gray-900">Total Amount:</span>
-                <span className="text-2xl font-bold text-purple-600">£{unpaidTotal.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-purple-600">
+                  £{unpaidTotal.toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -348,10 +346,3 @@ export function TablePaymentDialog({
     </Dialog>
   );
 }
-
-
-
-
-
-
-

@@ -1,11 +1,11 @@
 /**
  * Optimized Suspense Boundary Component
- * 
+ *
  * Best Practices:
  * - Wrap async components with Suspense boundaries
  * - Use streaming for better perceived performance
  * - Provide meaningful fallbacks
- * 
+ *
  * Performance: Enables React streaming and reduces perceived load time
  */
 
@@ -23,15 +23,15 @@ interface SuspenseBoundaryProps {
 
 /**
  * Optimized Suspense Boundary
- * 
+ *
  * Wraps async components with proper loading states
  * Enables React streaming for better performance
- * 
+ *
  * @example
  * <SuspenseBoundary message={LOADING_MESSAGES.ORDERS}>
  *   <OrdersList />
  * </SuspenseBoundary>
- * 
+ *
  * @example
  * <SuspenseBoundary variant="skeleton" skeletonCount={5}>
  *   <MenuItemsList />
@@ -51,10 +51,5 @@ export function SuspenseBoundary({
       <LoadingState message={message} />
     );
 
-  return (
-    <Suspense fallback={fallback || defaultFallback}>
-      {children}
-    </Suspense>
-  );
+  return <Suspense fallback={fallback || defaultFallback}>{children}</Suspense>;
 }
-

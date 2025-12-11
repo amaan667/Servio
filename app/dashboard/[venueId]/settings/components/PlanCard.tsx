@@ -26,7 +26,11 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
   const hasStripeCustomer = !!organization?.stripe_customer_id;
 
   // Use tier directly from database (should match Stripe exactly)
-  const normalizedTier = currentTier?.toLowerCase().trim() as "starter" | "pro" | "enterprise" | undefined;
+  const normalizedTier = currentTier?.toLowerCase().trim() as
+    | "starter"
+    | "pro"
+    | "enterprise"
+    | undefined;
   const tierInfo = normalizedTier ? PRICING_TIERS[normalizedTier] : null;
   const planName = tierInfo?.name;
   const features = tierInfo?.features;

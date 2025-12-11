@@ -46,10 +46,14 @@ export default function QRCodeClient({
   useEffect(() => {
     const tableParam = searchParams.get("table");
     const counterParam = searchParams.get("counter");
-    
+
     // Create a unique key for this set of parameters
-    const paramKey = tableParam ? `table:${tableParam}` : counterParam ? `counter:${counterParam}` : null;
-    
+    const paramKey = tableParam
+      ? `table:${tableParam}`
+      : counterParam
+        ? `counter:${counterParam}`
+        : null;
+
     // Skip if we've already processed these exact parameters
     if (!paramKey || hasProcessedParams.current === paramKey) {
       return;
@@ -406,7 +410,10 @@ export default function QRCodeClient({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 qr-code-print">
             {qrManagement.generatedQRs.map((qr, index) => (
-              <Card key={`${qr.name}-${qr.type}-${index}`} className="shadow-lg rounded-xl print:shadow-none print:border print:border-black">
+              <Card
+                key={`${qr.name}-${qr.type}-${index}`}
+                className="shadow-lg rounded-xl print:shadow-none print:border print:border-black"
+              >
                 <CardHeader>
                   <CardTitle className="text-lg">{qr.name}</CardTitle>
                 </CardHeader>

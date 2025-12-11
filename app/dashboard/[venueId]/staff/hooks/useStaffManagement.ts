@@ -44,11 +44,14 @@ export function useStaffManagement(
   _initialCounts?: StaffCounts
 ) {
   // Immediate logging when hook is called
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     console.log("=".repeat(80));
     console.log("[STAFF HOOK] useStaffManagement hook called");
     console.log("[STAFF HOOK] venueId parameter:", venueId);
-    console.log("[STAFF HOOK] initialStaff parameter:", initialStaff ? `${initialStaff.length} members` : "none");
+    console.log(
+      "[STAFF HOOK] initialStaff parameter:",
+      initialStaff ? `${initialStaff.length} members` : "none"
+    );
     console.log("[STAFF HOOK] Hook call timestamp:", new Date().toISOString());
     console.log("=".repeat(80));
   }
@@ -68,19 +71,22 @@ export function useStaffManagement(
     console.log("=".repeat(80));
     console.log("[STAFF PAGE LOAD] Starting staff load process");
     console.log("[STAFF PAGE LOAD] Raw venueId from props:", venueId);
-    console.log("[STAFF PAGE LOAD] initialStaff provided:", initialStaff ? `${initialStaff.length} members` : "none");
-    
+    console.log(
+      "[STAFF PAGE LOAD] initialStaff provided:",
+      initialStaff ? `${initialStaff.length} members` : "none"
+    );
+
     setLoading(true);
     try {
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
       console.log("[STAFF PAGE LOAD] Normalized venueId:", normalizedVenueId);
       console.log("[STAFF PAGE LOAD] Calling API route: /api/staff/list");
-      
+
       const queryStart = Date.now();
       const url = new URL("/api/staff/list", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
-      
+
       const res = await fetch(url.toString(), {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -93,9 +99,10 @@ export function useStaffManagement(
 
       const data = await res.json();
       console.log("[STAFF PAGE LOAD] Response data:", JSON.stringify(data, null, 2));
-      
+
       if (!res.ok) {
-        const errorMessage = data.error?.message || data.error || data.message || "Failed to load staff";
+        const errorMessage =
+          data.error?.message || data.error || data.message || "Failed to load staff";
         console.error("[STAFF PAGE LOAD] ERROR - API request failed:");
         console.error("[STAFF PAGE LOAD] Status:", res.status);
         console.error("[STAFF PAGE LOAD] Error message:", errorMessage);
@@ -108,16 +115,28 @@ export function useStaffManagement(
         setStaff(staffData);
       } else {
         console.log("[STAFF PAGE LOAD] WARNING - No staff data in response");
-        console.log("[STAFF PAGE LOAD] This might mean no staff exists for venue:", normalizedVenueId);
+        console.log(
+          "[STAFF PAGE LOAD] This might mean no staff exists for venue:",
+          normalizedVenueId
+        );
         setStaff([]);
       }
       console.log("[STAFF PAGE LOAD] Load process completed");
       console.log("=".repeat(80));
     } catch (e) {
       console.error("[STAFF PAGE LOAD] EXCEPTION - Unexpected error:");
-      console.error("[STAFF PAGE LOAD] Exception type:", e instanceof Error ? e.constructor.name : typeof e);
-      console.error("[STAFF PAGE LOAD] Exception message:", e instanceof Error ? e.message : String(e));
-      console.error("[STAFF PAGE LOAD] Exception stack:", e instanceof Error ? e.stack : "no stack");
+      console.error(
+        "[STAFF PAGE LOAD] Exception type:",
+        e instanceof Error ? e.constructor.name : typeof e
+      );
+      console.error(
+        "[STAFF PAGE LOAD] Exception message:",
+        e instanceof Error ? e.message : String(e)
+      );
+      console.error(
+        "[STAFF PAGE LOAD] Exception stack:",
+        e instanceof Error ? e.stack : "no stack"
+      );
       setError(e instanceof Error ? e.message : "Failed to load staff");
       setStaff([]);
     } finally {
@@ -141,11 +160,11 @@ export function useStaffManagement(
         const supabase = supabaseBrowser();
         // Normalize venueId - database stores with venue- prefix
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-        
+
         // Try staff_shifts first, fallback to shifts if it doesn't exist
         let shiftsData = null;
         let error = null;
-        
+
         // Try staff_shifts table first
         const { data: staffShiftsData, error: staffShiftsError } = await supabase
           .from("staff_shifts")
@@ -160,8 +179,8 @@ export function useStaffManagement(
           )
           .eq("venue_id", normalizedVenueId)
           .order("start_time", { ascending: false });
-        
-        if (staffShiftsError && staffShiftsError.code === 'PGRST116') {
+
+        if (staffShiftsError && staffShiftsError.code === "PGRST116") {
           // Table doesn't exist, try shifts table as fallback
           const { data: shiftsDataFallback, error: shiftsError } = await supabase
             .from("shifts")
@@ -176,7 +195,7 @@ export function useStaffManagement(
             )
             .eq("venue_id", normalizedVenueId)
             .order("start_time", { ascending: false });
-          
+
           shiftsData = shiftsDataFallback;
           error = shiftsError;
         } else {
@@ -186,7 +205,7 @@ export function useStaffManagement(
 
         if (error) {
           // Silently handle 404 - table might not exist yet
-          if (error.code !== 'PGRST116') {
+          if (error.code !== "PGRST116") {
             // Error logged but not critical
           }
         } else if (shiftsData && shiftsData.length > 0) {
@@ -229,7 +248,7 @@ export function useStaffManagement(
       const supabase = supabaseBrowser();
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      
+
       const { data: newStaff, error } = await supabase
         .from("staff")
         .insert({

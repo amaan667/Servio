@@ -12,7 +12,7 @@ export function asType<T>(value: unknown): T {
  * Safely access a property on an unknown object
  */
 export function getProperty<T = unknown>(obj: unknown, key: string): T | undefined {
-  if (obj && typeof obj === 'object' && key in obj) {
+  if (obj && typeof obj === "object" && key in obj) {
     return (obj as Record<string, unknown>)[key] as T;
   }
   return undefined;
@@ -29,7 +29,7 @@ export function isDefined<T>(value: T | null | undefined): value is T {
  * Type guard for objects
  */
 export function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -53,9 +53,12 @@ export function safeJsonParse<T = unknown>(json: string): T | null {
 /**
  * Assert that a value is not null/undefined
  */
-export function assertDefined<T>(value: T | null | undefined, message?: string): asserts value is T {
+export function assertDefined<T>(
+  value: T | null | undefined,
+  message?: string
+): asserts value is T {
   if (value === null || value === undefined) {
-    throw new Error(message || 'Value is null or undefined');
+    throw new Error(message || "Value is null or undefined");
   }
 }
 
@@ -66,7 +69,9 @@ export function toRecord(value: unknown): Record<string, unknown> {
   if (isObject(value)) {
     return value;
   }
-  return { /* Empty */ };
+  return {
+    /* Empty */
+  };
 }
 
 /**
@@ -86,12 +91,11 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
-  if (isObject(error) && 'message' in error) {
+  if (isObject(error) && "message" in error) {
     return String(error.message);
   }
-  return 'Unknown error';
+  return "Unknown error";
 }
-

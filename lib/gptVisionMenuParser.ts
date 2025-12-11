@@ -12,7 +12,9 @@ export interface ExtractedMenuItem {
   spiceLevel?: string | null;
 }
 
-export async function extractMenuFromImage(imagePathOrDataUrl: string): Promise<ExtractedMenuItem[]> { 
+export async function extractMenuFromImage(
+  imagePathOrDataUrl: string
+): Promise<ExtractedMenuItem[]> {
   const openai = getOpenAI();
 
   // Handle both file paths and data URLs
@@ -197,9 +199,7 @@ OTHER RULES:
     }
 
     // Log allergen and dietary information extraction
-    const itemsWithAllergens = json.filter(
-      (item) => item.allergens && item.allergens.length > 0
-    );
+    const itemsWithAllergens = json.filter((item) => item.allergens && item.allergens.length > 0);
     const itemsWithDietary = json.filter((item) => item.dietary && item.dietary.length > 0);
     const itemsWithSpiceLevel = json.filter((item) => item.spiceLevel);
 

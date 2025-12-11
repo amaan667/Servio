@@ -1,4 +1,3 @@
- 
 /**
  * Tests for Kitchen Display System API
  * Critical: Kitchen operations

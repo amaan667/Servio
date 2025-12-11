@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { isProduction } from '@/lib/env';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { isProduction } from "@/lib/env";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export async function POST() {
   try {

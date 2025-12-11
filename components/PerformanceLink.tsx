@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePrefetch } from '@/hooks/usePrefetch';
+import React from "react";
+import Link from "next/link";
+import { usePrefetch } from "@/hooks/usePrefetch";
 
 interface PerformanceLinkProps {
   href: string;
@@ -28,12 +28,7 @@ export const PerformanceLink = React.memo(function PerformanceLink({
   const handleMouseEnter = prefetch ? prefetchOnHover(href) : undefined;
 
   return (
-    <Link
-      href={href}
-      className={className}
-      onMouseEnter={handleMouseEnter}
-      {...props}
-    >
+    <Link href={href} className={className} onMouseEnter={handleMouseEnter} {...props}>
       {children}
     </Link>
   );

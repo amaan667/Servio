@@ -18,10 +18,10 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
   // Fetch initial KDS data on server to show accurate counts on first visit
   let initialTickets = null;
   let initialStations = null;
-  
+
   try {
     const supabase = createAdminClient();
-    
+
     // Fetch KDS stations
     const { data: stations } = await supabase
       .from("kds_stations")
@@ -29,7 +29,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       .eq("venue_id", venueId)
       .eq("is_active", true)
       .order("display_order", { ascending: true });
-    
+
     if (stations) {
       initialStations = stations;
     }
@@ -40,7 +40,9 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       // Step 1: Get ALL orders from this venue (no filters except venue_id)
       const { data: allOrders, error: ordersError } = await supabase
         .from("orders")
-        .select("id, venue_id, table_number, table_id, items, customer_name, order_status, payment_status")
+        .select(
+          "id, venue_id, table_number, table_id, items, customer_name, order_status, payment_status"
+        )
         .eq("venue_id", venueId)
         .order("created_at", { ascending: false });
 
@@ -66,9 +68,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
         );
 
         // Step 3: Filter to orders without tickets
-        const ordersWithoutTickets = allOrders.filter(
-          (order) => !existingOrderIds.has(order.id)
-        );
+        const ordersWithoutTickets = allOrders.filter((order) => !existingOrderIds.has(order.id));
 
         if (ordersWithoutTickets.length > 0) {
           logger.info("[KDS PAGE] Found orders without tickets, creating:", {
@@ -135,7 +135,8 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     // CRITICAL: Fetch ALL tickets from ALL orders - no date restrictions
     const { data: tickets, error: ticketsError } = await supabase
       .from("kds_tickets")
-      .select(`
+      .select(
+        `
         *,
         kds_stations (
           id,
@@ -149,11 +150,12 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
           order_status,
           payment_status
         )
-      `)
+      `
+      )
       .eq("venue_id", venueId)
       .neq("status", "bumped")
       .order("created_at", { ascending: true });
-    
+
     if (ticketsError) {
       logger.error("[KDS PAGE] Error fetching tickets:", {
         error: ticketsError.message,

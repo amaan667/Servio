@@ -1,11 +1,11 @@
 /**
  * Optimistic UI Utilities
- * 
+ *
  * Best Practices:
  * - Use for mutations that are likely to succeed
  * - Provide rollback on error
  * - Show immediate feedback to users
- * 
+ *
  * Performance: Reduces perceived latency by updating UI immediately
  */
 
@@ -19,7 +19,7 @@ export interface OptimisticUpdate<T> {
 
 /**
  * Create optimistic update handler
- * 
+ *
  * @example
  * const handleUpdate = useOptimisticUpdate(
  *   currentData,
@@ -83,4 +83,3 @@ export async function withOptimisticUpdate<T>(
     throw error;
   }
 }
-

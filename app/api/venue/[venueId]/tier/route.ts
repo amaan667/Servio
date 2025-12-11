@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context, routeParams?: { params?: Promise<Record<string, string>> }) => {
@@ -13,7 +13,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -22,7 +22,7 @@ export const GET = withUnifiedAuth(
 
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
-      
+
       // Also try to get from route params if not in context
       let finalVenueId: string | null = venueId;
       if (!finalVenueId && routeParams?.params) {
@@ -33,7 +33,7 @@ export const GET = withUnifiedAuth(
       // STEP 3: Parse request
       // STEP 4: Validate inputs
       if (!finalVenueId) {
-        return apiErrors.badRequest('Venue ID is required');
+        return apiErrors.badRequest("Venue ID is required");
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -84,16 +84,17 @@ export const GET = withUnifiedAuth(
         status: organization?.subscription_status || "active",
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[VENUE TIER GET] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -104,7 +105,7 @@ export const GET = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           tier: "starter",
@@ -114,7 +115,7 @@ export const GET = withUnifiedAuth(
       );
     }
   },
-    {
+  {
     // Extract venueId from URL params
     extractVenueId: async (_req, routeParams) => {
       try {

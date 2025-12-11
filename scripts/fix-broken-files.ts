@@ -42,4 +42,3 @@ for (const file of brokenFiles) {
 }
 
 console.log(`\n📊 Restored ${fixed} files\n`);
-

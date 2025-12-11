@@ -158,7 +158,7 @@ export class OrderService extends BaseService {
     }
   ): Promise<Order & { table_auto_created?: boolean; session_id?: string }> {
     const supabase = await createSupabaseClient();
-    
+
     // Use RPC function for transactional order creation
     const { data, error } = await supabase.rpc("create_order_with_session", {
       p_venue_id: venueId,

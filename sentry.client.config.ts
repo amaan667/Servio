@@ -7,10 +7,13 @@ import * as Sentry from "@sentry/nextjs";
 // Avoid double-initializing on the client. instrumentation-client.ts already
 // calls Sentry.init. Bail out if a client is already registered or if we
 // previously flagged initialization on window.
-const hub = (Sentry as unknown as { getCurrentHub?: () => { getClient?: () => unknown } }).getCurrentHub?.();
+const hub = (
+  Sentry as unknown as { getCurrentHub?: () => { getClient?: () => unknown } }
+).getCurrentHub?.();
 const alreadyHasClient = !!hub?.getClient?.();
 const windowFlag =
-  typeof window !== "undefined" && (window as unknown as { __sentryInitialized?: boolean }).__sentryInitialized;
+  typeof window !== "undefined" &&
+  (window as unknown as { __sentryInitialized?: boolean }).__sentryInitialized;
 
 if (!alreadyHasClient && !windowFlag) {
   Sentry.init({
@@ -35,4 +38,3 @@ if (!alreadyHasClient && !windowFlag) {
     (window as unknown as { __sentryInitialized?: boolean }).__sentryInitialized = true;
   }
 }
-

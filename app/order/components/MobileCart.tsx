@@ -71,15 +71,16 @@ export function MobileCart({
                     <div className="flex-1 min-w-0">
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
-                        {item.selectedModifiers && Object.keys(item.selectedModifiers).length > 0 && (
-                          <div className="text-xs text-purple-600 mt-1">
-                            {Object.entries(item.selectedModifiers).map(([modName, options]) => (
-                              <span key={modName} className="mr-2">
-                                {modName}: {options.join(", ")}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {item.selectedModifiers &&
+                          Object.keys(item.selectedModifiers).length > 0 && (
+                            <div className="text-xs text-purple-600 mt-1">
+                              {Object.entries(item.selectedModifiers).map(([modName, options]) => (
+                                <span key={modName} className="mr-2">
+                                  {modName}: {options.join(", ")}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                       </div>
                       <p className="text-sm text-gray-900">£{item.price.toFixed(2)} each</p>
                     </div>

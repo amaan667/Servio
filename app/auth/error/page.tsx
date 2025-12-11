@@ -1,35 +1,35 @@
-'use client';
+"use client";
 
-import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import Link from 'next/link';
-import { Suspense } from 'react';
+import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
 
 function AuthErrorContent() {
   const searchParams = useSearchParams();
-  const reason = searchParams?.get('reason');
+  const reason = searchParams?.get("reason");
 
   const getErrorMessage = (reason: string | null) => {
     switch (reason) {
-      case 'missing_code':
-        return 'No authorization code received from Google. Please try signing in again.';
-      case 'session_verification_failed':
-        return 'Failed to verify your session. Please try signing in again.';
-      case 'no_session_after_exchange':
-        return 'Authentication completed but no session was created. Please try again.';
-      case 'unexpected_error':
-        return 'An unexpected error occurred during authentication. Please try again.';
+      case "missing_code":
+        return "No authorization code received from Google. Please try signing in again.";
+      case "session_verification_failed":
+        return "Failed to verify your session. Please try signing in again.";
+      case "no_session_after_exchange":
+        return "Authentication completed but no session was created. Please try again.";
+      case "unexpected_error":
+        return "An unexpected error occurred during authentication. Please try again.";
       default:
-        return reason || 'An error occurred during authentication. Please try again.';
+        return reason || "An error occurred during authentication. Please try again.";
     }
   };
 
   const handleRetry = () => {
     // Clear unknown stale auth state BUT preserve PKCE verifier
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       Object.keys(localStorage).forEach((k) => {
         if ((k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("pkce")) {
           localStorage.removeItem(k);
@@ -38,9 +38,9 @@ function AuthErrorContent() {
       sessionStorage.removeItem("sb_oauth_retry");
       sessionStorage.removeItem("sb_oauth_in_progress");
     }
-    
+
     // Redirect back to sign-in
-    window.location.href = '/sign-in';
+    window.location.href = "/sign-in";
   };
 
   return (
@@ -56,9 +56,7 @@ function AuthErrorContent() {
         <CardContent className="space-y-4">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              {getErrorMessage(reason || null)}
-            </AlertDescription>
+            <AlertDescription>{getErrorMessage(reason || null)}</AlertDescription>
           </Alert>
 
           <div className="space-y-3">
@@ -66,7 +64,7 @@ function AuthErrorContent() {
               <RefreshCw className="mr-2 h-4 w-4" />
               Try Again
             </Button>
-            
+
             <Button asChild variant="outline" className="w-full">
               <Link href="/">
                 <Home className="mr-2 h-4 w-4" />
@@ -77,11 +75,7 @@ function AuthErrorContent() {
 
           <div className="text-center text-sm text-gray-900">
             <p>If this problem persists, please contact support.</p>
-            {reason && (
-              <p className="mt-2 text-xs text-gray-900">
-                Error code: {reason}
-              </p>
-            )}
+            {reason && <p className="mt-2 text-xs text-gray-900">Error code: {reason}</p>}
           </div>
         </CardContent>
       </Card>

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { NextRequest } from "next/server";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -16,7 +16,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -29,10 +29,7 @@ export const POST = withUnifiedAuth(
       // STEP 3: Parse request
       // STEP 4: Validate inputs
       if (!venueId) {
-        return NextResponse.json(
-          { error: "venue_id is required" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "venue_id is required" }, { status: 400 });
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -74,7 +71,7 @@ export const POST = withUnifiedAuth(
       `;
 
       // Execute table creation (using admin client for DDL operations)
-      const { error: stationsError } = await supabaseAdmin.rpc('exec_sql', {
+      const { error: stationsError } = await supabaseAdmin.rpc("exec_sql", {
         sql: createStationsTable,
       });
 
@@ -87,7 +84,7 @@ export const POST = withUnifiedAuth(
         // Continue anyway - table might already exist
       }
 
-      const { error: ticketsError } = await supabaseAdmin.rpc('exec_sql', {
+      const { error: ticketsError } = await supabaseAdmin.rpc("exec_sql", {
         sql: createTicketsTable,
       });
 
@@ -132,16 +129,17 @@ export const POST = withUnifiedAuth(
         venueId,
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[SETUP KDS] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -151,7 +149,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Internal Server Error",

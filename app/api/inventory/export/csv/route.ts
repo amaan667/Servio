@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getUserTier, hasAnalyticsExports } from "@/lib/tier-restrictions";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 // GET /api/inventory/export/csv?venue_id=xxx
 // CSV exports require Enterprise tier
@@ -15,9 +15,7 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -31,10 +29,10 @@ export const GET = withUnifiedAuth(
       const canExport = await hasAnalyticsExports(context.user.id);
       if (!canExport) {
         const tier = await getUserTier(context.user.id);
-        return apiErrors.forbidden(
-          "CSV exports require Enterprise tier",
-          { currentTier: tier, requiredTier: "enterprise" }
-        );
+        return apiErrors.forbidden("CSV exports require Enterprise tier", {
+          currentTier: tier,
+          requiredTier: "enterprise",
+        });
       }
 
       // STEP 4: Business logic - Fetch ingredients
@@ -113,10 +111,7 @@ export const GET = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {

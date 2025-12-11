@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const { venueId, orderIds } = await req.json();
 
     if (!venueId) {
-      return apiErrors.badRequest('Venue ID is required');
+      return apiErrors.badRequest("Venue ID is required");
     }
 
     // Use admin client - no authentication required for Live Orders feature
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
       if (fetchError) {
         logger.error("[BULK COMPLETE] Error fetching active orders:", { value: fetchError });
-        return apiErrors.internal('Failed to fetch active orders');
+        return apiErrors.internal("Failed to fetch active orders");
       }
 
       targetOrderIds = activeOrders?.map((order) => order.id) || [];
@@ -51,13 +51,11 @@ export async function POST(req: Request) {
 
     if (fetchError) {
       logger.error("[BULK COMPLETE] Error fetching orders:", { value: fetchError });
-      return apiErrors.internal('Failed to fetch orders');
+      return apiErrors.internal("Failed to fetch orders");
     }
 
     // Filter out unpaid orders
-    const unpaidOrders = ordersToComplete?.filter(
-      (order) => order.payment_status !== "PAID"
-    ) || [];
+    const unpaidOrders = ordersToComplete?.filter((order) => order.payment_status !== "PAID") || [];
 
     if (unpaidOrders.length > 0) {
       return NextResponse.json(
@@ -71,18 +69,18 @@ export async function POST(req: Request) {
 
     // Filter to only completable statuses
     const completableStatuses = ["SERVED", "READY", "SERVING"];
-    const nonCompletableOrders = ordersToComplete?.filter(
-      (order) => !completableStatuses.includes(order.order_status)
-    ) || [];
+    const nonCompletableOrders =
+      ordersToComplete?.filter((order) => !completableStatuses.includes(order.order_status)) || [];
 
     if (nonCompletableOrders.length > 0) {
       logger.warn("[BULK COMPLETE] Some orders not in completable status", {
         order_ids: nonCompletableOrders.map((o) => o.id),
       });
       // Continue with completable orders only
-      const completableOrderIds = ordersToComplete
-        ?.filter((order) => completableStatuses.includes(order.order_status))
-        .map((o) => o.id) || [];
+      const completableOrderIds =
+        ordersToComplete
+          ?.filter((order) => completableStatuses.includes(order.order_status))
+          .map((o) => o.id) || [];
 
       if (completableOrderIds.length === 0) {
         return NextResponse.json(
@@ -110,7 +108,7 @@ export async function POST(req: Request) {
 
     if (updateError) {
       logger.error("[BULK COMPLETE] Error updating orders:", { value: updateError });
-      return apiErrors.internal('Failed to update orders');
+      return apiErrors.internal("Failed to update orders");
     }
 
     // Handle table cleanup for completed orders
@@ -263,6 +261,6 @@ export async function POST(req: Request) {
     logger.error("[BULK COMPLETE] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

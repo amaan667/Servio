@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJobStatus } from "@/lib/ai/job-processor";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const jobId = searchParams.get("jobId");
 
     if (!jobId) {
-      return apiErrors.badRequest('jobId is required');
+      return apiErrors.badRequest("jobId is required");
     }
 
     logger.info(`[AI JOB STATUS] Checking status for job: ${jobId}`);
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const status = await getJobStatus(jobId);
 
     if (!status) {
-      return apiErrors.notFound('Job not found');
+      return apiErrors.notFound("Job not found");
     }
 
     return NextResponse.json({

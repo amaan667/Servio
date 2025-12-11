@@ -96,7 +96,7 @@ export default function QuestionsClient({
 
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      
+
       // Use API endpoint instead of direct Supabase query to get properly mapped data
       const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
         credentials: "include",
@@ -107,31 +107,35 @@ export default function QuestionsClient({
       }
 
       const data = await response.json();
-      
+
       if (!data.success || !data.data?.questions) {
         throw new Error("Invalid response format");
       }
 
       // Ensure all questions have required fields with defaults
-      const transformedQuestions = (data.data.questions as FeedbackQuestion[]).map((q: FeedbackQuestion) => ({
-        ...q,
-        type: (q.type || "stars") as FeedbackType, // Ensure type is always valid
-        prompt: q.prompt || "Untitled Question", // Ensure prompt exists with fallback
-        is_active: q.is_active ?? true, // Default to active
-        sort_index: q.sort_index ?? 0, // Default sort_index
-        choices: q.choices || [], // Ensure choices is an array
-        created_at: q.created_at || new Date().toISOString(),
-        updated_at: q.updated_at || new Date().toISOString(),
-        venue_id: q.venue_id || venueId,
-      }));
+      const transformedQuestions = (data.data.questions as FeedbackQuestion[]).map(
+        (q: FeedbackQuestion) => ({
+          ...q,
+          type: (q.type || "stars") as FeedbackType, // Ensure type is always valid
+          prompt: q.prompt || "Untitled Question", // Ensure prompt exists with fallback
+          is_active: q.is_active ?? true, // Default to active
+          sort_index: q.sort_index ?? 0, // Default sort_index
+          choices: q.choices || [], // Ensure choices is an array
+          created_at: q.created_at || new Date().toISOString(),
+          updated_at: q.updated_at || new Date().toISOString(),
+          venue_id: q.venue_id || venueId,
+        })
+      );
 
       // Sort questions by sort_index and created_at to ensure proper order
-      const sortedQuestions = transformedQuestions.sort((a: FeedbackQuestion, b: FeedbackQuestion) => {
-        if (a.sort_index !== b.sort_index) {
-          return (a.sort_index || 0) - (b.sort_index || 0);
+      const sortedQuestions = transformedQuestions.sort(
+        (a: FeedbackQuestion, b: FeedbackQuestion) => {
+          if (a.sort_index !== b.sort_index) {
+            return (a.sort_index || 0) - (b.sort_index || 0);
+          }
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         }
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      });
+      );
 
       setQuestions(sortedQuestions);
       setTotalCount(data.data.totalCount || sortedQuestions.length);
@@ -216,7 +220,7 @@ export default function QuestionsClient({
       // Add venueId to query string to help withUnifiedAuth extract it
       const url = new URL("/api/feedback/questions", window.location.origin);
       url.searchParams.set("venueId", venueId);
-      
+
       const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
@@ -261,7 +265,7 @@ export default function QuestionsClient({
       } else {
         // Handle API error response format: { success: false, error: { message: "..." } }
         let errorMessage = "Couldn't save question";
-        
+
         // Check for error in standard API response format
         if (responseData?.error?.message) {
           errorMessage = responseData.error.message;
@@ -272,11 +276,11 @@ export default function QuestionsClient({
         } else if (!response.ok) {
           // If response is not ok, check status code
           if (response.status === 500) {
-          errorMessage = "Server error. Please try again or contact support.";
-        } else if (response.status === 403) {
-          errorMessage = "Permission denied. Please check your access.";
-        } else if (response.status === 400) {
-          errorMessage = "Invalid request. Please check your input.";
+            errorMessage = "Server error. Please try again or contact support.";
+          } else if (response.status === 403) {
+            errorMessage = "Permission denied. Please check your access.";
+          } else if (response.status === 400) {
+            errorMessage = "Invalid request. Please check your input.";
           } else if (response.status === 429) {
             errorMessage = "Too many requests. Please wait a moment and try again.";
           }
@@ -285,7 +289,8 @@ export default function QuestionsClient({
           errorMessage = responseData?.error?.message || "Failed to create question";
         } else if (response.ok && responseData.success && !responseData.data?.question) {
           // Response is ok and success is true, but missing question data
-          errorMessage = "Question created but response format is invalid. Please refresh the page.";
+          errorMessage =
+            "Question created but response format is invalid. Please refresh the page.";
         }
 
         // Use console.error for client-side debugging (logger is server-side)
@@ -304,12 +309,13 @@ export default function QuestionsClient({
       }
     } catch (error) {
       // Catch network errors or JSON parsing errors
-      const errorMessage = error instanceof Error 
-        ? `Network error: ${error.message}` 
-        : "Couldn't save question. Please check your connection and try again.";
-      
+      const errorMessage =
+        error instanceof Error
+          ? `Network error: ${error.message}`
+          : "Couldn't save question. Please check your connection and try again.";
+
       console.error("[QuestionsClient] Error creating question:", error);
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -347,7 +353,7 @@ export default function QuestionsClient({
       // Add venueId to query string to help withUnifiedAuth extract it
       const url = new URL("/api/feedback/questions", window.location.origin);
       url.searchParams.set("venueId", venueId);
-      
+
       const response = await fetch(url.toString(), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -540,7 +546,7 @@ export default function QuestionsClient({
       paragraph: { label: "Paragraph", variant: "outline" as const },
     };
     // Safety check: if type is invalid or missing, default to "stars"
-    const validType = (type && variants[type as FeedbackType]) ? (type as FeedbackType) : "stars";
+    const validType = type && variants[type as FeedbackType] ? (type as FeedbackType) : "stars";
     const config = variants[validType];
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
@@ -595,26 +601,32 @@ export default function QuestionsClient({
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground">{question.prompt || "Untitled Question"}</p>
+                          <p className="font-medium text-foreground">
+                            {question.prompt || "Untitled Question"}
+                          </p>
                           <div className="flex items-center gap-2 mt-1">
                             {getTypeBadge(question?.type)}
                             {getStatusBadge(question?.is_active ?? true)}
                           </div>
-                          {question?.type === "multiple_choice" && question?.choices && question.choices.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {question.choices.map((choice, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {choice}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                          {question?.type === "multiple_choice" &&
+                            question?.choices &&
+                            question.choices.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {question.choices.map((choice, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">
+                                    {choice}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleToggleActive(question.id, !(question?.is_active ?? true))}
+                            onClick={() =>
+                              handleToggleActive(question.id, !(question?.is_active ?? true))
+                            }
                             title={(question?.is_active ?? true) ? "Deactivate" : "Activate"}
                           >
                             {(question?.is_active ?? true) ? (

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 import { apiLogger as logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 /**
  * Check current subscription status and tier detection
@@ -20,7 +20,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     // Get user's organization
@@ -120,7 +120,9 @@ export async function GET() {
               const items = subscription.items.data.map((item) => {
                 const price = item.price;
                 const product =
-                  typeof price.product === "string" ? null : (price.product as Stripe.Product | null);
+                  typeof price.product === "string"
+                    ? null
+                    : (price.product as Stripe.Product | null);
 
                 return {
                   priceId: price.id,
@@ -165,7 +167,8 @@ export async function GET() {
               result.stripe.tierFromProductName = tierFromProductName;
 
               // Check if tier matches (normalize "standard" to "pro" for comparison)
-              const normalizedDbTier = org.subscription_tier === "standard" ? "pro" : org.subscription_tier;
+              const normalizedDbTier =
+                org.subscription_tier === "standard" ? "pro" : org.subscription_tier;
               result.match.tierMatches = normalizedDbTier === tierFromStripe;
               result.match.statusMatches = org.subscription_status === subscription.status;
             } catch (subError) {
@@ -173,7 +176,8 @@ export async function GET() {
                 error: subError instanceof Error ? subError.message : String(subError),
               });
               if (result.stripe) {
-                result.stripe.subscriptionError = subError instanceof Error ? subError.message : String(subError);
+                result.stripe.subscriptionError =
+                  subError instanceof Error ? subError.message : String(subError);
               }
             }
           } else {
@@ -186,7 +190,8 @@ export async function GET() {
 
             if (subscriptions.data.length > 0 && result.stripe) {
               // Get the most recent active subscription
-              const activeSubscription = subscriptions.data.find((s) => s.status === "active") || subscriptions.data[0];
+              const activeSubscription =
+                subscriptions.data.find((s) => s.status === "active") || subscriptions.data[0];
 
               if (activeSubscription) {
                 try {
@@ -198,7 +203,9 @@ export async function GET() {
                   const items = subscription.items.data.map((item) => {
                     const price = item.price;
                     const product =
-                      typeof price.product === "string" ? null : (price.product as Stripe.Product | null);
+                      typeof price.product === "string"
+                        ? null
+                        : (price.product as Stripe.Product | null);
 
                     return {
                       priceId: price.id,
@@ -243,7 +250,8 @@ export async function GET() {
                   result.stripe.tierFromProductName = tierFromProductName;
 
                   // Check if tier matches (normalize "standard" to "pro")
-                  const normalizedDbTier = org.subscription_tier === "standard" ? "pro" : org.subscription_tier;
+                  const normalizedDbTier =
+                    org.subscription_tier === "standard" ? "pro" : org.subscription_tier;
                   result.match.tierMatches = normalizedDbTier === tierFromStripe;
                   result.match.statusMatches = org.subscription_status === subscription.status;
 
@@ -258,7 +266,8 @@ export async function GET() {
                     error: subError instanceof Error ? subError.message : String(subError),
                   });
                   if (result.stripe) {
-                    result.stripe.subscriptionError = subError instanceof Error ? subError.message : String(subError);
+                    result.stripe.subscriptionError =
+                      subError instanceof Error ? subError.message : String(subError);
                   }
                   result.stripe.subscriptionsFound = subscriptions.data.map((sub) => ({
                     id: sub.id,
@@ -275,7 +284,8 @@ export async function GET() {
           error: customerError instanceof Error ? customerError.message : String(customerError),
         });
         result.stripe = {
-          customerError: customerError instanceof Error ? customerError.message : String(customerError),
+          customerError:
+            customerError instanceof Error ? customerError.message : String(customerError),
           tierFromStripe: "",
           tierFromMetadata: null,
           tierFromProductName: null,
@@ -305,4 +315,3 @@ export async function GET() {
     );
   }
 }
-

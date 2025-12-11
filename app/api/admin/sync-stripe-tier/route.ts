@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { getStripeClient } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 /**
  * Sync subscription tier from Stripe to database
@@ -21,7 +21,7 @@ export async function POST() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     // Admin role check
@@ -32,7 +32,7 @@ export async function POST() {
       .single();
 
     if (userRole?.role !== "admin" && userRole?.role !== "owner") {
-      return apiErrors.forbidden('Admin access required');
+      return apiErrors.forbidden("Admin access required");
     }
 
     logger.info("[SYNC STRIPE TIER] Request to sync tier from Stripe", {
@@ -48,7 +48,7 @@ export async function POST() {
       .limit(1);
 
     if (!venues || venues.length === 0) {
-      return apiErrors.notFound('No organization found');
+      return apiErrors.notFound("No organization found");
     }
 
     const organizationId = venues[0].organization_id;
@@ -61,7 +61,7 @@ export async function POST() {
       .single();
 
     if (!org) {
-      return apiErrors.notFound('Organization not found');
+      return apiErrors.notFound("Organization not found");
     }
 
     logger.info("[SYNC STRIPE TIER] Current database state", {
@@ -98,7 +98,7 @@ export async function POST() {
     });
 
     if (subscriptions.data.length === 0) {
-      return apiErrors.notFound('No Stripe subscription found');
+      return apiErrors.notFound("No Stripe subscription found");
     }
 
     // Get the active subscription (or most recent one)
@@ -155,7 +155,7 @@ export async function POST() {
 
     if (error) {
       logger.error("[SYNC STRIPE TIER] Database update failed", { error });
-      return apiErrors.internal('Failed to update database');
+      return apiErrors.internal("Failed to update database");
     }
 
     logger.info("[SYNC STRIPE TIER] ✅ Successfully synced tier from Stripe", {

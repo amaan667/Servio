@@ -221,7 +221,7 @@ export function ReceiptModal({
           {/* Receipt Content */}
           <div className="space-y-6 print:space-y-4">
             {/* Venue Info */}
-            <div 
+            <div
               className="text-center border-b pb-6 print:border-b-2 print:pb-8"
               style={{ borderBottomColor: primaryColor }}
             >
@@ -241,10 +241,7 @@ export function ReceiptModal({
             {/* Order Details */}
             <div className="bg-gray-50 p-4 rounded-lg print:bg-transparent print:p-0 print:border print:border-gray-200 print:rounded print:p-3">
               <div className="mb-3 pb-2 border-b border-gray-300 print:border-b-2">
-                <span 
-                  className="text-lg font-bold print:text-xl"
-                  style={{ color: primaryColor }}
-                >
+                <span className="text-lg font-bold print:text-xl" style={{ color: primaryColor }}>
                   Order #{getShortOrderNumber(order.id)}
                 </span>
               </div>

@@ -37,7 +37,11 @@ export function captureException(error: unknown, context?: Record<string, unknow
 /**
  * Capture message to Sentry
  */
-export function captureMessage(message: string, level: Sentry.SeverityLevel = "info", context?: Record<string, unknown>): void {
+export function captureMessage(
+  message: string,
+  level: Sentry.SeverityLevel = "info",
+  context?: Record<string, unknown>
+): void {
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     Sentry.captureMessage(message, {
       level,
@@ -51,7 +55,11 @@ export function captureMessage(message: string, level: Sentry.SeverityLevel = "i
 /**
  * Set user context for Sentry
  */
-export function setUserContext(userId: string, email?: string, metadata?: Record<string, unknown>): void {
+export function setUserContext(
+  userId: string,
+  email?: string,
+  metadata?: Record<string, unknown>
+): void {
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     Sentry.setUser({
       id: userId,
@@ -64,7 +72,12 @@ export function setUserContext(userId: string, email?: string, metadata?: Record
 /**
  * Add breadcrumb for debugging
  */
-export function addBreadcrumb(message: string, category: string, level: Sentry.SeverityLevel = "info", data?: Record<string, unknown>): void {
+export function addBreadcrumb(
+  message: string,
+  category: string,
+  level: Sentry.SeverityLevel = "info",
+  data?: Record<string, unknown>
+): void {
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     Sentry.addBreadcrumb({
       message,

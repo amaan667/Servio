@@ -48,36 +48,43 @@ export function useOrderCart() {
     }
   }, [venueSlug, tableNumber, CART_STORAGE_KEY]);
 
-  const addToCart = useCallback((item: MenuItem & { selectedModifiers?: Record<string, string[]>; modifierPrice?: number }) => {
-    setCart((prev) => {
-      // Check if item with same modifiers already exists
-      const existing = prev.find((cartItem) => {
-        if (cartItem.id !== item.id) return false;
-        // Compare modifiers
-        const cartModifiers = JSON.stringify(cartItem.selectedModifiers || {});
-        const itemModifiers = JSON.stringify(item.selectedModifiers || {});
-        return cartModifiers === itemModifiers;
-      });
+  const addToCart = useCallback(
+    (item: MenuItem & { selectedModifiers?: Record<string, string[]>; modifierPrice?: number }) => {
+      setCart((prev) => {
+        // Check if item with same modifiers already exists
+        const existing = prev.find((cartItem) => {
+          if (cartItem.id !== item.id) return false;
+          // Compare modifiers
+          const cartModifiers = JSON.stringify(cartItem.selectedModifiers || {});
+          const itemModifiers = JSON.stringify(item.selectedModifiers || {});
+          return cartModifiers === itemModifiers;
+        });
 
-      if (existing) {
-        return prev.map((cartItem) =>
-          cartItem.id === item.id && 
-          JSON.stringify(cartItem.selectedModifiers || {}) === JSON.stringify(item.selectedModifiers || {})
-            ? { 
-                ...cartItem, 
-                quantity: cartItem.quantity + 1 
-              } 
-            : cartItem
-        );
-      }
-      return [...prev, { 
-        ...item, 
-        quantity: 1,
-        selectedModifiers: item.selectedModifiers,
-        modifierPrice: item.modifierPrice || 0,
-      }];
-    });
-  }, []);
+        if (existing) {
+          return prev.map((cartItem) =>
+            cartItem.id === item.id &&
+            JSON.stringify(cartItem.selectedModifiers || {}) ===
+              JSON.stringify(item.selectedModifiers || {})
+              ? {
+                  ...cartItem,
+                  quantity: cartItem.quantity + 1,
+                }
+              : cartItem
+          );
+        }
+        return [
+          ...prev,
+          {
+            ...item,
+            quantity: 1,
+            selectedModifiers: item.selectedModifiers,
+            modifierPrice: item.modifierPrice || 0,
+          },
+        ];
+      });
+    },
+    []
+  );
 
   const removeFromCart = useCallback((itemId: string) => {
     setCart((prev) => prev.filter((item) => item.id !== itemId));

@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 export interface RouteConfig {
   requireAuth?: boolean;
   requireVenueAccess?: boolean;
-  rateLimit?: typeof RATE_LIMITS[keyof typeof RATE_LIMITS];
+  rateLimit?: (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS];
   public?: boolean; // For public routes like health checks
 }
 
@@ -19,7 +19,10 @@ export interface RouteConfig {
  * Wrap an API route handler with production-ready features
  */
 export function withProductionFeatures<T = unknown>(
-  handler: (req: NextRequest, context?: { userId: string; venueId?: string }) => Promise<NextResponse<T>>,
+  handler: (
+    req: NextRequest,
+    context?: { userId: string; venueId?: string }
+  ) => Promise<NextResponse<T>>,
   config: RouteConfig = {}
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
@@ -111,4 +114,3 @@ export function withProductionFeatures<T = unknown>(
     }
   };
 }
-

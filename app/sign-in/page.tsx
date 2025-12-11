@@ -46,8 +46,7 @@ function SignInPageContent() {
               localStorage.removeItem(key);
             }
           });
-        } catch (e) {
-        }
+        } catch (e) {}
       } else if (hasRefreshToken && !hasAccessToken && isOAuthCallback) {
         // OAuth callback detected with refresh token
       }

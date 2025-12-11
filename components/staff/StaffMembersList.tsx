@@ -1,7 +1,7 @@
 "use client";
 
 // Immediate logging when module loads
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   console.log("=".repeat(80));
   console.log("[STAFF MEMBERS LIST] Module loaded - component file executed");
   console.log("[STAFF MEMBERS LIST] Timestamp:", new Date().toISOString());
@@ -88,7 +88,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
     console.log("[ADD STAFF CLICK] Button clicked - starting add staff process");
     console.log("[ADD STAFF CLICK] Form data - name:", name, "role:", role);
     console.log("[ADD STAFF CLICK] Raw venueId:", venueId);
-    
+
     if (!name.trim()) {
       console.log("[ADD STAFF CLICK] VALIDATION FAILED - Name is empty");
       setError("Please enter a name");
@@ -103,14 +103,14 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       // Normalize venueId - ensure it has venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
       console.log("[ADD STAFF CLICK] Normalized venueId:", normalizedVenueId);
-      
+
       const url = new URL("/api/staff/add", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
       console.log("[ADD STAFF CLICK] API URL:", url.toString());
-      
+
       const requestBody = { venue_id: normalizedVenueId, name: name.trim(), role };
       console.log("[ADD STAFF CLICK] Request body:", JSON.stringify(requestBody, null, 2));
-      
+
       const requestStart = Date.now();
       const res = await fetch(url.toString(), {
         method: "POST",
@@ -128,7 +128,8 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       console.log("[ADD STAFF CLICK] Response data:", JSON.stringify(data, null, 2));
 
       if (!res.ok) {
-        const errorMessage = data.error?.message || data.error || data.message || "Failed to add staff member";
+        const errorMessage =
+          data.error?.message || data.error || data.message || "Failed to add staff member";
         console.error("[ADD STAFF CLICK] ERROR - API request failed:");
         console.error("[ADD STAFF CLICK] Status:", res.status);
         console.error("[ADD STAFF CLICK] Error message:", errorMessage);
@@ -149,9 +150,18 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       console.log("=".repeat(80));
     } catch (err) {
       console.error("[ADD STAFF CLICK] EXCEPTION - Unexpected error:");
-      console.error("[ADD STAFF CLICK] Exception type:", err instanceof Error ? err.constructor.name : typeof err);
-      console.error("[ADD STAFF CLICK] Exception message:", err instanceof Error ? err.message : String(err));
-      console.error("[ADD STAFF CLICK] Exception stack:", err instanceof Error ? err.stack : "no stack");
+      console.error(
+        "[ADD STAFF CLICK] Exception type:",
+        err instanceof Error ? err.constructor.name : typeof err
+      );
+      console.error(
+        "[ADD STAFF CLICK] Exception message:",
+        err instanceof Error ? err.message : String(err)
+      );
+      console.error(
+        "[ADD STAFF CLICK] Exception stack:",
+        err instanceof Error ? err.stack : "no stack"
+      );
       const errorMessage = err instanceof Error ? err.message : "Failed to add staff member";
       setError(errorMessage);
       console.log("=".repeat(80));
@@ -174,7 +184,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
       const url = new URL("/api/staff/delete", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
-      
+
       const res = await fetch(url.toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -185,14 +195,16 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error?.message || data.error || data.message || "Failed to delete staff member");
+        throw new Error(
+          data.error?.message || data.error || data.message || "Failed to delete staff member"
+        );
       }
 
       // Reload staff list
       if (onStaffAdded) {
         await onStaffAdded();
       }
-      
+
       setDeleteConfirmOpen(false);
       setStaffToDelete(null);
     } catch (err) {
@@ -422,7 +434,8 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
           <DialogHeader>
             <DialogTitle>Delete Staff Member</DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete {staffToDelete?.name}? This action cannot be undone.
+              Are you sure you want to permanently delete {staffToDelete?.name}? This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 mt-4">

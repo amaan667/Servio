@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getUserTier, hasAnalyticsExports } from "@/lib/tier-restrictions";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 interface StockMovement {
   created_at: string;
@@ -50,7 +50,7 @@ export const GET = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!venueId) {
-        return apiErrors.badRequest('venue_id is required');
+        return apiErrors.badRequest("venue_id is required");
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -71,31 +71,31 @@ export const GET = withUnifiedAuth(
       // STEP 6: Business logic
       const supabase = await createClient();
 
-    let query = supabase
-      .from("stock_ledgers")
-      .select(
-        `
+      let query = supabase
+        .from("stock_ledgers")
+        .select(
+          `
         *,
         ingredient:ingredients(name, unit),
         user:created_by(email)
       `
-      )
-      .eq("venue_id", venueId)
-      .order("created_at", { ascending: false });
+        )
+        .eq("venue_id", venueId)
+        .order("created_at", { ascending: false });
 
-    if (reason && reason !== "all") {
-      query = query.eq("reason", reason);
-    }
+      if (reason && reason !== "all") {
+        query = query.eq("reason", reason);
+      }
 
-    if (from) {
-      query = query.gte("created_at", from);
-    }
+      if (from) {
+        query = query.gte("created_at", from);
+      }
 
-    if (to) {
-      query = query.lte("created_at", to);
-    }
+      if (to) {
+        query = query.lte("created_at", to);
+      }
 
-    const { data, error } = await query;
+      const { data, error } = await query;
 
       if (error) {
         logger.error("[INVENTORY EXPORT MOVEMENTS] Error fetching movements:", {
@@ -138,16 +138,17 @@ export const GET = withUnifiedAuth(
         },
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[INVENTORY EXPORT MOVEMENTS] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -157,7 +158,7 @@ export const GET = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Internal Server Error",
@@ -179,6 +180,6 @@ export const GET = withUnifiedAuth(
       }
     },
     // CSV exports require Enterprise tier
-        requireFeature: "analytics",
+    requireFeature: "analytics",
   }
 );

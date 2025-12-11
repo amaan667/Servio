@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
@@ -11,30 +11,26 @@ export const runtime = "nodejs";
  * Print physical ticket for counter/table orders
  * Supports ESC/POS format for thermal printers
  */
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
 
-      const body = await req.json();
-      const { orderId, printerType = "thermal"  } = body;
-      const finalVenueId = context.venueId || body.venueId;
+    const body = await req.json();
+    const { orderId, printerType = "thermal" } = body;
+    const finalVenueId = context.venueId || body.venueId;
 
     if (!orderId || !finalVenueId) {
-      return NextResponse.json(
-        { error: "orderId and finalVenueId are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "orderId and finalVenueId are required" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
@@ -48,7 +44,7 @@ export const POST = withUnifiedAuth(
       .single();
 
     if (orderError || !order) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Get venue info
@@ -94,15 +90,14 @@ export const POST = withUnifiedAuth(
       format: printerType,
       note: "Ticket content generated. Integrate with printer API for physical printing.",
     });
-    } catch (error) {
-      logger.error("[TICKET PRINT] Error:", error);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Internal server error" },
-        { status: 500 }
-      );
-    }
+  } catch (error) {
+    logger.error("[TICKET PRINT] Error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
   }
-);
+});
 
 /**
  * Generate ESC/POS formatted ticket

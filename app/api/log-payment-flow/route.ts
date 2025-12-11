@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
     // Handle both 'data' and 'details' fields for backward compatibility
     const logDetails = data || details || {};
-    
+
     const logMessage = `[PAYMENT FLOW] ${event}`;
     const logData = {
       event,
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     // Use console.log/console.error directly so Railway captures it
     // Railway logs capture stdout/stderr
     const logString = `[${logData.timestamp}] ${logMessage} ${JSON.stringify(logData, null, 2)}`;
-    
+
     if (level === "error") {
       console.error(logString);
     } else if (level === "warn") {
@@ -35,7 +35,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     // Don't fail if logging fails, but log the error
-    console.error("[PAYMENT FLOW LOG] Failed to log:", error instanceof Error ? error.message : String(error));
+    console.error(
+      "[PAYMENT FLOW LOG] Failed to log:",
+      error instanceof Error ? error.message : String(error)
+    );
     return NextResponse.json({ ok: false });
   }
 }

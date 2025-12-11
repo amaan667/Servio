@@ -3,11 +3,11 @@ import { NextRequest } from "next/server";
 import { type SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createSupabaseClient, createAdminClient } from "@/lib/supabase";
 import { apiLogger, logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { validateBody, createOrderSchema } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { validateBody, createOrderSchema } from "@/lib/api/validation-schemas";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export const runtime = "nodejs";
@@ -77,10 +77,7 @@ export const GET = withUnifiedAuth(
       // CRITICAL: Bound query to prevent unbounded data fetches
       // Default limit: 100 orders (reasonable for pilot scale)
       // Max limit: 500 orders (hard cap to prevent abuse)
-      const limit = Math.min(
-        limitParam ? parseInt(limitParam, 10) : 100,
-        500
-      );
+      const limit = Math.min(limitParam ? parseInt(limitParam, 10) : 100, 500);
       const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
 
       // venueId comes from context (already verified by withUnifiedAuth)
@@ -114,14 +111,15 @@ export const GET = withUnifiedAuth(
 
       return success({ orders: orders || [] });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       apiLogger.error("[ORDERS GET] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
       });
-      
+
       return apiErrors.internal(
         "Failed to fetch orders",
         isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
@@ -177,7 +175,7 @@ type OrderPayload = {
 // Legacy helper - use apiErrors instead
 function bad(msg: string, status = 400, requestId?: string) {
   // Log error using structured logger (Railway captures via next.config.mjs)
-  logger.error(`[ORDERS API ${requestId || 'unknown'}] Error`, { msg, status, requestId });
+  logger.error(`[ORDERS API ${requestId || "unknown"}] Error`, { msg, status, requestId });
   if (status === 403) return apiErrors.forbidden(msg);
   if (status === 404) return apiErrors.notFound(msg);
   if (status === 500) return apiErrors.internal(msg);
@@ -187,7 +185,14 @@ function bad(msg: string, status = 400, requestId?: string) {
 // Wrapper function for backward compatibility
 async function createKDSTickets(
   supabase: SupabaseClient,
-  order: { id: string; venue_id: string; items?: Array<Record<string, unknown>>; customer_name?: string; table_number?: number | null; table_id?: string }
+  order: {
+    id: string;
+    venue_id: string;
+    items?: Array<Record<string, unknown>>;
+    customer_name?: string;
+    table_number?: number | null;
+    table_id?: string;
+  }
 ) {
   return createKDSTicketsWithAI(supabase, {
     id: order.id,
@@ -263,54 +268,54 @@ async function createKDSTickets(
  *               $ref: '#/components/schemas/Error'
  */
 export async function POST(req: NextRequest) {
-    const requestId = Math.random().toString(36).substring(7);
-    const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  const startTime = Date.now();
 
-    // Use logger.info for structured logging (Railway captures console.info via next.config.mjs)
-    logger.info(`[ORDERS API ${requestId}] NEW ORDER SUBMISSION`, {
-      timestamp: new Date().toISOString(),
+  // Use logger.info for structured logging (Railway captures console.info via next.config.mjs)
+  logger.info(`[ORDERS API ${requestId}] NEW ORDER SUBMISSION`, {
+    timestamp: new Date().toISOString(),
+    requestId,
+  });
+
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const body = (await req.json()) as Partial<OrderPayload>;
+
+    // Log received payload structure (for debugging 400 errors)
+    logger.info(`[ORDERS API ${requestId}] Received request body`, {
       requestId,
+      hasVenueId: !!body.venue_id,
+      hasCustomerName: !!body.customer_name,
+      hasCustomerPhone: !!body.customer_phone,
+      hasItems: Array.isArray(body.items),
+      itemsCount: Array.isArray(body.items) ? body.items.length : 0,
+      hasTotalAmount: typeof body.total_amount === "number",
+      totalAmount: body.total_amount,
+      tableNumber: body.table_number,
+      paymentMode: (body as { payment_mode?: string }).payment_mode,
+      paymentStatus: (body as { payment_status?: string }).payment_status,
+      orderStatus: (body as { order_status?: string }).order_status,
     });
 
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+    // Validate venue_id is provided
+    if (!body.venue_id) {
+      logger.error(`[ORDERS API ${requestId}] Missing venue_id in request`);
+      return apiErrors.badRequest("venue_id is required");
+    }
 
-      const body = (await req.json()) as Partial<OrderPayload>;
-      
-      // Log received payload structure (for debugging 400 errors)
-      logger.info(`[ORDERS API ${requestId}] Received request body`, {
-        requestId,
-        hasVenueId: !!body.venue_id,
-        hasCustomerName: !!body.customer_name,
-        hasCustomerPhone: !!body.customer_phone,
-        hasItems: Array.isArray(body.items),
-        itemsCount: Array.isArray(body.items) ? body.items.length : 0,
-        hasTotalAmount: typeof body.total_amount === "number",
-        totalAmount: body.total_amount,
-        tableNumber: body.table_number,
-        paymentMode: (body as { payment_mode?: string }).payment_mode,
-        paymentStatus: (body as { payment_status?: string }).payment_status,
-        orderStatus: (body as { order_status?: string }).order_status,
-      });
-      
-      // Validate venue_id is provided
-      if (!body.venue_id) {
-        logger.error(`[ORDERS API ${requestId}] Missing venue_id in request`);
-        return apiErrors.badRequest("venue_id is required");
-      }
-      
-      const venueId = body.venue_id;
+    const venueId = body.venue_id;
 
     // STEP 3: Validate input with Zod
     let validatedOrderBody: OrderPayload;
@@ -319,7 +324,7 @@ export async function POST(req: NextRequest) {
         ...body,
         venue_id: venueId, // Use venueId from context
       });
-      
+
       // Use validated body for rest of function
       validatedOrderBody = validatedBody as OrderPayload;
     } catch (validationError) {
@@ -331,12 +336,14 @@ export async function POST(req: NextRequest) {
             venue_id: body.venue_id,
             customer_name: body.customer_name,
             customer_phone: body.customer_phone,
-            items: Array.isArray(body.items) ? body.items.map((item: unknown) => ({
-              hasMenuItemId: !!(item as { menu_item_id?: unknown }).menu_item_id,
-              hasItemName: !!(item as { item_name?: unknown }).item_name,
-              hasQuantity: typeof (item as { quantity?: unknown }).quantity === "number",
-              hasPrice: typeof (item as { price?: unknown }).price === "number",
-            })) : "not an array",
+            items: Array.isArray(body.items)
+              ? body.items.map((item: unknown) => ({
+                  hasMenuItemId: !!(item as { menu_item_id?: unknown }).menu_item_id,
+                  hasItemName: !!(item as { item_name?: unknown }).item_name,
+                  hasQuantity: typeof (item as { quantity?: unknown }).quantity === "number",
+                  hasPrice: typeof (item as { price?: unknown }).price === "number",
+                }))
+              : "not an array",
             total_amount: body.total_amount,
           },
         });
@@ -344,7 +351,10 @@ export async function POST(req: NextRequest) {
       }
       logger.error(`[ORDERS API ${requestId}] Non-Zod validation error`, {
         error: validationError instanceof Error ? validationError.message : String(validationError),
-        errorType: validationError instanceof Error ? validationError.constructor.name : typeof validationError,
+        errorType:
+          validationError instanceof Error
+            ? validationError.constructor.name
+            : typeof validationError,
         requestId,
       });
       return apiErrors.validation("Invalid order data");
@@ -388,7 +398,7 @@ export async function POST(req: NextRequest) {
       .eq("venue_id", venueId)
       .maybeSingle();
 
-      if (venueErr) {
+    if (venueErr) {
       logger.error(`[ORDERS API ${requestId}] Venue lookup error`, { error: venueErr, requestId });
       return bad(`Failed to verify venue: ${venueErr.message}`, 500, requestId);
     }
@@ -411,7 +421,10 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (lookupError) {
-        logger.error(`[ORDERS API ${requestId}] Failed to check existing tables`, { error: lookupError.message, requestId });
+        logger.error(`[ORDERS API ${requestId}] Failed to check existing tables`, {
+          error: lookupError.message,
+          requestId,
+        });
         return bad(`Failed to check existing tables: ${lookupError.message}`, 500, requestId);
       }
 
@@ -466,11 +479,17 @@ export async function POST(req: NextRequest) {
             if (existingTableAfterError) {
               tableId = existingTableAfterError.id;
             } else {
-              logger.error(`[ORDERS API ${requestId}] Failed to create table`, { error: tableCreateErr.message, requestId });
+              logger.error(`[ORDERS API ${requestId}] Failed to create table`, {
+                error: tableCreateErr.message,
+                requestId,
+              });
               return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
             }
           } else {
-            logger.error(`[ORDERS API ${requestId}] Failed to create table`, { error: tableCreateErr.message, requestId });
+            logger.error(`[ORDERS API ${requestId}] Failed to create table`, {
+              error: tableCreateErr.message,
+              requestId,
+            });
             return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
           }
         } else {
@@ -531,7 +550,8 @@ export async function POST(req: NextRequest) {
 
     // Use the source provided by the client (determined from URL parameters)
     // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
-    const orderSource = ((body as { source?: "qr" | "counter" }).source) || "qr" as "qr" | "counter"; // Default to 'qr' if not provided
+    const orderSource =
+      (body as { source?: "qr" | "counter" }).source || ("qr" as "qr" | "counter"); // Default to 'qr' if not provided
 
     const payload: OrderPayload = {
       venue_id: venueId,
@@ -542,15 +562,31 @@ export async function POST(req: NextRequest) {
       items: safeItems,
       total_amount: finalTotal,
       notes: (body as { notes?: string }).notes ?? null,
-      order_status: ((body as { order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED" }).order_status) || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
-      payment_status: ((body as { payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED" }).payment_status) || "UNPAID", // Use provided status or default to 'UNPAID'
+      order_status:
+        (
+          body as {
+            order_status?:
+              | "PLACED"
+              | "ACCEPTED"
+              | "IN_PREP"
+              | "READY"
+              | "SERVING"
+              | "COMPLETED"
+              | "CANCELLED"
+              | "REFUNDED";
+          }
+        ).order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
+      payment_status:
+        (body as { payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED" }).payment_status ||
+        "UNPAID", // Use provided status or default to 'UNPAID'
       payment_mode: validatedOrderBody.payment_mode || "online", // New field for payment mode
       payment_method: (() => {
-        const method = ((body as { payment_method?: string }).payment_method);
+        const method = (body as { payment_method?: string }).payment_method;
         // Map old values to standardized values
         if (!method) return "PAY_NOW"; // Default fallback
         const upperMethod = (method || "").toUpperCase();
-        if (upperMethod === "DEMO" || upperMethod === "STRIPE" || upperMethod === "PAY_NOW") return "PAY_NOW";
+        if (upperMethod === "DEMO" || upperMethod === "STRIPE" || upperMethod === "PAY_NOW")
+          return "PAY_NOW";
         if (upperMethod === "TILL" || upperMethod === "PAY_AT_TILL") return "PAY_AT_TILL";
         if (upperMethod === "LATER" || upperMethod === "PAY_LATER") return "PAY_LATER";
         return "PAY_NOW"; // Default fallback
@@ -625,7 +661,8 @@ export async function POST(req: NextRequest) {
       table_id: payload.table_id ?? null,
       customer_name: payload.customer_name,
       customer_phone: payload.customer_phone,
-      customer_email: (validatedOrderBody as { customer_email?: string | null }).customer_email ?? null, // Include customer_email if provided
+      customer_email:
+        (validatedOrderBody as { customer_email?: string | null }).customer_email ?? null, // Include customer_email if provided
       items: payload.items,
       total_amount: payload.total_amount,
       notes: payload.notes ?? null,
@@ -647,9 +684,9 @@ export async function POST(req: NextRequest) {
       created_at: now,
       updated_at: now,
     };
-    
+
     // Remove undefined fields (they break JSON serialization)
-    Object.keys(cleanPayload).forEach(key => {
+    Object.keys(cleanPayload).forEach((key) => {
       if (cleanPayload[key] === undefined) {
         delete cleanPayload[key];
       }
@@ -675,7 +712,10 @@ export async function POST(req: NextRequest) {
       created_at: cleanPayload.created_at,
       updated_at: cleanPayload.updated_at,
     });
-    logger.debug("[ORDER CREATION DEBUG] Full cleaned payload", { payload: cleanPayload, requestId });
+    logger.debug("[ORDER CREATION DEBUG] Full cleaned payload", {
+      payload: cleanPayload,
+      requestId,
+    });
 
     const { data: inserted, error: insertErr } = await supabase
       .from("orders")
@@ -796,7 +836,10 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (fetchError || !fetchedOrder) {
-        logger.error(`[ORDERS API ${requestId}] Order creation failed: No order data returned from database`, { fetchError, requestId });
+        logger.error(
+          `[ORDERS API ${requestId}] Order creation failed: No order data returned from database`,
+          { fetchError, requestId }
+        );
         return bad("Order creation failed: No order data returned from database", 500, requestId);
       }
 
@@ -861,30 +904,30 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(response);
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      const duration = Date.now() - startTime;
+  } catch (_error) {
+    const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+    const errorStack = _error instanceof Error ? _error.stack : undefined;
+    const duration = Date.now() - startTime;
 
-      logger.error(`[ORDERS API ${requestId}] ORDER CREATION FAILED`, {
-        error: errorMessage,
-        stack: errorStack,
-        duration: `${duration}ms`,
-        requestId,
-      });
+    logger.error(`[ORDERS API ${requestId}] ORDER CREATION FAILED`, {
+      error: errorMessage,
+      stack: errorStack,
+      duration: `${duration}ms`,
+      requestId,
+    });
 
-      // Check if it's an authentication/authorization error
-      if (errorMessage.includes("Unauthorized")) {
-        return apiErrors.unauthorized(errorMessage);
-      }
-      if (errorMessage.includes("Forbidden")) {
-        return apiErrors.forbidden(errorMessage);
-      }
-
-      // Return generic error in production, detailed in development
-      return apiErrors.internal(
-        "Failed to create order",
-        isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
-      );
+    // Check if it's an authentication/authorization error
+    if (errorMessage.includes("Unauthorized")) {
+      return apiErrors.unauthorized(errorMessage);
     }
+    if (errorMessage.includes("Forbidden")) {
+      return apiErrors.forbidden(errorMessage);
+    }
+
+    // Return generic error in production, detailed in development
+    return apiErrors.internal(
+      "Failed to create order",
+      isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
+    );
+  }
 }

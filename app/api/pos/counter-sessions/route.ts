@@ -3,8 +3,8 @@ import { createServerSupabase } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -12,9 +12,7 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -54,10 +52,7 @@ export const GET = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {
@@ -79,9 +74,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -96,7 +89,9 @@ export const POST = withUnifiedAuth(
       }
 
       if (action === "start" && (!counter_number || !customer_name)) {
-        return apiErrors.badRequest("counter_number and customer_name are required for start action");
+        return apiErrors.badRequest(
+          "counter_number and customer_name are required for start action"
+        );
       }
 
       // STEP 4: Business logic
@@ -176,10 +171,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {
@@ -187,9 +179,11 @@ export const POST = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         const body = await req.json().catch(() => ({}));
-        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
-               (body as { venue_id?: string; venueId?: string })?.venueId || 
-               null;
+        return (
+          (body as { venue_id?: string; venueId?: string })?.venue_id ||
+          (body as { venue_id?: string; venueId?: string })?.venueId ||
+          null
+        );
       } catch {
         return null;
       }

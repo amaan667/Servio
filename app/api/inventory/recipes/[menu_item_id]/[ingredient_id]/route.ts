@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 // DELETE /api/inventory/recipes/[menu_item_id]/[ingredient_id]
 // Remove a single ingredient from a recipe
@@ -23,7 +23,7 @@ export async function DELETE(
       logger.error("[INVENTORY API] Error deleting recipe ingredient:", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
-      return apiErrors.internal(error.message || 'Internal server error');
+      return apiErrors.internal(error.message || "Internal server error");
     }
 
     return NextResponse.json({ success: true });
@@ -31,6 +31,6 @@ export async function DELETE(
     logger.error("[INVENTORY API] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

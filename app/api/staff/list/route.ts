@@ -1,12 +1,12 @@
-import { NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { logger } from '@/lib/logger';
+import { NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 /**
  * Get staff list for a venue
@@ -19,9 +19,7 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate venueId
@@ -33,12 +31,12 @@ export const GET = withUnifiedAuth(
       // Use authenticated client that respects RLS (not admin client)
       // RLS policies ensure users can only access staff for venues they have access to
       const supabase = await createClient();
-      
+
       // Normalize venueId - database stores with venue- prefix
-      const normalizedVenueId = context.venueId.startsWith("venue-") 
-        ? context.venueId 
+      const normalizedVenueId = context.venueId.startsWith("venue-")
+        ? context.venueId
         : `venue-${context.venueId}`;
-      
+
       const { data: staff, error } = await supabase
         .from("staff")
         .select("*")
@@ -78,10 +76,7 @@ export const GET = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {

@@ -1,54 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env } from '@/lib/env';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env } from "@/lib/env";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
 // GET /api/staff/invitations - List invitations for a venue (Requires auth)
-export const GET = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit();
+export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return apiErrors.rateLimit();
     }
 
-      // Get venueId from context
-      const venueId = context.venueId;
-      
-      if (!venueId) {
-        return apiErrors.badRequest("venue_id is required");
-      }
+    // Get venueId from context
+    const venueId = context.venueId;
 
-      // Fetch invitations
-      const supabase = createAdminClient();
-      const { data: invitations, error: fetchError } = await supabase
-        .from("staff_invitations")
-        .select("*")
-        .eq("venue_id", venueId)
-        .order("created_at", { ascending: false });
-
-      if (fetchError) {
-        logger.error("[STAFF INVITATIONS] Error fetching invitations:", {
-          error: fetchError.message,
-          venueId,
-          userId: context.user.id,
-        });
-        return apiErrors.database("Failed to fetch invitations");
-      }
-
-      return success({ invitations: invitations || [] });
-    } catch (error) {
-      logger.error("[STAFF INVITATIONS] Unexpected error:", error);
-      return apiErrors.internal('Internal server error');
+    if (!venueId) {
+      return apiErrors.badRequest("venue_id is required");
     }
+
+    // Fetch invitations
+    const supabase = createAdminClient();
+    const { data: invitations, error: fetchError } = await supabase
+      .from("staff_invitations")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false });
+
+    if (fetchError) {
+      logger.error("[STAFF INVITATIONS] Error fetching invitations:", {
+        error: fetchError.message,
+        venueId,
+        userId: context.user.id,
+      });
+      return apiErrors.database("Failed to fetch invitations");
+    }
+
+    return success({ invitations: invitations || [] });
+  } catch (error) {
+    logger.error("[STAFF INVITATIONS] Unexpected error:", error);
+    return apiErrors.internal("Internal server error");
   }
-);
+});
 
 // POST /api/staff/invitations - Create invitation (Requires auth)
 export async function POST(_request: NextRequest) {
@@ -59,7 +57,7 @@ export async function POST(_request: NextRequest) {
 
     if (!user) {
       logger.warn("[STAFF INVITATION POST] Unauthorized - no user session");
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     const body = await _request.json();
@@ -97,7 +95,7 @@ export async function POST(_request: NextRequest) {
 
     if (venueError || !venue) {
       logger.error("[STAFF INVITATION POST] Venue not found", venueError);
-      return apiErrors.notFound('Venue not found');
+      return apiErrors.notFound("Venue not found");
     }
 
     const isVenueOwner = venue.owner_user_id === user.id;
@@ -225,14 +223,14 @@ export async function POST(_request: NextRequest) {
         );
       }
 
-      return apiErrors.internal('Internal server error');
+      return apiErrors.internal("Internal server error");
     }
 
     // Send invitation email via Resend
-    const inviteLink = `${env('NEXT_PUBLIC_APP_URL')}/accept-invite/${token}`;
+    const inviteLink = `${env("NEXT_PUBLIC_APP_URL")}/accept-invite/${token}`;
 
     try {
-      const resendApiKey = env('RESEND_API_KEY');
+      const resendApiKey = env("RESEND_API_KEY");
       if (!resendApiKey) {
         logger.error("[STAFF INVITATION] RESEND_API_KEY not configured");
         throw new Error("Email service not configured");
@@ -295,7 +293,7 @@ export async function POST(_request: NextRequest) {
     }
   } catch (error) {
     logger.error("[STAFF INVITATION POST] Unexpected error:", error);
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
 
@@ -308,7 +306,7 @@ export async function DELETE(_request: NextRequest) {
 
     if (!user) {
       logger.warn("[STAFF INVITATIONS DELETE] Unauthorized - no user session");
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     const body = await _request.json();
@@ -343,7 +341,7 @@ export async function DELETE(_request: NextRequest) {
     }
 
     if (!isVenueOwner && !hasPermission) {
-      return apiErrors.forbidden('Forbidden');
+      return apiErrors.forbidden("Forbidden");
     }
 
     // Delete the invitation
@@ -355,12 +353,12 @@ export async function DELETE(_request: NextRequest) {
 
     if (error) {
       logger.error("[STAFF INVITATIONS] Delete error:", error);
-      return apiErrors.internal(error.message || 'Internal server error');
+      return apiErrors.internal(error.message || "Internal server error");
     }
 
     return success({});
   } catch (error) {
     logger.error("[STAFF INVITATIONS] DELETE unexpected error:", error);
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

@@ -1,5 +1,5 @@
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect } from "react";
 
 /**
  * Hook for intelligent prefetching of routes and data
@@ -8,23 +8,29 @@ import { useCallback, useEffect } from 'react';
 export function usePrefetch() {
   const router = useRouter();
 
-  const prefetchRoute = useCallback((href: string) => {
-    if (typeof window !== 'undefined') {
-      router.prefetch(href);
-    }
-  }, [router]);
+  const prefetchRoute = useCallback(
+    (href: string) => {
+      if (typeof window !== "undefined") {
+        router.prefetch(href);
+      }
+    },
+    [router]
+  );
 
-  const prefetchOnHover = useCallback((href: string) => {
-    const handleMouseEnter = () => {
-      prefetchRoute(href);
-    };
+  const prefetchOnHover = useCallback(
+    (href: string) => {
+      const handleMouseEnter = () => {
+        prefetchRoute(href);
+      };
 
-    return handleMouseEnter;
-  }, [prefetchRoute]);
+      return handleMouseEnter;
+    },
+    [prefetchRoute]
+  );
 
   return {
     prefetchRoute,
-    prefetchOnHover
+    prefetchOnHover,
   };
 }
 
@@ -43,12 +49,12 @@ export function useDashboardPrefetch(venueId: string) {
       `/dashboard/${venueId}/menu-management`,
       `/dashboard/${venueId}/live-orders`,
       `/dashboard/${venueId}/analytics`,
-      `/dashboard/${venueId}/staff`
+      `/dashboard/${venueId}/staff`,
     ];
 
     // Prefetch routes after a short delay to not block initial load
     const timeoutId = setTimeout(() => {
-      routesToPrefetch.forEach(route => {
+      routesToPrefetch.forEach((route) => {
         prefetchRoute(route);
       });
     }, 2000);

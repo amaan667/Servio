@@ -3,29 +3,28 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
 
-      const user = context.user;
-      const { createAdminClient } = await import("@/lib/supabase");
-      const supabase = createAdminClient();
+    const user = context.user;
+    const { createAdminClient } = await import("@/lib/supabase");
+    const supabase = createAdminClient();
 
     // Check if staff_invitations table already exists
     const { error: invitationsError } = await supabase
@@ -121,18 +120,17 @@ export const POST = withUnifiedAuth(
         "Invited staff will receive email invitations to join your venue",
       ],
     });
-    } catch (_error) {
-      logger.error("[STAFF INVITATION SETUP] Error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to set up staff invitation system",
-          details: _error instanceof Error ? _error.message : "Unknown _error",
-        },
-        { status: 500 }
-      );
-    }
+  } catch (_error) {
+    logger.error("[STAFF INVITATION SETUP] Error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to set up staff invitation system",
+        details: _error instanceof Error ? _error.message : "Unknown _error",
+      },
+      { status: 500 }
+    );
   }
-);
+});

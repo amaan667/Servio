@@ -9,7 +9,7 @@ export default async function AichatPage({ params }: { params: { venueId: string
     requireFeature: "aiAssistant",
   }).catch(() => null);
 
-  const hasAIAccess = (auth?.hasFeatureAccess("aiAssistant") ?? false);
+  const hasAIAccess = auth?.hasFeatureAccess("aiAssistant") ?? false;
 
   return (
     <AichatClientPage

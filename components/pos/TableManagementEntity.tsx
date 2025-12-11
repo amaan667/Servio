@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Clock, 
-  CreditCard, 
-  Receipt, 
-  Table, 
-  CheckCircle, 
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  Clock,
+  CreditCard,
+  Receipt,
+  Table,
+  CheckCircle,
   AlertTriangle,
   Plus,
   Minus,
@@ -18,18 +18,18 @@ import {
   ArrowRight,
   User,
   Timer,
-  DollarSign
-} from 'lucide-react';
+  DollarSign,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 import {
   Select,
@@ -37,7 +37,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 interface TableEntity {
   table_id: string;
@@ -81,8 +81,8 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
   const [showSeatDialog, setShowSeatDialog] = useState(false);
   const [selectedTable, setSelectedTable] = useState<TableEntity | null>(null);
   const [guestCount, setGuestCount] = useState(1);
-  const [serverId, setServerId] = useState('');
-  const [notes, setNotes] = useState('');
+  const [serverId, setServerId] = useState("");
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     fetchEntities();
@@ -91,11 +91,11 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
   const fetchEntities = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch tables and counters in parallel
       const [tablesResponse, countersResponse] = await Promise.all([
         fetch(`/api/pos/table-sessions?venue_id=${venueId}`),
-        fetch(`/api/pos/counter-sessions?venue_id=${venueId}`)
+        fetch(`/api/pos/counter-sessions?venue_id=${venueId}`),
       ]);
 
       if (tablesResponse.ok) {
@@ -118,17 +118,17 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
     if (!selectedTable) return;
 
     try {
-      const response = await fetch('/api/pos/table-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/pos/table-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venue_id: venueId,
           table_id: selectedTable.table_id,
-          action: 'seat_party',
+          action: "seat_party",
           server_id: serverId,
           guest_count: guestCount,
-          notes
-        })
+          notes,
+        }),
       });
 
       if (response.ok) {
@@ -143,14 +143,14 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
 
   const handleTableAction = async (table: TableEntity, action: string) => {
     try {
-      const response = await fetch('/api/pos/table-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/pos/table-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venue_id: venueId,
           table_id: table.table_id,
-          action
-        })
+          action,
+        }),
       });
 
       if (response.ok) {
@@ -163,23 +163,35 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'FREE': return 'bg-green-100 text-green-800';
-      case 'OCCUPIED': return 'bg-blue-100 text-blue-800';
-      case 'AWAITING_PAYMENT': return 'bg-yellow-100 text-yellow-800';
-      case 'CLEANING': return 'bg-orange-100 text-orange-800';
-      case 'RESERVED': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "FREE":
+        return "bg-green-100 text-green-800";
+      case "OCCUPIED":
+        return "bg-blue-100 text-blue-800";
+      case "AWAITING_PAYMENT":
+        return "bg-yellow-100 text-yellow-800";
+      case "CLEANING":
+        return "bg-orange-100 text-orange-800";
+      case "RESERVED":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'FREE': return <CheckCircle className="h-4 w-4" />;
-      case 'OCCUPIED': return <Users className="h-4 w-4" />;
-      case 'AWAITING_PAYMENT': return <CreditCard className="h-4 w-4" />;
-      case 'CLEANING': return <AlertTriangle className="h-4 w-4" />;
-      case 'RESERVED': return <Clock className="h-4 w-4" />;
-      default: return <Table className="h-4 w-4" />;
+      case "FREE":
+        return <CheckCircle className="h-4 w-4" />;
+      case "OCCUPIED":
+        return <Users className="h-4 w-4" />;
+      case "AWAITING_PAYMENT":
+        return <CreditCard className="h-4 w-4" />;
+      case "CLEANING":
+        return <AlertTriangle className="h-4 w-4" />;
+      case "RESERVED":
+        return <Clock className="h-4 w-4" />;
+      default:
+        return <Table className="h-4 w-4" />;
     }
   };
 
@@ -188,7 +200,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 60) {
       return `${diffMins}m`;
     } else {
@@ -199,10 +211,10 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
 
   const getPaymentModeIcons = (paymentModeMix: Record<string, number>) => {
     const icons = [];
-    if (paymentModeMix.online) icons.push('💳');
-    if (paymentModeMix.pay_at_till) icons.push('💰');
-    if (paymentModeMix.pay_later) icons.push('⏰');
-    return icons.join(' ');
+    if (paymentModeMix.online) icons.push("💳");
+    if (paymentModeMix.pay_at_till) icons.push("💰");
+    if (paymentModeMix.pay_later) icons.push("⏰");
+    return icons.join(" ");
   };
 
   if (loading) {
@@ -217,7 +229,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
           <Table className="h-6 w-6" />
           Tables ({tables.length})
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {tables.map((table) => (
             <Card key={table.table_id} className="hover:shadow-md transition-shadow">
@@ -233,7 +245,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                   {table.area} • {table.seat_count} seats
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-3">
                 {/* Session Info */}
                 {table.session_id && (
@@ -278,10 +290,13 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2 pt-2">
                   {!table.session_id ? (
-                    <Dialog open={showSeatDialog && selectedTable?.table_id === table.table_id} onOpenChange={(open) => {
-                      setShowSeatDialog(open);
-                      if (open) setSelectedTable(table);
-                    }}>
+                    <Dialog
+                      open={showSeatDialog && selectedTable?.table_id === table.table_id}
+                      onOpenChange={(open) => {
+                        setShowSeatDialog(open);
+                        if (open) setSelectedTable(table);
+                      }}
+                    >
                       <DialogTrigger asChild>
                         <Button size="sm" className="flex-1">
                           <Plus className="h-4 w-4 mr-1" />
@@ -333,18 +348,18 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                     </Dialog>
                   ) : (
                     <>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => handleTableAction(table, 'close_tab')}
+                        onClick={() => handleTableAction(table, "close_tab")}
                       >
                         <Receipt className="h-4 w-4 mr-1" />
                         Close Tab
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => handleTableAction(table, 'mark_cleaning')}
+                        onClick={() => handleTableAction(table, "mark_cleaning")}
                       >
                         <AlertTriangle className="h-4 w-4 mr-1" />
                         Cleaning
@@ -364,7 +379,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
           <Receipt className="h-6 w-6" />
           Counters ({counters.length})
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {counters.map((counter) => (
             <Card key={counter.counter_id} className="hover:shadow-md transition-shadow">
@@ -376,11 +391,9 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                     <span className="ml-1">{counter.session_status}</span>
                   </Badge>
                 </div>
-                <div className="text-sm text-gray-900">
-                  {counter.area}
-                </div>
+                <div className="text-sm text-gray-900">{counter.area}</div>
               </CardHeader>
-              
+
               <CardContent className="space-y-3">
                 {/* Session Info */}
                 {counter.session_id && (
@@ -418,10 +431,12 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
                       Open Session
                     </Button>
                   ) : (
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
-                      onClick={() => {/* Handle close session */}}
+                      onClick={() => {
+                        /* Handle close session */
+                      }}
                     >
                       <Receipt className="h-4 w-4 mr-1" />
                       Close Session

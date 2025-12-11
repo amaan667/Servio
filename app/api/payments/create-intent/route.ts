@@ -2,13 +2,13 @@ import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody } from '@/lib/api/validation-schemas';
-import { getCorrelationIdFromRequest } from '@/lib/middleware/correlation-id';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody } from "@/lib/api/validation-schemas";
+import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 
 export const runtime = "nodejs";
 
@@ -16,13 +16,17 @@ const createIntentSchema = z.object({
   cartId: z.string().min(1, "Cart ID is required"),
   venueId: z.string().uuid("Invalid venue ID").optional(),
   tableNumber: z.number().int().positive("Table number must be positive"),
-  items: z.array(z.object({
-    id: z.string().uuid(),
-    name: z.string().min(1),
-    price: z.number().positive(),
-    quantity: z.number().int().positive(),
-    specialInstructions: z.string().optional(),
-  })).min(1, "At least one item is required"),
+  items: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1),
+        price: z.number().positive(),
+        quantity: z.number().int().positive(),
+        specialInstructions: z.string().optional(),
+      })
+    )
+    .min(1, "At least one item is required"),
   totalAmount: z.number().int().positive().min(50, "Amount too small (minimum £0.50)"),
   customerName: z.string().min(1).max(100),
   customerPhone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
@@ -32,14 +36,12 @@ const createIntentSchema = z.object({
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     const correlationId = getCorrelationIdFromRequest(req);
-    
+
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate input
@@ -51,15 +53,8 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 3: Business logic
-      const {
-        cartId,
-        tableNumber,
-        items,
-        totalAmount,
-        customerName,
-        customerPhone,
-        receiptEmail,
-      } = body;
+      const { cartId, tableNumber, items, totalAmount, customerName, customerPhone, receiptEmail } =
+        body;
 
       // Cart data stored in metadata
       const itemsSummary = items.map((item) => `${item.name} x${item.quantity}`).join(", ");
@@ -133,9 +128,11 @@ export const POST = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         const body = await req.json().catch(() => ({}));
-        return (body as { venueId?: string; venue_id?: string })?.venueId || 
-               (body as { venueId?: string; venue_id?: string })?.venue_id || 
-               null;
+        return (
+          (body as { venueId?: string; venue_id?: string })?.venueId ||
+          (body as { venueId?: string; venue_id?: string })?.venue_id ||
+          null
+        );
       } catch {
         return null;
       }

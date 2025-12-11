@@ -228,8 +228,8 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           <>
             <VenueSettingsClient
               user={data.user as User}
-              venue={data.venue as unknown as import('./hooks/useVenueSettings').Venue}
-              venues={data.venues as unknown as import('./hooks/useVenueSettings').Venue[]}
+              venue={data.venue as unknown as import("./hooks/useVenueSettings").Venue}
+              venues={data.venues as unknown as import("./hooks/useVenueSettings").Venue[]}
               organization={data.organization as Organization | undefined}
               isOwner={data.isOwner}
             />

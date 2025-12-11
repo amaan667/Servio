@@ -8,7 +8,7 @@ interface QuickAction {
   href: string;
   icon: LucideIcon;
   description?: string;
-  variant?: 'default' | 'outline' | 'ghost';
+  variant?: "default" | "outline" | "ghost";
 }
 
 interface QuickActionCardProps {
@@ -30,7 +30,7 @@ export function QuickActionCard({ title, actions }: QuickActionCardProps) {
               <Button
                 key={index}
                 asChild
-                variant={action.variant || 'outline'}
+                variant={action.variant || "outline"}
                 className="justify-start h-auto py-3 px-4 hover:shadow-md transition-shadow"
               >
                 <Link href={action.href}>
@@ -50,4 +50,3 @@ export function QuickActionCard({ title, actions }: QuickActionCardProps) {
     </Card>
   );
 }
-

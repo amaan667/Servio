@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
-import { env, isDevelopment } from '@/lib/env';
-import { apiErrors } from '@/lib/api/standard-response';
+import { env, isDevelopment } from "@/lib/env";
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const dynamic = "force-dynamic";
 export const runtime = "edge";
@@ -17,14 +17,14 @@ export async function GET(req: NextRequest) {
   try {
     // STEP 1: CRON_SECRET authentication (special auth for cron jobs)
     const authHeader = req.headers.get("authorization");
-    const expectedSecret = env('CRON_SECRET') || "demo-reset-secret";
+    const expectedSecret = env("CRON_SECRET") || "demo-reset-secret";
 
     if (authHeader !== `Bearer ${expectedSecret}`) {
       logger.warn("[DEMO RESET CRON] Unauthorized cron request", {
         hasHeader: !!authHeader,
         expectedPrefix: "Bearer",
       });
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     // STEP 3: Parse request
@@ -78,12 +78,12 @@ export async function GET(req: NextRequest) {
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
-    
+
     logger.error("[DEMO RESET CRON] Unexpected error:", {
       error: errorMessage,
       stack: errorStack,
     });
-    
+
     return NextResponse.json(
       {
         success: false,

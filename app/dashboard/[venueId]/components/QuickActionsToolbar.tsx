@@ -2,7 +2,20 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { LucideIcon, Clock, ShoppingBag, QrCode, BarChart, ChefHat, HelpCircle, MoreVertical, Lightbulb, Bug, MessageSquare, Settings } from "lucide-react";
+import {
+  LucideIcon,
+  Clock,
+  ShoppingBag,
+  QrCode,
+  BarChart,
+  ChefHat,
+  HelpCircle,
+  MoreVertical,
+  Lightbulb,
+  Bug,
+  MessageSquare,
+  Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import RoleManagementPopup from "@/components/role-management-popup";

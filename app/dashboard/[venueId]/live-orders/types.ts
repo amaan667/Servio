@@ -17,13 +17,24 @@ export interface Order {
   total_amount: number;
   created_at: string;
   updated_at?: string;
-  order_status: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'SERVED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED';
+  order_status:
+    | "PLACED"
+    | "ACCEPTED"
+    | "IN_PREP"
+    | "READY"
+    | "OUT_FOR_DELIVERY"
+    | "SERVING"
+    | "SERVED"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "REFUNDED"
+    | "EXPIRED";
   payment_status?: string;
   payment_method?: string;
   notes?: string;
   scheduled_for?: string;
   prep_lead_minutes?: number;
-  source?: 'qr' | 'counter';
+  source?: "qr" | "counter";
   table_label?: string;
   counter_label?: string;
   table?: { is_configured: boolean } | null;
@@ -37,4 +48,3 @@ export interface LiveOrdersClientProps {
 export interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
-

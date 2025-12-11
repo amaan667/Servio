@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -11,9 +11,7 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get user from context (already verified)
@@ -40,22 +38,23 @@ export const GET = withUnifiedAuth(
       // STEP 7: Return success response
       return success({ profile });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[USER PROFILE GET] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
       }
       if (errorMessage.includes("Forbidden")) {
         return apiErrors.forbidden(errorMessage);
       }
-      
+
       return apiErrors.internal(
         isDevelopment() ? errorMessage : "Request processing failed",
         isDevelopment() && errorStack ? { stack: errorStack } : undefined
@@ -74,9 +73,7 @@ export const PUT = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get user from context (already verified)
@@ -103,22 +100,23 @@ export const PUT = withUnifiedAuth(
         },
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[USER PROFILE PUT] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
       }
       if (errorMessage.includes("Forbidden")) {
         return apiErrors.forbidden(errorMessage);
       }
-      
+
       return apiErrors.internal(
         isDevelopment() ? errorMessage : "Request processing failed",
         isDevelopment() && errorStack ? { stack: errorStack } : undefined

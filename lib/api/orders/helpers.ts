@@ -25,7 +25,7 @@ interface Order {
 
 /**
  * Create KDS (Kitchen Display System) tickets for an order
- * 
+ *
  * This is a re-export of the unified AI-based implementation.
  * All KDS ticket creation now uses AI for station assignment.
  */
@@ -60,7 +60,7 @@ export async function ensureTableExists(
       label: `Table ${tableNumber}`,
       capacity: 4,
       is_active: true,
-      status: "available" as Database['public']['Tables']['tables']['Insert']['status'],
+      status: "available" as Database["public"]["Tables"]["tables"]["Insert"]["status"],
     })
     .select("id")
     .single();

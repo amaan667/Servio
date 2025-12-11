@@ -86,7 +86,6 @@ export function initWebVitals() {
     onFCP(sendToAnalytics); // First Contentful Paint
     onINP(sendToAnalytics); // Interaction to Next Paint
     onTTFB(sendToAnalytics); // Time to First Byte
-
   } catch (_error) {
     logger.error("[WEB_VITALS] Failed to initialize", { error: _error });
   }
@@ -270,5 +269,4 @@ export function initPerformanceMonitoring() {
   PerformanceTracker.trackPageLoad();
   PerformanceTracker.trackResources();
   PerformanceTracker.trackLongTasks();
-
 }

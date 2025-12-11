@@ -6,37 +6,43 @@ export function FeaturesSection() {
     {
       icon: QrCode,
       title: "QR Code Generation",
-      description: "Generate unique QR codes for each table. Customers scan to instantly access your menu and start ordering.",
+      description:
+        "Generate unique QR codes for each table. Customers scan to instantly access your menu and start ordering.",
       color: "purple",
     },
     {
       icon: Smartphone,
       title: "Mobile-First Design",
-      description: "Beautiful, responsive interface optimized for mobile devices. Your customers will love the smooth ordering experience.",
+      description:
+        "Beautiful, responsive interface optimized for mobile devices. Your customers will love the smooth ordering experience.",
       color: "blue",
     },
     {
       icon: Clock,
       title: "Real-Time Orders",
-      description: "Receive orders instantly in your dashboard. Track order status and manage your kitchen workflow efficiently.",
+      description:
+        "Receive orders instantly in your dashboard. Track order status and manage your kitchen workflow efficiently.",
       color: "green",
     },
     {
       icon: CreditCard,
       title: "Payment Integration",
-      description: "Secure payment processing built-in. Accept all major credit cards and digital wallets seamlessly.",
+      description:
+        "Secure payment processing built-in. Accept all major credit cards and digital wallets seamlessly.",
       color: "yellow",
     },
     {
       icon: BarChart3,
       title: "Analytics & Insights",
-      description: "Detailed analytics on sales, popular items, and customer behavior to help you make data-driven decisions.",
+      description:
+        "Detailed analytics on sales, popular items, and customer behavior to help you make data-driven decisions.",
       color: "red",
     },
     {
       icon: Users,
       title: "Staff Management",
-      description: "Manage your team with role-based access. Kitchen staff, front-of-house, and managers each get the tools they need.",
+      description:
+        "Manage your team with role-based access. Kitchen staff, front-of-house, and managers each get the tools they need.",
       color: "indigo",
     },
   ];
@@ -49,9 +55,8 @@ export function FeaturesSection() {
             Everything You Need to Run Your Food Business
           </h2>
           <p className="text-xl text-gray-800 max-w-3xl mx-auto">
-            From QR code ordering to kitchen management and inventory, Servio
-            provides all the tools you need to streamline operations and serve
-            customers efficiently.
+            From QR code ordering to kitchen management and inventory, Servio provides all the tools
+            you need to streamline operations and serve customers efficiently.
           </p>
         </div>
 
@@ -70,15 +75,13 @@ export function FeaturesSection() {
             return (
               <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
                 <CardContent className="p-8">
-                  <div className={`w-12 h-12 ${colorClasses[feature.color as keyof typeof colorClasses]} rounded-lg flex items-center justify-center mb-6`}>
+                  <div
+                    className={`w-12 h-12 ${colorClasses[feature.color as keyof typeof colorClasses]} rounded-lg flex items-center justify-center mb-6`}
+                  >
                     <Icon className="h-6 w-6" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-800">
-                    {feature.description}
-                  </p>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
+                  <p className="text-gray-800">{feature.description}</p>
                 </CardContent>
               </Card>
             );
@@ -88,4 +91,3 @@ export function FeaturesSection() {
     </section>
   );
 }
-

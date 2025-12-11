@@ -1,14 +1,14 @@
-import { NextRequest } from 'next/server';
-import { z } from 'zod';
-import { createClient } from '@/lib/supabase';
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { validateBody } from '@/lib/api/validation-schemas';
-import { logger } from '@/lib/logger';
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { validateBody } from "@/lib/api/validation-schemas";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 const reviewSchema = z.object({
   orderId: z.string().uuid("Invalid order ID"),
@@ -22,9 +22,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate input
@@ -32,12 +30,12 @@ export const POST = withUnifiedAuth(
 
       // STEP 3: Business logic
       const admin = await createClient();
-      
+
       // Verify order exists
       const { data: order, error: orderError } = await admin
-        .from('orders')
-        .select('id, venue_id')
-        .eq('id', body.orderId)
+        .from("orders")
+        .select("id, venue_id")
+        .eq("id", body.orderId)
         .maybeSingle();
 
       if (orderError || !order) {
@@ -49,11 +47,11 @@ export const POST = withUnifiedAuth(
       }
 
       // Insert review
-      const { error: insErr } = await admin.from('reviews').insert({
+      const { error: insErr } = await admin.from("reviews").insert({
         order_id: body.orderId,
         venue_id: order.venue_id,
         rating: body.rating,
-        comment: (body.comment ?? '').slice(0, 500),
+        comment: (body.comment ?? "").slice(0, 500),
       });
 
       if (insErr) {
@@ -87,10 +85,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {

@@ -4,14 +4,14 @@
 export function todayWindowForTZ(tz: string | undefined) {
   // Build the start of today and start of tomorrow in the provided tz,
   // then convert those instants to UTC ISO strings.
-  const zone = tz ?? 'UTC';
+  const zone = tz ?? "UTC";
 
   // Format current date components in the target timezone as YYYY-MM-DD
-  const todayYmd = new Intl.DateTimeFormat('en-CA', {
+  const todayYmd = new Intl.DateTimeFormat("en-CA", {
     timeZone: zone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).format(new Date());
 
   // Local midnight and next midnight in that timezone
@@ -19,7 +19,8 @@ export function todayWindowForTZ(tz: string | undefined) {
   const endLocal = new Date(startLocal.getTime() + 24 * 60 * 60 * 1000);
 
   // Convert those local instants to UTC by rendering with timeZone: 'UTC'
-  const toUtcIso = (d: Date) => new Date(d.toLocaleString('en-US', { timeZone: 'UTC' })).toISOString();
+  const toUtcIso = (d: Date) =>
+    new Date(d.toLocaleString("en-US", { timeZone: "UTC" })).toISOString();
 
   return {
     startUtcISO: toUtcIso(startLocal),
@@ -36,7 +37,7 @@ export function isWithinToday(iso: string, tz?: string) {
 export function todayPlus30MinWindow() {
   const now = new Date();
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
-  
+
   return {
     startUtcISO: thirtyMinutesAgo.toISOString(),
     endUtcISO: now.toISOString(),
@@ -47,37 +48,36 @@ export function todayPlus30MinWindow() {
 export function liveOrdersWindow() {
   const now = new Date();
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
-  
+
   const result = {
     startUtcISO: thirtyMinutesAgo.toISOString(),
     endUtcISO: now.toISOString(),
   };
-  
+
   return result;
 }
 
 // Get the time window for "earlier today" - orders from today but more than 30 minutes ago
 export function earlierTodayWindow(tz?: string) {
   const { startUtcISO, endUtcISO } = todayWindowForTZ(tz);
-  
+
   // Get the live window to use its start time as our end time (exclusive)
   const liveWindow = liveOrdersWindow();
-  
+
   const result = {
     startUtcISO: startUtcISO, // Start of today
     endUtcISO: liveWindow.startUtcISO, // Start of live window (exclusive)
   };
-  
+
   return result;
 }
 
 // Get the time window for "history" - orders from yesterday and earlier
 export function historyWindow(tz?: string) {
   const { startUtcISO } = todayWindowForTZ(tz);
-  
+
   return {
-    startUtcISO: null,        // No start limit (all history)
-    endUtcISO: startUtcISO,   // Before start of today (exclusive)
+    startUtcISO: null, // No start limit (all history)
+    endUtcISO: startUtcISO, // Before start of today (exclusive)
   };
 }
-

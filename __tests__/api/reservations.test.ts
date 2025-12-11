@@ -1,4 +1,3 @@
- 
 /**
  * Tests for Reservations API
  * Critical: Booking management

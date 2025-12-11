@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
 /**
  * GET /api/orders/unpaid-pay-later
- * 
+ *
  * Finds unpaid Pay Later orders for a specific table/venue.
  * Used when customer re-scans QR code to pay for existing unpaid order.
  */
@@ -17,9 +17,7 @@ export async function GET(req: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(
-        Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-      );
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
     }
 
     const { searchParams } = new URL(req.url);
@@ -40,7 +38,9 @@ export async function GET(req: NextRequest) {
     // Build query to find unpaid Pay Later orders
     let query = supabase
       .from("orders")
-      .select("id, venue_id, table_number, table_id, customer_name, customer_phone, customer_email, total_amount, items, payment_status, payment_method, payment_mode, order_status, created_at")
+      .select(
+        "id, venue_id, table_number, table_id, customer_name, customer_phone, customer_email, total_amount, items, payment_status, payment_method, payment_mode, order_status, created_at"
+      )
       .eq("venue_id", venueId)
       .eq("payment_method", "PAY_LATER")
       .eq("payment_status", "UNPAID")
@@ -63,10 +63,7 @@ export async function GET(req: NextRequest) {
         tableNumber,
         tableId,
       });
-      return apiErrors.database(
-        "Failed to find unpaid orders",
-        error.message
-      );
+      return apiErrors.database("Failed to find unpaid orders", error.message);
     }
 
     // Return the most recent unpaid order if found
@@ -88,4 +85,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-

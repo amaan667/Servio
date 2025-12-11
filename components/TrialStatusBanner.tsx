@@ -27,14 +27,14 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
     if (typeof window === "undefined" || !user?.id) return null;
     const cached = sessionStorage.getItem(`trial_status_${user.id}`);
     if (!cached) return null;
-    
+
     try {
       const status = JSON.parse(cached) as TrialStatus;
       // Validate cached status - if trial has expired, don't use cache
       if (status.trialEndsAt) {
         const endDate = new Date(status.trialEndsAt);
         const now = new Date();
-        if (endDate <= now || status.daysRemaining !== null && status.daysRemaining <= 0) {
+        if (endDate <= now || (status.daysRemaining !== null && status.daysRemaining <= 0)) {
           // Trial expired, clear cache
           sessionStorage.removeItem(`trial_status_${user.id}`);
           return null;
@@ -88,10 +88,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         // 1. Status is "trialing" (not "active" or other statuses)
         // 2. Days remaining is greater than 0 (trial hasn't expired)
         // 3. Trial end date is in the future
-        isTrialing = 
-          subscriptionStatus === "trialing" && 
-          daysRemaining > 0 && 
-          endDateStart > nowStart;
+        isTrialing =
+          subscriptionStatus === "trialing" && daysRemaining > 0 && endDateStart > nowStart;
       }
 
       // Final trial status calculated

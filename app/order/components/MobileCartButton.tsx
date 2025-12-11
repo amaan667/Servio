@@ -27,4 +27,3 @@ export function MobileCartButton({ totalItems, onClick }: MobileCartButtonProps)
     </div>
   );
 }
-

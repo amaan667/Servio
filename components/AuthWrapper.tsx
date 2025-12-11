@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { useAuth } from '@/app/auth/AuthProvider';
+import { ReactNode } from "react";
+import { useAuth } from "@/app/auth/AuthProvider";
 
 interface AuthWrapperProps {
   children: ReactNode;

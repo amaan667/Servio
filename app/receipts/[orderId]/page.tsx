@@ -31,10 +31,12 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
   try {
     const { data: venueData, error: venueError } = await supabase
       .from("venues")
-      .select("venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown")
+      .select(
+        "venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown"
+      )
       .eq("venue_id", order.venue_id)
       .maybeSingle();
-    
+
     if (!venueError && venueData) {
       venue = venueData;
     }

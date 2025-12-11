@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
-import { pageview } from '@/lib/analytics';
-import Script from 'next/script';
+import { useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { pageview } from "@/lib/analytics";
+import Script from "next/script";
 
 const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID;
 const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
@@ -14,7 +14,7 @@ export function Analytics() {
 
   useEffect(() => {
     if (pathname) {
-      const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
+      const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
       pageview(url);
     }
   }, [pathname, searchParams]);
@@ -59,4 +59,3 @@ export function Analytics() {
     </>
   );
 }
-

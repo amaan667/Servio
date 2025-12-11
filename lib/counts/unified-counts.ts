@@ -1,7 +1,7 @@
 /**
  * Unified Count System
  * All counts should be fetched from the same source and update in real-time
- * 
+ *
  * 10/10 Implementation:
  * - Comprehensive error handling with retry logic
  * - Type-safe responses with proper validation
@@ -47,11 +47,7 @@ function isDashboardCountsRPC(data: unknown): data is DashboardCountsRPC {
 /**
  * Safely extract number from RPC response
  */
-function safeExtractNumber(
-  data: unknown,
-  key: keyof DashboardCountsRPC,
-  defaultValue = 0
-): number {
+function safeExtractNumber(data: unknown, key: keyof DashboardCountsRPC, defaultValue = 0): number {
   if (!isDashboardCountsRPC(data)) {
     return defaultValue;
   }
@@ -71,15 +67,14 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
   }
 
   const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-  
+
   try {
     return await withRetry(
       async () => {
         // Use admin client on server (Node.js), browser client on client
-        const supabase = typeof globalThis.window === "undefined" 
-          ? createAdminClient() 
-          : createClient();
-        
+        const supabase =
+          typeof globalThis.window === "undefined" ? createAdminClient() : createClient();
+
         const { data: menuItems, error } = await supabase
           .from("menu_items")
           .select("id")
@@ -96,10 +91,10 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
         }
 
         const count = menuItems?.length || 0;
-        
+
         // CRITICAL LOG: Use stdout.write which Railway ALWAYS captures
         // Logging disabled
-        
+
         logger.debug("[UNIFIED COUNTS] Menu items count fetched:", {
           venueId: normalizedVenueId,
           count,
@@ -150,10 +145,8 @@ export async function fetchUnifiedCounts(
 
   const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
   // Use admin client on server (Node.js), browser client on client
-  const supabase = typeof globalThis.window === "undefined" 
-    ? createAdminClient() 
-    : createClient();
-  
+  const supabase = typeof globalThis.window === "undefined" ? createAdminClient() : createClient();
+
   // Validate time window
   let window;
   try {
@@ -177,7 +170,7 @@ export async function fetchUnifiedCounts(
   // Fetch dashboard counts using RPC (with error handling)
   let liveOrders = 0;
   let todayOrders = 0;
-  
+
   try {
     const { data: countsData, error: rpcError } = await supabase
       .rpc("dashboard_counts", {
@@ -207,7 +200,7 @@ export async function fetchUnifiedCounts(
   // Fetch revenue and unpaid (with error handling)
   let revenue = 0;
   let unpaid = 0;
-  
+
   try {
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
@@ -229,10 +222,9 @@ export async function fetchUnifiedCounts(
         const amount = order.total_amount;
         return sum + (typeof amount === "number" && !Number.isNaN(amount) ? amount : 0);
       }, 0);
-      
+
       unpaid = orders.filter(
-        (o) =>
-          o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER"
+        (o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER"
       ).length;
     }
   } catch (error) {
@@ -244,7 +236,7 @@ export async function fetchUnifiedCounts(
 
   // Fetch tables set up count (with error handling)
   let tablesSetUp = 0;
-  
+
   try {
     const { data: allTables, error: tablesError } = await supabase
       .from("tables")
@@ -258,9 +250,7 @@ export async function fetchUnifiedCounts(
         code: tablesError.code,
       });
     } else if (allTables) {
-      const activeTables = allTables.filter(
-        (t) => t.is_active === true
-      );
+      const activeTables = allTables.filter((t) => t.is_active === true);
       tablesSetUp = activeTables.length;
     }
   } catch (error) {
@@ -297,7 +287,7 @@ export function subscribeToMenuItemsChanges(
 
   const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
   const supabase = createClient();
-  
+
   let debounceTimeout: NodeJS.Timeout | null = null;
   let isSubscribed = true;
 
@@ -370,7 +360,12 @@ export function subscribeToMenuItemsChanges(
  */
 export function subscribeToOrdersChanges(
   venueId: string,
-  onUpdate: (counts: { liveOrders: number; todayOrders: number; revenue: number; unpaid: number }) => void,
+  onUpdate: (counts: {
+    liveOrders: number;
+    todayOrders: number;
+    revenue: number;
+    unpaid: number;
+  }) => void,
   venueTz: string = "Europe/London"
 ): () => void {
   if (!venueId || typeof venueId !== "string") {
@@ -382,7 +377,7 @@ export function subscribeToOrdersChanges(
 
   const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
   const supabase = createClient();
-  
+
   let debounceTimeout: NodeJS.Timeout | null = null;
   let isSubscribed = true;
 
@@ -456,4 +451,3 @@ export function subscribeToOrdersChanges(
     });
   };
 }
-

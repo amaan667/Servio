@@ -343,7 +343,12 @@ function findPeakAndLowestDays(
 }
 
 function markCurrentPeriod(
-  revenueOverTime: Array<{ date: string; revenue: number; orders: number; isCurrentPeriod?: boolean }>,
+  revenueOverTime: Array<{
+    date: string;
+    revenue: number;
+    orders: number;
+    isCurrentPeriod?: boolean;
+  }>,
   timePeriod: TimePeriod
 ) {
   const now = new Date();

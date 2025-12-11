@@ -293,7 +293,9 @@ export default function LiveOrdersClient({
 
   const renderOrdersSection = (ordersToRender: unknown[], title: string, iconColor: string) => {
     const filteredOrders = ordersToRender.filter(
-      (order) => !parsedTableFilter || (order as { table_number?: number }).table_number?.toString() === parsedTableFilter
+      (order) =>
+        !parsedTableFilter ||
+        (order as { table_number?: number }).table_number?.toString() === parsedTableFilter
     );
 
     // If we have a table filter but no orders in this section, return null
@@ -406,7 +408,8 @@ export default function LiveOrdersClient({
 
                   {searchQuery && (
                     <div className="text-sm text-gray-600 mb-4">
-                      Found {allFilteredOrders.length} order{allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                      Found {allFilteredOrders.length} order
+                      {allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
                     </div>
                   )}
 
@@ -468,7 +471,8 @@ export default function LiveOrdersClient({
 
                   {searchQuery && (
                     <div className="text-sm text-gray-600 mb-4">
-                      Found {allFilteredOrders.length} order{allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                      Found {allFilteredOrders.length} order
+                      {allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
                     </div>
                   )}
 
@@ -521,7 +525,8 @@ export default function LiveOrdersClient({
                   <>
                     {searchQuery && (
                       <div className="text-sm text-gray-600 mb-4">
-                        Found {filteredHistoryOrders.length} order{filteredHistoryOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                        Found {filteredHistoryOrders.length} order
+                        {filteredHistoryOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
                       </div>
                     )}
                     {Object.entries(groupedFiltered).map(([date, ordersForDate]) => (

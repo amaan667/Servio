@@ -4,4 +4,3 @@ export default async function ReceiptsRedirectPage({ params }: { params: { venue
   const { venueId } = params;
   redirect(`/dashboard/${venueId}/payments`);
 }
-

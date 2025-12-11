@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { X, Sparkles, TrendingUp, Users, QrCode } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { X, Sparkles, TrendingUp, Users, QrCode } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 export default function OnboardingCompletionBanner() {
   const params = useParams();
@@ -14,16 +14,16 @@ export default function OnboardingCompletionBanner() {
 
   useEffect(() => {
     // Check if onboarding was just completed
-    const onboardingComplete = localStorage.getItem('onboarding_complete');
-    const bannerDismissed = localStorage.getItem('onboarding_banner_dismissed');
+    const onboardingComplete = localStorage.getItem("onboarding_complete");
+    const bannerDismissed = localStorage.getItem("onboarding_banner_dismissed");
 
-    if (onboardingComplete === 'true' && !bannerDismissed) {
+    if (onboardingComplete === "true" && !bannerDismissed) {
       setVisible(true);
     }
   }, []);
 
   const handleDismiss = () => {
-    localStorage.setItem('onboarding_banner_dismissed', 'true');
+    localStorage.setItem("onboarding_banner_dismissed", "true");
     setVisible(false);
     setDismissed(true);
   };
@@ -56,11 +56,12 @@ export default function OnboardingCompletionBanner() {
           <h2 className="text-2xl font-bold">🎉 You're Live!</h2>
         </div>
         <p className="text-purple-100 mb-4">
-          Your venue is set up and ready to accept orders. Here are some next steps to get the most out of Servio:
+          Your venue is set up and ready to accept orders. Here are some next steps to get the most
+          out of Servio:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Link href={venueId ? `/dashboard/${venueId}/analytics` : '/'}>
+          <Link href={venueId ? `/dashboard/${venueId}/analytics` : "/"}>
             <div className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-4 cursor-pointer h-full">
               <TrendingUp className="w-8 h-8 mb-2" />
               <h3 className="font-semibold mb-1">View Analytics</h3>
@@ -76,7 +77,7 @@ export default function OnboardingCompletionBanner() {
             </div>
           </Link>
 
-          <Link href={venueId ? `/dashboard/${venueId}/settings/staff` : '/'}>
+          <Link href={venueId ? `/dashboard/${venueId}/settings/staff` : "/"}>
             <div className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-4 cursor-pointer h-full">
               <Users className="w-8 h-8 mb-2" />
               <h3 className="font-semibold mb-1">Invite Staff</h3>
@@ -98,4 +99,3 @@ export default function OnboardingCompletionBanner() {
     </div>
   );
 }
-

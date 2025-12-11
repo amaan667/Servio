@@ -31,9 +31,11 @@ export function AccountInformationCard({ user }: AccountInformationCardProps) {
             disabled
             className="bg-gray-50 border-gray-200 rounded-lg mt-1"
           />
-          <p className="text-sm text-gray-600 mt-1">Email address cannot be changed - it's associated with your Gmail account</p>
+          <p className="text-sm text-gray-600 mt-1">
+            Email address cannot be changed - it's associated with your Gmail account
+          </p>
         </div>
-        
+
         <div>
           <Label htmlFor="fullName" className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -41,7 +43,7 @@ export function AccountInformationCard({ user }: AccountInformationCardProps) {
           </Label>
           <Input
             id="fullName"
-            value={user.user_metadata?.full_name || ''}
+            value={user.user_metadata?.full_name || ""}
             disabled
             className="bg-gray-50 border-gray-200 rounded-lg mt-1"
           />
@@ -50,4 +52,3 @@ export function AccountInformationCard({ user }: AccountInformationCardProps) {
     </Card>
   );
 }
-

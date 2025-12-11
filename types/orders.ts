@@ -1,29 +1,29 @@
 // Unified order types for the new OrderCard component
 
-import { OrderForEntityKind } from '@/lib/orders/entity-types';
+import { OrderForEntityKind } from "@/lib/orders/entity-types";
 
 export interface OrderForCard extends OrderForEntityKind {
   id: string;
   short_id: string;
   placed_at: string; // ISO string
-  order_status: 'placed' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
+  order_status: "placed" | "preparing" | "ready" | "served" | "completed" | "cancelled";
   total_amount: number;
   currency: string; // "GBP"
   payment: {
-    mode: 'online' | 'pay_at_till' | 'pay_later';
-    status: 'paid' | 'unpaid' | 'failed' | 'refunded';
+    mode: "online" | "pay_at_till" | "pay_later";
+    status: "paid" | "unpaid" | "failed" | "refunded";
     method?: string; // Payment method: PAY_NOW, PAY_LATER, PAY_AT_TILL
   };
   table_number?: number | null;
-  table_label?: string | null;     // "Table 10"
-  counter_label?: string | null;   // "Counter A"  
+  table_label?: string | null; // "Table 10"
+  counter_label?: string | null; // "Counter A"
   customer?: { name?: string; phone?: string } | null;
   customer_name?: string;
   customer_phone?: string;
   payment_status?: string;
   payment_mode?: string;
   payment_method?: string; // Raw payment_method from database
-  items_preview?: string;          // precomputed "2x Burger, 1x Fries"
+  items_preview?: string; // precomputed "2x Burger, 1x Fries"
   items?: Array<{
     menu_item_id: string;
     quantity: number;

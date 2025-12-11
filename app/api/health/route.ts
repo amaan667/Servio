@@ -7,7 +7,7 @@ export async function GET() {
   // Return plain text "ok" - fastest possible response
   // No edge runtime (needs build first), no dependencies
   // Force rebuild: changed response format
-  return new NextResponse("ok", { 
+  return new NextResponse("ok", {
     status: 200,
     headers: {
       "Content-Type": "text/plain",

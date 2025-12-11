@@ -195,7 +195,7 @@ export default function MobileNav({
               }`}
             >
               <div className="relative mb-1">
-                <item.icon 
+                <item.icon
                   className={`h-5 w-5 transition-colors ${
                     item.isActive ? "text-purple-700" : "text-purple-600"
                   }`}
@@ -213,8 +213,8 @@ export default function MobileNav({
                 className={`text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate transition-colors ${
                   item.isActive ? "text-purple-700" : "text-purple-600"
                 }`}
-                style={{ 
-                  lineHeight: "1.2", 
+                style={{
+                  lineHeight: "1.2",
                   fontSize: "10px",
                   color: item.isActive ? "#6d28d9" : "#7c3aed",
                   fontWeight: item.isActive ? 700 : 600,

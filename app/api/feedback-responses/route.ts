@@ -1,12 +1,12 @@
-import { NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { validateBody, submitFeedbackSchema } from '@/lib/api/validation-schemas';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { validateBody, submitFeedbackSchema } from "@/lib/api/validation-schemas";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 /**
  * POST /api/feedback-responses
@@ -18,9 +18,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -34,13 +32,13 @@ export const POST = withUnifiedAuth(
       const body = await validateBody(submitFeedbackSchema, await req.json());
 
       // Normalize venue IDs for comparison (database may store with venue- prefix)
-      const normalizeVenueId = (id: string) => id.startsWith("venue-") ? id : `venue-${id}`;
+      const normalizeVenueId = (id: string) => (id.startsWith("venue-") ? id : `venue-${id}`);
       const normalizedContextVenueId = normalizeVenueId(venueId);
       const normalizedBodyVenueId = normalizeVenueId(body.venue_id);
 
       // Verify venue_id matches context
       if (normalizedBodyVenueId !== normalizedContextVenueId) {
-        return apiErrors.forbidden('Venue ID mismatch');
+        return apiErrors.forbidden("Venue ID mismatch");
       }
 
       // Use normalized venueId for database operations
@@ -57,12 +55,12 @@ export const POST = withUnifiedAuth(
           .single();
 
         if (orderError || !order) {
-          logger.warn('[FEEDBACK RESPONSES] Order not found or access denied', {
+          logger.warn("[FEEDBACK RESPONSES] Order not found or access denied", {
             orderId: body.order_id,
             venueId,
             userId: context.user.id,
           });
-          return apiErrors.notFound('Order not found or access denied');
+          return apiErrors.notFound("Order not found or access denied");
         }
       }
 
@@ -85,16 +83,16 @@ export const POST = withUnifiedAuth(
         .select();
 
       if (insertError || !insertedResponses) {
-        logger.error('[FEEDBACK RESPONSES] Database insert failed', {
+        logger.error("[FEEDBACK RESPONSES] Database insert failed", {
           error: insertError,
           venueId,
           userId: context.user.id,
         });
-        return apiErrors.database('Failed to save feedback responses', insertError);
+        return apiErrors.database("Failed to save feedback responses", insertError);
       }
 
       // STEP 6: Return success response
-      logger.info('[FEEDBACK RESPONSES] Feedback submitted successfully', {
+      logger.info("[FEEDBACK RESPONSES] Feedback submitted successfully", {
         venueId,
         userId: context.user.id,
         responseCount: insertedResponses.length,
@@ -105,7 +103,7 @@ export const POST = withUnifiedAuth(
         responses: insertedResponses,
       });
     } catch (error) {
-      logger.error('[FEEDBACK RESPONSES] Unexpected error', {
+      logger.error("[FEEDBACK RESPONSES] Unexpected error", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
@@ -113,12 +111,12 @@ export const POST = withUnifiedAuth(
       });
 
       // Handle validation errors
-      const { isZodError, handleZodError } = await import('@/lib/api/standard-response');
+      const { isZodError, handleZodError } = await import("@/lib/api/standard-response");
       if (isZodError(error)) {
         return handleZodError(error);
       }
 
-      return apiErrors.internal('Failed to process feedback submission', error);
+      return apiErrors.internal("Failed to process feedback submission", error);
     }
   },
   {
@@ -126,9 +124,11 @@ export const POST = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         const body = await req.json().catch(() => ({}));
-        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
-               (body as { venue_id?: string; venueId?: string })?.venueId || 
-               null;
+        return (
+          (body as { venue_id?: string; venueId?: string })?.venue_id ||
+          (body as { venue_id?: string; venueId?: string })?.venueId ||
+          null
+        );
       } catch {
         return null;
       }

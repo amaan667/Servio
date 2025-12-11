@@ -57,13 +57,13 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
         {
           headers: {
-            'User-Agent': 'ServioApp/1.0', // Required by Nominatim
+            "User-Agent": "ServioApp/1.0", // Required by Nominatim
           },
         }
       );
-      
+
       const data = await response.json();
-      
+
       if (data && data.length > 0) {
         const { lat, lon } = data[0];
         updateMapPreview(parseFloat(lat), parseFloat(lon));
@@ -92,7 +92,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
               variant="outline"
               size="sm"
               onClick={() => {
-                onChange('');
+                onChange("");
                 setMapUrl(null);
               }}
               className="h-7 px-2 text-xs"
@@ -102,7 +102,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
             </Button>
           )}
         </div>
-        
+
         <Input
           ref={inputRef}
           id="venueAddress"
@@ -136,8 +136,6 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
           </div>
         </Card>
       )}
-
     </div>
   );
 }
-

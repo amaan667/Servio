@@ -225,13 +225,22 @@ CONTEXT:
 - Features Enabled: ${JSON.stringify(features)}
 
 CURRENT DATA SUMMARIES:
-${dataSummaries.menu ? `\nMENU:
+${
+  dataSummaries.menu
+    ? `\nMENU:
 Total Items: ${dataSummaries.menu.totalItems}
 Categories: ${dataSummaries.menu.categories.length} (${dataSummaries.menu.categories.map((c: { name: string }) => c.name).join(", ")})
-Top Sellers: ${dataSummaries.menu.topSellers?.slice(0, 5).map((item: { name: string }) => item.name).join(", ") || "None"}
+Top Sellers: ${
+        dataSummaries.menu.topSellers
+          ?.slice(0, 5)
+          .map((item: { name: string }) => item.name)
+          .join(", ") || "None"
+      }
 Items Without Images: ${dataSummaries.menu.itemsWithoutImages}
 All Items (for reference - use IDs from here): ${JSON.stringify(dataSummaries.menu.allItems?.slice(0, 100) || [], null, 2)}
-${dataSummaries.menu.allItems && dataSummaries.menu.allItems.length > 100 ? `\nNote: Showing first 100 of ${dataSummaries.menu.allItems.length} items. Use allItems array to find item IDs by name.` : ""}` : ""}
+${dataSummaries.menu.allItems && dataSummaries.menu.allItems.length > 100 ? `\nNote: Showing first 100 of ${dataSummaries.menu.allItems.length} items. Use allItems array to find item IDs by name.` : ""}`
+    : ""
+}
 ${dataSummaries.inventory ? `\nINVENTORY:\n${JSON.stringify(dataSummaries.inventory, null, 2)}` : ""}
 ${dataSummaries.orders ? `\nORDERS:\n${JSON.stringify(dataSummaries.orders, null, 2)}` : ""}
 ${dataSummaries.analytics ? `\nANALYTICS:\n${JSON.stringify(dataSummaries.analytics, null, 2)}` : ""}

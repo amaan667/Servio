@@ -1,9 +1,8 @@
- 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createClient } from '@/lib/supabase';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createClient } from "@/lib/supabase";
 
 // Mock Supabase client
-vi.mock('@/lib/supabase', () => ({
+vi.mock("@/lib/supabase", () => ({
   createClient: vi.fn(() => ({
     auth: {
       signInWithPassword: vi.fn(),
@@ -20,17 +19,17 @@ vi.mock('@/lib/supabase', () => ({
   })),
 }));
 
-describe('Authentication - Sign In', () => {
+describe("Authentication - Sign In", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('signInWithPassword', () => {
-    it('should successfully sign in with valid credentials', async () => {
+  describe("signInWithPassword", () => {
+    it("should successfully sign in with valid credentials", async () => {
       const mockSupabase = await createClient();
       const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
+        id: "user-123",
+        email: "test@example.com",
         created_at: new Date().toISOString(),
       };
 
@@ -38,10 +37,10 @@ describe('Authentication - Sign In', () => {
         data: {
           user: mockUser,
           session: {
-            access_token: 'mock-token',
-            refresh_token: 'mock-refresh',
+            access_token: "mock-token",
+            refresh_token: "mock-refresh",
             expires_in: 3600,
-            token_type: 'bearer',
+            token_type: "bearer",
             user: mockUser,
           },
         },
@@ -49,97 +48,97 @@ describe('Authentication - Sign In', () => {
       });
 
       const result = await mockSupabase.auth.signInWithPassword({
-        email: 'test@example.com',
-        password: 'password123',
+        email: "test@example.com",
+        password: "password123",
       });
 
       expect(result.error).toBeNull();
       expect(result.data.user).toEqual(mockUser);
       expect(result.data.session).toBeDefined();
-      expect(result.data.session?.access_token).toBe('mock-token');
+      expect(result.data.session?.access_token).toBe("mock-token");
     });
 
-    it('should fail with invalid credentials', async () => {
+    it("should fail with invalid credentials", async () => {
       const mockSupabase = await createClient();
 
       vi.mocked(mockSupabase.auth.signInWithPassword).mockResolvedValueOnce({
         data: { user: null, session: null },
         error: {
-          message: 'Invalid login credentials',
-          name: 'AuthError',
+          message: "Invalid login credentials",
+          name: "AuthError",
           status: 400,
         },
       });
 
       const result = await mockSupabase.auth.signInWithPassword({
-        email: 'test@example.com',
-        password: 'wrong-password',
+        email: "test@example.com",
+        password: "wrong-password",
       });
 
       expect(result.error).toBeDefined();
-      expect(result.error?.message).toBe('Invalid login credentials');
+      expect(result.error?.message).toBe("Invalid login credentials");
       expect(result.data.user).toBeNull();
     });
 
-    it('should fail with missing email', async () => {
+    it("should fail with missing email", async () => {
       const mockSupabase = await createClient();
 
       vi.mocked(mockSupabase.auth.signInWithPassword).mockResolvedValueOnce({
         data: { user: null, session: null },
         error: {
-          message: 'Email is required',
-          name: 'AuthError',
+          message: "Email is required",
+          name: "AuthError",
           status: 400,
         },
       });
 
       const result = await mockSupabase.auth.signInWithPassword({
-        email: '',
-        password: 'password123',
+        email: "",
+        password: "password123",
       });
 
       expect(result.error).toBeDefined();
-      expect(result.error?.message).toContain('Email');
+      expect(result.error?.message).toContain("Email");
     });
 
-    it('should fail with missing password', async () => {
+    it("should fail with missing password", async () => {
       const mockSupabase = await createClient();
 
       vi.mocked(mockSupabase.auth.signInWithPassword).mockResolvedValueOnce({
         data: { user: null, session: null },
         error: {
-          message: 'Password is required',
-          name: 'AuthError',
+          message: "Password is required",
+          name: "AuthError",
           status: 400,
         },
       });
 
       const result = await mockSupabase.auth.signInWithPassword({
-        email: 'test@example.com',
-        password: '',
+        email: "test@example.com",
+        password: "",
       });
 
       expect(result.error).toBeDefined();
-      expect(result.error?.message).toContain('Password');
+      expect(result.error?.message).toContain("Password");
     });
   });
 
-  describe('getSession', () => {
-    it('should return valid session when authenticated', async () => {
+  describe("getSession", () => {
+    it("should return valid session when authenticated", async () => {
       const mockSupabase = await createClient();
       const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
+        id: "user-123",
+        email: "test@example.com",
         created_at: new Date().toISOString(),
       };
 
       vi.mocked(mockSupabase.auth.getSession).mockResolvedValueOnce({
         data: {
           session: {
-            access_token: 'mock-token',
-            refresh_token: 'mock-refresh',
+            access_token: "mock-token",
+            refresh_token: "mock-refresh",
             expires_in: 3600,
-            token_type: 'bearer',
+            token_type: "bearer",
             user: mockUser,
           },
         },
@@ -150,10 +149,10 @@ describe('Authentication - Sign In', () => {
 
       expect(result.error).toBeNull();
       expect(result.data.session).toBeDefined();
-      expect(result.data.session?.user.id).toBe('user-123');
+      expect(result.data.session?.user.id).toBe("user-123");
     });
 
-    it('should return null session when not authenticated', async () => {
+    it("should return null session when not authenticated", async () => {
       const mockSupabase = await createClient();
 
       vi.mocked(mockSupabase.auth.getSession).mockResolvedValueOnce({
@@ -168,8 +167,8 @@ describe('Authentication - Sign In', () => {
     });
   });
 
-  describe('signOut', () => {
-    it('should successfully sign out user', async () => {
+  describe("signOut", () => {
+    it("should successfully sign out user", async () => {
       const mockSupabase = await createClient();
 
       vi.mocked(mockSupabase.auth.signOut).mockResolvedValueOnce({
@@ -183,4 +182,3 @@ describe('Authentication - Sign In', () => {
     });
   });
 });
-

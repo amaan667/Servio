@@ -12,7 +12,11 @@ function findRouteFiles(dir: string): string[] {
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
-    if (entry.isDirectory() && !entry.name.includes("node_modules") && !entry.name.includes(".next")) {
+    if (
+      entry.isDirectory() &&
+      !entry.name.includes("node_modules") &&
+      !entry.name.includes(".next")
+    ) {
       files.push(...findRouteFiles(fullPath));
     } else if (entry.name === "route.ts") {
       files.push(fullPath);
@@ -32,10 +36,7 @@ function fixFile(filePath: string): boolean {
     /process\.env\.NODE_ENV\s*===\s*["']development["']/g,
     "isDevelopment()"
   );
-  content = content.replace(
-    /process\.env\.NODE_ENV\s*===\s*["']production["']/g,
-    "isProduction()"
-  );
+  content = content.replace(/process\.env\.NODE_ENV\s*===\s*["']production["']/g, "isProduction()");
   content = content.replace(
     /process\.env\.NODE_ENV\s*!==\s*["']development["']/g,
     "!isDevelopment()"
@@ -69,24 +70,28 @@ function fixFile(filePath: string): boolean {
   }
 
   // Add import if needed
-  const needsImport = content.includes("env(") || content.includes("isDevelopment()") || 
-                     content.includes("isProduction()") || content.includes("getNodeEnv()");
+  const needsImport =
+    content.includes("env(") ||
+    content.includes("isDevelopment()") ||
+    content.includes("isProduction()") ||
+    content.includes("getNodeEnv()");
   const hasImport = content.includes("from '@/lib/env'") || content.includes('from "@/lib/env"');
 
   if (needsImport && !hasImport) {
     // Find last import
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     let lastImportIndex = -1;
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('import ')) {
+      if (lines[i].trim().startsWith("import ")) {
         lastImportIndex = i;
       }
     }
-    
+
     if (lastImportIndex >= 0) {
-      const importLine = "import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';";
+      const importLine =
+        "import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';";
       lines.splice(lastImportIndex + 1, 0, importLine);
-      content = lines.join('\n');
+      content = lines.join("\n");
       changed = true;
     }
   }
@@ -114,4 +119,3 @@ for (const file of files) {
 }
 
 console.log(`\n📊 Fixed ${fixed} files\n`);
-

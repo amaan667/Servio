@@ -1,4 +1,3 @@
- 
 /**
  * Tests for Tables API
  * Critical: Table management

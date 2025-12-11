@@ -7,27 +7,26 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export const runtime = "nodejs"; // KDS backfill endpoint
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
 
-      const body = await req.json();
-      const venueIdFromBody = body?.venueId || body?.venue_id;
-      const scope = body?.scope || "today";
+    const body = await req.json();
+    const venueIdFromBody = body?.venueId || body?.venue_id;
+    const scope = body?.scope || "today";
 
-      // Use venueId from context or body
-      const finalVenueId = context.venueId || venueIdFromBody;
+    // Use venueId from context or body
+    const finalVenueId = context.venueId || venueIdFromBody;
 
     if (!finalVenueId) {
       return NextResponse.json(
@@ -94,14 +93,14 @@ export const POST = withUnifiedAuth(
       }
     }
 
-      // Stations will be ensured by createKDSTicketsWithAI
+    // Stations will be ensured by createKDSTicketsWithAI
 
-      // Build query for orders based on scope
-      let query = supabase
-        .from("orders")
-        .select(
-          "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at, customer_name"
-        )
+    // Build query for orders based on scope
+    let query = supabase
+      .from("orders")
+      .select(
+        "id, venue_id, table_number, table_id, items, order_status, payment_status, created_at, customer_name"
+      )
       .eq("venue_id", finalVenueId)
       .in("payment_status", ["PAID", "UNPAID", "PAYMENT_PENDING"]) // Only active orders
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]) // Only orders that need preparation (including SERVING for earlier today)
@@ -161,7 +160,7 @@ export const POST = withUnifiedAuth(
 
         // Create tickets using unified AI-based function
         const items = Array.isArray(order.items) ? order.items : [];
-        
+
         try {
           await createKDSTicketsWithAI(supabase, {
             id: order.id,
@@ -207,17 +206,16 @@ export const POST = withUnifiedAuth(
       tickets_created: ticketsCreated,
       errors: errors.length > 0 ? errors : undefined,
     });
-    } catch (_error) {
-      logger.error("[KDS BACKFILL] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
-      return NextResponse.json(
-        {
-          ok: false,
-          error: _error instanceof Error ? _error.message : "Backfill failed",
-        },
-        { status: 500 }
-      );
-    }
+  } catch (_error) {
+    logger.error("[KDS BACKFILL] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: _error instanceof Error ? _error.message : "Backfill failed",
+      },
+      { status: 500 }
+    );
   }
-);
+});

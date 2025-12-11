@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
 export type TimeValue24 = { hour: number | null; minute: number | null };
 
@@ -26,25 +26,29 @@ export function TimeField24({
       <div className="flex items-center gap-2">
         <select
           className="w-20 rounded-md border px-2 py-2"
-          value={value.hour ?? ''}
+          value={value.hour ?? ""}
           onChange={(e) => setHour(e.target.value)}
           disabled={disabled}
         >
           <option value="">HH</option>
           {hours.map((h) => (
-            <option key={h} value={h}>{h.toString().padStart(2, '0')}</option>
+            <option key={h} value={h}>
+              {h.toString().padStart(2, "0")}
+            </option>
           ))}
         </select>
         <span>:</span>
         <select
           className="w-20 rounded-md border px-2 py-2"
-          value={value.minute ?? ''}
+          value={value.minute ?? ""}
           onChange={(e) => setMinute(e.target.value)}
           disabled={disabled}
         >
           <option value="">MM</option>
           {minutes.map((m) => (
-            <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
+            <option key={m} value={m}>
+              {m.toString().padStart(2, "0")}
+            </option>
           ))}
         </select>
       </div>

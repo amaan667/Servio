@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useRef, useState, useEffect, ReactNode } from 'react';
+import { useRef, useState, useEffect, ReactNode } from "react";
 
 interface VirtualListProps<T> {
   items: T[];
@@ -17,7 +17,7 @@ export function VirtualList<T>({
   containerHeight,
   renderItem,
   overscan = 3,
-  className = '',
+  className = "",
 }: VirtualListProps<T>) {
   const [scrollTop, setScrollTop] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,20 +42,17 @@ export function VirtualList<T>({
       style={{ height: containerHeight }}
       onScroll={handleScroll}
     >
-      <div style={{ height: totalHeight, position: 'relative' }}>
+      <div style={{ height: totalHeight, position: "relative" }}>
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: startIndex * itemHeight,
-            width: '100%',
+            width: "100%",
           }}
         >
-          {visibleItems.map((item, i) =>
-            renderItem(item, startIndex + i)
-          )}
+          {visibleItems.map((item, i) => renderItem(item, startIndex + i))}
         </div>
       </div>
     </div>
   );
 }
-

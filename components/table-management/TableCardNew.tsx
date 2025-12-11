@@ -229,7 +229,7 @@ export function TableCardNew({
           } else if (error && typeof error === "object") {
             errorMessage = JSON.stringify(error);
           }
-          
+
           setRemoveError(errorMessage);
           // Reopen the dialog to show the error
           setShowRemoveDialog(true);

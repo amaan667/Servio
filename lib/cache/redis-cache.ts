@@ -36,9 +36,7 @@ class RedisCache {
 
         await this.redis.connect();
       } else {
-
         // Block handled
-
       }
     } catch (_error) {
       logger.warn("[REDIS] Failed to initialize Redis cache:", _error as Record<string, unknown>);

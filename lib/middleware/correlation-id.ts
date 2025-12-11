@@ -1,12 +1,12 @@
 /**
  * Correlation ID Middleware
- * 
+ *
  * Generates a unique correlation ID per request and injects it into:
  * - Request headers
  * - All logs
  * - External API calls (Stripe metadata)
  * - Background jobs
- * 
+ *
  * This enables distributed tracing across services.
  */
 
@@ -44,16 +44,17 @@ export function withCorrelationId(
 ): (req: NextRequest) => Promise<NextResponse> {
   return async (req: NextRequest) => {
     const correlationId = getCorrelationId(req);
-    
+
     // Store in request context for access in route handlers
-    (req as NextRequest & { [CORRELATION_ID_CONTEXT_KEY]: string })[CORRELATION_ID_CONTEXT_KEY] = correlationId;
-    
+    (req as NextRequest & { [CORRELATION_ID_CONTEXT_KEY]: string })[CORRELATION_ID_CONTEXT_KEY] =
+      correlationId;
+
     // Call handler
     const response = await handler(req);
-    
+
     // Add correlation ID to response headers
     setCorrelationId(response, correlationId);
-    
+
     return response;
   };
 }
@@ -62,8 +63,10 @@ export function withCorrelationId(
  * Get correlation ID from request (for use in route handlers)
  */
 export function getCorrelationIdFromRequest(req: NextRequest): string {
-  return (req as NextRequest & { [CORRELATION_ID_CONTEXT_KEY]?: string })[CORRELATION_ID_CONTEXT_KEY] || 
-         getCorrelationId(req);
+  return (
+    (req as NextRequest & { [CORRELATION_ID_CONTEXT_KEY]?: string })[CORRELATION_ID_CONTEXT_KEY] ||
+    getCorrelationId(req)
+  );
 }
 
 /**

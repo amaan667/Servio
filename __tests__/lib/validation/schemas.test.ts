@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Tests for validation schemas
  * @module __tests__/lib/validation/schemas

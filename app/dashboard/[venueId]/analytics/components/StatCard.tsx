@@ -26,4 +26,3 @@ export function StatCard({ title, value, icon: Icon, iconColor, iconBgColor }: S
     </Card>
   );
 }
-

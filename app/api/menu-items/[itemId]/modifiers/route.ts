@@ -2,13 +2,13 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
 /**
  * Menu Item Modifiers API
- * 
+ *
  * GET: Fetch modifiers for a menu item
  * POST: Create/update modifiers for a menu item
  * DELETE: Remove modifiers for a menu item
@@ -32,17 +32,14 @@ export interface ModifierOption {
   display_order?: number;
 }
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ itemId: string }> }
-) {
+export async function GET(req: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   const { itemId } = await context.params;
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
 
     if (!itemId) {
-      return apiErrors.badRequest('Item ID is required');
+      return apiErrors.badRequest("Item ID is required");
     }
 
     const supabase = createAdminClient();
@@ -55,11 +52,11 @@ export async function GET(
       .single();
 
     if (itemError || !menuItem) {
-      return apiErrors.notFound('Menu item not found');
+      return apiErrors.notFound("Menu item not found");
     }
 
     if (venueId && menuItem.venue_id !== venueId) {
-      return apiErrors.notFound('Menu item not found');
+      return apiErrors.notFound("Menu item not found");
     }
 
     // Fetch modifiers (stored as JSON in menu_items table or separate table)
@@ -75,7 +72,7 @@ export async function GET(
         error: fetchError.message,
         itemId,
       });
-      return apiErrors.database('Failed to fetch modifiers');
+      return apiErrors.database("Failed to fetch modifiers");
     }
 
     const modifiers = (itemWithModifiers?.modifiers as MenuItemModifier[]) || [];
@@ -87,14 +84,11 @@ export async function GET(
       error: errorMessage,
       itemId,
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ itemId: string }> }
-) {
+export async function POST(req: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   const { itemId } = await context.params;
   try {
     // Authenticate user
@@ -107,7 +101,7 @@ export async function POST(
     const { modifiers } = body as { modifiers: MenuItemModifier[] };
 
     if (!itemId) {
-      return apiErrors.badRequest('Item ID is required');
+      return apiErrors.badRequest("Item ID is required");
     }
 
     const supabase = createAdminClient();
@@ -120,7 +114,7 @@ export async function POST(
       .single();
 
     if (itemError || !menuItem) {
-      return apiErrors.notFound('Menu item not found');
+      return apiErrors.notFound("Menu item not found");
     }
 
     // Verify venue access
@@ -144,7 +138,7 @@ export async function POST(
 
     // Validate modifiers structure
     if (!Array.isArray(modifiers)) {
-      return apiErrors.badRequest('Modifiers must be an array');
+      return apiErrors.badRequest("Modifiers must be an array");
     }
 
     for (const modifier of modifiers) {
@@ -178,7 +172,7 @@ export async function POST(
 
     if (updateError) {
       logger.error("[MODIFIERS POST] Error updating modifiers:", { error: updateError });
-      return apiErrors.internal('Failed to update modifiers');
+      return apiErrors.internal("Failed to update modifiers");
     }
 
     logger.info("[MODIFIERS POST] Modifiers updated successfully", {
@@ -193,14 +187,11 @@ export async function POST(
       error: errorMessage,
       itemId,
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
 
-export async function DELETE(
-  _req: NextRequest,
-  context: { params: Promise<{ itemId: string }> }
-) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   const { itemId } = await context.params;
   try {
     // Authenticate user
@@ -211,7 +202,7 @@ export async function DELETE(
     }
 
     if (!itemId) {
-      return apiErrors.badRequest('Item ID is required');
+      return apiErrors.badRequest("Item ID is required");
     }
 
     const supabase = createAdminClient();
@@ -224,7 +215,7 @@ export async function DELETE(
       .single();
 
     if (itemError || !menuItem) {
-      return apiErrors.notFound('Menu item not found');
+      return apiErrors.notFound("Menu item not found");
     }
 
     // Verify venue access
@@ -260,7 +251,7 @@ export async function DELETE(
         error: updateError.message,
         itemId,
       });
-      return apiErrors.database('Failed to remove modifiers');
+      return apiErrors.database("Failed to remove modifiers");
     }
 
     return success({});
@@ -270,7 +261,6 @@ export async function DELETE(
       error: errorMessage,
       itemId,
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
-

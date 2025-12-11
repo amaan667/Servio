@@ -153,7 +153,11 @@ export function useDashboardRealtime({
             debouncedLoadStats();
 
             if (payload.eventType === "INSERT" && payload.new) {
-              const order = payload.new as { order_status: string; total_amount?: number; created_at?: string };
+              const order = payload.new as {
+                order_status: string;
+                total_amount?: number;
+                created_at?: string;
+              };
               const orderCreatedAt = payload.new?.created_at as string | undefined;
               // Only incrementally update if order is from today's window
               if (
@@ -164,7 +168,7 @@ export function useDashboardRealtime({
               ) {
                 updateRevenueIncrementallyRef.current(order);
               }
-              
+
               // Dispatch revenue changed event for instant updates
               if (typeof window !== "undefined" && order.total_amount) {
                 window.dispatchEvent(
@@ -187,7 +191,7 @@ export function useDashboardRealtime({
           async (_payload: RealtimePayload) => {
             if (!isMountedRef.current) return;
             debouncedRefresh();
-            
+
             // Also fetch and dispatch tables count for instant updates
             try {
               const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
@@ -195,10 +199,10 @@ export function useDashboardRealtime({
                 .from("tables")
                 .select("id, is_active")
                 .eq("venue_id", normalizedVenueId);
-              
+
               const activeTables = allTables?.filter((t) => t.is_active) || [];
               const count = activeTables.length;
-              
+
               // Dispatch custom event for instant updates
               if (typeof window !== "undefined") {
                 window.dispatchEvent(

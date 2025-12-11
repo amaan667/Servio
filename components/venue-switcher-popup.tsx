@@ -14,17 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Building2,
-  MapPin,
-  Phone,
-  Plus,
-  Edit,
-  Trash2,
-  X,
-  Store,
-  Settings,
-} from "lucide-react";
+import { Building2, MapPin, Phone, Plus, Edit, Trash2, X, Store, Settings } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";

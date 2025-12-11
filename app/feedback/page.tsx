@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import UnifiedFeedbackForm from '@/components/UnifiedFeedbackForm';
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 
 export default function FeedbackPage() {
   const searchParams = useSearchParams();
@@ -11,9 +11,9 @@ export default function FeedbackPage() {
   const [customerName, setCustomerName] = useState<string | null>(null);
 
   useEffect(() => {
-    const venueIdParam = searchParams?.get('venueId') || null;
-    const orderIdParam = searchParams?.get('orderId') || null;
-    const customerNameParam = searchParams?.get('customerName') || null;
+    const venueIdParam = searchParams?.get("venueId") || null;
+    const orderIdParam = searchParams?.get("orderId") || null;
+    const customerNameParam = searchParams?.get("customerName") || null;
 
     setVenueId(venueIdParam);
     setOrderId(orderIdParam);
@@ -26,9 +26,7 @@ export default function FeedbackPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Feedback</h1>
           <p className="text-gray-900">Please provide a venue ID to access the feedback form.</p>
-          <p className="text-sm text-gray-900 mt-2">
-            Example: /feedback?venueId=your-venue-id
-          </p>
+          <p className="text-sm text-gray-900 mt-2">Example: /feedback?venueId=your-venue-id</p>
         </div>
       </div>
     );

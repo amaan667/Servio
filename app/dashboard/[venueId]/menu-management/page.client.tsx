@@ -9,10 +9,10 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 import { isValidUserRole } from "@/lib/utils/userRole";
 
-export default function MenuManagementClientPage({ 
+export default function MenuManagementClientPage({
   venueId,
   initialMenuItemCount = 0,
-}: { 
+}: {
   venueId: string;
   initialMenuItemCount?: number;
 }) {

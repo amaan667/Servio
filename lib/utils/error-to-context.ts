@@ -18,15 +18,15 @@ export function errorToContext(error: unknown): LogContext {
       stack: error.stack,
     };
   }
-  
-  if (typeof error === 'string') {
+
+  if (typeof error === "string") {
     return { message: error };
   }
-  
-  if (typeof error === 'object' && error !== null) {
+
+  if (typeof error === "object" && error !== null) {
     return error as LogContext;
   }
-  
+
   return { value: String(error) };
 }
 
@@ -34,18 +34,17 @@ export function errorToContext(error: unknown): LogContext {
  * Convert unknown value to log context
  */
 export function toContext(value: unknown): LogContext {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return { message: value };
   }
-  
-  if (typeof value === 'number' || typeof value === 'boolean') {
+
+  if (typeof value === "number" || typeof value === "boolean") {
     return { value };
   }
-  
-  if (typeof value === 'object' && value !== null) {
+
+  if (typeof value === "object" && value !== null) {
     return value as LogContext;
   }
-  
+
   return { value: String(value) };
 }
-

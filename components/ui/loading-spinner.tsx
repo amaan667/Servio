@@ -1,11 +1,11 @@
 /**
  * Unified Loading Spinner Component
- * 
+ *
  * Best Practices:
  * - Use for inline/button loading states
  * - Prefer Skeleton components for content placeholders
  * - Use LoadingState for full-page/component loading
- * 
+ *
  * Performance: Optimized with minimal re-renders
  */
 
@@ -38,17 +38,17 @@ const colorMap: Record<LoadingSpinnerColor, string> = {
 
 /**
  * Unified Loading Spinner
- * 
+ *
  * @example
  * // Inline loading
  * <LoadingSpinner size="sm" />
- * 
+ *
  * // Button loading
  * <Button disabled={isLoading}>
  *   {isLoading && <LoadingSpinner size="sm" color="white" className="mr-2" />}
  *   Save
  * </Button>
- * 
+ *
  * // Full page loading
  * <LoadingState size="lg" message="Loading dashboard..." />
  */
@@ -67,4 +67,3 @@ export function LoadingSpinner({
     />
   );
 }
-

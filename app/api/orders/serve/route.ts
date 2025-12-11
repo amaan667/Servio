@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 import { createAdminClient } from "@/lib/supabase";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(req: Request) {
   try {
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const { orderId } = await req.json();
 
     if (!orderId) {
-      return apiErrors.badRequest('Order ID is required');
+      return apiErrors.badRequest("Order ID is required");
     }
 
     // Use admin client - no authentication required for customer-facing flow
@@ -28,16 +28,16 @@ export async function POST(req: Request) {
       logger.error("[ORDERS SERVE] Failed to fetch order", {
         error: { orderId, context: fetchError },
       });
-      return apiErrors.internal('Internal server error');
+      return apiErrors.internal("Internal server error");
     }
     if (!orderData) {
       logger.error("[ORDERS SERVE] Order not found", { orderId });
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
     const currentStatus = (orderData.order_status || "").toString().toUpperCase();
     const venueId = orderData.venue_id as string;
     if (!venueId) {
-      return apiErrors.badRequest('Order missing venue_id');
+      return apiErrors.badRequest("Order missing venue_id");
     }
 
     logger.debug("[ORDERS SERVE] Loaded order", {
@@ -64,9 +64,7 @@ export async function POST(req: Request) {
     }
 
     const hasKdsTickets = kdsTickets && kdsTickets.length > 0;
-    const allTicketsBumped = hasKdsTickets 
-      ? kdsTickets.every((t) => t.status === "bumped")
-      : true; // If no tickets, consider as "all bumped"
+    const allTicketsBumped = hasKdsTickets ? kdsTickets.every((t) => t.status === "bumped") : true; // If no tickets, consider as "all bumped"
 
     // Allow serving orders that are:
     // 1. READY or SERVING (normal flow with KDS)
@@ -74,7 +72,7 @@ export async function POST(req: Request) {
     // This allows orders without KDS tickets to bypass the KDS workflow
     const allowedStatuses = ["READY", "SERVING"];
     const canServeWithoutKds = !hasKdsTickets || allTicketsBumped;
-    const allowedStatusesWithKdsBypass = canServeWithoutKds 
+    const allowedStatusesWithKdsBypass = canServeWithoutKds
       ? ["READY", "SERVING", "PLACED", "IN_PREP"]
       : allowedStatuses;
 
@@ -91,10 +89,11 @@ export async function POST(req: Request) {
           created_at: orderData.created_at,
         },
       });
-      const errorMessage = hasKdsTickets && !allTicketsBumped
-        ? `Order must be READY (from KDS) or SERVING to mark as served. Current status: ${currentStatus}. Please ensure KDS has marked all tickets as ready/bumped.`
-        : `Order cannot be served in current status: ${currentStatus}. Order must be READY, SERVING, PLACED, or IN_PREP to mark as served.`;
-      
+      const errorMessage =
+        hasKdsTickets && !allTicketsBumped
+          ? `Order must be READY (from KDS) or SERVING to mark as served. Current status: ${currentStatus}. Please ensure KDS has marked all tickets as ready/bumped.`
+          : `Order cannot be served in current status: ${currentStatus}. Order must be READY, SERVING, PLACED, or IN_PREP to mark as served.`;
+
       return NextResponse.json(
         {
           error: errorMessage,
@@ -115,12 +114,15 @@ export async function POST(req: Request) {
         venueId,
       });
     } else if (allTicketsBumped && currentStatus !== "READY" && currentStatus !== "SERVING") {
-      logger.info("[ORDERS SERVE] Serving order with all tickets bumped but status not READY/SERVING", {
-        orderId,
-        currentStatus,
-        venueId,
-        ticketCount: kdsTickets.length,
-      });
+      logger.info(
+        "[ORDERS SERVE] Serving order with all tickets bumped but status not READY/SERVING",
+        {
+          orderId,
+          currentStatus,
+          venueId,
+          ticketCount: kdsTickets.length,
+        }
+      );
     }
 
     // Update the order status to SERVED
@@ -138,7 +140,7 @@ export async function POST(req: Request) {
       logger.error("[ORDERS SERVE] Failed to update order status", {
         error: { orderId, context: venueId, error },
       });
-      return apiErrors.internal(error.message || 'Internal server error');
+      return apiErrors.internal(error.message || "Internal server error");
     }
 
     // Also update table_sessions if present (best-effort)

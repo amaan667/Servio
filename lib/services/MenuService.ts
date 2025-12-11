@@ -3,8 +3,8 @@
  * Handles all menu-related business logic
  */
 
-import { BaseService } from './BaseService';
-import { createSupabaseClient } from '@/lib/supabase';
+import { BaseService } from "./BaseService";
+import { createSupabaseClient } from "@/lib/supabase";
 
 export interface MenuItem {
   id: string;
@@ -36,49 +36,57 @@ export class MenuService extends BaseService {
     venueId: string,
     options?: { includeUnavailable?: boolean; category?: string }
   ): Promise<MenuItem[]> {
-    const cacheKey = this.getCacheKey('menu:items', venueId, JSON.stringify(options));
-    
-    return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient();
-      let query = supabase
-        .from('menu_items')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('category', { ascending: true })
-        .order('position', { ascending: true });
+    const cacheKey = this.getCacheKey("menu:items", venueId, JSON.stringify(options));
 
-      if (!options?.includeUnavailable) {
-        query = query.eq('is_available', true);
-      }
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
+        let query = supabase
+          .from("menu_items")
+          .select("*")
+          .eq("venue_id", venueId)
+          .order("category", { ascending: true })
+          .order("position", { ascending: true });
 
-      if (options?.category) {
-        query = query.eq('category', options.category);
-      }
+        if (!options?.includeUnavailable) {
+          query = query.eq("is_available", true);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    }, 300); // 5 minute cache
+        if (options?.category) {
+          query = query.eq("category", options.category);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      },
+      300
+    ); // 5 minute cache
   }
 
   /**
    * Get menu item by ID
    */
   async getMenuItem(itemId: string, venueId: string): Promise<MenuItem | null> {
-    const cacheKey = this.getCacheKey('menu:item', venueId, itemId);
-    
-    return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient();
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('id', itemId)
-        .eq('venue_id', venueId)
-        .single();
+    const cacheKey = this.getCacheKey("menu:item", venueId, itemId);
 
-      if (error) throw error;
-      return data;
-    }, 300);
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("id", itemId)
+          .eq("venue_id", venueId)
+          .single();
+
+        if (error) throw error;
+        return data;
+      },
+      300
+    );
   }
 
   /**
@@ -86,11 +94,11 @@ export class MenuService extends BaseService {
    */
   async createMenuItem(
     venueId: string,
-    itemData: Omit<MenuItem, 'id' | 'venue_id' | 'created_at' | 'updated_at'>
+    itemData: Omit<MenuItem, "id" | "venue_id" | "created_at" | "updated_at">
   ): Promise<MenuItem> {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase
-      .from('menu_items')
+      .from("menu_items")
       .insert({
         ...itemData,
         venue_id: venueId,
@@ -112,14 +120,14 @@ export class MenuService extends BaseService {
   async updateMenuItem(
     itemId: string,
     venueId: string,
-    updates: Partial<Omit<MenuItem, 'id' | 'venue_id' | 'created_at'>>
+    updates: Partial<Omit<MenuItem, "id" | "venue_id" | "created_at">>
   ): Promise<MenuItem> {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase
-      .from('menu_items')
+      .from("menu_items")
       .update(updates)
-      .eq('id', itemId)
-      .eq('venue_id', venueId)
+      .eq("id", itemId)
+      .eq("venue_id", venueId)
       .select()
       .single();
 
@@ -137,10 +145,10 @@ export class MenuService extends BaseService {
   async deleteMenuItem(itemId: string, venueId: string): Promise<void> {
     const supabase = await createSupabaseClient();
     const { error } = await supabase
-      .from('menu_items')
+      .from("menu_items")
       .delete()
-      .eq('id', itemId)
-      .eq('venue_id', venueId);
+      .eq("id", itemId)
+      .eq("venue_id", venueId);
 
     if (error) throw error;
 
@@ -162,11 +170,7 @@ export class MenuService extends BaseService {
   /**
    * Update item price
    */
-  async updatePrice(
-    itemId: string,
-    venueId: string,
-    newPrice: number
-  ): Promise<MenuItem> {
+  async updatePrice(itemId: string, venueId: string, newPrice: number): Promise<MenuItem> {
     return this.updateMenuItem(itemId, venueId, { price: newPrice });
   }
 
@@ -181,10 +185,10 @@ export class MenuService extends BaseService {
 
     for (const update of updates) {
       const { error } = await supabase
-        .from('menu_items')
+        .from("menu_items")
         .update({ price: update.price })
-        .eq('id', update.id)
-        .eq('venue_id', venueId);
+        .eq("id", update.id)
+        .eq("venue_id", venueId);
 
       if (error) throw error;
     }
@@ -197,56 +201,63 @@ export class MenuService extends BaseService {
    * Get categories
    */
   async getCategories(venueId: string): Promise<MenuCategory[]> {
-    const cacheKey = this.getCacheKey('menu:categories', venueId);
-    
-    return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient();
-      const { data, error } = await supabase
-        .from('menu_categories')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('position', { ascending: true });
+    const cacheKey = this.getCacheKey("menu:categories", venueId);
 
-      if (error) throw error;
-      return data || [];
-    }, 600); // 10 minute cache
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
+        const { data, error } = await supabase
+          .from("menu_categories")
+          .select("*")
+          .eq("venue_id", venueId)
+          .order("position", { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+      },
+      600
+    ); // 10 minute cache
   }
 
   /**
    * Get public menu (no auth required)
    */
   async getPublicMenu(venueSlug: string): Promise<MenuItem[]> {
-    const cacheKey = this.getCacheKey('menu:public', venueSlug);
-    
-    return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient();
+    const cacheKey = this.getCacheKey("menu:public", venueSlug);
 
-      // Get venue by slug
-      const { data: venue } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('slug', venueSlug)
-        .single();
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
 
-      if (!venue) {
-        throw new Error('Venue not found');
-      }
+        // Get venue by slug
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("venue_id")
+          .eq("slug", venueSlug)
+          .single();
 
-      // Get menu items
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('venue_id', venue.venue_id)
-        .eq('is_available', true)
-        .order('category', { ascending: true })
-        .order('position', { ascending: true });
+        if (!venue) {
+          throw new Error("Venue not found");
+        }
 
-      if (error) throw error;
-      return data || [];
-    }, 300);
+        // Get menu items
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("venue_id", venue.venue_id)
+          .eq("is_available", true)
+          .order("category", { ascending: true })
+          .order("position", { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+      },
+      300
+    );
   }
 }
 
 // Export singleton instance
 export const menuService = new MenuService();
-

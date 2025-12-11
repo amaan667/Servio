@@ -11,10 +11,10 @@ export interface OrderPayload {
   table_id?: string | null;
   items: OrderItem[];
   total_amount: number;
-  payment_method: 'CARD' | 'CASH' | 'PAY_LATER' | 'STRIPE';
-  payment_status: 'PAID' | 'UNPAID' | 'PROCESSING';
+  payment_method: "CARD" | "CASH" | "PAY_LATER" | "STRIPE";
+  payment_status: "PAID" | "UNPAID" | "PROCESSING";
   order_status?: string;
-  source?: 'qr' | 'counter' | 'pos' | 'admin';
+  source?: "qr" | "counter" | "pos" | "admin";
   session_id?: string | null;
   notes?: string | null;
   stripe_session_id?: string | null;
@@ -41,4 +41,3 @@ export interface OrderResponse {
   duplicate?: boolean;
   error?: string;
 }
-

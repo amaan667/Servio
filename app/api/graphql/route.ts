@@ -89,14 +89,24 @@ const schema = buildSchema(`
 
 // Resolvers
 const rootValue = {
-  orders: async ({ venueId, limit = 50, offset = 0 }: { venueId: string; limit?: number; offset?: number }) => {
+  orders: async ({
+    venueId,
+    limit = 50,
+    offset = 0,
+  }: {
+    venueId: string;
+    limit?: number;
+    offset?: number;
+  }) => {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("orders")
-      .select(`
+      .select(
+        `
         *,
         order_items (*)
-      `)
+      `
+      )
       .eq("venue_id", venueId)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -106,25 +116,29 @@ const rootValue = {
       throw new Error(`Failed to fetch orders: ${error.message}`);
     }
 
-    return data?.map((order) => ({
-      id: order.id,
-      venueId: order.venue_id,
-      totalAmount: order.total_amount,
-      orderStatus: order.order_status,
-      paymentStatus: order.payment_status,
-      items: order.order_items || [],
-      createdAt: order.created_at,
-    })) || [];
+    return (
+      data?.map((order) => ({
+        id: order.id,
+        venueId: order.venue_id,
+        totalAmount: order.total_amount,
+        orderStatus: order.order_status,
+        paymentStatus: order.payment_status,
+        items: order.order_items || [],
+        createdAt: order.created_at,
+      })) || []
+    );
   },
 
   order: async ({ id }: { id: string }) => {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("orders")
-      .select(`
+      .select(
+        `
         *,
         order_items (*)
-      `)
+      `
+      )
       .eq("id", id)
       .single();
 
@@ -157,24 +171,22 @@ const rootValue = {
       throw new Error(`Failed to fetch menu: ${error.message}`);
     }
 
-    return data?.map((item) => ({
-      id: item.id,
-      venueId: item.venue_id,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      category: item.category,
-      isAvailable: item.is_available,
-    })) || [];
+    return (
+      data?.map((item) => ({
+        id: item.id,
+        venueId: item.venue_id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        isAvailable: item.is_available,
+      })) || []
+    );
   },
 
   venue: async ({ id }: { id: string }) => {
     const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("venues")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data, error } = await supabase.from("venues").select("*").eq("id", id).single();
 
     if (error || !data) {
       throw new Error(`Venue not found: ${id}`);
@@ -190,7 +202,7 @@ const rootValue = {
 
   createOrder: async ({ input }: { input: CreateOrderInput }) => {
     const supabase = await createClient();
-    
+
     // Create order
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -198,7 +210,10 @@ const rootValue = {
         venue_id: input.venueId,
         customer_name: input.customerName,
         customer_phone: input.customerPhone,
-        total_amount: input.items.reduce((sum: number, item: OrderItemInput) => sum + item.price * item.quantity, 0),
+        total_amount: input.items.reduce(
+          (sum: number, item: OrderItemInput) => sum + item.price * item.quantity,
+          0
+        ),
         order_status: "PLACED",
         payment_status: "UNPAID",
       })
@@ -219,9 +234,7 @@ const rootValue = {
       item_name: item.itemName,
     }));
 
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItems);
+    const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
 
     if (itemsError) {
       logger.error("[GraphQL] Error creating order items", { error: itemsError });
@@ -270,10 +283,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
     const { query, variables, operationName } = body;
 
     if (!query) {
-      return NextResponse.json(
-        { error: "GraphQL query is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "GraphQL query is required" }, { status: 400 });
     }
 
     const result = await graphql({
@@ -289,11 +299,13 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
       return NextResponse.json(
         {
           data: result.data,
-          errors: result.errors.map((e: { message: string; locations?: unknown; path?: unknown }) => ({
-            message: e.message,
-            locations: e.locations,
-            path: e.path,
-          })),
+          errors: result.errors.map(
+            (e: { message: string; locations?: unknown; path?: unknown }) => ({
+              message: e.message,
+              locations: e.locations,
+              path: e.path,
+            })
+          ),
         },
         { status: 200 } // GraphQL returns 200 even with errors
       );
@@ -339,4 +351,3 @@ export const GET = async () => {
     },
   });
 };
-

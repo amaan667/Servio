@@ -11,7 +11,7 @@ export interface TableWithState {
   created_at?: string;
   updated_at?: string;
   requiresConfirmation?: boolean;
-  mergeScenario?: 'simple' | 'both_active' | 'split_order' | 'transfer';
+  mergeScenario?: "simple" | "both_active" | "split_order" | "transfer";
   current_session_id?: string;
   merged_with_table_id?: string;
 }
@@ -23,4 +23,3 @@ export interface MergeResult {
   requiresConfirmation?: boolean;
   mergedTableId?: string;
 }
-

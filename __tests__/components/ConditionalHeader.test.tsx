@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Tests for ConditionalHeader component
  * @module __tests__/components/ConditionalHeader

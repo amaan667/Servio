@@ -13,36 +13,35 @@ interface KDSStation {
   [key: string]: unknown;
 }
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: 'Too many requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
 
-      const body = await req.json();
-      const venueIdFromBody = body?.venueId || body?.venue_id;
+    const body = await req.json();
+    const venueIdFromBody = body?.venueId || body?.venue_id;
 
-      // Use venueId from context or body
-      const finalVenueId = context.venueId || venueIdFromBody;
+    // Use venueId from context or body
+    const finalVenueId = context.venueId || venueIdFromBody;
 
-      if (!finalVenueId) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "venueId is required",
-          },
-          { status: 400 }
-        );
-      }
+    if (!finalVenueId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "venueId is required",
+        },
+        { status: 400 }
+      );
+    }
 
     const supabase = await createClient();
 
@@ -54,7 +53,6 @@ export const POST = withUnifiedAuth(
     const scopes = ["live", "today"];
 
     for (const scope of scopes) {
-
       // First, ensure KDS stations exist for this venue
       const { data: existingStations } = await supabase
         .from("kds_stations")
@@ -168,7 +166,7 @@ export const POST = withUnifiedAuth(
 
           // Create tickets using unified AI-based function
           const items = Array.isArray(order.items) ? order.items : [];
-          
+
           try {
             await createKDSTicketsWithAI(supabase, {
               id: order.id,
@@ -232,17 +230,16 @@ export const POST = withUnifiedAuth(
       total_tickets_created: totalTicketsCreated,
       results,
     });
-    } catch (_error) {
-      logger.error("[KDS BACKFILL ALL] Unexpected error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
-      return NextResponse.json(
-        {
-          ok: false,
-          error: _error instanceof Error ? _error.message : "Comprehensive backfill failed",
-        },
-        { status: 500 }
-      );
-    }
+  } catch (_error) {
+    logger.error("[KDS BACKFILL ALL] Unexpected error:", {
+      error: _error instanceof Error ? _error.message : "Unknown _error",
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: _error instanceof Error ? _error.message : "Comprehensive backfill failed",
+      },
+      { status: 500 }
+    );
   }
-);
+});

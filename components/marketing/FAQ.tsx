@@ -8,7 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 /**
  * FAQ Item Type
- * 
+ *
  * To edit FAQ content, modify the `faqItems` array below
  */
 interface FAQItem {
@@ -19,29 +19,33 @@ interface FAQItem {
 
 /**
  * FAQ Data
- * 
+ *
  * EDIT HERE: To update FAQ questions and answers, modify this array
  */
 const faqItems: FAQItem[] = [
   {
     id: "hardware",
     question: "Do I need new hardware to use Servio?",
-    answer: "**No.** Customers use their own phones. You print the QR codes; staff manage orders from unknown device with a browser.",
+    answer:
+      "**No.** Customers use their own phones. You print the QR codes; staff manage orders from unknown device with a browser.",
   },
   {
     id: "free-trial",
     question: "Can I try Servio for free?",
-    answer: "Yes — **14-day free trial** with full access. No credit card required. Cancel anytime.",
+    answer:
+      "Yes — **14-day free trial** with full access. No credit card required. Cancel anytime.",
   },
   {
     id: "how-it-works",
     question: "How do customers place orders?",
-    answer: "They scan the QR, browse your digital menu, and pay from their phone — no app needed. Orders appear instantly in your dashboard.",
+    answer:
+      "They scan the QR, browse your digital menu, and pay from their phone — no app needed. Orders appear instantly in your dashboard.",
   },
   {
     id: "availability",
     question: "Is Servio available outside the UK?",
-    answer: "We're UK-first today (GBP + Stripe). **Expanding soon.** Join the waitlist and we'll notify you when Servio launches in your region.",
+    answer:
+      "We're UK-first today (GBP + Stripe). **Expanding soon.** Join the waitlist and we'll notify you when Servio launches in your region.",
   },
 ];
 
@@ -59,9 +63,9 @@ interface FAQProps {
 
 /**
  * FAQ Component
- * 
+ *
  * Premium, accessible FAQ accordion for the Servio homepage.
- * 
+ *
  * Features:
  * - Fully accessible with ARIA attributes and keyboard navigation
  * - Smooth animations with prefers-reduced-motion support
@@ -69,10 +73,10 @@ interface FAQProps {
  * - SEO-friendly semantic HTML
  * - Optional analytics hooks
  * - Conversion-focused CTA footer
- * 
+ *
  * @example
  * ```tsx
- * <FAQ 
+ * <FAQ
  *   onToggle={(q, isOpen) => analytics.track('faq_toggle', { question: q, state: isOpen ? 'open' : 'closed' })}
  *   onCTAClick={(type) => analytics.track('faq_cta_click', { type })}
  * />
@@ -86,7 +90,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
     setOpenItems((prev) => {
       const newSet = new Set(prev);
       const willBeOpen = !newSet.has(id);
-      
+
       if (willBeOpen) {
         newSet.add(id);
       } else {
@@ -126,10 +130,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
       className={`w-full max-w-3xl mx-auto px-4 pt-16 pb-8 ${className}`}
     >
       {/* Heading */}
-      <h2
-        id="faq-heading"
-        className="text-3xl font-bold text-center text-gray-900 mb-8"
-      >
+      <h2 id="faq-heading" className="text-3xl font-bold text-center text-gray-900 mb-8">
         Frequently Asked Questions
       </h2>
 
@@ -176,8 +177,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
                   // Respect prefers-reduced-motion
                   transitionDuration:
                     typeof window !== "undefined" &&
-                    window.matchMedia("(prefers-reduced-motion: reduce)")
-                      .matches
+                    window.matchMedia("(prefers-reduced-motion: reduce)").matches
                       ? "0ms"
                       : "200ms",
                 }}
@@ -224,9 +224,9 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
 
 /**
  * FAQ JSON-LD Schema for SEO
- * 
+ *
  * Use this in your page's <head> or Next.js metadata for rich search results.
- * 
+ *
  * @example
  * ```tsx
  * // In app/page.tsx or layout.tsx
@@ -250,4 +250,3 @@ export const faqSchema = {
     },
   })),
 };
-

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -55,11 +55,7 @@ export const POST = withUnifiedAuth(
 
       // STEP 3: Parse request
       const body = await req.json();
-      const {
-        menu_url: menuUrl,
-        pdf_images: pdfImages,
-        replace_mode: replaceMode,
-      } = body;
+      const { menu_url: menuUrl, pdf_images: pdfImages, replace_mode: replaceMode } = body;
 
       // STEP 4: Validate inputs
       if (!venueId || !menuUrl || !pdfImages || pdfImages.length === 0) {
@@ -74,147 +70,148 @@ export const POST = withUnifiedAuth(
       // STEP 6: Business logic
       const supabase = await createClient();
 
-    // Step 1: Scrape URL for item data using centralized API
-    let urlItems: ScrapedMenuItem[] = [];
-    try {
-      const railwayDomain = env('RAILWAY_PUBLIC_DOMAIN');
-      const baseUrl =
-        env('NEXT_PUBLIC_APP_URL') ||
-        (railwayDomain
-          ? `https://${railwayDomain.replace(/^https?:\/\//, '')}`
-          : "http://localhost:3000");
-
-      // Create AbortController with 120s timeout (Playwright with scrolling can take 60-90s)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
-
-      let scrapeResponse;
+      // Step 1: Scrape URL for item data using centralized API
+      let urlItems: ScrapedMenuItem[] = [];
       try {
-        scrapeResponse = await fetch(`${baseUrl}/api/scrape-menu`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: menuUrl }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        throw fetchError;
+        const railwayDomain = env("RAILWAY_PUBLIC_DOMAIN");
+        const baseUrl =
+          env("NEXT_PUBLIC_APP_URL") ||
+          (railwayDomain
+            ? `https://${railwayDomain.replace(/^https?:\/\//, "")}`
+            : "http://localhost:3000");
+
+        // Create AbortController with 120s timeout (Playwright with scrolling can take 60-90s)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+        let scrapeResponse;
+        try {
+          scrapeResponse = await fetch(`${baseUrl}/api/scrape-menu`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: menuUrl }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
+        }
+
+        if (!scrapeResponse.ok) {
+          const errorData = await scrapeResponse.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(errorData.error || `Scrape API returned ${scrapeResponse.status}`);
+        }
+
+        const scrapeResult = (await scrapeResponse.json()) as {
+          ok: boolean;
+          items?: Array<{
+            name: string;
+            description?: string;
+            price?: number;
+            category?: string;
+            image?: string;
+          }>;
+          error?: string;
+        };
+        if (scrapeResult.ok && scrapeResult.items) {
+          urlItems = scrapeResult.items.map((item) => ({
+            name: item.name,
+            description: item.description || "",
+            price: item.price || 0,
+            category: item.category || "Menu Items",
+            image_url: item.image || null,
+          }));
+        } else {
+          throw new Error(scrapeResult.error || "Scraping returned no items");
+        }
+      } catch (_error) {
+        logger.warn(`[REPROCESS ${requestId}] URL scraping failed, falling back to PDF-only`);
+        // Continue with PDF-only extraction
       }
 
-      if (!scrapeResponse.ok) {
-        const errorData = await scrapeResponse.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errorData.error || `Scrape API returned ${scrapeResponse.status}`);
+      // Step 2: Extract items from existing PDF images
+      const pdfExtractedItems: PDFMenuItem[] = [];
+
+      for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
+        const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
+        pdfExtractedItems.push(...extractedItems.map((item) => ({ ...item, page: pageIndex })));
       }
 
-      const scrapeResult = (await scrapeResponse.json()) as {
-        ok: boolean;
-        items?: Array<{
-          name: string;
-          description?: string;
-          price?: number;
-          category?: string;
-          image?: string;
-        }>;
-        error?: string;
-      };
-      if (scrapeResult.ok && scrapeResult.items) {
-        urlItems = scrapeResult.items.map((item) => ({
-          name: item.name,
-          description: item.description || "",
-          price: item.price || 0,
-          category: item.category || "Menu Items",
-          image_url: item.image || null,
-        }));
-      } else {
-        throw new Error(scrapeResult.error || "Scraping returned no items");
-      }
-    } catch (_error) {
-      logger.warn(`[REPROCESS ${requestId}] URL scraping failed, falling back to PDF-only`);
-      // Continue with PDF-only extraction
-    }
+      // Step 3: Combine data
+      const menuItems = [];
+      const combinedItems = new Map();
 
-    // Step 2: Extract items from existing PDF images
-    const pdfExtractedItems: PDFMenuItem[] = [];
-
-    for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-      const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
-      pdfExtractedItems.push(...extractedItems.map((item) => ({ ...item, page: pageIndex })));
-    }
-
-    // Step 3: Combine data
-    const menuItems = [];
-    const combinedItems = new Map();
-
-    // Start with URL items (better quality data)
-    for (const urlItem of urlItems) {
-      const itemId = uuidv4();
-
-      const pdfMatch = pdfExtractedItems.find(
-        (pdfItem) => calculateSimilarity(urlItem.name, pdfItem.name) > 0.7
-      );
-
-      menuItems.push({
-        id: itemId,
-        venue_id: venueId,
-        name: urlItem.name,
-        description: urlItem.description || pdfMatch?.description || "",
-        price: urlItem.price || pdfMatch?.price || 0,
-        category: urlItem.category || pdfMatch?.category || "Menu Items",
-        image_url: urlItem.image_url || null,
-        is_available: true,
-        created_at: new Date().toISOString(),
-      });
-
-      combinedItems.set(urlItem.name.toLowerCase(), true);
-    }
-
-    // Add PDF items not in URL
-    for (const pdfItem of pdfExtractedItems) {
-      if (!combinedItems.has(pdfItem.name.toLowerCase())) {
+      // Start with URL items (better quality data)
+      for (const urlItem of urlItems) {
         const itemId = uuidv4();
+
+        const pdfMatch = pdfExtractedItems.find(
+          (pdfItem) => calculateSimilarity(urlItem.name, pdfItem.name) > 0.7
+        );
 
         menuItems.push({
           id: itemId,
           venue_id: venueId,
-          ...pdfItem,
+          name: urlItem.name,
+          description: urlItem.description || pdfMatch?.description || "",
+          price: urlItem.price || pdfMatch?.price || 0,
+          category: urlItem.category || pdfMatch?.category || "Menu Items",
+          image_url: urlItem.image_url || null,
           is_available: true,
           created_at: new Date().toISOString(),
         });
+
+        combinedItems.set(urlItem.name.toLowerCase(), true);
       }
-    }
 
-    // Step 4: Replace or Append
-    if (replaceMode) {
-      await supabase.from("menu_items").delete().eq("venue_id", venueId);
-    } else {
-      // Intentionally empty
-    }
+      // Add PDF items not in URL
+      for (const pdfItem of pdfExtractedItems) {
+        if (!combinedItems.has(pdfItem.name.toLowerCase())) {
+          const itemId = uuidv4();
 
-    // Step 5: Insert
-    if (menuItems.length > 0) {
-      const { error: insertError } = await supabase.from("menu_items").insert(menuItems);
-      if (insertError) throw new Error(`Insert failed: ${insertError.message}`);
-    }
+          menuItems.push({
+            id: itemId,
+            venue_id: venueId,
+            ...pdfItem,
+            is_available: true,
+            created_at: new Date().toISOString(),
+          });
+        }
+      }
 
-    return NextResponse.json({
-      ok: true,
-      result: {
-        items_created: menuItems.length,
-        categories_created: new Set(menuItems.map((i) => i.category)).size,
-      },
-    });
+      // Step 4: Replace or Append
+      if (replaceMode) {
+        await supabase.from("menu_items").delete().eq("venue_id", venueId);
+      } else {
+        // Intentionally empty
+      }
+
+      // Step 5: Insert
+      if (menuItems.length > 0) {
+        const { error: insertError } = await supabase.from("menu_items").insert(menuItems);
+        if (insertError) throw new Error(`Insert failed: ${insertError.message}`);
+      }
+
+      return NextResponse.json({
+        ok: true,
+        result: {
+          items_created: menuItems.length,
+          categories_created: new Set(menuItems.map((i) => i.category)).size,
+        },
+      });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error(`[REPROCESS ${requestId}] Error:`, {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -225,7 +222,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           ok: false,

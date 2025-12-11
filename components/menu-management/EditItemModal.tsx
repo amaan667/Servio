@@ -321,7 +321,9 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
               {formData.is_available ? "✅ Available" : "❌ Unavailable"}
             </Label>
             <p className="text-xs text-muted-foreground ml-auto">
-              {formData.is_available ? "Item is visible to customers" : "Item is hidden from customers"}
+              {formData.is_available
+                ? "Item is visible to customers"
+                : "Item is hidden from customers"}
             </p>
           </div>
         </div>

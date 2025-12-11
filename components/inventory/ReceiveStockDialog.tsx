@@ -1,12 +1,19 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import type { StockLevel } from '@/types/inventory';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { StockLevel } from "@/types/inventory";
 
 interface ReceiveStockDialogProps {
   open: boolean;
@@ -15,12 +22,17 @@ interface ReceiveStockDialogProps {
   onSuccess: () => void;
 }
 
-export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }: ReceiveStockDialogProps) {
+export function ReceiveStockDialog({
+  open,
+  onOpenChange,
+  ingredient,
+  onSuccess,
+}: ReceiveStockDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [quantity, setQuantity] = useState('');
-  const [costPerUnit, setCostPerUnit] = useState(ingredient.cost_per_unit?.toString() || '');
-  const [supplier, setSupplier] = useState(ingredient.supplier || '');
-  const [note, setNote] = useState('');
+  const [quantity, setQuantity] = useState("");
+  const [costPerUnit, setCostPerUnit] = useState(ingredient.cost_per_unit?.toString() || "");
+  const [supplier, setSupplier] = useState(ingredient.supplier || "");
+  const [note, setNote] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,15 +43,15 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
       const costValue = parseFloat(costPerUnit);
 
       if (isNaN(quantityValue) || quantityValue <= 0) {
-        alert('Please enter a valid quantity');
+        alert("Please enter a valid quantity");
         return;
       }
 
       // Update ingredient cost and supplier if changed
       if (costValue !== ingredient.cost_per_unit || supplier !== ingredient.supplier) {
         await fetch(`/api/inventory/ingredients/${ingredient.ingredient_id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             cost_per_unit: costValue,
             supplier: supplier,
@@ -48,24 +60,26 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
       }
 
       // Record the stock receipt
-      const response = await fetch('/api/inventory/stock/adjust', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/inventory/stock/adjust", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ingredient_id: ingredient.ingredient_id,
           delta: quantityValue,
-          reason: 'receive',
-          note: note || `Received ${quantityValue} ${ingredient.unit} from ${supplier || 'supplier'} @ $${costValue}/unit`,
+          reason: "receive",
+          note:
+            note ||
+            `Received ${quantityValue} ${ingredient.unit} from ${supplier || "supplier"} @ $${costValue}/unit`,
         }),
       });
 
       if (response.ok) {
         onSuccess();
         onOpenChange(false);
-        setQuantity('');
-        setCostPerUnit('');
-        setSupplier('');
-        setNote('');
+        setQuantity("");
+        setCostPerUnit("");
+        setSupplier("");
+        setNote("");
       }
     } catch (_error) {
       // Error silently handled
@@ -115,7 +129,7 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Previous: ${ingredient.cost_per_unit || '0.00'}
+                  Previous: ${ingredient.cost_per_unit || "0.00"}
                 </p>
               </div>
             </div>
@@ -151,9 +165,7 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
               </div>
               <div className="flex justify-between text-sm">
                 <span>Total Purchase Cost:</span>
-                <span className="font-bold text-green-600">
-                  £{totalCost.toFixed(2)}
-                </span>
+                <span className="font-bold text-green-600">£{totalCost.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -162,7 +174,7 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Processing...' : 'Receive Stock'}
+              {loading ? "Processing..." : "Receive Stock"}
             </Button>
           </DialogFooter>
         </form>
@@ -170,4 +182,3 @@ export function ReceiveStockDialog({ open, onOpenChange, ingredient, onSuccess }
     </Dialog>
   );
 }
-

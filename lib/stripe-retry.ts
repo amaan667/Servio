@@ -1,6 +1,6 @@
 /**
  * Stripe API Retry Logic with Circuit Breaker Pattern
- * 
+ *
  * Handles transient failures, rate limits, and implements circuit breaker
  * to prevent cascading failures.
  */
@@ -146,7 +146,7 @@ function calculateDelay(attempt: number, options: Required<RetryOptions>): numbe
 
 /**
  * Retry wrapper for Stripe API calls
- * 
+ *
  * @param fn - Function that returns a Promise (Stripe API call)
  * @param options - Retry configuration options
  * @returns Promise with the result of the function
@@ -170,10 +170,10 @@ export async function withStripeRetry<T>(
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
       const result = await fn();
-      
+
       // Record success in circuit breaker
       circuitBreaker.recordSuccess();
-      
+
       if (attempt > 0) {
         logger.info("[STRIPE RETRY] Request succeeded after retry", {
           attempt: attempt + 1,
@@ -236,4 +236,3 @@ export function resetCircuitBreaker(): void {
   circuitBreaker.recordSuccess();
   logger.info("[CIRCUIT BREAKER] Manually reset");
 }
-

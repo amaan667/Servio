@@ -1,9 +1,9 @@
 /**
  * Script to replace process.env usage with centralized env()
- * 
+ *
  * This script helps migrate from direct process.env access to the centralized
  * environment variable system.
- * 
+ *
  * Run: pnpm tsx scripts/replace-process-env.ts
  */
 
@@ -80,8 +80,12 @@ const replacements: Replacement[] = [
 ];
 
 function needsImport(content: string): boolean {
-  return content.includes("env(") || content.includes("getNodeEnv()") || 
-         content.includes("isProduction()") || content.includes("isDevelopment()");
+  return (
+    content.includes("env(") ||
+    content.includes("getNodeEnv()") ||
+    content.includes("isProduction()") ||
+    content.includes("isDevelopment()")
+  );
 }
 
 function hasEnvImport(content: string): boolean {
@@ -90,36 +94,40 @@ function hasEnvImport(content: string): boolean {
 
 function addEnvImport(content: string): string {
   // Find the last import statement
-  const importLines = content.split('\n');
+  const importLines = content.split("\n");
   let lastImportIndex = -1;
-  
+
   for (let i = 0; i < importLines.length; i++) {
-    if (importLines[i].trim().startsWith('import ')) {
+    if (importLines[i].trim().startsWith("import ")) {
       lastImportIndex = i;
     }
   }
-  
+
   if (lastImportIndex === -1) {
     // No imports, add at the top
     return `import { env, getNodeEnv, isProduction, isDevelopment } from '@/lib/env';\n${content}`;
   }
-  
+
   // Check if env import already exists
   if (hasEnvImport(content)) {
     return content;
   }
-  
+
   // Add import after last import
   const newContent = [...importLines];
-  newContent.splice(lastImportIndex + 1, 0, "import { env, getNodeEnv, isProduction, isDevelopment } from '@/lib/env';");
-  return newContent.join('\n');
+  newContent.splice(
+    lastImportIndex + 1,
+    0,
+    "import { env, getNodeEnv, isProduction, isDevelopment } from '@/lib/env';"
+  );
+  return newContent.join("\n");
 }
 
 function processFile(filePath: string): { changed: boolean; changes: string[] } {
   let content = readFileSync(filePath, "utf-8");
   const originalContent = content;
   const changes: string[] = [];
-  
+
   // Apply replacements
   for (const replacement of replacements) {
     if (replacement.pattern.test(content)) {
@@ -127,16 +135,13 @@ function processFile(filePath: string): { changed: boolean; changes: string[] } 
       changes.push(replacement.description);
     }
   }
-  
+
   // Replace common patterns
   content = content.replace(
     /process\.env\.NODE_ENV\s*===\s*["']development["']/g,
     "isDevelopment()"
   );
-  content = content.replace(
-    /process\.env\.NODE_ENV\s*===\s*["']production["']/g,
-    "isProduction()"
-  );
+  content = content.replace(/process\.env\.NODE_ENV\s*===\s*["']production["']/g, "isProduction()");
   content = content.replace(
     /process\.env\.NODE_ENV\s*!==\s*["']development["']/g,
     "!isDevelopment()"
@@ -145,7 +150,7 @@ function processFile(filePath: string): { changed: boolean; changes: string[] } 
     /process\.env\.NODE_ENV\s*!==\s*["']production["']/g,
     "!isProduction()"
   );
-  
+
   // Add import if needed
   if (needsImport(content) && !hasEnvImport(content)) {
     content = addEnvImport(content);
@@ -153,7 +158,7 @@ function processFile(filePath: string): { changed: boolean; changes: string[] } 
       changes.push("Added env import");
     }
   }
-  
+
   const changed = content !== originalContent;
   return { changed, changes, content };
 }
@@ -164,9 +169,13 @@ function findFiles(dir: string, extensions: string[] = [".ts", ".tsx"]): string[
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
-    if (entry.isDirectory() && !entry.name.includes("node_modules") && !entry.name.includes(".next")) {
+    if (
+      entry.isDirectory() &&
+      !entry.name.includes("node_modules") &&
+      !entry.name.includes(".next")
+    ) {
       files.push(...findFiles(fullPath, extensions));
-    } else if (entry.isFile() && extensions.some(ext => entry.name.endsWith(ext))) {
+    } else if (entry.isFile() && extensions.some((ext) => entry.name.endsWith(ext))) {
       files.push(fullPath);
     }
   }
@@ -192,7 +201,7 @@ for (const file of files) {
     // Write changes
     writeFileSync(file, result.content, "utf-8");
     console.log(`✅ ${file.replace(process.cwd(), "")}`);
-    result.changes.forEach(change => console.log(`   - ${change}`));
+    result.changes.forEach((change) => console.log(`   - ${change}`));
   }
 }
 
@@ -201,4 +210,3 @@ console.log(`   Files processed: ${files.length}`);
 console.log(`   Files changed: ${totalChanged}`);
 console.log(`\n⚠️  This script shows what would be changed.`);
 console.log(`   Uncomment the writeFileSync line to actually apply changes.\n`);
-

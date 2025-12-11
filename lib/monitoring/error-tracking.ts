@@ -34,23 +34,23 @@ export function trackError(
   };
 
   // Log based on severity
-      switch (severity) {
-        case "critical":
-          logger.error("[CRITICAL ERROR]", logData);
-          captureException(error, { ...context, severity });
-          break;
-        case "high":
-          logger.error("[HIGH SEVERITY ERROR]", logData);
-          captureException(error, { ...context, severity });
-          break;
-        case "medium":
-          logger.warn("[MEDIUM SEVERITY ERROR]", logData);
-          captureMessage(errorMessage, "warning", { ...context, severity });
-          break;
-        case "low":
-          logger.debug("[LOW SEVERITY ERROR]", logData);
-          break;
-      }
+  switch (severity) {
+    case "critical":
+      logger.error("[CRITICAL ERROR]", logData);
+      captureException(error, { ...context, severity });
+      break;
+    case "high":
+      logger.error("[HIGH SEVERITY ERROR]", logData);
+      captureException(error, { ...context, severity });
+      break;
+    case "medium":
+      logger.warn("[MEDIUM SEVERITY ERROR]", logData);
+      captureMessage(errorMessage, "warning", { ...context, severity });
+      break;
+    case "low":
+      logger.debug("[LOW SEVERITY ERROR]", logData);
+      break;
+  }
 }
 
 /**
@@ -121,7 +121,7 @@ export function createErrorResponse(
   defaultMessage = "An error occurred"
 ): { error: string; details?: string; code?: string } {
   const errorDetails = getErrorDetails(error);
-  
+
   // Track the error
   trackError(error, context);
 
@@ -130,8 +130,9 @@ export function createErrorResponse(
     error: errorDetails.message || defaultMessage,
     ...(errorDetails.code && { code: errorDetails.code }),
     // Don't expose stack traces in production
-    ...(process.env.NODE_ENV === "development" && errorDetails.stack && {
-      details: errorDetails.stack,
-    }),
+    ...(process.env.NODE_ENV === "development" &&
+      errorDetails.stack && {
+        details: errorDetails.stack,
+      }),
   };
 }

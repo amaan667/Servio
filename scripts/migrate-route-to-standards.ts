@@ -1,6 +1,6 @@
 /**
  * Route Migration Helper Script
- * 
+ *
  * This script helps identify routes that need migration to the new standards.
  * Run: pnpm tsx scripts/migrate-route-to-standards.ts
  */
@@ -28,7 +28,10 @@ function analyzeRoute(filePath: string): RouteAnalysis {
   }
 
   // Check for withUnifiedAuth
-  if (!content.includes("withUnifiedAuth") && content.includes("export const POST") || content.includes("export const GET")) {
+  if (
+    (!content.includes("withUnifiedAuth") && content.includes("export const POST")) ||
+    content.includes("export const GET")
+  ) {
     if (!content.includes("// Public route")) {
       issues.push("Missing withUnifiedAuth wrapper");
       score -= 3;
@@ -36,13 +39,16 @@ function analyzeRoute(filePath: string): RouteAnalysis {
   }
 
   // Check for input validation
-  if ((content.includes("req.json()") || content.includes("await req.json()")) && !content.includes("validateBody")) {
+  if (
+    (content.includes("req.json()") || content.includes("await req.json()")) &&
+    !content.includes("validateBody")
+  ) {
     issues.push("Missing Zod input validation");
     score -= 2;
   }
 
   // Check for standard error responses
-  if (content.includes('NextResponse.json({ error:') && !content.includes("apiErrors")) {
+  if (content.includes("NextResponse.json({ error:") && !content.includes("apiErrors")) {
     issues.push("Uses non-standard error responses");
     score -= 1;
   }
@@ -116,7 +122,7 @@ console.log(`Routes already compliant: ${routes.length - issues.length}\n`);
 
 if (issues.length > 0) {
   console.log("ROUTES NEEDING ATTENTION (sorted by priority):\n");
-  
+
   issues.forEach((issue, index) => {
     console.log(`${index + 1}. ${issue.file}`);
     console.log(`   Score: ${issue.score}/10`);
@@ -128,13 +134,18 @@ if (issues.length > 0) {
   // Summary statistics
   const avgScore = issues.reduce((sum, i) => sum + i.score, 0) / issues.length;
   const criticalRoutes = issues.filter((i) => i.score < 5).length;
-  
+
   console.log("=".repeat(80));
   console.log("SUMMARY");
   console.log("=".repeat(80));
   console.log(`Average score: ${avgScore.toFixed(1)}/10`);
   console.log(`Critical routes (score < 5): ${criticalRoutes}`);
-  console.log(`Routes needing immediate attention: ${issues.slice(0, 10).map((i) => i.file).join(", ")}\n`);
+  console.log(
+    `Routes needing immediate attention: ${issues
+      .slice(0, 10)
+      .map((i) => i.file)
+      .join(", ")}\n`
+  );
 }
 
 console.log("\n✅ Analysis complete!\n");
@@ -142,4 +153,3 @@ console.log("Next steps:");
 console.log("1. Review routes with score < 5 first");
 console.log("2. Follow API_STANDARDS.md for migration");
 console.log("3. Use the example in app/api/feedback-responses/route.ts as a template\n");
-

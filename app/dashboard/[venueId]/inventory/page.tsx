@@ -9,7 +9,7 @@ export default async function InventoryPage({ params }: { params: { venueId: str
     requireFeature: "inventory",
   }).catch(() => null);
 
-  const hasInventoryAccess = (auth?.hasFeatureAccess("inventory") ?? false);
+  const hasInventoryAccess = auth?.hasFeatureAccess("inventory") ?? false;
 
   return (
     <InventoryClientPage

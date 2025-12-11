@@ -176,9 +176,7 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href={
-                        venueId || primaryVenueId
-                          ? `/dashboard/${venueId || primaryVenueId}`
-                          : "/"
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       onClick={() => {
@@ -186,9 +184,10 @@ export default function GlobalNav() {
                         console.log("[GlobalNav] 🏠 HOME BUTTON CLICKED", {
                           venueId,
                           primaryVenueId,
-                          href: venueId || primaryVenueId
-                            ? `/dashboard/${venueId || primaryVenueId}`
-                            : "/",
+                          href:
+                            venueId || primaryVenueId
+                              ? `/dashboard/${venueId || primaryVenueId}`
+                              : "/",
                           timestamp: new Date().toISOString(),
                         });
                       }}
@@ -247,7 +246,10 @@ export default function GlobalNav() {
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       onClick={(e) => {
-                        const href = venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/";
+                        const href =
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}`
+                            : "/";
                         console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (feature page)", {
                           venueId,
                           primaryVenueId,
@@ -258,18 +260,18 @@ export default function GlobalNav() {
                           timestamp: new Date().toISOString(),
                           event: e,
                         });
-                        
+
                         // Track navigation attempt
                         const startTime = Date.now();
                         const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-                        
+
                         // Log navigation start
                         console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
                           navigationId,
                           href,
                           startTime,
                         });
-                        
+
                         // Monitor if navigation actually happens
                         setTimeout(() => {
                           const elapsed = Date.now() - startTime;
@@ -279,7 +281,8 @@ export default function GlobalNav() {
                             elapsed,
                             expectedPath: href,
                             actualPath: currentPath,
-                            navigationHappened: currentPath === href || currentPath.startsWith(href),
+                            navigationHappened:
+                              currentPath === href || currentPath.startsWith(href),
                           });
                         }, 100);
                       }}
@@ -338,7 +341,10 @@ export default function GlobalNav() {
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       onClick={(e) => {
-                        const href = venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/";
+                        const href =
+                          venueId || primaryVenueId
+                            ? `/dashboard/${venueId || primaryVenueId}`
+                            : "/";
                         console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (settings page)", {
                           venueId,
                           primaryVenueId,
@@ -348,17 +354,17 @@ export default function GlobalNav() {
                           timestamp: new Date().toISOString(),
                           event: e,
                         });
-                        
+
                         // Track navigation attempt
                         const startTime = Date.now();
                         const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-                        
+
                         console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
                           navigationId,
                           href,
                           startTime,
                         });
-                        
+
                         // Monitor if navigation actually happens
                         setTimeout(() => {
                           const elapsed = Date.now() - startTime;
@@ -368,7 +374,8 @@ export default function GlobalNav() {
                             elapsed,
                             expectedPath: href,
                             actualPath: currentPath,
-                            navigationHappened: currentPath === href || currentPath.startsWith(href),
+                            navigationHappened:
+                              currentPath === href || currentPath.startsWith(href),
                           });
                         }, 100);
                       }}
@@ -434,18 +441,18 @@ export default function GlobalNav() {
                             timestamp: new Date().toISOString(),
                             event: e,
                           });
-                          
+
                           // Track navigation attempt
                           const startTime = Date.now();
                           const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-                          
+
                           console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
                             navigationId,
                             href,
                             startTime,
                             routerAvailable: !!router,
                           });
-                          
+
                           // Monitor if navigation actually happens
                           setTimeout(() => {
                             const elapsed = Date.now() - startTime;
@@ -455,9 +462,10 @@ export default function GlobalNav() {
                               elapsed,
                               expectedPath: href,
                               actualPath: currentPath,
-                              navigationHappened: currentPath === href || currentPath.startsWith(href),
+                              navigationHappened:
+                                currentPath === href || currentPath.startsWith(href),
                             });
-                            
+
                             // If navigation didn't happen, log warning
                             if (currentPath !== href && !currentPath.startsWith(href)) {
                               console.warn("[GlobalNav] ⚠️ NAVIGATION FAILED", {
@@ -468,7 +476,7 @@ export default function GlobalNav() {
                               });
                             }
                           }, 100);
-                          
+
                           // Also check after longer delay
                           setTimeout(() => {
                             const currentPath = window.location.pathname;
@@ -577,9 +585,7 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href={
-                        venueId || primaryVenueId
-                          ? `/dashboard/${venueId || primaryVenueId}`
-                          : "/"
+                        venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}

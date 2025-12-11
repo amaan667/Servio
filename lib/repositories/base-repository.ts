@@ -3,9 +3,9 @@
  * @module lib/repositories/base-repository
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
-import { logger } from '@/lib/logger';
-import { EnhancedErrorTracker } from '@/lib/monitoring/sentry-enhanced';
+import { SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
+import { EnhancedErrorTracker } from "@/lib/monitoring/sentry-enhanced";
 
 export interface QueryOptions {
   select?: string;
@@ -37,16 +37,16 @@ export abstract class BaseRepository<T> {
    * Find single record by ID
    */
   async findById(id: string, options?: QueryOptions): Promise<T | null> {
-    return EnhancedErrorTracker.trackDatabaseQuery('SELECT', this.tableName, async () => {
-      const select = options?.select || '*';
+    return EnhancedErrorTracker.trackDatabaseQuery("SELECT", this.tableName, async () => {
+      const select = options?.select || "*";
       const { data, error } = await this.supabase
         .from(this.tableName)
         .select(select)
-        .eq('id', id)
+        .eq("id", id)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
+        if (error.code === "PGRST116") return null; // Not found
         logger.error(`[${this.tableName}] Error finding by ID`, { error, id });
         throw error;
       }
@@ -59,8 +59,8 @@ export abstract class BaseRepository<T> {
    * Find all records matching criteria
    */
   async findAll(criteria?: Partial<T>, options?: QueryOptions): Promise<T[]> {
-    return EnhancedErrorTracker.trackDatabaseQuery('SELECT', this.tableName, async () => {
-      const select = options?.select || '*';
+    return EnhancedErrorTracker.trackDatabaseQuery("SELECT", this.tableName, async () => {
+      const select = options?.select || "*";
       let query = this.supabase.from(this.tableName).select(select);
 
       // Apply criteria filters
@@ -107,12 +107,14 @@ export abstract class BaseRepository<T> {
     limit: number = 20,
     options?: QueryOptions
   ): Promise<PaginationResult<T>> {
-    return EnhancedErrorTracker.trackDatabaseQuery('SELECT', this.tableName, async () => {
-      const select = options?.select || '*';
+    return EnhancedErrorTracker.trackDatabaseQuery("SELECT", this.tableName, async () => {
+      const select = options?.select || "*";
       const offset = (page - 1) * limit;
 
       // Get total count
-      let countQuery = this.supabase.from(this.tableName).select('*', { count: 'exact', head: true });
+      let countQuery = this.supabase
+        .from(this.tableName)
+        .select("*", { count: "exact", head: true });
       if (criteria) {
         Object.entries(criteria).forEach(([key, value]) => {
           if (value !== undefined) {
@@ -148,7 +150,7 @@ export abstract class BaseRepository<T> {
    * Create new record
    */
   async create(data: Partial<T>): Promise<T> {
-    return EnhancedErrorTracker.trackDatabaseQuery('INSERT', this.tableName, async () => {
+    return EnhancedErrorTracker.trackDatabaseQuery("INSERT", this.tableName, async () => {
       const { data: created, error } = await this.supabase
         .from(this.tableName)
         .insert(data as never)
@@ -168,7 +170,7 @@ export abstract class BaseRepository<T> {
    * Create multiple records
    */
   async createMany(records: Partial<T>[]): Promise<T[]> {
-    return EnhancedErrorTracker.trackDatabaseQuery('INSERT', this.tableName, async () => {
+    return EnhancedErrorTracker.trackDatabaseQuery("INSERT", this.tableName, async () => {
       const { data, error } = await this.supabase
         .from(this.tableName)
         .insert(records as never[])
@@ -187,16 +189,16 @@ export abstract class BaseRepository<T> {
    * Update record by ID
    */
   async update(id: string, data: Partial<T>): Promise<T | null> {
-    return EnhancedErrorTracker.trackDatabaseQuery('UPDATE', this.tableName, async () => {
+    return EnhancedErrorTracker.trackDatabaseQuery("UPDATE", this.tableName, async () => {
       const { data: updated, error } = await this.supabase
         .from(this.tableName)
         .update(data as never)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
+        if (error.code === "PGRST116") return null; // Not found
         logger.error(`[${this.tableName}] Error updating record`, { error, id, data });
         throw error;
       }
@@ -209,7 +211,7 @@ export abstract class BaseRepository<T> {
    * Update multiple records matching criteria
    */
   async updateMany(criteria: Partial<T>, data: Partial<T>): Promise<T[]> {
-    return EnhancedErrorTracker.trackDatabaseQuery('UPDATE', this.tableName, async () => {
+    return EnhancedErrorTracker.trackDatabaseQuery("UPDATE", this.tableName, async () => {
       let query = this.supabase.from(this.tableName).update(data as never);
 
       Object.entries(criteria).forEach(([key, value]) => {
@@ -221,7 +223,11 @@ export abstract class BaseRepository<T> {
       const { data: updated, error } = await query.select();
 
       if (error) {
-        logger.error(`[${this.tableName}] Error updating multiple records`, { error, criteria, data });
+        logger.error(`[${this.tableName}] Error updating multiple records`, {
+          error,
+          criteria,
+          data,
+        });
         throw error;
       }
 
@@ -233,8 +239,8 @@ export abstract class BaseRepository<T> {
    * Delete record by ID
    */
   async delete(id: string): Promise<boolean> {
-    return EnhancedErrorTracker.trackDatabaseQuery('DELETE', this.tableName, async () => {
-      const { error } = await this.supabase.from(this.tableName).delete().eq('id', id);
+    return EnhancedErrorTracker.trackDatabaseQuery("DELETE", this.tableName, async () => {
+      const { error } = await this.supabase.from(this.tableName).delete().eq("id", id);
 
       if (error) {
         logger.error(`[${this.tableName}] Error deleting record`, { error, id });
@@ -249,7 +255,7 @@ export abstract class BaseRepository<T> {
    * Delete multiple records matching criteria
    */
   async deleteMany(criteria: Partial<T>): Promise<number> {
-    return EnhancedErrorTracker.trackDatabaseQuery('DELETE', this.tableName, async () => {
+    return EnhancedErrorTracker.trackDatabaseQuery("DELETE", this.tableName, async () => {
       let query = this.supabase.from(this.tableName).delete();
 
       Object.entries(criteria).forEach(([key, value]) => {
@@ -273,8 +279,8 @@ export abstract class BaseRepository<T> {
    * Count records matching criteria
    */
   async count(criteria?: Partial<T>): Promise<number> {
-    return EnhancedErrorTracker.trackDatabaseQuery('SELECT', this.tableName, async () => {
-      let query = this.supabase.from(this.tableName).select('*', { count: 'exact', head: true });
+    return EnhancedErrorTracker.trackDatabaseQuery("SELECT", this.tableName, async () => {
+      let query = this.supabase.from(this.tableName).select("*", { count: "exact", head: true });
 
       if (criteria) {
         Object.entries(criteria).forEach(([key, value]) => {
@@ -303,4 +309,3 @@ export abstract class BaseRepository<T> {
     return count > 0;
   }
 }
-

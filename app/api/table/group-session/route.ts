@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -13,7 +13,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -99,16 +99,17 @@ export const GET = withUnifiedAuth(
         });
       }
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[GROUP SESSION GET] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -119,7 +120,7 @@ export const GET = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           ok: false,
@@ -152,7 +153,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -325,16 +326,17 @@ export const POST = withUnifiedAuth(
         });
       }
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[GROUP SESSION POST] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -345,7 +347,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           ok: false,

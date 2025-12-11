@@ -1,23 +1,21 @@
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { NextRequest } from "next/server";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
-      }
+  try {
+    // CRITICAL: Rate limiting
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    if (!rateLimitResult.success) {
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+    }
 
-      const body = await req.json();
+    const body = await req.json();
 
     const { order_id, venue_id, sessionId } = body;
 
@@ -79,10 +77,7 @@ export async function POST(req: NextRequest) {
         orderId: order_id,
         error: updateError,
       });
-      return apiErrors.internal(
-        "Failed to process order",
-        updateError?.message || "Unknown error"
-      );
+      return apiErrors.internal("Failed to process order", updateError?.message || "Unknown error");
     }
 
     logger.info("[PAY LATER] Order marked as pay later successfully", {
@@ -101,26 +96,26 @@ export async function POST(req: NextRequest) {
       payment_method: "PAY_LATER", // Standardized payment method
       total_amount: order.total_amount,
     });
-    } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
-      logger.error("[PAY LATER] 💥 EXCEPTION CAUGHT:", {
-        error: errorMessage,
-        stack: errorStack,
-      });
+  } catch (_error) {
+    const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+    const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      // Check if it's an authentication/authorization error
-      if (errorMessage.includes("Unauthorized")) {
-        return apiErrors.unauthorized(errorMessage);
-      }
-      if (errorMessage.includes("Forbidden")) {
-        return apiErrors.forbidden(errorMessage);
-      }
-      
-      return apiErrors.internal(
-        isDevelopment() ? errorMessage : "Payment processing failed",
-        isDevelopment() && errorStack ? { stack: errorStack } : undefined
-      );
+    logger.error("[PAY LATER] 💥 EXCEPTION CAUGHT:", {
+      error: errorMessage,
+      stack: errorStack,
+    });
+
+    // Check if it's an authentication/authorization error
+    if (errorMessage.includes("Unauthorized")) {
+      return apiErrors.unauthorized(errorMessage);
     }
+    if (errorMessage.includes("Forbidden")) {
+      return apiErrors.forbidden(errorMessage);
+    }
+
+    return apiErrors.internal(
+      isDevelopment() ? errorMessage : "Payment processing failed",
+      isDevelopment() && errorStack ? { stack: errorStack } : undefined
+    );
+  }
 }

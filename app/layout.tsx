@@ -3,7 +3,7 @@ import { initErrorSuppression } from "@/lib/error-suppression";
 initErrorSuppression();
 
 import type { Metadata } from "next";
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from "@sentry/nextjs";
 // Railway deployment trigger - premium gates removed
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -75,46 +75,46 @@ export function generateMetadata(): Metadata {
     formatDetection: {
       telephone: false,
     },
-  openGraph: {
-    type: "website",
-    locale: "en_GB",
-    url: "https://servio.app",
-    siteName: "Servio",
-    title: "Servio - Complete POS & QR Ordering for Food Businesses",
-    description:
-      "All-in-one platform for restaurants, cafes, food trucks, and stalls. QR ordering, POS, payments, and kitchen management.",
-    images: [
-      {
-        url: "/placeholder-logo.png",
-        width: 512,
-        height: 512,
-        alt: "Servio - QR Code Ordering Platform",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Servio - Complete POS & QR Ordering for Food Businesses",
-    description: "All-in-one platform for restaurants, cafes, food trucks, and stalls",
-    images: ["/placeholder-logo.png"],
-    creator: "@servio_app",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    openGraph: {
+      type: "website",
+      locale: "en_GB",
+      url: "https://servio.app",
+      siteName: "Servio",
+      title: "Servio - Complete POS & QR Ordering for Food Businesses",
+      description:
+        "All-in-one platform for restaurants, cafes, food trucks, and stalls. QR ordering, POS, payments, and kitchen management.",
+      images: [
+        {
+          url: "/placeholder-logo.png",
+          width: 512,
+          height: 512,
+          alt: "Servio - QR Code Ordering Platform",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Servio - Complete POS & QR Ordering for Food Businesses",
+      description: "All-in-one platform for restaurants, cafes, food trucks, and stalls",
+      images: ["/placeholder-logo.png"],
+      creator: "@servio_app",
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  icons: {
-    icon: [{ url: "/assets/servio-s-logo.png", sizes: "any", type: "image/png" }],
-    shortcut: "/assets/servio-s-logo.png",
-    apple: "/assets/servio-s-logo.png",
-  },
+    icons: {
+      icon: [{ url: "/assets/servio-s-logo.png", sizes: "any", type: "image/png" }],
+      shortcut: "/assets/servio-s-logo.png",
+      apple: "/assets/servio-s-logo.png",
+    },
   };
 }
 
@@ -155,7 +155,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           error,
         } = await Promise.race([
           supabase.auth.getSession(),
-          new Promise<{ data: { session: null }; error: null }>((resolve) => 
+          new Promise<{ data: { session: null }; error: null }>((resolve) =>
             setTimeout(() => resolve({ data: { session: null }, error: null }), 1000)
           ),
         ]);

@@ -1,4 +1,3 @@
- 
 /**
  * Auto-generated test for orders/session/[sessionId]/open
  * Generated: 2025-11-23T00:14:32.214Z
@@ -18,14 +17,16 @@ vi.mock("@/lib/supabase", () => ({
       delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
     })),
   })),
-  createServerSupabase: vi.fn(() => Promise.resolve({
-    from: vi.fn(() => ({
-      select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-    auth: {
-      getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
-    },
-  })),
+  createServerSupabase: vi.fn(() =>
+    Promise.resolve({
+      from: vi.fn(() => ({
+        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+      auth: {
+        getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
+      },
+    })
+  ),
 }));
 
 vi.mock("@/lib/api-auth", () => ({
@@ -44,14 +45,15 @@ vi.mock("@/lib/api-auth", () => ({
 describe("Orders Session SessionId Open API", () => {
   describe("GET orders/session/[sessionId]/open", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/api//orders/session/[sessionId]/open");
+      const request = createMockRequest(
+        "GET",
+        "http://localhost:3000/api//orders/session/[sessionId]/open"
+      );
 
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {
-
-    });
+    it("should validate request parameters", async () => {});
   });
 });

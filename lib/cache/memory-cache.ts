@@ -24,17 +24,17 @@ class MemoryCache {
    */
   get<T>(key: string): T | null {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
-    
+
     if (!entry) {
       return null;
     }
-    
+
     // Check if expired
     if (Date.now() > entry.expires) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return entry.value;
   }
 
@@ -49,7 +49,7 @@ class MemoryCache {
         this.cache.delete(firstKey as string);
       }
     }
-    
+
     this.cache.set(key, {
       value,
       expires: Date.now() + (ttl || this.defaultTTL),
@@ -73,17 +73,13 @@ class MemoryCache {
   /**
    * Get or set pattern
    */
-  async getOrSet<T>(
-    key: string,
-    fetcher: () => Promise<T>,
-    ttl?: number
-  ): Promise<T> {
+  async getOrSet<T>(key: string, fetcher: () => Promise<T>, ttl?: number): Promise<T> {
     const cached = this.get<T>(key);
-    
+
     if (cached !== null) {
       return cached;
     }
-    
+
     const value = await fetcher();
     this.set(key, value, ttl);
     return value;
@@ -106,10 +102,13 @@ class MemoryCache {
 export const memoryCache = new MemoryCache();
 
 // Run cleanup every 5 minutes
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    memoryCache.cleanup();
-  }, 5 * 60 * 1000);
+if (typeof setInterval !== "undefined") {
+  setInterval(
+    () => {
+      memoryCache.cleanup();
+    },
+    5 * 60 * 1000
+  );
 }
 
 // Cache key builders for consistency
@@ -118,9 +117,8 @@ export const cacheKeys = {
   venueDetails: (venueId: string) => `venue:${venueId}`,
   userVenues: (userId: string) => `user:${userId}:venues`,
   dashboardCounts: (venueId: string) => `dashboard:${venueId}:counts`,
-  orders: (venueId: string, status?: string) => `orders:${venueId}:${status || 'all'}`,
+  orders: (venueId: string, status?: string) => `orders:${venueId}:${status || "all"}`,
   inventory: (venueId: string) => `inventory:${venueId}`,
   kdsStations: (venueId: string) => `kds:${venueId}:stations`,
   subscription: (orgId: string) => `subscription:${orgId}`,
 } as const;
-

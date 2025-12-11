@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const sessionId = searchParams.get("sessionId");
 
     if (!sessionId) {
-      return apiErrors.badRequest('Session ID is required');
+      return apiErrors.badRequest("Session ID is required");
     }
 
     // First try to fetch order by Stripe session ID
@@ -40,7 +40,6 @@ export async function GET(req: Request) {
 
     // If not found by session ID, try to find recent orders that might be related
     if (orderError && orderError.code === "PGRST116") {
-
       // Look for orders created in the last 15 minutes that are paid
       const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
       const { data: recentPaidOrders, error: _recentError } = await supabaseAdmin

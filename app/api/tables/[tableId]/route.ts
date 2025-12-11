@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody } from "@/lib/api/validation-schemas";
 
 const updateTableSchema = z.object({
   label: z.string().min(1).optional(),
@@ -22,9 +22,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
         // STEP 1: Rate limiting (ALWAYS FIRST)
         const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
         if (!rateLimitResult.success) {
-          return apiErrors.rateLimit(
-            Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-          );
+          return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
         }
 
         // STEP 2: Get tableId from route params
@@ -135,10 +133,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
           return handleZodError(error);
         }
 
-        return apiErrors.internal(
-          "Request processing failed",
-          isDevelopment() ? error : undefined
-        );
+        return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
       }
     },
     {
@@ -194,7 +189,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
         if (checkError || !existingTable) {
           logger.error("[TABLES API] Error checking table existence:", { value: checkError });
-          return apiErrors.notFound('Table not found');
+          return apiErrors.notFound("Table not found");
         }
 
         // Type assertion for TypeScript
@@ -382,8 +377,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (deleteSessionsError) {
-          logger.error("[TABLES API] Error deleting table sessions:", { value: deleteSessionsError });
-          logger.warn("[TABLES API] Proceeding with table deletion despite session deletion failure");
+          logger.error("[TABLES API] Error deleting table sessions:", {
+            value: deleteSessionsError,
+          });
+          logger.warn(
+            "[TABLES API] Proceeding with table deletion despite session deletion failure"
+          );
         }
 
         // Delete group sessions for this table
@@ -421,7 +420,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
             hint: error.hint,
             code: error.code,
           });
-          return apiErrors.internal('Failed to delete table');
+          return apiErrors.internal("Failed to delete table");
         }
 
         return success({ success: true, deletedTable: table });
@@ -429,7 +428,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
         logger.error("[TABLES API] Unexpected error:", {
           error: error instanceof Error ? error.message : String(error),
         });
-        return apiErrors.internal('Internal server error');
+        return apiErrors.internal("Internal server error");
       }
     },
     {

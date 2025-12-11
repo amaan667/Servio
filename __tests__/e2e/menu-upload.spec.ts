@@ -1,4 +1,3 @@
- 
 /**
  * E2E Tests - Menu Upload Flow
  * Tests the complete menu upload and extraction process

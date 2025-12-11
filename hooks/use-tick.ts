@@ -39,8 +39,8 @@ function getServerSnapshot() {
 export function useTick(): number {
   const value = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   // Force client-only
-  useEffect(() => { /* Empty */ }, []);
+  useEffect(() => {
+    /* Empty */
+  }, []);
   return value;
 }
-
-

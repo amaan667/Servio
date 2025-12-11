@@ -107,7 +107,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
 
       // Fetch recipe costs in parallel (batch query)
       const recipeCosts = new Map<string, number>();
-      
+
       if (menuItems.length > 0) {
         // Batch fetch all recipes at once
         const { data: allRecipes } = await supabase
@@ -119,7 +119,10 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
             ingredient:ingredients(cost_per_unit)
           `
           )
-          .in("menu_item_id", menuItems.map((item) => item.id));
+          .in(
+            "menu_item_id",
+            menuItems.map((item) => item.id)
+          );
 
         // Process recipes
         if (allRecipes) {
@@ -144,13 +147,10 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
           // Calculate costs for each item
           menuItems.forEach((item) => {
             const recipes = recipeMap.get(item.id) || [];
-            const totalCost = recipes.reduce(
-              (sum: number, recipe: RecipeType) => {
-                const ingredientCost = recipe.ingredient?.cost_per_unit || 0;
-                return sum + ingredientCost * (recipe.qty_per_item || 0);
-              },
-              0
-            );
+            const totalCost = recipes.reduce((sum: number, recipe: RecipeType) => {
+              const ingredientCost = recipe.ingredient?.cost_per_unit || 0;
+              return sum + ingredientCost * (recipe.qty_per_item || 0);
+            }, 0);
             recipeCosts.set(item.id, totalCost);
           });
         }
@@ -161,14 +161,15 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
 
       // Process orders to calculate revenue and quantities
       (orders || []).forEach((order) => {
-        const items = (order.items as Array<{
-          menu_item_id?: string;
-          id?: string;
-          item_name?: string;
-          name?: string;
-          quantity?: number;
-          price?: number;
-        }>) || [];
+        const items =
+          (order.items as Array<{
+            menu_item_id?: string;
+            id?: string;
+            item_name?: string;
+            name?: string;
+            quantity?: number;
+            price?: number;
+          }>) || [];
         items.forEach((item) => {
           const menuItemId = (item.menu_item_id || item.id) as string;
           const itemName = item.item_name || item.name || "Unknown";
@@ -462,7 +463,10 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
               <CardContent>
                 <div className="space-y-3">
                   {data.highMarginItems.map((item) => (
-                    <div key={item.menu_item_id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div
+                      key={item.menu_item_id}
+                      className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
+                    >
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
                         <p className="text-xs text-muted-foreground">{item.category}</p>
@@ -493,7 +497,10 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
               <CardContent>
                 <div className="space-y-3">
                   {data.lowMarginItems.map((item) => (
-                    <div key={item.menu_item_id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div
+                      key={item.menu_item_id}
+                      className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
+                    >
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
                         <p className="text-xs text-muted-foreground">{item.category}</p>
@@ -547,9 +554,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
                           <td className="text-right py-2 px-2 text-sm">
                             £{item.revenue.toFixed(2)}
                           </td>
-                          <td className="text-right py-2 px-2 text-sm">
-                            £{item.cogs.toFixed(2)}
-                          </td>
+                          <td className="text-right py-2 px-2 text-sm">£{item.cogs.toFixed(2)}</td>
                           <td
                             className={`text-right py-2 px-2 text-sm font-semibold ${
                               item.profit >= 0 ? "text-green-600" : "text-red-600"
@@ -593,7 +598,11 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
                         <span className="font-medium">{cat.category}</span>
                         <span
                           className={`font-semibold ${
-                            cat.margin >= 30 ? "text-green-600" : cat.margin >= 10 ? "text-yellow-600" : "text-red-600"
+                            cat.margin >= 30
+                              ? "text-green-600"
+                              : cat.margin >= 10
+                                ? "text-yellow-600"
+                                : "text-red-600"
                           }`}
                         >
                           {cat.margin.toFixed(1)}% margin
@@ -616,7 +625,11 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className={`h-2 rounded-full ${
-                            cat.margin >= 30 ? "bg-green-500" : cat.margin >= 10 ? "bg-yellow-500" : "bg-red-500"
+                            cat.margin >= 30
+                              ? "bg-green-500"
+                              : cat.margin >= 10
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
                           }`}
                           style={{ width: `${Math.min(cat.margin, 100)}%` }}
                         ></div>
@@ -725,4 +738,3 @@ function MetricCard({
     </Card>
   );
 }
-

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,11 +23,11 @@ export async function GET(
     const venueId = searchParams.get("venue_id");
 
     if (!venueId) {
-      return apiErrors.badRequest('venue_id is required');
+      return apiErrors.badRequest("venue_id is required");
     }
 
     if (!tableNumber) {
-      return apiErrors.badRequest('tableNumber is required');
+      return apiErrors.badRequest("tableNumber is required");
     }
 
     const admin = createAdminClient();
@@ -68,7 +68,7 @@ export async function GET(
       logger.error("[TABLE UNPAID FOR PAYMENT] Error fetching orders", {
         data: { tableNumber, venueId, error },
       });
-      return apiErrors.internal('Failed to fetch orders');
+      return apiErrors.internal("Failed to fetch orders");
     }
 
     // Calculate total
@@ -110,7 +110,6 @@ export async function GET(
         error: _error instanceof Error ? _error.message : String(_error),
       },
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
-

@@ -1,61 +1,65 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Clock, CheckCircle, ChefHat, Truck, Utensils } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Clock, CheckCircle, ChefHat, Truck, Utensils } from "lucide-react";
 
 interface OrderTimelineProps {
   orderId: string;
-  currentStatus?: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'SERVING' | 'COMPLETED';
+  currentStatus?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED";
   estimatedTime?: string;
 }
 
 const ORDER_STATUSES = [
   {
-    id: 'PLACED',
-    label: 'Order Placed',
-    description: 'Your order has been received',
+    id: "PLACED",
+    label: "Order Placed",
+    description: "Your order has been received",
     icon: CheckCircle,
-    color: 'bg-green-500',
-    textColor: 'text-green-600'
+    color: "bg-green-500",
+    textColor: "text-green-600",
   },
   {
-    id: 'ACCEPTED',
-    label: 'Order Confirmed',
-    description: 'Kitchen has confirmed your order',
+    id: "ACCEPTED",
+    label: "Order Confirmed",
+    description: "Kitchen has confirmed your order",
     icon: ChefHat,
-    color: 'bg-blue-500',
-    textColor: 'text-blue-600'
+    color: "bg-blue-500",
+    textColor: "text-blue-600",
   },
   {
-    id: 'IN_PREP',
-    label: 'Preparing',
-    description: 'Your food is being prepared',
+    id: "IN_PREP",
+    label: "Preparing",
+    description: "Your food is being prepared",
     icon: Utensils,
-    color: 'bg-orange-500',
-    textColor: 'text-orange-600'
+    color: "bg-orange-500",
+    textColor: "text-orange-600",
   },
   {
-    id: 'READY',
-    label: 'Ready for Pickup',
-    description: 'Your order is ready!',
+    id: "READY",
+    label: "Ready for Pickup",
+    description: "Your order is ready!",
     icon: Truck,
-    color: 'bg-purple-500',
-    textColor: 'text-purple-600'
+    color: "bg-purple-500",
+    textColor: "text-purple-600",
   },
   {
-    id: 'COMPLETED',
-    label: 'Delivered',
-    description: 'Enjoy your meal!',
+    id: "COMPLETED",
+    label: "Delivered",
+    description: "Enjoy your meal!",
     icon: CheckCircle,
-    color: 'bg-green-500',
-    textColor: 'text-green-600'
-  }
+    color: "bg-green-500",
+    textColor: "text-green-600",
+  },
 ];
 
-export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime }: OrderTimelineProps) {
-  const currentStatusIndex = ORDER_STATUSES.findIndex(status => status.id === currentStatus);
-  
+export function OrderTimeline({
+  orderId,
+  currentStatus = "PLACED",
+  estimatedTime,
+}: OrderTimelineProps) {
+  const currentStatusIndex = ORDER_STATUSES.findIndex((status) => status.id === currentStatus);
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -86,25 +90,27 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
             const isCompleted = index <= currentStatusIndex;
             const isCurrent = index === currentStatusIndex;
             const IconComponent = status.icon;
-            
+
             return (
               <div key={status.id} className="relative">
                 <div className="flex items-start space-x-3">
                   {/* Timeline Icon */}
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    isCompleted 
-                      ? `${status.color} text-white` 
-                      : 'bg-gray-200 text-gray-700'
-                  }`}>
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      isCompleted ? `${status.color} text-white` : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
                     <IconComponent className="h-4 w-4" />
                   </div>
-                  
+
                   {/* Timeline Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
-                      <p className={`text-sm font-medium ${
-                        isCompleted ? status.textColor : 'text-gray-900'
-                      }`}>
+                      <p
+                        className={`text-sm font-medium ${
+                          isCompleted ? status.textColor : "text-gray-900"
+                        }`}
+                      >
                         {status.label}
                       </p>
                       {isCurrent && (
@@ -113,22 +119,25 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
                         </Badge>
                       )}
                       {isCompleted && !isCurrent && (
-                        <Badge variant="outline" className="text-xs text-green-600 border-green-600">
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-green-600 border-green-600"
+                        >
                           Complete
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-900 mt-1">
-                      {status.description}
-                    </p>
+                    <p className="text-xs text-gray-900 mt-1">{status.description}</p>
                   </div>
                 </div>
-                
+
                 {/* Timeline Line */}
                 {index < ORDER_STATUSES.length - 1 && (
-                  <div className={`absolute left-4 top-8 w-0.5 h-4 ${
-                    isCompleted ? 'bg-gray-300' : 'bg-gray-200'
-                  }`} />
+                  <div
+                    className={`absolute left-4 top-8 w-0.5 h-4 ${
+                      isCompleted ? "bg-gray-300" : "bg-gray-200"
+                    }`}
+                  />
                 )}
               </div>
             );
@@ -138,8 +147,8 @@ export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime
         {/* Status Note */}
         <div className="bg-gray-50 p-3 rounded-lg">
           <p className="text-xs text-gray-900">
-            You'll receive updates as your order progresses. 
-            The kitchen team is working hard to prepare your meal!
+            You'll receive updates as your order progresses. The kitchen team is working hard to
+            prepare your meal!
           </p>
         </div>
       </CardContent>

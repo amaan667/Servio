@@ -1,2 +1,2 @@
 // Thin re-export to the canonical provider-based hook
-export { useAuth } from '@/app/auth/AuthProvider';
+export { useAuth } from "@/app/auth/AuthProvider";

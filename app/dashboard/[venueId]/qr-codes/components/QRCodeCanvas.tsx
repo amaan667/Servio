@@ -21,8 +21,8 @@ export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
         });
         setQrDataUrl(dataUrl);
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     };
 
     generateQR();
@@ -31,8 +31,8 @@ export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
   // Show placeholder immediately - no loading spinner
   if (!qrDataUrl) {
     return (
-      <div 
-        className="flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg" 
+      <div
+        className="flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg"
         style={{ width: size, height: size }}
       >
         <div className="text-gray-500 text-sm">QR Code</div>

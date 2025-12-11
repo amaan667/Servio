@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 import { getStripeClient } from "@/lib/stripe-client";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import type Stripe from "stripe";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { venueId, tableNumber, customerName, customerPhone, splits, source = "qr" } = body;
 
     if (!venueId || !splits || splits.length === 0) {
-      return apiErrors.badRequest('Missing required fields');
+      return apiErrors.badRequest("Missing required fields");
     }
 
     const supabase = createAdminClient();
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!venue) {
-      return apiErrors.notFound('Venue not found');
+      return apiErrors.notFound("Venue not found");
     }
 
     // Get or create table
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
       if (tableError || !newTable) {
         logger.error("[SPLIT ORDERS] Failed to create table:", tableError);
-        return apiErrors.internal('Failed to create table');
+        return apiErrors.internal("Failed to create table");
       }
       tableId = newTable.id;
     }
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
       if (orderError || !order) {
         logger.error("[SPLIT ORDERS] Failed to create order:", orderError);
-        return apiErrors.internal('Failed to create order');
+        return apiErrors.internal("Failed to create order");
       }
 
       createdOrders.push(order);
@@ -174,10 +174,9 @@ export async function POST(req: NextRequest) {
       };
 
       const stripe = getStripeClient();
-      const session = await withStripeRetry(
-        () => stripe.checkout.sessions.create(sessionParams),
-        { maxRetries: 3 }
-      );
+      const session = await withStripeRetry(() => stripe.checkout.sessions.create(sessionParams), {
+        maxRetries: 3,
+      });
 
       checkoutSessions.push({
         orderId: order.id,
@@ -207,7 +206,6 @@ export async function POST(req: NextRequest) {
       error: err.message,
       stack: err.stack,
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
-

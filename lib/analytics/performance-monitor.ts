@@ -170,7 +170,6 @@ export class PerformanceMonitor {
 
     // Send to analytics service
     this.sendToAnalytics(name, value);
-
   }
 
   /**

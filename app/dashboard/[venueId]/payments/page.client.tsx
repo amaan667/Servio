@@ -84,7 +84,9 @@ export default function PaymentsClientPage({ venueId }: { venueId: string }) {
 
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Payments</h1>
-          <p className="text-lg text-foreground mt-2">Manage payments, split bills, and view receipts</p>
+          <p className="text-lg text-foreground mt-2">
+            Manage payments, split bills, and view receipts
+          </p>
         </div>
 
         <PaymentsClient venueId={venueId} />

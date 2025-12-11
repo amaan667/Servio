@@ -48,7 +48,9 @@ export function getSupabaseAnonKey(): string {
         hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
         nodeEnv: process.env.NODE_ENV,
       });
-      throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables.");
+      throw new Error(
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables."
+      );
     }
     // Validate key format (should start with eyJ)
     if (!key.startsWith("eyJ")) {
@@ -59,7 +61,9 @@ export function getSupabaseAnonKey(): string {
   const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   if (!key) {
     logger.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in server environment");
-    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables.");
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables."
+    );
   }
   return key;
 }
@@ -76,7 +80,7 @@ export function supabaseBrowser() {
   // Validate environment variables first
   let url: string;
   let anonKey: string;
-  
+
   try {
     url = getSupabaseUrl();
     anonKey = getSupabaseAnonKey();
@@ -85,7 +89,9 @@ export function supabaseBrowser() {
     logger.error("[SUPABASE] Failed to get Supabase credentials", {
       error: errorMessage,
     });
-    throw new Error(`Supabase configuration error: ${errorMessage}. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.`);
+    throw new Error(
+      `Supabase configuration error: ${errorMessage}. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.`
+    );
   }
 
   if (typeof window === "undefined") {

@@ -16,9 +16,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
     const handler = (event: ErrorEvent) => {
       const message = event?.message || "";
-      const isChunkError =
-        message.includes("Loading chunk") ||
-        message.includes("ChunkLoadError");
+      const isChunkError = message.includes("Loading chunk") || message.includes("ChunkLoadError");
 
       if (isChunkError) {
         const hasRetried = sessionStorage.getItem("chunk-retry-done");

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
@@ -35,7 +35,7 @@ export async function POST(
 
         // STEP 4: Validate inputs
         if (!tableId) {
-          return apiErrors.badRequest('tableId is required');
+          return apiErrors.badRequest("tableId is required");
         }
 
         // STEP 5: Security - Verify table belongs to venue
@@ -55,10 +55,7 @@ export async function POST(
             venueId,
             error: fetchError,
           });
-          return NextResponse.json(
-            { error: "Table not found or access denied" },
-            { status: 404 }
-          );
+          return NextResponse.json({ error: "Table not found or access denied" }, { status: 404 });
         }
 
         // STEP 6: Business logic - Increment qr_version
@@ -92,16 +89,17 @@ export async function POST(
         // STEP 7: Return success response
         return NextResponse.json({ table });
       } catch (_error) {
-        const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+        const errorMessage =
+          _error instanceof Error ? _error.message : "An unexpected error occurred";
         const errorStack = _error instanceof Error ? _error.stack : undefined;
-        
+
         logger.error("[TABLES REISSUE QR] Unexpected error:", {
           error: errorMessage,
           stack: errorStack,
           venueId: authContext.venueId,
           userId: authContext.user.id,
         });
-        
+
         if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
           return NextResponse.json(
             {
@@ -111,7 +109,7 @@ export async function POST(
             { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
           );
         }
-        
+
         return NextResponse.json(
           {
             error: "Internal Server Error",
@@ -128,8 +126,8 @@ export async function POST(
         try {
           // Get tableId from URL path
           const url = new URL(req.url);
-          const pathParts = url.pathname.split('/');
-          const tableIdIndex = pathParts.indexOf('tables');
+          const pathParts = url.pathname.split("/");
+          const tableIdIndex = pathParts.indexOf("tables");
           if (tableIdIndex !== -1 && pathParts[tableIdIndex + 1]) {
             const tableId = pathParts[tableIdIndex + 1];
             const { createAdminClient } = await import("@/lib/supabase");
@@ -150,6 +148,6 @@ export async function POST(
       },
     }
   );
-  
+
   return handler(req, routeContext);
 }

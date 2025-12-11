@@ -91,9 +91,7 @@ export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
               )}
             </div>
             <div>
-              <DialogTitle>
-                {isFeatureRequest ? "Request a Feature" : "Report a Bug"}
-              </DialogTitle>
+              <DialogTitle>{isFeatureRequest ? "Request a Feature" : "Report a Bug"}</DialogTitle>
               <DialogDescription>
                 {isFeatureRequest
                   ? "Tell us what feature you'd like to see in Servio"
@@ -106,11 +104,16 @@ export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="subject">
-              {isFeatureRequest ? "Feature Title" : "Bug Title"} <span className="text-red-500">*</span>
+              {isFeatureRequest ? "Feature Title" : "Bug Title"}{" "}
+              <span className="text-red-500">*</span>
             </Label>
             <Input
               id="subject"
-              placeholder={isFeatureRequest ? "e.g., Add customer loyalty program" : "e.g., Orders not appearing in dashboard"}
+              placeholder={
+                isFeatureRequest
+                  ? "e.g., Add customer loyalty program"
+                  : "e.g., Orders not appearing in dashboard"
+              }
               value={formData.subject}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               required
@@ -120,7 +123,8 @@ export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="description">
-              {isFeatureRequest ? "Description" : "What happened?"} <span className="text-red-500">*</span>
+              {isFeatureRequest ? "Description" : "What happened?"}{" "}
+              <span className="text-red-500">*</span>
             </Label>
             <Textarea
               id="description"
@@ -185,4 +189,3 @@ export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
     </Dialog>
   );
 }
-

@@ -1,29 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  Receipt, 
-  Clock, 
-  Users, 
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  Receipt,
+  Clock,
+  Users,
   CreditCard,
   TrendingUp,
   AlertTriangle,
-  CheckCircle
-} from 'lucide-react';
-import { TableManagementEntity } from '@/components/pos/TableManagementEntity';
-import { LiveOrdersPOS } from '@/components/pos/LiveOrdersPOS';
+  CheckCircle,
+} from "lucide-react";
+import { TableManagementEntity } from "@/components/pos/TableManagementEntity";
+import { LiveOrdersPOS } from "@/components/pos/LiveOrdersPOS";
 
 interface POSDashboardClientProps {
   venueId: string;
 }
 
 export default function POSDashboardClient({ venueId }: POSDashboardClientProps) {
-  const [activeTab, setActiveTab] = useState('tables');
+  const [activeTab, setActiveTab] = useState("tables");
 
   return (
     <div className="space-y-6">
@@ -147,9 +147,7 @@ export default function POSDashboardClient({ venueId }: POSDashboardClientProps)
                 <p className="text-gray-900 mb-4">
                   Counter orders are displayed in the Live Orders tab with proper filtering.
                 </p>
-                <Button onClick={() => setActiveTab('orders')}>
-                  View Live Orders
-                </Button>
+                <Button onClick={() => setActiveTab("orders")}>View Live Orders</Button>
               </div>
             </CardContent>
           </Card>
@@ -164,7 +162,8 @@ export default function POSDashboardClient({ venueId }: POSDashboardClientProps)
             <div>
               <h4 className="font-medium text-orange-900">System Alerts</h4>
               <p className="text-sm text-orange-700">
-                Table 5 has been waiting 25 minutes • 3 orders need payment • Kitchen is 15 minutes behind
+                Table 5 has been waiting 25 minutes • 3 orders need payment • Kitchen is 15 minutes
+                behind
               </p>
             </div>
             <Button size="sm" variant="outline" className="ml-auto">

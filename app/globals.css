@@ -2598,7 +2598,7 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #6d28d9 !important; /* darker purple for active */
     font-weight: 700 !important;
   }
-  
+
   .mobile-nav button[class*="active"] svg,
   .mobile-nav button[class*="active"] svg * {
     color: #6d28d9 !important; /* darker purple for active icons */

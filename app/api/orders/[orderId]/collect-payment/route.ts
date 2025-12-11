@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,13 +48,13 @@ export async function POST(
       logger.error("[COLLECT PAYMENT] Order not found", {
         data: { orderId, venue_id, error: fetchError },
       });
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Validate order state
     if (order.payment_status === "PAID") {
       logger.warn("[COLLECT PAYMENT] Order already paid", { data: { orderId } });
-      return apiErrors.badRequest('Order has already been paid');
+      return apiErrors.badRequest("Order has already been paid");
     }
 
     if (order.payment_mode !== "pay_at_till") {
@@ -84,7 +84,7 @@ export async function POST(
       logger.error("[COLLECT PAYMENT] Failed to update order", {
         data: { orderId, error: updateError },
       });
-      return apiErrors.internal('Failed to mark payment as collected');
+      return apiErrors.internal("Failed to mark payment as collected");
     }
 
     logger.info("[COLLECT PAYMENT] Payment collected successfully", {
@@ -100,6 +100,6 @@ export async function POST(
     logger.error("[COLLECT PAYMENT] Unexpected error", {
       data: { orderId, error: _error instanceof Error ? _error.message : String(_error) },
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

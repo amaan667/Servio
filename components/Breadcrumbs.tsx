@@ -44,7 +44,9 @@ export default function Breadcrumbs() {
                 {c.label}
               </Link>
             )}
-            {i < crumbs.length - 1 && <span className="text-foreground/50 dark:text-foreground/60">→</span>}
+            {i < crumbs.length - 1 && (
+              <span className="text-foreground/50 dark:text-foreground/60">→</span>
+            )}
           </li>
         ))}
       </ol>

@@ -156,7 +156,12 @@ export default function MenuManagementClient({
     console.log("Initial Menu Items Count (from hook):", menuItems.length);
     console.log("Initial Menu Items Count (from server prop):", initialMenuItemCount);
     if (menuItems.length !== initialMenuItemCount) {
-      console.warn("⚠️ COUNT MISMATCH: Hook says", menuItems.length, "but server says", initialMenuItemCount);
+      console.warn(
+        "⚠️ COUNT MISMATCH: Hook says",
+        menuItems.length,
+        "but server says",
+        initialMenuItemCount
+      );
     }
     console.log("Loading:", loading);
     console.log("⚠️  This count should match the dashboard count!");
@@ -244,7 +249,7 @@ export default function MenuManagementClient({
       setEditingItem(null);
 
       await loadMenuItems();
-      
+
       // Dispatch event with updated count after menu items are loaded
       // Use a small delay to ensure state has updated
       setTimeout(async () => {
@@ -294,7 +299,7 @@ export default function MenuManagementClient({
       });
 
       await loadMenuItems();
-      
+
       // Dispatch event with updated count after menu items are loaded
       // Use a small delay to ensure state has updated
       setTimeout(async () => {
@@ -380,7 +385,10 @@ export default function MenuManagementClient({
     console.log("═══════════════════════════════════════════════════════════");
     console.log("Venue ID:", venueId);
     console.log("Current Item Count:", menuItems.length);
-    console.log("Current Items:", menuItems.map((i) => ({ id: i.id, name: i.name })));
+    console.log(
+      "Current Items:",
+      menuItems.map((i) => ({ id: i.id, name: i.name }))
+    );
     console.log("Timestamp:", new Date().toISOString());
     console.log("═══════════════════════════════════════════════════════════");
 
@@ -392,7 +400,7 @@ export default function MenuManagementClient({
     try {
       console.log("[MENU BUILDER] Starting clear menu process...");
       setIsClearing(true);
-      
+
       const requestBody = { venue_id: venueId };
       console.log("[MENU BUILDER] Clear menu API request:", {
         url: "/api/menu/clear",
@@ -400,7 +408,7 @@ export default function MenuManagementClient({
         body: requestBody,
         timestamp: new Date().toISOString(),
       });
-      
+
       const response = await fetch("/api/menu/clear", {
         method: "POST",
         headers: {
@@ -427,7 +435,7 @@ export default function MenuManagementClient({
       }
 
       const result = await response.json();
-      
+
       // CRITICAL LOG: Clear menu API response
       console.log("═══════════════════════════════════════════════════════════");
       console.log("📥 [CLEAR MENU API RESPONSE]");
@@ -443,18 +451,18 @@ export default function MenuManagementClient({
           title: "Menu cleared",
           description: `All menu items, categories, and options have been cleared successfully.`,
         });
-        
+
         console.log("═══════════════════════════════════════════════════════════");
         console.log("🔄 [CLEAR MENU] Reloading menu items...");
         console.log("═══════════════════════════════════════════════════════════");
         await loadMenuItems();
-        
+
         // Clear dashboard cache to force fresh count
         if (typeof window !== "undefined") {
           sessionStorage.removeItem(`dashboard_stats_${venueId}`);
           sessionStorage.removeItem(`dashboard_counts_${venueId}`);
           console.log("✅ Cleared dashboard cache");
-          
+
           // Dispatch custom event to trigger dashboard refresh
           window.dispatchEvent(
             new CustomEvent("menuChanged", {
@@ -463,10 +471,10 @@ export default function MenuManagementClient({
           );
           console.log("✅ Dispatched menuChanged event to refresh dashboard");
         }
-        
+
         // Force router refresh to update server-rendered data
         router.refresh();
-        
+
         // CRITICAL LOG: Clear menu success
         console.log("═══════════════════════════════════════════════════════════");
         console.log("✅ [CLEAR MENU SUCCESS]");
@@ -526,12 +534,12 @@ export default function MenuManagementClient({
               onSuccess={async () => {
                 // Refresh menu items list (client-side)
                 await loadMenuItems();
-                
+
                 // Clear dashboard cache to force fresh count
                 if (typeof window !== "undefined") {
                   sessionStorage.removeItem(`dashboard_stats_${venueId}`);
                   sessionStorage.removeItem(`dashboard_counts_${venueId}`);
-                  
+
                   // Dispatch custom event to trigger dashboard refresh
                   window.dispatchEvent(
                     new CustomEvent("menuChanged", {
@@ -540,7 +548,7 @@ export default function MenuManagementClient({
                   );
                   console.log("✅ Dispatched menuChanged event to refresh dashboard");
                 }
-                
+
                 // Force router refresh to update server-rendered dashboard stats
                 router.refresh();
               }}

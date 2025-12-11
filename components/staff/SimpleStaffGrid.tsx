@@ -37,7 +37,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarView, setCalendarView] = useState<CalendarView>("today");
-  
+
   // Fetch shifts on mount
   useEffect(() => {
     const fetchShifts = async () => {
@@ -48,12 +48,12 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
           setShifts(data.shifts);
         }
       } catch (_error) {
-      // Error handled silently
-    }
+        // Error handled silently
+      }
     };
-    
+
     fetchShifts();
-    
+
     // Refresh shifts every 30 seconds
     const interval = setInterval(fetchShifts, 30000);
     return () => clearInterval(interval);
@@ -107,7 +107,9 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
 
   // Group shifts by date for grid display
   const shiftsByDate = useMemo(() => {
-    const grouped: Record<string, LegacyShift[]> = { /* Empty */ };
+    const grouped: Record<string, LegacyShift[]> = {
+      /* Empty */
+    };
 
     visibleShifts.forEach((shift) => {
       const startDate = new Date(shift.start_time);
@@ -279,7 +281,9 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
               style={
                 calendarView !== "month"
                   ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }
-                  : { /* Empty */ }
+                  : {
+                      /* Empty */
+                    }
               }
             >
               {calendarView === "month"
@@ -306,7 +310,9 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
               style={
                 calendarView !== "month"
                   ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }
-                  : { /* Empty */ }
+                  : {
+                      /* Empty */
+                    }
               }
             >
               {displayDates.map((date, index) => {

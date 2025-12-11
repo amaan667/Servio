@@ -1,19 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Plus, 
-  Clock, 
-  UserCheck,
-  Trash2,
-  Loader2
-} from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Users, Plus, Clock, UserCheck, Trash2, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,15 +14,15 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
+} from "@/components/ui/dialog";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface WaitingParty {
   id: string;
   customer_name: string;
   customer_phone?: string;
   party_size: number;
-  status: 'WAITING' | 'SEATED' | 'CANCELLED' | 'NO_SHOW';
+  status: "WAITING" | "SEATED" | "CANCELLED" | "NO_SHOW";
   created_at: string;
   seated_at?: string;
   table_id?: string;
@@ -47,9 +40,9 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [seatingParty, setSeatingParty] = useState<string | null>(null);
   const [newParty, setNewParty] = useState({
-    customer_name: '',
-    customer_phone: '',
-    party_size: 2
+    customer_name: "",
+    customer_phone: "",
+    party_size: 2,
   });
 
   const supabase = createClient();
@@ -62,11 +55,11 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('waiting_list')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('status', 'WAITING')
-        .order('created_at', { ascending: true });
+        .from("waiting_list")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("status", "WAITING")
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setWaitingParties(data || []);
@@ -80,20 +73,20 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
   const addToWaitingList = async () => {
     try {
       const { data, error } = await supabase
-        .from('waiting_list')
+        .from("waiting_list")
         .insert({
           venue_id: venueId,
           customer_name: newParty.customer_name,
           customer_phone: newParty.customer_phone || null,
-          party_size: newParty.party_size
+          party_size: newParty.party_size,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setWaitingParties(prev => [...prev, data]);
-      setNewParty({ customer_name: '', customer_phone: '', party_size: 2 });
+      setWaitingParties((prev) => [...prev, data]);
+      setNewParty({ customer_name: "", customer_phone: "", party_size: 2 });
       setShowAddDialog(false);
     } catch (_error) {
       // Error silently handled
@@ -103,18 +96,18 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
   const seatParty = async (waitingId: string, tableId: string) => {
     try {
       setSeatingParty(waitingId);
-      
-      const { data, error } = await supabase.rpc('api_seat_waiting_party', {
+
+      const { data, error } = await supabase.rpc("api_seat_waiting_party", {
         p_waiting_id: waitingId,
         p_table_id: tableId,
-        p_venue_id: venueId
+        p_venue_id: venueId,
       });
 
       if (error) throw error;
 
       if (data.success) {
         // Remove from waiting list
-        setWaitingParties(prev => prev.filter(p => p.id !== waitingId));
+        setWaitingParties((prev) => prev.filter((p) => p.id !== waitingId));
         onPartySeated?.();
       }
     } catch (_error) {
@@ -127,13 +120,13 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
   const removeFromWaitingList = async (waitingId: string) => {
     try {
       const { error } = await supabase
-        .from('waiting_list')
-        .update({ status: 'CANCELLED' })
-        .eq('id', waitingId);
+        .from("waiting_list")
+        .update({ status: "CANCELLED" })
+        .eq("id", waitingId);
 
       if (error) throw error;
 
-      setWaitingParties(prev => prev.filter(p => p.id !== waitingId));
+      setWaitingParties((prev) => prev.filter((p) => p.id !== waitingId));
     } catch (_error) {
       // Error silently handled
     }
@@ -144,7 +137,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
     const created = new Date(createdAt);
     const diffMs = now.getTime() - created.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    
+
     if (diffMins < 60) {
       return `${diffMins}m`;
     } else {
@@ -155,9 +148,8 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
   };
 
   const getSuitableTables = (partySize: number) => {
-    return availableTables.filter(table => 
-      table.seat_count >= partySize && 
-      !seatingParty // Don't show tables that are currently being seated
+    return availableTables.filter(
+      (table) => table.seat_count >= partySize && !seatingParty // Don't show tables that are currently being seated
     );
   };
 
@@ -181,7 +173,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
         <div>
           <h3 className="text-lg font-semibold">Waiting List</h3>
           <p className="text-sm text-gray-900">
-            {waitingParties.length} {waitingParties.length === 1 ? 'party' : 'parties'} waiting
+            {waitingParties.length} {waitingParties.length === 1 ? "party" : "parties"} waiting
           </p>
         </div>
         <Button onClick={() => setShowAddDialog(true)}>
@@ -197,9 +189,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
             <div className="text-center">
               <Users className="h-12 w-12 text-gray-700 mx-auto mb-4" />
               <h4 className="text-lg font-medium mb-2">No parties waiting</h4>
-              <p className="text-gray-900 mb-4">
-                Add parties to the waiting list when they arrive
-              </p>
+              <p className="text-gray-900 mb-4">Add parties to the waiting list when they arrive</p>
               <Button onClick={() => setShowAddDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Party
@@ -229,7 +219,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
                       <p className="text-sm text-gray-900">{party.customer_phone}</p>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {/* Seat Party Dropdown */}
                     <select
@@ -249,7 +239,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
                         </option>
                       ))}
                     </select>
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -271,32 +261,34 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Party to Waiting List</DialogTitle>
-            <DialogDescription>
-              Add a party that's waiting to be seated
-            </DialogDescription>
+            <DialogDescription>Add a party that's waiting to be seated</DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label htmlFor="customer_name">Customer Name *</Label>
               <Input
                 id="customer_name"
                 value={newParty.customer_name}
-                onChange={(e) => setNewParty(prev => ({ ...prev, customer_name: e.target.value }))}
+                onChange={(e) =>
+                  setNewParty((prev) => ({ ...prev, customer_name: e.target.value }))
+                }
                 placeholder="Enter customer name"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="customer_phone">Phone Number</Label>
               <Input
                 id="customer_phone"
                 value={newParty.customer_phone}
-                onChange={(e) => setNewParty(prev => ({ ...prev, customer_phone: e.target.value }))}
+                onChange={(e) =>
+                  setNewParty((prev) => ({ ...prev, customer_phone: e.target.value }))
+                }
                 placeholder="Enter phone number (optional)"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="party_size">Party Size</Label>
               <Input
@@ -305,19 +297,18 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
                 min="1"
                 max="20"
                 value={newParty.party_size}
-                onChange={(e) => setNewParty(prev => ({ ...prev, party_size: parseInt(e.target.value) || 2 }))}
+                onChange={(e) =>
+                  setNewParty((prev) => ({ ...prev, party_size: parseInt(e.target.value) || 2 }))
+                }
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={addToWaitingList}
-              disabled={!newParty.customer_name.trim()}
-            >
+            <Button onClick={addToWaitingList} disabled={!newParty.customer_name.trim()}>
               Add to Waiting List
             </Button>
           </DialogFooter>

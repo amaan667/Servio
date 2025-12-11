@@ -238,9 +238,9 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     });
 
     // Combine: top sellers + items without images + category samples
-    const combined = new Map<string, typeof allItems[0]>();
+    const combined = new Map<string, (typeof allItems)[0]>();
     const topSellerIds = new Set(topSellers.map((s) => s.id));
-    
+
     // Add top sellers
     topSellers.forEach((seller) => {
       const item = allItems.find((i) => i.id === seller.id);
@@ -260,7 +260,7 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     });
 
     optimizedItems = Array.from(combined.values());
-    
+
     aiLogger.info("[AI CONTEXT] Optimized large menu for context window", {
       originalCount: allItems.length,
       optimizedCount: optimizedItems.length,

@@ -2,10 +2,10 @@ import Stripe from "stripe";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { getStripeClient } from "@/lib/stripe-client";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { NextRequest } from 'next/server';
-import { success, apiErrors } from '@/lib/api/standard-response';
-import { isDevelopment } from '@/lib/env';
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { NextRequest } from "next/server";
+import { success, apiErrors } from "@/lib/api/standard-response";
+import { isDevelopment } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -22,9 +22,7 @@ export async function POST(req: NextRequest) {
     // CRITICAL: Rate limiting
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(
-        Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-      );
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
     }
 
     const body = await req.json();
@@ -54,12 +52,12 @@ export async function POST(req: NextRequest) {
 
     if (!finalVenueId) {
       logger.error("[CHECKOUT API] Missing venueId");
-      return apiErrors.badRequest('venueId is required');
+      return apiErrors.badRequest("venueId is required");
     }
 
     if (!amount || amount < 0.5) {
       logger.error("[CHECKOUT API] Invalid amount", { amount });
-      return apiErrors.badRequest('Amount must be at least £0.50');
+      return apiErrors.badRequest("Amount must be at least £0.50");
     }
 
     logger.debug("[CHECKOUT API] Creating Stripe session", {
@@ -111,10 +109,9 @@ export async function POST(req: NextRequest) {
       sessionParams.customer_email = customerEmail.trim();
     }
 
-    const session = await withStripeRetry(
-      () => stripe.checkout.sessions.create(sessionParams),
-      { maxRetries: 3 }
-    );
+    const session = await withStripeRetry(() => stripe.checkout.sessions.create(sessionParams), {
+      maxRetries: 3,
+    });
 
     logger.info("[CHECKOUT API] Stripe session created successfully", {
       sessionId: session.id,
@@ -137,8 +134,6 @@ export async function POST(req: NextRequest) {
       stack: errorStack,
     });
 
-    return apiErrors.internal(
-      isDevelopment() ? errorMessage : "Failed to create checkout session"
-    );
+    return apiErrors.internal(isDevelopment() ? errorMessage : "Failed to create checkout session");
   }
 }

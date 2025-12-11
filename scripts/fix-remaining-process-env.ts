@@ -57,18 +57,19 @@ function fixFile(filePath: string): boolean {
   const hasImport = content.includes("from '@/lib/env'") || content.includes('from "@/lib/env"');
 
   if (needsImport && !hasImport) {
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     let lastImportIndex = -1;
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('import ')) {
+      if (lines[i].trim().startsWith("import ")) {
         lastImportIndex = i;
       }
     }
-    
+
     if (lastImportIndex >= 0) {
-      const importLine = "import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';";
+      const importLine =
+        "import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';";
       lines.splice(lastImportIndex + 1, 0, importLine);
-      content = lines.join('\n');
+      content = lines.join("\n");
       changed = true;
     }
   }
@@ -92,4 +93,3 @@ for (const file of filesToFix) {
 }
 
 console.log(`\n📊 Fixed ${fixed} files\n`);
-

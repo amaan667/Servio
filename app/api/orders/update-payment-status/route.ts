@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       logger.error("[UPDATE PAYMENT STATUS] Failed to update payment status", {
         error: error.message,
       });
-      return apiErrors.internal(error.message || 'Internal server error');
+      return apiErrors.internal(error.message || "Internal server error");
     }
 
     return success({ data });

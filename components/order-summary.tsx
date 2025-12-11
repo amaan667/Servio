@@ -185,7 +185,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     const fetchVenueInfo = async () => {
       try {
         const supabase = createClient();
-        
+
         // Get logo from menu design settings
         const { data: designSettings } = await supabase
           .from("menu_design_settings")
@@ -201,7 +201,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
           .single();
 
         const logoUrl = designSettings?.logo_url;
-        const primaryColor = designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
+        const primaryColor =
+          designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
 
         setVenueInfo({
           name: venue?.venue_name || undefined,
@@ -267,7 +268,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     ];
     const currentStatus = order?.order_status || "PLACED";
     // Map SERVING to SERVED for timeline display
-    const displayStatus: OrderStatus | "SERVED" = currentStatus === "SERVING" ? "SERVED" : currentStatus;
+    const displayStatus: OrderStatus | "SERVED" =
+      currentStatus === "SERVING" ? "SERVED" : currentStatus;
     const currentIndex = statusOrder.indexOf(displayStatus);
 
     return statusOrder.map((status, index) => {

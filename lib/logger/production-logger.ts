@@ -66,7 +66,7 @@ class ProductionLogger {
     if (level === LogLevel.ERROR) {
       console.error(formattedMessage);
       // Also write to stdout for Railway
-      if (typeof process !== 'undefined' && process.stdout) {
+      if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${formattedMessage}\n`);
       }
       // In production, send to external logging service
@@ -75,18 +75,18 @@ class ProductionLogger {
       }
     } else if (level === LogLevel.WARN) {
       console.warn(formattedMessage);
-      if (typeof process !== 'undefined' && process.stdout) {
+      if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${formattedMessage}\n`);
       }
     } else if (level === LogLevel.INFO) {
       console.info(formattedMessage);
       // Also write to stdout for Railway (Railway captures console.info)
-      if (typeof process !== 'undefined' && process.stdout) {
+      if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${formattedMessage}\n`);
       }
     } else {
       console.debug(formattedMessage);
-      if (typeof process !== 'undefined' && process.stdout) {
+      if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${formattedMessage}\n`);
       }
     }

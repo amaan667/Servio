@@ -33,16 +33,14 @@ export function TopSellingItemsChart({ topSellingItems }: TopSellingItemsChartPr
         <div className="h-80">
           <div className="space-y-3">
             {topSellingItems.slice(0, 8).map((item, index) => {
-              const maxQuantity = Math.max(...topSellingItems.map(i => i.quantity));
+              const maxQuantity = Math.max(...topSellingItems.map((i) => i.quantity));
               const width = maxQuantity > 0 ? (item.quantity / maxQuantity) * 100 : 0;
-              
+
               return (
                 <div key={index} className="flex items-center space-x-3">
-                  <div className="w-20 text-sm text-muted-foreground truncate">
-                    {item.name}
-                  </div>
+                  <div className="w-20 text-sm text-muted-foreground truncate">{item.name}</div>
                   <div className="flex-1 bg-gray-200 rounded-full h-4 relative">
-                    <div 
+                    <div
                       className="bg-orange-500 h-4 rounded-full transition-all duration-300"
                       style={{ width: `${Math.max(width, 5)}%` }}
                     />
@@ -62,4 +60,3 @@ export function TopSellingItemsChart({ topSellingItems }: TopSellingItemsChartPr
     </Card>
   );
 }
-

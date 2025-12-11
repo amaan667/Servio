@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -91,9 +97,7 @@ export function BillSplitModal({
                   return {
                     ...s,
                     items: s.items.filter((i) => i.id !== itemId),
-                    total:
-                      s.total -
-                      (item.price + (item.modifierPrice || 0)) * item.quantity,
+                    total: s.total - (item.price + (item.modifierPrice || 0)) * item.quantity,
                   };
                 }
                 return s;
@@ -107,8 +111,7 @@ export function BillSplitModal({
 
             // Add item to this split
             const newItems = [...split.items, item];
-            const newTotal =
-              split.total + (item.price + (item.modifierPrice || 0)) * item.quantity;
+            const newTotal = split.total + (item.price + (item.modifierPrice || 0)) * item.quantity;
             return { ...split, items: newItems, total: newTotal };
           }
         }
@@ -118,7 +121,9 @@ export function BillSplitModal({
   };
 
   const isItemInSplit = (itemId: string, splitId: string) => {
-    return splits.some((split) => split.id === splitId && split.items.some((item) => item.id === itemId));
+    return splits.some(
+      (split) => split.id === splitId && split.items.some((item) => item.id === itemId)
+    );
   };
 
   const getItemSplitCount = (itemId: string) => {
@@ -127,9 +132,7 @@ export function BillSplitModal({
 
   const updateSplitName = (splitId: string, name: string) => {
     setSplitNames((prev) => ({ ...prev, [splitId]: name }));
-    setSplits((prev) =>
-      prev.map((split) => (split.id === splitId ? { ...split, name } : split))
-    );
+    setSplits((prev) => prev.map((split) => (split.id === splitId ? { ...split, name } : split)));
   };
 
   const getTotalSplitAmount = () => {
@@ -148,7 +151,9 @@ export function BillSplitModal({
     }
 
     if (Math.abs(getRemainingAmount()) > 0.01) {
-      alert("Please assign all items to splits. Remaining amount: £" + getRemainingAmount().toFixed(2));
+      alert(
+        "Please assign all items to splits. Remaining amount: £" + getRemainingAmount().toFixed(2)
+      );
       return;
     }
 
@@ -226,7 +231,10 @@ export function BillSplitModal({
                               {item.quantity}x {item.name}
                             </span>
                             <span className="font-medium">
-                              £{((item.price + (item.modifierPrice || 0)) * item.quantity).toFixed(2)}
+                              £
+                              {((item.price + (item.modifierPrice || 0)) * item.quantity).toFixed(
+                                2
+                              )}
                             </span>
                           </div>
                         ))
@@ -256,11 +264,12 @@ export function BillSplitModal({
                         <span className="font-medium">
                           {item.quantity}x {item.name}
                         </span>
-                        {item.selectedModifiers && Object.keys(item.selectedModifiers).length > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            +modifiers
-                          </Badge>
-                        )}
+                        {item.selectedModifiers &&
+                          Object.keys(item.selectedModifiers).length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              +modifiers
+                            </Badge>
+                          )}
                       </div>
                       <span className="text-sm text-muted-foreground">
                         £{((item.price + (item.modifierPrice || 0)) * item.quantity).toFixed(2)}
@@ -321,4 +330,3 @@ export function BillSplitModal({
     </Dialog>
   );
 }
-

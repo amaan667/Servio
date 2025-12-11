@@ -25,7 +25,8 @@ export function CTASection({
           Ready to Transform Your Food Business?
         </h2>
         <p className="text-xl !text-white mb-8">
-          Join restaurants, cafes, food trucks, and stalls across the UK using Servio to streamline operations and delight customers.
+          Join restaurants, cafes, food trucks, and stalls across the UK using Servio to streamline
+          operations and delight customers.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
@@ -35,25 +36,15 @@ export function CTASection({
             className="text-lg px-8 py-4"
             disabled={authLoading}
           >
-            {authLoading ? 'Loading...' : (isSignedIn ? 'Go to Dashboard' : 'Start Your Free Trial')}
+            {authLoading ? "Loading..." : isSignedIn ? "Go to Dashboard" : "Start Your Free Trial"}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
           {!authLoading && !isSignedIn && (
-            <Button
-              size="lg"
-              onClick={onSignIn}
-              variant="servio"
-              className="text-lg px-8 py-4"
-            >
+            <Button size="lg" onClick={onSignIn} variant="servio" className="text-lg px-8 py-4">
               Sign In
             </Button>
           )}
-          <Button
-            size="lg"
-            onClick={onDemo}
-            variant="servio"
-            className="text-lg px-8 py-4"
-          >
+          <Button size="lg" onClick={onDemo} variant="servio" className="text-lg px-8 py-4">
             <QrCode className="mr-2 h-5 w-5" />
             Try the Demo
           </Button>
@@ -62,4 +53,3 @@ export function CTASection({
     </section>
   );
 }
-

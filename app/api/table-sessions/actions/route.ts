@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { logger } from "@/lib/logger";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import {
   handleStartPreparing,
   handleMarkReady,
@@ -33,9 +33,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Parse request BEFORE accessing venueId from context
@@ -97,7 +95,9 @@ export const POST = withUnifiedAuth(
 
         case "reserve_table":
           if (!customer_name || !reservation_time) {
-            return apiErrors.badRequest("customer_name and reservation_time are required for reserve_table action");
+            return apiErrors.badRequest(
+              "customer_name and reservation_time are required for reserve_table action"
+            );
           }
           return await handleReserveTable(
             supabase,
@@ -146,10 +146,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {
@@ -159,9 +156,11 @@ export const POST = withUnifiedAuth(
         // Clone the request so we don't consume the original body
         const clonedReq = req.clone();
         const body = await clonedReq.json().catch(() => ({}));
-        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
-               (body as { venue_id?: string; venueId?: string })?.venueId || 
-               null;
+        return (
+          (body as { venue_id?: string; venueId?: string })?.venue_id ||
+          (body as { venue_id?: string; venueId?: string })?.venueId ||
+          null
+        );
       } catch {
         return null;
       }

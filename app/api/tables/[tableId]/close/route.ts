@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateParams } from '@/lib/api/validation-schemas';
-import { handleCloseTable } from '@/app/api/table-sessions/handlers/table-action-handlers';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateParams } from "@/lib/api/validation-schemas";
+import { handleCloseTable } from "@/app/api/table-sessions/handlers/table-action-handlers";
 
 export const runtime = "nodejs";
 
@@ -23,9 +23,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
         // STEP 1: Rate limiting (ALWAYS FIRST)
         const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
         if (!rateLimitResult.success) {
-          return apiErrors.rateLimit(
-            Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-          );
+          return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
         }
 
         // STEP 2: Validate params
@@ -74,10 +72,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
           return handleZodError(error);
         }
 
-        return apiErrors.internal(
-          "Request processing failed",
-          isDevelopment() ? error : undefined
-        );
+        return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
       }
     },
     {

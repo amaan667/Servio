@@ -10,7 +10,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 export interface AuthMiddlewareOptions {
   requireAuth?: boolean;
   requireVenueAccess?: boolean;
-  rateLimitConfig?: typeof RATE_LIMITS[keyof typeof RATE_LIMITS];
+  rateLimitConfig?: (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS];
   public?: boolean;
 }
 
@@ -89,4 +89,3 @@ export async function applyAuthMiddleware(
 
   return null; // Continue to handler
 }
-

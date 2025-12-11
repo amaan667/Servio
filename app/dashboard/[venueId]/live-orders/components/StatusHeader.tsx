@@ -1,8 +1,8 @@
 "use client";
 
-import { ToggleSwitch } from '@/components/ui/toggle-switch';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface StatusHeaderProps {
   autoRefreshEnabled: boolean;
@@ -19,18 +19,24 @@ export function StatusHeader({
   onToggleAutoRefresh,
   onChangeRefreshInterval,
   tableFilter,
-  venueId
+  venueId,
 }: StatusHeaderProps) {
   const router = useRouter();
 
   return (
     <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-sm text-gray-600">
       <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100 text-xs sm:text-sm">
-        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Real-time monitoring active
+        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Real-time monitoring
+        active
       </span>
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-        <span>• {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} (today)</span>
-        <span>• Current time: {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span>
+          • {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long" })} (today)
+        </span>
+        <span>
+          • Current time:{" "}
+          {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+        </span>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2 sm:ml-auto">
@@ -42,18 +48,19 @@ export function StatusHeader({
             onChange={(e) => onChangeRefreshInterval(Number(e.target.value))}
             disabled={!autoRefreshEnabled}
           >
-            {[5, 10, 15, 30, 60].map(s => <option key={s} value={s}>{s}s</option>)}
+            {[5, 10, 15, 30, 60].map((s) => (
+              <option key={s} value={s}>
+                {s}s
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-700 font-medium">Auto-refresh:</span>
-          <ToggleSwitch
-            checked={autoRefreshEnabled}
-            onCheckedChange={onToggleAutoRefresh}
-          />
+          <ToggleSwitch checked={autoRefreshEnabled} onCheckedChange={onToggleAutoRefresh} />
           <span className="text-sm font-medium text-gray-600">
-            {autoRefreshEnabled ? 'On' : 'Off'}
+            {autoRefreshEnabled ? "On" : "Off"}
           </span>
         </div>
       </div>
@@ -78,4 +85,3 @@ export function StatusHeader({
     </div>
   );
 }
-

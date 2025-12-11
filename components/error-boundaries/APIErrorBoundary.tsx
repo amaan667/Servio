@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { trackError } from '@/lib/monitoring/error-tracking';
-import { AlertCircle } from 'lucide-react';
+import React from "react";
+import { trackError } from "@/lib/monitoring/error-tracking";
+import { AlertCircle } from "lucide-react";
 
 interface Props {
   children: React.ReactNode;
@@ -27,7 +27,7 @@ export class APIErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     trackError(error, {
       componentStack: errorInfo.componentStack,
-      boundary: 'APIErrorBoundary',
+      boundary: "APIErrorBoundary",
     });
   }
 
@@ -55,4 +55,3 @@ export class APIErrorBoundary extends React.Component<Props, State> {
     return this.props.children;
   }
 }
-

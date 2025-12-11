@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody, validateParams } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody, validateParams } from "@/lib/api/validation-schemas";
 
 export const runtime = "nodejs";
 
@@ -19,16 +19,17 @@ const reservationIdParamSchema = z.object({
 });
 
 // POST /api/reservations/[reservationId]/assign - Assign reservation to table
-export async function POST(req: NextRequest, context: { params: Promise<{ reservationId: string }> }) {
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ reservationId: string }> }
+) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext, routeParams) => {
       try {
         // STEP 1: Rate limiting (ALWAYS FIRST)
         const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
         if (!rateLimitResult.success) {
-          return apiErrors.rateLimit(
-            Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-          );
+          return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
         }
 
         // STEP 2: Validate params and body
@@ -69,9 +70,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ reserv
             tableId: body.tableId,
             userId: authContext.user.id,
           });
-          return apiErrors.badRequest(
-            error.message || "Failed to assign reservation"
-          );
+          return apiErrors.badRequest(error.message || "Failed to assign reservation");
         }
 
         logger.info("[RESERVATIONS ASSIGN] Reservation assigned successfully", {
@@ -95,10 +94,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ reserv
           return handleZodError(error);
         }
 
-        return apiErrors.internal(
-          "Request processing failed",
-          isDevelopment() ? error : undefined
-        );
+        return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
       }
     },
     {

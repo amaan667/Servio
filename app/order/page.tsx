@@ -161,7 +161,6 @@ export default function CustomerOrderPage() {
     });
   };
 
-
   // Show error if no venue or table parameter - no automatic redirect
   if (!venueSlug || !tableNumber) {
     return (
@@ -203,7 +202,8 @@ export default function CustomerOrderPage() {
             ) : menuError || menuItems.length === 0 ? (
               <Alert variant="destructive" className="m-4">
                 <AlertDescription>
-                  {menuError || "This venue has no available menu items yet. Please check back later."}
+                  {menuError ||
+                    "This venue has no available menu items yet. Please check back later."}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -309,7 +309,6 @@ export default function CustomerOrderPage() {
         onSubmit={handleGroupSizeUpdate}
         mode="update"
       />
-
     </div>
   );
 }

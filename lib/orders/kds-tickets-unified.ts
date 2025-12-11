@@ -1,6 +1,6 @@
 /**
  * Unified KDS Ticket Creation with AI Station Assignment
- * 
+ *
  * This is the single source of truth for creating KDS tickets.
  * All order creation and backfill operations should use this function.
  */
@@ -93,20 +93,16 @@ export async function createKDSTicketsWithAI(
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const itemName = item.item_name || "Unknown Item";
-      
+
       logger.debug("[KDS TICKETS] Processing item", {
         ...baseContext,
         itemName,
         itemIndex: i + 1,
         totalItems: items.length,
       });
-      
+
       // Use smart keyword categorization to assign station
-      const assignedStation = assignStationByKeywords(
-        itemName,
-        existingStations,
-        expoStation
-      );
+      const assignedStation = assignStationByKeywords(itemName, existingStations, expoStation);
 
       logger.debug("[KDS TICKETS] Assigned station", {
         ...baseContext,
@@ -117,7 +113,7 @@ export async function createKDSTicketsWithAI(
 
       // Combine special instructions and modifiers for kitchen display
       let combinedInstructions = item.specialInstructions || "";
-      
+
       // If modifiers exist, format them and add to instructions
       if (item.modifiers) {
         let modifiersText = "";
@@ -145,7 +141,7 @@ export async function createKDSTicketsWithAI(
         } catch (error) {
           logger.warn("[KDS TICKETS] Failed to parse modifiers:", { error });
         }
-        
+
         // Combine instructions and modifiers
         if (modifiersText) {
           combinedInstructions = combinedInstructions
@@ -159,10 +155,7 @@ export async function createKDSTicketsWithAI(
         order_id: order.id,
         station_id: assignedStation.id,
         item_name: itemName,
-        quantity:
-          typeof item.quantity === "string"
-            ? parseInt(item.quantity)
-            : item.quantity || 1,
+        quantity: typeof item.quantity === "string" ? parseInt(item.quantity) : item.quantity || 1,
         special_instructions: combinedInstructions || null,
         table_number: order.table_number,
         table_label: tableLabel,
@@ -191,7 +184,7 @@ export async function createKDSTicketsWithAI(
           },
         });
         // Convert to proper Error with details
-        const errorMsg = `KDS ticket insert failed: ${ticketError.message || ticketError.code || 'Unknown error'}`;
+        const errorMsg = `KDS ticket insert failed: ${ticketError.message || ticketError.code || "Unknown error"}`;
         const error = new Error(errorMsg);
         (error as unknown as { details: unknown }).details = ticketError;
         throw error;
@@ -223,10 +216,7 @@ export async function createKDSTicketsWithAI(
 /**
  * Ensures KDS stations exist for a venue, creates defaults if needed
  */
-async function ensureKDSStations(
-  supabase: SupabaseClient,
-  venueId: string
-): Promise<KDSStation[]> {
+async function ensureKDSStations(supabase: SupabaseClient, venueId: string): Promise<KDSStation[]> {
   let { data: existingStations } = await supabase
     .from("kds_stations")
     .select("id, station_type, station_name")
@@ -283,10 +273,7 @@ async function ensureKDSStations(
 /**
  * Gets table label from table_id or table_number
  */
-async function getTableLabel(
-  supabase: SupabaseClient,
-  order: OrderForKDSTickets
-): Promise<string> {
+async function getTableLabel(supabase: SupabaseClient, order: OrderForKDSTickets): Promise<string> {
   const customerName = order.customer_name;
   let tableLabel = customerName || "Guest";
 

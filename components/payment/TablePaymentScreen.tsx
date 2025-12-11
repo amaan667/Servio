@@ -302,4 +302,3 @@ export function TablePaymentScreen({
     </div>
   );
 }
-

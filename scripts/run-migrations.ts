@@ -85,7 +85,6 @@ async function executeMigration(filename: string): Promise<boolean> {
   const migrationsDir = path.join(process.cwd(), "supabase/migrations");
   const filepath = path.join(migrationsDir, filename);
 
-
   try {
     const sql = fs.readFileSync(filepath, "utf-8");
 
@@ -133,7 +132,6 @@ function generateChecksum(content: string): string {
  * Main migration runner
  */
 async function runMigrations() {
-
   try {
     // Step 1: Ensure migrations table exists
     await ensureMigrationsTable();

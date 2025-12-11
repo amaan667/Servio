@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 /**
  * Simple endpoint to set current user to enterprise tier
@@ -17,7 +17,7 @@ export async function POST() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     // Admin role check
@@ -28,7 +28,7 @@ export async function POST() {
       .single();
 
     if (userRole?.role !== "admin" && userRole?.role !== "owner") {
-      return apiErrors.forbidden('Admin access required');
+      return apiErrors.forbidden("Admin access required");
     }
 
     logger.info("[SET PREMIUM] Setting user to enterprise tier", {
@@ -44,7 +44,7 @@ export async function POST() {
       .limit(1);
 
     if (!venues || venues.length === 0) {
-      return apiErrors.notFound('No organization found');
+      return apiErrors.notFound("No organization found");
     }
 
     const organizationId = venues[0].organization_id;
@@ -57,7 +57,7 @@ export async function POST() {
       .single();
 
     if (!org) {
-      return apiErrors.notFound('Organization not found');
+      return apiErrors.notFound("Organization not found");
     }
 
     logger.info("[SET PREMIUM] Current organization state", {
@@ -79,7 +79,7 @@ export async function POST() {
 
     if (error) {
       logger.error("[SET PREMIUM] Update failed", { error });
-      return apiErrors.internal('Failed to update tier');
+      return apiErrors.internal("Failed to update tier");
     }
 
     logger.info("[SET PREMIUM] ✅ Successfully set to enterprise", {

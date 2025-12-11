@@ -1,12 +1,12 @@
-import { NextRequest } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { logger } from '@/lib/logger';
+import { NextRequest } from "next/server";
+import { createAdminClient } from "@/lib/supabase";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { logger } from "@/lib/logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -14,9 +14,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Business logic
@@ -40,7 +38,7 @@ export const POST = withUnifiedAuth(
     );
   exception when others then null; end $$;`;
 
-      const { error } = await admin.rpc('exec_sql', { sql });
+      const { error } = await admin.rpc("exec_sql", { sql });
       if (error) {
         logger.error("[STAFF INIT] SQL execution error:", {
           error: error.message,

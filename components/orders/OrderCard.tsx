@@ -5,7 +5,17 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, User, Hash, MapPin, CreditCard, CheckCircle, X, QrCode, Receipt } from "lucide-react";
+import {
+  Clock,
+  User,
+  Hash,
+  MapPin,
+  CreditCard,
+  CheckCircle,
+  X,
+  QrCode,
+  Receipt,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { OrderForCard } from "@/types/orders";
@@ -145,7 +155,7 @@ export function OrderCard({
     const fetchVenueInfo = async () => {
       try {
         const supabase = createClient();
-        
+
         // Get logo from menu design settings
         const { data: designSettings } = await supabase
           .from("menu_design_settings")
@@ -161,7 +171,8 @@ export function OrderCard({
           .single();
 
         const logoUrl = designSettings?.logo_url;
-        const primaryColor = designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
+        const primaryColor =
+          designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
 
         setVenueInfo({
           name: venue?.venue_name,
@@ -185,7 +196,12 @@ export function OrderCard({
     // Normalize payment status to uppercase PaymentStatus type
     const normalizePaymentStatus = (status: string): Order["payment_status"] => {
       const upper = status.toUpperCase();
-      if (upper === "PAID" || upper === "UNPAID" || upper === "REFUNDED" || upper === "PARTIALLY_PAID") {
+      if (
+        upper === "PAID" ||
+        upper === "UNPAID" ||
+        upper === "REFUNDED" ||
+        upper === "PARTIALLY_PAID"
+      ) {
         return upper as Order["payment_status"];
       }
       return "UNPAID";
@@ -194,7 +210,13 @@ export function OrderCard({
     // Normalize payment method
     const normalizePaymentMethod = (mode: string): Order["payment_method"] => {
       const normalized = mode.replace("_", " ").toLowerCase();
-      if (normalized === "demo" || normalized === "stripe" || normalized === "till" || normalized === "cash" || normalized === "card") {
+      if (
+        normalized === "demo" ||
+        normalized === "stripe" ||
+        normalized === "till" ||
+        normalized === "cash" ||
+        normalized === "card"
+      ) {
         return normalized as Order["payment_method"];
       }
       return null;
@@ -207,13 +229,14 @@ export function OrderCard({
       customer_name: order.customer?.name || order.customer_name || undefined,
       customer_phone: order.customer?.phone || order.customer_phone || undefined,
       customer_email: undefined, // Not available in OrderForCard
-      items: order.items?.map((item) => ({
-        menu_item_id: item.menu_item_id || "",
-        item_name: (item as { item_name?: string }).item_name || "Item",
-        quantity: item.quantity,
-        price: item.price,
-        special_instructions: (item as { specialInstructions?: string }).specialInstructions,
-      })) || [],
+      items:
+        order.items?.map((item) => ({
+          menu_item_id: item.menu_item_id || "",
+          item_name: (item as { item_name?: string }).item_name || "Item",
+          quantity: item.quantity,
+          price: item.price,
+          special_instructions: (item as { specialInstructions?: string }).specialInstructions,
+        })) || [],
       total_amount: order.total_amount,
       order_status: order.order_status.toUpperCase() as Order["order_status"],
       payment_status: normalizePaymentStatus(order.payment.status),
@@ -502,7 +525,8 @@ export function OrderCard({
                   Customer can rescan QR code to pay
                 </p>
                 <p className="text-xs text-gray-600">
-                  When customer rescans QR code, they will see their unpaid orders and can pay from the order page.
+                  When customer rescans QR code, they will see their unpaid orders and can pay from
+                  the order page.
                 </p>
               </div>
             </div>
@@ -514,7 +538,6 @@ export function OrderCard({
     // Default: no actions
     return null;
   };
-
 
   return (
     <Card
@@ -554,17 +577,21 @@ export function OrderCard({
                 {order.payment.status === "refunded" && <PaymentStatusChip status="refunded" />}
                 {/* Payment Method Badge */}
                 {(order.payment_method || order.payment?.method) && (
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-medium"
                   >
                     <CreditCard className="h-3 w-3 mr-1" />
                     {(() => {
-                      const method = (order.payment_method || order.payment?.method || '').toUpperCase();
-                      if (method === 'PAY_NOW') return 'Pay Now';
-                      if (method === 'PAY_LATER') return 'Pay Later';
-                      if (method === 'PAY_AT_TILL') return 'Pay at Till';
-                      return method || 'Online';
+                      const method = (
+                        order.payment_method ||
+                        order.payment?.method ||
+                        ""
+                      ).toUpperCase();
+                      if (method === "PAY_NOW") return "Pay Now";
+                      if (method === "PAY_LATER") return "Pay Later";
+                      if (method === "PAY_AT_TILL") return "Pay at Till";
+                      return method || "Online";
                     })()}
                   </Badge>
                 )}

@@ -5,11 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
-import { 
-  generateIdempotencyKey, 
-  withIdempotency,
-  checkIdempotency 
-} from "@/lib/db/idempotency";
+import { generateIdempotencyKey, withIdempotency, checkIdempotency } from "@/lib/db/idempotency";
 import { verifyVenueExists } from "@/lib/middleware/authorization";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import crypto from "crypto";
@@ -22,7 +18,7 @@ interface CreateOrderRequest {
 
 export async function POST(req: NextRequest) {
   const correlationId = getCorrelationIdFromRequest(req);
-  
+
   // CRITICAL: Rate limiting on public payment route to prevent spam/abuse
   const rateLimitResult = await rateLimit(req, RATE_LIMITS.STRICT);
   if (!rateLimitResult.success) {
@@ -35,7 +31,7 @@ export async function POST(req: NextRequest) {
         ok: false,
         message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
       },
-      { 
+      {
         status: 429,
         headers: {
           "Retry-After": Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
@@ -45,7 +41,7 @@ export async function POST(req: NextRequest) {
       }
     );
   }
-  
+
   try {
     // Use authenticated client - this is a public route but we still want RLS for safety
     // Note: For public routes creating orders, we may need admin client but with explicit venue verification
@@ -67,13 +63,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Idempotency check
-    const idempotencyKey = req.headers.get("idempotency-key") || 
-      generateIdempotencyKey(
-        "/api/orders/createFromPaidIntent",
+    const idempotencyKey =
+      req.headers.get("idempotency-key") ||
+      generateIdempotencyKey("/api/orders/createFromPaidIntent", paymentIntentId, {
         paymentIntentId,
-        { paymentIntentId, cartId }
-      );
-    
+        cartId,
+      });
+
     const requestHash = crypto
       .createHash("sha256")
       .update(JSON.stringify({ paymentIntentId, cartId }))
@@ -86,10 +82,9 @@ export async function POST(req: NextRequest) {
         idempotencyKey: idempotencyKey.substring(0, 20) + "...",
         correlationId,
       });
-      return NextResponse.json(
-        existing.response.response_data,
-        { status: existing.response.status_code }
-      );
+      return NextResponse.json(existing.response.response_data, {
+        status: existing.response.status_code,
+      });
     }
 
     // Retrieve payment intent from Stripe
@@ -111,7 +106,9 @@ export async function POST(req: NextRequest) {
     // Use explicit field selection instead of select("*")
     const { data: existingOrder } = await supabase
       .from("orders")
-      .select("id, venue_id, table_number, customer_name, customer_phone, customer_email, total_amount, order_status, payment_status, payment_intent_id, created_at, updated_at, items")
+      .select(
+        "id, venue_id, table_number, customer_name, customer_phone, customer_email, total_amount, order_status, payment_status, payment_intent_id, created_at, updated_at, items"
+      )
       .eq("payment_intent_id", paymentIntentId)
       .maybeSingle();
 
@@ -121,7 +118,7 @@ export async function POST(req: NextRequest) {
         paymentIntentId,
         correlationId,
       });
-      
+
       // Store in idempotency cache
       await import("@/lib/db/idempotency").then(({ storeIdempotency }) => {
         storeIdempotency(
@@ -134,7 +131,7 @@ export async function POST(req: NextRequest) {
           // Non-critical
         });
       });
-      
+
       return NextResponse.json({
         ok: true,
         order: existingOrder,
@@ -159,7 +156,7 @@ export async function POST(req: NextRequest) {
     // Verify venue exists and is valid (prevents cross-venue access)
     // NOTE: This is a public customer route, so we verify venue without requiring authentication
     const venueCheck = await verifyVenueExists(venue_id);
-    
+
     if (!venueCheck.valid) {
       logger.error("[ORDER FROM INTENT] Venue verification failed", {
         venue_id,
@@ -220,7 +217,7 @@ export async function POST(req: NextRequest) {
       async () => {
         // Use OrderService for transactional order creation
         const { orderService } = await import("@/lib/services/OrderService");
-        
+
         // Convert orderData to OrderService format
         const serviceOrderData = {
           table_number: orderData.table_number,
@@ -246,7 +243,7 @@ export async function POST(req: NextRequest) {
         const order = await orderService.createOrder(venue_id, serviceOrderData);
 
         if (!order) {
-          logger.error("[ORDER CREATION] OrderService returned null", { 
+          logger.error("[ORDER CREATION] OrderService returned null", {
             paymentIntentId,
             correlationId,
           });
@@ -270,7 +267,7 @@ export async function POST(req: NextRequest) {
             },
           });
         } catch (realtimeError) {
-          logger.error("[ORDER CREATION] Failed to publish realtime event:", { 
+          logger.error("[ORDER CREATION] Failed to publish realtime event:", {
             error: realtimeError instanceof Error ? realtimeError.message : String(realtimeError),
             correlationId,
           });
@@ -302,7 +299,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result.data, { status: result.statusCode });
   } catch (_error) {
     const correlationId = getCorrelationIdFromRequest(req);
-    
+
     logger.error("[ORDER CREATION] Error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
       stack: _error instanceof Error ? _error.stack : undefined,

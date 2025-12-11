@@ -22,39 +22,35 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
  * SECURITY: Uses withUnifiedAuth to enforce venue access, then uses authenticated
  * client that respects RLS (not admin client) to prevent cross-venue access.
  */
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    const startTime = Date.now();
-    const requestId = Math.random().toString(36).substring(7);
-    let logContext: { requestId: string; venueId?: string; menuUrl?: string; userId?: string } = {
+export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  let logContext: { requestId: string; venueId?: string; menuUrl?: string; userId?: string } = {
+    requestId,
+  };
+
+  try {
+    const body = await req.json();
+    const menuUrl = body.menuUrl as string | undefined;
+
+    // venueId comes from context (already verified by withUnifiedAuth)
+    const normalizedVenueId = context.venueId;
+    logContext = { requestId, venueId: normalizedVenueId, menuUrl, userId: context.user.id };
+
+    logger.info("[HYBRID MERGE] Start", {
       requestId,
-    };
+      venueId: normalizedVenueId,
+      menuUrl,
+      timestamp: new Date().toISOString(),
+    });
 
-    try {
-      const body = await req.json();
-      const menuUrl = body.menuUrl as string | undefined;
+    if (!menuUrl) {
+      return NextResponse.json({ ok: false, error: "menuUrl required" }, { status: 400 });
+    }
 
-      // venueId comes from context (already verified by withUnifiedAuth)
-      const normalizedVenueId = context.venueId;
-      logContext = { requestId, venueId: normalizedVenueId, menuUrl, userId: context.user.id };
-
-      logger.info("[HYBRID MERGE] Start", {
-        requestId,
-        venueId: normalizedVenueId,
-        menuUrl,
-        timestamp: new Date().toISOString(),
-      });
-
-      if (!menuUrl) {
-        return NextResponse.json(
-          { ok: false, error: "menuUrl required" },
-          { status: 400 }
-        );
-      }
-
-      // Use authenticated client that respects RLS (not admin client)
-      // This ensures venue isolation is enforced at the database level
-      const supabase = await createClient();
+    // Use authenticated client that respects RLS (not admin client)
+    // This ensures venue isolation is enforced at the database level
+    const supabase = await createClient();
 
     // Step 1: Fetch stored PDF images from database
 
@@ -248,5 +244,4 @@ export const POST = withUnifiedAuth(
       { status: 500 }
     );
   }
-  }
-);
+});

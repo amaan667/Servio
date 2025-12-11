@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,10 +22,8 @@ export async function POST(req: NextRequest) {
       return success({ success: true });
     }
 
-    return apiErrors.badRequest('Missing items or venue_id');
+    return apiErrors.badRequest("Missing items or venue_id");
   } catch (_err) {
-    return apiErrors.internal(
-      _err instanceof Error ? _err.message : "Failed to save menu."
-    );
+    return apiErrors.internal(_err instanceof Error ? _err.message : "Failed to save menu.");
   }
 }

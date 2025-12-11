@@ -5,14 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  CreditCard,
-  Crown,
-  Sparkles,
-  CheckCircle,
-  AlertTriangle,
-  Loader2,
-} from "lucide-react";
+import { CreditCard, Crown, Sparkles, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
@@ -51,7 +44,10 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   }
 
   // Get tier from organization - should match Stripe exactly (no normalization)
-  const tier = (organization?.subscription_tier?.toLowerCase() || "starter") as "starter" | "pro" | "enterprise";
+  const tier = (organization?.subscription_tier?.toLowerCase() || "starter") as
+    | "starter"
+    | "pro"
+    | "enterprise";
   const hasStripeCustomer = !!organization?.stripe_customer_id;
   const isGrandfathered = false; // Grandfathered accounts removed
 
@@ -59,7 +55,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   const getFeatureEnabled = (feature: string, currentTier: string): boolean => {
     const tierLimits = TIER_LIMITS[currentTier as keyof typeof TIER_LIMITS];
     if (!tierLimits) return false;
-    
+
     // Map feature names to TIER_LIMITS keys
     const featureMap: Record<string, keyof typeof tierLimits.features> = {
       kds: "kds",
@@ -70,22 +66,22 @@ export default function BillingSection({ organization }: BillingSectionProps) {
       customerFeedback: "customerFeedback",
       customBranding: "customBranding",
     };
-    
+
     const featureKey = featureMap[feature];
     if (!featureKey) return false;
-    
+
     const featureValue = tierLimits.features[featureKey];
-    
+
     // For boolean features, return the value directly
     if (typeof featureValue === "boolean") {
       return featureValue;
     }
-    
+
     // For analytics, any non-basic value means enabled (advanced, advanced+exports)
     if (feature === "analytics" && typeof featureValue === "string") {
       return featureValue !== "basic";
     }
-    
+
     return false;
   };
 
@@ -123,7 +119,8 @@ export default function BillingSection({ organization }: BillingSectionProps) {
       if (!response.ok) {
         toast({
           title: "Error",
-          description: data.message || data.error || `Failed to open billing portal (${response.status})`,
+          description:
+            data.message || data.error || `Failed to open billing portal (${response.status})`,
           variant: "destructive",
         });
         return;
@@ -240,9 +237,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
                       {JSON.stringify(organization, null, 2)}
                     </pre>
                   </div>
-                  <div className="mt-2">
-                    Please contact support or refresh the page.
-                  </div>
+                  <div className="mt-2">Please contact support or refresh the page.</div>
                 </div>
               </AlertDescription>
             </Alert>
@@ -272,9 +267,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
 
             {organization?.subscription_status && (
               <Badge
-                variant={
-                  organization.subscription_status === "active" ? "default" : "secondary"
-                }
+                variant={organization.subscription_status === "active" ? "default" : "secondary"}
                 className={organization.subscription_status === "active" ? "bg-green-600" : ""}
               >
                 {organization.subscription_status}
@@ -287,9 +280,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
             {organization?.trial_ends_at && (
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium">
-                  {new Date(organization.trial_ends_at) > new Date()
-                    ? "Trial Ends"
-                    : "Trial Ended"}
+                  {new Date(organization.trial_ends_at) > new Date() ? "Trial Ends" : "Trial Ended"}
                 </span>
                 <span className="text-sm text-gray-600">
                   {new Date(organization.trial_ends_at).toLocaleDateString()}
@@ -319,7 +310,8 @@ export default function BillingSection({ organization }: BillingSectionProps) {
 
             {hasStripeCustomer && (
               <p className="text-xs text-gray-600 text-center">
-                Click "Change Plan" to upgrade, downgrade, or manage your subscription, payment methods, and billing history.
+                Click "Change Plan" to upgrade, downgrade, or manage your subscription, payment
+                methods, and billing history.
               </p>
             )}
 

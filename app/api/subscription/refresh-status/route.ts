@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export async function POST(_request: NextRequest) {
   try {
@@ -16,14 +16,14 @@ export async function POST(_request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     const body = await _request.json();
     const { organizationId } = body;
 
     if (!organizationId) {
-      return apiErrors.badRequest('Organization ID required');
+      return apiErrors.badRequest("Organization ID required");
     }
 
     logger.debug("[SUBSCRIPTION REFRESH] Refreshing subscription status for org:", {
@@ -39,7 +39,7 @@ export async function POST(_request: NextRequest) {
 
     if (orgError || !org) {
       logger.error("[SUBSCRIPTION REFRESH] Organization not found:", { value: orgError });
-      return apiErrors.notFound('Organization not found');
+      return apiErrors.notFound("Organization not found");
     }
 
     // If no Stripe subscription ID, return current status
@@ -72,7 +72,7 @@ export async function POST(_request: NextRequest) {
       // Get tier from Stripe subscription (price/product metadata) - most reliable, no normalization
       const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
       const stripeClient = await import("@/lib/stripe-client").then((m) => m.stripe);
-      
+
       // Get tier directly from Stripe - this is the source of truth
       let finalTier: string;
       try {
@@ -135,7 +135,7 @@ export async function POST(_request: NextRequest) {
 
       if (resetError) {
         logger.error("[SUBSCRIPTION REFRESH] Error resetting organization:", { value: resetError });
-        return apiErrors.internal('Failed to reset subscription status');
+        return apiErrors.internal("Failed to reset subscription status");
       }
 
       return NextResponse.json({

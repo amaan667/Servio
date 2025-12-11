@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 import { logger } from "@/lib/logger";
 import OpenAI from "openai";
-import { env } from '@/lib/env';
+import { env } from "@/lib/env";
 
 // Force Node.js runtime (required for Playwright)
 export const runtime = "nodejs";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  * Browser instance cache for reuse across requests
  */
 
-let browserInstance: import('playwright-core').Browser | null = null;
+let browserInstance: import("playwright-core").Browser | null = null;
 
 /**
  * Get or create browser instance with Playwright
@@ -26,14 +26,14 @@ async function getBrowser() {
       // Try to install chromium if not already installed (lazy install)
       try {
         const { execSync } = await import("child_process");
-        execSync("npx playwright install chromium --with-deps", { 
+        execSync("npx playwright install chromium --with-deps", {
           stdio: "ignore",
-          timeout: 120000 // 2 minutes max for install
+          timeout: 120000, // 2 minutes max for install
         });
       } catch (installError) {
         // Installation failed or already installed - continue
         logger.warn("[SCRAPE MENU] Playwright install check failed (may already be installed)", {
-          error: installError instanceof Error ? installError.message : "Unknown"
+          error: installError instanceof Error ? installError.message : "Unknown",
         });
       }
 
@@ -296,7 +296,7 @@ export async function POST(req: NextRequest) {
     const { url } = body;
 
     if (!url) {
-      return apiErrors.badRequest('URL is required');
+      return apiErrors.badRequest("URL is required");
     }
 
     // Detect site type for optimal strategy
@@ -360,7 +360,7 @@ Return ONLY valid JSON:
     const aiStart = Date.now();
 
     // Initialize OpenAI client inside function to avoid build-time errors
-    const openai = new OpenAI({ apiKey: env('OPENAI_API_KEY') });
+    const openai = new OpenAI({ apiKey: env("OPENAI_API_KEY") });
 
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o",

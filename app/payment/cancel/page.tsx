@@ -45,23 +45,19 @@ export default function PaymentCancelPage() {
               {orderId && ` Your order #${orderId.slice(-6)} is still pending.`}
             </p>
             <div className="pt-4 space-y-2">
-              <Button 
+              <Button
                 onClick={() => {
                   if (venueId && tableNumber) {
                     router.push(`/order?venue=${venueId}&table=${tableNumber}`);
                   } else {
-                    router.push('/');
+                    router.push("/");
                   }
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
                 Start New Order
               </Button>
-              <Button 
-                onClick={() => router.back()}
-                variant="outline"
-                className="w-full"
-              >
+              <Button onClick={() => router.back()} variant="outline" className="w-full">
                 Go Back
               </Button>
             </div>
@@ -71,4 +67,3 @@ export default function PaymentCancelPage() {
     </div>
   );
 }
-

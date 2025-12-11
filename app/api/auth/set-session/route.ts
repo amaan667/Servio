@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 /**
  * Set session from client-side auth
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (!data.session) {
       logger.error("[AUTH SET-SESSION] No session returned");
-      return apiErrors.internal('Failed to set session');
+      return apiErrors.internal("Failed to set session");
     }
 
     logger.info("[AUTH SET-SESSION] ✅ Session set successfully", {
@@ -46,6 +46,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err) {
     logger.error("[AUTH SET-SESSION] Unexpected error:", { error: err });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

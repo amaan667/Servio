@@ -148,4 +148,5 @@ Object.defineProperty(window, "innerHeight", {
 // Mock environment variables for tests
 process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "sk_test_mock_key_for_testing";
 process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || "sk-mock-openai-key-for-testing";
-process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "mock-service-role-key";
+process.env.SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "mock-service-role-key";

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ orderId
     const { orderId } = await params;
 
     if (!orderId) {
-      return apiErrors.badRequest('Order ID is required');
+      return apiErrors.badRequest("Order ID is required");
     }
 
     // Fetch order with items (items are stored as JSONB in orders table)

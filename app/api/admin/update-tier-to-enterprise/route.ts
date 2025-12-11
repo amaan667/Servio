@@ -3,9 +3,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -15,7 +15,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -28,10 +28,7 @@ export const POST = withUnifiedAuth(
 
       // STEP 5: Security - Verify admin role
       if (context.role !== "admin" && context.role !== "owner") {
-        return NextResponse.json(
-          { ok: false, error: "Admin access required" },
-          { status: 403 }
-        );
+        return NextResponse.json({ ok: false, error: "Admin access required" }, { status: 403 });
       }
 
       // STEP 6: Business logic
@@ -50,7 +47,9 @@ export const POST = withUnifiedAuth(
           userId: context.user.id,
         });
       } else {
-        logger.info(`[UPDATE TIER] Updated ${premiumOrgs?.length || 0} premium tiers to enterprise`);
+        logger.info(
+          `[UPDATE TIER] Updated ${premiumOrgs?.length || 0} premium tiers to enterprise`
+        );
       }
 
       const { data: standardOrgs, error: standardError } = await supabase
@@ -93,15 +92,16 @@ export const POST = withUnifiedAuth(
         },
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[UPDATE TIER] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -111,7 +111,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Internal Server Error",

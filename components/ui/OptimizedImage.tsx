@@ -3,16 +3,16 @@
  * Wrapper around Next.js Image with best practices built-in
  */
 
-import Image, { ImageProps } from 'next/image';
-import { useState } from 'react';
+import Image, { ImageProps } from "next/image";
+import { useState } from "react";
 
-interface OptimizedImageProps extends Omit<ImageProps, 'src' | 'alt'> {
+interface OptimizedImageProps extends Omit<ImageProps, "src" | "alt"> {
   src: string | null | undefined;
   alt: string;
   fallbackSrc?: string;
 }
 
-const DEFAULT_FALLBACK = '/images/placeholder.svg';
+const DEFAULT_FALLBACK = "/images/placeholder.svg";
 
 export function OptimizedImage({
   src,
@@ -49,7 +49,7 @@ export function OptimizedImage({
     <Image
       src={imageSrc}
       alt={alt}
-      className={`${className} ${isLoading ? 'opacity-70' : 'opacity-100'} transition-opacity duration-300`}
+      className={`${className} ${isLoading ? "opacity-70" : "opacity-100"} transition-opacity duration-300`}
       onError={handleError}
       onLoad={handleLoadingComplete}
       quality={85}
@@ -66,7 +66,7 @@ export function OptimizedImage({
 export function MenuItemImage({
   src,
   alt,
-  className = '',
+  className = "",
 }: {
   src: string | null | undefined;
   alt: string;
@@ -90,7 +90,7 @@ export function MenuItemImage({
 export function LogoImage({
   src,
   alt,
-  className = '',
+  className = "",
 }: {
   src: string | null | undefined;
   alt: string;
@@ -107,4 +107,3 @@ export function LogoImage({
     />
   );
 }
-

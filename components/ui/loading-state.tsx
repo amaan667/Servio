@@ -1,11 +1,11 @@
 /**
  * Loading State Component
- * 
+ *
  * Best Practices:
  * - Use for full-page or component-level loading
  * - Prefer Skeleton components when you know the content structure
  * - Use for async data loading with Suspense boundaries
- * 
+ *
  * Performance: Optimized with proper accessibility
  */
 
@@ -24,14 +24,14 @@ interface LoadingStateProps {
 
 /**
  * Loading State Component
- * 
+ *
  * @example
  * // Full page loading
  * <LoadingState fullScreen message="Loading dashboard..." />
- * 
+ *
  * // Component loading
  * <LoadingState message="Loading orders..." />
- * 
+ *
  * // Skeleton variant
  * <LoadingState variant="skeleton" skeletonCount={3} />
  */
@@ -72,4 +72,3 @@ export function LoadingState({
     </div>
   );
 }
-

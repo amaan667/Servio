@@ -59,10 +59,15 @@ async function ensureMigrationsTable(supabase: SupabaseClient) {
   // Use raw SQL execution if rpc is not available
   interface SupabaseWithRPC {
     rpc(fn: string, args: { sql: string }): Promise<{ data: unknown; error: unknown }>;
-    from(table: string): { select(columns: string): Promise<{ data: unknown; error: unknown }>; insert(row: unknown): Promise<{ data: unknown; error: unknown }> };
+    from(table: string): {
+      select(columns: string): Promise<{ data: unknown; error: unknown }>;
+      insert(row: unknown): Promise<{ data: unknown; error: unknown }>;
+    };
   }
   try {
-    const { error } = await (supabase as unknown as SupabaseWithRPC).rpc("exec_sql", { sql: createTableSQL });
+    const { error } = await (supabase as unknown as SupabaseWithRPC).rpc("exec_sql", {
+      sql: createTableSQL,
+    });
     if (error) {
       logger.error("Failed to create migrations table", { error });
       throw error;
@@ -78,7 +83,9 @@ async function getExecutedMigrations(supabase: SupabaseClient): Promise<string[]
     from(table: string): { select(columns: string): Promise<{ data: unknown; error: unknown }> };
   }
   try {
-    const { data, error } = await (supabase as unknown as SupabaseWithMigrations).from("migrations").select("filename");
+    const { data, error } = await (supabase as unknown as SupabaseWithMigrations)
+      .from("migrations")
+      .select("filename");
 
     if (error) {
       logger.error("Failed to fetch executed migrations", { error });
@@ -91,18 +98,17 @@ async function getExecutedMigrations(supabase: SupabaseClient): Promise<string[]
   }
 }
 
-async function markMigrationExecuted(
-  supabase: SupabaseClient,
-  migration: Migration
-) {
+async function markMigrationExecuted(supabase: SupabaseClient, migration: Migration) {
   interface SupabaseWithMigrations {
     from(table: string): { insert(row: unknown): Promise<{ data: unknown; error: unknown }> };
   }
-  const { error } = await (supabase as unknown as SupabaseWithMigrations).from("migrations").insert({
-    filename: migration.filename,
-    timestamp: migration.timestamp,
-    description: migration.description,
-  });
+  const { error } = await (supabase as unknown as SupabaseWithMigrations)
+    .from("migrations")
+    .insert({
+      filename: migration.filename,
+      timestamp: migration.timestamp,
+      description: migration.description,
+    });
 
   if (error) {
     logger.error("Failed to mark migration as executed", { error, migration: migration.filename });
@@ -120,7 +126,9 @@ async function runMigration(supabase: SupabaseClient, migration: Migration) {
     rpc(fn: string, args: { sql: string }): Promise<{ data: unknown; error: unknown }>;
   }
   try {
-    const { error } = await (supabase as unknown as SupabaseWithRPC).rpc("exec_sql", { sql: migration.sql });
+    const { error } = await (supabase as unknown as SupabaseWithRPC).rpc("exec_sql", {
+      sql: migration.sql,
+    });
 
     if (error) {
       logger.error("Migration failed", { filename: migration.filename, error });
@@ -157,11 +165,9 @@ async function main() {
       return;
     }
 
-
     for (const migration of pending) {
       await runMigration(supabase, migration);
     }
-
   } catch (error) {
     logger.error("Migration process failed", { error });
     process.exit(1);

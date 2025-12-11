@@ -26,10 +26,10 @@ export default function ForgotPasswordPage() {
 
     try {
       if (!email.trim()) {
-      setError("Email address is required");
-      setLoading(false);
-      return;
-    }
+        setError("Email address is required");
+        setLoading(false);
+        return;
+      }
 
       // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

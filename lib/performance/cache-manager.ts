@@ -142,11 +142,10 @@ export const imageCache = new CacheManager(100, 30 * 60 * 1000); // 30 minutes
 export const staticCache = new CacheManager(50, 60 * 60 * 1000); // 1 hour
 
 // Periodic cleanup
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   setInterval(() => {
     apiCache.cleanup();
     imageCache.cleanup();
     staticCache.cleanup();
   }, 60000); // Every minute
 }
-

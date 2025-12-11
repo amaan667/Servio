@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody } from "@/lib/api/validation-schemas";
 
 export const runtime = "nodejs";
 
@@ -28,9 +28,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate input
@@ -40,7 +38,7 @@ export const POST = withUnifiedAuth(
       // Use authenticated client that respects RLS (not admin client)
       // RLS policies ensure users can only access ingredients for venues they have access to
       const supabase = await createClient();
-      
+
       const { data: ingredient, error: ingredientError } = await supabase
         .from("ingredients")
         .select("venue_id, name")
@@ -80,7 +78,7 @@ export const POST = withUnifiedAuth(
           delta: body.delta,
           reason: body.reason,
           ref_type: "manual",
-          note: body.note || `Manual adjustment: ${body.delta > 0 ? '+' : ''}${body.delta}`,
+          note: body.note || `Manual adjustment: ${body.delta > 0 ? "+" : ""}${body.delta}`,
           created_by: context.user.id,
         })
         .select()
@@ -111,7 +109,7 @@ export const POST = withUnifiedAuth(
       // STEP 5: Return success response
       return success({
         data: ledgerEntry,
-        message: `Stock adjusted by ${body.delta > 0 ? '+' : ''}${body.delta}`,
+        message: `Stock adjusted by ${body.delta > 0 ? "+" : ""}${body.delta}`,
       });
     } catch (error) {
       logger.error("[INVENTORY STOCK ADJUST] Unexpected error:", {
@@ -125,10 +123,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {

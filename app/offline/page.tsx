@@ -14,11 +14,7 @@ export default function OfflinePage() {
           It looks like you've lost your internet connection. Some features may not be available.
         </p>
         <div className="space-y-3">
-          <Button
-            onClick={() => window.location.reload()}
-            className="w-full"
-            variant="default"
-          >
+          <Button onClick={() => window.location.reload()} className="w-full" variant="default">
             <RefreshCw className="h-4 w-4 mr-2" />
             Try Again
           </Button>
@@ -35,4 +31,3 @@ export default function OfflinePage() {
     </div>
   );
 }
-

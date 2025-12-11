@@ -27,7 +27,10 @@ const rateLimitStore = new Map<string, { count: number; reset: number }>();
 // Redis client (lazy initialized)
 // Using unknown type for Redis client to avoid type issues with dynamic import
 // The client is only used for its methods (incr, expire) which we verify exist
-let redisClient: { incr: (key: string) => Promise<number>; expire: (key: string, seconds: number) => Promise<number> } | null = null;
+let redisClient: {
+  incr: (key: string) => Promise<number>;
+  expire: (key: string, seconds: number) => Promise<number>;
+} | null = null;
 let redisInitialized = false;
 
 async function getRedisClient() {
@@ -67,14 +70,17 @@ async function getRedisClient() {
 }
 
 // Cleanup expired entries every 5 minutes (in-memory only)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (value.reset < now) {
-      rateLimitStore.delete(key);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, value] of rateLimitStore.entries()) {
+      if (value.reset < now) {
+        rateLimitStore.delete(key);
+      }
     }
-  }
-}, 5 * 60 * 1000);
+  },
+  5 * 60 * 1000
+);
 
 /**
  * Get client identifier from request
@@ -114,7 +120,7 @@ export async function rateLimit(
       // Use sliding window with Redis
       const bucket = Math.floor(now / 1000 / options.window);
       const bucketKey = `${key}:${bucket}`;
-      
+
       // Increment counter for current bucket
       const count = await redis.incr(bucketKey);
       await redis.expire(bucketKey, options.window * 2); // Keep for 2 windows

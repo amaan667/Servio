@@ -29,7 +29,7 @@ export interface KDSTicket {
   table_label?: string;
   priority: number;
   updated_at: string;
-  
+
   // Relations
   kds_stations?: KDSStation;
   orders?: {
@@ -40,7 +40,7 @@ export interface KDSTicket {
   };
 }
 
-export type KDSTicketStatus = 'new' | 'in_progress' | 'ready' | 'bumped';
+export type KDSTicketStatus = "new" | "in_progress" | "ready" | "bumped";
 
 export interface KDSStationCategory {
   id: string;
@@ -116,7 +116,7 @@ export interface BulkUpdateTicketsResponse {
 
 export interface KDSFilters {
   selectedStation: string | null;
-  statusFilter: KDSTicketStatus | 'all';
+  statusFilter: KDSTicketStatus | "all";
 }
 
 export interface KDSStats {
@@ -134,4 +134,3 @@ export interface TicketGroup {
   customerName?: string;
   tableLabel?: string;
 }
-

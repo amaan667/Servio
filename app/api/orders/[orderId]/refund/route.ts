@@ -5,14 +5,11 @@ import { getAuthUserForAPI } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import type Stripe from "stripe";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ orderId: string }> }
-) {
+export async function POST(req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   try {
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();
@@ -66,10 +63,9 @@ export async function POST(
 
     // Check if order was paid via Stripe
     if (!order.stripe_payment_intent_id && !order.stripe_session_id) {
-      return apiErrors.badRequest(
-        "Order was not paid via Stripe. Cannot process refund.",
-        { payment_method: order.payment_method }
-      );
+      return apiErrors.badRequest("Order was not paid via Stripe. Cannot process refund.", {
+        payment_method: order.payment_method,
+      });
     }
 
     // Check if order is already refunded
@@ -119,10 +115,9 @@ export async function POST(
         refundParams.amount = refundAmount;
       }
 
-      const refund = await withStripeRetry(
-        () => stripe.refunds.create(refundParams),
-        { maxRetries: 3 }
-      );
+      const refund = await withStripeRetry(() => stripe.refunds.create(refundParams), {
+        maxRetries: 3,
+      });
 
       logger.info("[REFUND] Stripe refund created:", {
         refundId: refund.id,
@@ -152,9 +147,9 @@ export async function POST(
         // Refund was successful in Stripe, but DB update failed
         // This is a critical issue - log it but don't fail the request
         return success({
-            warning: "Refund processed but order update failed",
-            refund_id: refund.id,
-            error: updateError.message,
+          warning: "Refund processed but order update failed",
+          refund_id: refund.id,
+          error: updateError.message,
         });
       }
 
@@ -199,4 +194,3 @@ export async function POST(
     return apiErrors.internal("Internal server error");
   }
 }
-

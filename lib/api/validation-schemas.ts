@@ -1,6 +1,6 @@
 /**
  * API Input Validation Schemas
- * 
+ *
  * Centralized Zod schemas for all API route inputs.
  * This ensures consistent validation across the entire application.
  */
@@ -27,7 +27,8 @@ const positiveNumber = z.number().positive("Must be positive");
 const nonNegativeNumber = z.number().nonnegative("Cannot be negative");
 const email = z.string().email("Invalid email format");
 // More flexible phone validation - accepts various formats
-const phone = z.string()
+const phone = z
+  .string()
   .min(1, "Phone number is required")
   .refine(
     (val) => {
@@ -66,10 +67,26 @@ export const createOrderSchema = z.object({
   customer_name: nonEmptyString.max(100),
   customer_phone: phone,
   customer_email: email.optional().nullable(),
-  table_number: z.union([z.string(), z.number()]).optional().nullable().transform((val) => val !== null && val !== undefined ? String(val) : undefined),
+  table_number: z
+    .union([z.string(), z.number()])
+    .optional()
+    .nullable()
+    .transform((val) => (val !== null && val !== undefined ? String(val) : undefined)),
   items: z.array(orderItemSchema).min(1, "At least one item required"),
   total_amount: nonNegativeNumber,
-  payment_mode: z.enum(["online", "offline", "deferred", "pay_later", "pay_at_till", "STRIPE", "CASH", "CARD", "PAY_LATER"]).optional(),
+  payment_mode: z
+    .enum([
+      "online",
+      "offline",
+      "deferred",
+      "pay_later",
+      "pay_at_till",
+      "STRIPE",
+      "CASH",
+      "CARD",
+      "PAY_LATER",
+    ])
+    .optional(),
   special_instructions: z.string().max(500).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
@@ -267,4 +284,3 @@ export function validateParams<T extends z.ZodType>(
 ): z.infer<T> {
   return schema.parse(params);
 }
-

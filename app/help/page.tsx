@@ -25,4 +25,3 @@ const HelpCenterClient = dynamic(
 export default function HelpCenterPage() {
   return <HelpCenterClient />;
 }
-

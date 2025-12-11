@@ -8,8 +8,8 @@ import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -19,7 +19,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -33,13 +33,15 @@ export const POST = withUnifiedAuth(
       // STEP 3: Parse request
       // STEP 4: Validate inputs
       const userMetadata = user.user_metadata as Record<string, unknown> | undefined;
-      const pendingSignup = userMetadata?.pending_signup as {
-        venueName?: string;
-        venueType?: string;
-        serviceType?: string;
-        tier?: string;
-        stripeCustomerId?: string;
-      } | undefined;
+      const pendingSignup = userMetadata?.pending_signup as
+        | {
+            venueName?: string;
+            venueType?: string;
+            serviceType?: string;
+            tier?: string;
+            stripeCustomerId?: string;
+          }
+        | undefined;
 
       if (!pendingSignup) {
         // Check if user already has organization/venue (already completed onboarding)
@@ -68,7 +70,7 @@ export const POST = withUnifiedAuth(
       const { venueName, venueType, serviceType, tier, stripeCustomerId } = pendingSignup;
 
       if (!venueName || !tier) {
-        return apiErrors.badRequest('Missing required signup data');
+        return apiErrors.badRequest("Missing required signup data");
       }
 
       // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
@@ -183,15 +185,16 @@ export const POST = withUnifiedAuth(
         message: "Onboarding completed successfully!",
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[COMPLETE ONBOARDING] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -201,7 +204,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Failed to complete onboarding",

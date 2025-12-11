@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export async function GET() {
   try {
@@ -24,6 +24,6 @@ export async function GET() {
     });
   } catch (err) {
     logger.error("[CHECK COOKIES] Error:", { error: err });
-    return apiErrors.internal('Failed to check cookies');
+    return apiErrors.internal("Failed to check cookies");
   }
 }

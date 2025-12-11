@@ -209,7 +209,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
             case "multiple_choice":
               return typeof answer.answer_choice === "string" && answer.answer_choice.trim() !== "";
             case "paragraph":
-              return typeof answer.answer_text === 'string' && answer.answer_text.trim() !== "";
+              return typeof answer.answer_text === "string" && answer.answer_text.trim() !== "";
             default:
               return false;
           }

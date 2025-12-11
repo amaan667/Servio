@@ -56,7 +56,10 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
     if (typeof sanitized[key] === "string") {
       sanitized[key] = sanitizeText(sanitized[key] as string) as T[Extract<keyof T, string>];
     } else if (typeof sanitized[key] === "object" && sanitized[key] !== null) {
-      sanitized[key] = sanitizeObject(sanitized[key] as Record<string, unknown>) as T[Extract<keyof T, string>];
+      sanitized[key] = sanitizeObject(sanitized[key] as Record<string, unknown>) as T[Extract<
+        keyof T,
+        string
+      >];
     }
   }
   return sanitized;
@@ -65,7 +68,10 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
 /**
  * Validate and sanitize input based on type
  */
-export function sanitizeInput(input: unknown, type: "text" | "email" | "url" | "number"): string | number {
+export function sanitizeInput(
+  input: unknown,
+  type: "text" | "email" | "url" | "number"
+): string | number {
   if (type === "number") {
     const num = Number(input);
     return isNaN(num) ? 0 : num;

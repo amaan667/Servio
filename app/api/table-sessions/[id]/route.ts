@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         error: error.message,
         sessionId: id,
       });
-      return apiErrors.database('Failed to update table session');
+      return apiErrors.database("Failed to update table session");
     }
 
     return success({ session });
@@ -54,14 +54,13 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       error: errorMessage,
       sessionId: id,
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
 
 export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   try {
-
     const supabase = await createClient();
 
     // Delete table session
@@ -72,7 +71,7 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
         error: error.message,
         sessionId: id,
       });
-      return apiErrors.database('Failed to delete table session');
+      return apiErrors.database("Failed to delete table session");
     }
 
     return success({});
@@ -82,6 +81,6 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
       error: errorMessage,
       sessionId: id,
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

@@ -17,32 +17,32 @@ export interface RateLimitResult {
 
 export function rateLimit(key: Key, now = Date.now()): RateLimitResult {
   const h = hits.get(key);
-  
+
   // New key or expired window
   if (!h || now - h.ts > WINDOW_MS) {
     hits.set(key, { count: 1, ts: now });
-    return { 
-      ok: true, 
+    return {
+      ok: true,
       remaining: MAX_REQUESTS - 1,
-      reset: now + WINDOW_MS
+      reset: now + WINDOW_MS,
     };
   }
-  
+
   // Check limit
   if (h.count >= MAX_REQUESTS) {
-    return { 
+    return {
       ok: false,
       remaining: 0,
-      reset: h.ts + WINDOW_MS
+      reset: h.ts + WINDOW_MS,
     };
   }
-  
+
   // Increment
   h.count++;
-  return { 
+  return {
     ok: true,
     remaining: MAX_REQUESTS - h.count,
-    reset: h.ts + WINDOW_MS
+    reset: h.ts + WINDOW_MS,
   };
 }
 
@@ -50,9 +50,7 @@ export function rateLimit(key: Key, now = Date.now()): RateLimitResult {
  * Get rate limit key from request
  */
 export function getRateLimitKey(req: Request, endpoint: string): string {
-  const ip = req.headers.get('x-forwarded-for') ?? 
-             req.headers.get('x-real-ip') ?? 
-             'unknown';
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
   return `${req.method}:${endpoint}:${ip}`;
 }
 
@@ -68,7 +66,6 @@ export function cleanup(now = Date.now()) {
 }
 
 // Run cleanup every 5 minutes
-if (typeof global !== 'undefined') {
+if (typeof global !== "undefined") {
   setInterval(() => cleanup(), 5 * 60 * 1000);
 }
-

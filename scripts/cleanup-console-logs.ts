@@ -35,7 +35,8 @@ function processFile(filePath: string): void {
     const newLines: string[] = [];
 
     // Check if file already imports logger
-    const hasLoggerImport = content.includes('from "@/lib/logger"') || content.includes('from "../lib/logger"');
+    const hasLoggerImport =
+      content.includes('from "@/lib/logger"') || content.includes('from "../lib/logger"');
 
     lines.forEach((line, index) => {
       // Skip if line is commented out
@@ -46,25 +47,25 @@ function processFile(filePath: string): void {
 
       // Match console.log, console.info, console.debug, console.warn
       const consoleLogMatch = line.match(/console\.(log|info|debug|warn)\s*\(/);
-      
+
       if (consoleLogMatch) {
         const method = consoleLogMatch[1];
         const indent = line.match(/^(\s*)/)?.[1] || "";
-        
+
         // Extract the arguments
         const argsMatch = line.match(/console\.(log|info|debug|warn)\s*\((.*)\)/);
         if (argsMatch) {
           const args = argsMatch[2];
-          
+
           // Determine logger method
           let loggerMethod = "debug";
           if (method === "warn") loggerMethod = "warn";
           else if (method === "info") loggerMethod = "info";
           else if (method === "log") loggerMethod = "debug";
-          
+
           // Create replacement
           let replacement = "";
-          
+
           // Add logger import if needed
           if (!hasLoggerImport && !modified) {
             // Find the last import statement
@@ -75,14 +76,14 @@ function processFile(filePath: string): void {
                 break;
               }
             }
-            
+
             if (lastImportIndex >= 0) {
               newLines[lastImportIndex] += '\nimport { logger } from "@/lib/logger";';
             } else {
               newLines.unshift('import { logger } from "@/lib/logger";');
             }
           }
-          
+
           // Replace console call
           // Try to parse arguments intelligently
           if (args.includes('"') || args.includes("'")) {
@@ -92,14 +93,14 @@ function processFile(filePath: string): void {
             // Complex arguments - wrap in object
             replacement = `${indent}logger.${loggerMethod}({ data: ${args} });`;
           }
-          
+
           replacements.push({
             file: filePath,
             line: index + 1,
             original: line,
             replacement: replacement,
           });
-          
+
           newLines.push(replacement);
           modified = true;
         } else {
@@ -156,4 +157,3 @@ fileCounts.forEach((count, file) => {
 
 logger.debug("\n⚠️  Review changes before committing!");
 logger.debug("Run: git diff to see all changes");
-

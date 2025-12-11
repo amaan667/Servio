@@ -6,7 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase";
 /**
  * Hook to check authentication and redirect non-authenticated users to /select-plan
  * Use this in all dashboard page client components
- * 
+ *
  * FIX: Wait for session refresh before redirecting to prevent signing out users
  * who have valid sessions but need token refresh after being away for a long time
  */
@@ -44,9 +44,9 @@ export function useAuthRedirect() {
       if (!checkStartTime.current) {
         checkStartTime.current = Date.now();
       }
-      
+
       const elapsed = Date.now() - (checkStartTime.current || 0);
-      
+
       // Timeout: If we've been checking for too long, stop blocking
       if (elapsed > maxCheckTime) {
         // eslint-disable-next-line no-console
@@ -59,7 +59,7 @@ export function useAuthRedirect() {
         setCheckingAuth(false);
         return;
       }
-      
+
       // Don't redirect if already redirected
       if (hasRedirected.current) {
         setCheckingAuth(false);
@@ -79,7 +79,7 @@ export function useAuthRedirect() {
         checkStartTime.current = null;
         return;
       }
-      
+
       // If we have a session, we're likely authenticated - don't block
       if (session?.user) {
         // eslint-disable-next-line no-console
@@ -137,12 +137,15 @@ export function useAuthRedirect() {
           elapsed,
         });
         setCheckingAuth(true);
-        
+
         try {
           const supabase = supabaseBrowser();
           // Try to get/refresh the session - this will refresh expired tokens
-          const { data: { session: refreshedSession }, error } = await supabase.auth.getSession();
-          
+          const {
+            data: { session: refreshedSession },
+            error,
+          } = await supabase.auth.getSession();
+
           if (refreshedSession && !error && refreshedSession.user) {
             // eslint-disable-next-line no-console
             console.log("[useAuthRedirect] Session refreshed successfully", {
@@ -169,7 +172,7 @@ export function useAuthRedirect() {
           console.error("[useAuthRedirect] Session refresh error", error);
           // If refresh fails, continue to redirect after all retries
         }
-        
+
         // Timeout per retry attempt (2 seconds)
         if (elapsed > 2000 * retryCount.current) {
           // eslint-disable-next-line no-console
@@ -204,7 +207,7 @@ export function useAuthRedirect() {
         setCheckingAuth(false);
         return;
       }
-      
+
       // Only set checking to true if we're actively retrying
       if (!user && retryCount.current < maxRetries && elapsed < maxCheckTime) {
         setCheckingAuth(true);
@@ -239,7 +242,7 @@ export function useAuthRedirect() {
 
   // Don't block if we have a session even without user (user state may be updating)
   const isLoading = (authLoading || checkingAuth) && !user && !session;
-  
+
   // eslint-disable-next-line no-console
   console.log("[useAuthRedirect] Return state", {
     hasUser: !!user,
@@ -256,4 +259,3 @@ export function useAuthRedirect() {
     isLoading,
   };
 }
-

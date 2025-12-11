@@ -35,7 +35,11 @@ export function fail(
     {
       ok: false,
       error,
-      ...(details ? { details } : { /* Empty */ }),
+      ...(details
+        ? { details }
+        : {
+            /* Empty */
+          }),
     },
     { status }
   );

@@ -66,7 +66,7 @@ function CallbackContent() {
           allStorageItems[key] = value ? `${value.substring(0, 30)}...` : "null";
         });
 
-          // Verifier check complete
+        // Verifier check complete
 
         // Try to explicitly use the verifier if found
         let exchangeOptions = {};
@@ -78,7 +78,6 @@ function CallbackContent() {
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
-
           // If verifier was missing or empty, give user a helpful error
           if (!verifierValue || verifierValue === "") {
             setError(
@@ -95,7 +94,7 @@ function CallbackContent() {
           return;
         }
 
-          // Session created successfully
+        // Session created successfully
 
         // Now call server endpoint to SET COOKIES from the session using setSession
         const response = await fetch("/api/auth/set-session", {

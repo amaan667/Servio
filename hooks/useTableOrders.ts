@@ -89,13 +89,14 @@ export function useTableOrders(venueId: string) {
 
           // Always ensure we have a proper table label
           let finalTableLabel = tableLabel;
-          
+
           if (!finalTableLabel && order.table_number) {
-            finalTableLabel = order.source === "counter"
-              ? `Counter ${order.table_number}`
-              : `Table ${order.table_number}`;
+            finalTableLabel =
+              order.source === "counter"
+                ? `Counter ${order.table_number}`
+                : `Table ${order.table_number}`;
           }
-          
+
           // If still no label, try to get from table_id or use a default
           if (!finalTableLabel) {
             if (order.table_id) {
@@ -105,20 +106,18 @@ export function useTableOrders(venueId: string) {
                 .select("table_number")
                 .eq("id", order.table_id)
                 .single();
-              
+
               if (tableFromId?.table_number) {
                 finalTableLabel = `Table ${tableFromId.table_number}`;
               }
             }
           }
-          
+
           // Last resort: use order ID or a generic label
           if (!finalTableLabel) {
-            finalTableLabel = order.source === "counter" 
-              ? `Counter Order` 
-              : `Table Order`;
+            finalTableLabel = order.source === "counter" ? `Counter Order` : `Table Order`;
           }
-          
+
           return {
             ...order,
             table_label: finalTableLabel,

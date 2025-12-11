@@ -51,17 +51,17 @@ export default function ConditionalBottomNav() {
     const loadCounts = async (forceRefresh = false) => {
       if (!isMounted) return;
 
-        // Always hydrate from cache first if available, but never skip the network fetch
-        // This ensures we never get stuck showing stale counts from a "fresh" cache
-        if (!forceRefresh) {
-          const cached = getCachedCounts(venueIdFromPath);
-          if (cached && isCacheFresh(venueIdFromPath)) {
-            setCounts({
-              live_orders: cached.live_count || 0,
-              total_orders: cached.today_orders_count || 0,
-              notifications: 0,
-            });
-          }
+      // Always hydrate from cache first if available, but never skip the network fetch
+      // This ensures we never get stuck showing stale counts from a "fresh" cache
+      if (!forceRefresh) {
+        const cached = getCachedCounts(venueIdFromPath);
+        if (cached && isCacheFresh(venueIdFromPath)) {
+          setCounts({
+            live_orders: cached.live_count || 0,
+            total_orders: cached.today_orders_count || 0,
+            notifications: 0,
+          });
+        }
       }
 
       try {
@@ -86,20 +86,23 @@ export default function ConditionalBottomNav() {
 
           // Cache the result
           if (data && typeof data === "object") {
-            setCachedCounts(venueIdFromPath, data as {
-              live_count?: number;
-              earlier_today_count?: number;
-              history_count?: number;
-              today_orders_count?: number;
-              active_tables_count?: number;
-              tables_set_up?: number;
-              tables_in_use?: number;
-              tables_reserved_now?: number;
-              in_use_now?: number;
-              reserved_now?: number;
-              reserved_later?: number;
-              waiting?: number;
-            });
+            setCachedCounts(
+              venueIdFromPath,
+              data as {
+                live_count?: number;
+                earlier_today_count?: number;
+                history_count?: number;
+                today_orders_count?: number;
+                active_tables_count?: number;
+                tables_set_up?: number;
+                tables_in_use?: number;
+                tables_reserved_now?: number;
+                in_use_now?: number;
+                reserved_now?: number;
+                reserved_later?: number;
+                waiting?: number;
+              }
+            );
           }
         }
       } catch (_error) {

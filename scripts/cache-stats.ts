@@ -3,7 +3,6 @@
  * Shows cache performance metrics
  */
 
-async function showCacheStats() {
-}
+async function showCacheStats() {}
 
 showCacheStats();

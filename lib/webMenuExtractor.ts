@@ -60,7 +60,6 @@ async function getChromiumPath() {
  * Uses Puppeteer + Vision AI hybrid approach
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
-
   const executablePath = await getChromiumPath();
   logger.info("[WEB EXTRACT] Step 2: Environment details", {
     nodeEnv: process.env.NODE_ENV,
@@ -293,7 +292,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
  * Extract menu items from DOM structure
  * Enhanced to handle multiple website patterns and extract images properly
  */
-async function extractFromDOM(page: import('puppeteer-core').Page): Promise<WebMenuItem[]> {
+async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebMenuItem[]> {
   return await page.evaluate(() => {
     interface DOMMenuItem {
       name: string;
@@ -521,7 +520,10 @@ async function extractFromDOM(page: import('puppeteer-core').Page): Promise<WebM
  * Merge DOM and Vision AI extracted data
  * Strategy: Vision AI is more accurate for text, DOM is better for images/URLs
  */
-function mergeExtractedData(domItems: WebMenuItem[], visionItems: import('./gptVisionMenuParser').ExtractedMenuItem[]): WebMenuItem[] {
+function mergeExtractedData(
+  domItems: WebMenuItem[],
+  visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[]
+): WebMenuItem[] {
   logger.info("[MERGE] Starting merge", {
     domCount: domItems.length,
     visionCount: visionItems.length,

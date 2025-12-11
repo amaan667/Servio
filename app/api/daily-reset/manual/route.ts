@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -49,7 +49,7 @@ export const POST = withUnifiedAuth(
       }
 
       if (!venue) {
-        return apiErrors.notFound('Venue not found');
+        return apiErrors.notFound("Venue not found");
       }
 
       // Check if there are unknown recent orders (within last 2 hours) - if so, warn user
@@ -83,7 +83,7 @@ export const POST = withUnifiedAuth(
           venueId: finalVenueId,
           userId: context.user.id,
         });
-        return apiErrors.internal('Failed to fetch active orders');
+        return apiErrors.internal("Failed to fetch active orders");
       }
 
       if (activeOrders && activeOrders.length > 0) {
@@ -102,7 +102,7 @@ export const POST = withUnifiedAuth(
             venueId: finalVenueId,
             userId: context.user.id,
           });
-          return apiErrors.internal('Failed to complete active orders');
+          return apiErrors.internal("Failed to complete active orders");
         }
       }
 
@@ -119,7 +119,7 @@ export const POST = withUnifiedAuth(
           venueId: finalVenueId,
           userId: context.user.id,
         });
-        return apiErrors.internal('Failed to fetch active reservations');
+        return apiErrors.internal("Failed to fetch active reservations");
       }
 
       if (activeReservations && activeReservations.length > 0) {
@@ -154,7 +154,7 @@ export const POST = withUnifiedAuth(
           venueId: finalVenueId,
           userId: context.user.id,
         });
-        return apiErrors.internal('Failed to fetch tables');
+        return apiErrors.internal("Failed to fetch tables");
       }
 
       if (tables && tables.length > 0) {
@@ -185,7 +185,7 @@ export const POST = withUnifiedAuth(
             venueId: finalVenueId,
             userId: context.user.id,
           });
-          return apiErrors.internal('Failed to delete tables');
+          return apiErrors.internal("Failed to delete tables");
         }
       }
 
@@ -247,16 +247,17 @@ export const POST = withUnifiedAuth(
         },
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[MANUAL DAILY RESET] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return errorMessage.includes("Unauthorized")
           ? apiErrors.unauthorized(errorMessage)

@@ -24,11 +24,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
           <span
             className={`
               ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
-              ${
-                activeTab === "live"
-                  ? "bg-white text-servio-purple"
-                  : "bg-white/30 text-white"
-              }
+              ${activeTab === "live" ? "bg-white text-servio-purple" : "bg-white/30 text-white"}
             `}
           >
             {counts.live}
@@ -40,11 +36,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
           <span
             className={`
               ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
-              ${
-                activeTab === "all"
-                  ? "bg-white text-servio-purple"
-                  : "bg-white/30 text-white"
-              }
+              ${activeTab === "all" ? "bg-white text-servio-purple" : "bg-white/30 text-white"}
             `}
           >
             {counts.earlier}
@@ -56,11 +48,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
           <span
             className={`
               ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
-              ${
-                activeTab === "history"
-                  ? "bg-white text-servio-purple"
-                  : "bg-white/30 text-white"
-              }
+              ${activeTab === "history" ? "bg-white text-servio-purple" : "bg-white/30 text-white"}
             `}
           >
             {counts.history}

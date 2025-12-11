@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const sessionId = searchParams.get("sessionId");
 
     if (!sessionId) {
-      return apiErrors.badRequest('Session ID is required');
+      return apiErrors.badRequest("Session ID is required");
     }
 
     // Retrieve the Stripe session

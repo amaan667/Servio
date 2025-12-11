@@ -102,18 +102,25 @@ export function useOrderSession(orderParams: OrderParams) {
 
           if (orderInDb) {
             // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
-            const isPayLater = (orderInDb.payment_method === "PAY_LATER" || orderInDb.payment_mode === "pay_later" || orderInDb.payment_mode === "deferred") && 
-                               (orderInDb.payment_status === "UNPAID" || orderInDb.payment_status === "PAY_LATER_PENDING");
-            
+            const isPayLater =
+              (orderInDb.payment_method === "PAY_LATER" ||
+                orderInDb.payment_mode === "pay_later" ||
+                orderInDb.payment_mode === "deferred") &&
+              (orderInDb.payment_status === "UNPAID" ||
+                orderInDb.payment_status === "PAY_LATER_PENDING");
+
             if (isPayLater) {
-              logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
-                orderId: orderData.orderId,
-                customerEmail: orderInDb.customer_email,
-              });
-              
+              logger.info(
+                "✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout",
+                {
+                  orderId: orderData.orderId,
+                  customerEmail: orderInDb.customer_email,
+                }
+              );
+
               // Use customer_email from database order (preferred) or fallback to stored data
               const customerEmail = orderInDb.customer_email || orderData.customerEmail;
-              
+
               // Create Stripe checkout session for pay later order
               const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
                 method: "POST",
@@ -132,13 +139,16 @@ export function useOrderSession(orderParams: OrderParams) {
                 window.location.href = checkoutResult.url;
                 return;
               } else {
-                logger.error("[ORDER SESSION] Failed to create Stripe checkout for pay later order", {
-                  error: checkoutResult.error,
-                });
+                logger.error(
+                  "[ORDER SESSION] Failed to create Stripe checkout for pay later order",
+                  {
+                    error: checkoutResult.error,
+                  }
+                );
                 // Fall through to regular payment page
               }
             }
-            
+
             logger.info("✅ [ORDER SESSION] Redirecting to payment", {
               orderId: orderData.orderId,
             });
@@ -205,18 +215,25 @@ export function useOrderSession(orderParams: OrderParams) {
 
           if (sessionOrderInDb) {
             // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
-            const isPayLater = (sessionOrderInDb.payment_method === "PAY_LATER" || sessionOrderInDb.payment_mode === "pay_later" || sessionOrderInDb.payment_mode === "deferred") && 
-                               (sessionOrderInDb.payment_status === "UNPAID" || sessionOrderInDb.payment_status === "PAY_LATER_PENDING");
-            
+            const isPayLater =
+              (sessionOrderInDb.payment_method === "PAY_LATER" ||
+                sessionOrderInDb.payment_mode === "pay_later" ||
+                sessionOrderInDb.payment_mode === "deferred") &&
+              (sessionOrderInDb.payment_status === "UNPAID" ||
+                sessionOrderInDb.payment_status === "PAY_LATER_PENDING");
+
             if (isPayLater) {
-              logger.info("✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout", {
-                orderId: orderData.orderId,
-                customerEmail: sessionOrderInDb.customer_email,
-              });
-              
+              logger.info(
+                "✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout",
+                {
+                  orderId: orderData.orderId,
+                  customerEmail: sessionOrderInDb.customer_email,
+                }
+              );
+
               // Use customer_email from database order (preferred) or fallback to stored data
               const customerEmail = sessionOrderInDb.customer_email || orderData.customerEmail;
-              
+
               // Create Stripe checkout session for pay later order
               const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
                 method: "POST",
@@ -235,13 +252,16 @@ export function useOrderSession(orderParams: OrderParams) {
                 window.location.href = checkoutResult.url;
                 return;
               } else {
-                logger.error("[ORDER SESSION] Failed to create Stripe checkout for pay later order", {
-                  error: checkoutResult.error,
-                });
+                logger.error(
+                  "[ORDER SESSION] Failed to create Stripe checkout for pay later order",
+                  {
+                    error: checkoutResult.error,
+                  }
+                );
                 // Fall through to regular payment page
               }
             }
-            
+
             // Check if there are multiple unpaid orders for this table
             // If so, show table payment screen instead of single order payment
             try {
@@ -256,17 +276,23 @@ export function useOrderSession(orderParams: OrderParams) {
 
               if (tableOrders && tableOrders.length > 1) {
                 // Multiple unpaid orders - redirect to table payment screen
-                logger.info("📱 [ORDER SESSION] Multiple unpaid orders detected, showing table payment", {
-                  orderCount: tableOrders.length,
-                  tableNumber: orderData.tableNumber,
-                });
+                logger.info(
+                  "📱 [ORDER SESSION] Multiple unpaid orders detected, showing table payment",
+                  {
+                    orderCount: tableOrders.length,
+                    tableNumber: orderData.tableNumber,
+                  }
+                );
                 window.location.href = `/payment/table?venue=${orderParams.venueSlug}&table=${orderData.tableNumber}`;
                 return;
               }
             } catch (tableCheckError) {
               // Fall back to single order payment if table check fails
               logger.warn("[ORDER SESSION] Failed to check table orders, using single order flow", {
-                error: tableCheckError instanceof Error ? tableCheckError.message : String(tableCheckError),
+                error:
+                  tableCheckError instanceof Error
+                    ? tableCheckError.message
+                    : String(tableCheckError),
               });
             }
 
@@ -315,10 +341,13 @@ export function useOrderSession(orderParams: OrderParams) {
             .lte("created_at", todayEnd.toISOString());
 
           if (unpaidTableOrders && unpaidTableOrders.length > 0) {
-            logger.info("📱 [ORDER SESSION] Found unpaid orders for table, showing payment screen", {
-              orderCount: unpaidTableOrders.length,
-              tableNumber: orderParams.tableNumber,
-            });
+            logger.info(
+              "📱 [ORDER SESSION] Found unpaid orders for table, showing payment screen",
+              {
+                orderCount: unpaidTableOrders.length,
+                tableNumber: orderParams.tableNumber,
+              }
+            );
             // Redirect to table payment screen
             window.location.href = `/payment/table?venue=${orderParams.venueSlug}&table=${orderParams.tableNumber}`;
             return;
@@ -326,7 +355,8 @@ export function useOrderSession(orderParams: OrderParams) {
         } catch (tableCheckError) {
           // Silently continue to normal order flow if check fails
           logger.debug("[ORDER SESSION] Table order check failed, continuing normal flow", {
-            error: tableCheckError instanceof Error ? tableCheckError.message : String(tableCheckError),
+            error:
+              tableCheckError instanceof Error ? tableCheckError.message : String(tableCheckError),
           });
         }
       }

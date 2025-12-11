@@ -55,7 +55,7 @@ export async function createOrderWithKDSTickets<T>(
         orderId: createdOrderId,
         error: kdsError instanceof Error ? kdsError.message : "Unknown error",
       });
-      
+
       // Track but don't fail - KDS tickets are non-critical
       trackOrderError(kdsError, {
         orderId: createdOrderId,
@@ -140,4 +140,3 @@ export function validateOrderData(orderData: Record<string, unknown>): {
 
   return { isValid: true };
 }
-

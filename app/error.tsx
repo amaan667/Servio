@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Error({
   error,
@@ -14,9 +14,11 @@ export default function Error({
 
   useEffect(() => {
     // Only redirect to home for certain types of errors, not order-related ones
-    if (error.message.includes('Cannot access uninitialized variable') || 
-        error.message.includes('Missing Supabase environment variables')) {
-      router.push('/');
+    if (
+      error.message.includes("Cannot access uninitialized variable") ||
+      error.message.includes("Missing Supabase environment variables")
+    ) {
+      router.push("/");
     }
     // For other errors, don't redirect - let the component handle it
   }, [error, router]);
@@ -27,7 +29,7 @@ export default function Error({
       <div className="text-center max-w-md">
         <div className="text-6xl mb-4">⚠️</div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
-        <p className="text-gray-600 mb-4">{error.message || 'An unexpected error occurred'}</p>
+        <p className="text-gray-600 mb-4">{error.message || "An unexpected error occurred"}</p>
         <button
           onClick={() => {
             reset();

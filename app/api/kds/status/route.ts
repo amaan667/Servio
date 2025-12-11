@@ -109,11 +109,9 @@ export const GET = withUnifiedAuth(
     extractVenueId: async (req) => {
       const { searchParams } = new URL(req.url);
       const { venueId } = validateQuery(
-        paginationSchema
-          .pick({ limit: true, offset: true })
-          .extend({
-            venueId: z.string().min(1).max(64),
-          }),
+        paginationSchema.pick({ limit: true, offset: true }).extend({
+          venueId: z.string().min(1).max(64),
+        }),
         {
           venueId: searchParams.get("venueId"),
           // keep shape for validation; limit/offset ignored here

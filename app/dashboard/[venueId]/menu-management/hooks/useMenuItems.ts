@@ -13,17 +13,17 @@ export function useMenuItems(venueId: string) {
   const loadMenuItems = async () => {
     // Normalize venueId format - database stores with venue- prefix
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-    
+
     try {
       setLoading(true);
-      
+
       // Validate Supabase client creation
       let supabase;
       try {
         // Check environment variables before creating client
         const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
         const hasAnonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        
+
         console.log("[MENU BUILDER] Environment check:", {
           hasUrl,
           hasAnonKey,
@@ -38,13 +38,14 @@ export function useMenuItems(venueId: string) {
         }
 
         supabase = createClient();
-        
+
         // Verify client was created successfully
         if (!supabase) {
           throw new Error("Supabase client creation returned null/undefined");
         }
       } catch (clientError) {
-        const errorMessage = clientError instanceof Error ? clientError.message : String(clientError);
+        const errorMessage =
+          clientError instanceof Error ? clientError.message : String(clientError);
         console.error("[MENU BUILDER] Failed to create Supabase client:", {
           error: errorMessage,
           venueId,
@@ -74,9 +75,9 @@ export function useMenuItems(venueId: string) {
         .select("*")
         .eq("venue_id", normalizedVenueId)
         .order("position", { ascending: true, nullsFirst: false });
-      
+
       const actualItemCount = items?.length || 0;
-      
+
       // Use console.warn for maximum visibility
       console.warn("═══════════════════════════════════════════════════════════");
       console.warn("📊 [MENU BUILDER] Menu Items Loaded");
@@ -89,10 +90,10 @@ export function useMenuItems(venueId: string) {
       console.warn("⚠️  THIS COUNT SHOULD MATCH DASHBOARD COUNT");
       console.warn("Timestamp:", new Date().toISOString());
       console.warn("═══════════════════════════════════════════════════════════");
-      
+
       // Also log as plain console.log
       console.log("MENU BUILDER COUNT:", actualItemCount, "items");
-      
+
       console.log("[MENU BUILDER] Query result:", {
         itemsArrayLength: actualItemCount,
         normalizedVenueId,
@@ -127,7 +128,7 @@ export function useMenuItems(venueId: string) {
       }
 
       const itemCount = items?.length || 0;
-      
+
       // CRITICAL LOG: Menu builder count when page loads
       // Log to both console (browser) and logger (Railway)
       const menuBuilderLogData = {
@@ -135,11 +136,14 @@ export function useMenuItems(venueId: string) {
         normalizedVenueId,
         totalMenuItems: actualItemCount,
         itemsArrayLength: items?.length || 0,
-        first3Items: items?.slice(0, 3).map((i) => ({ id: i.id, name: i.name, is_available: i.is_available })) || [],
+        first3Items:
+          items
+            ?.slice(0, 3)
+            .map((i) => ({ id: i.id, name: i.name, is_available: i.is_available })) || [],
         allItemIds: items?.map((i) => i.id) || [],
         timestamp: new Date().toISOString(),
       };
-      
+
       console.log("═══════════════════════════════════════════════════════════");
       console.log("🔧 [MENU BUILDER LOAD] Menu Items Count");
       console.log("═══════════════════════════════════════════════════════════");
@@ -152,7 +156,7 @@ export function useMenuItems(venueId: string) {
       console.log("⚠️  Dashboard should show:", itemCount);
       console.log("Timestamp:", new Date().toISOString());
       console.log("═══════════════════════════════════════════════════════════");
-      
+
       // Log to Railway
       logger.info("[MENU BUILDER LOAD] Menu Items Count", menuBuilderLogData);
 
@@ -202,7 +206,6 @@ export function useMenuItems(venueId: string) {
     if (venueId) {
       loadMenuItems();
     }
-     
   }, [venueId]); // loadMenuItems is stable, don't need in deps
 
   // Auto-refresh when window regains focus to prevent stale data

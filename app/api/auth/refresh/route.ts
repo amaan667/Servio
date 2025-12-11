@@ -5,10 +5,13 @@ import { logger } from "@/lib/logger";
 export async function POST() {
   try {
     const supabase = await createServerSupabase();
-    
+
     // SECURE: Use getUser() instead of getSession() for authentication check
     // This authenticates the data by contacting the Supabase Auth server
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
     if (userError) {
       logger.error("[REFRESH API] Error getting user:", { error: userError.message });
@@ -32,10 +35,15 @@ export async function POST() {
     }
 
     // Get session for expires_at if needed
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
     if (sessionError && !sessionError.message?.includes("refresh_token_not_found")) {
-      logger.warn("[REFRESH API] Error getting session (non-critical):", { error: sessionError.message });
+      logger.warn("[REFRESH API] Error getting session (non-critical):", {
+        error: sessionError.message,
+      });
     }
 
     return NextResponse.json({

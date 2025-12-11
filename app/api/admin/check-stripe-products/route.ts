@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 
@@ -11,14 +11,14 @@ export async function GET() {
   try {
     const { createClient } = await import("@/lib/supabase");
     const supabase = await createClient();
-    
+
     // Get current user
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     // Admin role check
@@ -29,16 +29,16 @@ export async function GET() {
       .single();
 
     if (userRole?.role !== "admin" && userRole?.role !== "owner") {
-      return apiErrors.forbidden('Admin access required');
+      return apiErrors.forbidden("Admin access required");
     }
     // Get all products
     const products = await stripe.products.list({ limit: 100, active: true });
-    
+
     const productAnalysis = [];
 
     for (const product of products.data) {
       const tier = product.metadata?.tier;
-      
+
       // Get all prices for this product
       const prices = await stripe.prices.list({
         product: product.id,
@@ -62,7 +62,7 @@ export async function GET() {
         subscriptions.data.forEach((sub) => {
           const status = sub.status;
           subscriptionCounts[status] = (subscriptionCounts[status] || 0) + 1;
-          
+
           if (status === "active" || status === "trialing") {
             totalActiveSubscriptions++;
           } else {
@@ -74,7 +74,7 @@ export async function GET() {
       // Determine if product is safe to delete
       const hasActiveSubscriptions = totalActiveSubscriptions > 0;
       const isLatestForTier = tier && ["starter", "pro", "enterprise"].includes(tier);
-      
+
       productAnalysis.push({
         productId: product.id,
         name: product.name,
@@ -112,13 +112,14 @@ export async function GET() {
     };
 
     productAnalysis.forEach((p) => {
-      const tierKey = p.tier === "starter" || p.tier === "basic" 
-        ? "starter"
-        : p.tier === "pro" || p.tier === "standard"
-        ? "pro"
-        : p.tier === "enterprise" || p.tier === "premium"
-        ? "enterprise"
-        : "unknown";
+      const tierKey =
+        p.tier === "starter" || p.tier === "basic"
+          ? "starter"
+          : p.tier === "pro" || p.tier === "standard"
+            ? "pro"
+            : p.tier === "enterprise" || p.tier === "premium"
+              ? "enterprise"
+              : "unknown";
       productsByTier[tierKey].push(p);
     });
 
@@ -131,9 +132,16 @@ export async function GET() {
 
     // Find recommended products to keep (most recent with correct tier metadata)
     const recommendedProducts = {
-      starter: productsByTier.starter.find((p) => p.tier === "starter" && !p.hasActiveSubscriptions) || productsByTier.starter[0],
-      pro: productsByTier.pro.find((p) => p.tier === "pro" && !p.hasActiveSubscriptions) || productsByTier.pro[0],
-      enterprise: productsByTier.enterprise.find((p) => p.tier === "enterprise" && !p.hasActiveSubscriptions) || productsByTier.enterprise[0],
+      starter:
+        productsByTier.starter.find((p) => p.tier === "starter" && !p.hasActiveSubscriptions) ||
+        productsByTier.starter[0],
+      pro:
+        productsByTier.pro.find((p) => p.tier === "pro" && !p.hasActiveSubscriptions) ||
+        productsByTier.pro[0],
+      enterprise:
+        productsByTier.enterprise.find(
+          (p) => p.tier === "enterprise" && !p.hasActiveSubscriptions
+        ) || productsByTier.enterprise[0],
     };
 
     const productsToDelete = productAnalysis.filter((p) => p.canDelete);
@@ -145,7 +153,8 @@ export async function GET() {
       success: true,
       summary: {
         totalProducts: products.data.length,
-        productsWithActiveSubscriptions: productAnalysis.filter((p) => p.hasActiveSubscriptions).length,
+        productsWithActiveSubscriptions: productAnalysis.filter((p) => p.hasActiveSubscriptions)
+          .length,
         canDelete: productsToDelete.length,
         shouldArchive: productsToArchive.length,
       },
@@ -179,4 +188,3 @@ export async function GET() {
     );
   }
 }
-

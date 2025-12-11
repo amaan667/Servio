@@ -3,10 +3,10 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -14,9 +14,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified, may be null)
@@ -30,7 +28,7 @@ export const POST = withUnifiedAuth(
 
       // STEP 4: Validate inputs
       if (!finalVenueId) {
-        return apiErrors.badRequest('venueId is required');
+        return apiErrors.badRequest("venueId is required");
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -45,7 +43,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (!venue) {
-        return apiErrors.notFound('Venue not found');
+        return apiErrors.notFound("Venue not found");
       }
 
       // STEP 6: Business logic
@@ -109,23 +107,24 @@ export const POST = withUnifiedAuth(
         tier: org?.subscription_tier || "starter",
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[TIER CHECK] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
       }
       if (errorMessage.includes("Forbidden")) {
         return apiErrors.forbidden(errorMessage);
       }
-      
+
       return apiErrors.internal(
         isDevelopment() ? errorMessage : "Request processing failed",
         isDevelopment() && errorStack ? { stack: errorStack } : undefined

@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { env, isDevelopment } from '@/lib/env';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { validateBody, validateQuery } from "@/lib/api/validation-schemas";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { env, isDevelopment } from "@/lib/env";
 
 // Validation schemas
 const cartItemSchema = z.object({
@@ -38,9 +38,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -51,7 +49,7 @@ export const POST = withUnifiedAuth(
 
       // Verify venue_id matches context
       if (body.venueId !== venueId) {
-        return apiErrors.forbidden('Venue ID mismatch');
+        return apiErrors.forbidden("Venue ID mismatch");
       }
 
       // STEP 4: Business logic - Store cart data
@@ -75,7 +73,7 @@ export const POST = withUnifiedAuth(
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
       };
 
-      logger.info('[CART STORE] Cart stored successfully', {
+      logger.info("[CART STORE] Cart stored successfully", {
         cartId: body.cartId,
         venueId,
         userId: context.user.id,
@@ -85,7 +83,7 @@ export const POST = withUnifiedAuth(
       // STEP 5: Return success response
       return success({ cartData });
     } catch (error) {
-      logger.error('[CART STORE] Unexpected error', {
+      logger.error("[CART STORE] Unexpected error", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         venueId: context.venueId,
@@ -97,7 +95,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal('Failed to store cart', error);
+      return apiErrors.internal("Failed to store cart", error);
     }
   },
   {
@@ -105,9 +103,11 @@ export const POST = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         const body = await req.json().catch(() => ({}));
-        return (body as { venueId?: string; venue_id?: string })?.venueId || 
-               (body as { venueId?: string; venue_id?: string })?.venue_id || 
-               null;
+        return (
+          (body as { venueId?: string; venue_id?: string })?.venueId ||
+          (body as { venueId?: string; venue_id?: string })?.venue_id ||
+          null
+        );
       } catch {
         return null;
       }
@@ -121,9 +121,7 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Validate query parameters
@@ -136,7 +134,7 @@ export const GET = withUnifiedAuth(
       // In a real implementation, you'd retrieve from database
       // For now, return null to indicate cart not found
 
-      logger.debug('[CART STORE] Cart retrieval requested', {
+      logger.debug("[CART STORE] Cart retrieval requested", {
         cartId: query.cartId,
         userId: context.user.id,
       });
@@ -144,7 +142,7 @@ export const GET = withUnifiedAuth(
       // STEP 4: Return success response
       return success({ cartData: null });
     } catch (error) {
-      logger.error('[CART STORE GET] Unexpected error', {
+      logger.error("[CART STORE GET] Unexpected error", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         userId: context.user.id,
@@ -155,7 +153,7 @@ export const GET = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal('Failed to retrieve cart', error);
+      return apiErrors.internal("Failed to retrieve cart", error);
     }
   },
   {

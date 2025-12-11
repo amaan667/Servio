@@ -1,26 +1,26 @@
 // Inventory Management Types
 
-export type IngredientUnit = 
-  | 'g'    // grams
-  | 'kg'   // kilograms
-  | 'ml'   // milliliters
-  | 'l'    // liters
-  | 'oz'   // ounces
-  | 'lb'   // pounds
-  | 'pcs'  // pieces
-  | 'cup'
-  | 'tbsp' // tablespoon
-  | 'tsp'; // teaspoon
+export type IngredientUnit =
+  | "g" // grams
+  | "kg" // kilograms
+  | "ml" // milliliters
+  | "l" // liters
+  | "oz" // ounces
+  | "lb" // pounds
+  | "pcs" // pieces
+  | "cup"
+  | "tbsp" // tablespoon
+  | "tsp"; // teaspoon
 
-export type StockMovementReason = 
-  | 'sale'      // Consumed by order
-  | 'receive'   // Stock received
-  | 'adjust'    // Manual adjustment
-  | 'waste'     // Waste/spoilage
-  | 'stocktake' // Physical count adjustment
-  | 'return';   // Return to supplier
+export type StockMovementReason =
+  | "sale" // Consumed by order
+  | "receive" // Stock received
+  | "adjust" // Manual adjustment
+  | "waste" // Waste/spoilage
+  | "stocktake" // Physical count adjustment
+  | "return"; // Return to supplier
 
-export type StockRefType = 'order' | 'shipment' | 'manual';
+export type StockRefType = "order" | "shipment" | "manual";
 
 export interface Ingredient {
   id: string;
@@ -165,4 +165,3 @@ export interface StockDeductionResult {
   }>;
   error?: string;
 }
-

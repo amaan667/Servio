@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Tests for usePageAuth hook
  * @module __tests__/hooks/usePageAuth

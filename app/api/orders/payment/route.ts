@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors } from '@/lib/api/standard-response';
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 /**
  * Payment API Route - No authentication required for ordering UI
@@ -83,4 +83,3 @@ export async function POST(req: NextRequest) {
     return apiErrors.internal("Internal server error");
   }
 }
-

@@ -20,7 +20,8 @@ export function getUserFriendlyError(error: unknown, context?: string): UserFrie
   if (lowerMessage.includes("payment") || lowerMessage.includes("paid")) {
     if (lowerMessage.includes("unpaid") || lowerMessage.includes("not paid")) {
       return {
-        message: "This order hasn't been paid yet. Please collect payment before completing the order.",
+        message:
+          "This order hasn't been paid yet. Please collect payment before completing the order.",
         action: "Collect payment first",
         code: "UNPAID_ORDER",
       };
@@ -38,7 +39,8 @@ export function getUserFriendlyError(error: unknown, context?: string): UserFrie
   if (lowerMessage.includes("order status") || lowerMessage.includes("status")) {
     if (lowerMessage.includes("cannot complete")) {
       return {
-        message: "This order cannot be completed in its current state. Please check the order status.",
+        message:
+          "This order cannot be completed in its current state. Please check the order status.",
         action: "Check order status",
         code: "INVALID_ORDER_STATUS",
       };
@@ -124,4 +126,3 @@ export function createUserFriendlyErrorResponse(
     ...(friendlyError.code && { code: friendlyError.code }),
   };
 }
-

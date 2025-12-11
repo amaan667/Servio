@@ -1,41 +1,32 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  Clock, 
-  Receipt,
-  User,
-  QrCode,
-  X,
-  CreditCard,
-  Split,
-  CheckCircle
-} from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { TableOrder } from '@/hooks/useTableOrders';
-import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-utils';
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Clock, Receipt, User, QrCode, X, CreditCard, Split, CheckCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TableOrder } from "@/hooks/useTableOrders";
+import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
 
 // Helper functions for order status flow
 const getNextOrderStatus = (currentStatus: string) => {
   // Normalize to uppercase for comparison
   const status = currentStatus.toUpperCase();
   switch (status) {
-    case 'PLACED':
-    case 'ACCEPTED': return 'IN_PREP';
-    case 'IN_PREP':
-    case 'PREPARING': return 'READY';
-    case 'READY': return 'COMPLETED';
-    case 'SERVING':
-    case 'SERVED': return 'COMPLETED';
-    default: return 'COMPLETED';
+    case "PLACED":
+    case "ACCEPTED":
+      return "IN_PREP";
+    case "IN_PREP":
+    case "PREPARING":
+      return "READY";
+    case "READY":
+      return "COMPLETED";
+    case "SERVING":
+    case "SERVED":
+      return "COMPLETED";
+    default:
+      return "COMPLETED";
   }
 };
 
@@ -43,14 +34,19 @@ const getNextStatusLabel = (currentStatus: string) => {
   // Normalize to uppercase for comparison
   const status = currentStatus.toUpperCase();
   switch (status) {
-    case 'PLACED':
-    case 'ACCEPTED': return 'Start Preparing';
-    case 'IN_PREP':
-    case 'PREPARING': return 'Mark as Served';
-    case 'READY': return 'Complete Order';
-    case 'SERVING':
-    case 'SERVED': return 'Complete Order';
-    default: return 'Complete Order';
+    case "PLACED":
+    case "ACCEPTED":
+      return "Start Preparing";
+    case "IN_PREP":
+    case "PREPARING":
+      return "Mark as Served";
+    case "READY":
+      return "Complete Order";
+    case "SERVING":
+    case "SERVED":
+      return "Complete Order";
+    default:
+      return "Complete Order";
   }
 };
 
@@ -68,13 +64,13 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
   const handleRemoveOrder = async () => {
     try {
       setIsRemoving(true);
-      
-      const response = await fetch('/api/orders/delete', {
-        method: 'POST',
+
+      const response = await fetch("/api/orders/delete", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include', // Include cookies for authentication
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify({
           orderId: order.id,
           venue_id: venueId,
@@ -82,7 +78,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete order');
+        throw new Error("Failed to delete order");
       }
 
       onActionComplete?.();
@@ -95,27 +91,36 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PLACED': return 'bg-yellow-100 text-yellow-800';
-      case 'IN_PREP': return 'bg-blue-100 text-blue-800';
-      case 'READY': return 'bg-green-100 text-green-800';
-      case 'SERVING': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "PLACED":
+        return "bg-yellow-100 text-yellow-800";
+      case "IN_PREP":
+        return "bg-blue-100 text-blue-800";
+      case "READY":
+        return "bg-green-100 text-green-800";
+      case "SERVING":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case 'PAID': return 'bg-green-100 text-green-800';
-      case 'UNPAID': return 'bg-red-100 text-red-800';
-      case 'TILL': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "PAID":
+        return "bg-green-100 text-green-800";
+      case "UNPAID":
+        return "bg-red-100 text-red-800";
+      case "TILL":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -125,26 +130,26 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
     return formatPrice(total);
   };
 
-  const handlePayment = async (paymentMethod: 'till' | 'card') => {
+  const handlePayment = async (paymentMethod: "till" | "card") => {
     try {
       setIsProcessingPayment(true);
-      
-      const response = await fetch('/api/orders/payment', {
-        method: 'POST',
+
+      const response = await fetch("/api/orders/payment", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           orderId: order.id,
           venue_id: venueId,
           payment_method: paymentMethod,
-          payment_status: 'PAID'
+          payment_status: "PAID",
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to process payment');
+        throw new Error("Failed to process payment");
       }
 
       onActionComplete?.();
@@ -158,20 +163,20 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
   const handleStatusUpdate = async (newStatus: string) => {
     try {
       setIsProcessingPayment(true);
-      
-      const response = await fetch('/api/orders/set-status', {
-        method: 'POST',
+
+      const response = await fetch("/api/orders/set-status", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           orderId: order.id,
-          status: newStatus
+          status: newStatus,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update order status');
+        throw new Error("Failed to update order status");
       }
 
       onActionComplete?.();
@@ -183,7 +188,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
   };
 
   return (
-    <Card 
+    <Card
       className="w-full shadow-sm hover:shadow-md transition-all duration-200 relative"
       onMouseEnter={() => setShowHoverRemove(true)}
       onMouseLeave={() => setShowHoverRemove(false)}
@@ -193,18 +198,26 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
           <div className="flex-1 min-w-0">
             {/* Order ID - Prominently displayed */}
             <div className="mb-3">
-              <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Order ID</div>
+              <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">
+                Order ID
+              </div>
               <div className="text-xl font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg inline-block">
                 #{order.id.slice(-6).toUpperCase()}
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3 mb-2">
               <h3 className="font-semibold text-lg text-gray-900">
-                {order.table_label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)}
+                {order.table_label ||
+                  (order.source === "counter"
+                    ? `Counter ${order.table_number}`
+                    : `Table ${order.table_number}`)}
               </h3>
-              <Badge variant="secondary" className={`text-xs px-2 py-1 ${order.source === 'counter' ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'}`}>
-                {order.source === 'counter' ? (
+              <Badge
+                variant="secondary"
+                className={`text-xs px-2 py-1 ${order.source === "counter" ? "bg-orange-50 text-orange-700" : "bg-blue-50 text-blue-700"}`}
+              >
+                {order.source === "counter" ? (
                   <>
                     <Receipt className="h-3 w-3 mr-1" />
                     Counter Order
@@ -222,13 +235,17 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
           <div className="text-right flex items-center gap-2">
             {/* Total Amount - More prominent */}
             <div className="text-right">
-              <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Total</div>
+              <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">
+                Total
+              </div>
               <div className="text-3xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg">
                 £{getTotalAmount()}
               </div>
             </div>
             {/* Remove Order Button - appears on hover */}
-            <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+              className={`transition-opacity duration-200 ${showHoverRemove ? "opacity-100" : "opacity-0"}`}
+            >
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -254,7 +271,9 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         {/* Customer Info - More prominent */}
         {order.customer_name && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Customer</div>
+            <div className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">
+              Customer
+            </div>
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-gray-900" />
               <span className="text-lg font-bold text-gray-900">{order.customer_name}</span>
@@ -267,10 +286,14 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
 
         {/* Status Badges */}
         <div className="flex items-center flex-wrap gap-2 mb-6">
-          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
-            {order.order_status.replace('_', ' ')}
+          <Badge
+            className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}
+          >
+            {order.order_status.replace("_", " ")}
           </Badge>
-          <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
+          <Badge
+            className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}
+          >
             {order.payment_status}
           </Badge>
         </div>
@@ -281,14 +304,19 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
             <h4 className="text-sm font-semibold text-gray-700 mb-3">Order Items</h4>
             <div className="space-y-2">
               {order.items.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-900 border border-gray-200">
                       {item.quantity}
                     </div>
                     <span className="font-medium text-gray-900">{item.item_name}</span>
                   </div>
-                  <span className="font-semibold text-gray-900">£{formatPrice(normalizePrice(item.price))}</span>
+                  <span className="font-semibold text-gray-900">
+                    £{formatPrice(normalizePrice(item.price))}
+                  </span>
                 </div>
               ))}
             </div>
@@ -296,7 +324,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         )}
 
         {/* Payment Actions */}
-        {order.payment_status === 'UNPAID' && (
+        {order.payment_status === "UNPAID" && (
           <div className="mt-6 pt-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-900">
@@ -306,7 +334,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handlePayment('till')}
+                  onClick={() => handlePayment("till")}
                   disabled={isProcessingPayment}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
@@ -315,7 +343,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => handlePayment('card')}
+                  onClick={() => handlePayment("card")}
                   disabled={isProcessingPayment}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
@@ -323,7 +351,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
                   Card Payment
                 </Button>
                 {/* Only show split bill for pay-at-till orders */}
-                {(order.payment_mode === 'pay_at_till' || order.payment_method === 'TILL') && (
+                {(order.payment_mode === "pay_at_till" || order.payment_method === "TILL") && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -344,7 +372,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         )}
 
         {/* Order Status Actions */}
-        {order.payment_status === 'PAID' && order.order_status !== 'COMPLETED' && (
+        {order.payment_status === "PAID" && order.order_status !== "COMPLETED" && (
           <div className="mt-6 pt-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-blue-600">

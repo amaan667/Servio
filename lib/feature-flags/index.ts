@@ -45,7 +45,6 @@ export class FeatureFlagsManager {
 
     // Cache the flags
     await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
-
   }
 
   /**
@@ -281,7 +280,6 @@ export class FeatureFlagsManager {
 
     // Update cache
     await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), { ttl: this.CACHE_TTL });
-
   }
 
   /**

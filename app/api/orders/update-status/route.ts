@@ -1,9 +1,9 @@
-import { apiErrors, success } from '@/lib/api/standard-response';
+import { apiErrors, success } from "@/lib/api/standard-response";
 import { createServerSupabase } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { logger } from "@/lib/logger";
-import { env } from '@/lib/env';
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     const { orderId, status } = await req.json();
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       .single();
 
     if (!orderCheck) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Verify venue access
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (!venueAccess && !staffAccess) {
-      return apiErrors.forbidden('Forbidden');
+      return apiErrors.forbidden("Forbidden");
     }
 
     // CRITICAL: Verify payment status before allowing COMPLETED
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         .single();
 
       if (!currentOrder) {
-        return apiErrors.notFound('Order not found');
+        return apiErrors.notFound("Order not found");
       }
 
       if (currentOrder.payment_status !== "PAID") {
@@ -136,7 +136,7 @@ export async function POST(req: Request) {
         if (status === "COMPLETED" && order.payment_status === "PAID") {
           try {
             const baseUrl =
-              env('NEXT_PUBLIC_SITE_URL') || "https://servio-production.up.railway.app";
+              env("NEXT_PUBLIC_SITE_URL") || "https://servio-production.up.railway.app";
             const completionResponse = await fetch(`${baseUrl}/api/reservations/check-completion`, {
               method: "POST",
               headers: {
@@ -166,6 +166,6 @@ export async function POST(req: Request) {
     logger.error("[UPDATE STATUS] Unexpected error:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

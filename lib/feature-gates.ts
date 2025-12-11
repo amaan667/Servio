@@ -82,7 +82,7 @@ export async function checkFeatureAccess(
     // Get tier from organization (should be synced from Stripe)
     let currentTier: SubscriptionTier = "starter";
     const tierFromDb = org.subscription_tier?.toLowerCase().trim();
-    
+
     // Validate tier is one of the valid values
     if (tierFromDb && ["starter", "pro", "enterprise"].includes(tierFromDb)) {
       currentTier = tierFromDb as SubscriptionTier;

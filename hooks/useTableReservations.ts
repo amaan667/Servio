@@ -66,7 +66,15 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         .from("table_sessions")
         .select("*")
         .eq("venue_id", venueId)
-        .in("status", ["FREE", "OCCUPIED", "ORDERING", "IN_PREP", "READY", "SERVED", "AWAITING_BILL"]) // Include FREE and OCCUPIED status
+        .in("status", [
+          "FREE",
+          "OCCUPIED",
+          "ORDERING",
+          "IN_PREP",
+          "READY",
+          "SERVED",
+          "AWAITING_BILL",
+        ]) // Include FREE and OCCUPIED status
         .order("opened_at", { ascending: false });
       if (sessionsError) throw sessionsError;
 
@@ -143,7 +151,10 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         let orderUpdatedAt = null;
 
         // Priority 1: If there's an active table session with OCCUPIED status or non-FREE status, table is OCCUPIED
-        if (activeSession && (activeSession.status === "OCCUPIED" || activeSession.status !== "FREE")) {
+        if (
+          activeSession &&
+          (activeSession.status === "OCCUPIED" || activeSession.status !== "FREE")
+        ) {
           sessionStatus = "OCCUPIED";
           openedAt = activeSession.opened_at;
           orderId = activeSession.order_id;
@@ -594,7 +605,7 @@ export function useDeleteTable(venueId: string) {
         const errorData = await response.json();
         // Extract error message properly - handle nested error objects
         let errorMessage = "Failed to delete table";
-        
+
         if (errorData.error) {
           if (typeof errorData.error === "string") {
             errorMessage = errorData.error;
@@ -604,7 +615,7 @@ export function useDeleteTable(venueId: string) {
             errorMessage = `Error code: ${errorData.error.code}`;
           }
         }
-        
+
         throw new Error(errorMessage);
       }
 

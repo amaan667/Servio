@@ -1,8 +1,8 @@
 /**
  * Reusable Page Authentication Helper
- * 
+ *
  * Use this in all dashboard page.tsx files for consistent auth checking
- * 
+ *
  * CRITICAL: NO REDIRECTS - User requested ZERO sign-in redirects
  * Returns null on auth failures instead of redirecting
  */
@@ -44,19 +44,19 @@ export interface RequirePageAuthOptions {
 
 /**
  * Main helper used by ALL dashboard pages
- * 
+ *
  * NEVER throws - always redirects on auth failures to prevent 500 errors
- * 
+ *
  * Usage:
  * ```typescript
  * export default async function MyPage({ params }: { params: { venueId: string } }) {
  *   const { venueId } = params;
- *   
+ *
  *   const auth = await requirePageAuth(venueId, {
  *     requireFeature: "aiAssistant", // optional
  *     requireRole: ["owner", "manager"], // optional
  *   });
- *   
+ *
  *   // Now safe to fetch data and render
  *   return <MyClientPage venueId={venueId} tier={auth.tier} role={auth.role} />;
  * }
@@ -69,7 +69,7 @@ export async function requirePageAuth(
   // STEP 1: Get user from Supabase session (cookie-aware)
   // Use createServerSupabase directly for better cookie handling in production
   const supabase = await createServerSupabase();
-  
+
   const {
     data: { user },
     error,
@@ -134,14 +134,14 @@ export async function requirePageAuth(
     }
 
     const featureValue = tierLimits.features[options.requireFeature];
-    
+
     // For boolean features, check the value directly
     if (typeof featureValue === "boolean" && !featureValue) {
       // NO REDIRECTS - User requested ZERO sign-in redirects
       // Return null instead of redirecting
       return null;
     }
-    
+
     // For analytics and supportLevel, they're always allowed (just different levels)
     // So we don't redirect for those
   }
@@ -150,7 +150,7 @@ export async function requirePageAuth(
   const hasFeatureAccess = (feature: FeatureKey): boolean => {
     const tierLimits = TIER_LIMITS[tier];
     if (!tierLimits) return false;
-    
+
     const featureValue = tierLimits.features[feature];
     // For boolean features, return the value directly
     if (typeof featureValue === "boolean") {
@@ -174,16 +174,14 @@ export async function requirePageAuth(
  * Optional page auth - returns null if not authenticated instead of redirecting
  * Useful for pages that can be viewed by unauthenticated users
  */
-export async function getOptionalPageAuth(
-  venueId?: string
-): Promise<PageAuthContext | null> {
+export async function getOptionalPageAuth(venueId?: string): Promise<PageAuthContext | null> {
   try {
     const supabase = await createServerSupabase();
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser();
-    
+
     if (error || !user) {
       return null;
     }

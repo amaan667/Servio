@@ -23,17 +23,10 @@ export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProp
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
           {counterOrders
-            .sort(
-              (a, b) =>
-                new Date(a.created_at).getTime() -
-                new Date(b.created_at).getTime()
-            )
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
             .map((order) => (
               <div key={order.id} className="flex-shrink-0 w-80">
-                <OrderCard
-                  order={mapCounterOrderToCardData(order)}
-                  variant="counter"
-                />
+                <OrderCard order={mapCounterOrderToCardData(order)} variant="counter" />
               </div>
             ))}
         </div>

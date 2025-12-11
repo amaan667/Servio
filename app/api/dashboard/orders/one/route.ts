@@ -1,31 +1,30 @@
 export const runtime = "nodejs";
 
-import { success, apiErrors } from '@/lib/api/standard-response';
-import { createClient } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { NextRequest } from 'next/server';
+import { success, apiErrors } from "@/lib/api/standard-response";
+import { createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { NextRequest } from "next/server";
 
 /**
  * Get orders for a venue with scope filtering
  * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
  * The authenticated client ensures users can only access orders for venues they have access to.
  */
-export const GET = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    const url = new URL(req.url);
-    // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
-    const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
+export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
+  const url = new URL(req.url);
+  // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
+  const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
 
-    // venueId comes from context (already verified by withUnifiedAuth)
-    const venueId = context.venueId;
+  // venueId comes from context (already verified by withUnifiedAuth)
+  const venueId = context.venueId;
 
-    try {
-      // Use authenticated client that respects RLS (not admin client)
-      // RLS policies ensure users can only access orders for venues they have access to
-      const supabase = await createClient();
+  try {
+    // Use authenticated client that respects RLS (not admin client)
+    // RLS policies ensure users can only access orders for venues they have access to
+    const supabase = await createClient();
 
-      // base query: always sort by created_at DESC  ✅ (Requirement #2)
+    // base query: always sort by created_at DESC  ✅ (Requirement #2)
     let q = supabase
       .from("orders")
       .select(
@@ -105,18 +104,17 @@ export const GET = withUnifiedAuth(
     //
     // }
 
-      return success({
-        orders: transformedOrders || [],
-        meta: { scope, zone: "Europe/London", count: transformedOrders?.length ?? 0 },
-      });
-    } catch (_e) {
-      const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
-      logger.error("[DASHBOARD ORDERS ONE] Unexpected error", {
-        error: errorMessage,
-        venueId,
-        userId: context.user.id,
-      });
-      return apiErrors.internal(errorMessage);
-    }
+    return success({
+      orders: transformedOrders || [],
+      meta: { scope, zone: "Europe/London", count: transformedOrders?.length ?? 0 },
+    });
+  } catch (_e) {
+    const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
+    logger.error("[DASHBOARD ORDERS ONE] Unexpected error", {
+      error: errorMessage,
+      venueId,
+      userId: context.user.id,
+    });
+    return apiErrors.internal(errorMessage);
   }
-);
+});

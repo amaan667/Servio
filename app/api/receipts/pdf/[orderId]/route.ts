@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { generateReceiptPDF, generateReceiptHTMLForPrint } from "@/lib/pdf/generateReceiptPDF";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export async function GET(
   req: NextRequest,
@@ -19,7 +19,7 @@ export async function GET(
         if (!rateLimitResult.success) {
           return NextResponse.json(
             {
-              error: 'Too many requests',
+              error: "Too many requests",
               message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
             },
             { status: 429 }
@@ -34,7 +34,7 @@ export async function GET(
 
         // STEP 4: Validate inputs
         if (!orderId) {
-          return apiErrors.badRequest('orderId is required');
+          return apiErrors.badRequest("orderId is required");
         }
 
         // STEP 5: Security - Verify order belongs to venue
@@ -58,10 +58,7 @@ export async function GET(
             venueId,
             error: orderError,
           });
-          return NextResponse.json(
-            { error: "Order not found or access denied" },
-            { status: 404 }
-          );
+          return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
         }
 
         // Get logo and detected colors from menu design settings
@@ -82,9 +79,10 @@ export async function GET(
         const venueAddress = venue?.venue_address || "";
         const venueEmail = venue?.venue_email || "";
         const logoUrl = designSettings?.logo_url || undefined;
-        
+
         // Use detected primary color from logo (stored when logo was uploaded), fallback to default
-        const primaryColor = designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
+        const primaryColor =
+          designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
 
         // Calculate VAT (20% UK standard rate)
         const totalAmount = order.total_amount || 0;
@@ -160,16 +158,17 @@ export async function GET(
           });
         }
       } catch (_error) {
-        const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+        const errorMessage =
+          _error instanceof Error ? _error.message : "An unexpected error occurred";
         const errorStack = _error instanceof Error ? _error.stack : undefined;
-        
+
         logger.error("[RECEIPTS PDF] Unexpected error:", {
           error: errorMessage,
           stack: errorStack,
           venueId: authContext.venueId,
           userId: authContext.user.id,
         });
-        
+
         if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
           return NextResponse.json(
             {
@@ -179,7 +178,7 @@ export async function GET(
             { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
           );
         }
-        
+
         return NextResponse.json(
           {
             error: "Internal Server Error",
@@ -196,8 +195,8 @@ export async function GET(
         try {
           // Get orderId from URL path
           const url = new URL(req.url);
-          const pathParts = url.pathname.split('/');
-          const orderIdIndex = pathParts.indexOf('pdf');
+          const pathParts = url.pathname.split("/");
+          const orderIdIndex = pathParts.indexOf("pdf");
           if (orderIdIndex !== -1 && pathParts[orderIdIndex + 1]) {
             const orderId = pathParts[orderIdIndex + 1];
             const { createAdminClient } = await import("@/lib/supabase");
@@ -218,6 +217,6 @@ export async function GET(
       },
     }
   );
-  
+
   return handler(req, routeContext);
 }

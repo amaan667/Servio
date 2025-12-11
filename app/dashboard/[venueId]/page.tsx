@@ -65,11 +65,11 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
       // Fetch dashboard counts using RPC
       const { data: countsData, error: countsError } = await supabase
-      .rpc("dashboard_counts", {
-        p_venue_id: normalizedVenueId,
-        p_tz: venueTz,
-        p_live_window_mins: 30,
-      })
+        .rpc("dashboard_counts", {
+          p_venue_id: normalizedVenueId,
+          p_tz: venueTz,
+          p_live_window_mins: 30,
+        })
         .single();
 
       if (countsError) {
@@ -127,7 +127,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
           const activeTables = allTables?.filter((t) => t.is_active) || [];
           const tablesInUse = activeSessions?.length || 0;
           const tablesReserved = currentReservations?.length || 0;
-          
+
           initialCounts = {
             ...initialCounts,
             tables_set_up: activeTables.length, // Real count from tables table
@@ -153,10 +153,12 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
       let revenue = 0;
       let unpaid = 0;
-      
+
       if (!ordersError && orders) {
         revenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-        unpaid = orders.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER").length;
+        unpaid = orders.filter(
+          (o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER"
+        ).length;
       } else if (ordersError) {
         logger.error("[DASHBOARD] Error fetching orders", {
           error: ordersError.message,
@@ -170,7 +172,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         menuItems: actualMenuItemCount, // Use actual array length, not count query
         unpaid,
       };
-      }
+    }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     logger.error("[DASHBOARD] Error fetching dashboard data", {

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { checkFeatureAccess, PREMIUM_FEATURES } from '@/lib/feature-gates';
-import { logger } from '@/lib/logger';
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { NextRequest, NextResponse } from "next/server";
+import { checkFeatureAccess, PREMIUM_FEATURES } from "@/lib/feature-gates";
+import { logger } from "@/lib/logger";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
 
 // GET /api/features/check?venue_id=xxx&feature=INVENTORY
 export const GET = withUnifiedAuth(
@@ -14,7 +14,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -26,21 +26,15 @@ export const GET = withUnifiedAuth(
 
       // STEP 3: Parse request
       const { searchParams } = new URL(req.url);
-      const feature = searchParams.get('feature') as keyof typeof PREMIUM_FEATURES;
+      const feature = searchParams.get("feature") as keyof typeof PREMIUM_FEATURES;
 
       // STEP 4: Validate inputs
       if (!venueId || !feature) {
-        return NextResponse.json(
-          { error: 'venue_id and feature are required' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "venue_id and feature are required" }, { status: 400 });
       }
 
       if (!(feature in PREMIUM_FEATURES)) {
-        return NextResponse.json(
-          { error: 'Invalid feature' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Invalid feature" }, { status: 400 });
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
@@ -52,16 +46,17 @@ export const GET = withUnifiedAuth(
       // STEP 7: Return success response
       return NextResponse.json(access);
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
-      logger.error('[FEATURE CHECK] Unexpected error:', {
+
+      logger.error("[FEATURE CHECK] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -71,7 +66,7 @@ export const GET = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Internal Server Error",

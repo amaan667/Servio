@@ -38,14 +38,14 @@ export function usePaymentState() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Safe setter that ensures error is always a string
   const setErrorSafe = (errorValue: string | null | unknown) => {
     if (errorValue === null || errorValue === undefined) {
       setError(null);
       return;
     }
-    
+
     let safeError: string;
     if (typeof errorValue === "string") {
       safeError = errorValue;
@@ -64,16 +64,17 @@ export function usePaymentState() {
         if (stringified.includes("[object Object]")) {
           safeError = "An unexpected error occurred. Please try again.";
         } else {
-          safeError = stringified.length > 200 ? stringified.substring(0, 200) + "..." : stringified;
+          safeError =
+            stringified.length > 200 ? stringified.substring(0, 200) + "..." : stringified;
         }
       }
     } else {
       safeError = String(errorValue);
     }
-    
+
     // Final check: remove any [object Object] strings
     safeError = safeError.replace(/\[object\s+Object\]/gi, "An unexpected error occurred");
-    
+
     setError(safeError);
   };
   const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);

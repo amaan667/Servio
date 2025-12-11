@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
 
 // Disable caching to always get fresh data
 export const dynamic = "force-dynamic";
@@ -50,7 +50,7 @@ export const POST = withUnifiedAuth(
       }
 
       // Verify SERVICE_ROLE_KEY is set
-      if (!env('SUPABASE_SERVICE_ROLE_KEY')) {
+      if (!env("SUPABASE_SERVICE_ROLE_KEY")) {
         logger.error("[ORG ENSURE] SUPABASE_SERVICE_ROLE_KEY is not set!");
         return NextResponse.json(
           { error: "Server configuration error: Missing SERVICE_ROLE_KEY" },
@@ -184,21 +184,25 @@ export const POST = withUnifiedAuth(
       });
 
       // Add cache control headers to ensure fresh data
-      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      response.headers.set(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
       response.headers.set("Pragma", "no-cache");
       response.headers.set("Expires", "0");
 
       return response;
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[ORG ENSURE] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -208,7 +212,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Internal Server Error",

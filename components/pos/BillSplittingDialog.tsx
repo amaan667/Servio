@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import {
   Dialog,
@@ -13,23 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { 
-  Split, 
-  Plus, 
-  Minus, 
-  DollarSign, 
-  Users,
-  CreditCard,
-  CheckCircle
-} from 'lucide-react';
+} from "@/components/ui/select";
+import { Split, Plus, Minus, DollarSign, Users, CreditCard, CheckCircle } from "lucide-react";
 
 interface Order {
   id: string;
@@ -48,7 +40,7 @@ interface BillSplit {
   id: string;
   orders: string[];
   total_amount: number;
-  payment_status: 'UNPAID' | 'PAID';
+  payment_status: "UNPAID" | "PAID";
   payment_method?: string;
 }
 
@@ -69,7 +61,7 @@ export function BillSplittingDialog({
   tableSessionId,
   counterSessionId,
   venueId,
-  onSplitComplete
+  onSplitComplete,
 }: BillSplittingDialogProps) {
   const [splits, setSplits] = useState<BillSplit[]>([]);
   const [splitCount, setSplitCount] = useState(2);
@@ -84,85 +76,89 @@ export function BillSplittingDialog({
   const initializeSplits = () => {
     const totalAmount = orders.reduce((sum, order) => sum + order.total_amount, 0);
     const amountPerSplit = totalAmount / splitCount;
-    
+
     const newSplits: BillSplit[] = [];
     for (let i = 0; i < splitCount; i++) {
       newSplits.push({
         id: `split-${i + 1}`,
         orders: [],
         total_amount: 0,
-        payment_status: 'UNPAID'
+        payment_status: "UNPAID",
       });
     }
-    
+
     setSplits(newSplits);
   };
 
   const addOrderToSplit = (orderId: string, splitId: string) => {
-    setSplits(prev => prev.map(split => {
-      if (split.id === splitId) {
-        const newOrders = [...split.orders, orderId];
-        const order = orders.find(o => o.id === orderId);
-        const newTotal = newOrders.reduce((sum, id) => {
-          const order = orders.find(o => o.id === id);
-          return sum + (order?.total_amount || 0);
-        }, 0);
-        
-        return {
-          ...split,
-          orders: newOrders,
-          total_amount: newTotal
-        };
-      }
-      return split;
-    }));
+    setSplits((prev) =>
+      prev.map((split) => {
+        if (split.id === splitId) {
+          const newOrders = [...split.orders, orderId];
+          const order = orders.find((o) => o.id === orderId);
+          const newTotal = newOrders.reduce((sum, id) => {
+            const order = orders.find((o) => o.id === id);
+            return sum + (order?.total_amount || 0);
+          }, 0);
+
+          return {
+            ...split,
+            orders: newOrders,
+            total_amount: newTotal,
+          };
+        }
+        return split;
+      })
+    );
   };
 
   const removeOrderFromSplit = (orderId: string, splitId: string) => {
-    setSplits(prev => prev.map(split => {
-      if (split.id === splitId) {
-        const newOrders = split.orders.filter(id => id !== orderId);
-        const newTotal = newOrders.reduce((sum, id) => {
-          const order = orders.find(o => o.id === id);
-          return sum + (order?.total_amount || 0);
-        }, 0);
-        
-        return {
-          ...split,
-          orders: newOrders,
-          total_amount: newTotal
-        };
-      }
-      return split;
-    }));
+    setSplits((prev) =>
+      prev.map((split) => {
+        if (split.id === splitId) {
+          const newOrders = split.orders.filter((id) => id !== orderId);
+          const newTotal = newOrders.reduce((sum, id) => {
+            const order = orders.find((o) => o.id === id);
+            return sum + (order?.total_amount || 0);
+          }, 0);
+
+          return {
+            ...split,
+            orders: newOrders,
+            total_amount: newTotal,
+          };
+        }
+        return split;
+      })
+    );
   };
 
   const getAvailableOrders = () => {
-    const usedOrderIds = splits.flatMap(split => split.orders);
-    return orders.filter(order => !usedOrderIds.includes(order.id));
+    const usedOrderIds = splits.flatMap((split) => split.orders);
+    return orders.filter((order) => !usedOrderIds.includes(order.id));
   };
 
   const getSplitForOrder = (orderId: string) => {
-    return splits.find(split => split.orders.includes(orderId));
+    return splits.find((split) => split.orders.includes(orderId));
   };
 
   const handleCreateSplits = async () => {
     try {
       setLoading(true);
-      
-      const response = await fetch('/api/pos/bill-splits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+
+      const response = await fetch("/api/pos/bill-splits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venue_id: venueId,
           table_session_id: tableSessionId,
           counter_session_id: counterSessionId,
-          action: 'create_splits',
-          splits: splits.map(split => ({
+          action: "create_splits",
+          splits: splits.map((split) => ({
             total_amount: split.total_amount,
-            order_ids: split.orders
-          }))
-        })
+            order_ids: split.orders,
+          })),
+        }),
       });
 
       if (response.ok) {
@@ -231,7 +227,9 @@ export function BillSplittingDialog({
               </div>
               <div className="flex justify-between items-center">
                 <span>Remaining:</span>
-                <span className={`text-lg ${remainingAmount === 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span
+                  className={`text-lg ${remainingAmount === 0 ? "text-green-600" : "text-red-600"}`}
+                >
                   £{remainingAmount.toFixed(2)}
                 </span>
               </div>
@@ -242,7 +240,7 @@ export function BillSplittingDialog({
           <div>
             <h3 className="text-lg font-semibold mb-3">Available Orders</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {getAvailableOrders().map(order => (
+              {getAvailableOrders().map((order) => (
                 <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
@@ -253,10 +251,10 @@ export function BillSplittingDialog({
                       <span className="font-semibold">£{order.total_amount.toFixed(2)}</span>
                     </div>
                     <div className="text-sm text-gray-900 mb-3">
-                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                      {order.items.length} item{order.items.length !== 1 ? "s" : ""}
                     </div>
                     <div className="flex gap-2">
-                      {splits.map(split => (
+                      {splits.map((split) => (
                         <Button
                           key={split.id}
                           size="sm"
@@ -264,7 +262,7 @@ export function BillSplittingDialog({
                           onClick={() => addOrderToSplit(order.id, split.id)}
                           className="flex-1"
                         >
-                          Add to {split.id.replace('split-', 'Split ')}
+                          Add to {split.id.replace("split-", "Split ")}
                         </Button>
                       ))}
                     </div>
@@ -278,30 +276,33 @@ export function BillSplittingDialog({
           <div>
             <h3 className="text-lg font-semibold mb-3">Bill Splits</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {splits.map(split => (
+              {splits.map((split) => (
                 <Card key={split.id}>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>{split.id.replace('split-', 'Split ')}</span>
-                      <Badge variant="outline">
-                        £{split.total_amount.toFixed(2)}
-                      </Badge>
+                      <span>{split.id.replace("split-", "Split ")}</span>
+                      <Badge variant="outline">£{split.total_amount.toFixed(2)}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {split.orders.map(orderId => {
-                        const order = orders.find(o => o.id === orderId);
+                      {split.orders.map((orderId) => {
+                        const order = orders.find((o) => o.id === orderId);
                         if (!order) return null;
-                        
+
                         return (
-                          <div key={orderId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div
+                            key={orderId}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                          >
                             <div>
                               <p className="font-medium">{order.customer_name}</p>
                               <p className="text-sm text-gray-900">#{order.id.slice(-6)}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold">£{order.total_amount.toFixed(2)}</span>
+                              <span className="font-semibold">
+                                £{order.total_amount.toFixed(2)}
+                              </span>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -313,7 +314,7 @@ export function BillSplittingDialog({
                           </div>
                         );
                       })}
-                      
+
                       {split.orders.length === 0 && (
                         <p className="text-gray-900 text-center py-4">
                           No orders assigned to this split
@@ -331,13 +332,13 @@ export function BillSplittingDialog({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleCreateSplits}
             disabled={loading || remainingAmount !== 0}
             className="flex items-center gap-2"
           >
             <Split className="h-4 w-4" />
-            {loading ? 'Creating Splits...' : 'Create Bill Splits'}
+            {loading ? "Creating Splits..." : "Create Bill Splits"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Tests for performance monitoring wrapper
  * @module __tests__/lib/monitoring/performance-wrapper
@@ -8,7 +7,6 @@ import { describe, it, expect } from "vitest";
 import { performanceMonitor } from "@/lib/monitoring/performance-wrapper";
 
 describe("Performance Monitor", () => {
-
   describe("measure", () => {
     it("should execute function and return result", async () => {
       const testFn = vi.fn().mockResolvedValue("test result");

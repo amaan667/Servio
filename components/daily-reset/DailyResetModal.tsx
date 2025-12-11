@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,8 +9,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
 
 interface DailyResetModalProps {
   isOpen: boolean;
@@ -25,18 +25,17 @@ export function DailyResetModal({
   onClose,
   onConfirm,
   isResetting,
-  venueName = 'this venue'
+  venueName = "this venue",
 }: DailyResetModalProps) {
   const [isConfirmed, setIsConfirmed] = useState(false);
 
   const handleConfirm = async () => {
     if (!isConfirmed) return;
-    
+
     try {
       await onConfirm();
       onClose();
     } catch (_error) {
-
       // Error handling is done in the parent component
     }
   };
@@ -70,7 +69,7 @@ export function DailyResetModal({
                 <p className="text-xs text-gray-900">Mark all pending orders as completed</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div>
@@ -78,7 +77,7 @@ export function DailyResetModal({
                 <p className="text-xs text-gray-900">Mark all active reservations as cancelled</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div>
@@ -90,7 +89,8 @@ export function DailyResetModal({
 
           <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
             <p className="text-sm text-orange-800">
-              <strong>Warning:</strong> This action cannot be undone. All current data will be permanently removed.
+              <strong>Warning:</strong> This action cannot be undone. All current data will be
+              permanently removed.
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export function DailyResetModal({
           >
             Cancel
           </Button>
-          
+
           <Button
             onClick={handleConfirm}
             disabled={!isConfirmed || isResetting}
@@ -116,7 +116,7 @@ export function DailyResetModal({
                 Resetting...
               </>
             ) : (
-              'Confirm Reset'
+              "Confirm Reset"
             )}
           </Button>
         </DialogFooter>

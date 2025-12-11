@@ -102,13 +102,23 @@ export const POST = withUnifiedAuth(
       let error: { message: string } | null = null;
       try {
         // Attempt to execute via RPC if available
-        const result = await (supabase as unknown as { rpc: (name: string, params: Record<string, unknown>) => Promise<{ error: unknown }> }).rpc("exec_sql", { sql: functionSQL });
+        const result = await (
+          supabase as unknown as {
+            rpc: (name: string, params: Record<string, unknown>) => Promise<{ error: unknown }>;
+          }
+        ).rpc("exec_sql", { sql: functionSQL });
         error = result.error as { message: string } | null;
       } catch {
         error = { message: "exec_sql not available" };
       }
 
-      if (error && (typeof error === "object" && error !== null && "message" in error && error.message !== "exec_sql not available")) {
+      if (
+        error &&
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        error.message !== "exec_sql not available"
+      ) {
         logger.error("[CREATE INVITATION FUNCTION] Error creating function", {
           error,
           userId: context.user.id,
@@ -132,15 +142,16 @@ export const POST = withUnifiedAuth(
         note: "The get_invitation_by_token function is now available and will properly join with auth.users to get inviter details.",
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[CREATE INVITATION FUNCTION] Unexpected error", {
         error: errorMessage,
         stack: errorStack,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -151,7 +162,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           success: false,

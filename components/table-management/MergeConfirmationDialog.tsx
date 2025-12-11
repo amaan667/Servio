@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Users, Receipt, Calendar } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Users, Receipt, Calendar } from "lucide-react";
 
 interface Table {
   id: string;
@@ -30,7 +30,7 @@ interface MergeConfirmationDialogProps {
   onConfirm: () => void;
   sourceTable: Table;
   targetTable: Table;
-  mergeType: 'OCCUPIED_OCCUPIED' | 'RESERVED_RESERVED';
+  mergeType: "OCCUPIED_OCCUPIED" | "RESERVED_RESERVED";
   isLoading?: boolean;
 }
 
@@ -41,16 +41,14 @@ export function MergeConfirmationDialog({
   sourceTable,
   targetTable,
   mergeType,
-  isLoading = false
+  isLoading = false,
 }: MergeConfirmationDialogProps) {
-  const [confirmText, setConfirmText] = useState('');
+  const [confirmText, setConfirmText] = useState("");
 
-  const isOccupiedOccupied = mergeType === 'OCCUPIED_OCCUPIED';
-  const isReservedReserved = mergeType === 'RESERVED_RESERVED';
+  const isOccupiedOccupied = mergeType === "OCCUPIED_OCCUPIED";
+  const isReservedReserved = mergeType === "RESERVED_RESERVED";
 
-  const requiredConfirmText = isOccupiedOccupied 
-    ? 'MERGE ACTIVE BILLS' 
-    : 'MERGE RESERVATIONS';
+  const requiredConfirmText = isOccupiedOccupied ? "MERGE ACTIVE BILLS" : "MERGE RESERVATIONS";
 
   const canConfirm = confirmText === requiredConfirmText;
 
@@ -69,7 +67,8 @@ export function MergeConfirmationDialog({
             Confirm Risky Merge Operation
           </DialogTitle>
           <DialogDescription>
-            This merge operation requires explicit confirmation due to its potential impact on active sessions or reservations.
+            This merge operation requires explicit confirmation due to its potential impact on
+            active sessions or reservations.
           </DialogDescription>
         </DialogHeader>
 
@@ -80,13 +79,14 @@ export function MergeConfirmationDialog({
               <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold text-red-800 mb-2">
-                  {isOccupiedOccupied ? 'Active Bills Will Be Combined' : 'Reservations Will Be Merged'}
+                  {isOccupiedOccupied
+                    ? "Active Bills Will Be Combined"
+                    : "Reservations Will Be Merged"}
                 </h4>
                 <p className="text-sm text-red-700">
-                  {isOccupiedOccupied 
-                    ? 'This will merge two active bills into one. Outstanding unpaid balances will be combined and both parties will share the same session.'
-                    : 'This will merge two tables for the same reservation. Both tables will be grouped under the same reservation.'
-                  }
+                  {isOccupiedOccupied
+                    ? "This will merge two active bills into one. Outstanding unpaid balances will be combined and both parties will share the same session."
+                    : "This will merge two tables for the same reservation. Both tables will be grouped under the same reservation."}
                 </p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export function MergeConfirmationDialog({
                     {sourceTable.seat_count} seats
                   </Badge>
                 </div>
-                
+
                 {sourceTable.order_id && (
                   <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
@@ -118,18 +118,18 @@ export function MergeConfirmationDialog({
                       </div>
                     )}
                     {sourceTable.customer_name && (
-                      <div className="ml-5 text-sm">
-                        {sourceTable.customer_name}
-                      </div>
+                      <div className="ml-5 text-sm">{sourceTable.customer_name}</div>
                     )}
                   </div>
                 )}
-                
+
                 {(sourceTable.reserved_now_name || sourceTable.reserved_later_name) && (
                   <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3 w-3" />
-                      <span>{sourceTable.reserved_now_name || sourceTable.reserved_later_name}</span>
+                      <span>
+                        {sourceTable.reserved_now_name || sourceTable.reserved_later_name}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -147,7 +147,7 @@ export function MergeConfirmationDialog({
                     {targetTable.seat_count} seats
                   </Badge>
                 </div>
-                
+
                 {targetTable.order_id && (
                   <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
@@ -160,18 +160,18 @@ export function MergeConfirmationDialog({
                       </div>
                     )}
                     {targetTable.customer_name && (
-                      <div className="ml-5 text-sm">
-                        {targetTable.customer_name}
-                      </div>
+                      <div className="ml-5 text-sm">{targetTable.customer_name}</div>
                     )}
                   </div>
                 )}
-                
+
                 {(targetTable.reserved_now_name || targetTable.reserved_later_name) && (
                   <div className="text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3 w-3" />
-                      <span>{targetTable.reserved_now_name || targetTable.reserved_later_name}</span>
+                      <span>
+                        {targetTable.reserved_now_name || targetTable.reserved_later_name}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -205,7 +205,8 @@ export function MergeConfirmationDialog({
           {/* Confirmation Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">
-              To confirm this action, type <code className="bg-gray-100 px-1 rounded">{requiredConfirmText}</code>:
+              To confirm this action, type{" "}
+              <code className="bg-gray-100 px-1 rounded">{requiredConfirmText}</code>:
             </label>
             <input
               type="text"
@@ -222,7 +223,7 @@ export function MergeConfirmationDialog({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirm}
             disabled={!canConfirm || isLoading}
             className="bg-red-600 hover:bg-red-700"

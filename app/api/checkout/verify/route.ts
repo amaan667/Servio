@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from "@supabase/ssr";
 import { stripe } from "@/lib/stripe-client";
-import { logger } from '@/lib/logger';
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { createAdminClient } from '@/lib/supabase';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
+import { logger } from "@/lib/logger";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -17,7 +17,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -31,7 +31,7 @@ export const GET = withUnifiedAuth(
       const { searchParams } = new URL(req.url);
       const orderId = searchParams.get("orderId")!;
       const sessionId = searchParams.get("sessionId")!;
-      
+
       // STEP 4: Validate inputs
       if (!orderId || !sessionId) {
         return NextResponse.json(
@@ -47,7 +47,7 @@ export const GET = withUnifiedAuth(
       if (paid) {
         // STEP 6: Use admin client for order lookup with venue filtering
         const admin = createAdminClient();
-        
+
         // Find the order by session ID and venue ID (security: filter by venue)
         let order: Record<string, unknown> | null = null;
         const { data: initialOrder } = await admin
@@ -65,10 +65,10 @@ export const GET = withUnifiedAuth(
           let retryCount = 0;
           const maxRetries = 5;
           let orderFound = false;
-          
+
           while (retryCount < maxRetries && !orderFound) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+
             const { data: retryOrder, error: retryError } = await admin
               .from("orders")
               .select("id, venue_id, stripe_session_id, payment_status")
@@ -87,26 +87,26 @@ export const GET = withUnifiedAuth(
           }
 
           if (!orderFound) {
-            logger.error("[CHECKOUT_VERIFY] Order still not found after retry for session", { 
-              sessionId, 
-              venueId, 
-              userId: context.user.id 
+            logger.error("[CHECKOUT_VERIFY] Order still not found after retry for session", {
+              sessionId,
+              venueId,
+              userId: context.user.id,
             });
             return NextResponse.json(
-              { paid: false, error: "Order not found or access denied - webhook may be delayed" }, 
+              { paid: false, error: "Order not found or access denied - webhook may be delayed" },
               { status: 404 }
             );
           }
         }
 
         if (!order) {
-          logger.error("[CHECKOUT_VERIFY] Order is null after all attempts to find it", { 
-            sessionId, 
-            venueId, 
-            userId: context.user.id 
+          logger.error("[CHECKOUT_VERIFY] Order is null after all attempts to find it", {
+            sessionId,
+            venueId,
+            userId: context.user.id,
           });
           return NextResponse.json(
-            { paid: false, error: "Order not found or access denied" }, 
+            { paid: false, error: "Order not found or access denied" },
             { status: 404 }
           );
         }
@@ -116,19 +116,19 @@ export const GET = withUnifiedAuth(
       }
 
       return NextResponse.json({ paid: false }, { status: 200 });
-      
     } catch (_error) {
       // STEP 8: Consistent error handling
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[CHECKOUT_VERIFY] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -138,7 +138,7 @@ export const GET = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Internal Server Error",
@@ -155,11 +155,11 @@ export const GET = withUnifiedAuth(
       try {
         const { searchParams } = new URL(req.url);
         const sessionId = searchParams.get("sessionId");
-        
+
         if (!sessionId) {
           return null;
         }
-        
+
         // Look up the order by session ID to get venue_id
         const admin = createAdminClient();
         const { data: order } = await admin
@@ -167,11 +167,11 @@ export const GET = withUnifiedAuth(
           .select("venue_id")
           .eq("stripe_session_id", sessionId)
           .single();
-          
+
         if (order?.venue_id) {
           return order.venue_id;
         }
-        
+
         return null;
       } catch {
         return null;

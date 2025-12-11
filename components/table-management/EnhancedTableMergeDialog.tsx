@@ -116,11 +116,7 @@ export function EnhancedTableMergeDialog({
 
     try {
       setIsLoading(true);
-      await onMergeConfirm(
-        sourceTable.id,
-        selectedTableId,
-        selectedTable.requiresConfirmation
-      );
+      await onMergeConfirm(sourceTable.id, selectedTableId, selectedTable.requiresConfirmation);
       onActionComplete?.();
       onClose();
     } catch (_error) {
@@ -308,8 +304,7 @@ export function EnhancedTableMergeDialog({
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>
-                                {table.mergeScenario?.description ||
-                                  "Cannot merge with this table"}
+                                {table.mergeScenario?.description || "Cannot merge with this table"}
                               </p>
                             </TooltipContent>
                           </Tooltip>

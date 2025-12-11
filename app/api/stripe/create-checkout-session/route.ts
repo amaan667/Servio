@@ -4,14 +4,14 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 // Pricing tiers from homepage - these are optional env vars
 const getPriceIds = () => ({
-  starter: env('STRIPE_BASIC_PRICE_ID') ?? undefined,
-  pro: env('STRIPE_STANDARD_PRICE_ID') ?? undefined,
-  enterprise: env('STRIPE_PREMIUM_PRICE_ID') ?? undefined,
+  starter: env("STRIPE_BASIC_PRICE_ID") ?? undefined,
+  pro: env("STRIPE_STANDARD_PRICE_ID") ?? undefined,
+  enterprise: env("STRIPE_PREMIUM_PRICE_ID") ?? undefined,
 });
 
 // Get Stripe products and prices - reads only, never creates
@@ -114,13 +114,13 @@ export async function POST(_request: NextRequest) {
       const tierLower = tier.toLowerCase().trim();
       if (!["starter", "pro", "enterprise"].includes(tierLower)) {
         logger.error("[STRIPE CHECKOUT] Invalid tier value:", tier);
-        return apiErrors.badRequest('Invalid tier');
+        return apiErrors.badRequest("Invalid tier");
       }
       tier = tierLower as "starter" | "pro" | "enterprise";
     }
 
     if (!tier || !["starter", "pro", "enterprise"].includes(tier)) {
-      return apiErrors.badRequest('Invalid tier');
+      return apiErrors.badRequest("Invalid tier");
     }
 
     // If this is a signup flow, handle it differently (no auth required)
@@ -139,8 +139,8 @@ export async function POST(_request: NextRequest) {
             quantity: 1,
           },
         ],
-        success_url: `${env('NEXT_PUBLIC_APP_URL') || "http://localhost:3000"}/auth/create-account?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${env('NEXT_PUBLIC_APP_URL') || "http://localhost:3000"}/?cancelled=true`,
+        success_url: `${env("NEXT_PUBLIC_APP_URL") || "http://localhost:3000"}/auth/create-account?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${env("NEXT_PUBLIC_APP_URL") || "http://localhost:3000"}/?cancelled=true`,
         metadata: {
           tier,
           is_signup: "true",
@@ -189,7 +189,7 @@ export async function POST(_request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     // ALWAYS get or create a real organization - NO MOCK IDs
@@ -333,8 +333,8 @@ export async function POST(_request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${env('NEXT_PUBLIC_APP_URL') || "http://localhost:3000"}/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=${tier}`,
-      cancel_url: `${env('NEXT_PUBLIC_APP_URL') || "http://localhost:3000"}/?upgrade=cancelled`,
+      success_url: `${env("NEXT_PUBLIC_APP_URL") || "http://localhost:3000"}/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=${tier}`,
+      cancel_url: `${env("NEXT_PUBLIC_APP_URL") || "http://localhost:3000"}/?upgrade=cancelled`,
       metadata: {
         organization_id: actualOrgId,
         tier,
@@ -348,10 +348,10 @@ export async function POST(_request: NextRequest) {
         },
         // Only start trial if customer hasn't already used their trial
         // Check if trial has ended or if subscription is already active
-        ...(org.trial_ends_at && new Date(org.trial_ends_at) < new Date() || org.subscription_status === "active"
+        ...((org.trial_ends_at && new Date(org.trial_ends_at) < new Date()) ||
+        org.subscription_status === "active"
           ? {} // No trial - customer already used it or is active
-          : { trial_period_days: 14 } // Start 14-day trial for new customers
-        ),
+          : { trial_period_days: 14 }), // Start 14-day trial for new customers
       },
     };
 

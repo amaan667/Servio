@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { isDevelopment } from '@/lib/env';
-import { z } from 'zod';
-import { validateBody, validateQuery } from '@/lib/api/validation-schemas';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { isDevelopment } from "@/lib/env";
+import { z } from "zod";
+import { validateBody, validateQuery } from "@/lib/api/validation-schemas";
 
 // Validation schemas
 const billSplitItemSchema = z.object({
@@ -45,9 +45,7 @@ export const POST = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -58,7 +56,7 @@ export const POST = withUnifiedAuth(
 
       // Verify venue_id matches context
       if (body.venue_id !== venueId) {
-        return apiErrors.forbidden('Venue ID mismatch');
+        return apiErrors.forbidden("Venue ID mismatch");
       }
 
       // STEP 4: Business logic
@@ -179,10 +177,7 @@ export const POST = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {
@@ -190,9 +185,11 @@ export const POST = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         const body = await req.json().catch(() => ({}));
-        return (body as { venue_id?: string; venueId?: string })?.venue_id || 
-               (body as { venue_id?: string; venueId?: string })?.venueId || 
-               null;
+        return (
+          (body as { venue_id?: string; venueId?: string })?.venue_id ||
+          (body as { venue_id?: string; venueId?: string })?.venueId ||
+          null
+        );
       } catch {
         return null;
       }
@@ -206,9 +203,7 @@ export const GET = withUnifiedAuth(
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(
-          Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-        );
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -279,10 +274,7 @@ export const GET = withUnifiedAuth(
         return handleZodError(error);
       }
 
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
     }
   },
   {

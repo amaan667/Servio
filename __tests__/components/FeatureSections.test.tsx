@@ -10,5 +10,3 @@ describe("FeatureSections", () => {
     expect(screen.getByText("Payments")).toBeInTheDocument();
   });
 });
-
-

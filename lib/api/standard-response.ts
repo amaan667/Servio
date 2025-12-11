@@ -1,6 +1,6 @@
 /**
  * Standard API Response Format
- * 
+ *
  * ALL API routes MUST use this format for consistency.
  * This ensures predictable error handling and response structure.
  */
@@ -80,7 +80,7 @@ export const ErrorCodes = {
   CONFLICT: "CONFLICT",
   RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
   BAD_REQUEST: "BAD_REQUEST",
-  
+
   // Server errors (5xx)
   INTERNAL_ERROR: "INTERNAL_ERROR",
   SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
@@ -93,19 +93,18 @@ export const ErrorCodes = {
 export const apiErrors = {
   validation: (message: string, details?: unknown) =>
     error(ErrorCodes.VALIDATION_ERROR, message, 400, details),
-  
+
   unauthorized: (message: string = "Authentication required") =>
     error(ErrorCodes.UNAUTHORIZED, message, 401),
-  
+
   forbidden: (message: string = "Access denied", details?: unknown) =>
     error(ErrorCodes.FORBIDDEN, message, 403, details),
-  
-  notFound: (message: string = "Resource not found") =>
-    error(ErrorCodes.NOT_FOUND, message, 404),
-  
+
+  notFound: (message: string = "Resource not found") => error(ErrorCodes.NOT_FOUND, message, 404),
+
   conflict: (message: string, details?: unknown) =>
     error(ErrorCodes.CONFLICT, message, 409, details),
-  
+
   rateLimit: (retryAfter?: number) =>
     error(
       ErrorCodes.RATE_LIMIT_EXCEEDED,
@@ -113,16 +112,16 @@ export const apiErrors = {
       429,
       retryAfter ? { retryAfter } : undefined
     ),
-  
+
   badRequest: (message: string, details?: unknown) =>
     error(ErrorCodes.BAD_REQUEST, message, 400, details),
-  
+
   internal: (message: string = "Internal server error", details?: unknown) =>
     error(ErrorCodes.INTERNAL_ERROR, message, 500, details),
-  
+
   serviceUnavailable: (message: string = "Service temporarily unavailable") =>
     error(ErrorCodes.SERVICE_UNAVAILABLE, message, 503),
-  
+
   database: (message: string, details?: unknown) =>
     error(ErrorCodes.DATABASE_ERROR, message, 500, details),
 };
@@ -173,4 +172,3 @@ export function getErrorDetails(error: unknown): unknown {
   }
   return error;
 }
-

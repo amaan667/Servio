@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: 'Too many requests',
+          error: "Too many requests",
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -28,14 +28,14 @@ export async function POST(req: NextRequest) {
 
     // STEP 2: CRON_SECRET authentication (special auth for cron jobs)
     const authHeader = req.headers.get("authorization");
-    const expectedAuth = env('CRON_SECRET') || "default-cron-secret";
+    const expectedAuth = env("CRON_SECRET") || "default-cron-secret";
 
     if (authHeader !== `Bearer ${expectedAuth}`) {
       logger.warn("[CRON DAILY RESET] Unauthorized cron request", {
         hasHeader: !!authHeader,
         expectedPrefix: "Bearer",
       });
-      return apiErrors.unauthorized('Unauthorized');
+      return apiErrors.unauthorized("Unauthorized");
     }
 
     // STEP 3: Parse request
@@ -246,12 +246,12 @@ export async function POST(req: NextRequest) {
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
-    
+
     logger.error("[CRON DAILY RESET] Unexpected error:", {
       error: errorMessage,
       stack: errorStack,
     });
-    
+
     return NextResponse.json(
       {
         error: "Internal Server Error",

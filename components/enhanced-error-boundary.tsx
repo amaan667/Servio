@@ -1,10 +1,10 @@
 "use client";
 
-import React from 'react';
-import { AlertTriangle, RefreshCw, Home, Wifi, WifiOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { clearAuthStorage } from '@/lib/supabase';
+import React from "react";
+import { AlertTriangle, RefreshCw, Home, Wifi, WifiOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { clearAuthStorage } from "@/lib/supabase";
 
 interface EnhancedErrorBoundaryState {
   hasError: boolean;
@@ -46,7 +46,6 @@ export class EnhancedErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-
     this.setState({
       error,
       errorInfo,
@@ -58,7 +57,6 @@ export class EnhancedErrorBoundary extends React.Component<
     }
 
     // Log error to console with more context
-
   }
 
   componentWillUnmount() {
@@ -69,9 +67,8 @@ export class EnhancedErrorBoundary extends React.Component<
 
   handleRetry = () => {
     const { maxRetries = 3 } = this.props;
-    
-    if (this.state.retryCount >= maxRetries) {
 
+    if (this.state.retryCount >= maxRetries) {
       return;
     }
 
@@ -94,42 +91,55 @@ export class EnhancedErrorBoundary extends React.Component<
       await clearAuthStorage();
       window.location.reload();
     } catch (_err) {
-
       window.location.reload();
     }
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   isAuthError = (): boolean => {
     const { error } = this.state;
     if (!error) return false;
-    
+
     const authErrorKeywords = [
-      'auth', 'session', 'token', 'unauthorized', 'forbidden',
-      'invalid_grant', 'refresh_token', 'authentication'
+      "auth",
+      "session",
+      "token",
+      "unauthorized",
+      "forbidden",
+      "invalid_grant",
+      "refresh_token",
+      "authentication",
     ];
-    
-    return authErrorKeywords.some(keyword => 
-      error.message.toLowerCase().includes(keyword) ||
-      error.stack?.toLowerCase().includes(keyword)
+
+    return authErrorKeywords.some(
+      (keyword) =>
+        error.message.toLowerCase().includes(keyword) ||
+        error.stack?.toLowerCase().includes(keyword)
     );
   };
 
   isNetworkError = (): boolean => {
     const { error } = this.state;
     if (!error) return false;
-    
+
     const networkErrorKeywords = [
-      'network', 'fetch', 'timeout', 'connection', 'offline',
-      'failed to fetch', 'net::', 'socket'
+      "network",
+      "fetch",
+      "timeout",
+      "connection",
+      "offline",
+      "failed to fetch",
+      "net::",
+      "socket",
     ];
-    
-    return networkErrorKeywords.some(keyword => 
-      error.message.toLowerCase().includes(keyword) ||
-      error.stack?.toLowerCase().includes(keyword)
+
+    return networkErrorKeywords.some(
+      (keyword) =>
+        error.message.toLowerCase().includes(keyword) ||
+        error.stack?.toLowerCase().includes(keyword)
     );
   };
 
@@ -137,7 +147,7 @@ export class EnhancedErrorBoundary extends React.Component<
     if (this.state.hasError) {
       const { fallback: Fallback } = this.props;
       const { error, isRetrying, retryCount } = this.state;
-      
+
       // Use custom fallback if provided
       if (Fallback) {
         return <Fallback error={error!} retry={this.handleRetry} />;
@@ -158,31 +168,30 @@ export class EnhancedErrorBoundary extends React.Component<
                 )}
               </div>
               <CardTitle className="text-xl font-semibold text-gray-900">
-                {isAuthError ? 'Authentication Error' : 
-                 isNetworkError ? 'Connection Problem' : 
-                 'Something went wrong'}
+                {isAuthError
+                  ? "Authentication Error"
+                  : isNetworkError
+                    ? "Connection Problem"
+                    : "Something went wrong"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-center">
                 <p className="text-gray-900 mb-4">
-                  {isAuthError ? 
-                    'Your session has expired or there was an authentication error.' :
-                    isNetworkError ?
-                    'Please check your internet connection and try again.' :
-                    'An unexpected error occurred. We\'re working to fix it.'
-                  }
+                  {isAuthError
+                    ? "Your session has expired or there was an authentication error."
+                    : isNetworkError
+                      ? "Please check your internet connection and try again."
+                      : "An unexpected error occurred. We're working to fix it."}
                 </p>
-                
+
                 {retryCount > 0 && (
-                  <p className="text-sm text-gray-900 mb-4">
-                    Retry attempt: {retryCount}
-                  </p>
+                  <p className="text-sm text-gray-900 mb-4">Retry attempt: {retryCount}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Button 
+                <Button
                   onClick={this.handleRetry}
                   disabled={isRetrying || retryCount >= (this.props.maxRetries || 3)}
                   className="w-full"
@@ -202,33 +211,25 @@ export class EnhancedErrorBoundary extends React.Component<
                 </Button>
 
                 {isAuthError && (
-                  <Button 
-                    onClick={this.handleClearAuth}
-                    variant="outline"
-                    className="w-full"
-                  >
+                  <Button onClick={this.handleClearAuth} variant="outline" className="w-full">
                     Clear Session & Reload
                   </Button>
                 )}
 
-                <Button 
-                  onClick={this.handleGoHome}
-                  variant="ghost"
-                  className="w-full"
-                >
+                <Button onClick={this.handleGoHome} variant="ghost" className="w-full">
                   <Home className="w-4 h-4 mr-2" />
                   Go to Home
                 </Button>
               </div>
 
-              {process.env.NODE_ENV === 'development' && (
+              {process.env.NODE_ENV === "development" && (
                 <details className="mt-4">
                   <summary className="text-xs text-gray-900 cursor-pointer">
                     Error Details (Development)
                   </summary>
                   <pre className="text-xs text-gray-900 mt-2 p-2 bg-gray-100 rounded overflow-auto max-h-32">
                     {error?.message}
-                    {'\n\n'}
+                    {"\n\n"}
                     {error?.stack}
                   </pre>
                 </details>
@@ -252,7 +253,6 @@ export function useErrorHandler() {
   }, []);
 
   const handleError = React.useCallback((error: Error) => {
-
     setError(error);
   }, []);
 

@@ -1,9 +1,9 @@
 /**
  * DEPRECATED: Use @/lib/auth/unified-auth instead
- * 
+ *
  * This module is kept for backward compatibility during migration.
  * All new code should use withUnifiedAuth() from @/lib/auth/unified-auth
- * 
+ *
  * @deprecated Use withUnifiedAuth() wrapper instead
  */
 
@@ -22,17 +22,16 @@ import { NextResponse } from "next/server";
 export async function requireVenueAccessForAPI(
   venueId: string | null | undefined,
   request?: NextRequest
-): Promise<
-  | { success: true; context: AuthContext }
-  | { success: false; response: NextResponse }
-> {
+): Promise<{ success: true; context: AuthContext } | { success: false; response: NextResponse }> {
   // Use provided request or create a minimal one
   // Routes should ALWAYS pass the actual request object for proper cookie reading
-  const req = request || new NextRequest("http://localhost", {
-    method: "GET",
-    headers: new Headers(),
-  });
-  
+  const req =
+    request ||
+    new NextRequest("http://localhost", {
+      method: "GET",
+      headers: new Headers(),
+    });
+
   return await requireAuthAndVenueAccess(req, venueId);
 }
 
@@ -41,13 +40,15 @@ export type { AuthContext as AuthorizedContext } from "@/lib/auth/unified-auth";
 
 // Legacy requireAuthForAPI - use withUnifiedAuth wrapper instead
 // Now accepts optional request to read cookies from request (more reliable)
-export async function requireAuthForAPI(request?: NextRequest): Promise<{ user: User | null; error: string | null }> {
+export async function requireAuthForAPI(
+  request?: NextRequest
+): Promise<{ user: User | null; error: string | null }> {
   // If request is provided, use request-based auth (more reliable in API routes)
   if (request) {
     const { getAuthUserFromRequest } = await import("@/lib/auth/unified-auth");
     return await getAuthUserFromRequest(request);
   }
-  
+
   // Fallback to cookie-based auth for backward compatibility
   const { user, error } = await getAuthenticatedUser();
   return { user, error };
@@ -62,4 +63,3 @@ export function extractVenueId(req: Request): string | null {
     return null;
   }
 }
-

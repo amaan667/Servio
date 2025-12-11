@@ -6,21 +6,21 @@ export const getTableSummary = (orders: Order[]) => {
     return sum + calculateOrderTotal({ total_amount: order.total_amount, items: order.items });
   }, 0);
 
-  const statuses = orders.map(order => order.order_status);
-  const paymentStatuses = orders.map(order => order.payment_status).filter(Boolean);
-  
-  let overallStatus = 'MIXED';
+  const statuses = orders.map((order) => order.order_status);
+  const paymentStatuses = orders.map((order) => order.payment_status).filter(Boolean);
+
+  let overallStatus = "MIXED";
   const uniqueStatuses = [...new Set(statuses)];
   if (uniqueStatuses.length === 1) {
     overallStatus = uniqueStatuses[0];
-  } else if (uniqueStatuses.includes('READY')) {
-    overallStatus = 'MIXED_READY';
-  } else if (uniqueStatuses.includes('IN_PREP')) {
-    overallStatus = 'MIXED_PREP';
+  } else if (uniqueStatuses.includes("READY")) {
+    overallStatus = "MIXED_READY";
+  } else if (uniqueStatuses.includes("IN_PREP")) {
+    overallStatus = "MIXED_PREP";
   }
 
   const uniquePaymentStatuses = [...new Set(paymentStatuses)];
-  let overallPaymentStatus = 'MIXED';
+  let overallPaymentStatus = "MIXED";
   if (uniquePaymentStatuses.length === 1 && uniquePaymentStatuses[0]) {
     overallPaymentStatus = uniquePaymentStatuses[0];
   }
@@ -31,7 +31,6 @@ export const getTableSummary = (orders: Order[]) => {
     overallStatus,
     overallPaymentStatus,
     statuses: uniqueStatuses,
-    paymentStatuses: uniquePaymentStatuses
+    paymentStatuses: uniquePaymentStatuses,
   };
 };
-

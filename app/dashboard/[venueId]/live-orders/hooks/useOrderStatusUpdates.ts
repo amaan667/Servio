@@ -88,9 +88,7 @@ async function clearTableSession(orderData: unknown, venueId: string, orderId: s
 
     let filteredActiveOrders = (activeOrders as ActiveOrder[] | null) || [];
     if (orderInfo.table_id) {
-      filteredActiveOrders = filteredActiveOrders.filter(
-        (o) => o.table_id === orderInfo.table_id
-      );
+      filteredActiveOrders = filteredActiveOrders.filter((o) => o.table_id === orderInfo.table_id);
     } else if (orderInfo.table_number) {
       filteredActiveOrders = filteredActiveOrders.filter(
         (o) => o.table_number === orderInfo.table_number

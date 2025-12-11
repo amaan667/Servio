@@ -135,7 +135,10 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         setError(null); // Clear any previous errors
         // Cache tickets
         if (typeof window !== "undefined") {
-          sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(data.data?.tickets || []));
+          sessionStorage.setItem(
+            `kds_tickets_${venueId}`,
+            JSON.stringify(data.data?.tickets || [])
+          );
         }
       } else {
         setError(data.error?.message || "Failed to load tickets");
@@ -150,71 +153,79 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   }, [venueId, selectedStation]);
 
   // Update ticket status
-  const updateTicketStatus = useCallback(async (ticketId: string, status: string) => {
-    try {
-      console.log("[KDS CLIENT] ===== UPDATING TICKET STATUS =====", {
-        ticketId,
-        status,
-        venueId,
-        timestamp: new Date().toISOString(),
-      });
+  const updateTicketStatus = useCallback(
+    async (ticketId: string, status: string) => {
+      try {
+        console.log("[KDS CLIENT] ===== UPDATING TICKET STATUS =====", {
+          ticketId,
+          status,
+          venueId,
+          timestamp: new Date().toISOString(),
+        });
 
-      const { apiClient } = await import("@/lib/api-client");
-      const payload = { ticket_id: ticketId, status, venueId };
-      
-      console.log("[KDS CLIENT] Sending PATCH request:", {
-        url: "/api/kds/tickets",
-        payload: JSON.stringify(payload, null, 2),
-      });
+        const { apiClient } = await import("@/lib/api-client");
+        const payload = { ticket_id: ticketId, status, venueId };
 
-      const response = await apiClient.patch("/api/kds/tickets", payload);
+        console.log("[KDS CLIENT] Sending PATCH request:", {
+          url: "/api/kds/tickets",
+          payload: JSON.stringify(payload, null, 2),
+        });
 
-      console.log("[KDS CLIENT] Response received:", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      });
+        const response = await apiClient.patch("/api/kds/tickets", payload);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[KDS CLIENT] ❌ HTTP Error Response:", {
+        console.log("[KDS CLIENT] Response received:", {
           status: response.status,
           statusText: response.statusText,
-          body: errorText,
+          ok: response.ok,
         });
-        
-        try {
-          const errorData = JSON.parse(errorText);
-          console.error("[KDS CLIENT] ❌ Parsed Error:", JSON.stringify(errorData, null, 2));
-        } catch {
-          console.error("[KDS CLIENT] ❌ Could not parse error response as JSON");
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("[KDS CLIENT] ❌ HTTP Error Response:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+
+          try {
+            const errorData = JSON.parse(errorText);
+            console.error("[KDS CLIENT] ❌ Parsed Error:", JSON.stringify(errorData, null, 2));
+          } catch {
+            console.error("[KDS CLIENT] ❌ Could not parse error response as JSON");
+          }
+          return;
         }
-        return;
+
+        const data = await response.json();
+
+        console.log("[KDS CLIENT] Response data:", JSON.stringify(data, null, 2));
+
+        if (data.success) {
+          console.log("[KDS CLIENT] ✅ Ticket updated successfully", {
+            ticketId,
+            newStatus: status,
+          });
+          // Update local state immediately for instant feedback
+          setTickets((prev) =>
+            prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t))
+          );
+          // Refetch tickets after a short delay to ensure consistency
+          setTimeout(() => {
+            fetchTickets();
+          }, 500);
+        } else {
+          console.error("[KDS CLIENT] ❌ Update failed:", JSON.stringify(data, null, 2));
+        }
+      } catch (error) {
+        console.error("[KDS CLIENT] ❌ Exception during ticket update:", {
+          error: error instanceof Error ? error.message : String(error),
+          ticketId,
+          status,
+        });
       }
-
-      const data = await response.json();
-
-      console.log("[KDS CLIENT] Response data:", JSON.stringify(data, null, 2));
-
-      if (data.success) {
-        console.log("[KDS CLIENT] ✅ Ticket updated successfully", { ticketId, newStatus: status });
-        // Update local state immediately for instant feedback
-        setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t)));
-        // Refetch tickets after a short delay to ensure consistency
-        setTimeout(() => {
-          fetchTickets();
-        }, 500);
-      } else {
-        console.error("[KDS CLIENT] ❌ Update failed:", JSON.stringify(data, null, 2));
-      }
-    } catch (error) {
-      console.error("[KDS CLIENT] ❌ Exception during ticket update:", {
-        error: error instanceof Error ? error.message : String(error),
-        ticketId,
-        status,
-      });
-    }
-  }, [venueId]);
+    },
+    [venueId]
+  );
 
   // Bump all ready tickets for an order
   const bumpOrder = useCallback(async (orderId: string) => {
@@ -279,7 +290,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
     const triggerBackfill = async () => {
       // Wait a bit for initial fetch to complete
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+
       // If still no tickets, trigger backfill
       if (tickets.length === 0 && !loading) {
         try {
@@ -290,7 +301,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
             scope: "today",
           });
           const data = await response.json();
-          
+
           if (data.ok && data.tickets_created > 0) {
             console.log("[KDS CLIENT] Backfill created tickets, refreshing...");
             // Wait a moment then refresh tickets
@@ -561,7 +572,9 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
                     {(ticket as { modifiers?: Record<string, string[]> }).modifiers && (
                       <div className="bg-purple-50 border border-purple-200 p-2 rounded text-sm">
                         <p className="font-medium text-purple-800 mb-1">Modifiers:</p>
-                        {Object.entries((ticket as { modifiers?: Record<string, string[]> }).modifiers || {}).map(([modName, options]) => (
+                        {Object.entries(
+                          (ticket as { modifiers?: Record<string, string[]> }).modifiers || {}
+                        ).map(([modName, options]) => (
                           <p key={modName} className="text-xs text-purple-700">
                             {modName}: {options.join(", ")}
                           </p>
@@ -629,9 +642,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
                         </div>
                       </div>
                       <div className="text-right">
-                        <Badge className="bg-green-600 text-white">
-                          {ticket.quantity}x
-                        </Badge>
+                        <Badge className="bg-green-600 text-white">{ticket.quantity}x</Badge>
                       </div>
                     </div>
 

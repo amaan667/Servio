@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 /**
  * POST /api/orders/close-table-session
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const { orderId } = await req.json();
 
     if (!orderId) {
-      return apiErrors.badRequest('orderId is required');
+      return apiErrors.badRequest("orderId is required");
     }
 
     const supabase = createAdminClient();
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (orderError || !order) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     logger.info("[CLOSE TABLE SESSION] Closing table session for order", {
@@ -80,6 +80,6 @@ export async function POST(req: NextRequest) {
       "[CLOSE TABLE SESSION] Unexpected error:",
       _error instanceof Error ? _error : { error: String(_error) }
     );
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }

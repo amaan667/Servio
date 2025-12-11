@@ -9,18 +9,17 @@ export async function GET() {
   console.log("[RAILWAY TEST] console.log - This should appear");
   console.error("[RAILWAY TEST] console.error - This should appear");
   console.warn("[RAILWAY TEST] console.warn - This should appear");
-  
-  if (typeof process !== 'undefined' && process.stdout) {
+
+  if (typeof process !== "undefined" && process.stdout) {
     process.stdout.write("[RAILWAY TEST] process.stdout.write - This should appear\n");
   }
-  
-  if (typeof process !== 'undefined' && process.stderr) {
+
+  if (typeof process !== "undefined" && process.stderr) {
     process.stderr.write("[RAILWAY TEST] process.stderr.write - This should appear\n");
   }
-  
-  return NextResponse.json({ 
+
+  return NextResponse.json({
     message: "Check Railway logs for test messages",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
-

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NextRequest as _NextRequest, NextResponse as _NextResponse } from 'next/server';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest as _NextRequest, NextResponse as _NextResponse } from "next/server";
 
 // Mock Stripe
-vi.mock('stripe', () => {
+vi.mock("stripe", () => {
   const mockStripe = {
     checkout: {
       sessions: {
@@ -27,63 +27,63 @@ vi.mock('stripe', () => {
 });
 
 // Mock Supabase
-vi.mock('@/lib/supabase', () => ({
+vi.mock("@/lib/supabase", () => ({
   createClient: vi.fn(),
   supabaseAdmin: vi.fn(),
 }));
 
-describe('Stripe Checkout Integration', () => {
+describe("Stripe Checkout Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Checkout Session Creation', () => {
-    it('should create checkout session for basic tier', async () => {
+  describe("Checkout Session Creation", () => {
+    it("should create checkout session for basic tier", async () => {
       const checkoutData = {
-        tier: 'basic',
-        priceId: 'price_basic_monthly',
-        successUrl: 'https://app.servio.com/success',
-        cancelUrl: 'https://app.servio.com/cancel',
-        customerEmail: 'test@example.com',
+        tier: "basic",
+        priceId: "price_basic_monthly",
+        successUrl: "https://app.servio.com/success",
+        cancelUrl: "https://app.servio.com/cancel",
+        customerEmail: "test@example.com",
       };
 
-      expect(checkoutData.tier).toBe('basic');
+      expect(checkoutData.tier).toBe("basic");
       expect(checkoutData.priceId).toBeDefined();
-      expect(checkoutData.successUrl).toContain('/success');
-      expect(checkoutData.cancelUrl).toContain('/cancel');
+      expect(checkoutData.successUrl).toContain("/success");
+      expect(checkoutData.cancelUrl).toContain("/cancel");
     });
 
-    it('should include customer metadata in session', () => {
+    it("should include customer metadata in session", () => {
       const metadata = {
-        venueId: 'venue-123',
-        tier: 'standard',
-        userId: 'user-456',
+        venueId: "venue-123",
+        tier: "standard",
+        userId: "user-456",
       };
 
       expect(metadata.venueId).toBeDefined();
-      expect(metadata.tier).toBe('standard');
+      expect(metadata.tier).toBe("standard");
       expect(metadata.userId).toBeDefined();
     });
 
-    it('should set correct mode for subscription', () => {
+    it("should set correct mode for subscription", () => {
       const sessionConfig = {
-        mode: 'subscription' as const,
-        payment_method_types: ['card'],
-        billing_address_collection: 'required' as const,
+        mode: "subscription" as const,
+        payment_method_types: ["card"],
+        billing_address_collection: "required" as const,
       };
 
-      expect(sessionConfig.mode).toBe('subscription');
-      expect(sessionConfig.payment_method_types).toContain('card');
-      expect(sessionConfig.billing_address_collection).toBe('required');
+      expect(sessionConfig.mode).toBe("subscription");
+      expect(sessionConfig.payment_method_types).toContain("card");
+      expect(sessionConfig.billing_address_collection).toBe("required");
     });
 
-    it('should handle trial period for new customers', () => {
+    it("should handle trial period for new customers", () => {
       const trialConfig = {
         subscription_data: {
           trial_period_days: 14,
           trial_settings: {
             end_behavior: {
-              missing_payment_method: 'cancel' as const,
+              missing_payment_method: "cancel" as const,
             },
           },
         },
@@ -93,8 +93,8 @@ describe('Stripe Checkout Integration', () => {
     });
   });
 
-  describe('Price Calculation', () => {
-    it('should calculate correct amounts for each tier', () => {
+  describe("Price Calculation", () => {
+    it("should calculate correct amounts for each tier", () => {
       const prices = {
         basic: 9900, // £99.00 in pence
         standard: 24900, // £249.00 in pence
@@ -111,9 +111,9 @@ describe('Stripe Checkout Integration', () => {
       expect(prices.premium / 100).toBe(449);
     });
 
-    it('should handle VAT calculation', () => {
+    it("should handle VAT calculation", () => {
       const subtotal = 9900; // £99.00
-      const vatRate = 0.20; // 20% UK VAT
+      const vatRate = 0.2; // 20% UK VAT
       const vat = Math.round(subtotal * vatRate);
       const total = subtotal + vat;
 
@@ -122,63 +122,62 @@ describe('Stripe Checkout Integration', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle missing price ID', () => {
+  describe("Error Handling", () => {
+    it("should handle missing price ID", () => {
       const invalidRequest = {
-        tier: 'basic',
+        tier: "basic",
         priceId: undefined,
       };
 
       expect(invalidRequest.priceId).toBeUndefined();
     });
 
-    it('should handle invalid tier selection', () => {
-      const invalidTiers = ['free', 'enterprise', '', null];
-      const validTiers = ['basic', 'standard', 'premium'];
+    it("should handle invalid tier selection", () => {
+      const invalidTiers = ["free", "enterprise", "", null];
+      const validTiers = ["basic", "standard", "premium"];
 
-      invalidTiers.forEach(tier => {
+      invalidTiers.forEach((tier) => {
         expect(validTiers).not.toContain(tier);
       });
     });
 
-    it('should validate customer email format', () => {
+    it("should validate customer email format", () => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      
-      expect(emailRegex.test('valid@example.com')).toBe(true);
-      expect(emailRegex.test('invalid')).toBe(false);
-      expect(emailRegex.test('')).toBe(false);
+
+      expect(emailRegex.test("valid@example.com")).toBe(true);
+      expect(emailRegex.test("invalid")).toBe(false);
+      expect(emailRegex.test("")).toBe(false);
     });
   });
 
-  describe('Session Metadata', () => {
-    it('should include required metadata fields', () => {
+  describe("Session Metadata", () => {
+    it("should include required metadata fields", () => {
       const metadata = {
-        venueId: 'venue-123',
-        userId: 'user-456',
-        tier: 'standard',
-        organizationId: 'org-789',
+        venueId: "venue-123",
+        userId: "user-456",
+        tier: "standard",
+        organizationId: "org-789",
       };
 
-      expect(Object.keys(metadata)).toContain('venueId');
-      expect(Object.keys(metadata)).toContain('userId');
-      expect(Object.keys(metadata)).toContain('tier');
-      expect(Object.keys(metadata)).toContain('organizationId');
+      expect(Object.keys(metadata)).toContain("venueId");
+      expect(Object.keys(metadata)).toContain("userId");
+      expect(Object.keys(metadata)).toContain("tier");
+      expect(Object.keys(metadata)).toContain("organizationId");
     });
 
-    it('should sanitize metadata values', () => {
+    it("should sanitize metadata values", () => {
       const unsafeMetadata = {
         venueName: '<script>alert("xss")</script>Restaurant',
-        notes: 'Normal & safe text',
+        notes: "Normal & safe text",
       };
 
       const sanitized = {
-        venueName: unsafeMetadata.venueName.replace(/<[^>]*>/g, ''),
+        venueName: unsafeMetadata.venueName.replace(/<[^>]*>/g, ""),
         notes: unsafeMetadata.notes,
       };
 
-      expect(sanitized.venueName).not.toContain('<script>');
-      expect(sanitized.venueName).toContain('Restaurant');
+      expect(sanitized.venueName).not.toContain("<script>");
+      expect(sanitized.venueName).toContain("Restaurant");
     });
   });
 });
-

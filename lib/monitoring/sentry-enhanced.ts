@@ -106,7 +106,11 @@ export class EnhancedErrorTracker {
       finish(): void;
     }
     interface SentryWithTransaction {
-      startTransaction(context: { name: string; op: string; data?: Record<string, unknown> }): SentryTransaction;
+      startTransaction(context: {
+        name: string;
+        op: string;
+        data?: Record<string, unknown>;
+      }): SentryTransaction;
     }
     return (Sentry as unknown as SentryWithTransaction).startTransaction({
       name,

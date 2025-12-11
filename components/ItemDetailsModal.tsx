@@ -5,7 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
-import { ModifierSelector, type MenuItemModifier, type SelectedModifiers } from "@/components/ModifierSelector";
+import {
+  ModifierSelector,
+  type MenuItemModifier,
+  type SelectedModifiers,
+} from "@/components/ModifierSelector";
 import { supabaseBrowser } from "@/lib/supabase";
 
 interface MenuItem {
@@ -27,7 +31,9 @@ interface ItemDetailsModalProps {
   item: MenuItem | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart: (item: MenuItem & { selectedModifiers?: SelectedModifiers; modifierPrice?: number }) => void;
+  onAddToCart: (
+    item: MenuItem & { selectedModifiers?: SelectedModifiers; modifierPrice?: number }
+  ) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   quantity: number;
   isPreview?: boolean; // If true, hide cart functionality
@@ -59,7 +65,7 @@ export function ItemDetailsModal({
     setLoadingModifiers(true);
     try {
       const supabase = supabaseBrowser();
-      
+
       // Try to get modifiers from menu_items table (JSONB column)
       const { data: menuItem, error } = await supabase
         .from("menu_items")
@@ -71,7 +77,9 @@ export function ItemDetailsModal({
         setModifiers(menuItem.modifiers as MenuItemModifier[]);
       } else {
         // Fallback: try API endpoint
-        const response = await fetch(`/api/menu-items/${item.id}/modifiers?venueId=${item.venue_id || ""}`);
+        const response = await fetch(
+          `/api/menu-items/${item.id}/modifiers?venueId=${item.venue_id || ""}`
+        );
         if (response.ok) {
           const data = await response.json();
           setModifiers(data.modifiers || []);

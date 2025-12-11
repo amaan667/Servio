@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Clock, Users, Receipt } from 'lucide-react';
-import { PendingOrderData } from '../hooks/useOrderSummary';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Clock, Users, Receipt } from "lucide-react";
+import { PendingOrderData } from "../hooks/useOrderSummary";
 
 interface OrderDetailsCardProps {
   orderData: PendingOrderData;
@@ -33,7 +33,7 @@ export function OrderDetailsCard({ orderData }: OrderDetailsCardProps) {
           <div>
             <p className="text-sm text-gray-600">Order Type</p>
             <p className="font-medium capitalize">
-              {orderData.orderType || (orderData.tableNumber ? 'Table' : 'Counter')}
+              {orderData.orderType || (orderData.tableNumber ? "Table" : "Counter")}
             </p>
           </div>
         </div>
@@ -45,7 +45,9 @@ export function OrderDetailsCard({ orderData }: OrderDetailsCardProps) {
           <div>
             <p className="text-sm text-gray-600">Location</p>
             <p className="font-medium">
-              {orderData.tableNumber ? `Table ${orderData.tableNumber}` : `Counter ${orderData.counterNumber}`}
+              {orderData.tableNumber
+                ? `Table ${orderData.tableNumber}`
+                : `Counter ${orderData.counterNumber}`}
             </p>
           </div>
         </div>
@@ -72,4 +74,3 @@ export function OrderDetailsCard({ orderData }: OrderDetailsCardProps) {
     </Card>
   );
 }
-

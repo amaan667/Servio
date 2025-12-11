@@ -218,7 +218,6 @@ export async function seedInventoryData(venueId: string) {
           note: "Initial seed stock",
         });
       }
-
     } catch (_error) {
       logger.error(
         `[INVENTORY SEED] Unexpected _error for ingredient "${ingredient.name}":`,
@@ -278,9 +277,7 @@ export async function seedInventoryData(venueId: string) {
             errorToContext(error)
           );
         } else {
-
           // Block handled
-
         }
       }
     } catch (_error) {

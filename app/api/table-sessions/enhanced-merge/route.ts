@@ -3,10 +3,10 @@ import { createAdminClient } from "@/lib/supabase";
 import { getTableState, getMergeScenario } from "@/lib/table-states";
 import { logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { withUnifiedAuth } from '@/lib/auth/unified-auth';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { env, isDevelopment, isProduction, getNodeEnv } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -16,7 +16,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: 'Too many requests',
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -43,10 +43,10 @@ export const POST = withUnifiedAuth(
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
       // Get both tables with their current state
       const supabase = createAdminClient();
-    const { data: tables, error: tablesError } = await supabase
-      .from("tables")
-      .select(
-        `
+      const { data: tables, error: tablesError } = await supabase
+        .from("tables")
+        .select(
+          `
         *,
         table_sessions!left (
           id,
@@ -59,81 +59,81 @@ export const POST = withUnifiedAuth(
           reservation_time
         )
       `
-      )
-      .in("id", [source_table_id, target_table_id])
-      .eq("venue_id", venueId);
+        )
+        .in("id", [source_table_id, target_table_id])
+        .eq("venue_id", venueId);
 
-    if (tablesError || !tables || tables.length !== 2) {
-      return apiErrors.notFound('Tables not found');
-    }
+      if (tablesError || !tables || tables.length !== 2) {
+        return apiErrors.notFound("Tables not found");
+      }
 
-    const sourceTable = tables.find((t: { id: string }) => t.id === source_table_id);
-    const targetTable = tables.find((t: { id: string }) => t.id === target_table_id);
+      const sourceTable = tables.find((t: { id: string }) => t.id === source_table_id);
+      const targetTable = tables.find((t: { id: string }) => t.id === target_table_id);
 
-    if (!sourceTable || !targetTable) {
-      return apiErrors.notFound('One or both tables not found');
-    }
+      if (!sourceTable || !targetTable) {
+        return apiErrors.notFound("One or both tables not found");
+      }
 
-    // Get table states and merge scenario
-    const sourceState = getTableState(sourceTable);
-    getTableState(targetTable); // targetState calculated but not used yet
-    const mergeScenario = getMergeScenario(sourceTable, targetTable);
+      // Get table states and merge scenario
+      const sourceState = getTableState(sourceTable);
+      getTableState(targetTable); // targetState calculated but not used yet
+      const mergeScenario = getMergeScenario(sourceTable, targetTable);
 
-    // Validate merge scenario
-    if (!mergeScenario.allowed) {
-      return NextResponse.json(
-        {
-          error: mergeScenario.description,
-          scenario: mergeScenario.type,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if confirmation is required but not provided
-    if (mergeScenario.requiresConfirmation && !confirmed) {
-      return NextResponse.json(
-        {
-          error: "Confirmation required for this merge operation",
-          requires_confirmation: true,
-          warning: mergeScenario.warning,
-          scenario: mergeScenario.type,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Perform the merge based on scenario type
-    let result;
-    switch (mergeScenario.type) {
-      case "FREE_FREE":
-        result = await mergeFreeTables(supabase, sourceTable, targetTable);
-        break;
-      case "FREE_OCCUPIED":
-        result = await expandOccupiedTable(
-          supabase,
-          sourceTable,
-          targetTable,
-          sourceState.state === "FREE"
+      // Validate merge scenario
+      if (!mergeScenario.allowed) {
+        return NextResponse.json(
+          {
+            error: mergeScenario.description,
+            scenario: mergeScenario.type,
+          },
+          { status: 400 }
         );
-        break;
-      case "FREE_RESERVED":
-        result = await expandReservedTable(
-          supabase,
-          sourceTable,
-          targetTable,
-          sourceState.state === "FREE"
+      }
+
+      // Check if confirmation is required but not provided
+      if (mergeScenario.requiresConfirmation && !confirmed) {
+        return NextResponse.json(
+          {
+            error: "Confirmation required for this merge operation",
+            requires_confirmation: true,
+            warning: mergeScenario.warning,
+            scenario: mergeScenario.type,
+          },
+          { status: 400 }
         );
-        break;
-      case "OCCUPIED_OCCUPIED":
-        result = await mergeOccupiedTables(supabase, sourceTable, targetTable);
-        break;
-      case "RESERVED_RESERVED":
-        result = await mergeReservedTables(supabase, sourceTable, targetTable);
-        break;
-      default:
-        return apiErrors.badRequest('Unsupported merge scenario');
-    }
+      }
+
+      // Perform the merge based on scenario type
+      let result;
+      switch (mergeScenario.type) {
+        case "FREE_FREE":
+          result = await mergeFreeTables(supabase, sourceTable, targetTable);
+          break;
+        case "FREE_OCCUPIED":
+          result = await expandOccupiedTable(
+            supabase,
+            sourceTable,
+            targetTable,
+            sourceState.state === "FREE"
+          );
+          break;
+        case "FREE_RESERVED":
+          result = await expandReservedTable(
+            supabase,
+            sourceTable,
+            targetTable,
+            sourceState.state === "FREE"
+          );
+          break;
+        case "OCCUPIED_OCCUPIED":
+          result = await mergeOccupiedTables(supabase, sourceTable, targetTable);
+          break;
+        case "RESERVED_RESERVED":
+          result = await mergeReservedTables(supabase, sourceTable, targetTable);
+          break;
+        default:
+          return apiErrors.badRequest("Unsupported merge scenario");
+      }
 
       if (result.error) {
         logger.error("[ENHANCED MERGE] Merge operation failed:", {
@@ -158,16 +158,17 @@ export const POST = withUnifiedAuth(
         description: mergeScenario.description,
       });
     } catch (_error) {
-      const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
+      const errorMessage =
+        _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-      
+
       logger.error("[ENHANCED MERGE] Unexpected error:", {
         error: errorMessage,
         stack: errorStack,
         venueId: context.venueId,
         userId: context.user.id,
       });
-      
+
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
@@ -177,7 +178,7 @@ export const POST = withUnifiedAuth(
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
       }
-      
+
       return NextResponse.json(
         {
           error: "Internal Server Error",
@@ -421,8 +422,12 @@ async function mergeOccupiedTables(
       order_id?: string;
       [key: string]: unknown;
     }
-    const sourceSession = (sessions as unknown as SessionRow[]).find((s) => s.table_id === sourceTable.id);
-    const targetSession = (sessions as unknown as SessionRow[]).find((s) => s.table_id === targetTable.id);
+    const sourceSession = (sessions as unknown as SessionRow[]).find(
+      (s) => s.table_id === sourceTable.id
+    );
+    const targetSession = (sessions as unknown as SessionRow[]).find(
+      (s) => s.table_id === targetTable.id
+    );
 
     if (!sourceSession || !targetSession) {
       return { error: "Could not find both active sessions" };

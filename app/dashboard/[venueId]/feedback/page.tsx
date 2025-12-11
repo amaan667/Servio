@@ -9,7 +9,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
     requireFeature: "customerFeedback",
   }).catch(() => null);
 
-  const hasFeedbackAccess = (auth?.hasFeatureAccess("customerFeedback") ?? false);
+  const hasFeedbackAccess = auth?.hasFeatureAccess("customerFeedback") ?? false;
 
   return (
     <FeedbackClientPage

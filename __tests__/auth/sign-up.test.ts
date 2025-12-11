@@ -1,8 +1,7 @@
- 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock Next.js navigation
-vi.mock('next/navigation', () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),
@@ -13,107 +12,88 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-describe('Authentication - Sign Up', () => {
+describe("Authentication - Sign Up", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Sign Up Validation', () => {
-    it('should validate email format', () => {
+  describe("Sign Up Validation", () => {
+    it("should validate email format", () => {
       const validEmails = [
-        'test@example.com',
-        'user+tag@domain.co.uk',
-        'test.user@subdomain.example.com',
+        "test@example.com",
+        "user+tag@domain.co.uk",
+        "test.user@subdomain.example.com",
       ];
 
-      const invalidEmails = [
-        'invalid',
-        '@example.com',
-        'test@',
-        'test @example.com',
-      ];
+      const invalidEmails = ["invalid", "@example.com", "test@", "test @example.com"];
 
-      validEmails.forEach(email => {
+      validEmails.forEach((email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         expect(emailRegex.test(email)).toBe(true);
       });
 
-      invalidEmails.forEach(email => {
+      invalidEmails.forEach((email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         expect(emailRegex.test(email)).toBe(false);
       });
     });
 
-    it('should validate password strength', () => {
-      const strongPasswords = [
-        'Password123!',
-        'MySecure@Pass99',
-        'Complex#Pass2024',
-      ];
+    it("should validate password strength", () => {
+      const strongPasswords = ["Password123!", "MySecure@Pass99", "Complex#Pass2024"];
 
       const weakPasswords = [
-        'short',
-        'password',
-        '12345678',
-        'Password', // No number or special char
+        "short",
+        "password",
+        "12345678",
+        "Password", // No number or special char
       ];
 
       // Password should be at least 8 characters
-      strongPasswords.forEach(password => {
+      strongPasswords.forEach((password) => {
         expect(password.length).toBeGreaterThanOrEqual(8);
       });
 
-      weakPasswords.forEach(password => {
-        const isWeak = password.length < 8 || 
-                       !/[A-Z]/.test(password) || 
-                       !/[0-9]/.test(password);
+      weakPasswords.forEach((password) => {
+        const isWeak = password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password);
         expect(isWeak).toBe(true);
       });
     });
 
-    it('should validate venue name is not empty', () => {
-      const validVenueNames = [
-        'My Restaurant',
-        'Café Central',
-        'The Pizza Place',
-      ];
+    it("should validate venue name is not empty", () => {
+      const validVenueNames = ["My Restaurant", "Café Central", "The Pizza Place"];
 
-      const invalidVenueNames = [
-        '',
-        '   ',
-        '\t',
-      ];
+      const invalidVenueNames = ["", "   ", "\t"];
 
-      validVenueNames.forEach(name => {
+      validVenueNames.forEach((name) => {
         expect(name.trim().length).toBeGreaterThan(0);
       });
 
-      invalidVenueNames.forEach(name => {
+      invalidVenueNames.forEach((name) => {
         expect(name.trim().length).toBe(0);
       });
     });
 
-    it('should validate subscription tier selection', () => {
-      const validTiers = ['basic', 'standard', 'premium'];
-      const invalidTiers = ['free', 'enterprise', ''];
+    it("should validate subscription tier selection", () => {
+      const validTiers = ["basic", "standard", "premium"];
+      const invalidTiers = ["free", "enterprise", ""];
 
-      validTiers.forEach(tier => {
-        expect(['basic', 'standard', 'premium']).toContain(tier);
+      validTiers.forEach((tier) => {
+        expect(["basic", "standard", "premium"]).toContain(tier);
       });
 
-      invalidTiers.forEach(tier => {
-        expect(['basic', 'standard', 'premium']).not.toContain(tier);
+      invalidTiers.forEach((tier) => {
+        expect(["basic", "standard", "premium"]).not.toContain(tier);
       });
     });
   });
 
-  describe('Sign Up Flow', () => {
-    it('should require all mandatory fields', () => {
+  describe("Sign Up Flow", () => {
+    it("should require all mandatory fields", () => {
       const signUpData = {
-        email: 'test@example.com',
-        password: 'Password123!',
-        venueName: 'My Restaurant',
-        tier: 'standard',
+        email: "test@example.com",
+        password: "Password123!",
+        venueName: "My Restaurant",
+        tier: "standard",
       };
 
       expect(signUpData.email).toBeDefined();
@@ -122,24 +102,24 @@ describe('Authentication - Sign Up', () => {
       expect(signUpData.tier).toBeDefined();
     });
 
-    it('should sanitize venue name input', () => {
+    it("should sanitize venue name input", () => {
       const unsafeInputs = [
         '<script>alert("xss")</script>',
-        'Restaurant & Bar',
-        'Café   with   spaces',
+        "Restaurant & Bar",
+        "Café   with   spaces",
       ];
 
-      unsafeInputs.forEach(input => {
+      unsafeInputs.forEach((input) => {
         // Remove HTML tags
-        const sanitized = input.replace(/<[^>]*>/g, '');
-        expect(sanitized).not.toContain('<script>');
-        expect(sanitized).not.toContain('</script>');
+        const sanitized = input.replace(/<[^>]*>/g, "");
+        expect(sanitized).not.toContain("<script>");
+        expect(sanitized).not.toContain("</script>");
       });
     });
   });
 
-  describe('Tier Selection', () => {
-    it('should correctly map tier features', () => {
+  describe("Tier Selection", () => {
+    it("should correctly map tier features", () => {
       const tierFeatures = {
         basic: {
           maxTables: 10,
@@ -166,7 +146,7 @@ describe('Authentication - Sign Up', () => {
       expect(tierFeatures.premium.maxTables).toBe(-1); // Unlimited
     });
 
-    it('should calculate correct pricing for each tier', () => {
+    it("should calculate correct pricing for each tier", () => {
       const tierPricing = {
         basic: 9900, // £99 in pence
         standard: 24900, // £249 in pence
@@ -179,4 +159,3 @@ describe('Authentication - Sign Up', () => {
     });
   });
 });
-

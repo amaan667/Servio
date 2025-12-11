@@ -151,7 +151,7 @@ export default function GlobalBottomNav({
               ) {
                 const liveCount = (data as { live_count?: number }).live_count;
                 setLiveOrdersCount(liveCount || 0);
-                
+
                 // Update cache to keep it in sync
                 const cached = getCachedCounts(venueId);
                 if (cached) {
@@ -161,20 +161,23 @@ export default function GlobalBottomNav({
                   });
                 } else if (data) {
                   // Cache the full result if we don't have cached data
-                  setCachedCounts(venueId, data as {
-                    live_count?: number;
-                    earlier_today_count?: number;
-                    history_count?: number;
-                    today_orders_count?: number;
-                    active_tables_count?: number;
-                    tables_set_up?: number;
-                    tables_in_use?: number;
-                    tables_reserved_now?: number;
-                    in_use_now?: number;
-                    reserved_now?: number;
-                    reserved_later?: number;
-                    waiting?: number;
-                  });
+                  setCachedCounts(
+                    venueId,
+                    data as {
+                      live_count?: number;
+                      earlier_today_count?: number;
+                      history_count?: number;
+                      today_orders_count?: number;
+                      active_tables_count?: number;
+                      tables_set_up?: number;
+                      tables_in_use?: number;
+                      tables_reserved_now?: number;
+                      in_use_now?: number;
+                      reserved_now?: number;
+                      reserved_later?: number;
+                      waiting?: number;
+                    }
+                  );
                 }
               }
             } catch {
@@ -287,7 +290,7 @@ export default function GlobalBottomNav({
                   width: "100%",
                 }}
               >
-                <item.icon 
+                <item.icon
                   className={`h-6 w-6 transition-colors ${
                     item.isActive ? "text-purple-700" : "text-purple-600"
                   }`}
@@ -295,9 +298,7 @@ export default function GlobalBottomNav({
               </div>
               <span
                 className={`font-semibold text-center px-0.5 transition-colors w-full flex-shrink-0 ${
-                  item.isActive 
-                    ? "font-bold text-purple-700" 
-                    : "text-purple-600"
+                  item.isActive ? "font-bold text-purple-700" : "text-purple-600"
                 }`}
                 style={{
                   fontSize: "11px",

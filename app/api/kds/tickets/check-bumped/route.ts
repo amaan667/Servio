@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { isDevelopment } from '@/lib/env';
-import { success, apiErrors, isZodError, handleZodError } from '@/lib/api/standard-response';
-import { z } from 'zod';
-import { validateBody } from '@/lib/api/validation-schemas';
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDevelopment } from "@/lib/env";
+import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
+import { validateBody } from "@/lib/api/validation-schemas";
 
 export const runtime = "nodejs";
 
@@ -21,9 +21,7 @@ export async function POST(req: NextRequest) {
     // STEP 1: Rate limiting (ALWAYS FIRST)
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(
-        Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-      );
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
     }
 
     // STEP 2: Validate input - handle case where venueId might be missing
@@ -47,7 +45,7 @@ export async function POST(req: NextRequest) {
       }
       return apiErrors.badRequest("Invalid request body - order_id is required");
     }
-    
+
     const orderId = body.order_id;
     const venueIdFromBody = body.venue_id;
 
@@ -68,70 +66,69 @@ export async function POST(req: NextRequest) {
     }
 
     if (!venueId) {
-      return apiErrors.badRequest("venue_id is required (provide in body or it will be extracted from order)");
+      return apiErrors.badRequest(
+        "venue_id is required (provide in body or it will be extracted from order)"
+      );
     }
 
-      // STEP 4: Business logic - Check if all tickets are bumped
+    // STEP 4: Business logic - Check if all tickets are bumped
 
-      // Get all tickets for this order
-      const { data: tickets, error: fetchError } = await supabase
-        .from("kds_tickets")
-        .select("id, status")
-        .eq("order_id", orderId)
-        .eq("venue_id", venueId);
+    // Get all tickets for this order
+    const { data: tickets, error: fetchError } = await supabase
+      .from("kds_tickets")
+      .select("id, status")
+      .eq("order_id", orderId)
+      .eq("venue_id", venueId);
 
-      if (fetchError) {
+    if (fetchError) {
       logger.error("[KDS CHECK BUMPED] Error fetching tickets:", {
         error: fetchError.message,
         orderId,
         venueId,
       });
-        return apiErrors.database(
-          "Failed to check ticket status",
-          isDevelopment() ? fetchError.message : undefined
-        );
-      }
-
-      // If no tickets exist, consider it as "all bumped" (order might not have KDS tickets)
-      if (!tickets || tickets.length === 0) {
-        logger.debug("[KDS CHECK BUMPED] No tickets found for order", {
-          orderId,
-          venueId,
-        });
-        return success({ all_bumped: true, ticket_count: 0 });
-      }
-
-      // Check if all tickets are bumped
-      const allBumped = tickets.every((t) => t.status === "bumped");
-      const bumpedCount = tickets.filter((t) => t.status === "bumped").length;
-
-      logger.debug("[KDS CHECK BUMPED] Ticket status checked", {
-        orderId,
-        venueId,
-        totalTickets: tickets.length,
-        bumpedCount,
-        allBumped,
-      });
-
-      // STEP 5: Return success response
-      return success({
-        all_bumped: allBumped,
-        ticket_count: tickets.length,
-        bumped_count: bumpedCount,
-      });
-    } catch (error) {
-      logger.error("[KDS CHECK BUMPED] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal(
-        "Request processing failed",
-        isDevelopment() ? error : undefined
+      return apiErrors.database(
+        "Failed to check ticket status",
+        isDevelopment() ? fetchError.message : undefined
       );
     }
+
+    // If no tickets exist, consider it as "all bumped" (order might not have KDS tickets)
+    if (!tickets || tickets.length === 0) {
+      logger.debug("[KDS CHECK BUMPED] No tickets found for order", {
+        orderId,
+        venueId,
+      });
+      return success({ all_bumped: true, ticket_count: 0 });
+    }
+
+    // Check if all tickets are bumped
+    const allBumped = tickets.every((t) => t.status === "bumped");
+    const bumpedCount = tickets.filter((t) => t.status === "bumped").length;
+
+    logger.debug("[KDS CHECK BUMPED] Ticket status checked", {
+      orderId,
+      venueId,
+      totalTickets: tickets.length,
+      bumpedCount,
+      allBumped,
+    });
+
+    // STEP 5: Return success response
+    return success({
+      all_bumped: allBumped,
+      ticket_count: tickets.length,
+      bumped_count: bumpedCount,
+    });
+  } catch (error) {
+    logger.error("[KDS CHECK BUMPED] Unexpected error:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    if (isZodError(error)) {
+      return handleZodError(error);
+    }
+
+    return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+  }
 }

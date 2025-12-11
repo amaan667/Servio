@@ -5,8 +5,24 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, Mail, BookOpen, MessageSquare, HelpCircle, QrCode, ShoppingBag, BarChart, Users, Settings } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Search,
+  Mail,
+  BookOpen,
+  MessageSquare,
+  HelpCircle,
+  QrCode,
+  ShoppingBag,
+  BarChart,
+  Users,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
@@ -25,15 +41,18 @@ const faqs = [
     questions: [
       {
         question: "How do I create my first menu?",
-        answer: "Go to Menu Builder in your dashboard, click 'Add Item', fill in the details (name, price, description, category), upload an image, and save. You can organize items into categories for better organization.",
+        answer:
+          "Go to Menu Builder in your dashboard, click 'Add Item', fill in the details (name, price, description, category), upload an image, and save. You can organize items into categories for better organization.",
       },
       {
         question: "How do I generate QR codes for my tables?",
-        answer: "Navigate to QR Codes in your dashboard, enter a table name (e.g., 'Table 1' or 'Counter 1'), and click 'Generate QR Code'. The QR code will work immediately - no table setup required. You can print or download the QR code.",
+        answer:
+          "Navigate to QR Codes in your dashboard, enter a table name (e.g., 'Table 1' or 'Counter 1'), and click 'Generate QR Code'. The QR code will work immediately - no table setup required. You can print or download the QR code.",
       },
       {
         question: "How do customers place orders?",
-        answer: "Customers scan the QR code at their table or counter, browse your menu on their phone, add items to cart, and checkout. Orders appear instantly in your Live Orders dashboard.",
+        answer:
+          "Customers scan the QR code at their table or counter, browse your menu on their phone, add items to cart, and checkout. Orders appear instantly in your Live Orders dashboard.",
       },
     ],
   },
@@ -42,19 +61,23 @@ const faqs = [
     questions: [
       {
         question: "How do I view and manage orders?",
-        answer: "Go to Live Orders in your dashboard. You'll see all recent orders with their status (Placed, In Prep, Ready, Serving, Completed). Click on any order to view details and update its status.",
+        answer:
+          "Go to Live Orders in your dashboard. You'll see all recent orders with their status (Placed, In Prep, Ready, Serving, Completed). Click on any order to view details and update its status.",
       },
       {
         question: "How do I search for a specific order?",
-        answer: "In the Live Orders page, use the search bar at the top. You can search by order ID, customer name, phone number, or table number. The search works across all tabs (Live, Earlier Today, History).",
+        answer:
+          "In the Live Orders page, use the search bar at the top. You can search by order ID, customer name, phone number, or table number. The search works across all tabs (Live, Earlier Today, History).",
       },
       {
         question: "What payment methods are supported?",
-        answer: "Servio supports Stripe payments (card payments), demo payments for testing, and till/cash payments. Customers can pay directly through the QR code ordering system.",
+        answer:
+          "Servio supports Stripe payments (card payments), demo payments for testing, and till/cash payments. Customers can pay directly through the QR code ordering system.",
       },
       {
         question: "How do I send receipts to customers?",
-        answer: "Go to Payments in your dashboard. You can view all receipts, send them via email or SMS, and print them. Receipts are automatically generated for all completed orders.",
+        answer:
+          "Go to Payments in your dashboard. You can view all receipts, send them via email or SMS, and print them. Receipts are automatically generated for all completed orders.",
       },
     ],
   },
@@ -63,19 +86,23 @@ const faqs = [
     questions: [
       {
         question: "How do I update menu item prices?",
-        answer: "Go to Menu Builder, find the item you want to update, click 'Edit', change the price, and save. Changes are reflected immediately on customer-facing menus.",
+        answer:
+          "Go to Menu Builder, find the item you want to update, click 'Edit', change the price, and save. Changes are reflected immediately on customer-facing menus.",
       },
       {
         question: "How do I mark items as unavailable?",
-        answer: "In Menu Builder, click on an item and toggle the 'Available' switch. Unavailable items won't appear on customer menus but remain in your system for easy re-activation.",
+        answer:
+          "In Menu Builder, click on an item and toggle the 'Available' switch. Unavailable items won't appear on customer menus but remain in your system for easy re-activation.",
       },
       {
         question: "Can I import my menu from a website or PDF?",
-        answer: "Yes! Use the AI Menu Extraction feature in Menu Builder. Upload an image or PDF of your menu, and Servio will automatically extract items, prices, and descriptions.",
+        answer:
+          "Yes! Use the AI Menu Extraction feature in Menu Builder. Upload an image or PDF of your menu, and Servio will automatically extract items, prices, and descriptions.",
       },
       {
         question: "How do I organize items into categories?",
-        answer: "In Menu Builder, create categories first, then assign items to categories when creating or editing them. You can drag and drop items to reorder them within categories.",
+        answer:
+          "In Menu Builder, create categories first, then assign items to categories when creating or editing them. You can drag and drop items to reorder them within categories.",
       },
     ],
   },
@@ -84,15 +111,18 @@ const faqs = [
     questions: [
       {
         question: "How do I set up KDS stations?",
-        answer: "Go to Kitchen Display in your dashboard. KDS stations are automatically created (Grill, Fryer, Barista, etc.). You can customize station names and manage tickets from each station.",
+        answer:
+          "Go to Kitchen Display in your dashboard. KDS stations are automatically created (Grill, Fryer, Barista, etc.). You can customize station names and manage tickets from each station.",
       },
       {
         question: "How do orders appear in the kitchen?",
-        answer: "When an order is placed, it automatically creates tickets for each KDS station based on the items ordered. Kitchen staff can see tickets, update status (In Progress, Ready), and mark as complete.",
+        answer:
+          "When an order is placed, it automatically creates tickets for each KDS station based on the items ordered. Kitchen staff can see tickets, update status (In Progress, Ready), and mark as complete.",
       },
       {
         question: "Can I bulk update ticket statuses?",
-        answer: "Yes, in the Kitchen Display page, you can select multiple tickets and update their statuses at once. This is useful when multiple items are ready at the same time.",
+        answer:
+          "Yes, in the Kitchen Display page, you can select multiple tickets and update their statuses at once. This is useful when multiple items are ready at the same time.",
       },
     ],
   },
@@ -101,15 +131,18 @@ const faqs = [
     questions: [
       {
         question: "Do I need to create tables before using QR codes?",
-        answer: "No! QR codes work immediately without table setup. However, if you want to track table status, reservations, and manage seating, you can create tables in the Table Management section.",
+        answer:
+          "No! QR codes work immediately without table setup. However, if you want to track table status, reservations, and manage seating, you can create tables in the Table Management section.",
       },
       {
         question: "How do I manage reservations?",
-        answer: "In Table Management, you can create reservations, assign them to tables, and track reservation status. The system shows which tables are reserved, occupied, or available.",
+        answer:
+          "In Table Management, you can create reservations, assign them to tables, and track reservation status. The system shows which tables are reserved, occupied, or available.",
       },
       {
         question: "How do I clear completed table sessions?",
-        answer: "Table sessions are automatically cleared when orders are completed. You can also manually clear sessions in Table Management or use the 'Clear Completed' option.",
+        answer:
+          "Table sessions are automatically cleared when orders are completed. You can also manually clear sessions in Table Management or use the 'Clear Completed' option.",
       },
     ],
   },
@@ -118,15 +151,18 @@ const faqs = [
     questions: [
       {
         question: "What analytics are available?",
-        answer: "View revenue trends, order counts, top-selling items, peak hours, and customer insights. Analytics are available in the Analytics section of your dashboard.",
+        answer:
+          "View revenue trends, order counts, top-selling items, peak hours, and customer insights. Analytics are available in the Analytics section of your dashboard.",
       },
       {
         question: "Can I export data?",
-        answer: "Yes, Enterprise tier users can export inventory data and analytics reports as CSV files. Go to the respective sections and click 'Export CSV'.",
+        answer:
+          "Yes, Enterprise tier users can export inventory data and analytics reports as CSV files. Go to the respective sections and click 'Export CSV'.",
       },
       {
         question: "How do I see today's performance?",
-        answer: "The main dashboard shows today's key metrics: orders count, revenue, table utilization, and menu item performance. Click on any metric card to see detailed information.",
+        answer:
+          "The main dashboard shows today's key metrics: orders count, revenue, table utilization, and menu item performance. Click on any metric card to see detailed information.",
       },
     ],
   },
@@ -135,15 +171,18 @@ const faqs = [
     questions: [
       {
         question: "How do I invite staff members?",
-        answer: "Go to Staff Management, click 'Invite Staff', enter their email and select a role (Manager, Server, Kitchen, Cashier). They'll receive an email invitation to join your venue.",
+        answer:
+          "Go to Staff Management, click 'Invite Staff', enter their email and select a role (Manager, Server, Kitchen, Cashier). They'll receive an email invitation to join your venue.",
       },
       {
         question: "What are the different staff roles?",
-        answer: "Owner: Full access. Manager: Can manage operations but not billing. Server: Can view orders and process payments. Kitchen: Can view KDS and update order status. Cashier: Can process payments.",
+        answer:
+          "Owner: Full access. Manager: Can manage operations but not billing. Server: Can view orders and process payments. Kitchen: Can view KDS and update order status. Cashier: Can process payments.",
       },
       {
         question: "How do I manage staff shifts?",
-        answer: "In Staff Management, go to the Shifts tab. You can add shifts, view schedules, and manage staff availability. Shifts help track who's working when.",
+        answer:
+          "In Staff Management, go to the Shifts tab. You can add shifts, view schedules, and manage staff availability. Shifts help track who's working when.",
       },
     ],
   },
@@ -152,19 +191,23 @@ const faqs = [
     questions: [
       {
         question: "Orders aren't appearing in Live Orders",
-        answer: "Check that your internet connection is active. Refresh the page. Ensure the order status is not 'CANCELLED' or 'EXPIRED'. If issues persist, contact support.",
+        answer:
+          "Check that your internet connection is active. Refresh the page. Ensure the order status is not 'CANCELLED' or 'EXPIRED'. If issues persist, contact support.",
       },
       {
         question: "QR codes aren't working",
-        answer: "Ensure the QR code is printed clearly and not damaged. Check that your venue is active in settings. Verify that your menu has available items. Try generating a new QR code.",
+        answer:
+          "Ensure the QR code is printed clearly and not damaged. Check that your venue is active in settings. Verify that your menu has available items. Try generating a new QR code.",
       },
       {
         question: "I can't process payments",
-        answer: "Verify your Stripe account is connected in Settings > Billing. Check that your subscription is active. For demo payments, ensure you're in test mode.",
+        answer:
+          "Verify your Stripe account is connected in Settings > Billing. Check that your subscription is active. For demo payments, ensure you're in test mode.",
       },
       {
         question: "How do I reset my password?",
-        answer: "Go to the sign-in page, click 'Forgot Password', enter your email, and check your inbox for a reset link. The link expires after 1 hour.",
+        answer:
+          "Go to the sign-in page, click 'Forgot Password', enter your email, and check your inbox for a reset link. The link expires after 1 hour.",
       },
     ],
   },
@@ -249,9 +292,7 @@ export function HelpCenterClient() {
 
         // Try to get venueId from storage first
         let foundVenueId: string | null =
-          localStorage.getItem("currentVenueId") ||
-          localStorage.getItem("venueId") ||
-          null;
+          localStorage.getItem("currentVenueId") || localStorage.getItem("venueId") || null;
 
         // Check sessionStorage
         if (!foundVenueId) {
@@ -304,8 +345,12 @@ export function HelpCenterClient() {
   // Build exactly 7 links - no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
     // Log only primitive values, not React components
-    if (process.env.NODE_ENV === 'development') {
-      console.log("[HELP CENTER] Building quickLinks", { isLoading, venueId, timestamp: Date.now() });
+    if (process.env.NODE_ENV === "development") {
+      console.log("[HELP CENTER] Building quickLinks", {
+        isLoading,
+        venueId,
+        timestamp: Date.now(),
+      });
     }
 
     if (isLoading) {
@@ -373,7 +418,7 @@ export function HelpCenterClient() {
 
     // Safety check - if somehow we have duplicates, filter them
     const seen = new Set<string>();
-    const unique = links.filter(link => {
+    const unique = links.filter((link) => {
       if (seen.has(link.title)) {
         return false;
       }
@@ -384,14 +429,16 @@ export function HelpCenterClient() {
     return unique;
   }, [venueId, isLoading]);
 
-  const filteredFAQs = faqs.map((category) => ({
-    ...category,
-    questions: category.questions.filter(
-      (q) =>
-        q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        q.answer.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-  })).filter((category) => category.questions.length > 0);
+  const filteredFAQs = faqs
+    .map((category) => ({
+      ...category,
+      questions: category.questions.filter(
+        (q) =>
+          q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          q.answer.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter((category) => category.questions.length > 0);
 
   // Removed logging that was trying to serialize React components
 
@@ -399,7 +446,7 @@ export function HelpCenterClient() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb showBackButton={false} />
-        
+
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
@@ -447,13 +494,17 @@ export function HelpCenterClient() {
         {/* FAQs */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-            {searchQuery ? `Search Results (${filteredFAQs.reduce((acc, cat) => acc + cat.questions.length, 0)} found)` : "Frequently Asked Questions"}
+            {searchQuery
+              ? `Search Results (${filteredFAQs.reduce((acc, cat) => acc + cat.questions.length, 0)} found)`
+              : "Frequently Asked Questions"}
           </h2>
-          
+
           {filteredFAQs.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <p className="text-gray-600">No results found for "{searchQuery}". Try different keywords.</p>
+                <p className="text-gray-600">
+                  No results found for "{searchQuery}". Try different keywords.
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -499,9 +550,7 @@ export function HelpCenterClient() {
                 </a>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <a href="mailto:hello@servio.app">
-                  General Inquiries
-                </a>
+                <a href="mailto:hello@servio.app">General Inquiries</a>
               </Button>
             </div>
           </CardContent>

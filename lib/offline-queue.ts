@@ -174,7 +174,9 @@ class OfflineQueue {
         case "order":
           return await this.processOrder(operation.data as { order: unknown; endpoint: string });
         case "payment":
-          return await this.processPayment(operation.data as { payment: unknown; endpoint: string });
+          return await this.processPayment(
+            operation.data as { payment: unknown; endpoint: string }
+          );
         case "status_update":
           return await this.processStatusUpdate(
             operation.data as { orderId: string; status: string; endpoint: string }

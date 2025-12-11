@@ -4,10 +4,10 @@
  */
 
 export enum LogLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
+  DEBUG = "debug",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
 }
 
 export interface LogContext {
@@ -37,8 +37,8 @@ class StructuredLogger {
   private serviceName: string;
 
   constructor() {
-    this.env = process.env.NODE_ENV || 'development';
-    this.serviceName = 'servio';
+    this.env = process.env.NODE_ENV || "development";
+    this.serviceName = "servio";
   }
 
   private createLogEntry(
@@ -61,7 +61,7 @@ class StructuredLogger {
     if (error) {
       entry.error = {
         message: error.message,
-        stack: this.env === 'development' ? error.stack : undefined,
+        stack: this.env === "development" ? error.stack : undefined,
         code: (error as { code?: string }).code,
       };
     }
@@ -76,7 +76,7 @@ class StructuredLogger {
   private output(entry: LogEntry): void {
     // In production, send to logging service (DataDog, New Relic, etc.)
     // const json = JSON.stringify(entry);
-    if (this.env === 'production') {
+    if (this.env === "production") {
       // Logging service: Currently using console with structured format
       // For production, integrate with Datadog, LogRocket, or similar service
       // await fetch('https://logs.example.com/ingest', { body: json });
@@ -96,7 +96,7 @@ class StructuredLogger {
   }
 
   debug(message: string, context?: LogContext, metadata?: Record<string, unknown>): void {
-    if (this.env === 'development') {
+    if (this.env === "development") {
       const entry = this.createLogEntry(LogLevel.DEBUG, message, context, undefined, metadata);
       this.output(entry);
     }
@@ -112,12 +112,17 @@ class StructuredLogger {
     this.output(entry);
   }
 
-  error(message: string, error?: Error, context?: LogContext, metadata?: Record<string, unknown>): void {
+  error(
+    message: string,
+    error?: Error,
+    context?: LogContext,
+    metadata?: Record<string, unknown>
+  ): void {
     const entry = this.createLogEntry(LogLevel.ERROR, message, context, error, metadata);
     this.output(entry);
-    
+
     // Send to error tracking service (Sentry)
-    if (this.env === 'production' && error) {
+    if (this.env === "production" && error) {
       // Sentry is already configured in sentry config files
     }
   }
@@ -127,8 +132,19 @@ class StructuredLogger {
     this.info(`API Request: ${method} ${path}`, context, { method, path });
   }
 
-  apiResponse(method: string, path: string, status: number, duration: number, context?: LogContext): void {
-    this.info(`API Response: ${method} ${path} ${status}`, context, { method, path, status, duration });
+  apiResponse(
+    method: string,
+    path: string,
+    status: number,
+    duration: number,
+    context?: LogContext
+  ): void {
+    this.info(`API Response: ${method} ${path} ${status}`, context, {
+      method,
+      path,
+      status,
+      duration,
+    });
   }
 
   dbQuery(query: string, duration: number, context?: LogContext): void {
@@ -145,4 +161,3 @@ class StructuredLogger {
 }
 
 export const structuredLogger = new StructuredLogger();
-

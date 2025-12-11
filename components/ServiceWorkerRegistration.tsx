@@ -77,7 +77,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         .register(`/sw.js?ver=${cacheVersion}`, { scope: "/" })
         .then((registration) => {
           logger.info("[SW] Service worker registered:", registration.scope);
-          
+
           // Check for updates periodically
           setInterval(() => {
             registration.update();
@@ -118,7 +118,8 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
             <div className="flex items-center justify-center space-x-2">
               <WifiOff className="h-4 w-4" />
               <span>
-                You&apos;re offline. {queueCount > 0 && `${queueCount} operation${queueCount > 1 ? "s" : ""} queued.`}
+                You&apos;re offline.{" "}
+                {queueCount > 0 && `${queueCount} operation${queueCount > 1 ? "s" : ""} queued.`}
               </span>
               {queueCount > 0 && isOnline && typeof window !== "undefined" && (
                 <button

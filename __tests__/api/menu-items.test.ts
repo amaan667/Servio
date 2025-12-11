@@ -1,4 +1,3 @@
- 
 /**
  * Tests for Menu Items API
  * Critical: Menu management
@@ -53,9 +52,12 @@ describe("GET /api/menu/[venueId]", () => {
   });
 
   it("filters by is_available flag", async () => {
-    const mockRequest = new NextRequest("http://localhost:3000/api//menu/venue_123?available=true", {
-      method: "GET",
-    });
+    const mockRequest = new NextRequest(
+      "http://localhost:3000/api//menu/venue_123?available=true",
+      {
+        method: "GET",
+      }
+    );
 
     expect(mockRequest.url).toContain("available=true");
   });

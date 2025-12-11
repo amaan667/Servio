@@ -1,12 +1,25 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { IngredientUnit } from '@/types/inventory';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { IngredientUnit } from "@/types/inventory";
 
 interface AddIngredientDialogProps {
   open: boolean;
@@ -15,19 +28,24 @@ interface AddIngredientDialogProps {
   onSuccess: () => void;
 }
 
-const UNITS: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'oz', 'lb', 'pcs', 'cup', 'tbsp', 'tsp'];
+const UNITS: IngredientUnit[] = ["g", "kg", "ml", "l", "oz", "lb", "pcs", "cup", "tbsp", "tsp"];
 
-export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: AddIngredientDialogProps) {
+export function AddIngredientDialog({
+  open,
+  onOpenChange,
+  venueId,
+  onSuccess,
+}: AddIngredientDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    sku: '',
-    unit: 'g' as IngredientUnit,
-    cost_per_unit: '',
-    par_level: '',
-    reorder_level: '',
-    supplier: '',
-    initial_stock: '',
+    name: "",
+    sku: "",
+    unit: "g" as IngredientUnit,
+    cost_per_unit: "",
+    par_level: "",
+    reorder_level: "",
+    supplier: "",
+    initial_stock: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,9 +53,9 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
     setLoading(true);
 
     try {
-      const response = await fetch('/api/inventory/ingredients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/inventory/ingredients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           venue_id: venueId,
           name: formData.name,
@@ -55,14 +73,14 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
         onSuccess();
         onOpenChange(false);
         setFormData({
-          name: '',
-          sku: '',
-          unit: 'g',
-          cost_per_unit: '',
-          par_level: '',
-          reorder_level: '',
-          supplier: '',
-          initial_stock: '',
+          name: "",
+          sku: "",
+          unit: "g",
+          cost_per_unit: "",
+          par_level: "",
+          reorder_level: "",
+          supplier: "",
+          initial_stock: "",
         });
       }
     } catch (_error) {
@@ -77,9 +95,7 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Ingredient</DialogTitle>
-          <DialogDescription>
-            Add a new ingredient to your inventory
-          </DialogDescription>
+          <DialogDescription>Add a new ingredient to your inventory</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -105,7 +121,9 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
                 <Label htmlFor="unit">Unit *</Label>
                 <Select
                   value={formData.unit}
-                  onValueChange={(value) => setFormData({ ...formData, unit: value as IngredientUnit })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, unit: value as IngredientUnit })
+                  }
                 >
                   <SelectTrigger id="unit">
                     <SelectValue />
@@ -178,7 +196,7 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Ingredient'}
+              {loading ? "Adding..." : "Add Ingredient"}
             </Button>
           </DialogFooter>
         </form>
@@ -186,4 +204,3 @@ export function AddIngredientDialog({ open, onOpenChange, venueId, onSuccess }: 
     </Dialog>
   );
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface SkeletonProps {
   className?: string;
@@ -104,22 +104,29 @@ export const StatsCardSkeleton: React.FC = () => (
   </Card>
 );
 
-export const TableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({ 
-  rows = 5, 
-  cols = 4 
+export const TableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({
+  rows = 5,
+  cols = 4,
 }) => (
   <div className="animate-pulse">
     <div className="overflow-hidden border rounded-lg">
       {/* Header */}
-      <div className="grid gap-4 p-4 border-b bg-gray-50" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+      <div
+        className="grid gap-4 p-4 border-b bg-gray-50"
+        style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+      >
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-4 w-full" />
         ))}
       </div>
-      
+
       {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="grid gap-4 p-4 border-b" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+        <div
+          key={rowIndex}
+          className="grid gap-4 p-4 border-b"
+          style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+        >
           {Array.from({ length: cols }).map((_, colIndex) => (
             <Skeleton key={colIndex} className="h-4 w-full" />
           ))}

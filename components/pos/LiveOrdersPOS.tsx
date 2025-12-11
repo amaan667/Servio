@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabaseBrowser as createClient } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import { useState, useEffect, useCallback } from "react";
+import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   User,
   Hash,
@@ -19,17 +19,17 @@ import {
   Square,
   RefreshCw,
   Filter,
-  Search
-} from 'lucide-react';
-import { Input } from '@/components/ui/input';
+  Search,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface OrderItem {
   menu_item_id: string;
@@ -37,8 +37,8 @@ interface OrderItem {
   price: number;
   item_name: string;
   specialInstructions?: string;
-  prep_status?: 'pending' | 'preparing' | 'ready' | 'served';
-  station?: 'kitchen' | 'bar' | 'dessert';
+  prep_status?: "pending" | "preparing" | "ready" | "served";
+  station?: "kitchen" | "bar" | "dessert";
 }
 
 interface Order {
@@ -47,12 +47,12 @@ interface Order {
   table_number: number;
   table_id?: string;
   table_label?: string;
-  source: 'qr' | 'counter';
+  source: "qr" | "counter";
   customer_name: string;
   customer_phone?: string;
-  order_status: 'PLACED' | 'IN_PREP' | 'READY' | 'SERVING' | 'COMPLETED' | 'CANCELLED';
-  payment_status: 'UNPAID' | 'PAID' | 'TILL' | 'REFUNDED';
-  payment_mode: 'online' | 'pay_later' | 'pay_at_till';
+  order_status: "PLACED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED";
+  payment_status: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
+  payment_mode: "online" | "pay_later" | "pay_at_till";
   total_amount: number;
   notes?: string;
   items: OrderItem[];
@@ -67,45 +67,49 @@ interface LiveOrdersPOSProps {
 }
 
 const ORDER_STATUSES = {
-  PLACED: { label: 'Placed', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-  IN_PREP: { label: 'Preparing', color: 'bg-blue-100 text-blue-800', icon: Play },
-  READY: { label: 'Ready', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  SERVING: { label: 'Serving', color: 'bg-purple-100 text-purple-800', icon: User },
-  COMPLETED: { label: 'Completed', color: 'bg-gray-100 text-gray-800', icon: CheckCircle },
-  CANCELLED: { label: 'Cancelled', color: 'bg-red-100 text-red-800', icon: XCircle }
+  PLACED: { label: "Placed", color: "bg-yellow-100 text-yellow-800", icon: Clock },
+  IN_PREP: { label: "Preparing", color: "bg-blue-100 text-blue-800", icon: Play },
+  READY: { label: "Ready", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  SERVING: { label: "Serving", color: "bg-purple-100 text-purple-800", icon: User },
+  COMPLETED: { label: "Completed", color: "bg-gray-100 text-gray-800", icon: CheckCircle },
+  CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-800", icon: XCircle },
 };
 
 const PAYMENT_STATUSES = {
-  UNPAID: { label: 'Unpaid', color: 'bg-red-100 text-red-800', icon: AlertTriangle },
-  PAID: { label: 'Paid', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  TILL: { label: 'Till', color: 'bg-blue-100 text-blue-800', icon: CreditCard },
-  REFUNDED: { label: 'Refunded', color: 'bg-orange-100 text-orange-800', icon: RefreshCw }
+  UNPAID: { label: "Unpaid", color: "bg-red-100 text-red-800", icon: AlertTriangle },
+  PAID: { label: "Paid", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  TILL: { label: "Till", color: "bg-blue-100 text-blue-800", icon: CreditCard },
+  REFUNDED: { label: "Refunded", color: "bg-orange-100 text-orange-800", icon: RefreshCw },
 };
 
 export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [stationFilter, setStationFilter] = useState<string>('all');
-  const [serverFilter, setServerFilter] = useState<string>('all');
-  const [paymentFilter, setPaymentFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState('kitchen');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [stationFilter, setStationFilter] = useState<string>("all");
+  const [serverFilter, setServerFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("kitchen");
 
   useEffect(() => {
     fetchOrders();
-    
+
     // Set up real-time subscription
     const supabase = createClient();
     const channel = supabase
-      .channel('live-orders-pos')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'orders',
-        filter: `venue_id=eq.${venueId}`
-      }, () => {
-        fetchOrders();
-      })
+      .channel("live-orders-pos")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `venue_id=eq.${venueId}`,
+        },
+        () => {
+          fetchOrders();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -130,13 +134,13 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const response = await fetch('/api/pos/orders/status', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/pos/orders/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id: orderId,
-          order_status: newStatus
-        })
+          order_status: newStatus,
+        }),
       });
 
       if (response.ok) {
@@ -149,14 +153,14 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
 
   const updateItemStatus = async (orderId: string, itemId: string, newStatus: string) => {
     try {
-      const response = await fetch('/api/pos/orders/items/status', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/pos/orders/items/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id: orderId,
           item_id: itemId,
-          prep_status: newStatus
-        })
+          prep_status: newStatus,
+        }),
       });
 
       if (response.ok) {
@@ -168,31 +172,31 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
   };
 
   const getFilteredOrders = () => {
-    return orders.filter(order => {
-      const matchesSearch = !searchQuery || 
+    return orders.filter((order) => {
+      const matchesSearch =
+        !searchQuery ||
         order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (order.table_label && order.table_label.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesStation = stationFilter === 'all' || 
-        order.items.some(item => item.station === stationFilter);
+      const matchesStation =
+        stationFilter === "all" || order.items.some((item) => item.station === stationFilter);
 
-      const matchesPayment = paymentFilter === 'all' || 
-        order.payment_status === paymentFilter;
+      const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
 
       return matchesSearch && matchesStation && matchesPayment;
     });
   };
 
   const getOrdersByStatus = (status: string) => {
-    return getFilteredOrders().filter(order => order.order_status === status);
+    return getFilteredOrders().filter((order) => order.order_status === status);
   };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -201,7 +205,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 60) {
       return `${diffMins}m`;
     } else {
@@ -212,11 +216,16 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
 
   const getItemStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      case 'preparing': return 'bg-blue-100 text-blue-800';
-      case 'ready': return 'bg-green-100 text-green-800';
-      case 'served': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending":
+        return "bg-gray-100 text-gray-800";
+      case "preparing":
+        return "bg-blue-100 text-blue-800";
+      case "ready":
+        return "bg-green-100 text-green-800";
+      case "served":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -238,8 +247,11 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
             </div>
             <div className="text-right">
               <div className="text-sm text-gray-900">
-                {order.source === 'counter' ? `Counter ${order.table_number}` : 
-                 order.table_label ? order.table_label : `Table ${order.table_number}`}
+                {order.source === "counter"
+                  ? `Counter ${order.table_number}`
+                  : order.table_label
+                    ? order.table_label
+                    : `Table ${order.table_number}`}
               </div>
               <div className="text-lg font-bold text-green-600">
                 £{order.total_amount.toFixed(2)}
@@ -279,9 +291,9 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
               <PaymentIcon className="h-3 w-3 mr-1" />
               {PAYMENT_STATUSES[order.payment_status]?.label}
             </Badge>
-            {order.payment_mode !== 'online' && (
+            {order.payment_mode !== "online" && (
               <Badge variant="outline" className="text-xs">
-                {order.payment_mode.replace('_', ' ')}
+                {order.payment_mode.replace("_", " ")}
               </Badge>
             )}
           </div>
@@ -293,7 +305,9 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
               <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{item.quantity}x {item.item_name}</span>
+                    <span className="font-medium">
+                      {item.quantity}x {item.item_name}
+                    </span>
                     {item.station && (
                       <Badge variant="outline" className="text-xs">
                         {item.station}
@@ -301,13 +315,13 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
                     )}
                   </div>
                   {item.specialInstructions && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      Note: {item.specialInstructions}
-                    </p>
+                    <p className="text-xs text-orange-600 mt-1">Note: {item.specialInstructions}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">£{(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="text-sm font-semibold">
+                    £{(item.price * item.quantity).toFixed(2)}
+                  </span>
                   {item.prep_status && (
                     <Badge className={getItemStatusColor(item.prep_status)}>
                       {item.prep_status}
@@ -329,30 +343,30 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
-            {order.order_status === 'PLACED' && (
-              <Button 
-                size="sm" 
-                onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
+            {order.order_status === "PLACED" && (
+              <Button
+                size="sm"
+                onClick={() => updateOrderStatus(order.id, "IN_PREP")}
                 className="flex-1"
               >
                 <Play className="h-4 w-4 mr-1" />
                 Start Prep
               </Button>
             )}
-            {order.order_status === 'IN_PREP' && (
-              <Button 
-                size="sm" 
-                onClick={() => updateOrderStatus(order.id, 'READY')}
+            {order.order_status === "IN_PREP" && (
+              <Button
+                size="sm"
+                onClick={() => updateOrderStatus(order.id, "READY")}
                 className="flex-1"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                {order.source === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served'}
+                {order.source === "counter" ? "Mark as Ready for Pickup" : "Mark as Served"}
               </Button>
             )}
-            {order.order_status === 'READY' && (
-              <Button 
-                size="sm" 
-                onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
+            {order.order_status === "READY" && (
+              <Button
+                size="sm"
+                onClick={() => updateOrderStatus(order.id, "COMPLETED")}
                 className="flex-1"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
@@ -382,7 +396,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
             className="pl-10"
           />
         </div>
-        
+
         <Select value={stationFilter} onValueChange={setStationFilter}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Station" />
@@ -426,36 +440,44 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Pipeline Columns */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-yellow-800">Placed ({getOrdersByStatus('PLACED').length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-yellow-800">
+                Placed ({getOrdersByStatus("PLACED").length})
+              </h3>
               <div className="space-y-4">
-                {getOrdersByStatus('PLACED').map(order => (
+                {getOrdersByStatus("PLACED").map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-blue-800">Preparing ({getOrdersByStatus('IN_PREP').length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-blue-800">
+                Preparing ({getOrdersByStatus("IN_PREP").length})
+              </h3>
               <div className="space-y-4">
-                {getOrdersByStatus('IN_PREP').map(order => (
+                {getOrdersByStatus("IN_PREP").map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-green-800">Ready ({getOrdersByStatus('READY').length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-green-800">
+                Ready ({getOrdersByStatus("READY").length})
+              </h3>
               <div className="space-y-4">
-                {getOrdersByStatus('READY').map(order => (
+                {getOrdersByStatus("READY").map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-purple-800">Serving ({getOrdersByStatus('SERVING').length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-purple-800">
+                Serving ({getOrdersByStatus("SERVING").length})
+              </h3>
               <div className="space-y-4">
-                {getOrdersByStatus('SERVING').map(order => (
+                {getOrdersByStatus("SERVING").map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>
@@ -467,9 +489,11 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Same pipeline for bar items */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-yellow-800">Placed ({getOrdersByStatus('PLACED').length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-yellow-800">
+                Placed ({getOrdersByStatus("PLACED").length})
+              </h3>
               <div className="space-y-4">
-                {getOrdersByStatus('PLACED').map(order => (
+                {getOrdersByStatus("PLACED").map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>
@@ -482,9 +506,11 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Same pipeline for dessert items */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-yellow-800">Placed ({getOrdersByStatus('PLACED').length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-yellow-800">
+                Placed ({getOrdersByStatus("PLACED").length})
+              </h3>
               <div className="space-y-4">
-                {getOrdersByStatus('PLACED').map(order => (
+                {getOrdersByStatus("PLACED").map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>
@@ -497,9 +523,11 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* All stations combined view */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-yellow-800">Placed ({getOrdersByStatus('PLACED').length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-yellow-800">
+                Placed ({getOrdersByStatus("PLACED").length})
+              </h3>
               <div className="space-y-4">
-                {getOrdersByStatus('PLACED').map(order => (
+                {getOrdersByStatus("PLACED").map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>

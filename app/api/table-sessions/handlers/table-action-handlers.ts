@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { apiErrors } from '@/lib/api/standard-response';
+import { apiErrors } from "@/lib/api/standard-response";
 import { logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -24,7 +24,7 @@ export async function handleStartPreparing(
 
   if (orderError) {
     logger.error("[TABLE ACTIONS] Error updating order status:", { value: orderError });
-    return apiErrors.internal('Failed to update order status');
+    return apiErrors.internal("Failed to update order status");
   }
 
   // Update table session status
@@ -39,7 +39,7 @@ export async function handleStartPreparing(
 
   if (sessionError) {
     logger.error("[TABLE ACTIONS] Error updating session status:", { value: sessionError });
-    return apiErrors.internal('Failed to update session status');
+    return apiErrors.internal("Failed to update session status");
   }
 
   return NextResponse.json({ success: true });
@@ -61,7 +61,7 @@ export async function handleMarkReady(
 
   if (orderError) {
     logger.error("[TABLE ACTIONS] Error updating order status:", { value: orderError });
-    return apiErrors.internal('Failed to update order status');
+    return apiErrors.internal("Failed to update order status");
   }
 
   // Update table session status
@@ -76,7 +76,7 @@ export async function handleMarkReady(
 
   if (sessionError) {
     logger.error("[TABLE ACTIONS] Error updating session status:", { value: sessionError });
-    return apiErrors.internal('Failed to update session status');
+    return apiErrors.internal("Failed to update session status");
   }
 
   return NextResponse.json({ success: true });
@@ -98,7 +98,7 @@ export async function handleMarkServed(
 
   if (orderError) {
     logger.error("[TABLE ACTIONS] Error updating order status:", { value: orderError });
-    return apiErrors.internal('Failed to update order status');
+    return apiErrors.internal("Failed to update order status");
   }
 
   // Update table session status
@@ -113,7 +113,7 @@ export async function handleMarkServed(
 
   if (sessionError) {
     logger.error("[TABLE ACTIONS] Error updating session status:", { value: sessionError });
-    return apiErrors.internal('Failed to update session status');
+    return apiErrors.internal("Failed to update session status");
   }
 
   return NextResponse.json({ success: true });
@@ -132,7 +132,7 @@ export async function handleMarkAwaitingBill(supabase: SupabaseClient, table_id:
 
   if (sessionError) {
     logger.error("[TABLE ACTIONS] Error updating session status:", { value: sessionError });
-    return apiErrors.internal('Failed to update session status');
+    return apiErrors.internal("Failed to update session status");
   }
 
   return NextResponse.json({ success: true });
@@ -151,7 +151,7 @@ export async function handleCloseTable(supabase: SupabaseClient, table_id: strin
       logger.error("[TABLE ACTIONS] Error fetching table for close:", {
         error: tableError instanceof Error ? tableError.message : "Unknown error",
       });
-      return apiErrors.notFound('Table not found');
+      return apiErrors.notFound("Table not found");
     }
 
     // Get current session with order details
@@ -197,7 +197,7 @@ export async function handleCloseTable(supabase: SupabaseClient, table_id: strin
 
     if (sessionError) {
       logger.error("[TABLE ACTIONS] Error closing session:", { value: sessionError });
-      return apiErrors.internal('Failed to close session');
+      return apiErrors.internal("Failed to close session");
     }
 
     // Create a new FREE session for the table
@@ -213,7 +213,7 @@ export async function handleCloseTable(supabase: SupabaseClient, table_id: strin
 
     if (newSessionError) {
       logger.error("[TABLE ACTIONS] Error creating new FREE session:", { value: newSessionError });
-      return apiErrors.internal('Failed to create new session');
+      return apiErrors.internal("Failed to create new session");
     }
 
     return NextResponse.json({
@@ -227,7 +227,7 @@ export async function handleCloseTable(supabase: SupabaseClient, table_id: strin
     logger.error("[TABLE ACTIONS] Unexpected _error closing table:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
 
@@ -269,7 +269,7 @@ export async function handleReserveTable(
         );
       }
 
-      return apiErrors.notFound('Table not found');
+      return apiErrors.notFound("Table not found");
     }
 
     // Check if there's already an active session/reservation for this table
@@ -284,7 +284,7 @@ export async function handleReserveTable(
       logger.error("[TABLE ACTIONS] Error checking existing session:", {
         value: sessionCheckError,
       });
-      return apiErrors.internal('Failed to check table availability');
+      return apiErrors.internal("Failed to check table availability");
     }
 
     // If there's an active session, check if it's a reservation
@@ -340,7 +340,7 @@ export async function handleReserveTable(
 
     if (checkError && checkError.code !== "PGRST116") {
       logger.error("[TABLE ACTIONS] Error checking existing reservation:", { value: checkError });
-      return apiErrors.internal('Failed to check existing reservation');
+      return apiErrors.internal("Failed to check existing reservation");
     }
 
     // Create or update reservation
@@ -359,7 +359,7 @@ export async function handleReserveTable(
 
       if (updateError) {
         logger.error("[TABLE ACTIONS] Error updating reservation:", { value: updateError });
-        return apiErrors.internal('Failed to update reservation');
+        return apiErrors.internal("Failed to update reservation");
       }
     } else {
       const { error: reservationError } = await supabase.from("reservations").insert({
@@ -391,7 +391,7 @@ export async function handleReserveTable(
       logger.error("[TABLE ACTIONS] Error checking existing session:", {
         value: currentSessionError,
       });
-      return apiErrors.internal('Failed to check existing session');
+      return apiErrors.internal("Failed to check existing session");
     }
 
     if (currentSession) {
@@ -408,7 +408,7 @@ export async function handleReserveTable(
 
       if (sessionError) {
         logger.error("[TABLE ACTIONS] Error updating session status:", { value: sessionError });
-        return apiErrors.internal('Failed to update session status');
+        return apiErrors.internal("Failed to update session status");
       }
     } else {
       const { error: sessionError } = await supabase.from("table_sessions").insert({
@@ -425,7 +425,7 @@ export async function handleReserveTable(
 
       if (sessionError) {
         logger.error("[TABLE ACTIONS] Error creating session:", { value: sessionError });
-        return apiErrors.internal('Failed to create session');
+        return apiErrors.internal("Failed to create session");
       }
     }
 
@@ -434,13 +434,13 @@ export async function handleReserveTable(
     logger.error("[TABLE ACTIONS] Unexpected _error in handleReserveTable:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error in reservation');
+    return apiErrors.internal("Internal server error in reservation");
   }
 }
 
 export async function handleOccupyTable(supabase: SupabaseClient, table_id: string) {
   console.log("[OCCUPY TABLE] Starting - table_id:", table_id);
-  
+
   // First, check if there's an existing open session
   const { data: existingSession, error: checkError } = await supabase
     .from("table_sessions")
@@ -454,7 +454,7 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
   if (checkError && checkError.code !== "PGRST116") {
     console.log("[OCCUPY TABLE] ERROR checking session:", checkError);
     logger.error("[TABLE ACTIONS] Error checking existing session:", { value: checkError });
-    return apiErrors.internal('Failed to check table status');
+    return apiErrors.internal("Failed to check table status");
   }
 
   // Get venue_id from table first
@@ -489,12 +489,12 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
         { status: 404 }
       );
     }
-    return apiErrors.internal('Failed to get table info');
+    return apiErrors.internal("Failed to get table info");
   }
 
   if (!table) {
     logger.error("[TABLE ACTIONS] Table not found for ID:", { value: table_id });
-    return apiErrors.notFound('Table not found');
+    return apiErrors.notFound("Table not found");
   }
 
   if (existingSession) {
@@ -508,12 +508,15 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
       })
       .eq("id", existingSession.id);
 
-    console.log("[OCCUPY TABLE] Update result:", { error: updateError?.message, success: !updateError });
+    console.log("[OCCUPY TABLE] Update result:", {
+      error: updateError?.message,
+      success: !updateError,
+    });
 
     if (updateError) {
       console.log("[OCCUPY TABLE] ERROR updating session:", updateError);
       logger.error("[TABLE ACTIONS] Error updating session to OCCUPIED:", { value: updateError });
-      return apiErrors.internal('Failed to occupy table');
+      return apiErrors.internal("Failed to occupy table");
     }
   } else {
     console.log("[OCCUPY TABLE] Creating new OCCUPIED session");
@@ -525,20 +528,25 @@ export async function handleOccupyTable(supabase: SupabaseClient, table_id: stri
       opened_at: new Date().toISOString(),
     });
 
-    console.log("[OCCUPY TABLE] Create result:", { error: createError?.message, success: !createError });
+    console.log("[OCCUPY TABLE] Create result:", {
+      error: createError?.message,
+      success: !createError,
+    });
 
     if (createError) {
       console.log("[OCCUPY TABLE] ERROR creating session:", createError);
-      logger.error("[TABLE ACTIONS] Error creating new OCCUPIED session:", { 
+      logger.error("[TABLE ACTIONS] Error creating new OCCUPIED session:", {
         value: createError,
         code: createError.code,
         message: createError.message,
         details: createError.details,
         hint: createError.hint,
         tableId: table_id,
-        venueId: table.venue_id
+        venueId: table.venue_id,
       });
-      return apiErrors.internal(`Failed to occupy table: ${createError.message || 'Unknown error'}`);
+      return apiErrors.internal(
+        `Failed to occupy table: ${createError.message || "Unknown error"}`
+      );
     }
   }
 
@@ -561,7 +569,7 @@ export async function handleMoveTable(
 
   if (sessionError || !currentSession) {
     logger.error("[TABLE ACTIONS] Error fetching current session:", { value: sessionError });
-    return apiErrors.badRequest('No active session found for table');
+    return apiErrors.badRequest("No active session found for table");
   }
 
   // Cannot move FREE tables (no session to transfer)
@@ -581,7 +589,7 @@ export async function handleMoveTable(
     .single();
 
   if (destError || !destSession || destSession.status !== "FREE") {
-    return apiErrors.badRequest('Destination table must be FREE');
+    return apiErrors.badRequest("Destination table must be FREE");
   }
 
   // Close current session
@@ -595,7 +603,7 @@ export async function handleMoveTable(
 
   if (closeError) {
     logger.error("[TABLE ACTIONS] Error closing current session:", { value: closeError });
-    return apiErrors.internal('Failed to close current session');
+    return apiErrors.internal("Failed to close current session");
   }
 
   // Update destination session with current session data
@@ -614,7 +622,7 @@ export async function handleMoveTable(
 
   if (updateError) {
     logger.error("[TABLE ACTIONS] Error updating destination session:", { value: updateError });
-    return apiErrors.internal('Failed to update destination session');
+    return apiErrors.internal("Failed to update destination session");
   }
 
   // Update the order's table_id to point to new table
@@ -667,7 +675,7 @@ export async function handleMergeTable(
     logger.error("[TABLE ACTIONS] Unexpected _error merging tables:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
 
@@ -682,7 +690,7 @@ export async function handleUnmergeTable(supabase: SupabaseClient, table_id: str
 
     if (currentTableError || !currentTable) {
       logger.error("[TABLE ACTIONS] Error getting current table:", { value: currentTableError });
-      return apiErrors.notFound('Table not found');
+      return apiErrors.notFound("Table not found");
     }
 
     // Check if this table has a merged_with_table_id (it's a secondary table)
@@ -716,7 +724,7 @@ export async function handleUnmergeTable(supabase: SupabaseClient, table_id: str
 
     if (findError && findError.code !== "PGRST116") {
       logger.error("[TABLE ACTIONS] Error finding secondary table:", { value: findError });
-      return apiErrors.internal('Failed to find merged table');
+      return apiErrors.internal("Failed to find merged table");
     }
 
     if (secondaryTable) {
@@ -740,12 +748,12 @@ export async function handleUnmergeTable(supabase: SupabaseClient, table_id: str
       });
     }
 
-    return apiErrors.notFound('No merged table found for this table');
+    return apiErrors.notFound("No merged table found for this table");
   } catch (_error) {
     logger.error("[TABLE ACTIONS] Unexpected _error unmerging table:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
 
@@ -778,12 +786,12 @@ export async function handleCancelReservation(
 
     if (sessionError) {
       logger.error("[TABLE ACTIONS] Error fetching current session:", { value: sessionError });
-      return apiErrors.internal('Failed to fetch table session');
+      return apiErrors.internal("Failed to fetch table session");
     }
 
     if (!currentSession) {
       logger.error("[TABLE ACTIONS] No active session found for table:", { value: table_id });
-      return apiErrors.notFound('No active session found');
+      return apiErrors.notFound("No active session found");
     }
 
     // Close the current session
@@ -797,7 +805,7 @@ export async function handleCancelReservation(
 
     if (closeError) {
       logger.error("[TABLE ACTIONS] Error closing session:", { value: closeError });
-      return apiErrors.internal('Failed to close session');
+      return apiErrors.internal("Failed to close session");
     }
 
     // Create a new FREE session for the table
@@ -813,7 +821,7 @@ export async function handleCancelReservation(
 
     if (newSessionError) {
       logger.error("[TABLE ACTIONS] Error creating new FREE session:", { value: newSessionError });
-      return apiErrors.internal('Failed to create new session');
+      return apiErrors.internal("Failed to create new session");
     }
 
     return NextResponse.json({
@@ -827,6 +835,6 @@ export async function handleCancelReservation(
     logger.error("[TABLE ACTIONS] Unexpected _error cancelling reservation:", {
       error: _error instanceof Error ? _error.message : "Unknown _error",
     });
-    return apiErrors.internal('Internal server error');
+    return apiErrors.internal("Internal server error");
   }
 }
