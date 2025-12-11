@@ -115,8 +115,9 @@ function SignInPageContent() {
               // User has pending signup but no venues - redirect to onboarding
               router.push("/onboarding/venue-setup");
             } else {
-              // No venues and no pending signup - redirect to plan selection
-              router.push("/select-plan");
+              // No venues and no pending signup - redirect to home page
+              // User can then click "Start Free Trial" to go to plan selection
+              router.push("/");
             }
           }
         } catch (error) {

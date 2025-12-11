@@ -49,7 +49,9 @@ function CallbackContent() {
             return;
           }
 
-          router.push("/select-plan");
+          // Existing user signing in with no venues - redirect to home page
+          // Plan selection should ONLY be accessed via "Start Free Trial" button
+          router.push("/");
           return;
         }
 
@@ -150,8 +152,9 @@ function CallbackContent() {
           return;
         }
 
-        // New user - redirect to select plan
-        router.push("/select-plan");
+        // Existing user signing in with no venues - redirect to home page
+        // Plan selection should ONLY be accessed via "Start Free Trial" button
+        router.push("/");
       } catch (err) {
         setError("An unexpected error occurred");
       }

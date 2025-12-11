@@ -153,8 +153,9 @@ export async function POST(request: NextRequest) {
       // User has pending signup data but no venues - redirect to onboarding
       redirectTo = "/onboarding/venue-setup";
     } else {
-      // No venues and no pending signup - redirect to plan selection
-      redirectTo = "/select-plan";
+      // No venues and no pending signup - redirect to home page
+      // User can then click "Start Free Trial" to go to plan selection
+      redirectTo = "/";
     }
 
     logger.info("[AUTH SIGN-IN] ✅ EMAIL/PASSWORD - Redirecting to:", {
