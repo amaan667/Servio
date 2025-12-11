@@ -1,6 +1,7 @@
 import { AssistantCommandPalette } from "@/components/ai/assistant-command-palette";
 import { OfflineDetector } from "@/components/error-handling/OfflineDetector";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 // import { FeedbackMenu } from "@/components/feedback/FeedbackMenu"; // Temporarily hidden for screenshots
 
 export default async function VenueDashboardLayout({
@@ -15,6 +16,7 @@ export default async function VenueDashboardLayout({
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <OnlineStatusBadge />
         <NavigationBreadcrumb venueId={venueId} showBackButton={false} />
       </div>
       {children}
