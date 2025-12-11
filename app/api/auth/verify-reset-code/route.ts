@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/supabase";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(request: NextRequest) {
   try {

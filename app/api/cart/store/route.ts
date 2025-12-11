@@ -5,7 +5,6 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { validateBody, validateQuery } from "@/lib/api/validation-schemas";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { z } from "zod";
-import { env, isDevelopment } from "@/lib/env";
 
 // Validation schemas
 const cartItemSchema = z.object({

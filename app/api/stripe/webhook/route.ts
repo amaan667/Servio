@@ -73,6 +73,12 @@ export async function POST(_request: NextRequest) {
     return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });
   }
 
+  // Extract session metadata for error tracking (if checkout session)
+  const sessionMetadata =
+    event.type === "checkout.session.completed"
+      ? (event.data.object as Stripe.Checkout.Session).metadata
+      : undefined;
+
   // Idempotency + DLQ guard using stripe_webhook_events table
   const nowIso = new Date().toISOString();
   const { data: existingEvent, error: existingEventError } = await supabaseAdmin
@@ -122,10 +128,13 @@ export async function POST(_request: NextRequest) {
       correlationId,
     });
     trackPaymentError(upsertError, {
-      orderId: session?.metadata?.orderId,
-      venueId: session?.metadata?.venue_id ?? session?.metadata?.venueId,
-      paymentMethod: session?.metadata?.paymentType,
-      stripeSessionId: session?.id,
+      orderId: sessionMetadata?.orderId,
+      venueId: sessionMetadata?.venue_id ?? sessionMetadata?.venueId,
+      paymentMethod: sessionMetadata?.paymentType,
+      stripeSessionId:
+        event.type === "checkout.session.completed"
+          ? (event.data.object as Stripe.Checkout.Session).id
+          : undefined,
     });
     return NextResponse.json({ ok: false, error: "Failed to reserve event" }, { status: 500 });
   }

@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 

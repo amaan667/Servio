@@ -71,6 +71,20 @@ export async function runStripeReconcile({
       continue; // skip active processing
     }
 
+    // Extract metadata at event level for logging
+    let eventMetadata: Record<string, unknown> | undefined;
+    try {
+      const event = ev.payload as unknown as Stripe.Event;
+      if (event && typeof event === "object" && "data" in event) {
+        const eventObj = event as { data?: { object?: { metadata?: Record<string, unknown> } } };
+        if (typeof eventObj.data?.object?.metadata === "object") {
+          eventMetadata = eventObj.data.object.metadata;
+        }
+      }
+    } catch {
+      // Ignore metadata extraction errors
+    }
+
     // Lock the event for processing
     const attempts = (ev.attempts || 0) + 1;
     const { error: lockError } = await supabase
@@ -94,14 +108,6 @@ export async function runStripeReconcile({
         throw new Error("Invalid stored payload");
       }
 
-      const metadata =
-        typeof (event as { data?: { object?: { metadata?: Record<string, unknown> } } }).data
-          ?.object?.metadata === "object"
-          ? ((event.data!.object as { metadata?: Record<string, unknown> }).metadata as
-              | Record<string, unknown>
-              | undefined)
-          : undefined;
-
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
         const correlationId = session.metadata?.correlation_id ?? requestId;
@@ -116,8 +122,8 @@ export async function runStripeReconcile({
       apiLogger.info("[STRIPE RECONCILE] Replay succeeded", {
         eventId: ev.event_id,
         type: ev.type,
-        venueId: metadata?.venue_id ?? metadata?.venueId,
-        orderId: metadata?.order_id ?? metadata?.orderId,
+        venueId: eventMetadata?.venue_id ?? eventMetadata?.venueId,
+        orderId: eventMetadata?.order_id ?? eventMetadata?.orderId,
         requestId,
       });
     } catch (err) {
@@ -136,8 +142,8 @@ export async function runStripeReconcile({
         requestId,
         eventId: ev.event_id,
         eventType: ev.type,
-        venueId: metadata?.venue_id ?? metadata?.venueId,
-        orderId: metadata?.order_id ?? metadata?.orderId,
+        venueId: (eventMetadata?.venue_id as string) ?? (eventMetadata?.venueId as string),
+        orderId: (eventMetadata?.order_id as string) ?? (eventMetadata?.orderId as string),
       });
     }
   }

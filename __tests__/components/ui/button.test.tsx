@@ -18,15 +18,15 @@ describe("Button", () => {
     render(<Button variant="servio">Servio Button</Button>);
     const button = screen.getByRole("button", { name: /servio button/i });
     expect(button).toBeInTheDocument();
-    expect(button).toHaveClass("bg-servio-purple", "text-white");
-    expect(button).toHaveClass("hover:bg-white", "hover:text-servio-purple");
+    expect(button).toHaveClass("bg-servio-purple", "!text-white");
+    expect(button).toHaveClass("hover:bg-white", "hover:!text-servio-purple");
   });
 
   it("should render button with destructive variant", () => {
     render(<Button variant="destructive">Delete</Button>);
     const button = screen.getByRole("button", { name: /delete/i });
     expect(button).toBeInTheDocument();
-    expect(button).toHaveClass("bg-red-600", "text-white");
+    expect(button).toHaveClass("bg-red-600", "!text-white");
   });
 
   it("should handle click events", () => {

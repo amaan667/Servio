@@ -29,12 +29,21 @@ export interface ApiResponse<T = unknown> {
 /**
  * Create a successful response
  */
-export function success<T>(data: T, meta?: ApiResponse<T>["meta"]): NextResponse<ApiResponse<T>> {
+export function success<T>(
+  data: T,
+  meta?: ApiResponse<T>["meta"],
+  correlationId?: string
+): NextResponse<ApiResponse<T>> {
+  const responseMeta = meta || {
+    timestamp: new Date().toISOString(),
+    ...(correlationId && { requestId: correlationId }),
+  };
+
   return NextResponse.json<ApiResponse<T>>(
     {
       success: true,
       data,
-      ...(meta && { meta }),
+      meta: responseMeta,
     },
     { status: 200 }
   );
@@ -48,23 +57,29 @@ export function error(
   message: string,
   status: number = 400,
   details?: unknown,
-  meta?: ApiResponse["meta"]
+  meta?: ApiResponse["meta"],
+  correlationId?: string
 ): NextResponse<ApiResponse> {
+  const responseMeta = meta || {
+    timestamp: new Date().toISOString(),
+    ...(correlationId && { requestId: correlationId }),
+  };
+
   const response: Partial<ApiResponse> = {
     success: false,
     error: {
       code,
       message,
     },
+    meta: responseMeta,
   };
+
   if (details) {
     if (response.error) {
       response.error.details = details;
     }
   }
-  if (meta) {
-    response.meta = meta;
-  }
+
   return NextResponse.json<ApiResponse>(response as ApiResponse, { status });
 }
 
@@ -91,39 +106,47 @@ export const ErrorCodes = {
  * Convenience functions for common errors
  */
 export const apiErrors = {
-  validation: (message: string, details?: unknown) =>
-    error(ErrorCodes.VALIDATION_ERROR, message, 400, details),
+  validation: (message: string, details?: unknown, correlationId?: string) =>
+    error(ErrorCodes.VALIDATION_ERROR, message, 400, details, undefined, correlationId),
 
-  unauthorized: (message: string = "Authentication required") =>
-    error(ErrorCodes.UNAUTHORIZED, message, 401),
+  unauthorized: (message: string = "Authentication required", correlationId?: string) =>
+    error(ErrorCodes.UNAUTHORIZED, message, 401, undefined, undefined, correlationId),
 
-  forbidden: (message: string = "Access denied", details?: unknown) =>
-    error(ErrorCodes.FORBIDDEN, message, 403, details),
+  forbidden: (message: string = "Access denied", details?: unknown, correlationId?: string) =>
+    error(ErrorCodes.FORBIDDEN, message, 403, details, undefined, correlationId),
 
-  notFound: (message: string = "Resource not found") => error(ErrorCodes.NOT_FOUND, message, 404),
+  notFound: (message: string = "Resource not found", correlationId?: string) =>
+    error(ErrorCodes.NOT_FOUND, message, 404, undefined, undefined, correlationId),
 
-  conflict: (message: string, details?: unknown) =>
-    error(ErrorCodes.CONFLICT, message, 409, details),
+  conflict: (message: string, details?: unknown, correlationId?: string) =>
+    error(ErrorCodes.CONFLICT, message, 409, details, undefined, correlationId),
 
-  rateLimit: (retryAfter?: number) =>
+  rateLimit: (retryAfter?: number, correlationId?: string) =>
     error(
       ErrorCodes.RATE_LIMIT_EXCEEDED,
       `Rate limit exceeded. ${retryAfter ? `Try again in ${retryAfter} seconds.` : ""}`,
       429,
-      retryAfter ? { retryAfter } : undefined
+      retryAfter ? { retryAfter } : undefined,
+      undefined,
+      correlationId
     ),
 
-  badRequest: (message: string, details?: unknown) =>
-    error(ErrorCodes.BAD_REQUEST, message, 400, details),
+  badRequest: (message: string, details?: unknown, correlationId?: string) =>
+    error(ErrorCodes.BAD_REQUEST, message, 400, details, undefined, correlationId),
 
-  internal: (message: string = "Internal server error", details?: unknown) =>
-    error(ErrorCodes.INTERNAL_ERROR, message, 500, details),
+  internal: (
+    message: string = "Internal server error",
+    details?: unknown,
+    correlationId?: string
+  ) => error(ErrorCodes.INTERNAL_ERROR, message, 500, details, undefined, correlationId),
 
-  serviceUnavailable: (message: string = "Service temporarily unavailable") =>
-    error(ErrorCodes.SERVICE_UNAVAILABLE, message, 503),
+  serviceUnavailable: (
+    message: string = "Service temporarily unavailable",
+    correlationId?: string
+  ) => error(ErrorCodes.SERVICE_UNAVAILABLE, message, 503, undefined, undefined, correlationId),
 
-  database: (message: string, details?: unknown) =>
-    error(ErrorCodes.DATABASE_ERROR, message, 500, details),
+  database: (message: string, details?: unknown, correlationId?: string) =>
+    error(ErrorCodes.DATABASE_ERROR, message, 500, details, undefined, correlationId),
 };
 
 /**

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { env, getNodeEnv } from "@/lib/env";
+import { apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(request: NextRequest) {
   try {
@@ -179,9 +179,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Get Supabase project ID from URL for cookie names
-    const supabaseUrl = env("NEXT_PUBLIC_SUPABASE_URL") || "";
-    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+    // Supabase SSR handles cookies automatically
 
     // DON'T manually set cookies - let Supabase SSR handle it!
     // The createServerSupabase() client already sets cookies via the signInWithPassword call

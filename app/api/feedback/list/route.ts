@@ -27,12 +27,14 @@ export const POST = withUnifiedAuth(
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
       const { searchParams } = new URL(req.url);
-      const limit = z.coerce.number().int().min(1).max(500).catch(100).parse(
-        searchParams.get("limit")
-      );
-      const offset = z.coerce.number().int().min(0).catch(0).parse(
-        searchParams.get("offset")
-      );
+      const limit = z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(500)
+        .catch(100)
+        .parse(searchParams.get("limit"));
+      const offset = z.coerce.number().int().min(0).catch(0).parse(searchParams.get("offset"));
 
       // STEP 3: Parse request
       // STEP 4: Validate inputs

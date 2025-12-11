@@ -41,13 +41,14 @@ describe("Card Components", () => {
   });
 
   it("should support custom className", () => {
-    render(
+    const { container } = render(
       <Card className="custom-card">
         <CardContent>Content</CardContent>
       </Card>
     );
 
-    expect(screen.getByText("Content").closest("div")).toHaveClass("custom-card");
+    const card = container.firstChild as HTMLElement;
+    expect(card).toHaveClass("custom-card");
   });
 
   it("should render multiple cards", () => {

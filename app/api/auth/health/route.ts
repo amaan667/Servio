@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { env, getNodeEnv } from "@/lib/env";
 
 export async function GET() {
   try {

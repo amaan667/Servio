@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/auth";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { env, getNodeEnv } from "@/lib/env";
 
 export async function GET(_request: NextRequest) {
   try {

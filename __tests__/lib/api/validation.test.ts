@@ -59,8 +59,9 @@ describe("Input Validation", () => {
     });
 
     it("should reject invalid phone numbers", () => {
-      expect(PhoneSchema.safeParse("123").success).toBe(false);
-      expect(PhoneSchema.safeParse("abc").success).toBe(false);
+      expect(PhoneSchema.safeParse("023").success).toBe(false); // starts with 0
+      expect(PhoneSchema.safeParse("abc").success).toBe(false); // contains letters
+      expect(PhoneSchema.safeParse("").success).toBe(false); // empty string
     });
   });
 

@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { isProduction } from "@/lib/env";

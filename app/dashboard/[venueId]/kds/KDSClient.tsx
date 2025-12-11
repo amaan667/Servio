@@ -83,6 +83,10 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   const [selectedStation, setSelectedStation] = useState<string | null>(getCachedSelectedStation());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(5); // seconds
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connected" | "connecting" | "disconnected" | "error"
+  >("connecting");
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   // Fetch stations
   const fetchStations = useCallback(async () => {
@@ -330,6 +334,60 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
     let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null = null;
     let authSubscription: { unsubscribe: () => void } | null = null;
     let isMounted = true;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    const maxReconnectAttempts = 5;
+
+    const attemptReconnect = () => {
+      if (!isMounted || reconnectAttempts >= maxReconnectAttempts) {
+        if (reconnectAttempts >= maxReconnectAttempts) {
+          setConnectionStatus("error");
+          setError("Lost connection to KDS. Please refresh the page.");
+        }
+        return;
+      }
+
+      setReconnectAttempts((prev) => prev + 1);
+      setConnectionStatus("connecting");
+
+      // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
+
+      console.log(
+        `[KDS RECONNECT] Attempting reconnection in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`
+      );
+
+      reconnectTimeout = setTimeout(async () => {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+
+          if (session && channel) {
+            // Clean up old channel
+            if (channel.state === "joined") {
+              supabase.removeChannel(channel);
+            }
+
+            // Create new channel
+            channel = setupChannel();
+
+            // Trigger backfill to ensure we have latest data
+            setTimeout(() => {
+              if (isMounted) {
+                fetchTickets();
+              }
+            }, 1000);
+          } else {
+            // Session invalid, stop trying to reconnect
+            setConnectionStatus("error");
+            setError("Authentication expired. Please refresh the page.");
+          }
+        } catch (_error) {
+          console.error("[KDS RECONNECT] Failed to get session:", _error);
+          attemptReconnect();
+        }
+      }, delay);
+    };
 
     const setupChannel = () => {
       // Use unique channel name with device ID to prevent conflicts
@@ -363,20 +421,19 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
           }
         )
         .subscribe((status: string) => {
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            // Try to reconnect after token refresh
-            setTimeout(async () => {
-              try {
-                const {
-                  data: { session },
-                } = await supabase.auth.getSession();
-                if (session && channel) {
-                  channel.subscribe();
-                }
-              } catch (_error) {
-                // Session invalid
-              }
-            }, 3000);
+          if (!isMounted) return;
+
+          console.log(`[KDS REALTIME] Status: ${status}`);
+
+          if (status === "SUBSCRIBED") {
+            setConnectionStatus("connected");
+            setReconnectAttempts(0);
+            setError(null);
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            setConnectionStatus("disconnected");
+            attemptReconnect();
+          } else if (status === "SUBSCRIBING") {
+            setConnectionStatus("connecting");
           }
         });
 
@@ -399,6 +456,10 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
 
     return () => {
       isMounted = false;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
       if (channel) {
         supabase.removeChannel(channel);
         channel = null;
@@ -447,36 +508,72 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
 
   return (
     <div className="space-y-6">
-      {/* Auto-Refresh Controls */}
-      <div className="flex items-center justify-end gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Auto-refresh:</span>
-          <Button
-            variant={autoRefresh ? "default" : "outline"}
-            size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-          >
-            <Timer className="h-4 w-4 mr-2" />
-            {autoRefresh ? "ON" : "OFF"}
-          </Button>
-        </div>
-        {autoRefresh && (
+      {/* Connection Status - Always visible at top */}
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 -mx-2 px-2 py-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Every:</span>
-            <select
-              value={refreshInterval}
-              onChange={(e) => setRefreshInterval(Number(e.target.value))}
-              className="text-sm border rounded-md px-2 py-1 bg-white"
+            <div
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                {
+                  "bg-green-100 text-green-800 border border-green-200":
+                    connectionStatus === "connected",
+                  "bg-yellow-100 text-yellow-800 border border-yellow-200":
+                    connectionStatus === "connecting",
+                  "bg-red-100 text-red-800 border border-red-200":
+                    connectionStatus === "disconnected" || connectionStatus === "error",
+                }
+              )}
             >
-              <option value={3}>3s</option>
-              <option value={5}>5s</option>
-              <option value={10}>10s</option>
-              <option value={15}>15s</option>
-              <option value={30}>30s</option>
-              <option value={60}>1m</option>
-            </select>
+              <div
+                className={cn("w-2 h-2 rounded-full", {
+                  "bg-green-500": connectionStatus === "connected",
+                  "bg-yellow-500 animate-pulse": connectionStatus === "connecting",
+                  "bg-red-500": connectionStatus === "disconnected" || connectionStatus === "error",
+                })}
+              />
+              <span>
+                {connectionStatus === "connected" && "KDS Online"}
+                {connectionStatus === "connecting" && "Reconnecting..."}
+                {connectionStatus === "disconnected" && "Disconnected"}
+                {connectionStatus === "error" && "Connection Failed"}
+                {reconnectAttempts > 0 && ` (${reconnectAttempts}/5)`}
+              </span>
+            </div>
           </div>
-        )}
+
+          {/* Auto-Refresh Controls */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Auto-refresh:</span>
+              <Button
+                variant={autoRefresh ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+              >
+                <Timer className="h-4 w-4 mr-2" />
+                {autoRefresh ? "ON" : "OFF"}
+              </Button>
+            </div>
+            {autoRefresh && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Every:</span>
+                <select
+                  value={refreshInterval}
+                  onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                  className="text-sm border rounded-md px-2 py-1 bg-white"
+                >
+                  <option value={3}>3s</option>
+                  <option value={5}>5s</option>
+                  <option value={10}>10s</option>
+                  <option value={15}>15s</option>
+                  <option value={30}>30s</option>
+                  <option value={60}>1m</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Stats */}

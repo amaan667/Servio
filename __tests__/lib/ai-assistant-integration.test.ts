@@ -1,7 +1,7 @@
 // AI Assistant Integration Test - Actual LLM execution
 // This test runs REAL queries through the AI assistant to verify accuracy
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import { testCases, mockDataSummaries } from "./ai-assistant-comprehensive.test";
 import type { AIAssistantContext } from "@/types/ai-assistant";

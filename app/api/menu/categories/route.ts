@@ -16,8 +16,8 @@ export async function GET(_request: NextRequest) {
 
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venueId");
-    const limit = z
-      .coerce.number()
+    const limit = z.coerce
+      .number()
       .int()
       .min(1)
       .max(1000)
