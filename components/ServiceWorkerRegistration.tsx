@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { WifiOff, RefreshCw } from "lucide-react";
 import { getOfflineQueue } from "@/lib/offline-queue";
 import { logger } from "@/lib/logger";
@@ -13,6 +14,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
   // Always enable service worker for offline support. Versioned cache to avoid stale assets.
   const cacheVersion = process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v-current";
 
+  const pathname = usePathname();
   const [isOnline, setIsOnline] = useState(true);
   const [queueCount, setQueueCount] = useState(0);
 
@@ -104,20 +106,14 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
 
   // const handleUpdate = () => { /* Empty */ };
 
-  const isBrowser = typeof window !== "undefined";
-  const pathname = isBrowser ? window.location.pathname : "";
-  const isDashboardOrOrderOrPayment =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/order") ||
-    pathname.startsWith("/payment");
-  const isKdsPage = pathname.includes("/dashboard") && pathname.includes("/kds");
+  const isDashboardRoute = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 
   return (
     <>
       {children}
 
-      {/* Offline Indicator - Show on dashboard and order pages */}
-      {!isOnline && isBrowser && isDashboardOrOrderOrPayment && (
+      {/* Offline Indicator - Dashboard only */}
+      {!isOnline && isDashboardRoute && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white p-2 text-center text-sm">
           <div className="flex items-center justify-center space-x-2">
             <WifiOff className="h-4 w-4" />
@@ -125,7 +121,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
               You&apos;re offline.{" "}
               {queueCount > 0 && `${queueCount} operation${queueCount > 1 ? "s" : ""} queued.`}
             </span>
-            {queueCount > 0 && isOnline && typeof window !== "undefined" && (
+            {queueCount > 0 && typeof window !== "undefined" && (
               <button
                 onClick={() => {
                   const queue = getOfflineQueue();
