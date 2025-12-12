@@ -48,7 +48,9 @@ export function useOrderManagement(venueId: string) {
         .gte("created_at", window.startUtcISO)
         .lt("created_at", window.endUtcISO)
         .gte("created_at", liveOrdersCutoff)
-        .or("payment_status.eq.PAID,payment_method.eq.PAY_LATER,payment_method.eq.PAY_AT_TILL") // Only show PAID orders or confirmed UNPAID (Pay Later/Till)
+        // Show both paid and unpaid orders so freshly placed orders always appear.
+        // This avoids the "count shows 1 but list is empty" mismatch.
+        .in("payment_status", ["PAID", "UNPAID", "TILL"])
         .order("created_at", { ascending: false });
 
       const { data: allData, error: allError } = await createClient()
@@ -57,7 +59,7 @@ export function useOrderManagement(venueId: string) {
         .eq("venue_id", venueId)
         .gte("created_at", window.startUtcISO)
         .lt("created_at", liveOrdersCutoff)
-        .or("payment_status.eq.PAID,payment_method.eq.PAY_LATER,payment_method.eq.PAY_AT_TILL") // Only show confirmed orders
+        .in("payment_status", ["PAID", "UNPAID", "TILL"])
         .order("created_at", { ascending: false });
 
       const { data: historyData, error: historyError } = await createClient()
@@ -65,7 +67,7 @@ export function useOrderManagement(venueId: string) {
         .select("*")
         .eq("venue_id", venueId)
         .lt("created_at", window.startUtcISO)
-        .or("payment_status.eq.PAID,payment_method.eq.PAY_LATER,payment_method.eq.PAY_AT_TILL") // Only show confirmed orders
+        .in("payment_status", ["PAID", "UNPAID", "TILL"])
         .order("created_at", { ascending: false })
         .limit(100);
 
