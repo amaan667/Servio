@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { env, getNodeEnv } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(request: NextRequest) {
