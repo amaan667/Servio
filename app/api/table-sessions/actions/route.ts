@@ -4,7 +4,7 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import {
   handleStartPreparing,
   handleMarkReady,

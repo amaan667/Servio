@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { Clock, CheckCircle, XCircle, RefreshCw, User, Hash, Star, Loader2 } from "lucide-react";
+import { Clock, XCircle, User, Hash, Star, Loader2 } from "lucide-react";
 
 // Hooks
 import { useOrderDetails } from "./hooks/useOrderDetails";

@@ -1,6 +1,5 @@
 // Test script to verify the unified OrderCard system works correctly
 
-import { deriveEntityKind } from "./entity-types";
 import { mapOrderToCardData } from "./mapOrderToCardData";
 import { mapCounterOrderToCardData } from "./mapCounterOrderToCardData";
 import type { LegacyOrder } from "@/types/orders";

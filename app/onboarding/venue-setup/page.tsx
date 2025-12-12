@@ -6,16 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Upload,
-  CheckCircle,
-  ArrowRight,
-  Building2,
-  CreditCard,
-  MapPin,
-  Clock,
-  Receipt,
-} from "lucide-react";
+import { Upload, CheckCircle, ArrowRight, Building2, MapPin, Clock, Receipt } from "lucide-react";
 import OnboardingProgress from "@/components/onboarding-progress";
 import { createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";

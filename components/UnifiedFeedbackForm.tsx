@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabaseBrowser as createClient } from "@/lib/supabase";
 import type { FeedbackQuestion, FeedbackAnswer } from "@/types/feedback";
 
 interface UnifiedFeedbackFormProps {

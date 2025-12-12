@@ -2,7 +2,6 @@
 
 import { ReactNode } from "react";
 import { useAuth } from "./auth/AuthProvider";
-import { redirect } from "next/navigation";
 
 interface ProtectedRouteProps {
   children: ReactNode;

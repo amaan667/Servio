@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import POSClient from "./pos-dashboard-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";

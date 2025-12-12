@@ -5,7 +5,6 @@
 
 import { NextRequest } from "next/server";
 import { createHash, randomBytes } from "crypto";
-import { logger } from "@/lib/logger";
 
 interface RateLimitConfig {
   windowMs: number;

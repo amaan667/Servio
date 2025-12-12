@@ -5,7 +5,7 @@ import { errorToContext } from "@/lib/utils/error-to-context";
  * Provides lazy loading and code splitting helpers
  */
 
-import { lazy, ComponentType, Suspense } from "react";
+import { lazy, ComponentType } from "react";
 import { logger } from "@/lib/logger";
 
 /**

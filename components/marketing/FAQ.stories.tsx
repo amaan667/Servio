@@ -6,7 +6,6 @@
  */
 
 import { FAQ } from "./FAQ";
-import { logger } from "@/lib/logger";
 
 /**
  * Example 1: Basic usage

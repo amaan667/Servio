@@ -1,7 +1,6 @@
 "use client";
 
 import { Clock, Timer, History } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface OrderTabsProps {

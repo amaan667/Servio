@@ -7,7 +7,7 @@
  * Run: pnpm tsx scripts/replace-process-env.ts
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from "fs";
+import { readFileSync, writeFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 interface Replacement {

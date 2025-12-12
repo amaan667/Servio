@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Send } from "lucide-react";
+import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";

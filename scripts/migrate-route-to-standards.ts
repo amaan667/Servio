@@ -5,7 +5,7 @@
  * Run: pnpm tsx scripts/migrate-route-to-standards.ts
  */
 
-import { readFileSync, readdirSync, statSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 interface RouteAnalysis {

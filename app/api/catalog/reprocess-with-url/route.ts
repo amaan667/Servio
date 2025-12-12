@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { env, isDevelopment } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;

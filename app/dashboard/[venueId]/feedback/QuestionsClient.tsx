@@ -29,8 +29,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackType } from "@/types/feedback";
-import { supabaseBrowser } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 interface QuestionsClientProps {
   venueId: string;

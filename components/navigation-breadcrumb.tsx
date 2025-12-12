@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter, usePathname, useParams } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, ArrowLeft, LayoutDashboard } from "lucide-react";
+import { Home, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useEffect, useState } from "react";
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import QRCodeClient from "./QRCodeClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";

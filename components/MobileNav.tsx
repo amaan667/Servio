@@ -18,11 +18,9 @@ import {
   Table,
   MessageSquare,
   ChevronRight,
-  Bell,
   Receipt,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useSwipeNavigation } from "@/hooks/useGestures";
 
 interface MobileNavProps {
   venueId: string;

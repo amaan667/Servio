@@ -1,5 +1,4 @@
 import { Order } from "../types";
-import { LIVE_TABLE_ORDER_STATUSES, ACTIVE_TABLE_ORDER_STATUSES } from "../constants";
 
 export const isCounterOrder = (order: Order) => {
   // Use source field first, but fallback to table_id check for accuracy

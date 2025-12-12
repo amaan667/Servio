@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import type { TableWithState } from "@/types/table-types";
 import {
   Dialog,
   DialogContent,
@@ -29,11 +28,9 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   getTableState,
-  getMergeScenario,
   getMergeableTables,
   getStateDisplayLabel,
   getStateColorClass,
-  getStateIcon,
   type TableState,
   type TableStateInfo,
   type MergeScenario,

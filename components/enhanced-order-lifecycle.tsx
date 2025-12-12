@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,16 +12,13 @@ import {
   XCircle,
   AlertTriangle,
   User,
-  Hash,
   Play,
-  Pause,
   SkipForward,
   RotateCcw,
   Timer,
   Zap,
 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 interface OrderItem {
   menu_item_id: string;

@@ -1,5 +1,4 @@
 import { TableCardNew } from "@/components/table-management/TableCardNew";
-import { TableRuntimeState } from "@/types/table-management";
 import { TableGridItem } from "@/hooks/useTableReservations";
 
 interface TableGridSectionProps {

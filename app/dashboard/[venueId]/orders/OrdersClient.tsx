@@ -1,12 +1,9 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Clock, ArrowLeft, User } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Clock } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { liveOrdersWindow } from "@/lib/dates";
 import { todayWindowForTZ } from "@/lib/time";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from "@/components/orders/OrderCard";

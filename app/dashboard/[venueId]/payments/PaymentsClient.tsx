@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Receipt, Download, CheckCircle, Split, CreditCard, Clock } from "lucide-react";
+import { Receipt, Download, CheckCircle, Split, Clock } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";

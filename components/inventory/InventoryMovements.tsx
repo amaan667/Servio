@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download, Calendar } from "lucide-react";
+import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import type { StockLedger } from "@/types/inventory";
 
 interface InventoryMovementsProps {

@@ -3,12 +3,7 @@ import { errorToContext } from "@/lib/utils/error-to-context";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useState, useEffect, useCallback } from "react";
 import { logger } from "@/lib/logger";
-import {
-  getCachedCounts,
-  setCachedCounts,
-  isCacheFresh,
-  type CachedCounts,
-} from "@/lib/cache/count-cache";
+import { getCachedCounts, setCachedCounts } from "@/lib/cache/count-cache";
 
 export interface TabCounts {
   live_count: number;

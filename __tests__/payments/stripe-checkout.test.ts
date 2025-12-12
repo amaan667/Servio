@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest as _NextRequest, NextResponse as _NextResponse } from "next/server";
 
 // Mock Stripe
 vi.mock("stripe", () => {

@@ -4,7 +4,6 @@
  */
 
 import { createServerSupabase } from "@/lib/supabase";
-import type { Database } from "@/types/database";
 
 type MenuItem = unknown; // Database['public']['Tables']['menu_items']['Row'];
 type MenuItemInsert = unknown; // Database['public']['Tables']['menu_items']['Insert'];

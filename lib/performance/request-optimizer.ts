@@ -41,7 +41,10 @@ class RequestDeduplicator {
 
 // Request batcher for combining multiple requests
 class RequestBatcher {
-  private batches = new Map<string, Array<{ id: string; resolve: Function; reject: Function }>>();
+  private batches = new Map<
+    string,
+    Array<{ id: string; resolve: (value: unknown) => void; reject: (reason?: unknown) => void }>
+  >();
   private batchTimeout = 50; // 50ms batch window
   private batchTimers = new Map<string, NodeJS.Timeout>();
 
@@ -51,12 +54,13 @@ class RequestBatcher {
     batchFetcher: (ids: string[]) => Promise<Record<string, T>>
   ): Promise<T> {
     return new Promise((resolve, reject) => {
+      const resolveUnknown = (value: unknown) => resolve(value as T);
       // Add to batch
       if (!this.batches.has(batchKey)) {
         this.batches.set(batchKey, []);
       }
 
-      this.batches.get(batchKey)!.push({ id: itemId, resolve, reject });
+      this.batches.get(batchKey)!.push({ id: itemId, resolve: resolveUnknown, reject });
 
       // Clear existing timer
       if (this.batchTimers.has(batchKey)) {

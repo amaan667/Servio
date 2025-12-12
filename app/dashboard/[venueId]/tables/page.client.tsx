@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/app/auth/AuthProvider";
 import { supabaseBrowser } from "@/lib/supabase";
 import { TableManagementClientNew } from "./table-management-client-new";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";

@@ -24,7 +24,6 @@ export function useAuthRedirect() {
   const maxCheckTime = 10000; // 10 seconds max
 
   useEffect(() => {
-    // eslint-disable-next-line no-console
     console.log("[useAuthRedirect] Effect triggered", {
       hasUser: !!user,
       hasSession: !!session,
@@ -49,7 +48,6 @@ export function useAuthRedirect() {
 
       // Timeout: If we've been checking for too long, stop blocking
       if (elapsed > maxCheckTime) {
-        // eslint-disable-next-line no-console
         console.log("[useAuthRedirect] Timeout - stopping auth check", {
           elapsed,
           maxCheckTime,
@@ -68,7 +66,6 @@ export function useAuthRedirect() {
 
       // If we have a user, we're authenticated - stop checking immediately
       if (user) {
-        // eslint-disable-next-line no-console
         console.log("[useAuthRedirect] User found - authenticated", {
           userId: user.id,
           timestamp: new Date().toISOString(),
@@ -82,7 +79,6 @@ export function useAuthRedirect() {
 
       // If we have a session, we're likely authenticated - don't block
       if (session?.user) {
-        // eslint-disable-next-line no-console
         console.log("[useAuthRedirect] Session found - not blocking", {
           hasUser: !!user,
           hasSession: !!session,
@@ -95,7 +91,6 @@ export function useAuthRedirect() {
       if (authLoading) {
         // If auth has been loading for more than 5 seconds, proceed anyway
         if (elapsed > 5000) {
-          // eslint-disable-next-line no-console
           console.log("[useAuthRedirect] Auth loading timeout - proceeding", {
             elapsed,
             hasUser: !!user,
@@ -111,7 +106,6 @@ export function useAuthRedirect() {
       // If we have a session but no user yet, wait for state to sync
       // This can happen when session is refreshing
       if (session && !user) {
-        // eslint-disable-next-line no-console
         console.log("[useAuthRedirect] Session exists but no user - waiting briefly", {
           hasSession: !!session,
           hasUser: !!user,
@@ -130,7 +124,7 @@ export function useAuthRedirect() {
       // This handles the case where user has been away and token needs refresh
       if (!user && !session && retryCount.current < maxRetries) {
         retryCount.current += 1;
-        // eslint-disable-next-line no-console
+
         console.log("[useAuthRedirect] Attempting session refresh", {
           retryCount: retryCount.current,
           maxRetries,
@@ -147,7 +141,6 @@ export function useAuthRedirect() {
           } = await supabase.auth.getSession();
 
           if (refreshedSession && !error && refreshedSession.user) {
-            // eslint-disable-next-line no-console
             console.log("[useAuthRedirect] Session refreshed successfully", {
               hasUser: !!refreshedSession.user,
             });
@@ -161,21 +154,18 @@ export function useAuthRedirect() {
             }, 300);
             return;
           } else {
-            // eslint-disable-next-line no-console
             console.log("[useAuthRedirect] Session refresh failed", {
               error: error?.message,
               hasSession: !!refreshedSession,
             });
           }
         } catch (error) {
-          // eslint-disable-next-line no-console
           console.error("[useAuthRedirect] Session refresh error", error);
           // If refresh fails, continue to redirect after all retries
         }
 
         // Timeout per retry attempt (2 seconds)
         if (elapsed > 2000 * retryCount.current) {
-          // eslint-disable-next-line no-console
           console.log("[useAuthRedirect] Retry timeout", {
             retryCount: retryCount.current,
             elapsed,
@@ -187,7 +177,6 @@ export function useAuthRedirect() {
       // After all retries, if still no user, redirect
       // Only redirect if we've exhausted all retry attempts
       if (!user && !session && retryCount.current >= maxRetries && !hasRedirected.current) {
-        // eslint-disable-next-line no-console
         console.log("[useAuthRedirect] All retries exhausted - redirecting", {
           retryCount: retryCount.current,
           maxRetries,
@@ -229,7 +218,6 @@ export function useAuthRedirect() {
   // Reset redirect flag if user appears (session refreshed successfully)
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line no-console
       console.log("[useAuthRedirect] User appeared - resetting state", {
         userId: user.id,
       });
@@ -243,7 +231,6 @@ export function useAuthRedirect() {
   // Don't block if we have a session even without user (user state may be updating)
   const isLoading = (authLoading || checkingAuth) && !user && !session;
 
-  // eslint-disable-next-line no-console
   console.log("[useAuthRedirect] Return state", {
     hasUser: !!user,
     hasSession: !!session,

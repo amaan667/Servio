@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Unit Tests - Hybrid Menu Extractor
  * Tests core matching and extraction logic

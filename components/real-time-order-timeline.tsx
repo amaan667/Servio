@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, XCircle, RefreshCw, User, Hash, Loader2 } from "lucide-react";
+import { Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface OrderItem {

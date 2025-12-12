@@ -178,7 +178,6 @@ export default function GlobalNav() {
                       href="/"
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       onClick={() => {
-                        // eslint-disable-next-line no-console
                         console.log("[GlobalNav] 🏠 HOME BUTTON CLICKED", {
                           venueId,
                           primaryVenueId,

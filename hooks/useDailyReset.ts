@@ -1,6 +1,6 @@
 import { errorToContext } from "@/lib/utils/error-to-context";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { logger } from "@/lib/logger";
 
 interface DailyResetResult {

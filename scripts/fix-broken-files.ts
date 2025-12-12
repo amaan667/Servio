@@ -3,7 +3,7 @@
  * Restores missing code after rate limit checks
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
 import { join } from "path";
 
 const brokenFiles = [

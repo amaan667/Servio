@@ -13,12 +13,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Plus,
-  Minus,
-  Split,
-  ArrowRight,
-  User,
   Timer,
-  DollarSign,
 } from "lucide-react";
 import {
   Dialog,

@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/select";
 import { Building2, Plus } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
 
 interface Venue {
   venue_id: string;

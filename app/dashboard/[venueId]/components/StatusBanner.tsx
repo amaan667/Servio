@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Wifi, WifiOff, Clock, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Wifi, WifiOff, Clock, CheckCircle, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,

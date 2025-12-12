@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Clock } from "lucide-react";
-import { DAYS_OF_WEEK, OperatingHours, DayHours } from "../hooks/useVenueSettings";
+import { DAYS_OF_WEEK, OperatingHours } from "../hooks/useVenueSettings";
 
 interface OperatingHoursCardProps {
   operatingHours: OperatingHours;

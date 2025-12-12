@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, TrendingDown } from "lucide-react";
+import { Award } from "lucide-react";
 import { formatTooltipDate, formatXAxisLabel, getTimePeriodLabel } from "../utils/dateFormatters";
 import { TimePeriod } from "../hooks/useAnalyticsData";
 

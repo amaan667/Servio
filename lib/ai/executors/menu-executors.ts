@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase";
 import { aiLogger as logger } from "@/lib/logger";
 import {
-  ToolName,
   MenuUpdatePricesParams,
   MenuToggleAvailabilityParams,
   MenuCreateItemParams,

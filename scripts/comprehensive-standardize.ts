@@ -43,11 +43,14 @@ function standardizeRoute(filePath: string): { changed: boolean; fixes: string[]
     content.includes("validateParams");
 
   // 2. Fix non-standard error responses
-  const errorPatterns = [
+  const errorPatterns: Array<{
+    pattern: RegExp;
+    replacement: (substring: string, ...args: string[]) => string;
+  }> = [
     {
       pattern:
         /return\s+NextResponse\.json\(\s*\{\s*error:\s*['"]([^'"]+)['"]\s*\}\s*,\s*\{\s*status:\s*400\s*\}\)/g,
-      replacement: (match: string, message: string) => {
+      replacement: (_substring: string, message: string) => {
         fixes.push("Standardized 400 error");
         return `return apiErrors.badRequest('${message.replace(/'/g, "\\'")}')`;
       },
@@ -55,7 +58,7 @@ function standardizeRoute(filePath: string): { changed: boolean; fixes: string[]
     {
       pattern:
         /return\s+NextResponse\.json\(\s*\{\s*error:\s*['"]([^'"]+)['"]\s*\}\s*,\s*\{\s*status:\s*401\s*\}\)/g,
-      replacement: (match: string, message: string) => {
+      replacement: (_substring: string, message: string) => {
         fixes.push("Standardized 401 error");
         return `return apiErrors.unauthorized('${message.replace(/'/g, "\\'")}')`;
       },
@@ -63,7 +66,7 @@ function standardizeRoute(filePath: string): { changed: boolean; fixes: string[]
     {
       pattern:
         /return\s+NextResponse\.json\(\s*\{\s*error:\s*['"]([^'"]+)['"]\s*\}\s*,\s*\{\s*status:\s*403\s*\}\)/g,
-      replacement: (match: string, message: string) => {
+      replacement: (_substring: string, message: string) => {
         fixes.push("Standardized 403 error");
         return `return apiErrors.forbidden('${message.replace(/'/g, "\\'")}')`;
       },
@@ -71,7 +74,7 @@ function standardizeRoute(filePath: string): { changed: boolean; fixes: string[]
     {
       pattern:
         /return\s+NextResponse\.json\(\s*\{\s*error:\s*['"]([^'"]+)['"]\s*\}\s*,\s*\{\s*status:\s*404\s*\}\)/g,
-      replacement: (match: string, message: string) => {
+      replacement: (_substring: string, message: string) => {
         fixes.push("Standardized 404 error");
         return `return apiErrors.notFound('${message.replace(/'/g, "\\'")}')`;
       },
@@ -88,7 +91,7 @@ function standardizeRoute(filePath: string): { changed: boolean; fixes: string[]
 
   for (const { pattern, replacement } of errorPatterns) {
     if (pattern.test(content)) {
-      content = content.replace(pattern, replacement as any);
+      content = content.replace(pattern, replacement);
     }
   }
 

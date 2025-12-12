@@ -5,6 +5,7 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { MenuStyle, getMenuStyleClasses } from "@/lib/menu-style-extractor";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
+import { VerticalMenuDisplay } from "./VerticalMenuDisplay";
 
 interface MenuItem {
   id: string;
@@ -100,7 +101,6 @@ export function StyledMenuDisplay({
 
   if (!menuStyle) {
     // Use new vertical menu display as default
-    const { VerticalMenuDisplay } = require("./VerticalMenuDisplay");
     return (
       <VerticalMenuDisplay
         menuItems={menuItems}

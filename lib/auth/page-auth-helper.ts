@@ -11,7 +11,6 @@
 import { createServerSupabase } from "@/lib/supabase";
 import { verifyVenueAccess } from "@/lib/middleware/authorization";
 import { getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
-import type { User } from "@supabase/supabase-js";
 
 export type UserRole = "owner" | "manager" | "server" | "staff" | "viewer";
 

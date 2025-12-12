@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, XCircle, RefreshCw, Truck, User, Hash } from "lucide-react";
+import { Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 
 interface OrderItem {

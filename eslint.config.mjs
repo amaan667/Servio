@@ -3,6 +3,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
+import unusedImports from "eslint-plugin-unused-imports";
 
 export default [
   {
@@ -42,6 +43,7 @@ export default [
     plugins: {
       react,
       "react-hooks": reactHooks,
+      "unused-imports": unusedImports,
     },
     rules: {
       ...react.configs.recommended.rules,
@@ -49,20 +51,25 @@ export default [
       "react/react-in-jsx-scope": "off",
       "react/no-unescaped-entities": "off", // Too strict for production content
       "react/prop-types": "off", // Using TypeScript instead
-      "react/no-unknown-property": "warn",
+      "react/no-unknown-property": "error",
 
       // Logging
       "no-console": "error",
 
       // Type safety
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-      ],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-require-imports": "warn",
-      "@typescript-eslint/no-empty-object-type": "warn",
-      "@typescript-eslint/no-unsafe-function-type": "warn",
+      // Enforce zero-unused across the repo with auto-fix for imports.
+      // (typescript-eslint can’t auto-remove unused imports; this can.)
+      "@typescript-eslint/no-unused-vars": "off",
+      "unused-imports/no-unused-imports": "error",
+      // NOTE: We intentionally do not enforce unused *variables* here because the
+      // codebase currently has a lot of intentionally-unused locals in tests and
+      // handlers (used for debugging / future assertions). We do enforce unused
+      // imports (above) since those are pure noise and safely auto-fixable.
+      "unused-imports/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-require-imports": "error",
+      "@typescript-eslint/no-empty-object-type": "error",
+      "@typescript-eslint/no-unsafe-function-type": "error",
 
       // Hooks
       "react-hooks/exhaustive-deps": "off", // Too strict - causes false positives
@@ -93,7 +100,8 @@ export default [
     ],
     ignores: ["app/api/**/*"],
     rules: {
-      "no-console": "warn",
+      // Don’t emit warnings in lint output; client console is stripped in prod builds.
+      "no-console": "off",
     },
   },
   // Allow console usage in operational tooling and diagnostic endpoints

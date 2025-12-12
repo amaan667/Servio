@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Receipt, User, QrCode, X, CreditCard, Split, CheckCircle } from "lucide-react";
+import { Receipt, User, QrCode, X, CreditCard, Split, CheckCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TableOrder } from "@/hooks/useTableOrders";
 import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";

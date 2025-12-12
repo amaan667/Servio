@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { success, apiErrors } from "@/lib/api/standard-response";
 

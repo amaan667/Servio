@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Star, MessageSquare, Send, CheckCircle } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 

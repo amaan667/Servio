@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // Comprehensive AI Assistant Test Suite - 100% Coverage
 // Tests every possible prompt type to ensure perfect execution
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // Mock data summaries for testing
 const mockDataSummaries = {

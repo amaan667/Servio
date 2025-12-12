@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { env, isDevelopment } from "@/lib/env";
+import { apiErrors } from "@/lib/api/standard-response";
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight

@@ -14,7 +14,6 @@ import { errorToContext } from "@/lib/utils/error-to-context";
  */
 
 import { createAdminClient } from "@/lib/supabase";
-import type { CreateIngredientRequest } from "@/types/inventory";
 import { logger } from "@/lib/logger";
 
 interface SeedIngredient {

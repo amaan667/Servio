@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Order } from "../types";
 
 export function useBulkOperations(venueId: string) {

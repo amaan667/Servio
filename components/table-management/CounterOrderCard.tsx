@@ -4,9 +4,8 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Receipt, User, X, CreditCard, Split, CheckCircle } from "lucide-react";
+import { User, X, CreditCard, CheckCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { StatusPill } from "./StatusPill";
 import { CounterOrder } from "@/hooks/useCounterOrders";
 import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
 

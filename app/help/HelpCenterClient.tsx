@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable no-console */
 
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

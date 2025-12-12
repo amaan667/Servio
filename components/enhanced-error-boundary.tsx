@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, RefreshCw, Home, Wifi, WifiOff } from "lucide-react";
+import { AlertTriangle, RefreshCw, Home, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { clearAuthStorage } from "@/lib/supabase";

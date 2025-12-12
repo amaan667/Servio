@@ -2,7 +2,7 @@ import { logger } from "@/lib/logger";
 import { toast } from "@/hooks/use-toast";
 import { PaymentAction } from "./usePaymentState";
 import { CheckoutData } from "@/types/payment";
-import { queueOrder, queuePayment, queueStatusUpdate, getOfflineQueue } from "@/lib/offline-queue";
+import { queueOrder, queueStatusUpdate } from "@/lib/offline-queue";
 
 // Helper function to log to server (appears in Railway logs)
 // Uses fetch with fire-and-forget to not block the payment flow

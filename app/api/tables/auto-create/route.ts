@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 

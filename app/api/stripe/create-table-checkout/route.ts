@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe-client";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { env } from "@/lib/env";

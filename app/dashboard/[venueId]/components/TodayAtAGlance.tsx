@@ -2,10 +2,8 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, DollarSign } from "lucide-react";
+import { TrendingUp, DollarSign } from "lucide-react";
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   PieChart,
@@ -15,7 +13,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
 } from "recharts";
 
 interface TodayAtAGlanceProps {

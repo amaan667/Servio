@@ -4,17 +4,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  Receipt,
-  Clock,
-  Users,
-  CreditCard,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-} from "lucide-react";
+import { Table, Receipt, Clock, Users, CreditCard, TrendingUp, AlertTriangle } from "lucide-react";
 import { TableManagementEntity } from "@/components/pos/TableManagementEntity";
 import { LiveOrdersPOS } from "@/components/pos/LiveOrdersPOS";
 

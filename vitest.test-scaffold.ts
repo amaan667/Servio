@@ -3,7 +3,7 @@
  * Common test helpers and patterns for consistent testing
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 /**

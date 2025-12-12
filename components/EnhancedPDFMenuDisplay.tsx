@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, ShoppingCart, X, Search, List, Grid, ZoomIn, ZoomOut } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Search, List, Grid, ZoomIn, ZoomOut } from "lucide-react";
 import { ItemDetailsModal } from "@/components/ItemDetailsModal";
 import { Input } from "@/components/ui/input";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";

@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context, routeParams?: { params?: Promise<Record<string, string>> }) => {

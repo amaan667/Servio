@@ -185,7 +185,6 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
   // Log server-side render completion
   if (typeof process !== "undefined") {
-    // eslint-disable-next-line no-console
     console.log("[DashboardPage] Server-side render complete", {
       venueId,
       hasInitialCounts: !!initialCounts,

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle2, ChefHat, PlayCircle, XCircle, Timer, ArrowRight } from "lucide-react";
+import { Clock, CheckCircle2, ChefHat, Timer, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KDSStation {

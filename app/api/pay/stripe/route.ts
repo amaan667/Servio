@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { env, isDevelopment } from "@/lib/env";
 
 export const runtime = "nodejs";
 

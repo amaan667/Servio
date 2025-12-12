@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable no-console */
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";

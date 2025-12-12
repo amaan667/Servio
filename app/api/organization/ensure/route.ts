@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { env, isDevelopment } from "@/lib/env";
 
 // Disable caching to always get fresh data
 export const dynamic = "force-dynamic";

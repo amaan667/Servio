@@ -3,7 +3,7 @@ import { checkFeatureAccess, PREMIUM_FEATURES } from "@/lib/feature-gates";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { env, isDevelopment, isProduction, getNodeEnv } from "@/lib/env";
+import { isDevelopment } from "@/lib/env";
 
 // GET /api/features/check?venue_id=xxx&feature=INVENTORY
 export const GET = withUnifiedAuth(

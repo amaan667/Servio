@@ -3,7 +3,7 @@
  * Replaces NextResponse.json({ error: ... }) with apiErrors.*
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from "fs";
+import { readFileSync, writeFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 function findRouteFiles(dir: string): string[] {

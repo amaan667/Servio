@@ -13,7 +13,6 @@ import {
   Sparkles,
   Bot,
   TrendingUp,
-  Package,
   Clock,
   Star,
   Plus,

@@ -79,7 +79,7 @@ function fixFile(filePath: string): { fixed: boolean; fixes: string[] } {
   ];
 
   for (const { regex, replacement } of patterns) {
-    content = content.replace(regex, replacement as any);
+    content = content.replace(regex, replacement);
   }
 
   // Add import if needed

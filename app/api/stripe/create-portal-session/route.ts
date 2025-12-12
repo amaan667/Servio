@@ -1,6 +1,5 @@
 // Stripe Billing Portal - Let customers manage their subscription
 import { NextRequest } from "next/server";
-import Stripe from "stripe";
 import { stripe } from "@/lib/stripe-client";
 import { apiLogger as logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";

@@ -11,7 +11,6 @@
 import { extractMenuFromImage } from "./gptVisionMenuParser";
 import { extractMenuFromWebsite } from "./webMenuExtractor";
 import { logger } from "./logger";
-import { trackPerformance } from "./performance";
 
 interface MenuItem {
   name: string;

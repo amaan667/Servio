@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { loadGoogleMapsAPI } from "@/lib/google-maps";
 
 interface AddressInputProps {
   value: string;

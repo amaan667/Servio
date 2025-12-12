@@ -2,7 +2,6 @@
 // All API routes should use this instead of getAuthUserForAPI()
 
 import { headers } from "next/headers";
-import type { User } from "@supabase/supabase-js";
 
 export async function getUserFromMiddleware(): Promise<{
   user: { id: string; email: string } | null;
