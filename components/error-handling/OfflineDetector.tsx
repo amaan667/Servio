@@ -11,9 +11,6 @@ export function OfflineDetector() {
   const [isOnline, setIsOnline] = useState(true);
   const [wasOffline, setWasOffline] = useState(false);
 
-  // Dashboard-only: users should only be notified about connectivity here.
-  if (!isDashboardRoute) return null;
-
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
@@ -41,9 +38,10 @@ export function OfflineDetector() {
     };
   }, [wasOffline]);
 
-  // Only show offline UI globally. Any "back online" messaging should be dashboard-only.
+  // Dashboard-only: users should only be notified about connectivity here.
+  if (!isDashboardRoute) return null;
+
   if (isOnline && !wasOffline) return null;
-  if (isOnline && wasOffline && !isDashboardRoute) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50 max-w-md">
