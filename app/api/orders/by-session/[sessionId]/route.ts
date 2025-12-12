@@ -6,10 +6,12 @@ import { apiErrors } from "@/lib/api/standard-response";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ sessionId: string }> }) {
+type SessionParams = { params?: { sessionId?: string } };
+
+export async function GET(_req: Request, context: SessionParams = {}) {
   try {
     const supabaseAdmin = createAdminClient();
-    const { sessionId } = await params;
+    const sessionId = context.params?.sessionId;
 
     if (!sessionId) {
       logger.error("[ORDER SESSION LOOKUP DEBUG] No session ID provided");

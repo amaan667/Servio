@@ -161,14 +161,22 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     }
   );
 
-  return handler(req, context);
+  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
+    params?: Promise<Record<string, string>>;
+  });
 }
 
-export async function DELETE(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
+type TableParams = { params?: { tableId?: string } };
+
+export async function DELETE(req: NextRequest, context: TableParams = {}) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext) => {
       try {
-        const { tableId } = await context.params;
+        const tableId = context.params?.tableId;
+
+        if (!tableId) {
+          return apiErrors.badRequest("Table ID is required");
+        }
 
         // Check if force=true is passed as query parameter
         const url = new URL(req.url);
@@ -456,5 +464,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
   );
 
-  return handler(req, context);
+  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
+    params?: Promise<Record<string, string>>;
+  });
 }

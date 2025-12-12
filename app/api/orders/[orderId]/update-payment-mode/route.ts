@@ -12,11 +12,14 @@ export const dynamic = "force-dynamic";
  * Allow customer to switch payment method (e.g., pay_later → pay_at_till)
  * Used when customer changes their mind about how to pay
  */
-export async function PATCH(
-  _request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
-) {
-  const { orderId } = await params;
+type OrderParams = { params?: { orderId?: string } };
+
+export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
+  const orderId = context.params?.orderId;
+
+  if (!orderId) {
+    return apiErrors.badRequest("Order ID is required");
+  }
 
   try {
     const body = await _request.json();

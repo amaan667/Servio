@@ -189,3 +189,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
 });
+
+// Simple GET handler for health/testing
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}

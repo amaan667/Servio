@@ -6,10 +6,9 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-export async function PUT(
-  req: NextRequest,
-  context: { params: Promise<{ reservationId: string }> }
-) {
+type ReservationParams = { params?: { reservationId?: string } };
+
+export async function PUT(req: NextRequest, context: ReservationParams = {}) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext, routeParams) => {
       try {
@@ -25,7 +24,8 @@ export async function PUT(
           );
         }
 
-        const { reservationId } = await routeParams!.params!;
+        const params = routeParams?.params ?? {};
+        const { reservationId } = params as { reservationId?: string };
         const { customerName, startAt, endAt, partySize, customerPhone } = await req.json();
 
         if (!reservationId) {
@@ -138,5 +138,7 @@ export async function PUT(
     }
   );
 
-  return handler(req, context);
+  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
+    params?: Promise<Record<string, string>>;
+  });
 }

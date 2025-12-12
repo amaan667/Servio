@@ -6,10 +6,12 @@ import { apiErrors } from "@/lib/api/standard-response";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ orderId: string }> }) {
+type OrderParams = { params?: { orderId?: string } };
+
+export async function GET(_req: Request, context: OrderParams = {}) {
   try {
     const supabaseAdmin = createAdminClient();
-    const { orderId } = await params;
+    const orderId = context.params?.orderId;
 
     if (!orderId) {
       return apiErrors.badRequest("Order ID is required");

@@ -19,10 +19,9 @@ const reservationIdParamSchema = z.object({
 });
 
 // POST /api/reservations/[reservationId]/assign - Assign reservation to table
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ reservationId: string }> }
-) {
+type ReservationParams = { params?: { reservationId?: string } };
+
+export async function POST(req: NextRequest, context: ReservationParams = {}) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext, routeParams) => {
       try {
@@ -33,7 +32,7 @@ export async function POST(
         }
 
         // STEP 2: Validate params and body
-        const params = await routeParams!.params!;
+        const params = routeParams?.params ?? {};
         const validatedParams = validateParams(reservationIdParamSchema, params);
         const body = await validateBody(assignReservationSchema, await req.json());
 
@@ -122,5 +121,7 @@ export async function POST(
     }
   );
 
-  return handler(req, context);
+  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
+    params?: Promise<Record<string, string>>;
+  });
 }

@@ -12,11 +12,14 @@ export const dynamic = "force-dynamic";
  * Mark payment as collected for "pay_at_till" orders
  * Staff uses this after processing payment via card reader/cash register
  */
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
-) {
-  const { orderId } = await params;
+type OrderParams = { params?: { orderId?: string } };
+
+export async function POST(_request: NextRequest, context: OrderParams = {}) {
+  const orderId = context.params?.orderId;
+
+  if (!orderId) {
+    return apiErrors.badRequest("Order ID is required");
+  }
 
   try {
     const body = await _request.json();

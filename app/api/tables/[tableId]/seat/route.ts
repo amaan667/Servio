@@ -20,7 +20,9 @@ const tableIdParamSchema = z.object({
 });
 
 // POST /api/tables/[tableId]/seat - Seat a party at a table
-export async function POST(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
+type TableParams = { params?: { tableId?: string } };
+
+export async function POST(req: NextRequest, context: TableParams = {}) {
   const handler = withUnifiedAuth(
     async (req: NextRequest, authContext, routeParams) => {
       try {
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
         }
 
         // STEP 2: Validate params and body
-        const params = await routeParams!.params!;
+        const params = routeParams?.params ?? {};
         const validatedParams = validateParams(tableIdParamSchema, params);
         const body = await validateBody(seatTableSchema, await req.json().catch(() => ({})));
 
@@ -136,5 +138,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ tableI
     }
   );
 
-  return handler(req, context);
+  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
+    params?: Promise<Record<string, string>>;
+  });
 }

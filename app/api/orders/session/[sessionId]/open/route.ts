@@ -5,9 +5,11 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ sessionId: string }> }) {
+type SessionParams = { params?: { sessionId?: string } };
+
+export async function GET(_req: Request, context: SessionParams = {}) {
   try {
-    const { sessionId } = await params;
+    const sessionId = context.params?.sessionId;
 
     if (!sessionId) {
       return NextResponse.json(

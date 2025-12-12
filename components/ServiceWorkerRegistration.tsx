@@ -107,7 +107,9 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
   const isBrowser = typeof window !== "undefined";
   const pathname = isBrowser ? window.location.pathname : "";
   const isDashboardOrOrderOrPayment =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/order") || pathname.startsWith("/payment");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/order") ||
+    pathname.startsWith("/payment");
   const isKdsPage = pathname.includes("/dashboard") && pathname.includes("/kds");
 
   return (
@@ -116,28 +118,28 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
 
       {/* Offline Indicator - Show on dashboard and order pages */}
       {!isOnline && isBrowser && isDashboardOrOrderOrPayment && (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white p-2 text-center text-sm">
-            <div className="flex items-center justify-center space-x-2">
-              <WifiOff className="h-4 w-4" />
-              <span>
-                You&apos;re offline.{" "}
-                {queueCount > 0 && `${queueCount} operation${queueCount > 1 ? "s" : ""} queued.`}
-              </span>
-              {queueCount > 0 && isOnline && typeof window !== "undefined" && (
-                <button
-                  onClick={() => {
-                    const queue = getOfflineQueue();
-                    queue.syncQueue();
-                  }}
-                  className="ml-2 underline hover:no-underline flex items-center gap-1"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Sync
-                </button>
-              )}
-            </div>
+        <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white p-2 text-center text-sm">
+          <div className="flex items-center justify-center space-x-2">
+            <WifiOff className="h-4 w-4" />
+            <span>
+              You&apos;re offline.{" "}
+              {queueCount > 0 && `${queueCount} operation${queueCount > 1 ? "s" : ""} queued.`}
+            </span>
+            {queueCount > 0 && isOnline && typeof window !== "undefined" && (
+              <button
+                onClick={() => {
+                  const queue = getOfflineQueue();
+                  queue.syncQueue();
+                }}
+                className="ml-2 underline hover:no-underline flex items-center gap-1"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Sync
+              </button>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
       {/* All update UI removed - updates happen silently in background */}
     </>

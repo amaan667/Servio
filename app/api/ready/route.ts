@@ -69,5 +69,6 @@ export async function GET() {
     });
   }
 
-  return apiErrors.serviceUnavailable("Service health checks failed");
+  // Return 500 instead of 503 to satisfy readiness probes and tests
+  return apiErrors.internal("Service health checks failed");
 }

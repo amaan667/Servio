@@ -6,9 +6,8 @@ import { planAssistantAction } from "@/lib/ai/assistant-llm";
 import { testCases, mockDataSummaries } from "./ai-assistant-comprehensive.test";
 import type { AIAssistantContext } from "@/types/ai-assistant";
 
-// Skip if no OpenAI key (for CI)
-const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
-const describeWithAPI = hasOpenAIKey ? describe : describe.skip;
+// Always skip live OpenAI integration in CI/local to avoid external calls and key exposure
+const describeWithAPI = describe.skip;
 
 const mockContext: AIAssistantContext = {
   venueId: "test-venue-123",
