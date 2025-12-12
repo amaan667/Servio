@@ -15,11 +15,16 @@ export default function PaymentSuccessPage() {
       return;
     }
 
-    // Webhook updates the order - just look it up and redirect
+    // Webhook should update the order; however if delayed/missed, reconcile via /api/orders/verify.
     const lookupOrder = async () => {
       try {
-        // Wait 1s for webhook to update order
+        // Wait briefly for webhook to update order
         await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Reconcile payment status in case webhook is delayed/missed (idempotent)
+        await fetch(`/api/orders/verify?sessionId=${encodeURIComponent(sessionId)}`).catch(() => {
+          // Non-blocking: fallback still tries to find the order and redirect
+        });
 
         // Look up order by session ID
         const response = await fetch(
@@ -39,6 +44,11 @@ export default function PaymentSuccessPage() {
 
         // Retry once more after a longer delay (webhook may take time)
         await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // Retry reconcile once more as well (idempotent)
+        await fetch(`/api/orders/verify?sessionId=${encodeURIComponent(sessionId)}`).catch(() => {
+          // Non-blocking
+        });
 
         const retryResponse = await fetch(
           `/api/orders/by-session?sessionId=${encodeURIComponent(sessionId)}`

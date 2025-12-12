@@ -107,15 +107,15 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
 
   return (
     <Card className="w-full border-2 border-gray-200 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow-md">
-      <CardContent className="p-6">
+      <CardContent className="p-5">
         {/* Header Section */}
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-2xl font-bold text-gray-900">{tableLabel}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="text-xl font-bold text-gray-900 truncate">{tableLabel}</h3>
               <Badge
                 variant="secondary"
-                className={`text-xs ${isQrTable ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-orange-50 text-orange-700 border-orange-200"}`}
+                className={`text-[11px] ${isQrTable ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-orange-50 text-orange-700 border-orange-200"}`}
               >
                 {isQrTable ? (
                   <>
@@ -135,23 +135,25 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
             </p>
           </div>
 
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
               Total
             </p>
-            <p className="text-3xl font-bold text-green-600">£{getTotalAmountForAllOrders()}</p>
+            <p className="text-2xl font-bold text-green-600 leading-none">
+              £{getTotalAmountForAllOrders()}
+            </p>
           </div>
         </div>
 
         {/* Status Badges */}
         <div className="flex items-center flex-wrap gap-2 mb-4">
           <Badge
-            className={`${getStatusColor(overallStatus)} text-sm font-semibold px-3 py-1.5 rounded-full`}
+            className={`${getStatusColor(overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}
           >
             {overallStatus.replace("_", " ").toLowerCase()}
           </Badge>
           <Badge
-            className={`${getPaymentStatusColor(overallPaymentStatus)} text-sm font-semibold px-3 py-1.5 rounded-full`}
+            className={`${getPaymentStatusColor(overallPaymentStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}
           >
             {overallPaymentStatus.toLowerCase()}
           </Badge>

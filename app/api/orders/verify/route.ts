@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
 import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
+import { createAdminClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,13 +50,12 @@ export async function GET(req: Request) {
       );
     }
 
-    // Fetch the existing order (should have been created in order page)
+    // Use admin client to avoid RLS issues; the Stripe session metadata is the security boundary.
+    const supabaseAdmin = createAdminClient();
 
-    const supabase = await createClient();
-
-    const { data: order, error: fetchError } = await supabase
+    const { data: order, error: fetchError } = await supabaseAdmin
       .from("orders")
-      .select("*")
+      .select("id, venue_id, payment_status, stripe_session_id")
       .eq("id", orderId)
       .single();
 
@@ -71,14 +70,24 @@ export async function GET(req: Request) {
       );
     }
 
-    // Update payment status to PAID
+    // Idempotency: if already paid, just return it.
+    if ((order.payment_status || "").toUpperCase() === "PAID") {
+      return NextResponse.json({
+        order,
+        updated: false,
+      });
+    }
 
-    const { data: updatedOrder, error: updateError } = await supabase
+    // Update payment status to PAID (fallback when webhook is delayed/missed)
+    const nowIso = new Date().toISOString();
+    const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from("orders")
       .update({
         payment_status: "PAID",
-        payment_method: "stripe",
-        stripe_payment_intent_id: session.payment_intent as string,
+        payment_method: "PAY_NOW",
+        stripe_session_id: order.stripe_session_id || session.id,
+        stripe_payment_intent_id: String(session.payment_intent ?? ""),
+        updated_at: nowIso,
       })
       .eq("id", orderId)
       .select()

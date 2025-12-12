@@ -13,6 +13,7 @@ export interface TableOrder {
   payment_status: string;
   payment_mode?: string;
   payment_method?: string;
+  stripe_session_id?: string | null;
   total_amount: number;
   created_at: string;
   updated_at: string;
@@ -24,6 +25,8 @@ export interface TableOrder {
     price: number;
   }>;
 }
+
+const ACTIVE_TABLE_ORDER_STATUSES = ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"] as const;
 
 // Get active table orders (orders with source = 'qr' and active status)
 export function useTableOrders(venueId: string) {
@@ -46,6 +49,9 @@ export function useTableOrders(venueId: string) {
 					customer_phone,
 					order_status,
 					payment_status,
+          payment_mode,
+          payment_method,
+          stripe_session_id,
 					total_amount,
 					created_at,
 					updated_at,
@@ -56,12 +62,36 @@ export function useTableOrders(venueId: string) {
         .eq("venue_id", venueId)
         .eq("source", "qr")
         // Only show today's active orders (respects daily reset)
-        .in("order_status", ["PLACED", "IN_PREP", "READY", "SERVING"])
+        .in("order_status", [...ACTIVE_TABLE_ORDER_STATUSES])
         .gte("created_at", todayStart.toISOString())
         .lte("created_at", todayEnd.toISOString())
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+
+      // Best-effort reconciliation: if a PAY_NOW order has a Stripe session but is still UNPAID,
+      // reconcile payment status via server endpoint (webhook may be delayed/missed).
+      const suspicious = (data || []).filter((o: Record<string, unknown>) => {
+        const paymentStatus = String(o.payment_status || "").toUpperCase();
+        const paymentMethod = String(o.payment_method || "").toUpperCase();
+        const sessionId = o.stripe_session_id;
+        return (
+          paymentStatus === "UNPAID" &&
+          paymentMethod === "PAY_NOW" &&
+          typeof sessionId === "string" &&
+          sessionId.length > 0
+        );
+      });
+
+      // Limit reconciliation to avoid spamming Stripe in extreme edge cases
+      await Promise.allSettled(
+        suspicious.slice(0, 3).map(async (o: Record<string, unknown>) => {
+          const sessionId = String(o.stripe_session_id || "");
+          await fetch(`/api/orders/verify?sessionId=${encodeURIComponent(sessionId)}`).catch(
+            () => null
+          );
+        })
+      );
 
       // Get table labels for each order using table_number
       const ordersWithTableLabels = await Promise.all(
@@ -139,14 +169,20 @@ export function useTableOrderCounts(venueId: string) {
   return useQuery({
     queryKey: ["table-order-counts", venueId],
     queryFn: async () => {
-      // Count all active orders regardless of date for consistency
+      // Count today's active orders (must match useTableOrders filter to keep UI consistent)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
       const { data, error } = await supabase
         .from("orders")
         .select("order_status, source, created_at")
         .eq("venue_id", venueId)
         .eq("source", "qr")
-        // Count all active orders regardless of date
-        .in("order_status", ["PLACED", "IN_PREP", "READY", "SERVING"]);
+        .in("order_status", [...ACTIVE_TABLE_ORDER_STATUSES])
+        .gte("created_at", todayStart.toISOString())
+        .lte("created_at", todayEnd.toISOString());
 
       if (error) throw error;
 
@@ -171,7 +207,7 @@ export function useTableOrderCounts(venueId: string) {
         placed: byStatus.PLACED || 0,
         in_prep: byStatus.IN_PREP || 0,
         ready: byStatus.READY || 0,
-        serving: byStatus.SERVING || 0,
+        serving: (byStatus.SERVING || 0) + (byStatus.SERVED || 0),
       };
     },
     refetchInterval: 15000,

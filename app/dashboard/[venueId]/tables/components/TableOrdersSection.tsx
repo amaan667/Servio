@@ -26,7 +26,7 @@ export function TableOrdersSection({ groupedTableOrders, venueId }: TableOrdersS
           {Object.entries(groupedTableOrders)
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([tableKey, orders]) => (
-              <div key={tableKey} className="flex-shrink-0 w-96">
+              <div key={tableKey} className="flex-shrink-0 w-[28rem] max-w-[28rem]">
                 <TableOrderGroupCard
                   tableLabel={tableKey}
                   orders={orders as unknown as TableOrder[]}

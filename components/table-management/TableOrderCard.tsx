@@ -21,7 +21,7 @@ const getNextOrderStatus = (currentStatus: string) => {
     case "PREPARING":
       return "READY";
     case "READY":
-      return "COMPLETED";
+      return "SERVED";
     case "SERVING":
     case "SERVED":
       return "COMPLETED";
@@ -39,9 +39,9 @@ const getNextStatusLabel = (currentStatus: string) => {
       return "Start Preparing";
     case "IN_PREP":
     case "PREPARING":
-      return "Mark as Served";
+      return "Mark Ready";
     case "READY":
-      return "Complete Order";
+      return "Mark Served";
     case "SERVING":
     case "SERVED":
       return "Complete Order";
@@ -164,16 +164,34 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
     try {
       setIsProcessingPayment(true);
 
-      const response = await fetch("/api/orders/set-status", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId: order.id,
-          status: newStatus,
-        }),
-      });
+      const normalized = (newStatus || "").toUpperCase();
+
+      // Use side-effect-safe endpoints for key transitions so table sessions are cleaned up.
+      let response: Response;
+      if (normalized === "SERVED") {
+        response = await fetch("/api/orders/serve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+      } else if (normalized === "COMPLETED") {
+        response = await fetch("/api/orders/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+      } else {
+        response = await fetch("/api/orders/set-status", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId: order.id,
+            status: normalized,
+          }),
+        });
+      }
 
       if (!response.ok) {
         throw new Error("Failed to update order status");
