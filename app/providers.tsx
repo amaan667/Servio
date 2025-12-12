@@ -34,6 +34,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                   name.startsWith("next") ||
                   name.startsWith("_next") ||
                   name.includes("static") ||
+                  name.startsWith("servio-") ||
                   name.includes(process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v-current")
               )
               .forEach((name) => caches.delete(name));

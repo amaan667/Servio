@@ -3,7 +3,11 @@
  * Caches critical pages and assets for offline access
  */
 
-const CACHE_NAME = 'servio-v1';
+// Version cache by the service worker script URL (?ver=...), so deploys can bust caches.
+// Service worker global scope exposes its own script URL as self.location.
+const SW_URL = new URL(self.location.href);
+const CACHE_VERSION = SW_URL.searchParams.get('ver') || 'v1';
+const CACHE_NAME = `servio-${CACHE_VERSION}`;
 const OFFLINE_PAGE = '/offline';
 // Only cache pages that definitely exist and are accessible
 const CRITICAL_PAGES = [
@@ -81,6 +85,30 @@ self.addEventListener('fetch', (event) => {
         }
         return new Response('Network error', { status: 503 });
       })
+    );
+    return;
+  }
+
+  // Navigations should be network-first to avoid getting stuck on stale HTML after deploys.
+  // If offline, fall back to cached page or offline page.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache successful navigations for offline support.
+          if (response && response.status === 200 && response.type === 'basic') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          return caches.match(OFFLINE_PAGE) || new Response('Offline', { status: 503 });
+        })
     );
     return;
   }

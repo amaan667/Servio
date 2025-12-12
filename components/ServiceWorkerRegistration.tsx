@@ -12,7 +12,7 @@ interface ServiceWorkerRegistrationProps {
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
   // Always enable service worker for offline support. Versioned cache to avoid stale assets.
-  const cacheVersion = process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v-current";
+  const envCacheVersion = process.env.NEXT_PUBLIC_SW_CACHE_VERSION;
 
   const pathname = usePathname();
   const [isOnline, setIsOnline] = useState(true);
@@ -75,6 +75,19 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
 
     // Register service worker for offline support (only if enabled)
     if ("serviceWorker" in navigator) {
+      // Prefer explicit env version; otherwise use Next build id (changes every deploy) to bust SW cache.
+      const buildId =
+        typeof window !== "undefined"
+          ? (
+              window as unknown as {
+                __NEXT_DATA__?: {
+                  buildId?: string;
+                };
+              }
+            ).__NEXT_DATA__?.buildId
+          : undefined;
+      const cacheVersion = envCacheVersion || buildId || "v-current";
+
       navigator.serviceWorker
         .register(`/sw.js?ver=${cacheVersion}`, { scope: "/" })
         .then((registration) => {
