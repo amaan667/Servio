@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { getOfflineQueue } from "@/lib/offline-queue";
 
 export function OnlineStatusBadge() {
+  const pathname = usePathname();
+  const isDashboardRoute = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
   const [isOnline, setIsOnline] = useState(true);
   const [queueCount, setQueueCount] = useState(0);
+
+  // Safety: never show outside dashboard, even if accidentally mounted globally.
+  if (!isDashboardRoute) return null;
 
   useEffect(() => {
     if (typeof window === "undefined") {
