@@ -123,7 +123,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         show_vat_breakdown: venue?.show_vat_breakdown ?? true,
       });
 
-      // Fetch pay-at-till orders (UNPAID with payment_mode = pay_at_till)
+      // Fetch pay-at-till orders (UNPAID with payment_method = PAY_AT_TILL)
+      // NOTE: payment_mode is stored as "offline" in DB for pay-at-till; do not filter on payment_mode.
       const activeStatuses: OrderStatus[] = [
         "PLACED",
         "ACCEPTED",
@@ -138,7 +139,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .select("*")
         .eq("venue_id", venueId)
         .eq("payment_status", "UNPAID")
-        .eq("payment_mode", "pay_at_till")
+        .eq("payment_method", "PAY_AT_TILL")
         // Only include currently active orders awaiting pay-at-till payment.
         // This clears out old unpaid orders that were already completed or cancelled.
         .in("order_status", activeStatuses)

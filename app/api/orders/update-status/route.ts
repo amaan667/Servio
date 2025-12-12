@@ -67,9 +67,11 @@ export async function POST(req: Request) {
         return apiErrors.notFound("Order not found");
       }
 
-      if (currentOrder.payment_status !== "PAID") {
+      const paidStatuses = ["PAID", "TILL"];
+      const currentPayment = (currentOrder.payment_status || "").toUpperCase();
+      if (!paidStatuses.includes(currentPayment)) {
         return apiErrors.badRequest(
-          `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID before completion.`,
+          `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID or TILL before completion.`,
           { payment_status: currentOrder.payment_status }
         );
       }
@@ -133,7 +135,10 @@ export async function POST(req: Request) {
         }
 
         // If order is completed and paid, check if reservations should be auto-completed
-        if (status === "COMPLETED" && order.payment_status === "PAID") {
+        if (
+          status === "COMPLETED" &&
+          ["PAID", "TILL"].includes((order.payment_status || "").toUpperCase())
+        ) {
           try {
             const baseUrl =
               env("NEXT_PUBLIC_SITE_URL") || "https://servio-production.up.railway.app";

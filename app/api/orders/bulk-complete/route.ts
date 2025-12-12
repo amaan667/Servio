@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // CRITICAL: Verify all orders are PAID before bulk completing
+    // CRITICAL: Verify all orders are paid before bulk completing
     const { data: ordersToComplete, error: fetchError } = await supabase
       .from("orders")
       .select("id, payment_status, order_status")
@@ -55,12 +55,15 @@ export async function POST(req: Request) {
     }
 
     // Filter out unpaid orders
-    const unpaidOrders = ordersToComplete?.filter((order) => order.payment_status !== "PAID") || [];
+    const unpaidOrders =
+      ordersToComplete?.filter(
+        (order) => !["PAID", "TILL"].includes((order.payment_status || "").toUpperCase())
+      ) || [];
 
     if (unpaidOrders.length > 0) {
       return NextResponse.json(
         {
-          error: `Cannot complete ${unpaidOrders.length} unpaid order(s). All orders must be PAID before completion.`,
+          error: `Cannot complete ${unpaidOrders.length} unpaid order(s). All orders must be PAID or TILL before completion.`,
           unpaid_order_ids: unpaidOrders.map((o) => o.id),
         },
         { status: 400 }

@@ -85,7 +85,8 @@ export function OrderCard({
           .select("*", { count: "exact", head: true })
           .eq("venue_id", venueId)
           .eq("table_number", order.table_number)
-          .in("payment_status", ["UNPAID", "PAY_LATER"])
+          .eq("payment_status", "UNPAID")
+          .in("payment_method", ["PAY_LATER", "PAY_AT_TILL"])
           .gte("created_at", todayStart.toISOString())
           .lte("created_at", todayEnd.toISOString());
 
