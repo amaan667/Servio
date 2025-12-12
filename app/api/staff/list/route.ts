@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -27,21 +27,20 @@ export const GET = withUnifiedAuth(
         return apiErrors.badRequest("venueId is required");
       }
 
-      // STEP 3: Business logic
-      // Use authenticated client that respects RLS (not admin client)
-      // RLS policies ensure users can only access staff for venues they have access to
-      const supabase = await createClient();
-
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = context.venueId.startsWith("venue-")
         ? context.venueId
         : `venue-${context.venueId}`;
 
+      // STEP 3: Business logic
+      // Use service role client for consistent reads regardless of RLS policies.
+      // Access is enforced by withUnifiedAuth (venue access).
+      const supabase = createAdminClient();
+
       const { data: staff, error } = await supabase
         .from("staff")
         .select("*")
         .eq("venue_id", normalizedVenueId)
-        .is("deleted_at", null) // Exclude soft-deleted staff members
         .order("created_at", { ascending: false });
 
       if (error) {

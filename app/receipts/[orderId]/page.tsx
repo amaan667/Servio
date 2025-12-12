@@ -32,7 +32,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
     const { data: venueData, error: venueError } = await supabase
       .from("venues")
       .select(
-        "venue_name, venue_email, venue_address, receipt_logo_url, receipt_footer_text, show_vat_breakdown"
+        "venue_name, email, address, receipt_logo_url, receipt_footer_text, show_vat_breakdown"
       )
       .eq("venue_id", order.venue_id)
       .maybeSingle();
@@ -49,8 +49,8 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
     <ReceiptPageClient
       order={order}
       venueName={venue?.venue_name || "Restaurant"}
-      venueEmail={venue?.venue_email}
-      venueAddress={venue?.venue_address}
+      venueEmail={venue?.email}
+      venueAddress={venue?.address}
       receiptLogoUrl={venue?.receipt_logo_url}
       receiptFooterText={venue?.receipt_footer_text}
       showVAT={venue?.show_vat_breakdown ?? true}

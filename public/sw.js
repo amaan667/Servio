@@ -70,6 +70,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip Next.js build assets entirely.
+  // Caching /_next assets in a custom SW can cause stale/mismatched bundles after deploy,
+  // leading to MIME/type errors and broken pages.
+  if (url.pathname.startsWith('/_next/')) {
+    return;
+  }
+
   // Skip external resources
   if (url.origin !== self.location.origin) {
     return;

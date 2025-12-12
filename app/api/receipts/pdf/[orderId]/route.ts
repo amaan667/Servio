@@ -71,13 +71,13 @@ export async function GET(
         // Get venue contact info
         const { data: venue } = await supabase
           .from("venues")
-          .select("venue_name, venue_email, venue_address")
+          .select("venue_name, email, address")
           .eq("venue_id", venueId) // Use context.venueId
           .single();
 
         const venueName = venue?.venue_name || "Restaurant";
-        const venueAddress = venue?.venue_address || "";
-        const venueEmail = venue?.venue_email || "";
+        const venueAddress = venue?.address || "";
+        const venueEmail = venue?.email || "";
         const logoUrl = designSettings?.logo_url || undefined;
 
         // Use detected primary color from logo (stored when logo was uploaded), fallback to default

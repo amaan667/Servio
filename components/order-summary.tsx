@@ -196,7 +196,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
         // Get venue contact info
         const { data: venue } = await supabase
           .from("venues")
-          .select("venue_name, venue_email, venue_address")
+          .select("venue_name, email, address")
           .eq("venue_id", order.venue_id)
           .single();
 
@@ -206,8 +206,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
 
         setVenueInfo({
           name: venue?.venue_name || undefined,
-          email: venue?.venue_email || undefined,
-          address: venue?.venue_address || undefined,
+          email: venue?.email || undefined,
+          address: venue?.address || undefined,
           logoUrl,
           primaryColor,
         });

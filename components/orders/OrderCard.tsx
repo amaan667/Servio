@@ -166,7 +166,7 @@ export function OrderCard({
         // Get venue contact info
         const { data: venue } = await supabase
           .from("venues")
-          .select("venue_name, venue_email, venue_address")
+          .select("venue_name, email, address")
           .eq("venue_id", venueId)
           .single();
 
@@ -176,8 +176,8 @@ export function OrderCard({
 
         setVenueInfo({
           name: venue?.venue_name,
-          email: venue?.venue_email,
-          address: venue?.venue_address,
+          email: venue?.email,
+          address: venue?.address,
           logoUrl,
           primaryColor,
         });

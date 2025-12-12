@@ -75,42 +75,23 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
   const fetchQuestions = useCallback(async () => {
     try {
-      // Fetch directly from Supabase like other pages do
-      const supabase = createClient();
-      const { data: questions } = await supabase
-        .from("feedback_questions")
-        .select("*")
-        .eq("venue_id", venueId)
-        .eq("is_active", true)
-        .order("sort_index", { ascending: true })
-        .order("created_at", { ascending: true });
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
+        credentials: "include",
+      });
 
-      // Transform questions to match frontend expectations (prompt, type, choices)
-      const transformedQuestions = (questions || []).map(
-        (q: {
-          id: string;
-          question_text: string;
-          question_type: string;
-          options: string[] | null;
-          is_active: boolean;
-          sort_index: number;
-          created_at?: string;
-          updated_at?: string;
-          venue_id: string;
-        }) => ({
-          id: q.id,
-          prompt: q.question_text, // Map 'question_text' to 'prompt'
-          type: q.question_type as FeedbackQuestion["type"], // Map 'question_type' to 'type'
-          choices: q.options || [], // Map 'options' to 'choices'
-          is_active: q.is_active,
-          sort_index: q.sort_index,
-          created_at: q.created_at,
-          updated_at: q.updated_at,
-          venue_id: q.venue_id,
-        })
-      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch questions (${response.status})`);
+      }
 
-      setQuestions(transformedQuestions);
+      const data = (await response.json()) as {
+        success?: boolean;
+        data?: { questions?: FeedbackQuestion[] };
+      };
+
+      const apiQuestions = data?.data?.questions || [];
+      const active = apiQuestions.filter((q) => q.is_active);
+      setQuestions(active);
     } catch (_error) {
       // Error silently handled
     }
@@ -164,16 +145,17 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
       if (fetchError) throw new Error(fetchError.message);
 
-      let filteredFeedback = data || [];
+      let filteredFeedback = (data as Feedback[] | null) || [];
 
       // Apply search filter (only filter not handled by query)
       if (searchQuery.trim()) {
-        filteredFeedback = filteredFeedback.filter(
-          (f) =>
+        filteredFeedback = filteredFeedback.filter((f) => {
+          return (
             f.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
             f.category?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+          );
+        });
       }
 
       setFeedback(filteredFeedback);

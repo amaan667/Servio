@@ -321,7 +321,7 @@ export async function processCustomerCheckoutSession(
   try {
     const { data: venue } = await supabaseAdmin
       .from("venues")
-      .select("auto_email_receipts, venue_name, venue_email, venue_address")
+      .select("auto_email_receipts, venue_name, email, address")
       .eq("venue_id", firstOrder.venue_id)
       .single();
 

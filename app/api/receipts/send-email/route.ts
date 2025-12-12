@@ -52,12 +52,12 @@ export const POST = withUnifiedAuth(
       // Get venue info
       const { data: venue } = await supabase
         .from("venues")
-        .select("venue_name, venue_email, venue_address")
+        .select("venue_name, email, address")
         .eq("venue_id", finalVenueId)
         .single();
 
       const venueName = venue?.venue_name || "Restaurant";
-      const venueAddress = venue?.venue_address || "";
+      const venueAddress = venue?.address || "";
 
       // Calculate VAT (20% UK standard rate)
       const subtotal = order.total_amount || 0;

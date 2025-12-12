@@ -39,8 +39,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
   const [isProcessingPayment, setIsProcessingPayment] = useState<string | null>(null);
   const [venueInfo, setVenueInfo] = useState<{
     venue_name?: string;
-    venue_email?: string;
-    venue_address?: string;
+    email?: string;
+    address?: string;
     logo_url?: string;
     primary_color?: string;
     show_vat_breakdown?: boolean;
@@ -89,7 +89,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       try {
         const { data: venueData, error: venueError } = await supabase
           .from("venues")
-          .select("venue_name, venue_email, venue_address, show_vat_breakdown")
+          .select("venue_name, email, address, show_vat_breakdown")
           .eq("venue_id", venueId)
           .maybeSingle();
 
@@ -116,8 +116,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
       setVenueInfo({
         venue_name: venue?.venue_name || undefined,
-        venue_email: venue?.venue_email || undefined,
-        venue_address: venue?.venue_address || undefined,
+        email: venue?.email || undefined,
+        address: venue?.address || undefined,
         logo_url: logoUrl || undefined,
         primary_color: primaryColor,
         show_vat_breakdown: venue?.show_vat_breakdown ?? true,
@@ -587,8 +587,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       {selectedReceipt && (
         <ReceiptModal
           order={selectedReceipt as Order}
-          venueEmail={venueInfo.venue_email}
-          venueAddress={venueInfo.venue_address}
+          venueEmail={venueInfo.email}
+          venueAddress={venueInfo.address}
           logoUrl={venueInfo.logo_url}
           primaryColor={venueInfo.primary_color}
           isOpen={!!selectedReceipt}

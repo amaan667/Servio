@@ -140,15 +140,16 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   useEffect(() => {
     const supabase = createClient();
 
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
     const channel = supabase
-      .channel(`feedback-questions-${venueId}`)
+      .channel(`feedback-questions-${normalizedVenueId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "feedback_questions",
-          filter: `venue_id=eq.${venueId}`,
+          filter: `venue_id=eq.${normalizedVenueId}`,
         },
         (_payload: unknown) => {
           fetchQuestions();

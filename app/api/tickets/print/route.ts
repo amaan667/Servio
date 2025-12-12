@@ -50,13 +50,13 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Get venue info
     const { data: venue } = await supabase
       .from("venues")
-      .select("venue_name, venue_address, venue_phone")
+      .select("venue_name, address, phone")
       .eq("venue_id", finalVenueId)
       .single();
 
     const venueName = venue?.venue_name || "Restaurant";
-    const venueAddress = venue?.venue_address || "";
-    const venuePhone = venue?.venue_phone || "";
+    const venueAddress = venue?.address || "";
+    const venuePhone = venue?.phone || "";
 
     // Generate ticket content based on printer type
     let ticketContent: string;

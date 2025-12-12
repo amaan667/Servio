@@ -31,6 +31,7 @@ const protectedPaths = [
   "/api/inventory",
   "/api/staff",
   "/api/ai",
+  "/api/feedback",
   // "/api/analytics/vitals" - PUBLIC: web performance metrics, no auth needed
   // "/api/auth" - PUBLIC: auth endpoints must be accessible
   "/api/qr",
