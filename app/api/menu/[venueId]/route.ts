@@ -123,6 +123,23 @@ export async function GET(
       return apiErrors.database("Failed to load menu items");
     }
 
+    // Fetch latest uploaded PDF images + category order (public customer display)
+    const { data: uploadData } = await supabase
+      .from("menu_uploads")
+      .select("pdf_images, pdf_images_cc, category_order, created_at")
+      .eq("venue_id", venue.venue_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const pdfImages: string[] = (uploadData?.pdf_images ||
+      uploadData?.pdf_images_cc ||
+      []) as string[];
+
+    const categoryOrder: string[] | null = Array.isArray(uploadData?.category_order)
+      ? (uploadData?.category_order as string[])
+      : null;
+
     // Return menu items with venue info
     const response = {
       venue: {
@@ -131,6 +148,8 @@ export async function GET(
       },
       menuItems: menuItems || [],
       totalItems,
+      pdfImages,
+      categoryOrder,
       pagination: {
         limit,
         offset,

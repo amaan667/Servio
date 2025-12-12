@@ -30,6 +30,24 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   const [menuError, setMenuError] = useState<string | null>(null);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(cachedCategories);
   const [venueName, setVenueName] = useState<string>(cachedVenueName);
+  const [pdfImages, setPdfImages] = useState<string[]>([]);
+
+  const normalizeVenueId = (id: string) => (id.startsWith("venue-") ? id : `venue-${id}`);
+
+  const getApiErrorMessage = (body: unknown): string => {
+    if (!body || typeof body !== "object") return "Failed to load menu";
+    const obj = body as Record<string, unknown>;
+    const error = obj.error as unknown;
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object") {
+      const errorObj = error as Record<string, unknown>;
+      const message = errorObj.message;
+      if (typeof message === "string" && message.trim().length > 0) return message;
+    }
+    const message = obj.message;
+    if (typeof message === "string" && message.trim().length > 0) return message;
+    return "Failed to load menu";
+  };
 
   const loadMenuItems = useCallback(async () => {
     // Skip fetch if we have cached data - instant load
@@ -54,6 +72,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       }));
       setMenuItems(mappedItems);
       setVenueName("Demo Café");
+      setPdfImages([]);
       setLoadingMenu(false);
 
       // Cache demo menu
@@ -77,8 +96,8 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       if (!response.ok) {
         let errorMessage = "Failed to load menu";
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
+          const errorData: unknown = await response.json();
+          errorMessage = getApiErrorMessage(errorData);
         } catch (parseError) {
           // If JSON parsing fails, use status text
           errorMessage = response.statusText || errorMessage;
@@ -88,32 +107,51 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         return;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        success?: boolean;
+        data?: {
+          venue?: { id?: string; name?: string };
+          menuItems?: MenuItem[];
+          totalItems?: number;
+          categoryOrder?: string[] | null;
+          pdfImages?: string[];
+        };
+        error?: unknown;
+      };
 
-      const itemCount = data.menuItems?.length || 0;
-      console.log("[CUSTOMER UI] Menu loaded from API:", {
-        venueSlug,
-        totalItems: data.totalItems || itemCount,
-        menuItemsCount: itemCount,
-        hasItems: itemCount > 0,
-        venueName: data.venue?.venue_name || data.venueName,
-        timestamp: new Date().toISOString(),
-      });
+      if (!data.success || !data.data) {
+        const errorMessage = getApiErrorMessage(data);
+        setMenuError(`Error loading menu: ${errorMessage}`);
+        setLoadingMenu(false);
+        return;
+      }
 
-      const normalized = (data.menuItems || []).map((mi: Record<string, unknown>) => ({
+      const payload = data.data;
+      const itemCount = payload.menuItems?.length || 0;
+      const payloadVenueName = payload.venue?.name || "";
+
+      const normalized = (payload.menuItems || []).map((mi: MenuItem) => ({
         ...mi,
-        venue_name: data.venue?.venue_name || "",
+        venue_name: payloadVenueName,
       }));
 
       setMenuItems(normalized);
-      const venueNameValue = data.venue?.venue_name || data.venueName || "";
+      const venueNameValue = payloadVenueName;
       setVenueName(venueNameValue);
+      setPdfImages(Array.isArray(payload.pdfImages) ? payload.pdfImages : []);
+      setCategoryOrder(Array.isArray(payload.categoryOrder) ? payload.categoryOrder : null);
 
       // Clear cache if no items to prevent stale data
       if (typeof window !== "undefined") {
         if (itemCount > 0) {
           sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(normalized));
           sessionStorage.setItem(`venue_name_${venueSlug}`, venueNameValue);
+          if (Array.isArray(payload.categoryOrder)) {
+            sessionStorage.setItem(
+              `categories_${venueSlug}`,
+              JSON.stringify(payload.categoryOrder)
+            );
+          }
         } else {
           // Clear cache when no items
           sessionStorage.removeItem(`menu_${venueSlug}`);
@@ -122,30 +160,33 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         }
       }
 
-      // Fetch category order
-      try {
-        const categoryOrderResponse = await fetch(
-          `${window.location.origin}/api/menu/categories?venueId=${venueSlug}`
-        );
-        if (categoryOrderResponse.ok) {
-          const categoryOrderData = await categoryOrderResponse.json();
-          if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
-            setCategoryOrder(categoryOrderData.categories);
-            // Cache categories
-            if (typeof window !== "undefined" && itemCount > 0) {
-              sessionStorage.setItem(
-                `categories_${venueSlug}`,
-                JSON.stringify(categoryOrderData.categories)
-              );
+      // Backward compatibility: if API didn't include categoryOrder, fetch it.
+      if (!Array.isArray(payload.categoryOrder)) {
+        try {
+          const normalizedVenueId = normalizeVenueId(venueSlug);
+          const categoryOrderResponse = await fetch(
+            `${window.location.origin}/api/menu/categories?venueId=${normalizedVenueId}`
+          );
+          if (categoryOrderResponse.ok) {
+            const categoryOrderData = (await categoryOrderResponse.json()) as {
+              categories?: string[];
+            };
+            if (Array.isArray(categoryOrderData.categories)) {
+              setCategoryOrder(categoryOrderData.categories);
+              if (typeof window !== "undefined" && itemCount > 0) {
+                sessionStorage.setItem(
+                  `categories_${venueSlug}`,
+                  JSON.stringify(categoryOrderData.categories)
+                );
+              }
             }
           }
+        } catch {
+          // Non-fatal
         }
-      } catch (_error) {
-        setCategoryOrder(null);
       }
 
       if (itemCount === 0) {
-        console.log("[CUSTOMER UI] No menu items found - setting error message");
         setMenuError("This venue has no available menu items yet.");
       } else {
         setMenuError(null);
@@ -168,5 +209,6 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     menuError,
     categoryOrder,
     venueName,
+    pdfImages,
   };
 }

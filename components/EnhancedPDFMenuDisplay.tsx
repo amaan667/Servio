@@ -26,6 +26,7 @@ interface MenuItem {
 
 interface EnhancedPDFMenuDisplayProps {
   venueId: string;
+  pdfImages?: string[];
   menuItems: MenuItem[];
   categoryOrder: string[] | null;
   onAddToCart: (item: MenuItem) => void;
@@ -37,6 +38,7 @@ interface EnhancedPDFMenuDisplayProps {
 
 export function EnhancedPDFMenuDisplay({
   venueId,
+  pdfImages: pdfImagesProp,
   menuItems,
   categoryOrder,
   onAddToCart,
@@ -45,33 +47,41 @@ export function EnhancedPDFMenuDisplay({
   onUpdateQuantity,
   isOrdering = false,
 }: EnhancedPDFMenuDisplayProps) {
+  const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+
   // Check cache for PDF images existence to prevent flicker
   const hasPdfImagesInCache = () => {
     if (typeof window === "undefined") return false;
-    const cached = sessionStorage.getItem(`has_pdf_images_${venueId}`);
+    const cached = sessionStorage.getItem(`has_pdf_images_${normalizedVenueId}`);
     return cached === "true";
   };
 
   // Cache PDF images for instant load
   const getCachedPdfImages = () => {
     if (typeof window === "undefined") return [];
-    const cached = sessionStorage.getItem(`pdf_images_${venueId}`);
+    const cached = sessionStorage.getItem(`pdf_images_${normalizedVenueId}`);
     return cached ? JSON.parse(cached) : [];
   };
 
-  // Initialize with cached data immediately - no loading state if cache exists
   const cachedImages = getCachedPdfImages();
+  const initialImages =
+    Array.isArray(pdfImagesProp) && pdfImagesProp.length > 0 ? pdfImagesProp : cachedImages;
   const hasCachedImages = cachedImages.length > 0;
 
-  const [pdfImages, setPdfImages] = useState<string[]>(cachedImages);
-  const [loading, setLoading] = useState(!hasCachedImages); // Only show loading if no cached images
+  const [pdfImages, setPdfImages] = useState<string[]>(initialImages);
+  const [loading, setLoading] = useState(
+    !(Array.isArray(pdfImagesProp) ? pdfImagesProp.length > 0 : hasCachedImages)
+  ); // Only show loading if no cached images and no prop images
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"pdf" | "list">(
-    hasCachedImages && cachedImages.length > 0 ? "pdf" : "list"
+    (Array.isArray(pdfImagesProp) && pdfImagesProp.length > 0) ||
+      (hasCachedImages && cachedImages.length > 0)
+      ? "pdf"
+      : "list"
   );
   const [hasPdfImages, setHasPdfImages] = useState(
-    hasPdfImagesInCache() || cachedImages.length > 0
+    (Array.isArray(pdfImagesProp) && pdfImagesProp.length > 0) || hasPdfImagesInCache()
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -97,6 +107,29 @@ export function EnhancedPDFMenuDisplay({
   }, [pdfImages]);
 
   useEffect(() => {
+    // If parent provided images (from public API), use them and cache immediately.
+    if (Array.isArray(pdfImagesProp)) {
+      if (pdfImagesProp.length > 0) {
+        setPdfImages(pdfImagesProp);
+        setHasPdfImages(true);
+        setViewMode("pdf");
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "true");
+          sessionStorage.setItem(`pdf_images_${normalizedVenueId}`, JSON.stringify(pdfImagesProp));
+        }
+      } else {
+        setPdfImages([]);
+        setHasPdfImages(false);
+        setViewMode("list");
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "false");
+          sessionStorage.removeItem(`pdf_images_${normalizedVenueId}`);
+        }
+      }
+      setLoading(false);
+      return;
+    }
+
     // Skip fetch if we already have cached data - instant load
     if (hasCachedImages && cachedImages.length > 0) {
       setLoading(false);
@@ -111,7 +144,7 @@ export function EnhancedPDFMenuDisplay({
         const { data: uploadData, error } = await supabase
           .from("menu_uploads")
           .select("*")
-          .eq("venue_id", venueId)
+          .eq("venue_id", normalizedVenueId)
           .order("created_at", { ascending: false })
           .limit(1)
           .single();
@@ -125,8 +158,8 @@ export function EnhancedPDFMenuDisplay({
           setViewMode("pdf");
           // Cache PDF images for instant load next time
           if (typeof window !== "undefined") {
-            sessionStorage.setItem(`has_pdf_images_${venueId}`, "true");
-            sessionStorage.setItem(`pdf_images_${venueId}`, JSON.stringify(images));
+            sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "true");
+            sessionStorage.setItem(`pdf_images_${normalizedVenueId}`, JSON.stringify(images));
           }
           // Preload images
           images.forEach((imageUrl: string) => {
@@ -137,9 +170,15 @@ export function EnhancedPDFMenuDisplay({
           setViewMode("list");
           setHasPdfImages(false);
           if (typeof window !== "undefined") {
-            sessionStorage.setItem(`has_pdf_images_${venueId}`, "false");
-            sessionStorage.removeItem(`pdf_images_${venueId}`);
+            sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "false");
+            sessionStorage.removeItem(`pdf_images_${normalizedVenueId}`);
           }
+        }
+
+        if (error) {
+          // If query failed (likely RLS), fall back to list view gracefully.
+          setViewMode("list");
+          setHasPdfImages(false);
         }
       } catch (_error) {
         setViewMode("list");
@@ -149,7 +188,7 @@ export function EnhancedPDFMenuDisplay({
     };
 
     fetchPDFImages();
-  }, [venueId, hasCachedImages, cachedImages.length]);
+  }, [normalizedVenueId, hasCachedImages, cachedImages.length, pdfImagesProp]);
 
   // Check if cart has items to show sticky cart
   useEffect(() => {

@@ -108,7 +108,7 @@ export default function CustomerOrderPage() {
     resetCart,
   } = useOrderCart();
 
-  const { menuItems, loadingMenu, menuError, categoryOrder, venueName } = useOrderMenu(
+  const { menuItems, loadingMenu, menuError, categoryOrder, venueName, pdfImages } = useOrderMenu(
     venueSlug,
     isDemo
   );
@@ -209,6 +209,7 @@ export default function CustomerOrderPage() {
             ) : (
               <EnhancedPDFMenuDisplay
                 venueId={venueSlug}
+                pdfImages={pdfImages}
                 menuItems={menuItems}
                 categoryOrder={categoryOrder}
                 onAddToCart={(item) => addToCart(item)}
