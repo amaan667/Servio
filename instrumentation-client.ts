@@ -1,3 +1,15 @@
+/**
+ * Client-side instrumentation (Next.js file convention)
+ *
+ * Intentionally minimal.
+ *
+ * The Sentry Next.js integration injects client initialization during build.
+ * Keeping this file present (and empty) satisfies the Next.js convention and
+ * prevents relying on `sentry.client.config.ts` (which may stop working with
+ * Turbopack).
+ */
+export {};
+
 // This file configures the initialization of Sentry on the client.
 // The added config here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/

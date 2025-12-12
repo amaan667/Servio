@@ -61,7 +61,9 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // If Supabase env is misconfigured, fail open so the dashboard still loads
+  // If Supabase env is misconfigured:
+  // - FAIL CLOSED for protected API routes (security)
+  // - Keep dashboard navigation non-blocking (no redirects), but do not inject auth headers
   let supabase: ReturnType<typeof createServerClient> | null = null;
   try {
     supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
@@ -93,7 +95,18 @@ export async function middleware(request: NextRequest) {
     logger.error("[middleware] Supabase disabled - env missing or invalid", {
       error: error instanceof Error ? error.message : String(error),
     });
-    // Fail open: allow request to continue without auth to avoid 500s
+    // Pilot hardening: never allow protected API routes to proceed without auth infrastructure.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        {
+          error: "Auth temporarily unavailable",
+          code: "AUTH_UNAVAILABLE",
+        },
+        { status: 503 }
+      );
+    }
+
+    // Dashboard: allow to load (client-side can show auth/env error states)
     return response;
   }
 
@@ -110,6 +123,17 @@ export async function middleware(request: NextRequest) {
   // For API routes, inject user info into headers if session exists
   // Middleware does ALL auth checks - routes just read headers
   if (pathname.startsWith("/api/")) {
+    // FAIL CLOSED: protected API routes require an authenticated user.
+    if (!session) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      );
+    }
+
     const requestHeaders = new Headers(request.headers);
 
     // If session exists, inject user info - routes trust this completely
