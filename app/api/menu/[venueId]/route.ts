@@ -25,9 +25,13 @@ export async function GET(
     }
 
     const { searchParams } = new URL(_request.url);
+    // IMPORTANT: URLSearchParams.get() returns null when missing.
+    // Passing null into z.coerce.number() becomes 0, which fails min(1).
+    const normalizeParam = (value: string | null) =>
+      value === null || value === "" ? undefined : value;
     const { limit, offset } = validateQuery(menuPaginationSchema, {
-      limit: searchParams.get("limit"),
-      offset: searchParams.get("offset"),
+      limit: normalizeParam(searchParams.get("limit")),
+      offset: normalizeParam(searchParams.get("offset")),
     });
 
     const params = await context.params;
