@@ -1,7 +1,6 @@
 // Tier Check API - Check if user can perform an action
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase";
-import { checkLimit, checkFeatureAccess, getTierLimits } from "@/lib/tier-restrictions";
+import { TIER_LIMITS, type TierLimits } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -19,7 +18,6 @@ export const POST = withUnifiedAuth(
 
       // STEP 2: Get venueId from context (already verified, may be null)
       const venueId = context.venueId;
-      const user = context.user;
 
       // STEP 3: Parse request
       const body = await req.json();
@@ -32,79 +30,69 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-      // Verify venue belongs to user
-      const supabase = await createClient();
-
-      // Get venue to verify access
-      const { data: venue } = await supabase
-        .from("venues")
-        .select("venue_id, owner_user_id")
-        .eq("venue_id", finalVenueId)
-        .single();
-
-      if (!venue) {
-        return apiErrors.notFound("Venue not found");
-      }
 
       // STEP 6: Business logic
+      // IMPORTANT: Tier limits and feature gates are based on the venue owner's subscription.
+      // `withUnifiedAuth` already computed `context.tier` from the billing owner, so all checks
+      // below should be purely derived from `context.tier` (no extra DB reads).
+      const tierKey = String(context.tier || "starter").toLowerCase().trim();
+      const tierLimits: TierLimits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+
       // Check based on action type
       if (action === "create" && resource) {
-        const limitCheck = await checkLimit(user.id, resource, currentCount);
+        const limit = tierLimits[resource as keyof TierLimits];
+        // -1 means unlimited
+        const allowed = typeof limit === "number" ? limit === -1 || currentCount < limit : false;
 
-        if (!limitCheck.allowed) {
+        if (!allowed) {
           return success({
             allowed: false,
-            tier: limitCheck.currentTier,
-            limit: limitCheck.limit,
+            tier: tierKey,
+            limit: typeof limit === "number" ? limit : 0,
             current: currentCount,
-            reason: `Limit reached: ${currentCount}/${limitCheck.limit} ${resource.replace("max", "").toLowerCase()}`,
+            reason: `Limit reached: ${currentCount}/${typeof limit === "number" ? limit : 0} ${resource.replace("max", "").toLowerCase()}`,
             upgradeRequired: true,
           });
         }
 
         return success({
           allowed: true,
-          tier: limitCheck.currentTier,
-          limit: limitCheck.limit,
+          tier: tierKey,
+          limit: typeof limit === "number" ? limit : 0,
           current: currentCount,
         });
       }
 
       // Check feature access
       if (action === "access" && resource) {
-        const featureCheck = await checkFeatureAccess(user.id, resource);
+        const featureValue = tierLimits.features[resource as keyof TierLimits["features"]];
+        const allowed =
+          typeof featureValue === "boolean"
+            ? featureValue
+            : // Non-boolean features (analytics/supportLevel) are always "allowed"
+              true;
 
-        if (!featureCheck.allowed) {
+        if (!allowed) {
           return success({
             allowed: false,
-            tier: featureCheck.currentTier,
-            requiredTier: featureCheck.requiredTier,
-            reason: `This feature requires ${featureCheck.requiredTier} tier`,
+            tier: tierKey,
+            requiredTier: "enterprise",
+            reason: "This feature requires a higher tier",
             upgradeRequired: true,
           });
         }
 
         return success({
           allowed: true,
-          tier: featureCheck.currentTier,
+          tier: tierKey,
         });
       }
-
-      // Get all limits and current tier
-      const limits = await getTierLimits(user.id);
-
-      // Get user's organization to return tier info
-      const { data: org } = await supabase
-        .from("organizations")
-        .select("subscription_tier")
-        .eq("owner_user_id", user.id)
-        .maybeSingle();
 
       // STEP 7: Return success response
       return success({
         allowed: true,
-        limits,
-        tier: org?.subscription_tier || "starter",
+        limits: tierLimits,
+        tier: tierKey,
       });
     } catch (_error) {
       const errorMessage =

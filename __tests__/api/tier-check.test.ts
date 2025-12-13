@@ -1,56 +1,99 @@
 /**
- * Auto-generated test for tier-check
- * Generated: 2025-11-23T00:14:32.222Z
+ * Tier-check should use venue owner's tier (staff-safe)
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { createMockRequest } from "../helpers/api-test-helpers";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createAuthenticatedRequest, parseJsonResponse } from "../helpers/api-test-helpers";
 import { POST as postPOST } from "@/app/api/tier-check/route";
 
-// Mock dependencies
-vi.mock("@/lib/supabase", () => ({
-  createAdminClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      insert: vi.fn(() => Promise.resolve({ data: [{ id: "test-id" }], error: null })),
-      update: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-  })),
-  createServerSupabase: vi.fn(() =>
-    Promise.resolve({
-      from: vi.fn(() => ({
-        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      })),
-      auth: {
-        getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
-      },
-    })
-  ),
+vi.mock("@/lib/rate-limit", () => ({
+  rateLimit: vi.fn(async () => ({ success: true, reset: Date.now() + 10000 })),
+  RATE_LIMITS: { GENERAL: {} },
 }));
 
-vi.mock("@/lib/api-auth", () => ({
-  authenticateRequest: vi.fn(async () => ({
-    success: true,
-    user: { id: "user-123" },
-    supabase: {
-      from: vi.fn(() => ({
-        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      })),
-    },
-  })),
-  verifyVenueAccess: vi.fn(() => Promise.resolve(true)),
+const verifyVenueAccessMock = vi.fn();
+vi.mock("@/lib/middleware/authorization", () => ({
+  verifyVenueAccess: (...args: unknown[]) => verifyVenueAccessMock(...args),
 }));
+
+const getUserTierMock = vi.fn();
+vi.mock("@/lib/tier-restrictions", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/tier-restrictions")>(
+    "@/lib/tier-restrictions"
+  );
+  return {
+    ...actual,
+    getUserTier: (...args: unknown[]) => getUserTierMock(...args),
+  };
+});
 
 describe("Tier Check API", () => {
-  describe("POST tier-check", () => {
-    it("should handle post request", async () => {
-      const request = createMockRequest("POST", "http://localhost:3000/apitier-check");
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-      const response = await postPOST(request);
-      expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
+  it("returns the venue owner's tier even for staff user", async () => {
+    // Staff user is authenticated via middleware header
+    const staffUserId = "staff-1";
+    const venueId = "venue-1";
+    const ownerUserId = "owner-1";
+
+    verifyVenueAccessMock.mockResolvedValue({
+      venue: {
+        venue_id: venueId,
+        owner_user_id: ownerUserId,
+        name: "Test Venue",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      user: { id: staffUserId },
+      role: "staff",
     });
 
-    it("should validate request parameters", async () => {});
+    // Tier is tied to the owner (billing owner)
+    getUserTierMock.mockImplementation(async (userId: string) =>
+      userId === ownerUserId ? "enterprise" : "starter"
+    );
+
+    const request = createAuthenticatedRequest("POST", "http://localhost:3000/api/tier-check", staffUserId, {
+      body: { venueId, action: "access", resource: "kds" },
+    });
+
+    const response = await postPOST(request);
+    expect(response.status).toBe(200);
+
+    const json = await parseJsonResponse<{ data?: { tier?: string } }>(response);
+    expect(json.data?.tier).toBe("enterprise");
+    expect(getUserTierMock).toHaveBeenCalledWith(ownerUserId);
+  });
+
+  it("enforces limits based on venue owner's tier", async () => {
+    const staffUserId = "staff-2";
+    const venueId = "venue-2";
+    const ownerUserId = "owner-2";
+
+    verifyVenueAccessMock.mockResolvedValue({
+      venue: {
+        venue_id: venueId,
+        owner_user_id: ownerUserId,
+        name: "Test Venue 2",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      user: { id: staffUserId },
+      role: "staff",
+    });
+
+    getUserTierMock.mockResolvedValue("starter");
+
+    const request = createAuthenticatedRequest("POST", "http://localhost:3000/api/tier-check", staffUserId, {
+      body: { venueId, action: "create", resource: "maxStaff", currentCount: 999 },
+    });
+
+    const response = await postPOST(request);
+    expect(response.status).toBe(200);
+    const json = await parseJsonResponse<{ data?: { allowed?: boolean; tier?: string } }>(response);
+    expect(json.data?.allowed).toBe(false);
+    expect(json.data?.tier).toBe("starter");
   });
 });

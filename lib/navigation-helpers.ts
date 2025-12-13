@@ -3,7 +3,7 @@
  */
 
 import { UserRole, canAccess } from "@/lib/permissions";
-import { getUserTier, checkFeatureAccess, TIER_LIMITS } from "@/lib/tier-restrictions";
+import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
 export interface NavigationItem {
   label: string;
@@ -17,7 +17,7 @@ export interface NavigationItem {
  * Check if user can access a navigation item based on role and tier
  */
 export async function canAccessNavigationItem(
-  userId: string,
+  tier: string,
   userRole: UserRole,
   item: NavigationItem
 ): Promise<boolean> {
@@ -29,15 +29,17 @@ export async function canAccessNavigationItem(
 
   // If tier check is required, check subscription tier
   if (item.tierFeature) {
-    const tierCheck = await checkFeatureAccess(userId, item.tierFeature);
-    return tierCheck.allowed;
+    const tierKey = String(tier || "starter").toLowerCase().trim();
+    const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+    const featureValue = limits.features[item.tierFeature];
+    return typeof featureValue === "boolean" ? featureValue : true;
   }
 
   // If specific tier is required, check it
   if (item.requiredTier) {
-    const tier = await getUserTier(userId);
+    const tierKey = String(tier || "starter").toLowerCase().trim();
     const tierOrder: Record<string, number> = { starter: 1, pro: 2, enterprise: 3 };
-    return tierOrder[tier] >= tierOrder[item.requiredTier];
+    return (tierOrder[tierKey] || 0) >= tierOrder[item.requiredTier];
   }
 
   return true;
@@ -47,14 +49,14 @@ export async function canAccessNavigationItem(
  * Filter navigation items based on role and tier
  */
 export async function filterNavigationItems(
-  userId: string,
+  tier: string,
   userRole: UserRole,
   items: NavigationItem[]
 ): Promise<NavigationItem[]> {
   const filtered: NavigationItem[] = [];
 
   for (const item of items) {
-    const canAccess = await canAccessNavigationItem(userId, userRole, item);
+    const canAccess = await canAccessNavigationItem(tier, userRole, item);
     if (canAccess) {
       filtered.push(item);
     }

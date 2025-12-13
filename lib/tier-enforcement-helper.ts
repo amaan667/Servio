@@ -4,41 +4,36 @@
  */
 
 import { UserRole } from "@/lib/permissions";
-import { checkLimit, hasAnalyticsExports } from "@/lib/tier-restrictions";
-import { checkAccess } from "@/lib/access-control";
+import { TIER_LIMITS, type TierLimits } from "@/lib/tier-restrictions";
+import { checkAccessByTier } from "@/lib/access-control";
 
 /**
  * Check if user can export data (CSV, etc.)
  * Exports require Enterprise tier
  */
-export async function canExportData(userId: string, userRole: UserRole): Promise<boolean> {
-  const hasExports = await hasAnalyticsExports(userId);
-  if (!hasExports) {
-    return false;
-  }
-
+export async function canExportData(tier: string, userRole: UserRole): Promise<boolean> {
   // Also check role permission
-  const access = await checkAccess(userId, userRole, "analytics", "analytics");
-  return access.allowed && hasExports;
+  const access = checkAccessByTier(userRole, tier, "analytics", "analytics");
+  return access.allowed && String(tier).toLowerCase().trim() === "enterprise";
 }
 
 /**
  * Check if user can access a feature with both role and tier checks
  */
 export async function canAccessFeature(
-  userId: string,
+  tier: string,
   userRole: UserRole,
   feature: string,
   tierFeature?: keyof import("@/lib/tier-restrictions").TierLimits["features"]
 ): Promise<{ allowed: boolean; reason?: string; currentTier?: string; requiredTier?: string }> {
-  return checkAccess(userId, userRole, feature, tierFeature);
+  return checkAccessByTier(userRole, tier, feature, tierFeature);
 }
 
 /**
  * Check if user can create a resource (staff, table, etc.)
  */
 export async function canCreateResource(
-  userId: string,
+  tier: string,
   resourceType: "staff" | "table" | "menuItem",
   currentCount: number
 ): Promise<{ allowed: boolean; reason?: string; limit?: number; currentTier?: string }> {
@@ -53,11 +48,16 @@ export async function canCreateResource(
     return { allowed: false, reason: "Invalid resource type" };
   }
 
-  const limitCheck = await checkLimit(userId, limitType, currentCount);
+  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const limits: TierLimits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limit = limits[limitType];
+
+  // -1 means unlimited
+  const allowed = limit === -1 || currentCount < limit;
   return {
-    allowed: limitCheck.allowed,
-    reason: limitCheck.allowed ? undefined : `Limit reached: ${currentCount}/${limitCheck.limit}`,
-    limit: limitCheck.limit,
-    currentTier: limitCheck.currentTier,
+    allowed,
+    reason: allowed ? undefined : `Limit reached: ${currentCount}/${limit}`,
+    limit,
+    currentTier: tierKey,
   };
 }

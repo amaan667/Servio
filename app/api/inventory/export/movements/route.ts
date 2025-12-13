@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { getUserTier, hasAnalyticsExports } from "@/lib/tier-restrictions";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -55,13 +54,13 @@ export const GET = withUnifiedAuth(
 
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
       // Check tier - CSV exports require Enterprise tier
-      const canExport = await hasAnalyticsExports(context.user.id);
-      if (!canExport) {
-        const tier = await getUserTier(context.user.id);
+      // IMPORTANT: Tier is computed by unified auth based on the venue owner's subscription.
+      // Staff accounts should not downgrade the venue's plan.
+      if (context.tier !== "enterprise") {
         return NextResponse.json(
           {
             error: "CSV exports require Enterprise tier",
-            currentTier: tier,
+            currentTier: context.tier,
             requiredTier: "enterprise",
           },
           { status: 403 }

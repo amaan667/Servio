@@ -211,7 +211,8 @@ export async function requireAuthAndVenueAccess(
   }
 
   // 4. Get user tier
-  const tier = await getUserTier(user.id);
+  // IMPORTANT: Tier is owned by the venue's billing owner/org, not the staff user.
+  const tier = await getUserTier(access.venue.owner_user_id);
 
   return {
     success: true,
@@ -353,14 +354,14 @@ export async function getPageAuthContext(
   venueAccess: boolean;
 } | null> {
   try {
-    // Get tier
-    const tier = await getUserTier(userId);
-
     // Verify venue access
     const access = await verifyVenueAccess(venueId, userId);
     if (!access) {
       return null;
     }
+
+    // Get tier (billing owner / venue owner)
+    const tier = await getUserTier(access.venue.owner_user_id);
 
     // Helper to check feature access (synchronous check using tier)
     const hasFeatureAccess = (
@@ -482,7 +483,10 @@ export function withUnifiedAuth(
       // Use custom extractor if provided
       if (options?.extractVenueId) {
         logger.debug("[UNIFIED AUTH] Using custom venueId extractor");
-        venueId = await options.extractVenueId(req, routeParams);
+        // IMPORTANT: Some extractors read `req.json()`. If they do so on the original request,
+        // the handler will later fail with "Body is unusable" when it tries to read the body.
+        // Always pass a clone to custom extractors so the original request remains readable.
+        venueId = await options.extractVenueId(req.clone() as NextRequest, routeParams);
 
         logger.debug("[UNIFIED AUTH] Custom extractor returned:", venueId);
       } else {
@@ -623,7 +627,12 @@ export function withUnifiedAuth(
       // Feature check
       if (options?.requireFeature) {
         logger.debug("[UNIFIED AUTH] Step 3: Checking feature access:", options.requireFeature);
-        const featureCheck = await enforceFeatureAccess(context.user.id, options.requireFeature);
+        // IMPORTANT: Feature access is based on the venue owner's subscription tier.
+        // Staff users should inherit the venue's plan.
+        const featureCheck = await enforceFeatureAccess(
+          context.venue.owner_user_id,
+          options.requireFeature
+        );
         if (!featureCheck.allowed) {
           logger.error("[UNIFIED AUTH] Feature access denied:", {
             feature: options.requireFeature,

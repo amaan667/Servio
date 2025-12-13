@@ -12,6 +12,7 @@ import {
   getUserTier,
   hasAdvancedAnalytics,
   hasAnalyticsExports,
+  TIER_LIMITS,
   type TierLimits,
 } from "@/lib/tier-restrictions";
 
@@ -21,6 +22,61 @@ export interface AccessCheckResult {
   currentTier?: string;
   requiredTier?: string;
   userRole?: UserRole;
+}
+
+/**
+ * Check access using an already-known subscription tier.
+ * Use this when you have `tier` from the unified auth context.
+ *
+ * IMPORTANT: Staff accounts should not change subscription tier. Only `userRole` affects access.
+ */
+export function checkAccessByTier(
+  userRole: UserRole,
+  tier: string,
+  feature: string,
+  tierFeature?: keyof TierLimits["features"]
+): AccessCheckResult {
+  // First check role permissions
+  const hasRoleAccess = checkRoleAccess(userRole, feature);
+  if (!hasRoleAccess) {
+    return {
+      allowed: false,
+      reason: `Your role (${userRole}) does not have permission to access this feature`,
+      userRole,
+    };
+  }
+
+  // If tier check is required, check subscription tier
+  if (tierFeature) {
+    const limits = (tier && typeof tier === "string" ? tier.toLowerCase().trim() : "starter") as
+      | "starter"
+      | "pro"
+      | "enterprise";
+    const tierLimits = TIER_LIMITS[limits] || TIER_LIMITS.starter;
+    const featureValue = tierLimits?.features?.[tierFeature];
+    const allowed = typeof featureValue === "boolean" ? featureValue : true;
+
+    if (!allowed) {
+      return {
+        allowed: false,
+        reason: "This feature requires a higher tier",
+        currentTier: limits,
+        requiredTier: "enterprise",
+        userRole,
+      };
+    }
+    return {
+      allowed: true,
+      currentTier: limits,
+      userRole,
+    };
+  }
+
+  // Role check passed, no tier restriction
+  return {
+    allowed: true,
+    userRole,
+  };
 }
 
 /**
@@ -120,6 +176,62 @@ export async function checkAnalyticsAccess(
   return {
     allowed: true,
     currentTier: tier,
+    userRole,
+  };
+}
+
+/**
+ * Check analytics access using an already-known subscription tier.
+ * Use this when you have `tier` from the unified auth context.
+ *
+ * IMPORTANT: Staff accounts should not change subscription tier. Only `userRole` affects access.
+ */
+export function checkAnalyticsAccessByTier(
+  userRole: UserRole,
+  tier: string,
+  requireAdvanced = false,
+  requireExports = false
+): AccessCheckResult {
+  // Check role first
+  const hasRoleAccess = checkRoleAccess(userRole, "analytics");
+  if (!hasRoleAccess) {
+    return {
+      allowed: false,
+      reason: `Your role (${userRole}) does not have permission to view analytics`,
+      userRole,
+    };
+  }
+
+  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+
+  if (requireExports) {
+    if (limits.features.analytics !== "advanced+exports") {
+      return {
+        allowed: false,
+        reason: "Analytics exports require Enterprise tier",
+        currentTier: tierKey,
+        requiredTier: "enterprise",
+        userRole,
+      };
+    }
+  }
+
+  if (requireAdvanced) {
+    if (limits.features.analytics === "basic") {
+      return {
+        allowed: false,
+        reason: "Advanced analytics features require Pro tier or higher",
+        currentTier: tierKey,
+        requiredTier: "pro",
+        userRole,
+      };
+    }
+  }
+
+  return {
+    allowed: true,
+    currentTier: tierKey,
     userRole,
   };
 }

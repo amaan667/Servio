@@ -141,10 +141,13 @@ export async function POST(_request: NextRequest) {
     const staffCount = currentStaffCount || 0;
 
     // Check tier limit
-    const limitCheck = await checkLimit(user.id, "maxStaff", staffCount);
+    // IMPORTANT: Tier limits are based on the venue owner's subscription, not the staff member
+    // sending the invite.
+    const limitCheck = await checkLimit(venue.owner_user_id, "maxStaff", staffCount);
     if (!limitCheck.allowed) {
       logger.warn("[STAFF INVITATION POST] Staff limit reached", {
         userId: user.id,
+        ownerUserId: venue.owner_user_id,
         currentCount: staffCount,
         limit: limitCheck.limit,
         tier: limitCheck.currentTier,
