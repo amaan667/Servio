@@ -41,6 +41,7 @@ interface TableData {
   reserved_now_id?: string | null;
   reserved_later_id?: string | null;
   order_status?: string | null;
+  completion_status?: string | null; // Unified lifecycle field
 }
 
 /**
@@ -48,7 +49,15 @@ interface TableData {
  */
 export function getTableState(table: TableData): TableStateInfo {
   const hasSession = !!table.session_id && table.status !== "FREE";
-  const hasActiveOrder = !!table.order_id;
+  // An order is only "active" if it's not completed
+  // Check completion_status first (unified lifecycle), fallback to order_status
+  const isOrderCompleted =
+    table.completion_status?.toUpperCase() === "COMPLETED" ||
+    (table.order_status &&
+      ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(
+        table.order_status.toUpperCase()
+      ));
+  const hasActiveOrder = !!table.order_id && !isOrderCompleted;
   const hasReservation = !!(table.reserved_now_id || table.reserved_later_id);
   const sessionStatus = table.status;
 

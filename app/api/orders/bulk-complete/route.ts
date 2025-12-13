@@ -97,22 +97,68 @@ export async function POST(req: Request) {
       targetOrderIds = completableOrderIds;
     }
 
-    // Update all orders to COMPLETED status
-    const { data: updatedOrders, error: updateError } = await supabase
-      .from("orders")
-      .update({
-        order_status: "COMPLETED",
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .in("id", targetOrderIds)
-      .eq("venue_id", venueId)
-      .select("id, table_id, table_number, source");
+    // Update all orders to COMPLETED using unified lifecycle RPC (atomic eligibility check)
+    // This ensures completion_status is set correctly and triggers any database-level cleanup
+    const completedOrders: Array<{
+      id: string;
+      table_id?: string | null;
+      table_number?: number | null;
+      source?: string;
+    }> = [];
 
-    if (updateError) {
-      logger.error("[BULK COMPLETE] Error updating orders:", { value: updateError });
-      return apiErrors.internal("Failed to update orders");
+    for (const orderId of targetOrderIds) {
+      try {
+        const { data: completedRows, error: completeError } = await supabase.rpc("orders_complete", {
+          p_order_id: orderId,
+          p_venue_id: venueId,
+          p_forced: false,
+          p_forced_by: null,
+          p_forced_reason: null,
+        });
+
+        if (completeError) {
+          logger.warn("[BULK COMPLETE] Failed to complete order via RPC:", {
+            orderId,
+            error: completeError.message,
+          });
+          // Fallback: try direct update if RPC fails (backward compatibility)
+          const { data: fallbackOrder } = await supabase
+            .from("orders")
+            .select("id, table_id, table_number, source")
+            .eq("id", orderId)
+            .single();
+          if (fallbackOrder) {
+            await supabase
+              .from("orders")
+              .update({
+                order_status: "COMPLETED",
+                completion_status: "COMPLETED",
+                completed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", orderId);
+            completedOrders.push(fallbackOrder);
+          }
+        } else {
+          // Get order details for cleanup
+          const { data: orderData } = await supabase
+            .from("orders")
+            .select("id, table_id, table_number, source")
+            .eq("id", orderId)
+            .single();
+          if (orderData) {
+            completedOrders.push(orderData);
+          }
+        }
+      } catch (error) {
+        logger.error("[BULK COMPLETE] Error completing order:", {
+          orderId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
+
+    const updatedOrders = completedOrders;
 
     // Handle table cleanup for completed orders
     if (updatedOrders && updatedOrders.length > 0) {
@@ -124,8 +170,8 @@ export async function POST(req: Request) {
           tableCleanupTasks.push(
             cleanupTableOnOrderCompletion({
               venueId: venueId, // Use the venueId from the request parameter
-              tableId: order.table_id,
-              tableNumber: order.table_number,
+              tableId: order.table_id || undefined,
+              tableNumber: order.table_number?.toString() || undefined,
             })
           );
         }

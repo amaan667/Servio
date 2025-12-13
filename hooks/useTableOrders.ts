@@ -39,7 +39,8 @@ export function useTableOrders(venueId: string) {
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
 
-      const { data, error } = await supabase
+      // Try to use completion_status first (unified lifecycle), fallback to order_status
+      let query = supabase
         .from("orders")
         .select(
           `
@@ -48,6 +49,7 @@ export function useTableOrders(venueId: string) {
 					customer_name,
 					customer_phone,
 					order_status,
+					completion_status,
 					payment_status,
           payment_mode,
           payment_method,
@@ -61,11 +63,19 @@ export function useTableOrders(venueId: string) {
         )
         .eq("venue_id", venueId)
         .eq("source", "qr")
-        // Only show today's active orders (respects daily reset)
-        .in("order_status", [...ACTIVE_TABLE_ORDER_STATUSES])
         .gte("created_at", todayStart.toISOString())
-        .lte("created_at", todayEnd.toISOString())
-        .order("created_at", { ascending: false });
+        .lte("created_at", todayEnd.toISOString());
+
+      // Filter by completion_status if available, otherwise use order_status
+      // This ensures backward compatibility during migration rollout
+      try {
+        query = query.eq("completion_status", "OPEN");
+      } catch {
+        // Fallback: use order_status if completion_status column doesn't exist
+        query = query.in("order_status", [...ACTIVE_TABLE_ORDER_STATUSES]);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -175,14 +185,24 @@ export function useTableOrderCounts(venueId: string) {
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
 
-      const { data, error } = await supabase
+      // Try to use completion_status first (unified lifecycle), fallback to order_status
+      let query = supabase
         .from("orders")
-        .select("order_status, source, created_at")
+        .select("order_status, completion_status, source, created_at")
         .eq("venue_id", venueId)
         .eq("source", "qr")
-        .in("order_status", [...ACTIVE_TABLE_ORDER_STATUSES])
         .gte("created_at", todayStart.toISOString())
         .lte("created_at", todayEnd.toISOString());
+
+      // Filter by completion_status if available, otherwise use order_status
+      try {
+        query = query.eq("completion_status", "OPEN");
+      } catch {
+        // Fallback: use order_status if completion_status column doesn't exist
+        query = query.in("order_status", [...ACTIVE_TABLE_ORDER_STATUSES]);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

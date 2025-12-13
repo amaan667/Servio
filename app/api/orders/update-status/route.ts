@@ -86,9 +86,18 @@ export async function POST(req: Request) {
       }
     }
 
+    // Update order status, and also set completion_status if completing
+    const updateData: Record<string, unknown> = { order_status: status };
+    if (status === "COMPLETED") {
+      updateData.completion_status = "COMPLETED";
+      updateData.completed_at = new Date().toISOString();
+    } else if (status === "CANCELLED") {
+      updateData.completion_status = "COMPLETED"; // Cancelled orders are also "completed" in lifecycle
+    }
+
     const { data, error } = await supabase
       .from("orders")
-      .update({ order_status: status })
+      .update(updateData)
       .eq("id", orderId)
       .select();
 

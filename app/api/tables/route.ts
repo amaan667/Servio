@@ -56,6 +56,34 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("table_id", (tables as unknown as TableRow[])?.map((t) => t.id) || [])
       .is("closed_at", null); // Only get active sessions
 
+    // Get orders for sessions that have order_id to check completion_status
+    const sessionOrderIds = (sessions || [])
+      .map((s: Record<string, unknown>) => s.order_id as string)
+      .filter((id): id is string => !!id);
+
+    let orderCompletionMap: Record<string, { completion_status?: string; order_status?: string }> =
+      {};
+    if (sessionOrderIds.length > 0) {
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("id, completion_status, order_status")
+        .in("id", sessionOrderIds)
+        .eq("venue_id", context.venueId);
+
+      if (orders) {
+        orderCompletionMap = orders.reduce(
+          (acc, order) => {
+            acc[order.id] = {
+              completion_status: order.completion_status,
+              order_status: order.order_status,
+            };
+            return acc;
+          },
+          {} as Record<string, { completion_status?: string; order_status?: string }>
+        );
+      }
+    }
+
     if (sessionsError) {
       logger.error("[TABLES GET] Sessions error:", { error: sessionsError });
       return apiErrors.database(
@@ -65,33 +93,59 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     // Combine tables with their sessions
+    // Filter out sessions where the order is completed (table should be FREE)
     const tablesWithSessions =
       tables?.map((table: Record<string, unknown>) => {
         const session = sessions?.find((s: Record<string, unknown>) => s.table_id === table.id) as
           | Record<string, unknown>
           | undefined;
+
+        // Check if the session's order is completed
+        const sessionOrderId = session?.order_id as string | null | undefined;
+        const order = sessionOrderId ? orderCompletionMap[sessionOrderId] : null;
+        const isOrderCompleted =
+          order?.completion_status?.toUpperCase() === "COMPLETED" ||
+          (order?.order_status &&
+            ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(
+              order.order_status.toUpperCase()
+            ));
+
+        // If order is completed, treat session as if it doesn't exist (table is FREE)
+        const effectiveSession = isOrderCompleted ? null : session;
+
         const tableRecord = table as Record<string, unknown>;
         const result = {
           ...tableRecord,
           table_id: tableRecord.id as string, // Add table_id field for consistency with TableRuntimeState interface
           merged_with_table_id: (tableRecord.merged_with_table_id as string | null) || null, // Include merge relationship
-          session_id: (session?.id as string | null) || null,
-          status: (session?.status as string) || "FREE",
-          order_id: (session?.order_id as string | null) || null,
-          opened_at: (session?.opened_at as string | null) || null,
-          closed_at: (session?.closed_at as string | null) || null,
-          total_amount: (session?.total_amount as number | null) || null,
-          customer_name: (session?.customer_name as string | null) || null,
-          order_status: (session?.order_status as string | null) || null,
-          payment_status: (session?.payment_status as string | null) || null,
-          order_updated_at: (session?.order_updated_at as string | null) || null,
-          reservation_time: (session?.reservation_time as string | null) || null,
+          session_id: (effectiveSession?.id as string | null) || null,
+          status: isOrderCompleted ? "FREE" : ((effectiveSession?.status as string) || "FREE"),
+          order_id: isOrderCompleted ? null : ((effectiveSession?.order_id as string | null) || null),
+          opened_at: (effectiveSession?.opened_at as string | null) || null,
+          closed_at: (effectiveSession?.closed_at as string | null) || null,
+          total_amount: (effectiveSession?.total_amount as number | null) || null,
+          customer_name: (effectiveSession?.customer_name as string | null) || null,
+          order_status: isOrderCompleted
+            ? null
+            : ((effectiveSession?.order_status as string | null) || null),
+          completion_status: order?.completion_status || null, // Include completion_status for table state logic
+          // If order is completed, automatically close the session (cleanup)
+          ...(isOrderCompleted && effectiveSession
+            ? {
+                // Trigger cleanup: close session and clear order_id
+                _shouldCleanup: true,
+              }
+            : {}),
+          payment_status: (effectiveSession?.payment_status as string | null) || null,
+          order_updated_at: (effectiveSession?.order_updated_at as string | null) || null,
+          reservation_time: (effectiveSession?.reservation_time as string | null) || null,
           reservation_duration_minutes:
-            (session?.reservation_duration_minutes as number | null) || null,
-          reservation_end_time: (session?.reservation_end_time as string | null) || null,
-          reservation_created_at: (session?.reservation_created_at as string | null) || null,
+            (effectiveSession?.reservation_duration_minutes as number | null) || null,
+          reservation_end_time: (effectiveSession?.reservation_end_time as string | null) || null,
+          reservation_created_at: (effectiveSession?.reservation_created_at as string | null) || null,
           most_recent_activity:
-            (session?.most_recent_activity as string) || (tableRecord.table_created_at as string),
+            (effectiveSession?.most_recent_activity as string) ||
+            (tableRecord.table_created_at as string),
           reserved_now_id: null,
           reserved_now_start: null,
           reserved_now_end: null,
@@ -107,6 +161,88 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
         return result;
       }) || [];
+
+    // Proactively clean up sessions with completed orders (background cleanup)
+    // This ensures tables are freed immediately when orders complete
+    const sessionsToCleanup = (sessions || []).filter((s: Record<string, unknown>) => {
+      const orderId = s.order_id as string | null | undefined;
+      if (!orderId) return false;
+      const order = orderCompletionMap[orderId];
+      return (
+        order?.completion_status?.toUpperCase() === "COMPLETED" ||
+        (order?.order_status &&
+          ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(
+            order.order_status.toUpperCase()
+          ))
+      );
+    });
+
+    if (sessionsToCleanup.length > 0) {
+      // Clean up in background (don't block response)
+      Promise.all(
+        sessionsToCleanup.map(async (session: Record<string, unknown>) => {
+          const sessionId = session.id as string;
+          const orderId = session.order_id as string;
+          const tableId = session.table_id as string;
+          const tableNumber = session.table_number as number | null;
+
+          try {
+            // Close the session and clear order_id
+            await supabase
+              .from("table_sessions")
+              .update({
+                status: "FREE",
+                order_id: null,
+                closed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", sessionId);
+
+            // Also clear table runtime state if we have table_number
+            if (tableNumber) {
+              await supabase
+                .from("table_runtime_state")
+                .update({
+                  primary_status: "FREE",
+                  order_id: null,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("venue_id", context.venueId)
+                .eq("label", `Table ${tableNumber}`);
+            }
+
+            // Clear by table_id if available
+            if (tableId) {
+              await supabase
+                .from("table_runtime_state")
+                .update({
+                  primary_status: "FREE",
+                  order_id: null,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("venue_id", context.venueId)
+                .eq("table_id", tableId);
+            }
+
+            logger.debug("[TABLES GET] Cleaned up session with completed order", {
+              sessionId,
+              orderId,
+              tableId,
+              tableNumber,
+            });
+          } catch (cleanupError) {
+            logger.error("[TABLES GET] Error cleaning up session:", {
+              sessionId,
+              error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+            });
+          }
+        })
+      ).catch((error) => {
+        logger.error("[TABLES GET] Background cleanup error:", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    }
 
     // Ensure all tables have active sessions (create missing ones)
     const tablesWithoutSessions = tablesWithSessions.filter((t) => !t.session_id);
