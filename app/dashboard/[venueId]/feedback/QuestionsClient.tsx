@@ -458,14 +458,34 @@ export default function QuestionsClient({
     if (!confirm("Are you sure you want to delete this question?")) return;
 
     try {
-      const response = await fetch("/api/feedback/questions", {
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      
+      // Add venueId to query string to help withUnifiedAuth extract it
+      const url = new URL("/api/feedback/questions", window.location.origin);
+      url.searchParams.set("venueId", normalizedVenueId);
+      
+      const response = await fetch(url.toString(), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ id, venue_id: venueId }),
+        body: JSON.stringify({ id }),
       });
 
-      if (response.ok) {
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        console.error("[QuestionsClient] Failed to parse delete response:", parseError);
+        toast({
+          title: "Error",
+          description: `Server error (${response.status}). Please try again.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (response.ok && responseData.success) {
         toast({
           title: "Success",
           description: "Question deleted successfully",
@@ -483,16 +503,32 @@ export default function QuestionsClient({
           window.dispatchEvent(new CustomEvent("feedbackQuestionsUpdated"));
         }
       } else {
+        // Extract error message from response
+        const errorMessage =
+          responseData?.error?.message ||
+          responseData?.message ||
+          (typeof responseData?.error === "string" ? responseData.error : null) ||
+          `Failed to delete question (${response.status})`;
+        
+        console.error("[QuestionsClient] Delete error:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorData: responseData,
+          questionId: id,
+          venueId: normalizedVenueId,
+        });
+        
         toast({
           title: "Error",
-          description: "Couldn't delete question",
+          description: errorMessage,
           variant: "destructive",
         });
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error("[QuestionsClient] Unexpected error deleting question:", error);
       toast({
         title: "Error",
-        description: "Couldn't delete question",
+        description: error instanceof Error ? error.message : "Couldn't delete question",
         variant: "destructive",
       });
     }
