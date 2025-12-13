@@ -558,12 +558,12 @@ export function withUnifiedAuth(
         }
       }
 
-      logger.debug(
-        "[UNIFIED AUTH] Final venueId:",
+      logger.debug("[UNIFIED AUTH] Final venueId extracted", {
         venueId,
-        "usedCustomExtractor:",
-        usedCustomExtractor
-      );
+        usedCustomExtractor,
+        url: req.url,
+        method: req.method,
+      });
 
       // If custom extractor returned null, this route doesn't need venueId - skip venue check
       if (!venueId && usedCustomExtractor) {
@@ -600,18 +600,36 @@ export function withUnifiedAuth(
 
       // Auth + venue access (venueId is required)
       if (!venueId) {
-        logger.error("[UNIFIED AUTH] venueId is required but not found");
+        logger.error("[UNIFIED AUTH] venueId is required but not found", {
+          url: req.url,
+          method: req.method,
+          hasExtractor: !!options?.extractVenueId,
+          extractorResult: venueId,
+        });
         return NextResponse.json(
-          { error: "Bad Request", message: "venueId is required" },
+          {
+            error: "Bad Request",
+            message: "venueId is required",
+            details: "The venueId could not be extracted from the request. Please ensure venueId is provided in the query parameters or request body.",
+          },
           { status: 400 }
         );
       }
 
-      logger.debug("[UNIFIED AUTH] Step 2: Checking authentication and venue access...");
+      logger.debug("[UNIFIED AUTH] Step 2: Checking authentication and venue access...", {
+        venueId,
+        url: req.url,
+        method: req.method,
+      });
       const authResult = await requireAuthAndVenueAccess(req, venueId);
 
       if (!authResult.success) {
-        logger.error("[UNIFIED AUTH] Auth/venue access check failed");
+        logger.error("[UNIFIED AUTH] Auth/venue access check failed", {
+          venueId,
+          url: req.url,
+          method: req.method,
+          responseStatus: authResult.response.status,
+        });
         return authResult.response;
       }
 

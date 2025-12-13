@@ -103,11 +103,31 @@ export default function QuestionsClient({
       if (!response.ok) {
         // Try to get error details from response
         let errorMessage = `Failed to fetch questions: ${response.statusText}`;
+        let errorDetails: unknown = null;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          errorMessage =
+            errorData.message ||
+            errorData.error?.message ||
+            (typeof errorData.error === "string" ? errorData.error : null) ||
+            errorData.details ||
+            errorMessage;
+          errorDetails = errorData;
+          console.error("[QuestionsClient] API error response:", {
+            status: response.status,
+            statusText: response.statusText,
+            errorData,
+            url: response.url,
+            venueId: normalizedVenueId,
+          });
         } catch {
           // If response isn't JSON, use status text
+          console.error("[QuestionsClient] API error (non-JSON):", {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url,
+            venueId: normalizedVenueId,
+          });
         }
         throw new Error(errorMessage);
       }
