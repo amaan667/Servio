@@ -1227,19 +1227,40 @@ export const DELETE = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
+        // For DELETE requests, check both query params and body
         const { searchParams } = new URL(req.url);
-        const venueId = searchParams.get("venueId");
+        let venueId = searchParams.get("venueId");
+        
+        // If not in query params and it's a DELETE request, check body
+        if (!venueId && req.method === "DELETE") {
+          try {
+            const clonedReq = req.clone();
+            const body = await clonedReq.json().catch(() => ({}));
+            venueId = body.venue_id || body.venueId || null;
+            logger.debug("[FEEDBACK QUESTIONS DELETE] Extracted venueId from body", {
+              venueId,
+              bodyKeys: Object.keys(body),
+            });
+          } catch {
+            // Body parsing failed, continue with query param only
+            logger.debug("[FEEDBACK QUESTIONS DELETE] Body parsing failed, using query params only");
+          }
+        }
+        
         if (!venueId) {
-          logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
+          logger.warn("[FEEDBACK QUESTIONS DELETE] venueId not found in query params or body", {
             url: req.url,
             searchParams: Object.fromEntries(searchParams.entries()),
+            method: req.method,
           });
         }
         return venueId;
       } catch (error) {
-        logger.error("[FEEDBACK QUESTIONS] Error extracting venueId", {
+        logger.error("[FEEDBACK QUESTIONS DELETE] Error extracting venueId", {
           error: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
           url: req.url,
+          method: req.method,
         });
         return null;
       }
