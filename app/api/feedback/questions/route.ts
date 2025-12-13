@@ -150,30 +150,51 @@ export const GET = withUnifiedAuth(
       const activeCount = questions?.filter((q) => q.is_active).length || 0;
 
       // STEP 4: Transform questions to match frontend expectations (prompt, type, choices)
-      const transformedQuestions = (questions || []).map(
-        (q: {
-          id: string;
-          question_text?: string;
-          question?: string;
-          question_type: string;
-          options?: string[] | null;
-          is_active: boolean;
-          display_order?: number;
-          created_at: string;
-          updated_at: string;
-          venue_id: string;
-        }) => ({
-          id: q.id,
-          prompt: q.question_text || q.question || "", // Map 'question_text' or 'question' to 'prompt' for frontend
-          type: q.question_type, // Map 'question_type' to 'type' for frontend
-          choices: q.options || [], // Map 'options' to 'choices' for frontend
-          is_active: q.is_active,
-          sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
-          created_at: q.created_at,
-          updated_at: q.updated_at,
-          venue_id: q.venue_id,
-        })
-      );
+      // Filter out questions without valid prompts and ensure prompt is always present
+      const transformedQuestions = (questions || [])
+        .map(
+          (q: {
+            id: string;
+            question_text?: string;
+            question?: string;
+            text?: string;
+            prompt?: string;
+            question_type: string;
+            options?: string[] | null;
+            is_active: boolean;
+            display_order?: number;
+            created_at: string;
+            updated_at: string;
+            venue_id: string;
+          }) => {
+            // Try all possible column names for the question text
+            const prompt =
+              q.question_text || q.question || q.text || q.prompt || "";
+            
+            // Only include questions with valid prompts
+            if (!prompt || prompt.trim().length === 0) {
+              logger.warn("[FEEDBACK QUESTIONS GET] Question missing prompt, skipping", {
+                questionId: q.id,
+                venueId: normalizedVenueId,
+                availableFields: Object.keys(q),
+              });
+              return null;
+            }
+
+            return {
+              id: q.id,
+              prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
+              type: q.question_type, // Map 'question_type' to 'type' for frontend
+              choices: q.options || [], // Map 'options' to 'choices' for frontend
+              is_active: q.is_active,
+              sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
+              created_at: q.created_at,
+              updated_at: q.updated_at,
+              venue_id: q.venue_id,
+            };
+          }
+        )
+        .filter((q): q is NonNullable<typeof q> => q !== null); // Remove null entries
 
       // STEP 5: Return success response
       return success({
@@ -768,9 +789,29 @@ export const POST = withUnifiedAuth(
       logger.info(
         `[FEEDBACK QUESTIONS POST ${requestId}] Step 5: Transforming question for frontend`
       );
+      
+      // Extract prompt from all possible column names
+      const prompt =
+        (question as { question?: string }).question ||
+        (question as { question_text?: string }).question_text ||
+        (question as { text?: string }).text ||
+        (question as { prompt?: string }).prompt ||
+        body.prompt || // Fallback to the original prompt from request body
+        "";
+      
+      if (!prompt || prompt.trim().length === 0) {
+        const errorMsg = `${logPrefix} ERROR: Question created but prompt is missing`;
+        logger.error(errorMsg, {
+          questionId: question.id,
+          questionFields: Object.keys(question),
+          bodyPrompt: body.prompt,
+        });
+        return apiErrors.internal("Question created but prompt is missing");
+      }
+
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question || question.question_text || "", // Map 'question' or 'question_text' to 'prompt'
+        prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,
@@ -1010,9 +1051,27 @@ export const PATCH = withUnifiedAuth(
       });
 
       // STEP 6: Transform question to match frontend expectations
+      // Extract prompt from all possible column names
+      const prompt =
+        (question as { question?: string }).question ||
+        (question as { question_text?: string }).question_text ||
+        (question as { text?: string }).text ||
+        (question as { prompt?: string }).prompt ||
+        body.prompt || // Fallback to the original prompt from request body
+        "";
+      
+      if (!prompt || prompt.trim().length === 0) {
+        logger.error("[FEEDBACK QUESTIONS PATCH] Question updated but prompt is missing", {
+          questionId: question.id,
+          questionFields: Object.keys(question),
+          bodyPrompt: body.prompt,
+        });
+        return apiErrors.internal("Question updated but prompt is missing");
+      }
+
       const transformedQuestion = {
         id: question.id,
-        prompt: question.question || question.question_text || "", // Map 'question' or 'question_text' to 'prompt'
+        prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
         is_active: question.is_active,

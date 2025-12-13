@@ -139,19 +139,27 @@ export default function QuestionsClient({
       }
 
       // Ensure all questions have required fields with defaults
-      const transformedQuestions = (data.data.questions as FeedbackQuestion[]).map(
-        (q: FeedbackQuestion) => ({
+      // Filter out questions without valid prompts (shouldn't happen, but safety check)
+      const transformedQuestions = (data.data.questions as FeedbackQuestion[])
+        .filter((q: FeedbackQuestion) => {
+          // Only include questions with valid prompts
+          if (!q.prompt || q.prompt.trim().length === 0) {
+            console.warn("[QuestionsClient] Question missing prompt, filtering out:", q.id);
+            return false;
+          }
+          return true;
+        })
+        .map((q: FeedbackQuestion) => ({
           ...q,
           type: (q.type || "stars") as FeedbackType, // Ensure type is always valid
-          prompt: q.prompt || "Untitled Question", // Ensure prompt exists with fallback
+          prompt: q.prompt.trim(), // Ensure prompt is trimmed and never empty
           is_active: q.is_active ?? true, // Default to active
           sort_index: q.sort_index ?? 0, // Default sort_index
           choices: q.choices || [], // Ensure choices is an array
           created_at: q.created_at || new Date().toISOString(),
           updated_at: q.updated_at || new Date().toISOString(),
           venue_id: q.venue_id || venueId,
-        })
-      );
+        }));
 
       // Sort questions by sort_index and created_at to ensure proper order
       const sortedQuestions = transformedQuestions.sort(
@@ -628,7 +636,7 @@ export default function QuestionsClient({
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground">
-                            {question.prompt || "Untitled Question"}
+                            {question.prompt}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             {getTypeBadge(question?.type)}
@@ -864,7 +872,7 @@ export default function QuestionsClient({
                         key={question.id}
                         className="flex items-center justify-between p-2 bg-green-50 rounded"
                       >
-                        <span className="text-sm">{question.prompt || "Untitled Question"}</span>
+                        <span className="text-sm">{question.prompt}</span>
                         {getTypeBadge(question.type)}
                       </div>
                     ))}
@@ -927,7 +935,7 @@ export default function QuestionsClient({
                                 <span className="font-medium">{index + 1}.</span>
                               </div>
                               <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                                {question.prompt || "Untitled Question"}
+                                {question.prompt}
                               </h4>
                             </div>
 
