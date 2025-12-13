@@ -267,12 +267,22 @@ export async function validateBody<T extends z.ZodType>(
 
 /**
  * Helper to validate query parameters
+ * Throws ZodError on validation failure
  */
 export function validateQuery<T extends z.ZodType>(
   schema: T,
   query: Record<string, unknown>
 ): z.infer<T> {
-  return schema.parse(query);
+  try {
+    return schema.parse(query);
+  } catch (error) {
+    // Re-throw ZodError as-is for proper error handling
+    if (error instanceof z.ZodError) {
+      throw error;
+    }
+    // Wrap other errors
+    throw new Error("Validation failed");
+  }
 }
 
 /**

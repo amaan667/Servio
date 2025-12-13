@@ -56,10 +56,30 @@ export const GET = withUnifiedAuth(
         limit: z.coerce.number().int().min(1).max(500).default(200),
         offset: z.coerce.number().int().min(0).default(0),
       });
-      const { limit, offset } = validateQuery(paginationSchema, {
-        limit: req.nextUrl.searchParams.get("limit"),
-        offset: req.nextUrl.searchParams.get("offset"),
-      });
+      
+      let limit = 200;
+      let offset = 0;
+      
+      try {
+        const pagination = validateQuery(paginationSchema, {
+          limit: req.nextUrl.searchParams.get("limit"),
+          offset: req.nextUrl.searchParams.get("offset"),
+        });
+        limit = pagination.limit;
+        offset = pagination.offset;
+      } catch (error) {
+        if (isZodError(error)) {
+          logger.warn("[FEEDBACK QUESTIONS GET] Pagination validation error, using defaults", {
+            error: (error as z.ZodError).errors,
+            url: req.url,
+          });
+          // Use defaults if validation fails
+        } else {
+          logger.error("[FEEDBACK QUESTIONS GET] Unexpected pagination validation error", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
 
       if (!venueId) {
         return apiErrors.badRequest("venueId is required");
