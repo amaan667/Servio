@@ -9,6 +9,17 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
+function looksLikeMissingLifecycleColumn(message: string): boolean {
+  const m = message.toLowerCase();
+  // Supabase/PostgREST errors vary, but missing columns usually include the column name.
+  return (
+    m.includes("completion_status") ||
+    m.includes("kitchen_status") ||
+    m.includes("service_status") ||
+    m.includes("payment_method")
+  );
+}
+
 // Function to automatically backfill missing KDS tickets for orders
 // Returns true if tickets were created, false otherwise
 // SECURITY: This function is called from within withUnifiedAuth context, so venue access is already verified
@@ -26,18 +37,39 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
     // User wants ALL items from EVERY order to always be visible
 
     // Step 1: Get OPEN orders from this venue (KDS only shows OPEN orders)
-    const { data: allOrders, error: allOrdersError } = await adminSupabase
+    // NOTE: Production may not have the unified lifecycle migration applied yet.
+    // Fall back gracefully if new columns are missing.
+    let allOrders: Array<Record<string, unknown>> | null = null;
+    const allOrdersResult = await adminSupabase
       .from("orders")
       .select("id, payment_method, payment_status, completion_status")
       .eq("venue_id", venueId)
       .eq("completion_status", "OPEN");
 
-    if (allOrdersError) {
-      logger.error("[KDS AUTO-BACKFILL] Error querying all orders:", {
-        error: allOrdersError.message,
-        venueId,
-      });
-      return false;
+    if (allOrdersResult.error) {
+      // Backwards compatibility: if completion_status/payment_method columns don't exist yet, refetch without them
+      if (looksLikeMissingLifecycleColumn(allOrdersResult.error.message)) {
+        const legacyOrdersResult = await adminSupabase
+          .from("orders")
+          .select("id, payment_method, payment_status")
+          .eq("venue_id", venueId);
+        if (legacyOrdersResult.error) {
+          logger.error("[KDS AUTO-BACKFILL] Error querying orders (legacy fallback):", {
+            error: legacyOrdersResult.error.message,
+            venueId,
+          });
+          return false;
+        }
+        allOrders = legacyOrdersResult.data as Array<Record<string, unknown>> | null;
+      } else {
+        logger.error("[KDS AUTO-BACKFILL] Error querying all orders:", {
+          error: allOrdersResult.error.message,
+          venueId,
+        });
+        return false;
+      }
+    } else {
+      allOrders = allOrdersResult.data as Array<Record<string, unknown>> | null;
     }
 
     if (!allOrders || allOrders.length === 0) {
@@ -56,7 +88,8 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
 
     // Step 3: Filter to orders without tickets (in JavaScript - more reliable)
     const ordersWithoutTickets = (allOrders || []).filter((order) => {
-      const id = (order as { id: string }).id;
+      const id = String((order as { id?: unknown }).id || "");
+      if (!id) return false;
       if (existingOrderIds.has(id)) return false;
 
       // Don't backfill KDS tickets for unpaid PAY_NOW orders (kitchen should only see paid PAY_NOW)
@@ -81,7 +114,7 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
       const { data: order } = await adminSupabase
         .from("orders")
         .select("id, venue_id, table_number, table_id, items, customer_name")
-        .eq("id", orderRef.id)
+        .eq("id", String(orderRef.id))
         .single();
 
       if (!order) {
@@ -168,10 +201,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // CRITICAL: Fetch ALL tickets - no status or date restrictions
     // Show tickets for OPEN orders only (completed orders should drop out of operational views)
-    let query = supabase
-      .from("kds_tickets")
-      .select(
-        `
+    const selectWithLifecycle = `
           *,
           kds_stations (
             id,
@@ -189,8 +219,26 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
             payment_method,
             payment_status
           )
-        `
-      )
+        `;
+    const selectLegacy = `
+          *,
+          kds_stations (
+            id,
+            station_name,
+            station_type,
+            color_code
+          ),
+          orders (
+            id,
+            customer_name,
+            order_status,
+            payment_status
+          )
+        `;
+
+    let query = supabase
+      .from("kds_tickets")
+      .select(selectWithLifecycle)
       .eq("venue_id", venueId)
       .eq("orders.completion_status", "OPEN")
       .order("created_at", { ascending: false });
@@ -203,19 +251,47 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       query = query.eq("status", status);
     }
 
-    const { data: tickets, error: fetchError } = await query;
-
-    if (fetchError) {
-      logger.error("[KDS TICKETS] Error fetching tickets:", {
-        error: fetchError.message,
-        venueId,
-        stationId,
-        userId: context.user.id,
-      });
-      return apiErrors.database(
-        "Failed to fetch KDS tickets",
-        isDevelopment() ? fetchError.message : undefined
-      );
+    let tickets: unknown[] | null = null;
+    const firstAttempt = await query;
+    if (firstAttempt.error) {
+      // Backwards compatibility: if lifecycle columns aren't in prod yet, fall back to legacy select.
+      if (looksLikeMissingLifecycleColumn(firstAttempt.error.message)) {
+        let legacyQuery = supabase
+          .from("kds_tickets")
+          .select(selectLegacy)
+          .eq("venue_id", venueId)
+          .order("created_at", { ascending: false });
+        if (stationId) legacyQuery = legacyQuery.eq("station_id", stationId);
+        if (status) legacyQuery = legacyQuery.eq("status", status);
+        const legacyAttempt = await legacyQuery;
+        if (legacyAttempt.error) {
+          logger.error("[KDS TICKETS] Error fetching tickets (legacy fallback):", {
+            error: legacyAttempt.error.message,
+            venueId,
+            stationId,
+            userId: context.user.id,
+          });
+          return apiErrors.database(
+            "Failed to fetch KDS tickets",
+            isDevelopment() ? legacyAttempt.error.message : undefined
+          );
+        }
+        tickets = legacyAttempt.data as unknown[] | null;
+      } else {
+        const fetchError = firstAttempt.error;
+        logger.error("[KDS TICKETS] Error fetching tickets:", {
+          error: fetchError.message,
+          venueId,
+          stationId,
+          userId: context.user.id,
+        });
+        return apiErrors.database(
+          "Failed to fetch KDS tickets",
+          isDevelopment() ? fetchError.message : undefined
+        );
+      }
+    } else {
+      tickets = firstAttempt.data as unknown[] | null;
     }
 
     // Auto-backfill missing tickets
@@ -224,33 +300,23 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     // Refetch if backfill created tickets or if no tickets were found initially
     let finalTickets = tickets || [];
     if (backfillCreatedTickets || !tickets || tickets.length === 0) {
-      const { data: refetchedTickets } = await supabase
+      const refetchAttempt = await supabase
         .from("kds_tickets")
-        .select(
-          `
-            *,
-            kds_stations (
-              id,
-              station_name,
-              station_type,
-              color_code
-            ),
-            orders (
-              id,
-              customer_name,
-              order_status,
-              kitchen_status,
-              service_status,
-              completion_status,
-              payment_method,
-              payment_status
-            )
-          `
-        )
+        .select(selectWithLifecycle)
         .eq("venue_id", venueId)
         .eq("orders.completion_status", "OPEN")
         .order("created_at", { ascending: false });
-      finalTickets = refetchedTickets || [];
+
+      if (refetchAttempt.error && looksLikeMissingLifecycleColumn(refetchAttempt.error.message)) {
+        const legacyRefetch = await supabase
+          .from("kds_tickets")
+          .select(selectLegacy)
+          .eq("venue_id", venueId)
+          .order("created_at", { ascending: false });
+        finalTickets = (legacyRefetch.data as unknown[] | null) || [];
+      } else {
+        finalTickets = (refetchAttempt.data as unknown[] | null) || [];
+      }
     }
 
     logger.info("[KDS TICKETS] Tickets fetched successfully", {
