@@ -293,9 +293,9 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.orders_force_complete_all(
   p_venue_id TEXT,
-  p_order_ids UUID[] DEFAULT NULL,
   p_forced_by UUID,
-  p_forced_reason TEXT
+  p_forced_reason TEXT,
+  p_order_ids UUID[] DEFAULT NULL
 )
 RETURNS INTEGER
 LANGUAGE plpgsql
