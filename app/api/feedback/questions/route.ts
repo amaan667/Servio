@@ -184,8 +184,23 @@ export const GET = withUnifiedAuth(
   },
   {
     extractVenueId: async (req) => {
-      const { searchParams } = new URL(req.url);
-      return searchParams.get("venueId");
+      try {
+        const { searchParams } = new URL(req.url);
+        const venueId = searchParams.get("venueId");
+        if (!venueId) {
+          logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
+            url: req.url,
+            searchParams: Object.fromEntries(searchParams.entries()),
+          });
+        }
+        return venueId;
+      } catch (error) {
+        logger.error("[FEEDBACK QUESTIONS] Error extracting venueId", {
+          error: error instanceof Error ? error.message : String(error),
+          url: req.url,
+        });
+        return null;
+      }
     },
   }
 );
@@ -819,8 +834,23 @@ export const POST = withUnifiedAuth(
   },
   {
     extractVenueId: async (req) => {
-      const { searchParams } = new URL(req.url);
-      return searchParams.get("venueId");
+      try {
+        const { searchParams } = new URL(req.url);
+        const venueId = searchParams.get("venueId");
+        if (!venueId) {
+          logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
+            url: req.url,
+            searchParams: Object.fromEntries(searchParams.entries()),
+          });
+        }
+        return venueId;
+      } catch (error) {
+        logger.error("[FEEDBACK QUESTIONS] Error extracting venueId", {
+          error: error instanceof Error ? error.message : String(error),
+          url: req.url,
+        });
+        return null;
+      }
     },
   }
 );
@@ -991,8 +1021,23 @@ export const PATCH = withUnifiedAuth(
   },
   {
     extractVenueId: async (req) => {
-      const { searchParams } = new URL(req.url);
-      return searchParams.get("venueId");
+      try {
+        const { searchParams } = new URL(req.url);
+        const venueId = searchParams.get("venueId");
+        if (!venueId) {
+          logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
+            url: req.url,
+            searchParams: Object.fromEntries(searchParams.entries()),
+          });
+        }
+        return venueId;
+      } catch (error) {
+        logger.error("[FEEDBACK QUESTIONS] Error extracting venueId", {
+          error: error instanceof Error ? error.message : String(error),
+          url: req.url,
+        });
+        return null;
+      }
     },
   }
 );
@@ -1102,8 +1147,23 @@ export const DELETE = withUnifiedAuth(
   },
   {
     extractVenueId: async (req) => {
-      const { searchParams } = new URL(req.url);
-      return searchParams.get("venueId");
+      try {
+        const { searchParams } = new URL(req.url);
+        const venueId = searchParams.get("venueId");
+        if (!venueId) {
+          logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
+            url: req.url,
+            searchParams: Object.fromEntries(searchParams.entries()),
+          });
+        }
+        return venueId;
+      } catch (error) {
+        logger.error("[FEEDBACK QUESTIONS] Error extracting venueId", {
+          error: error instanceof Error ? error.message : String(error),
+          url: req.url,
+        });
+        return null;
+      }
     },
   }
 );

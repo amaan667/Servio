@@ -81,7 +81,16 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch questions (${response.status})`);
+        // Try to get error details from response
+        let errorMessage = `Failed to fetch questions (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error("[EnhancedFeedbackSystem] Questions API error:", errorData);
+        } catch {
+          // If response isn't JSON, use status text
+        }
+        throw new Error(errorMessage);
       }
 
       const data = (await response.json()) as {
@@ -92,8 +101,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       const apiQuestions = data?.data?.questions || [];
       const active = apiQuestions.filter((q) => q.is_active);
       setQuestions(active);
-    } catch (_error) {
-      // Error silently handled
+    } catch (error) {
+      console.error("[EnhancedFeedbackSystem] Error fetching questions:", error);
+      // Set empty array on error to prevent UI issues
+      setQuestions([]);
     }
   }, [venueId]);
 

@@ -101,7 +101,15 @@ export default function QuestionsClient({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch questions: ${response.statusText}`);
+        // Try to get error details from response
+        let errorMessage = `Failed to fetch questions: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response isn't JSON, use status text
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
