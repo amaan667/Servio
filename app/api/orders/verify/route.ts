@@ -55,7 +55,7 @@ export async function GET(req: Request) {
 
     const { data: order, error: fetchError } = await supabaseAdmin
       .from("orders")
-      .select("id, venue_id, payment_status, stripe_session_id")
+      .select("id, venue_id, payment_status, stripe_session_id, payment_method")
       .eq("id", orderId)
       .single();
 
@@ -80,11 +80,16 @@ export async function GET(req: Request) {
 
     // Update payment status to PAID (fallback when webhook is delayed/missed)
     const nowIso = new Date().toISOString();
+    const existingPaymentMethod = String(order.payment_method || "").toUpperCase();
+    const safePaymentMethod = ["PAY_NOW", "PAY_LATER", "PAY_AT_TILL"].includes(existingPaymentMethod)
+      ? existingPaymentMethod
+      : "PAY_NOW";
     const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from("orders")
       .update({
         payment_status: "PAID",
-        payment_method: "PAY_NOW",
+        // Preserve original payment_method (PAY_LATER stays PAY_LATER).
+        payment_method: safePaymentMethod,
         stripe_session_id: order.stripe_session_id || session.id,
         stripe_payment_intent_id: String(session.payment_intent ?? ""),
         updated_at: nowIso,

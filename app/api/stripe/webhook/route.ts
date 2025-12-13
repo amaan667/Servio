@@ -251,7 +251,6 @@ export async function processCustomerCheckoutSession(
 
     const updateData: Record<string, unknown> = {
       payment_status: "PAID",
-      payment_method: "PAY_NOW",
       stripe_session_id: session.id,
       stripe_payment_intent_id: String(session.payment_intent ?? ""),
       updated_at: new Date().toISOString(),
@@ -281,7 +280,6 @@ export async function processCustomerCheckoutSession(
   } else if (orderId) {
     const updateData: Record<string, unknown> = {
       payment_status: "PAID",
-      payment_method: "PAY_NOW",
       stripe_session_id: session.id,
       stripe_payment_intent_id: String(session.payment_intent ?? ""),
       updated_at: new Date().toISOString(),
@@ -317,6 +315,74 @@ export async function processCustomerCheckoutSession(
   }
 
   const firstOrder = updatedOrders[0];
+
+  // Ensure PAY_NOW orders that were created without tickets get KDS tickets once paid.
+  // This keeps kitchen flow consistent and prevents unpaid pay-now orders from showing up in KDS.
+  try {
+    const { createKDSTicketsWithAI } = await import("@/lib/orders/kds-tickets-unified");
+
+    for (const ord of updatedOrders) {
+      const { count: ticketCount } = await supabaseAdmin
+        .from("kds_tickets")
+        .select("*", { count: "exact", head: true })
+        .eq("venue_id", ord.venue_id)
+        .eq("order_id", ord.id);
+
+      if ((ticketCount || 0) > 0) {
+        continue;
+      }
+
+      const { data: fullOrder } = await supabaseAdmin
+        .from("orders")
+        .select("id, venue_id, items, customer_name, table_number, table_id, payment_method, completion_status")
+        .eq("id", ord.id)
+        .single();
+
+      if (
+        !fullOrder ||
+        (fullOrder.completion_status || "").toString().toUpperCase() !== "OPEN" ||
+        (fullOrder.payment_method || "").toString().toUpperCase() !== "PAY_NOW"
+      ) {
+        continue;
+      }
+
+      if (!Array.isArray(fullOrder.items) || fullOrder.items.length === 0) {
+        continue;
+      }
+
+      await createKDSTicketsWithAI(supabaseAdmin, {
+        id: fullOrder.id,
+        venue_id: fullOrder.venue_id,
+        items: fullOrder.items,
+        customer_name: fullOrder.customer_name,
+        table_number: fullOrder.table_number,
+        table_id: fullOrder.table_id,
+      });
+
+      await supabaseAdmin
+        .from("orders")
+        .update({
+          kitchen_status: "PREPARING",
+          service_status: "NOT_SERVED",
+          completion_status: "OPEN",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", fullOrder.id)
+        .eq("venue_id", fullOrder.venue_id);
+
+      apiLogger.info("[CUSTOMER ORDER WEBHOOK] Created KDS tickets for paid PAY_NOW order", {
+        orderId: fullOrder.id,
+        venueId: fullOrder.venue_id,
+        correlationId,
+      });
+    }
+  } catch (_e) {
+    // Best-effort; don't fail successful payment processing if KDS ticket creation fails.
+    apiLogger.warn("[CUSTOMER ORDER WEBHOOK] Post-payment KDS ticket ensure failed", {
+      correlationId,
+      error: _e instanceof Error ? _e.message : String(_e),
+    });
+  }
 
   try {
     const { data: venue } = await supabaseAdmin

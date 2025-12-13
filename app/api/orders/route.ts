@@ -669,6 +669,10 @@ export async function POST(req: NextRequest) {
       order_status: payload.order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
       payment_status: payload.payment_status || "UNPAID",
       payment_method: payload.payment_method || "PAY_NOW", // Ensure payment_method is always set (required by constraint)
+      // Unified lifecycle defaults (canonical source of truth)
+      kitchen_status: "PREPARING",
+      service_status: "NOT_SERVED",
+      completion_status: "OPEN",
       payment_mode: (() => {
         // Ensure payment_mode matches payment_method for constraint consistency
         const method = payload.payment_method || "PAY_NOW";
@@ -864,27 +868,52 @@ export async function POST(req: NextRequest) {
 
     // Create KDS tickets for the order
     try {
-      logger.info("[ORDER CREATION DEBUG] Creating KDS tickets for order:", {
-        orderId: inserted[0].id,
-        itemCount: Array.isArray(inserted[0].items) ? inserted[0].items.length : 0,
-        venueId: inserted[0].venue_id,
-        requestId,
-      });
-      await createKDSTickets(supabase, inserted[0]);
-      logger.info("[ORDER CREATION DEBUG] ✅ KDS tickets created successfully", {
-        orderId: inserted[0].id,
-        requestId,
-      });
+      const orderForTickets = createdOrder;
+      const paymentMethod = String((orderForTickets as { payment_method?: unknown }).payment_method || "")
+        .toUpperCase()
+        .trim();
+      const paymentStatus = String((orderForTickets as { payment_status?: unknown }).payment_status || "")
+        .toUpperCase()
+        .trim();
+
+      // For PAY_NOW, only create KDS tickets once payment is confirmed.
+      // This prevents kitchen work starting before card payment is actually completed.
+      const shouldCreateTickets = paymentMethod !== "PAY_NOW" || paymentStatus === "PAID";
+
+      if (shouldCreateTickets) {
+        logger.info("[ORDER CREATION DEBUG] Creating KDS tickets for order:", {
+          orderId: (orderForTickets as { id: string }).id,
+          itemCount: Array.isArray((orderForTickets as { items?: unknown }).items)
+            ? ((orderForTickets as { items: unknown[] }).items.length || 0)
+            : 0,
+          venueId: (orderForTickets as { venue_id: string }).venue_id,
+          requestId,
+        });
+        await createKDSTickets(supabase, orderForTickets);
+        logger.info("[ORDER CREATION DEBUG] ✅ KDS tickets created successfully", {
+          orderId: (orderForTickets as { id: string }).id,
+          requestId,
+        });
+      } else {
+        logger.info("[ORDER CREATION DEBUG] Skipping KDS ticket creation for unpaid PAY_NOW order", {
+          orderId: (orderForTickets as { id: string }).id,
+          paymentMethod,
+          paymentStatus,
+          requestId,
+        });
+      }
     } catch (kdsError) {
       // Log detailed error but don't fail order creation
       const errorMessage = kdsError instanceof Error ? kdsError.message : JSON.stringify(kdsError);
       const errorStack = kdsError instanceof Error ? kdsError.stack : undefined;
       logger.error("[ORDER CREATION DEBUG] KDS ticket creation failed (non-critical)", {
-        orderId: inserted[0].id,
+        orderId: (createdOrder as { id: string }).id,
         error: errorMessage,
         stack: errorStack,
-        orderItems: Array.isArray(inserted[0].items) ? inserted[0].items.length : 0,
-        venueId: inserted[0].venue_id,
+        orderItems: Array.isArray((createdOrder as { items?: unknown }).items)
+          ? ((createdOrder as { items: unknown[] }).items.length || 0)
+          : 0,
+        venueId: (createdOrder as { venue_id: string }).venue_id,
         requestId,
         fullError: kdsError,
       });
@@ -894,11 +923,11 @@ export async function POST(req: NextRequest) {
     const duration = Date.now() - startTime;
 
     logger.info("✅✅✅ ORDER CREATED SUCCESSFULLY ✅✅✅", {
-      orderId: inserted[0].id,
-      customer: inserted[0].customer_name,
-      venue: inserted[0].venue_id,
-      table: inserted[0].table_number,
-      total: inserted[0].total_amount,
+      orderId: (createdOrder as { id: string }).id,
+      customer: (createdOrder as { customer_name?: string }).customer_name,
+      venue: (createdOrder as { venue_id: string }).venue_id,
+      table: (createdOrder as { table_number?: unknown }).table_number,
+      total: (createdOrder as { total_amount?: unknown }).total_amount,
       duration: `${duration}ms`,
       requestId,
     });

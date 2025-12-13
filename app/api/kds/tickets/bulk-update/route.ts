@@ -86,28 +86,25 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
       if (allBumped) {
         const { data: currentOrder } = await supabase
           .from("orders")
-          .select("order_status")
+          .select("order_status, kitchen_status")
           .eq("id", orderId)
           .eq("venue_id", venueId)
           .single();
 
-        logger.debug("[KDS BULK UPDATE] All tickets bumped - updating order status", {
+        logger.debug("[KDS BULK UPDATE] All tickets bumped - updating order kitchen_status", {
           orderId,
           currentStatus: currentOrder?.order_status,
-          updatingTo: "READY",
+          currentKitchenStatus: (currentOrder as { kitchen_status?: unknown })?.kitchen_status,
+          updatingTo: "BUMPED",
         });
 
-        const { error: orderUpdateError } = await supabase
-          .from("orders")
-          .update({
-            order_status: "READY",
-            updated_at: now,
-          })
-          .eq("id", orderId)
-          .eq("venue_id", venueId);
+        const { error: orderUpdateError } = await supabase.rpc("orders_set_kitchen_bumped", {
+          p_order_id: orderId,
+          p_venue_id: venueId,
+        });
 
         if (orderUpdateError) {
-          logger.error("[KDS BULK UPDATE] Error updating order status after bump:", {
+          logger.error("[KDS BULK UPDATE] Error updating order kitchen_status after bump:", {
             error: orderUpdateError.message,
             orderId,
             currentStatus: currentOrder?.order_status,
@@ -115,7 +112,7 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
             userId: context.user.id,
           });
         } else {
-          logger.info("[KDS BULK UPDATE] Order status updated to READY - all items bumped", {
+          logger.info("[KDS BULK UPDATE] Order kitchen_status updated to BUMPED - all items bumped", {
             orderId,
             previousStatus: currentOrder?.order_status,
             venueId,

@@ -13,6 +13,8 @@ export const runtime = "nodejs";
 
 const completeOrderSchema = z.object({
   orderId: z.string().uuid("Invalid order ID"),
+  forced: z.boolean().optional(),
+  forcedReason: z.string().min(1).max(500).optional(),
 });
 
 export const POST = withUnifiedAuth(
@@ -27,6 +29,8 @@ export const POST = withUnifiedAuth(
       // STEP 2: Validate input
       const body = await validateBody(completeOrderSchema, await req.json());
       const orderId = body.orderId;
+      const forced = body.forced === true;
+      const forcedReason = body.forcedReason;
 
       // STEP 3: Get venueId from context
       const venueId = context.venueId;
@@ -40,7 +44,9 @@ export const POST = withUnifiedAuth(
 
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
-        .select("id, venue_id, order_status, payment_status, table_id, table_number, source")
+        .select(
+          "id, venue_id, order_status, payment_status, payment_method, kitchen_status, service_status, completion_status, table_id, table_number, source"
+        )
         .eq("id", orderId)
         .eq("venue_id", venueId)
         .single();
@@ -55,43 +61,26 @@ export const POST = withUnifiedAuth(
         return apiErrors.notFound("Order not found");
       }
 
-      // Verify order is in a completable state
-      const completableStatuses = ["SERVED", "READY", "SERVING"];
-      if (!completableStatuses.includes(orderData.order_status)) {
-        return apiErrors.badRequest(
-          `Cannot complete order: current status is ${orderData.order_status}. Order must be SERVED, READY, or SERVING before completion.`
-        );
+      // Forced completion requires elevated role and auditable reason
+      if (forced && !["owner", "manager"].includes(context.role)) {
+        return apiErrors.forbidden("Forced completion requires owner or manager role");
+      }
+      if (forced && (!forcedReason || forcedReason.trim().length === 0)) {
+        return apiErrors.badRequest("forcedReason is required when forced=true");
       }
 
-      // Verify payment status - must be in a paid state
-      const paidStatuses = ["PAID", "TILL"];
-      if (!paidStatuses.includes(orderData.payment_status?.toUpperCase() || "")) {
+      // Canonical completion transition (atomic eligibility check in RPC)
+      const { data: completedRows, error: completeError } = await supabase.rpc("orders_complete", {
+        p_order_id: orderId,
+        p_venue_id: venueId,
+        p_forced: forced,
+        p_forced_by: forced ? context.user.id : null,
+        p_forced_reason: forced ? forcedReason : null,
+      });
+
+      if (completeError) {
         return apiErrors.badRequest(
-          `Cannot complete order: payment status is ${orderData.payment_status}. Order must be PAID or TILL before completion.`
-        );
-      }
-
-      // Update order status to COMPLETED
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({
-          order_status: "COMPLETED",
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", orderId)
-        .eq("venue_id", venueId);
-
-      if (updateError) {
-        logger.error("[ORDERS COMPLETE] Error updating order:", {
-          error: updateError.message,
-          orderId,
-          venueId,
-          userId: context.user.id,
-        });
-        return apiErrors.database(
-          "Failed to complete order",
-          isDevelopment() ? updateError.message : undefined
+          isDevelopment() ? completeError.message : "Order not eligible for completion"
         );
       }
 
@@ -99,6 +88,7 @@ export const POST = withUnifiedAuth(
         orderId,
         venueId,
         userId: context.user.id,
+        forced,
       });
 
       // STEP 5: Clear table session if order has table
@@ -138,7 +128,10 @@ export const POST = withUnifiedAuth(
       // STEP 6: Return success response
       return success({
         success: true,
-        message: "Order marked as completed and table freed",
+        message: forced
+          ? "Order force-completed and table freed"
+          : "Order marked as completed and table freed",
+        order: Array.isArray(completedRows) ? completedRows[0] : completedRows,
       });
     } catch (error) {
       logger.error("[ORDERS COMPLETE] Unexpected error:", {

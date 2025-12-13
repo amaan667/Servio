@@ -25,11 +25,12 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
     // CRITICAL: Get ALL orders - NO date restrictions, NO status filters, NO subquery limitations
     // User wants ALL items from EVERY order to always be visible
 
-    // Step 1: Get ALL orders from this venue
+    // Step 1: Get OPEN orders from this venue (KDS only shows OPEN orders)
     const { data: allOrders, error: allOrdersError } = await adminSupabase
       .from("orders")
-      .select("id")
-      .eq("venue_id", venueId);
+      .select("id, payment_method, payment_status, completion_status")
+      .eq("venue_id", venueId)
+      .eq("completion_status", "OPEN");
 
     if (allOrdersError) {
       logger.error("[KDS AUTO-BACKFILL] Error querying all orders:", {
@@ -54,7 +55,16 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
     );
 
     // Step 3: Filter to orders without tickets (in JavaScript - more reliable)
-    const ordersWithoutTickets = allOrders.filter((order) => !existingOrderIds.has(order.id));
+    const ordersWithoutTickets = (allOrders || []).filter((order) => {
+      const id = (order as { id: string }).id;
+      if (existingOrderIds.has(id)) return false;
+
+      // Don't backfill KDS tickets for unpaid PAY_NOW orders (kitchen should only see paid PAY_NOW)
+      const method = String((order as { payment_method?: unknown }).payment_method || "").toUpperCase();
+      const status = String((order as { payment_status?: unknown }).payment_status || "").toUpperCase();
+      if (method === "PAY_NOW" && status !== "PAID") return false;
+      return true;
+    });
 
     if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
       return false;
@@ -157,7 +167,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     const supabase = await createClient();
 
     // CRITICAL: Fetch ALL tickets - no status or date restrictions
-    // User wants ALL items from EVERY order to always be visible
+    // Show tickets for OPEN orders only (completed orders should drop out of operational views)
     let query = supabase
       .from("kds_tickets")
       .select(
@@ -173,11 +183,16 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
             id,
             customer_name,
             order_status,
+            kitchen_status,
+            service_status,
+            completion_status,
+            payment_method,
             payment_status
           )
         `
       )
       .eq("venue_id", venueId)
+      .eq("orders.completion_status", "OPEN")
       .order("created_at", { ascending: false });
 
     if (stationId) {
@@ -224,11 +239,16 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
               id,
               customer_name,
               order_status,
+              kitchen_status,
+              service_status,
+              completion_status,
+              payment_method,
               payment_status
             )
           `
         )
         .eq("venue_id", venueId)
+        .eq("orders.completion_status", "OPEN")
         .order("created_at", { ascending: false });
       finalTickets = refetchedTickets || [];
     }
@@ -376,32 +396,29 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
         allBumped,
       });
 
-      // Only update order status if ALL tickets are bumped
+      // Only update order kitchen_status if ALL tickets are bumped
       if (allBumped) {
         const { data: currentOrder } = await supabase
           .from("orders")
-          .select("order_status")
+          .select("order_status, kitchen_status")
           .eq("id", currentTicket.order_id)
           .eq("venue_id", venueId)
           .single();
 
-        logger.debug("[KDS TICKETS] All tickets bumped - updating order status", {
+        logger.debug("[KDS TICKETS] All tickets bumped - updating order kitchen_status", {
           orderId: currentTicket.order_id,
           currentStatus: currentOrder?.order_status,
-          updatingTo: "READY",
+          currentKitchenStatus: (currentOrder as { kitchen_status?: unknown })?.kitchen_status,
+          updatingTo: "BUMPED",
         });
 
-        const { error: orderUpdateError } = await supabase
-          .from("orders")
-          .update({
-            order_status: "READY",
-            updated_at: now,
-          })
-          .eq("id", currentTicket.order_id)
-          .eq("venue_id", venueId);
+        const { error: orderUpdateError } = await supabase.rpc("orders_set_kitchen_bumped", {
+          p_order_id: currentTicket.order_id,
+          p_venue_id: venueId,
+        });
 
         if (orderUpdateError) {
-          logger.error("[KDS TICKETS] Error updating order status after bump:", {
+          logger.error("[KDS TICKETS] Error updating order kitchen_status after bump:", {
             error: orderUpdateError.message,
             orderId: currentTicket.order_id,
             currentStatus: currentOrder?.order_status,
@@ -409,7 +426,7 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
             userId: context.user.id,
           });
         } else {
-          logger.info("[KDS TICKETS] Order status updated to READY - all items bumped", {
+          logger.info("[KDS TICKETS] Order kitchen_status updated to BUMPED - all items bumped", {
             orderId: currentTicket.order_id,
             previousStatus: currentOrder?.order_status,
             venueId,
