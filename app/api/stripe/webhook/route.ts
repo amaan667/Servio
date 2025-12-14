@@ -359,9 +359,12 @@ export async function processCustomerCheckoutSession(
         table_id: fullOrder.table_id,
       });
 
+      // Update order status to IN_PREP to show "preparing in kitchen" label in live orders
+      // Also set unified lifecycle fields for proper status tracking
       await supabaseAdmin
         .from("orders")
         .update({
+          order_status: "IN_PREP", // Set to IN_PREP to show "preparing in kitchen" label
           kitchen_status: "PREPARING",
           service_status: "NOT_SERVED",
           completion_status: "OPEN",

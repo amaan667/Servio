@@ -51,7 +51,7 @@ export function useOrderManagement(venueId: string) {
         // Show both paid and unpaid orders so freshly placed orders always appear.
         // This avoids the "count shows 1 but list is empty" mismatch.
         .in("payment_status", ["PAID", "UNPAID", "TILL"])
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }); // Sort by creation time, then we'll re-sort to put COMPLETED at bottom
 
       const { data: allData, error: allError } = await createClient()
         .from("orders")
@@ -73,9 +73,22 @@ export function useOrderManagement(venueId: string) {
 
       if (!liveError && liveData) {
         const liveOrders = liveData as Order[];
-        setOrders(liveOrders);
+        // Sort orders: COMPLETED orders go to bottom, active orders at top (newest first)
+        const sortedLiveOrders = [...liveOrders].sort((a, b) => {
+          const aIsCompleted = a.order_status === "COMPLETED";
+          const bIsCompleted = b.order_status === "COMPLETED";
+          
+          // If one is completed and the other isn't, completed goes to bottom
+          if (aIsCompleted && !bIsCompleted) return 1;
+          if (!aIsCompleted && bIsCompleted) return -1;
+          
+          // Both same type, sort by creation time (newest first)
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        
+        setOrders(sortedLiveOrders);
         // ANTI-FLICKER: Cache live orders
-        PersistentCache.set(`live_orders_${venueId}`, liveOrders, 2 * 60 * 1000); // 2 min TTL
+        PersistentCache.set(`live_orders_${venueId}`, sortedLiveOrders, 2 * 60 * 1000); // 2 min TTL
       }
 
       if (!allError && allData) {
@@ -167,7 +180,17 @@ export function useOrderManagement(venueId: string) {
     const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
 
     if (isLiveOrder && isRecentOrder) {
-      setOrders((prev) => [order, ...prev]);
+      setOrders((prev) => {
+        // Sort orders: COMPLETED at bottom, active at top (newest first)
+        const updated = [order, ...prev];
+        return updated.sort((a, b) => {
+          const aIsCompleted = a.order_status === "COMPLETED";
+          const bIsCompleted = b.order_status === "COMPLETED";
+          if (aIsCompleted && !bIsCompleted) return 1;
+          if (!aIsCompleted && bIsCompleted) return -1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+      });
     }
 
     const isInTodayWindow =
@@ -203,11 +226,30 @@ export function useOrderManagement(venueId: string) {
     const orderCreatedAt = new Date(order.created_at);
     const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
 
+    // Sort orders: COMPLETED orders go to bottom, others stay at top (newest first)
+    const sortOrders = (ordersList: Order[]): Order[] => {
+      return [...ordersList].sort((a, b) => {
+        const aIsCompleted = a.order_status === "COMPLETED";
+        const bIsCompleted = b.order_status === "COMPLETED";
+        
+        // If one is completed and the other isn't, completed goes to bottom
+        if (aIsCompleted && !bIsCompleted) return 1;
+        if (!aIsCompleted && bIsCompleted) return -1;
+        
+        // Both same type, sort by creation time (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    };
+
     if (isLiveOrder && isRecentOrder) {
       setOrders((prev) => {
         const exists = prev.find((o) => o.id === order.id);
-        if (!exists) return [order, ...prev];
-        return prev.map((o) => (o.id === order.id ? order : o));
+        if (!exists) {
+          const updated = [order, ...prev];
+          return sortOrders(updated);
+        }
+        const updated = prev.map((o) => (o.id === order.id ? order : o));
+        return sortOrders(updated);
       });
       setAllTodayOrders((prev) => prev.filter((o) => o.id !== order.id));
     } else {

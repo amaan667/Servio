@@ -795,11 +795,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (existingSession) {
-        // Update existing session to ORDERING status
+        // Update existing session to OCCUPIED status (table is now occupied with an order)
         const { error: sessionUpdateError } = await supabase
           .from("table_sessions")
           .update({
-            status: "ORDERING",
+            status: "OCCUPIED",
             order_id: inserted[0].id,
             updated_at: new Date().toISOString(),
           })
@@ -809,17 +809,55 @@ export async function POST(req: NextRequest) {
           logger.error("[ORDERS] Error updating session status:", { error: sessionUpdateError });
         }
       } else {
-        // Create new session with ORDERING status
+        // Create new session with OCCUPIED status (table is now occupied with an order)
         const { error: sessionCreateError } = await supabase.from("table_sessions").insert({
           table_id: tableId,
           venue_id: venueId,
-          status: "ORDERING",
+          status: "OCCUPIED",
           order_id: inserted[0].id,
           opened_at: new Date().toISOString(),
         });
 
         if (sessionCreateError) {
           logger.error("[ORDERS] Error creating table session:", { error: sessionCreateError });
+        }
+      }
+
+      // Also update table_runtime_state to show table as OCCUPIED
+      if (table_number) {
+        const { error: runtimeStateError } = await supabase
+          .from("table_runtime_state")
+          .update({
+            primary_status: "OCCUPIED",
+            order_id: inserted[0].id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("venue_id", venueId)
+          .eq("label", `Table ${table_number}`);
+
+        if (runtimeStateError) {
+          logger.debug("[ORDERS] Error updating table runtime state (non-critical):", {
+            error: runtimeStateError,
+          });
+        }
+      }
+
+      // Update by table_id if available
+      if (tableId) {
+        const { error: runtimeStateErrorById } = await supabase
+          .from("table_runtime_state")
+          .update({
+            primary_status: "OCCUPIED",
+            order_id: inserted[0].id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("venue_id", venueId)
+          .eq("table_id", tableId);
+
+        if (runtimeStateErrorById) {
+          logger.debug("[ORDERS] Error updating table runtime state by ID (non-critical):", {
+            error: runtimeStateErrorById,
+          });
         }
       }
     }

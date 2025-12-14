@@ -66,7 +66,17 @@ export function OrderStatusChip({
   };
 
   const variant = statusMap[status.toUpperCase()] || "placed";
-  const displayText = status.replace("_", " ").toLowerCase();
+  
+  // Custom display text for specific statuses
+  let displayText: string;
+  const upperStatus = status.toUpperCase();
+  if (upperStatus === "IN_PREP" || upperStatus === "PREPARING") {
+    displayText = "preparing in kitchen";
+  } else if (upperStatus === "PLACED") {
+    displayText = "placed";
+  } else {
+    displayText = status.replace("_", " ").toLowerCase();
+  }
 
   return (
     <Chip variant={variant} className={className}>
