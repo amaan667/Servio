@@ -149,10 +149,14 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         // Only include currently active orders awaiting payment.
         // This clears out old unpaid orders that were already completed or cancelled.
         .in("order_status", activeStatuses)
+        // Explicitly exclude completed and cancelled orders (safety check)
+        .neq("order_status", "COMPLETED")
+        .neq("order_status", "CANCELLED")
         // Filter out very old unpaid orders (cleanup for stale historical entries)
+        // Reduced to 7 days to prevent showing very old unpaid orders
         .gte(
           "created_at",
-          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // last 30 days
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // last 7 days
         )
         .order("created_at", { ascending: false });
 
