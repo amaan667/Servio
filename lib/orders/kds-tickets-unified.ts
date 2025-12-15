@@ -12,6 +12,7 @@ export interface OrderForKDSTickets {
   id: string;
   venue_id: string;
   items?: Array<{
+    menu_item_id?: string | null;
     item_name?: string;
     quantity?: string | number;
     specialInstructions?: string;
@@ -93,16 +94,54 @@ export async function createKDSTicketsWithAI(
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const itemName = item.item_name || "Unknown Item";
+      const menuItemId = item.menu_item_id;
 
       logger.debug("[KDS TICKETS] Processing item", {
         ...baseContext,
         itemName,
+        menuItemId,
         itemIndex: i + 1,
         totalItems: items.length,
       });
 
-      // Use smart keyword categorization to assign station
-      const assignedStation = assignStationByKeywords(itemName, existingStations, expoStation);
+      // Step 1: Try to get station from menu_item if menu_item_id exists
+      let assignedStation: KDSStation | null = null;
+      if (menuItemId) {
+        try {
+          const { data: menuItem } = await supabase
+            .from("menu_items")
+            .select("kds_station_id, name")
+            .eq("id", menuItemId)
+            .eq("venue_id", order.venue_id)
+            .single();
+
+          if (menuItem?.kds_station_id) {
+            const stationFromMenu = existingStations.find((s) => s.id === menuItem.kds_station_id);
+            if (stationFromMenu) {
+              assignedStation = stationFromMenu;
+              logger.debug("[KDS TICKETS] Station assigned from menu item", {
+                ...baseContext,
+                itemName,
+                menuItemId,
+                stationId: menuItem.kds_station_id,
+                stationType: stationFromMenu.station_type,
+              });
+            }
+          }
+        } catch (error) {
+          logger.debug("[KDS TICKETS] Failed to lookup menu item station, falling back to keywords", {
+            ...baseContext,
+            itemName,
+            menuItemId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      // Step 2: Fall back to keyword-based assignment if no menu item station found
+      if (!assignedStation) {
+        assignedStation = assignStationByKeywords(itemName, existingStations, expoStation);
+      }
 
       logger.debug("[KDS TICKETS] Assigned station", {
         ...baseContext,
@@ -345,7 +384,15 @@ function assignStationByKeywords(
     itemNameLower.includes("grill") ||
     itemNameLower.includes("bbq") ||
     itemNameLower.includes("ribs") ||
-    itemNameLower.includes("halloumi")
+    itemNameLower.includes("halloumi") ||
+    itemNameLower.includes("patty") ||
+    itemNameLower.includes("meat") ||
+    itemNameLower.includes("bacon") ||
+    itemNameLower.includes("pancake") ||
+    itemNameLower.includes("waffle") ||
+    itemNameLower.includes("toast") ||
+    itemNameLower.includes("croissant") ||
+    itemNameLower.includes("bagel")
   ) {
     const grillStation = stations.find((s) => s.station_type === "grill");
     if (grillStation) {
@@ -393,7 +440,10 @@ function assignStationByKeywords(
     itemNameLower.includes("mezze") ||
     itemNameLower.includes("dip") ||
     itemNameLower.includes("labneh") ||
-    itemNameLower.includes("tzatziki")
+    itemNameLower.includes("tzatziki") ||
+    itemNameLower.includes("avo") ||
+    itemNameLower.includes("avocado") ||
+    itemNameLower.includes("loaded")
   ) {
     const coldStation = stations.find((s) => s.station_type === "cold");
     if (coldStation) {
