@@ -18,8 +18,9 @@ CREATE TABLE IF NOT EXISTS kds_station_categories (
 COMMENT ON TABLE kds_station_categories IS 'Maps menu categories to KDS stations. Items in a category will automatically route to the assigned station.';
 
 -- Create index for efficient lookups
-CREATE INDEX IF NOT EXISTS idx_kds_station_categories_venue_category ON kds_station_categories(venue_id, menu_category) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_kds_station_categories_venue_category ON kds_station_categories(venue_id, menu_category);
 CREATE INDEX IF NOT EXISTS idx_kds_station_categories_station ON kds_station_categories(station_id);
+CREATE INDEX IF NOT EXISTS idx_kds_station_categories_active ON kds_station_categories(venue_id, menu_category) WHERE is_active = true;
 
 -- Enable RLS
 ALTER TABLE kds_station_categories ENABLE ROW LEVEL SECURITY;
