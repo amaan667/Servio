@@ -104,32 +104,45 @@ export async function createKDSTicketsWithAI(
         totalItems: items.length,
       });
 
-      // Step 1: Try to get station from menu_item if menu_item_id exists
+      // Step 1: Try to get station from menu item's category (category-based assignment)
       let assignedStation: KDSStation | null = null;
       if (menuItemId) {
         try {
+          // First, get the menu item to find its category
           const { data: menuItem } = await supabase
             .from("menu_items")
-            .select("kds_station_id, name")
+            .select("category, name")
             .eq("id", menuItemId)
             .eq("venue_id", order.venue_id)
             .single();
 
-          if (menuItem?.kds_station_id) {
-            const stationFromMenu = existingStations.find((s) => s.id === menuItem.kds_station_id);
-            if (stationFromMenu) {
-              assignedStation = stationFromMenu;
-              logger.debug("[KDS TICKETS] Station assigned from menu item", {
-                ...baseContext,
-                itemName,
-                menuItemId,
-                stationId: menuItem.kds_station_id,
-                stationType: stationFromMenu.station_type,
-              });
+          if (menuItem && menuItem.category) {
+            // Check category-based station assignment
+            const { data: categoryStation } = await supabase
+              .from("kds_station_categories")
+              .select("station_id")
+              .eq("venue_id", order.venue_id)
+              .eq("menu_category", menuItem.category)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (categoryStation?.station_id) {
+              const stationFromCategory = existingStations.find((s) => s.id === categoryStation.station_id);
+              if (stationFromCategory) {
+                assignedStation = stationFromCategory;
+                logger.debug("[KDS TICKETS] Station assigned from category", {
+                  ...baseContext,
+                  itemName,
+                  menuItemId,
+                  category: menuItem.category,
+                  stationId: categoryStation.station_id,
+                  stationType: stationFromCategory.station_type,
+                });
+              }
             }
           }
         } catch (error) {
-          logger.debug("[KDS TICKETS] Failed to lookup menu item station, falling back to keywords", {
+          logger.debug("[KDS TICKETS] Failed to lookup menu item/category station, falling back to keywords", {
             ...baseContext,
             itemName,
             menuItemId,
@@ -138,7 +151,7 @@ export async function createKDSTicketsWithAI(
         }
       }
 
-      // Step 2: Fall back to keyword-based assignment if no menu item station found
+      // Step 2: Fall back to keyword-based assignment if no category/menu item station found
       if (!assignedStation) {
         assignedStation = assignStationByKeywords(itemName, existingStations, expoStation);
       }
