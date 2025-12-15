@@ -24,6 +24,8 @@ export interface CheckoutData {
   notes?: string;
   source?: string;
   sessionId?: string | null;
+  orderId?: string; // For existing orders when customer rescans QR
+  orderNumber?: string; // For display purposes
 }
 
 export type PaymentAction = "demo" | "stripe" | "till" | "later";

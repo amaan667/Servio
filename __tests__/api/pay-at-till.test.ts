@@ -164,8 +164,7 @@ describe("Pay at Till lifecycle", () => {
         venue_id: venueId,
         payment_method: "till",
         payment_status: "PAID",
-      }),
-      { "Content-Type": "application/json" }
+      })
     );
 
     const response = await paymentPOST(request);
@@ -187,12 +186,7 @@ describe("Pay at Till lifecycle", () => {
     };
 
     // Mark served
-    const serveReq = createMockRequest(
-      "POST",
-      "http://localhost:3000/api/orders/serve",
-      JSON.stringify({ orderId }),
-      { "Content-Type": "application/json" }
-    );
+    const serveReq = createMockRequest("POST", "http://localhost:3000/api/orders/serve", JSON.stringify({ orderId }));
     const serveRes = await servePOST(serveReq as unknown as Request);
     expect(serveRes.status).toBe(200);
     expect(mockOrders[orderId].order_status).toBe("SERVED");
@@ -201,8 +195,7 @@ describe("Pay at Till lifecycle", () => {
     const completeReqUnpaid = createMockRequest(
       "POST",
       "http://localhost:3000/api/orders/complete",
-      JSON.stringify({ orderId }),
-      { "Content-Type": "application/json" }
+      JSON.stringify({ orderId })
     );
     const completeResUnpaid = await completePOST(completeReqUnpaid as unknown as Request);
     expect(completeResUnpaid.status).toBe(400);
@@ -217,8 +210,7 @@ describe("Pay at Till lifecycle", () => {
         venue_id: venueId,
         payment_method: "till",
         payment_status: "PAID",
-      }),
-      { "Content-Type": "application/json" }
+      })
     );
     const payRes = await paymentPOST(payReq);
     expect(payRes.status).toBe(200);
@@ -228,8 +220,7 @@ describe("Pay at Till lifecycle", () => {
     const completeReqPaid = createMockRequest(
       "POST",
       "http://localhost:3000/api/orders/complete",
-      JSON.stringify({ orderId }),
-      { "Content-Type": "application/json" }
+      JSON.stringify({ orderId })
     );
     const completeResPaid = await completePOST(completeReqPaid as unknown as Request);
     expect(completeResPaid.status).toBe(200);
@@ -259,8 +250,7 @@ describe("Pay at Till lifecycle", () => {
     const req1 = createMockRequest(
       "POST",
       "http://localhost:3000/api/orders/payment",
-      JSON.stringify(body),
-      { "Content-Type": "application/json" }
+      JSON.stringify(body)
     );
     const res1 = await paymentPOST(req1);
     expect(res1.status).toBe(200);
@@ -270,8 +260,7 @@ describe("Pay at Till lifecycle", () => {
     const req2 = createMockRequest(
       "POST",
       "http://localhost:3000/api/orders/payment",
-      JSON.stringify(body),
-      { "Content-Type": "application/json" }
+      JSON.stringify(body)
     );
     const res2 = await paymentPOST(req2);
     expect([200, 400]).toContain(res2.status);

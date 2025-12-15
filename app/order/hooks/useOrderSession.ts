@@ -109,44 +109,42 @@ export function useOrderSession(orderParams: OrderParams) {
               (orderInDb.payment_status === "UNPAID" ||
                 orderInDb.payment_status === "PAY_LATER_PENDING");
 
-            if (isPayLater) {
+            // For unpaid Pay Later or Pay at Till orders, redirect to payment page
+            // where customer can choose payment method (Stripe checkout or Pay at Till)
+            const isPayAtTill =
+              (orderInDb.payment_method === "PAY_AT_TILL" ||
+                orderInDb.payment_mode === "offline") &&
+              orderInDb.payment_status === "UNPAID";
+
+            if (isPayLater || isPayAtTill) {
               logger.info(
-                "✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout",
+                "✅ [ORDER SESSION] Unpaid order found, redirecting to payment page for payment method selection",
                 {
                   orderId: orderData.orderId,
-                  customerEmail: orderInDb.customer_email,
+                  paymentMethod: orderInDb.payment_method,
+                  paymentStatus: orderInDb.payment_status,
                 }
               );
 
-              // Use customer_email from database order (preferred) or fallback to stored data
-              const customerEmail = orderInDb.customer_email || orderData.customerEmail;
+              // Redirect to payment page where customer can choose payment method
+              const checkoutData = {
+                venueId: orderData.venueId,
+                venueName: "Restaurant",
+                tableNumber: orderData.tableNumber,
+                customerName: orderInDb.customer_name || orderData.customerName,
+                customerPhone: orderInDb.customer_phone || orderData.customerPhone,
+                customerEmail: orderInDb.customer_email || orderData.customerEmail,
+                cart: orderData.cart || [],
+                total: orderInDb.total_amount || orderData.total,
+                orderId: orderData.orderId,
+                orderNumber: orderData.orderNumber,
+                sessionId: sessionParam,
+                isDemo: orderParams.isDemo,
+              };
 
-              // Create Stripe checkout session for pay later order
-              const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  amount: orderInDb.total_amount || orderData.total,
-                  customerEmail: customerEmail || undefined, // Use from DB order
-                  customerName: orderInDb.customer_name || orderData.customerName,
-                  venueName: "Restaurant",
-                  orderId: orderData.orderId,
-                }),
-              });
-
-              const checkoutResult = await checkoutResponse.json();
-              if (checkoutResponse.ok && checkoutResult.url) {
-                window.location.href = checkoutResult.url;
-                return;
-              } else {
-                logger.error(
-                  "[ORDER SESSION] Failed to create Stripe checkout for pay later order",
-                  {
-                    error: checkoutResult.error,
-                  }
-                );
-                // Fall through to regular payment page
-              }
+              localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+              window.location.href = "/payment";
+              return;
             }
 
             logger.info("✅ [ORDER SESSION] Redirecting to payment", {
@@ -215,6 +213,8 @@ export function useOrderSession(orderParams: OrderParams) {
 
           if (sessionOrderInDb) {
             // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            // For unpaid Pay Later or Pay at Till orders, redirect to payment page
+            // where customer can choose payment method (Stripe checkout or Pay at Till)
             const isPayLater =
               (sessionOrderInDb.payment_method === "PAY_LATER" ||
                 sessionOrderInDb.payment_mode === "pay_later" ||
@@ -222,44 +222,40 @@ export function useOrderSession(orderParams: OrderParams) {
               (sessionOrderInDb.payment_status === "UNPAID" ||
                 sessionOrderInDb.payment_status === "PAY_LATER_PENDING");
 
-            if (isPayLater) {
+            const isPayAtTill =
+              (sessionOrderInDb.payment_method === "PAY_AT_TILL" ||
+                sessionOrderInDb.payment_mode === "offline") &&
+              sessionOrderInDb.payment_status === "UNPAID";
+
+            if (isPayLater || isPayAtTill) {
               logger.info(
-                "✅ [ORDER SESSION] Pay later order found, redirecting to Stripe checkout",
+                "✅ [ORDER SESSION] Unpaid order found, redirecting to payment page for payment method selection",
                 {
                   orderId: orderData.orderId,
-                  customerEmail: sessionOrderInDb.customer_email,
+                  paymentMethod: sessionOrderInDb.payment_method,
+                  paymentStatus: sessionOrderInDb.payment_status,
                 }
               );
 
-              // Use customer_email from database order (preferred) or fallback to stored data
-              const customerEmail = sessionOrderInDb.customer_email || orderData.customerEmail;
+              // Redirect to payment page where customer can choose payment method
+              const checkoutData = {
+                venueId: orderData.venueId,
+                venueName: "Restaurant",
+                tableNumber: orderData.tableNumber,
+                customerName: sessionOrderInDb.customer_name || orderData.customerName,
+                customerPhone: sessionOrderInDb.customer_phone || orderData.customerPhone,
+                customerEmail: sessionOrderInDb.customer_email || orderData.customerEmail,
+                cart: orderData.cart || [],
+                total: sessionOrderInDb.total_amount || orderData.total,
+                orderId: orderData.orderId,
+                orderNumber: orderData.orderNumber,
+                sessionId: sessionParam,
+                isDemo: orderParams.isDemo,
+              };
 
-              // Create Stripe checkout session for pay later order
-              const checkoutResponse = await fetch("/api/stripe/create-customer-checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  amount: sessionOrderInDb.total_amount || orderData.total,
-                  customerEmail: customerEmail || undefined, // Use from DB order
-                  customerName: sessionOrderInDb.customer_name || orderData.customerName,
-                  venueName: "Restaurant",
-                  orderId: orderData.orderId,
-                }),
-              });
-
-              const checkoutResult = await checkoutResponse.json();
-              if (checkoutResponse.ok && checkoutResult.url) {
-                window.location.href = checkoutResult.url;
-                return;
-              } else {
-                logger.error(
-                  "[ORDER SESSION] Failed to create Stripe checkout for pay later order",
-                  {
-                    error: checkoutResult.error,
-                  }
-                );
-                // Fall through to regular payment page
-              }
+              localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+              window.location.href = "/payment";
+              return;
             }
 
             // Check if there are multiple unpaid orders for this table

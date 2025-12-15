@@ -162,12 +162,7 @@ describe("Pay Later API & lifecycle", () => {
         venue_id: "venue-1",
         sessionId: "session-abc",
       };
-      const request = createMockRequest(
-        "POST",
-        "http://localhost:3000/api/pay/later",
-        JSON.stringify(body),
-        { "Content-Type": "application/json" }
-      );
+      const request = createMockRequest("POST", "http://localhost:3000/api/pay/later", JSON.stringify(body));
 
       const response = await payLaterPOST(request);
       expect(response.status).toBe(200);
@@ -192,12 +187,7 @@ describe("Pay Later API & lifecycle", () => {
       };
 
       // 1) Staff marks order as served (kitchen finished)
-      const serveReq = createMockRequest(
-        "POST",
-        "http://localhost:3000/api/orders/serve",
-        JSON.stringify({ orderId }),
-        { "Content-Type": "application/json" }
-      );
+      const serveReq = createMockRequest("POST", "http://localhost:3000/api/orders/serve", JSON.stringify({ orderId }));
       const serveRes = await servePOST(serveReq as unknown as Request);
       expect(serveRes.status).toBe(200);
       expect(mockOrders[orderId].order_status).toBe("SERVED");
@@ -206,8 +196,7 @@ describe("Pay Later API & lifecycle", () => {
       const completeReqUnpaid = createMockRequest(
         "POST",
         "http://localhost:3000/api/orders/complete",
-        JSON.stringify({ orderId }),
-        { "Content-Type": "application/json" }
+        JSON.stringify({ orderId })
       );
       const completeResUnpaid = await completePOST(completeReqUnpaid as unknown as Request);
       expect(completeResUnpaid.status).toBe(400);
@@ -218,8 +207,7 @@ describe("Pay Later API & lifecycle", () => {
       const paymentReq = createMockRequest(
         "POST",
         "http://localhost:3000/api/orders/update-payment-status",
-        JSON.stringify({ orderId, paymentStatus: "PAID", paymentMethod: "PAY_LATER" }),
-        { "Content-Type": "application/json" }
+        JSON.stringify({ orderId, paymentStatus: "PAID", paymentMethod: "PAY_LATER" })
       );
       const paymentRes = await updatePaymentStatusPOST(paymentReq as unknown as Request);
       expect(paymentRes.status).toBe(200);
@@ -229,8 +217,7 @@ describe("Pay Later API & lifecycle", () => {
       const completeReqPaid = createMockRequest(
         "POST",
         "http://localhost:3000/api/orders/complete",
-        JSON.stringify({ orderId }),
-        { "Content-Type": "application/json" }
+        JSON.stringify({ orderId })
       );
       const completeResPaid = await completePOST(completeReqPaid as unknown as Request);
       expect(completeResPaid.status).toBe(200);
@@ -252,8 +239,7 @@ describe("Pay Later API & lifecycle", () => {
       const completeReq1 = createMockRequest(
         "POST",
         "http://localhost:3000/api/orders/complete",
-        JSON.stringify({ orderId }),
-        { "Content-Type": "application/json" }
+        JSON.stringify({ orderId })
       );
       const res1 = await completePOST(completeReq1 as unknown as Request);
       expect(res1.status).toBe(200);
@@ -263,8 +249,7 @@ describe("Pay Later API & lifecycle", () => {
       const completeReq2 = createMockRequest(
         "POST",
         "http://localhost:3000/api/orders/complete",
-        JSON.stringify({ orderId }),
-        { "Content-Type": "application/json" }
+        JSON.stringify({ orderId })
       );
       const res2 = await completePOST(completeReq2 as unknown as Request);
       // Either 200 or 400 depending on RPC logic, but status must stay COMPLETED

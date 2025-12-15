@@ -567,19 +567,46 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
         console.log("💳 [PAY NOW - STRIPE] ===== STARTING STRIPE PAYMENT FLOW =====");
-        console.log("💳 [PAY NOW] Step 1: Creating order...");
+        console.log("💳 [PAY NOW] Step 1: Processing Stripe payment...");
         logger.info("💳 [PAYMENT PROCESSING] Processing STRIPE payment...");
 
-        // Create order first with UNPAID status
-        const orderResult = await createOrder();
-        const orderId = orderResult.order?.id;
+        let orderId: string;
 
-        if (!orderId) {
-          console.error("💳 [PAY NOW] ❌ No order ID returned");
-          throw new Error("Failed to create order before Stripe checkout");
+        // If orderId exists in checkoutData, use existing order instead of creating new one
+        if (checkoutData.orderId) {
+          console.log("💳 [PAY NOW] Using existing order for Stripe checkout...", {
+            orderId: checkoutData.orderId,
+          });
+          orderId = checkoutData.orderId;
+
+          // Update existing order to PAY_NOW (will be set to PAID by webhook after payment)
+          const updateResponse = await fetch("/api/orders/payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: checkoutData.orderId,
+              venue_id: checkoutData.venueId,
+              payment_method: "stripe",
+              payment_status: "UNPAID", // Will be updated to PAID by webhook
+            }),
+          });
+
+          if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            throw new Error(errorData.error || "Failed to update order payment method");
+          }
+        } else {
+          // Create order first with UNPAID status
+          const orderResult = await createOrder();
+          orderId = orderResult.order?.id;
+
+          if (!orderId) {
+            console.error("💳 [PAY NOW] ❌ No order ID returned");
+            throw new Error("Failed to create order before Stripe checkout");
+          }
         }
 
-        console.log("💳 [PAY NOW] Step 2: Order created, creating Stripe session...", { orderId });
+        console.log("💳 [PAY NOW] Step 2: Order ready, creating Stripe session...", { orderId });
 
         let result;
         try {
@@ -690,23 +717,55 @@ export function usePaymentProcessing() {
         }
       } else if (action === "till") {
         console.log("🧾 [PAY AT TILL] ===== STARTING PAY AT TILL FLOW =====");
-        console.log("🧾 [PAY AT TILL] Step 1: Creating order IMMEDIATELY...");
         logger.info("🧾 [PAYMENT PROCESSING] Processing PAY AT TILL payment...");
 
-        // IMMEDIATELY create order in DB (per spec)
-        const orderResult = await createOrder();
-        const orderId = orderResult.order?.id;
+        let orderId: string;
 
-        if (!orderId) {
-          console.error("🧾 [PAY AT TILL] ❌ No order ID returned");
-          throw new Error("Failed to create order");
+        // If orderId exists in checkoutData, update existing order instead of creating new one
+        if (checkoutData.orderId) {
+          console.log("🧾 [PAY AT TILL] Step 1: Updating existing order payment method...", {
+            orderId: checkoutData.orderId,
+          });
+
+          // Update existing order to PAY_AT_TILL
+          const updateResponse = await fetch("/api/pay/till", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              order_id: checkoutData.orderId,
+              venue_id: checkoutData.venueId,
+              sessionId: checkoutData.sessionId,
+            }),
+          });
+
+          if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            throw new Error(errorData.error || "Failed to update order payment method");
+          }
+
+          orderId = checkoutData.orderId;
+          console.log("🧾 [PAY AT TILL] Step 2: ✅ Order updated to PAY_AT_TILL", {
+            orderId,
+            paymentMethod: "PAY_AT_TILL",
+            paymentStatus: "UNPAID",
+          });
+        } else {
+          console.log("🧾 [PAY AT TILL] Step 1: Creating order IMMEDIATELY...");
+          // IMMEDIATELY create order in DB (per spec)
+          const orderResult = await createOrder();
+          orderId = orderResult.order?.id;
+
+          if (!orderId) {
+            console.error("🧾 [PAY AT TILL] ❌ No order ID returned");
+            throw new Error("Failed to create order");
+          }
+
+          console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", {
+            orderId,
+            paymentMethod: "PAY_AT_TILL",
+            paymentStatus: "UNPAID",
+          });
         }
-
-        console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", {
-          orderId,
-          paymentMethod: "PAY_AT_TILL",
-          paymentStatus: "UNPAID",
-        });
 
         // Clear cart
         localStorage.removeItem("servio-order-cart");

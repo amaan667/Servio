@@ -916,6 +916,7 @@ export async function POST(req: NextRequest) {
 
       // For PAY_NOW, only create KDS tickets once payment is confirmed.
       // This prevents kitchen work starting before card payment is actually completed.
+      // For PAY_LATER and PAY_AT_TILL, create tickets immediately so kitchen can start.
       const shouldCreateTickets = paymentMethod !== "PAY_NOW" || paymentStatus === "PAID";
 
       if (shouldCreateTickets) {
@@ -925,6 +926,8 @@ export async function POST(req: NextRequest) {
             ? ((orderForTickets as { items: unknown[] }).items.length || 0)
             : 0,
           venueId: (orderForTickets as { venue_id: string }).venue_id,
+          paymentMethod,
+          paymentStatus,
           requestId,
         });
         await createKDSTickets(supabase, orderForTickets);
@@ -932,6 +935,36 @@ export async function POST(req: NextRequest) {
           orderId: (orderForTickets as { id: string }).id,
           requestId,
         });
+
+        // Update order status to IN_PREP for Pay Later and Pay at Till orders
+        // (Pay Now orders are updated to IN_PREP in Stripe webhook after payment confirmation)
+        if (paymentMethod === "PAY_LATER" || paymentMethod === "PAY_AT_TILL") {
+          const { error: statusUpdateError } = await supabase
+            .from("orders")
+            .update({
+              order_status: "IN_PREP",
+              kitchen_status: "PREPARING",
+              service_status: "NOT_SERVED",
+              completion_status: "OPEN",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", (orderForTickets as { id: string }).id)
+            .eq("venue_id", (orderForTickets as { venue_id: string }).venue_id);
+
+          if (statusUpdateError) {
+            logger.error("[ORDER CREATION DEBUG] Failed to update order status to IN_PREP", {
+              orderId: (orderForTickets as { id: string }).id,
+              error: statusUpdateError,
+              requestId,
+            });
+          } else {
+            logger.info("[ORDER CREATION DEBUG] ✅ Updated order status to IN_PREP", {
+              orderId: (orderForTickets as { id: string }).id,
+              paymentMethod,
+              requestId,
+            });
+          }
+        }
       } else {
         logger.info("[ORDER CREATION DEBUG] Skipping KDS ticket creation for unpaid PAY_NOW order", {
           orderId: (orderForTickets as { id: string }).id,
