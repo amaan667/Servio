@@ -14,13 +14,30 @@ CREATE TABLE IF NOT EXISTS kds_station_categories (
   UNIQUE(venue_id, menu_category)
 );
 
+-- Add is_active column if table exists but column doesn't
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'kds_station_categories')
+    AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'kds_station_categories' AND column_name = 'is_active')
+  THEN
+    ALTER TABLE kds_station_categories ADD COLUMN is_active BOOLEAN DEFAULT true;
+  END IF;
+END $$;
+
 -- Add comment explaining the table
 COMMENT ON TABLE kds_station_categories IS 'Maps menu categories to KDS stations. Items in a category will automatically route to the assigned station.';
 
--- Create index for efficient lookups
+-- Create index for efficient lookups (create basic index first)
 CREATE INDEX IF NOT EXISTS idx_kds_station_categories_venue_category ON kds_station_categories(venue_id, menu_category);
 CREATE INDEX IF NOT EXISTS idx_kds_station_categories_station ON kds_station_categories(station_id);
-CREATE INDEX IF NOT EXISTS idx_kds_station_categories_active ON kds_station_categories(venue_id, menu_category) WHERE is_active = true;
+
+-- Create filtered index for active categories (only if is_active column exists)
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'kds_station_categories' AND column_name = 'is_active') THEN
+    CREATE INDEX IF NOT EXISTS idx_kds_station_categories_active ON kds_station_categories(venue_id, menu_category) WHERE is_active = true;
+  END IF;
+END $$;
 
 -- Enable RLS
 ALTER TABLE kds_station_categories ENABLE ROW LEVEL SECURITY;
