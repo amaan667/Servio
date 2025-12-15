@@ -34,7 +34,7 @@ const resetMockOrders = () => {
 // Mock Supabase behaviour used by pay-later + lifecycle routes
 vi.mock("@/lib/supabase", () => {
   return {
-    createAdminClient: vi.fn(() => ({
+  createAdminClient: vi.fn(() => ({
       from: vi.fn((table: string) => {
         if (table === "orders") {
           return {
@@ -98,8 +98,8 @@ vi.mock("@/lib/supabase", () => {
           select: vi.fn(() => ({
             eq: vi.fn(() => ({
               single: vi.fn(async () => ({ data: null, error: null })),
-            })),
-          })),
+    })),
+  })),
         };
       }),
       rpc: vi.fn((fnName: string, args: Record<string, unknown>) => {
@@ -133,7 +133,7 @@ vi.mock("@/lib/supabase", () => {
           eq: vi.fn(() => ({
             select: vi.fn(() => ({
               single: vi.fn(async () => ({ data: null, error: null })),
-            })),
+      })),
           })),
         })),
       })),

@@ -955,8 +955,8 @@ export async function POST(req: NextRequest) {
             logger.error("[ORDER CREATION DEBUG] Failed to update order status to IN_PREP", {
               orderId: (orderForTickets as { id: string }).id,
               error: statusUpdateError,
-              requestId,
-            });
+          requestId,
+        });
           } else {
             logger.info("[ORDER CREATION DEBUG] ✅ Updated order status to IN_PREP", {
               orderId: (orderForTickets as { id: string }).id,

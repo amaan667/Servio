@@ -144,10 +144,38 @@ export function OrderCard({
 
     if (isCompletable && isPaidOrUnpaid) {
       checkTicketsBumped();
+      // Set up polling to check ticket status periodically (every 5 seconds)
+      const interval = setInterval(() => {
+        checkTicketsBumped();
+      }, 5000);
+
+      return () => clearInterval(interval);
     } else {
       setAllTicketsBumped(null);
     }
   }, [venueId, order.id, order.order_status, order.payment?.status, order.payment_status]);
+
+  // Listen for payment updates to refresh order data
+  React.useEffect(() => {
+    if (!venueId || !order.id) return;
+
+    const handlePaymentUpdate = (event: CustomEvent) => {
+      if (event.detail?.orderId === order.id) {
+        // Trigger a refresh by calling onActionComplete
+        onActionComplete?.();
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
+      }
+    };
+  }, [venueId, order.id, onActionComplete]);
 
   // Fetch venue info and logo for receipt
   React.useEffect(() => {
@@ -414,18 +442,27 @@ export function OrderCard({
           </div>
         );
       }
-      // Still waiting for KDS to bump tickets - show "preparing in kitchen" or "waiting on kitchen"
+      // Still waiting for KDS to bump tickets - show appropriate status message
       const isInPrep = orderStatus === "IN_PREP" || orderStatus === "PREPARING";
+      // If we've checked and tickets aren't all bumped, show preparing status
+      // If we haven't checked yet or checking, show checking message
+      let statusMessage = "Checking kitchen status...";
+      if (!checkingTickets) {
+        if (allTicketsBumped === false) {
+          // Tickets exist but not all bumped - show preparing
+          statusMessage = isInPrep ? "Preparing in kitchen" : "Waiting on kitchen";
+        } else if (allTicketsBumped === null) {
+          // Haven't checked yet or no tickets - show preparing
+          statusMessage = isInPrep ? "Preparing in kitchen" : "Waiting on kitchen";
+        }
+      }
+
       return (
-        <div className="mt-4 pt-4 border-t border-slate-200">
-          <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
-            <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
-            <span className="text-sm font-medium text-blue-700">
-              {checkingTickets
-                ? "Checking kitchen status..."
-                : isInPrep
-                  ? "Preparing in kitchen"
-                  : "Waiting on kitchen"}
+        <div className="mt-4 pt-4 border-t-2 border-slate-200">
+          <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+            <Clock className="h-5 w-5 text-blue-600 animate-pulse" />
+            <span className="text-base font-semibold text-blue-700">
+              {statusMessage}
             </span>
           </div>
         </div>
@@ -565,73 +602,72 @@ export function OrderCard({
 
   return (
     <Card
-      className={`rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow ${className}`}
+      className={`rounded-xl border-2 border-slate-300 bg-white shadow-md hover:shadow-lg transition-all ${className}`}
       onMouseEnter={() => setShowHoverRemove(true)}
       onMouseLeave={() => setShowHoverRemove(false)}
     >
       <CardContent className="p-6">
-        {/* Header Section */}
-        <div className="flex items-start justify-between mb-4">
+        {/* Header Section - POS Style: Clear hierarchy with proper spacing */}
+        <div className="flex items-start justify-between mb-5 pb-4 border-b-2 border-slate-200">
           <div className="flex-1 min-w-0">
-            {/* Order ID and Time */}
-            <div className="flex items-center gap-3 mb-3">
-              <Badge variant="outline" className="text-sm font-semibold px-3 py-1">
+            {/* Order ID and Time - Top Row */}
+            <div className="flex items-center gap-4 mb-3">
+              <Badge variant="outline" className="text-base font-bold px-4 py-1.5 border-2">
                 #{order.short_id}
               </Badge>
-              <div className="flex items-center gap-1 text-sm text-slate-500">
+              <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
                 <Clock className="h-4 w-4" />
-                {formatOrderTime(order.placed_at)}
+                <span>{formatOrderTime(order.placed_at)}</span>
               </div>
             </div>
 
-            {/* Entity Badge and Status */}
-            <div className="flex items-center gap-3 mb-4">
-              <Badge className={`inline-flex items-center text-sm px-3 py-1.5 ${badgeColor}`}>
+            {/* Entity Badge - Second Row */}
+            <div className="mb-3">
+              <Badge className={`inline-flex items-center text-sm px-4 py-2 font-semibold ${badgeColor}`}>
                 {icon}
-                <span className="ml-2 font-medium">{label}</span>
-                <span className="ml-2 text-xs opacity-75">({type})</span>
+                <span className="ml-2">{label}</span>
               </Badge>
+            </div>
 
-              {/* Status Chips */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <OrderStatusChip status={order.order_status} />
-                {shouldShowUnpaidChip(order) && <PaymentStatusChip status="unpaid" />}
-                {order.payment.status === "paid" && <PaymentStatusChip status="paid" />}
-                {order.payment.status === "failed" && <PaymentStatusChip status="failed" />}
-                {order.payment.status === "refunded" && <PaymentStatusChip status="refunded" />}
-                {/* Payment Method Badge */}
-                {(order.payment_method || order.payment?.method) && (
-                  <Badge
-                    variant="outline"
-                    className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-medium"
-                  >
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    {(() => {
-                      const method = (
-                        order.payment_method ||
-                        order.payment?.method ||
-                        ""
-                      ).toUpperCase();
-                      if (method === "PAY_NOW") return "Pay Now";
-                      if (method === "PAY_LATER") return "Pay Later";
-                      if (method === "PAY_AT_TILL") return "Pay at Till";
-                      return method || "Online";
-                    })()}
-                  </Badge>
-                )}
-              </div>
+            {/* Status Chips - Third Row with proper spacing */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <OrderStatusChip status={order.order_status} />
+              {shouldShowUnpaidChip(order) && <PaymentStatusChip status="unpaid" />}
+              {order.payment.status === "paid" && <PaymentStatusChip status="paid" />}
+              {order.payment.status === "failed" && <PaymentStatusChip status="failed" />}
+              {order.payment.status === "refunded" && <PaymentStatusChip status="refunded" />}
+              {/* Payment Method Badge */}
+              {(order.payment_method || order.payment?.method) && (
+                <Badge
+                  variant="outline"
+                  className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold px-3 py-1"
+                >
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  {(() => {
+                    const method = (
+                      order.payment_method ||
+                      order.payment?.method ||
+                      ""
+                    ).toUpperCase();
+                    if (method === "PAY_NOW") return "Pay Now";
+                    if (method === "PAY_LATER") return "Pay Later";
+                    if (method === "PAY_AT_TILL") return "Pay at Till";
+                    return method || "Online";
+                  })()}
+                </Badge>
+              )}
             </div>
           </div>
 
-          {/* Total Amount and Action Buttons */}
-          <div className="flex items-center gap-2">
+          {/* Total Amount and Action Buttons - Right Side */}
+          <div className="flex flex-col items-end gap-3">
             <div className="text-right">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-3xl font-bold text-green-600">
                 {formatCurrency(order.total_amount, order.currency)}
               </div>
             </div>
-
-            {/* Receipt Button */}
+            <div className="flex items-center gap-2">
+              {/* Receipt Button */}
             {showActions && (
               <TooltipProvider>
                 <Tooltip>
@@ -677,27 +713,32 @@ export function OrderCard({
                 </TooltipProvider>
               </div>
             )}
+            </div>
           </div>
         </div>
 
-        {/* Customer Info */}
+        {/* Customer Info - POS Style: Clear section with proper spacing */}
         {order.customer?.name && (
-          <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-slate-600" />
-              <span className="font-semibold text-slate-900">{order.customer.name}</span>
-              {order.customer.phone && (
-                <span className="text-sm text-slate-600 ml-2">• {order.customer.phone}</span>
-              )}
+          <div className="mb-4 p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-slate-700" />
+              <div className="flex-1">
+                <div className="font-bold text-base text-slate-900">{order.customer.name}</div>
+                {order.customer.phone && (
+                  <div className="text-sm text-slate-600 mt-1">{order.customer.phone}</div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Items Preview */}
+        {/* Items Preview - POS Style: Clear list with proper spacing */}
         {order.items_preview && (
-          <div className="mb-4">
-            <div className="text-sm font-medium text-slate-700 mb-2">Order Items</div>
-            <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div className="mb-5">
+            <div className="text-base font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
+              Order Items
+            </div>
+            <div className="text-sm text-slate-700 bg-slate-50 p-4 rounded-lg border-2 border-slate-200 font-medium">
               {order.items_preview}
             </div>
           </div>
@@ -714,10 +755,10 @@ export function OrderCard({
             open={showPaymentDialog}
             onOpenChange={setShowPaymentDialog}
             orderId={order.id}
-            orderNumber={order.short_id}
-            customerName={order.customer_name || "Customer"}
-            totalAmount={order.total_amount}
-            venueId={venueId}
+            orderNumber={order.short_id ?? ""}
+            customerName={order.customer_name ?? "Customer"}
+            totalAmount={order.total_amount ?? 0}
+            venueId={venueId ?? ""}
             items={
               order.items?.map((item: Record<string, unknown>) => ({
                 item_name: (item.item_name as string) || (item.name as string) || "Item",
@@ -733,7 +774,7 @@ export function OrderCard({
             }}
           />
           {/* Table Payment Dialog (for paying entire table) */}
-          {order.table_number && (
+          {order.table_number && venueId && (
             <TablePaymentDialog
               open={showTablePaymentDialog}
               onOpenChange={setShowTablePaymentDialog}

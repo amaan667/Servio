@@ -131,12 +131,12 @@ export function useOrderSession(orderParams: OrderParams) {
                 venueId: orderData.venueId,
                 venueName: "Restaurant",
                 tableNumber: orderData.tableNumber,
-                customerName: orderInDb.customer_name || orderData.customerName,
+                  customerName: orderInDb.customer_name || orderData.customerName,
                 customerPhone: orderInDb.customer_phone || orderData.customerPhone,
                 customerEmail: orderInDb.customer_email || orderData.customerEmail,
                 cart: orderData.cart || [],
                 total: orderInDb.total_amount || orderData.total,
-                orderId: orderData.orderId,
+                  orderId: orderData.orderId,
                 orderNumber: orderData.orderNumber,
                 sessionId: sessionParam,
                 isDemo: orderParams.isDemo,
@@ -144,7 +144,7 @@ export function useOrderSession(orderParams: OrderParams) {
 
               localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
               window.location.href = "/payment";
-              return;
+                return;
             }
 
             logger.info("✅ [ORDER SESSION] Redirecting to payment", {
@@ -242,12 +242,12 @@ export function useOrderSession(orderParams: OrderParams) {
                 venueId: orderData.venueId,
                 venueName: "Restaurant",
                 tableNumber: orderData.tableNumber,
-                customerName: sessionOrderInDb.customer_name || orderData.customerName,
+                  customerName: sessionOrderInDb.customer_name || orderData.customerName,
                 customerPhone: sessionOrderInDb.customer_phone || orderData.customerPhone,
                 customerEmail: sessionOrderInDb.customer_email || orderData.customerEmail,
                 cart: orderData.cart || [],
                 total: sessionOrderInDb.total_amount || orderData.total,
-                orderId: orderData.orderId,
+                  orderId: orderData.orderId,
                 orderNumber: orderData.orderNumber,
                 sessionId: sessionParam,
                 isDemo: orderParams.isDemo,
@@ -255,7 +255,7 @@ export function useOrderSession(orderParams: OrderParams) {
 
               localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
               window.location.href = "/payment";
-              return;
+                return;
             }
 
             // Check if there are multiple unpaid orders for this table

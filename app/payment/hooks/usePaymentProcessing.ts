@@ -596,13 +596,13 @@ export function usePaymentProcessing() {
             throw new Error(errorData.error || "Failed to update order payment method");
           }
         } else {
-          // Create order first with UNPAID status
-          const orderResult = await createOrder();
+        // Create order first with UNPAID status
+        const orderResult = await createOrder();
           orderId = orderResult.order?.id;
 
-          if (!orderId) {
-            console.error("💳 [PAY NOW] ❌ No order ID returned");
-            throw new Error("Failed to create order before Stripe checkout");
+        if (!orderId) {
+          console.error("💳 [PAY NOW] ❌ No order ID returned");
+          throw new Error("Failed to create order before Stripe checkout");
           }
         }
 
@@ -751,20 +751,20 @@ export function usePaymentProcessing() {
           });
         } else {
           console.log("🧾 [PAY AT TILL] Step 1: Creating order IMMEDIATELY...");
-          // IMMEDIATELY create order in DB (per spec)
-          const orderResult = await createOrder();
+        // IMMEDIATELY create order in DB (per spec)
+        const orderResult = await createOrder();
           orderId = orderResult.order?.id;
 
-          if (!orderId) {
-            console.error("🧾 [PAY AT TILL] ❌ No order ID returned");
-            throw new Error("Failed to create order");
-          }
+        if (!orderId) {
+          console.error("🧾 [PAY AT TILL] ❌ No order ID returned");
+          throw new Error("Failed to create order");
+        }
 
-          console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", {
-            orderId,
-            paymentMethod: "PAY_AT_TILL",
-            paymentStatus: "UNPAID",
-          });
+        console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", {
+          orderId,
+          paymentMethod: "PAY_AT_TILL",
+          paymentStatus: "UNPAID",
+        });
         }
 
         // Clear cart

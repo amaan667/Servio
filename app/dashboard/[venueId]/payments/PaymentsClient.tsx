@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Receipt, Download, CheckCircle, Split, Clock } from "lucide-react";
+import { Receipt, Download, CheckCircle, Split, Clock, User, MapPin } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
@@ -215,7 +215,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     loadPayments();
   }, [loadPayments]);
 
-  // Set up real-time subscription
+  // Set up real-time subscription for payment updates
   useEffect(() => {
     if (!venueId) return;
 
@@ -242,6 +242,18 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       )
       .subscribe();
 
+    // Listen for custom payment update events
+    const handlePaymentUpdate = (event: CustomEvent) => {
+      if (event.detail?.orderId) {
+        // Immediately refresh when payment is updated
+        loadPayments();
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
+    }
+
     // Also set up periodic refresh
     const refreshInterval = setInterval(() => {
       loadPayments();
@@ -251,6 +263,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       if (debounceTimeout) clearTimeout(debounceTimeout);
       supabase.removeChannel(channel);
       clearInterval(refreshInterval);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
+      }
     };
   }, [venueId, loadPayments]);
 
@@ -271,12 +286,28 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to mark order as paid");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData?.error?.message || errorData?.error || "Failed to mark order as paid";
+        console.error("[PAYMENTS] Failed to mark order as paid:", errorMessage);
+        alert(`Failed to mark order as paid: ${errorMessage}`);
+        return;
       }
 
+      const result = await response.json();
+      console.log("[PAYMENTS] Order marked as paid successfully:", result);
+
+      // Reload payments to reflect the change
       await loadPayments();
+
+      // Show success feedback
+      if (typeof window !== "undefined") {
+        // Trigger a custom event for real-time updates
+        window.dispatchEvent(new CustomEvent("order-payment-updated", { detail: { orderId } }));
+      }
     } catch (error) {
-      // Error handled silently
+      console.error("[PAYMENTS] Error marking order as paid:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      alert(`Error: ${errorMessage}`);
     } finally {
       setIsProcessingPayment(null);
     }
@@ -324,87 +355,100 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     const isServed = order.order_status === "SERVED";
 
     return (
-      <Card key={order.id} className="hover:shadow-md transition-shadow">
+      <Card key={order.id} className="hover:shadow-lg transition-all border-2 border-slate-300">
         <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-5 w-5 text-orange-600" />
-                <span className="font-semibold text-lg">#{orderNumber}</span>
+          {/* Header - POS Style: Clear hierarchy */}
+          <div className="flex items-start justify-between mb-5 pb-4 border-b-2 border-slate-200">
+            <div className="flex-1 min-w-0">
+              {/* Order ID and Time - Top Row */}
+              <div className="flex items-center gap-4 mb-3">
+                <Badge variant="outline" className="text-base font-bold px-4 py-1.5 border-2">
+                  #{orderNumber}
+                </Badge>
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                  <Clock className="h-4 w-4" />
+                  <span>{formattedDate} at {formattedTime}</span>
+                </div>
+                <div className="text-2xl font-bold text-green-600 ml-auto">
+                  £{order.total_amount.toFixed(2)}
+                </div>
+              </div>
+
+              {/* Payment Method and Service Status - Second Row */}
+              <div className="flex items-center gap-2 flex-wrap mb-3">
                 <Badge
                   variant="secondary"
-                  className={isPayLater ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}
+                  className={`text-sm font-semibold px-3 py-1.5 ${isPayLater ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
                 >
                   {isPayLater ? "Pay Later" : "Pay at Till"}
                 </Badge>
                 {isServed ? (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-semibold">
                     Served
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 font-semibold">
                     Not Served
                   </Badge>
                 )}
               </div>
-              <div className="space-y-1 text-sm text-gray-600">
+
+              {/* Customer and Table Info - Third Row */}
+              <div className="space-y-2 text-sm">
+                {order.customer_name && (
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-slate-600" />
+                    <span className="font-semibold text-slate-900">{order.customer_name}</span>
+                  </div>
+                )}
                 {order.table_label && (
-                  <div>
-                    <span className="font-medium">Table:</span> {order.table_label}
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-slate-600" />
+                    <span className="font-medium text-slate-700">{order.table_label}</span>
                   </div>
                 )}
                 {order.counter_label && (
-                  <div>
-                    <span className="font-medium">Counter:</span> {order.counter_label}
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-slate-600" />
+                    <span className="font-medium text-slate-700">{order.counter_label}</span>
                   </div>
                 )}
-                {order.customer_name && (
-                  <div>
-                    <span className="font-medium">Customer:</span> {order.customer_name}
-                  </div>
-                )}
-                <div>
-                  <span className="font-medium">Date:</span> {formattedDate} at {formattedTime}
-                </div>
-              </div>
-              <div className="mt-3">
-                <span className="text-2xl font-bold text-gray-900">
-                  £{order.total_amount.toFixed(2)}
-                </span>
               </div>
             </div>
-            <div className="flex flex-col gap-2 ml-4">
-              <Button
-                onClick={() => handleMarkAsPaid(order.id)}
-                disabled={isProcessingPayment === order.id}
-                variant="default"
-                size="sm"
-                className="w-full"
-              >
-                {isProcessingPayment === order.id ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-1 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark as Paid
-                  </>
-                )}
-              </Button>
-              {!isPayLater && (
-                <Button
-                  onClick={() => setSelectedOrderForSplit(order)}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                >
-                  <Split className="h-4 w-4 mr-1" />
-                  Split Bill
-                </Button>
+          </div>
+
+          {/* Action Buttons - POS Style: Clear, prominent buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={() => handleMarkAsPaid(order.id)}
+              disabled={isProcessingPayment === order.id}
+              variant="default"
+              size="lg"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+            >
+              {isProcessingPayment === order.id ? (
+                <>
+                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Mark as Paid
+                </>
               )}
-            </div>
+            </Button>
+            {!isPayLater && (
+              <Button
+                onClick={() => setSelectedOrderForSplit(order)}
+                variant="outline"
+                size="lg"
+                className="flex-1 border-2 font-semibold"
+              >
+                <Split className="h-5 w-5 mr-2" />
+                Split Bill
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

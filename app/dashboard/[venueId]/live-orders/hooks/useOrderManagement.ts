@@ -169,8 +169,23 @@ export function useOrderManagement(venueId: string) {
       )
       .subscribe();
 
+    // Listen for custom payment update events
+    const handlePaymentUpdate = (event: CustomEvent) => {
+      if (event.detail?.orderId) {
+        // Reload orders when payment is updated
+        loadOrders();
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
+    }
+
     return () => {
       createClient().removeChannel(channel);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
+      }
     };
   }, [venueId]);
 
