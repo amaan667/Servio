@@ -121,16 +121,16 @@ export function OrderCard({
           if (data.success) {
             setAllTicketsBumped(data.data?.all_bumped ?? false);
           } else {
-            // If API fails, assume tickets are bumped (for orders without KDS tickets)
-            setAllTicketsBumped(true);
+            // If API fails, default to false (not ready) to prevent premature "Mark Served"
+            setAllTicketsBumped(false);
           }
         } else {
-          // If API fails, assume tickets are bumped (for orders without KDS tickets)
-          setAllTicketsBumped(true);
+          // If API fails, default to false (not ready) to prevent premature "Mark Served"
+          setAllTicketsBumped(false);
         }
       } catch {
-        // Silently fail - assume tickets are bumped for orders without KDS
-        setAllTicketsBumped(true);
+        // Silently fail - default to false (not ready) to prevent premature "Mark Served"
+        setAllTicketsBumped(false);
       } finally {
         setCheckingTickets(false);
       }
@@ -385,11 +385,11 @@ export function OrderCard({
     // Requirements:
     // 1. Order status is PLACED, IN_PREP, or READY
     // 2. Payment status is PAID or UNPAID
-    // 3. All KDS tickets are bumped (or no KDS tickets exist)
+    // 3. All KDS tickets are bumped (must be explicitly true, not null or false)
     const canMarkServed =
       ["PLACED", "IN_PREP", "READY"].includes(orderStatus) &&
       (paymentStatus === "PAID" || paymentStatus === "UNPAID") &&
-      (allTicketsBumped === true || (allTicketsBumped === null && !checkingTickets));
+      allTicketsBumped === true; // Only show when explicitly all tickets are bumped
 
     // If order is PLACED, IN_PREP, or READY, check if all tickets are bumped
     if (["PLACED", "IN_PREP", "READY"].includes(orderStatus)) {
@@ -414,13 +414,18 @@ export function OrderCard({
           </div>
         );
       }
-      // Still waiting for KDS to bump tickets - show "waiting on kitchen"
+      // Still waiting for KDS to bump tickets - show "preparing in kitchen" or "waiting on kitchen"
+      const isInPrep = orderStatus === "IN_PREP" || orderStatus === "PREPARING";
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 rounded-lg">
             <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
             <span className="text-sm font-medium text-blue-700">
-              {checkingTickets ? "Checking kitchen status..." : "Waiting on kitchen"}
+              {checkingTickets
+                ? "Checking kitchen status..."
+                : isInPrep
+                  ? "Preparing in kitchen"
+                  : "Waiting on kitchen"}
             </span>
           </div>
         </div>
