@@ -514,21 +514,39 @@ export function OrderCard({
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-blue-600">
-                  <span className="font-medium">Served - Unpaid</span>
+                  <span className="font-medium">Awaiting Payment (Pay Later)</span>
                 </div>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  Pay Later - {formatCurrency(order.total_amount, order.currency)}
+                  Unpaid - {formatCurrency(order.total_amount, order.currency)}
                 </Badge>
               </div>
-              <div className="bg-blue-50 rounded-lg p-3 text-sm text-gray-700">
+              <div className="bg-blue-50 rounded-lg p-3 text-sm text-gray-700 space-y-2">
                 <p className="font-medium mb-1 flex items-center gap-2">
                   <QrCode className="h-4 w-4" />
                   Customer can rescan QR code to pay
                 </p>
                 <p className="text-xs text-gray-600">
-                  When customer rescans QR code, they will see their unpaid orders and can pay from
-                  the order page.
+                  When the customer pays (via QR or staff), this order will automatically unlock
+                  completion.
                 </p>
+                <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-blue-100">
+                  <Button
+                    size="sm"
+                    variant="servio"
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      if (!venueId) return;
+                      // Deep-link staff straight into consolidated payments view for this order
+                      if (typeof window !== "undefined") {
+                        window.location.href = `/dashboard/${venueId}/payments?orderId=${order.id}`;
+                      }
+                    }}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Take Payment
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

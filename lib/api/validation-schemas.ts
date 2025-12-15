@@ -274,7 +274,7 @@ export function validateQuery<T extends z.ZodType>(
   query: Record<string, unknown>
 ): z.infer<T> {
   try {
-    return schema.parse(query);
+  return schema.parse(query);
   } catch (error) {
     // Re-throw ZodError as-is for proper error handling
     if (error instanceof z.ZodError) {

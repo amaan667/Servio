@@ -74,21 +74,40 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     return orderId.slice(-6).toUpperCase();
   };
 
-  // Get payment success message based on payment method
-  const getPaymentSuccessMessage = (paymentMethod: string, paymentStatus: string) => {
+  // Get payment success / state message based on payment method
+  const getPaymentSuccessMessage = (rawPaymentMethod: string, paymentStatus: string) => {
+    const method = (rawPaymentMethod || "").toLowerCase();
+    const isPayLaterMethod = method === "pay_later" || method === "later";
+
+    // PAY LATER (unpaid) → explicit "Payment Pending" copy
+    if (isPayLaterMethod && paymentStatus !== "PAID") {
+      return {
+        title: "⏰ Payment Pending (Pay Later)",
+        description: "Your order has been sent to the kitchen. Please pay before you leave.",
+      };
+    }
+
+    // Generic paid flows
     if (paymentStatus === "PAID") {
-      if (paymentMethod === "demo" || paymentMethod === "stripe") {
+      if (method === "demo" || method === "stripe" || method === "pay_now") {
         return {
           title: "✅ Payment Successful",
           description: "Your order has been confirmed and sent to the kitchen.",
         };
-      } else if (paymentMethod === "till" || paymentMethod === "later") {
+      } else if (method === "till") {
         return {
           title: "✅ Order Created Successfully",
           description: "Your order has been placed and will be prepared.",
         };
+      } else if (isPayLaterMethod) {
+        return {
+          title: "✅ Payment Received",
+          description: "Your Pay Later order is now fully paid.",
+        };
       }
     }
+
+    // Fallback
     return {
       title: "✅ Order Confirmed",
       description: "Your order has been received and is being processed.",
@@ -317,16 +336,19 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     );
   }
 
-  const paymentMessage = getPaymentSuccessMessage(
-    order.payment_method || "unknown",
-    order.payment_status
-  );
+  const paymentMessage = getPaymentSuccessMessage(order.payment_method || "unknown", order.payment_status);
+  const paymentMethodRaw = (order.payment_method || "").toString().toUpperCase();
+  const paymentModeRaw = (order.payment_mode || "").toString().toLowerCase();
+  const isPayLaterUnpaid =
+    (paymentMethodRaw === "PAY_LATER" || paymentModeRaw === "deferred") &&
+    order.payment_status === "UNPAID";
+  const isPayAtTill = paymentMethodRaw === "PAY_AT_TILL" || paymentModeRaw === "offline";
   const timelineItems = getTimelineItems();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
       <div className="max-w-2xl mx-auto">
-        {/* Success Header */}
+        {/* Success / Payment State Header */}
         <Card className="mb-6 border-green-200 bg-green-50">
           <CardContent className="p-6 text-center">
             <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -334,6 +356,48 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             </div>
             <h1 className="text-2xl font-bold text-green-800 mb-2">{paymentMessage.title}</h1>
             <p className="text-green-700">{paymentMessage.description}</p>
+
+            {/* Pay Later specific CTA: allow customer to pay now from summary */}
+            {isPayLaterUnpaid && (
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <span className="text-sm text-gray-900">
+                  You chose <span className="font-semibold">Pay Later</span>. You can pay now at any time.
+                </span>
+                <Button
+                  variant="default"
+                  className="mt-2 sm:mt-0"
+                  onClick={() => {
+                    try {
+                      if (!order) return;
+                      const venueId = order.venue_id;
+                      const tableNumber = order.table_number || 1;
+
+                      // Reuse existing session if present so the pay-later Stripe flow works seamlessly
+                      let sessionParam: string | null = null;
+                      if (typeof window !== "undefined") {
+                        sessionParam = window.localStorage.getItem("servio-current-session");
+                      }
+
+                      const params = new URLSearchParams();
+                      if (venueId) params.set("venue", String(venueId));
+                      params.set("table", String(tableNumber));
+                      if (sessionParam) params.set("session", sessionParam);
+
+                      if (typeof window !== "undefined") {
+                        window.location.href = `/order?${params.toString()}`;
+                      }
+                    } catch {
+                      // If anything goes wrong, gracefully fall back to the order page without extras
+                      if (typeof window !== "undefined" && order?.venue_id && order?.table_number) {
+                        window.location.href = `/order?venue=${order.venue_id}&table=${order.table_number}`;
+                      }
+                    }
+                  }}
+                >
+                  Pay Now
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -366,6 +430,30 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                 <p className="font-semibold">{order.table_number || "N/A"}</p>
               </div>
             </div>
+
+            {/* Payment summary for Pay at Till */}
+            {isPayAtTill && (
+              <div className="mt-4 p-3 rounded-lg border border-yellow-200 bg-yellow-50 text-left">
+                <p className="text-sm font-semibold text-yellow-800 flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Pay at Till
+                </p>
+                <p className="text-sm text-yellow-900 mt-1">
+                  Payment method: <span className="font-medium">Pay at Till</span>
+                </p>
+                <p className="text-sm text-yellow-900">
+                  Status:{" "}
+                  <span className="font-medium">
+                    {order.payment_status === "PAID" ? "Paid" : "Unpaid"}
+                  </span>
+                </p>
+                {order.payment_status !== "PAID" && (
+                  <p className="text-sm text-yellow-900 mt-1">
+                    Please <span className="font-semibold">pay at the till</span>.
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

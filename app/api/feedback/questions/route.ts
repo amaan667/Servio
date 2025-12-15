@@ -62,9 +62,9 @@ export const GET = withUnifiedAuth(
       
       try {
         const pagination = validateQuery(paginationSchema, {
-          limit: req.nextUrl.searchParams.get("limit"),
-          offset: req.nextUrl.searchParams.get("offset"),
-        });
+        limit: req.nextUrl.searchParams.get("limit"),
+        offset: req.nextUrl.searchParams.get("offset"),
+      });
         limit = pagination.limit;
         offset = pagination.offset;
       } catch (error) {
@@ -153,19 +153,19 @@ export const GET = withUnifiedAuth(
       // Filter out questions without valid prompts and ensure prompt is always present
       const transformedQuestions = (questions || [])
         .map(
-          (q: {
-            id: string;
-            question_text?: string;
-            question?: string;
+        (q: {
+          id: string;
+          question_text?: string;
+          question?: string;
             text?: string;
             prompt?: string;
-            question_type: string;
-            options?: string[] | null;
-            is_active: boolean;
-            display_order?: number;
-            created_at: string;
-            updated_at: string;
-            venue_id: string;
+          question_type: string;
+          options?: string[] | null;
+          is_active: boolean;
+          display_order?: number;
+          created_at: string;
+          updated_at: string;
+          venue_id: string;
           }) => {
             // Try all possible column names for the question text
             const prompt =
@@ -182,15 +182,15 @@ export const GET = withUnifiedAuth(
             }
 
             return {
-              id: q.id,
+          id: q.id,
               prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
-              type: q.question_type, // Map 'question_type' to 'type' for frontend
-              choices: q.options || [], // Map 'options' to 'choices' for frontend
-              is_active: q.is_active,
-              sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
-              created_at: q.created_at,
-              updated_at: q.updated_at,
-              venue_id: q.venue_id,
+          type: q.question_type, // Map 'question_type' to 'type' for frontend
+          choices: q.options || [], // Map 'options' to 'choices' for frontend
+          is_active: q.is_active,
+          sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
+          created_at: q.created_at,
+          updated_at: q.updated_at,
+          venue_id: q.venue_id,
             };
           }
         )
@@ -226,7 +226,7 @@ export const GET = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-        const { searchParams } = new URL(req.url);
+      const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
         if (!venueId) {
           logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
@@ -896,7 +896,7 @@ export const POST = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-        const { searchParams } = new URL(req.url);
+      const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
         if (!venueId) {
           logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
@@ -1101,7 +1101,7 @@ export const PATCH = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-        const { searchParams } = new URL(req.url);
+      const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
         if (!venueId) {
           logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
@@ -1228,7 +1228,7 @@ export const DELETE = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         // For DELETE requests, check both query params and body
-        const { searchParams } = new URL(req.url);
+      const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId");
         
         // If not in query params and it's a DELETE request, check body

@@ -129,13 +129,13 @@ export async function POST(req: Request) {
             .single();
           if (fallbackOrder) {
             await supabase
-              .from("orders")
-              .update({
-                order_status: "COMPLETED",
+      .from("orders")
+      .update({
+        order_status: "COMPLETED",
                 completion_status: "COMPLETED",
-                completed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
               .eq("id", orderId);
             completedOrders.push(fallbackOrder);
           }

@@ -59,13 +59,13 @@ describe("Tier Check API", () => {
       body: { venueId, action: "access", resource: "kds" },
     });
 
-    const response = await postPOST(request);
+      const response = await postPOST(request);
     expect(response.status).toBe(200);
 
     const json = await parseJsonResponse<{ data?: { tier?: string } }>(response);
     expect(json.data?.tier).toBe("enterprise");
     expect(getUserTierMock).toHaveBeenCalledWith(ownerUserId);
-  });
+    });
 
   it("enforces limits based on venue owner's tier", async () => {
     const staffUserId = "staff-2";

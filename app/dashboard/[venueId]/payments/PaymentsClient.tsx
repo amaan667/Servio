@@ -30,7 +30,7 @@ interface GroupedReceipts {
 }
 
 const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
-  const [payAtTillOrders, setPayAtTillOrders] = useState<PaymentOrder[]>([]);
+  const [unpaidOrders, setUnpaidOrders] = useState<PaymentOrder[]>([]);
   const [todayReceipts, setTodayReceipts] = useState<PaymentOrder[]>([]);
   const [historyReceipts, setHistoryReceipts] = useState<PaymentOrder[]>([]);
   const [groupedHistoryReceipts, setGroupedHistoryReceipts] = useState<GroupedReceipts>({});
@@ -47,21 +47,25 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
   }>({});
   const [activeTab, setActiveTab] = useState("pay-at-till");
 
-  // Check URL params for split action
+  // Check URL params for split action / direct order focus
   useEffect(() => {
     if (typeof window === "undefined") return;
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("orderId");
     const action = urlParams.get("action");
+
     if (orderId && action === "split") {
       setActiveTab("pay-at-till");
       // Find the order and open split dialog
-      const order = payAtTillOrders.find((o) => o.id === orderId);
+      const order = unpaidOrders.find((o) => o.id === orderId);
       if (order) {
         setSelectedOrderForSplit(order);
       }
+    } else if (orderId) {
+      // If we have an orderId but no explicit action, still bring staff to the Payments tab
+      setActiveTab("pay-at-till");
     }
-  }, [payAtTillOrders]);
+  }, [unpaidOrders]);
 
   const loadPayments = useCallback(async () => {
     if (!venueId) return;
@@ -123,8 +127,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         show_vat_breakdown: venue?.show_vat_breakdown ?? true,
       });
 
-      // Fetch pay-at-till orders (UNPAID with payment_method = PAY_AT_TILL)
-      // NOTE: payment_mode is stored as "offline" in DB for pay-at-till; do not filter on payment_mode.
+      // Fetch ALL unpaid operational orders (Pay at Till + Pay Later)
+      // NOTE: payment_mode differences (offline/deferred) are just presentation; we only care about:
+      // - payment_status = UNPAID
+      // - payment_method IN (PAY_AT_TILL, PAY_LATER)
       const activeStatuses: OrderStatus[] = [
         "PLACED",
         "ACCEPTED",
@@ -134,18 +140,23 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         "SERVED",
       ];
 
-      const { data: payAtTillData } = await supabase
+      const { data: unpaidData } = await supabase
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
         .eq("payment_status", "UNPAID")
         .eq("payment_method", "PAY_AT_TILL")
-        // Only include currently active orders awaiting pay-at-till payment.
+        // Only include currently active orders awaiting payment.
         // This clears out old unpaid orders that were already completed or cancelled.
         .in("order_status", activeStatuses)
+        // Filter out very old unpaid orders (cleanup for stale historical entries)
+        .gte(
+          "created_at",
+          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // last 30 days
+        )
         .order("created_at", { ascending: false });
 
-      setPayAtTillOrders((payAtTillData || []) as PaymentOrder[]);
+      setUnpaidOrders((unpaidData || []) as PaymentOrder[]);
 
       // Fetch paid orders for receipts
       const { data: ordersData, error: fetchError } = await supabase
@@ -291,7 +302,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     }
   };
 
-  const renderPayAtTillCard = (order: PaymentOrder) => {
+  const renderUnpaidOrderCard = (order: PaymentOrder) => {
     const orderNumber = order.id.slice(-6).toUpperCase();
     const date = new Date(order.created_at);
     const formattedDate = date.toLocaleDateString("en-GB", {
@@ -304,6 +315,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       minute: "2-digit",
     });
 
+    const method = String(order.payment_method || "").toUpperCase();
+    const isPayLater = method === "PAY_LATER";
+    const isServed = order.order_status === "SERVED";
+
     return (
       <Card key={order.id} className="hover:shadow-md transition-shadow">
         <CardContent className="p-6">
@@ -312,9 +327,21 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="h-5 w-5 text-orange-600" />
                 <span className="font-semibold text-lg">#{orderNumber}</span>
-                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                  Pay at Till
+                <Badge
+                  variant="secondary"
+                  className={isPayLater ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}
+                >
+                  {isPayLater ? "Pay Later" : "Pay at Till"}
                 </Badge>
+                {isServed ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    Served
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                    Not Served
+                  </Badge>
+                )}
               </div>
               <div className="space-y-1 text-sm text-gray-600">
                 {order.table_label && (
@@ -362,15 +389,17 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                   </>
                 )}
               </Button>
-              <Button
-                onClick={() => setSelectedOrderForSplit(order)}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                <Split className="h-4 w-4 mr-1" />
-                Split Bill
-              </Button>
+              {!isPayLater && (
+                <Button
+                  onClick={() => setSelectedOrderForSplit(order)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  <Split className="h-4 w-4 mr-1" />
+                  Split Bill
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -469,7 +498,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="pay-at-till" className="flex items-center gap-2 relative">
-                <span className="flex-1 text-left">Payments</span>
+                <span className="flex-1 text-left">Unpaid Orders</span>
                 <span
                   className={`
                     ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
@@ -480,7 +509,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     }
                   `}
                 >
-                  {payAtTillOrders.length}
+                  {unpaidOrders.length}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="today" className="flex items-center gap-2 relative">
@@ -517,21 +546,21 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
             {/* Payments - Pay at Till Orders */}
             <TabsContent value="pay-at-till" className="mt-6">
-              {payAtTillOrders.length === 0 ? (
+              {unpaidOrders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No Pay at Till Orders
+                      No Unpaid Orders
                     </h3>
                     <p className="text-gray-600">
-                      No unpaid orders with pay at till payment method
+                      No unpaid Pay Later or Pay at Till orders found
                     </p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {payAtTillOrders.map(renderPayAtTillCard)}
+                  {unpaidOrders.map(renderUnpaidOrderCard)}
                 </div>
               )}
             </TabsContent>
