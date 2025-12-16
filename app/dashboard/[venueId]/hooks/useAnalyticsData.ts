@@ -40,16 +40,26 @@ export function useAnalyticsData(venueId: string) {
         yesterdayStart.getTime() + (now.getTime() - todayStart.getTime())
       );
 
-      // Fetch today's orders - only count PAID orders for revenue
+      // Fetch today's orders - we'll filter by payment_status in processing
       const { data: todayOrders, error: ordersError } = await supabase
         .from("orders")
         .select("created_at, items, total_amount, payment_status")
         .eq("venue_id", venueId)
         .gte("created_at", todayStart.toISOString())
-        .in("payment_status", ["PAID", "TILL"]) // Only count paid orders for revenue
         .order("created_at", { ascending: true });
 
       if (ordersError) throw ordersError;
+
+      console.log("[ANALYTICS] Fetched today's orders:", {
+        count: todayOrders?.length || 0,
+        orders: todayOrders?.map((o: Record<string, unknown>) => ({
+          id: o.id,
+          payment_status: o.payment_status,
+          total_amount: o.total_amount,
+          hasItems: Array.isArray(o.items) && o.items.length > 0,
+          itemsCount: Array.isArray(o.items) ? o.items.length : 0,
+        })),
+      });
 
       // Fetch yesterday's orders for comparison
       const { data: yesterdayOrders } = await supabase
@@ -96,31 +106,53 @@ export function useAnalyticsData(venueId: string) {
         /* Empty */
       };
       
+      let processedOrders = 0;
+      let skippedOrders = 0;
+      let itemsProcessed = 0;
+      let itemsSkipped = 0;
+      
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
         // Only process paid orders
         const paymentStatus = (order.payment_status as string) || "";
         if (paymentStatus !== "PAID" && paymentStatus !== "TILL") {
+          skippedOrders++;
           return;
         }
 
         // Check if order has items array
         if (!Array.isArray(order.items) || order.items.length === 0) {
-          // If no items, we can't categorize, but we could add to "Uncategorized"
-          // For now, skip orders without items
+          // If no items but order is paid, add to "Uncategorized" category
+          const totalAmount = parseFloat((order.total_amount as string) || "0");
+          if (totalAmount > 0) {
+            categoryRevenue["Uncategorized"] = (categoryRevenue["Uncategorized"] || 0) + totalAmount;
+            processedOrders++;
+            console.log("[ANALYTICS] Order without items, using total_amount:", {
+              orderId: order.id,
+              totalAmount,
+            });
+          } else {
+            skippedOrders++;
+          }
           return;
         }
+
+        processedOrders++;
+        let orderHasValidItems = false;
 
         order.items.forEach((item: Record<string, unknown>) => {
           // Get category from menu items database, not from order item
           const menuItemId = item.menu_item_id as string;
-          if (!menuItemId) {
-            // Skip items without menu_item_id
-            return;
+          
+          // Try to get category from item itself if menu_item_id lookup fails
+          let category = menuItemCategories.get(menuItemId);
+          if (!category) {
+            // Fallback to item.category or item_name-based category
+            if (typeof item.category === "string" && item.category) {
+              category = item.category;
+            } else {
+              category = "Other";
+            }
           }
-
-          const category =
-            menuItemCategories.get(menuItemId) ||
-            (typeof item.category === "string" ? item.category : "Other");
           
           const price = parseFloat(
             typeof item.unit_price === "string"
@@ -129,7 +161,9 @@ export function useAnalyticsData(venueId: string) {
                 ? item.price
                 : typeof item.unitPrice === "number"
                   ? String(item.unitPrice)
-                  : "0"
+                  : typeof item.unit_price === "number"
+                    ? String(item.unit_price)
+                    : "0"
           );
           
           const qty = parseInt(
@@ -139,15 +173,48 @@ export function useAnalyticsData(venueId: string) {
                 ? item.qty
                 : typeof item.quantity === "number"
                   ? String(item.quantity)
-                  : "1"
+                  : typeof item.qty === "number"
+                    ? String(item.qty)
+                    : "1"
           );
           
           // Only add if we have valid price and quantity
           if (price > 0 && qty > 0) {
             const categoryKey = String(category || "Other");
             categoryRevenue[categoryKey] = (categoryRevenue[categoryKey] || 0) + price * qty;
+            itemsProcessed++;
+            orderHasValidItems = true;
+          } else {
+            itemsSkipped++;
+            console.log("[ANALYTICS] Item skipped - invalid price or quantity:", {
+              menuItemId,
+              price,
+              qty,
+              item,
+            });
           }
         });
+
+        if (!orderHasValidItems) {
+          // If order has items but none were valid, use total_amount as fallback
+          const totalAmount = parseFloat((order.total_amount as string) || "0");
+          if (totalAmount > 0) {
+            categoryRevenue["Uncategorized"] = (categoryRevenue["Uncategorized"] || 0) + totalAmount;
+            console.log("[ANALYTICS] Order with invalid items, using total_amount:", {
+              orderId: order.id,
+              totalAmount,
+            });
+          }
+        }
+      });
+
+      console.log("[ANALYTICS] Revenue calculation summary:", {
+        processedOrders,
+        skippedOrders,
+        itemsProcessed,
+        itemsSkipped,
+        categoryRevenue,
+        menuItemsCount: menuItemCategories.size,
       });
 
       const revenueByCategory = Object.entries(categoryRevenue)
