@@ -40,12 +40,13 @@ export function useAnalyticsData(venueId: string) {
         yesterdayStart.getTime() + (now.getTime() - todayStart.getTime())
       );
 
-      // Fetch today's orders
+      // Fetch today's orders - only count PAID orders for revenue
       const { data: todayOrders, error: ordersError } = await supabase
         .from("orders")
-        .select("created_at, items, total_amount")
+        .select("created_at, items, total_amount, payment_status")
         .eq("venue_id", venueId)
         .gte("created_at", todayStart.toISOString())
+        .in("payment_status", ["PAID", "TILL"]) // Only count paid orders for revenue
         .order("created_at", { ascending: true });
 
       if (ordersError) throw ordersError;
@@ -94,32 +95,59 @@ export function useAnalyticsData(venueId: string) {
       const categoryRevenue: { [key: string]: number } = {
         /* Empty */
       };
+      
       (todayOrders || []).forEach((order: Record<string, unknown>) => {
-        if (Array.isArray(order.items)) {
-          order.items.forEach((item: Record<string, unknown>) => {
-            // Get category from menu items database, not from order item
-            const menuItemId = item.menu_item_id as string;
-            const category =
-              menuItemCategories.get(menuItemId) ||
-              (typeof item.category === "string" ? item.category : "Other");
-            const price = parseFloat(
-              typeof item.unit_price === "string"
-                ? item.unit_price
-                : typeof item.price === "string"
-                  ? item.price
-                  : "0"
-            );
-            const qty = parseInt(
-              typeof item.quantity === "string"
-                ? item.quantity
-                : typeof item.qty === "string"
-                  ? item.qty
-                  : "1"
-            );
-            const categoryKey = String(category);
-            categoryRevenue[categoryKey] = (categoryRevenue[categoryKey] || 0) + price * qty;
-          });
+        // Only process paid orders
+        const paymentStatus = (order.payment_status as string) || "";
+        if (paymentStatus !== "PAID" && paymentStatus !== "TILL") {
+          return;
         }
+
+        // Check if order has items array
+        if (!Array.isArray(order.items) || order.items.length === 0) {
+          // If no items, we can't categorize, but we could add to "Uncategorized"
+          // For now, skip orders without items
+          return;
+        }
+
+        order.items.forEach((item: Record<string, unknown>) => {
+          // Get category from menu items database, not from order item
+          const menuItemId = item.menu_item_id as string;
+          if (!menuItemId) {
+            // Skip items without menu_item_id
+            return;
+          }
+
+          const category =
+            menuItemCategories.get(menuItemId) ||
+            (typeof item.category === "string" ? item.category : "Other");
+          
+          const price = parseFloat(
+            typeof item.unit_price === "string"
+              ? item.unit_price
+              : typeof item.price === "string"
+                ? item.price
+                : typeof item.unitPrice === "number"
+                  ? String(item.unitPrice)
+                  : "0"
+          );
+          
+          const qty = parseInt(
+            typeof item.quantity === "string"
+              ? item.quantity
+              : typeof item.qty === "string"
+                ? item.qty
+                : typeof item.quantity === "number"
+                  ? String(item.quantity)
+                  : "1"
+          );
+          
+          // Only add if we have valid price and quantity
+          if (price > 0 && qty > 0) {
+            const categoryKey = String(category || "Other");
+            categoryRevenue[categoryKey] = (categoryRevenue[categoryKey] || 0) + price * qty;
+          }
+        });
       });
 
       const revenueByCategory = Object.entries(categoryRevenue)
@@ -187,8 +215,10 @@ export function useAnalyticsData(venueId: string) {
           })
         );
       }
-    } catch (_err) {
-      setError(_err instanceof Error ? _err.message : "Failed to fetch analytics");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch analytics";
+      console.error("[ANALYTICS] Error fetching analytics data:", err);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
