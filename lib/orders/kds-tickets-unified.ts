@@ -389,40 +389,7 @@ function assignStationByKeywords(
     }
   }
 
-  // Grill Station - Hot grilled items
-  if (
-    itemNameLower.includes("burger") ||
-    itemNameLower.includes("steak") ||
-    itemNameLower.includes("chicken") ||
-    itemNameLower.includes("beef") ||
-    itemNameLower.includes("lamb") ||
-    itemNameLower.includes("pork") ||
-    itemNameLower.includes("sausage") ||
-    itemNameLower.includes("kebab") ||
-    itemNameLower.includes("grill") ||
-    itemNameLower.includes("bbq") ||
-    itemNameLower.includes("ribs") ||
-    itemNameLower.includes("halloumi") ||
-    itemNameLower.includes("patty") ||
-    itemNameLower.includes("meat") ||
-    itemNameLower.includes("bacon") ||
-    itemNameLower.includes("pancake") ||
-    itemNameLower.includes("waffle") ||
-    itemNameLower.includes("toast") ||
-    itemNameLower.includes("croissant") ||
-    itemNameLower.includes("bagel")
-  ) {
-    const grillStation = stations.find((s) => s.station_type === "grill");
-    if (grillStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: "grill",
-      });
-      return grillStation;
-    }
-  }
-
-  // Fryer Station - Fried items
+  // Fryer Station - Fried items (check BEFORE Grill to catch "fried chicken", "chicken wings", etc.)
   if (
     itemNameLower.includes("fries") ||
     itemNameLower.includes("chips") ||
@@ -445,7 +412,47 @@ function assignStationByKeywords(
     }
   }
 
+  // Grill Station - Hot grilled items
+  // NOTE: Check AFTER Fryer to avoid conflicts (e.g., "fried chicken" should go to Fryer, not Grill)
+  // Also exclude salad/sandwich items that might contain "chicken" but are cold prep
+  if (
+    (itemNameLower.includes("burger") ||
+      itemNameLower.includes("steak") ||
+      itemNameLower.includes("chicken") ||
+      itemNameLower.includes("beef") ||
+      itemNameLower.includes("lamb") ||
+      itemNameLower.includes("pork") ||
+      itemNameLower.includes("sausage") ||
+      itemNameLower.includes("kebab") ||
+      itemNameLower.includes("grill") ||
+      itemNameLower.includes("bbq") ||
+      itemNameLower.includes("ribs") ||
+      itemNameLower.includes("halloumi") ||
+      itemNameLower.includes("patty") ||
+      itemNameLower.includes("meat") ||
+      itemNameLower.includes("bacon") ||
+      itemNameLower.includes("pancake") ||
+      itemNameLower.includes("waffle") ||
+      itemNameLower.includes("toast") ||
+      itemNameLower.includes("croissant") ||
+      itemNameLower.includes("bagel")) &&
+    // Exclude items that are clearly cold prep (salads, sandwiches)
+    !itemNameLower.includes("salad") &&
+    !itemNameLower.includes("sandwich") &&
+    !itemNameLower.includes("wrap")
+  ) {
+    const grillStation = stations.find((s) => s.station_type === "grill");
+    if (grillStation) {
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: "grill",
+      });
+      return grillStation;
+    }
+  }
+
   // Cold Prep Station - Salads, sandwiches, cold items
+  // NOTE: Check AFTER Fryer and Grill to avoid conflicts
   // NOTE: "bowl" is checked here, but drink bowls (matcha, yogurt, acai) are caught by Barista first
   if (
     itemNameLower.includes("salad") ||
