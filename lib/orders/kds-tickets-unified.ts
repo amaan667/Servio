@@ -347,7 +347,8 @@ async function getTableLabel(supabase: SupabaseClient, order: OrderForKDSTickets
 }
 
 /**
- * Assigns a station to an item using smart keyword categorization
+ * Assigns a station to an item using smart keyword categorization with conflict resolution
+ * Priority order: Barista → Fryer → Pizza/Pasta → Grill → Cold Prep → Expo
  */
 function assignStationByKeywords(
   itemName: string,
@@ -356,29 +357,21 @@ function assignStationByKeywords(
 ): KDSStation {
   const itemNameLower = itemName.toLowerCase();
 
-  // Barista Station - Drinks & Beverages
-  // Check for drink-related keywords FIRST (before checking "bowl" which could match Cold Prep)
-  if (
-    itemNameLower.includes("coffee") ||
-    itemNameLower.includes("latte") ||
-    itemNameLower.includes("cappuccino") ||
-    itemNameLower.includes("espresso") ||
-    itemNameLower.includes("mocha") ||
-    itemNameLower.includes("americano") ||
-    itemNameLower.includes("macchiato") ||
-    itemNameLower.includes("tea") ||
-    itemNameLower.includes("matcha") ||
-    itemNameLower.includes("chai") ||
-    itemNameLower.includes("hot chocolate") ||
-    itemNameLower.includes("smoothie") ||
-    itemNameLower.includes("juice") ||
-    itemNameLower.includes("shake") ||
-    itemNameLower.includes("drink") ||
-    itemNameLower.includes("beverage") ||
-    itemNameLower.includes("yogurt") ||
-    itemNameLower.includes("acai") ||
-    itemNameLower.includes("parfait")
-  ) {
+  // ============================================
+  // TIER 1: Barista Station - Drinks & Beverages (Highest Priority)
+  // ============================================
+  // Check FIRST to catch all beverages before other keywords
+  const baristaKeywords = [
+    "coffee", "latte", "cappuccino", "espresso", "mocha", "americano",
+    "macchiato", "flat white", "cortado", "doppio", "lungo", "ristretto",
+    "tea", "matcha", "chai", "hot chocolate", "cocoa", "hot cocoa",
+    "smoothie", "juice", "shake", "milkshake", "frappe", "frappuccino",
+    "drink", "beverage", "yogurt", "acai", "parfait", "bubble tea",
+    "boba", "iced tea", "iced coffee", "cold brew", "refresher",
+    "lemonade", "iced", "soda", "soft drink", "energy drink"
+  ];
+  
+  if (baristaKeywords.some(keyword => itemNameLower.includes(keyword))) {
     const baristaStation = stations.find((s) => s.station_type === "barista");
     if (baristaStation) {
       logger.debug("[KDS CATEGORIZATION] Station match", {
@@ -389,19 +382,18 @@ function assignStationByKeywords(
     }
   }
 
-  // Fryer Station - Fried items (check BEFORE Grill to catch "fried chicken", "chicken wings", etc.)
-  if (
-    itemNameLower.includes("fries") ||
-    itemNameLower.includes("chips") ||
-    itemNameLower.includes("fried") ||
-    itemNameLower.includes("fryer") ||
-    itemNameLower.includes("wings") ||
-    itemNameLower.includes("nuggets") ||
-    itemNameLower.includes("crispy") ||
-    itemNameLower.includes("tempura") ||
-    itemNameLower.includes("calamari") ||
-    itemNameLower.includes("onion rings")
-  ) {
+  // ============================================
+  // TIER 2: Fryer Station - Fried items (Before Grill to catch "fried chicken", "wings")
+  // ============================================
+  const fryerKeywords = [
+    "fries", "chips", "fried", "fryer", "wings", "nuggets", "crispy",
+    "tempura", "calamari", "onion rings", "mozzarella sticks",
+    "spring rolls", "samosa", "pakora", "fritter", "doughnut", "donut",
+    "beignet", "churro", "funnel cake", "corn dog", "fish and chips"
+  ];
+  
+  // Special handling: "fried chicken" should go to Fryer, not Grill
+  if (fryerKeywords.some(keyword => itemNameLower.includes(keyword))) {
     const fryerStation = stations.find((s) => s.station_type === "fryer");
     if (fryerStation) {
       logger.debug("[KDS CATEGORIZATION] Station match", {
@@ -412,34 +404,63 @@ function assignStationByKeywords(
     }
   }
 
-  // Grill Station - Hot grilled items
-  // NOTE: Check AFTER Fryer to avoid conflicts (e.g., "fried chicken" should go to Fryer, not Grill)
-  // Also exclude salad/sandwich items that might contain "chicken" but are cold prep
+  // ============================================
+  // TIER 3: Pizza/Pasta Station (if exists) - Check before Grill
+  // ============================================
+  const pizzaPastaKeywords = [
+    "pizza", "pasta", "spaghetti", "penne", "fettuccine", "linguine",
+    "ravioli", "lasagna", "gnocchi", "risotto", "carbonara", "alfredo",
+    "marinara", "bolognese", "pesto", "calzone", "stromboli", "flatbread"
+  ];
+  
+  if (pizzaPastaKeywords.some(keyword => itemNameLower.includes(keyword))) {
+    // Try pizza/pasta station first
+    const pizzaStation = stations.find((s) => 
+      s.station_type === "pizza" || s.station_type === "pasta"
+    );
+    if (pizzaStation) {
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: pizzaStation.station_type,
+      });
+      return pizzaStation;
+    }
+    // If no dedicated pizza/pasta station, fall through to Grill (many venues handle pizza at grill)
+  }
+
+  // ============================================
+  // TIER 4: Grill Station - Hot grilled/cooked items
+  // ============================================
+  // Exclude items that should go to other stations
+  const isColdPrepItem = 
+    itemNameLower.includes("salad") ||
+    itemNameLower.includes("sandwich") ||
+    itemNameLower.includes("wrap") ||
+    itemNameLower.includes("sushi") ||
+    itemNameLower.includes("poke") ||
+    itemNameLower.includes("cold");
+  
+  const isSoupItem = 
+    itemNameLower.includes("soup") ||
+    itemNameLower.includes("stew") ||
+    itemNameLower.includes("chowder") ||
+    itemNameLower.includes("bisque") ||
+    itemNameLower.includes("broth");
+  
+  const grillKeywords = [
+    "burger", "steak", "chicken", "beef", "lamb", "pork", "sausage",
+    "kebab", "grill", "bbq", "barbecue", "ribs", "halloumi", "patty",
+    "meat", "bacon", "pancake", "waffle", "toast", "croissant", "bagel",
+    "omelet", "omelette", "eggs", "breakfast", "brunch", "hash",
+    "skewer", "kabob", "shish", "tandoori", "tikka", "curry", "masala",
+    "teriyaki", "stir fry", "stir-fry", "wok", "fajita", "quesadilla",
+    "taco", "burrito", "enchilada", "queso", "nachos", "loaded"
+  ];
+  
   if (
-    (itemNameLower.includes("burger") ||
-      itemNameLower.includes("steak") ||
-      itemNameLower.includes("chicken") ||
-      itemNameLower.includes("beef") ||
-      itemNameLower.includes("lamb") ||
-      itemNameLower.includes("pork") ||
-      itemNameLower.includes("sausage") ||
-      itemNameLower.includes("kebab") ||
-      itemNameLower.includes("grill") ||
-      itemNameLower.includes("bbq") ||
-      itemNameLower.includes("ribs") ||
-      itemNameLower.includes("halloumi") ||
-      itemNameLower.includes("patty") ||
-      itemNameLower.includes("meat") ||
-      itemNameLower.includes("bacon") ||
-      itemNameLower.includes("pancake") ||
-      itemNameLower.includes("waffle") ||
-      itemNameLower.includes("toast") ||
-      itemNameLower.includes("croissant") ||
-      itemNameLower.includes("bagel")) &&
-    // Exclude items that are clearly cold prep (salads, sandwiches)
-    !itemNameLower.includes("salad") &&
-    !itemNameLower.includes("sandwich") &&
-    !itemNameLower.includes("wrap")
+    grillKeywords.some(keyword => itemNameLower.includes(keyword)) &&
+    !isColdPrepItem &&
+    !isSoupItem
   ) {
     const grillStation = stations.find((s) => s.station_type === "grill");
     if (grillStation) {
@@ -451,30 +472,49 @@ function assignStationByKeywords(
     }
   }
 
-  // Cold Prep Station - Salads, sandwiches, cold items
-  // NOTE: Check AFTER Fryer and Grill to avoid conflicts
-  // NOTE: "bowl" is checked here, but drink bowls (matcha, yogurt, acai) are caught by Barista first
+  // ============================================
+  // TIER 5: Soup Station (if exists) or Grill fallback
+  // ============================================
+  if (isSoupItem) {
+    const soupStation = stations.find((s) => s.station_type === "soup");
+    if (soupStation) {
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: "soup",
+      });
+      return soupStation;
+    }
+    // If no soup station, soups often prepared at Grill
+    const grillStation = stations.find((s) => s.station_type === "grill");
+    if (grillStation) {
+      logger.debug("[KDS CATEGORIZATION] Station match (soup → grill fallback)", {
+        itemName,
+        station: "grill",
+      });
+      return grillStation;
+    }
+  }
+
+  // ============================================
+  // TIER 6: Cold Prep Station - Salads, sandwiches, cold items
+  // ============================================
+  const coldPrepKeywords = [
+    "salad", "sandwich", "wrap", "cold", "sushi", "poke",
+    "hummus", "mezze", "dip", "labneh", "tzatziki", "avo", "avocado",
+    "ceviche", "tartare", "carpaccio", "bruschetta", "antipasto",
+    "charcuterie", "cheese board", "platter", "gazpacho"
+  ];
+  
+  // Only match "bowl" if it's NOT a drink bowl (already caught by Barista)
+  const isDrinkBowl = 
+    itemNameLower.includes("matcha") ||
+    itemNameLower.includes("yogurt") ||
+    itemNameLower.includes("acai") ||
+    itemNameLower.includes("parfait");
+  
   if (
-    itemNameLower.includes("salad") ||
-    itemNameLower.includes("sandwich") ||
-    itemNameLower.includes("wrap") ||
-    itemNameLower.includes("cold") ||
-    itemNameLower.includes("sushi") ||
-    itemNameLower.includes("poke") ||
-    // Only match "bowl" if it's NOT a drink bowl (matcha, yogurt, acai already caught by Barista)
-    (itemNameLower.includes("bowl") &&
-      !itemNameLower.includes("matcha") &&
-      !itemNameLower.includes("yogurt") &&
-      !itemNameLower.includes("acai") &&
-      !itemNameLower.includes("parfait")) ||
-    itemNameLower.includes("hummus") ||
-    itemNameLower.includes("mezze") ||
-    itemNameLower.includes("dip") ||
-    itemNameLower.includes("labneh") ||
-    itemNameLower.includes("tzatziki") ||
-    itemNameLower.includes("avo") ||
-    itemNameLower.includes("avocado") ||
-    itemNameLower.includes("loaded")
+    coldPrepKeywords.some(keyword => itemNameLower.includes(keyword)) ||
+    (itemNameLower.includes("bowl") && !isDrinkBowl)
   ) {
     const coldStation = stations.find((s) => s.station_type === "cold");
     if (coldStation) {
@@ -486,7 +526,39 @@ function assignStationByKeywords(
     }
   }
 
-  // Default to Expo if no match
+  // ============================================
+  // TIER 7: Dessert Station (if exists)
+  // ============================================
+  const dessertKeywords = [
+    "dessert", "cake", "pie", "tart", "mousse", "pudding", "custard",
+    "ice cream", "gelato", "sorbet", "cheesecake", "brownie", "cookie",
+    "biscuit", "muffin", "scone", "pastry", "eclair", "tiramisu",
+    "creme brulee", "flan", "panna cotta"
+  ];
+  
+  if (dessertKeywords.some(keyword => itemNameLower.includes(keyword))) {
+    const dessertStation = stations.find((s) => s.station_type === "dessert");
+    if (dessertStation) {
+      logger.debug("[KDS CATEGORIZATION] Station match", {
+        itemName,
+        station: "dessert",
+      });
+      return dessertStation;
+    }
+    // If no dessert station, desserts often prepared at Cold Prep or Barista
+    const coldStation = stations.find((s) => s.station_type === "cold");
+    if (coldStation) {
+      logger.debug("[KDS CATEGORIZATION] Station match (dessert → cold fallback)", {
+        itemName,
+        station: "cold",
+      });
+      return coldStation;
+    }
+  }
+
+  // ============================================
+  // FALLBACK: Default to Expo if no match
+  // ============================================
   logger.debug("[KDS CATEGORIZATION] Station fallback", {
     itemName,
     station: "expo",
