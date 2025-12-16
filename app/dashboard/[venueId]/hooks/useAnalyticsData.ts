@@ -90,15 +90,33 @@ export function useAnalyticsData(venueId: string) {
       }));
 
       // Fetch menu items with categories
-      const { data: menuItems } = await supabase
+      const { data: menuItems, error: menuItemsError } = await supabase
         .from("menu_items")
         .select("id, name, category")
         .eq("venue_id", venueId);
 
-      // Create a map of menu item ID to category
-      const menuItemCategories = new Map<string, string>();
+      if (menuItemsError) {
+        console.error("[ANALYTICS] Error fetching menu items:", menuItemsError);
+      }
+
+      // Create maps for lookup: ID -> category and name -> category
+      const menuItemCategoriesById = new Map<string, string>();
+      const menuItemCategoriesByName = new Map<string, string>();
       (menuItems || []).forEach((item: Record<string, unknown>) => {
-        menuItemCategories.set(item.id as string, (item.category as string) || "Other");
+        const id = String(item.id || "");
+        const name = String(item.name || "").toLowerCase().trim();
+        const category = (item.category as string) || "Other";
+        if (id) {
+          menuItemCategoriesById.set(id, category);
+        }
+        if (name) {
+          menuItemCategoriesByName.set(name, category);
+        }
+      });
+
+      console.log("[ANALYTICS] Menu items loaded:", {
+        count: menuItems?.length || 0,
+        sampleCategories: Array.from(menuItemCategoriesById.values()).slice(0, 5),
       });
 
       // Calculate revenue by category from order items using actual menu categories
@@ -140,18 +158,43 @@ export function useAnalyticsData(venueId: string) {
         let orderHasValidItems = false;
 
         order.items.forEach((item: Record<string, unknown>) => {
-          // Get category from menu items database, not from order item
-          const menuItemId = item.menu_item_id as string;
+          // Get category from menu items database
+          const menuItemId = item.menu_item_id ? String(item.menu_item_id) : null;
+          const itemName = item.item_name ? String(item.item_name).toLowerCase().trim() : null;
           
-          // Try to get category from item itself if menu_item_id lookup fails
-          let category = menuItemCategories.get(menuItemId);
-          if (!category) {
-            // Fallback to item.category or item_name-based category
-            if (typeof item.category === "string" && item.category) {
-              category = item.category;
-            } else {
-              category = "Other";
+          // Try multiple lookup strategies
+          let category: string | null = null;
+          
+          // Strategy 1: Lookup by menu_item_id
+          if (menuItemId) {
+            category = menuItemCategoriesById.get(menuItemId) || null;
+            if (category) {
+              console.log("[ANALYTICS] Found category by ID:", { menuItemId, category });
             }
+          }
+          
+          // Strategy 2: Lookup by item_name if ID lookup failed
+          if (!category && itemName) {
+            category = menuItemCategoriesByName.get(itemName) || null;
+            if (category) {
+              console.log("[ANALYTICS] Found category by name:", { itemName, category });
+            }
+          }
+          
+          // Strategy 3: Use item.category if present
+          if (!category && typeof item.category === "string" && item.category) {
+            category = item.category;
+            console.log("[ANALYTICS] Using item.category:", { category });
+          }
+          
+          // Strategy 4: Default to "Other" only if all lookups fail
+          if (!category) {
+            category = "Other";
+            console.log("[ANALYTICS] No category found, using 'Other':", {
+              menuItemId,
+              itemName,
+              itemKeys: Object.keys(item),
+            });
           }
           
           const price = parseFloat(
