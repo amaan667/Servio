@@ -226,8 +226,14 @@ export function useNoShowReservation() {
 export function useRemoveTable() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ tableId, venueId: _venueId }: { tableId: string; venueId: string }) => {
-      const response = await fetch(`/api/tables/${tableId}`, {
+    mutationFn: async ({ tableId, venueId: _venueId, force = false }: { tableId: string; venueId: string; force?: boolean }) => {
+      // Build URL with force parameter if needed
+      const url = new URL(`/api/tables/${tableId}`, window.location.origin);
+      if (force) {
+        url.searchParams.set("force", "true");
+      }
+
+      const response = await fetch(url.toString(), {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -235,12 +241,19 @@ export function useRemoveTable() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        logger.error("[TABLE HOOK] Delete table error:", errorData);
-        throw new Error(errorData.error || "Failed to delete table");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData?.error?.message || errorData?.error || "Failed to delete table";
+        logger.error("[TABLE HOOK] Delete table error:", {
+          errorData,
+          status: response.status,
+          tableId,
+          force,
+        });
+        throw new Error(errorMessage);
       }
 
       const responseData = await response.json();
+      return responseData;
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
