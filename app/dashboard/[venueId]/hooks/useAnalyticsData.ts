@@ -33,9 +33,15 @@ export function useAnalyticsData(venueId: string) {
       setLoading(true);
       setError(null);
 
+      console.log("🔍 [ANALYTICS] Step 1: Creating Supabase client");
       const supabase = supabaseBrowser();
+      console.log("🔍 [ANALYTICS] Step 2: Calculating date range");
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      console.log("🔍 [ANALYTICS] Date range:", {
+        now: now.toISOString(),
+        todayStart: todayStart.toISOString(),
+      });
 
       // Compare apples-to-apples: same time period
       // If it's 2:49 PM today, compare today 12 AM - 2:49 PM vs yesterday 12 AM - 2:49 PM
@@ -45,6 +51,7 @@ export function useAnalyticsData(venueId: string) {
       );
 
       // Fetch today's orders - we'll filter by payment_status in processing
+      console.log("🔍 [ANALYTICS] Step 3: Fetching today's orders");
       const { data: todayOrders, error: ordersError } = await supabase
         .from("orders")
         .select("created_at, items, total_amount, payment_status")
@@ -52,9 +59,18 @@ export function useAnalyticsData(venueId: string) {
         .gte("created_at", todayStart.toISOString())
         .order("created_at", { ascending: true });
 
-      if (ordersError) throw ordersError;
+      console.log("🔍 [ANALYTICS] Orders query result:", {
+        hasData: !!todayOrders,
+        count: todayOrders?.length || 0,
+        error: ordersError,
+      });
 
-      console.log("[ANALYTICS] Fetched today's orders:", {
+      if (ordersError) {
+        console.error("🔍 [ANALYTICS] Orders query error:", ordersError);
+        throw ordersError;
+      }
+
+      console.log("🔍 [ANALYTICS] Fetched today's orders:", {
         count: todayOrders?.length || 0,
         orders: todayOrders?.map((o: Record<string, unknown>) => ({
           id: o.id,
@@ -326,9 +342,14 @@ export function useAnalyticsData(venueId: string) {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch analytics";
-      console.error("[ANALYTICS] Error fetching analytics data:", err);
+      console.error("🔍 [ANALYTICS] ===== ERROR IN FETCH ANALYTICS =====", {
+        error: err,
+        message: errorMessage,
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       setError(errorMessage);
     } finally {
+      console.log("🔍 [ANALYTICS] ===== FETCH ANALYTICS COMPLETE =====");
       setLoading(false);
     }
   }, [venueId]);
