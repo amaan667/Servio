@@ -410,11 +410,25 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
             if (!isMounted) return;
 
             if (payload.eventType === "INSERT") {
+              // When a new ticket is inserted, refetch to get all tickets with current filter
+              // This ensures the new ticket appears in the correct station view
               fetchTickets();
             } else if (payload.eventType === "UPDATE") {
-              setTickets((prev) =>
-                prev.map((t) => (t.id === payload.new?.id ? { ...t, ...payload.new } : t))
-              );
+              // For updates, merge the updated ticket data
+              // But only if it matches the current station filter (or no filter for "All Stations")
+              const updatedTicket = payload.new as KDSTicket | undefined;
+              if (updatedTicket) {
+                // If we have a station filter, only update if the ticket belongs to that station
+                // If no filter (All Stations), update all tickets
+                if (!selectedStation || updatedTicket.station_id === selectedStation) {
+                  setTickets((prev) =>
+                    prev.map((t) => (t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t))
+                  );
+                } else {
+                  // Ticket was moved to a different station, remove it from current view
+                  setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
+                }
+              }
             } else if (payload.eventType === "DELETE") {
               setTickets((prev) => prev.filter((t) => t.id !== payload.old?.id));
             }
