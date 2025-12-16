@@ -395,8 +395,15 @@ const DashboardClient = React.memo(function DashboardClient({
   const tableUtilization = 0; // Placeholder, not displayed
 
   const revenueByCategory = useMemo(() => {
-    if (analyticsData.data?.revenueByCategory && analyticsData.data.revenueByCategory.length > 0) {
-      return analyticsData.data.revenueByCategory;
+    const data = analyticsData.data?.revenueByCategory;
+    console.log("🔍 [PAGE CLIENT] revenueByCategory useMemo:", {
+      hasData: !!data,
+      isArray: Array.isArray(data),
+      length: Array.isArray(data) ? data.length : 0,
+      data,
+    });
+    if (data && Array.isArray(data) && data.length > 0) {
+      return data;
     }
     return [];
   }, [analyticsData.data?.revenueByCategory]);
@@ -737,15 +744,7 @@ const DashboardClient = React.memo(function DashboardClient({
           <TodayAtAGlance
             ordersByHour={ordersByHour}
             tableUtilization={tableUtilization}
-            revenueByCategory={(() => {
-              console.log("[PAGE CLIENT] Passing revenueByCategory to TodayAtAGlance:", {
-                revenueByCategory,
-                type: typeof revenueByCategory,
-                isArray: Array.isArray(revenueByCategory),
-                length: Array.isArray(revenueByCategory) ? revenueByCategory.length : "N/A",
-              });
-              return revenueByCategory;
-            })()}
+            revenueByCategory={revenueByCategory}
             loading={false}
           />
         </div>
