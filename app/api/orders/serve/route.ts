@@ -115,6 +115,61 @@ export const POST = withUnifiedAuth(
         }
       }
 
+      // Verify order state before calling serve RPC
+      const { data: verifyOrder, error: verifyError } = await admin
+        .from("orders")
+        .select("kitchen_status, completion_status, service_status, order_status")
+        .eq("id", orderId)
+        .eq("venue_id", venueId)
+        .single();
+
+      if (verifyError || !verifyOrder) {
+        logger.error("[ORDERS SERVE] Failed to verify order before serve", {
+          error: verifyError?.message,
+          orderId,
+          venueId,
+        });
+        return apiErrors.notFound("Order not found");
+      }
+
+      // Check completion_status
+      if (verifyOrder.completion_status?.toUpperCase() !== "OPEN") {
+        logger.error("[ORDERS SERVE] Order completion_status is not OPEN", {
+          orderId,
+          venueId,
+          completion_status: verifyOrder.completion_status,
+          order_status: verifyOrder.order_status,
+        });
+        return apiErrors.badRequest(
+          `Order cannot be served: order is ${verifyOrder.completion_status || "not open"}`
+        );
+      }
+
+      // Check if already served
+      if (verifyOrder.service_status?.toUpperCase() === "SERVED") {
+        logger.debug("[ORDERS SERVE] Order already served", {
+          orderId,
+          venueId,
+        });
+        // Return success since it's already in the desired state
+        return NextResponse.json({
+          success: true,
+          message: "Order is already marked as served",
+        });
+      }
+
+      // Verify kitchen_status is BUMPED
+      if (verifyOrder.kitchen_status?.toUpperCase() !== "BUMPED") {
+        logger.error("[ORDERS SERVE] kitchen_status not BUMPED", {
+          orderId,
+          venueId,
+          kitchen_status: verifyOrder.kitchen_status,
+        });
+        return apiErrors.badRequest(
+          "Order kitchen status is not BUMPED. Please ensure all items are bumped in the kitchen first."
+        );
+      }
+
       // Canonical transition: SERVE (requires kitchen_status=BUMPED, enforced in RPC)
       const { data, error } = await admin.rpc("orders_set_served", {
         p_order_id: orderId,
@@ -124,12 +179,28 @@ export const POST = withUnifiedAuth(
       if (error) {
         logger.error("[ORDERS SERVE] RPC error", {
           error: error.message,
+          errorCode: error.code,
+          errorDetails: error.details,
+          errorHint: error.hint,
           orderId,
           venueId,
-          currentKitchenStatus: currentOrder.kitchen_status,
+          currentKitchenStatus: verifyOrder.kitchen_status,
+          completionStatus: verifyOrder.completion_status,
+          serviceStatus: verifyOrder.service_status,
         });
-        const msg = isDevelopment() ? error.message : "Failed to mark order as served";
-        return apiErrors.badRequest(msg);
+        // Return the actual error message from the RPC
+        const errorMsg = error.message || "Failed to mark order as served";
+        return apiErrors.badRequest(errorMsg);
+      }
+
+      // Verify the update actually happened
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        logger.error("[ORDERS SERVE] RPC returned no data - update may have failed", {
+          orderId,
+          venueId,
+          data,
+        });
+        return apiErrors.badRequest("Failed to update order status - no data returned");
       }
 
       // Best-effort: update table_sessions status to SERVED for table UI
