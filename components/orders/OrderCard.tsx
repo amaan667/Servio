@@ -136,21 +136,26 @@ export function OrderCard({
       }
     };
 
-    // Only check for orders that are not completed and have payment status PAID/UNPAID
+    // Check ticket status for orders that:
+    // 1. Are not completed/cancelled/refunded
+    // 2. Are in a status where we need to check if items are ready (PLACED, IN_PREP, PREPARING, READY)
+    // 3. Have payment status PAID or UNPAID
     const orderStatus = (order.order_status || "").toUpperCase();
     const paymentStatus = (order.payment?.status || order.payment_status || "unpaid").toUpperCase();
     const isCompletable = !["COMPLETED", "CANCELLED", "REFUNDED"].includes(orderStatus);
+    const needsTicketCheck = ["PLACED", "IN_PREP", "PREPARING", "READY"].includes(orderStatus);
     const isPaidOrUnpaid = ["PAID", "UNPAID"].includes(paymentStatus);
 
-    if (isCompletable && isPaidOrUnpaid) {
+    if (isCompletable && needsTicketCheck && isPaidOrUnpaid) {
       checkTicketsBumped();
-      // Set up polling to check ticket status periodically (every 5 seconds)
+      // Set up polling to check ticket status periodically (every 3 seconds for faster updates)
       const interval = setInterval(() => {
         checkTicketsBumped();
-      }, 5000);
+      }, 3000);
 
       return () => clearInterval(interval);
     } else {
+      // If order is SERVED or COMPLETED, we don't need to check tickets anymore
       setAllTicketsBumped(null);
     }
   }, [venueId, order.id, order.order_status, order.payment?.status, order.payment_status]);
@@ -174,6 +179,70 @@ export function OrderCard({
       if (typeof window !== "undefined") {
         window.removeEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
       }
+    };
+  }, [venueId, order.id, onActionComplete]);
+
+  // Listen for real-time order status updates (e.g., when KDS bumps tickets or order is marked served)
+  React.useEffect(() => {
+    if (!venueId || !order.id) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`order-${order.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${order.id}`,
+        },
+        () => {
+          // When order status changes, refresh the order data
+          onActionComplete?.();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "kds_tickets",
+          filter: `order_id=eq.${order.id}`,
+        },
+        () => {
+          // When KDS ticket status changes, immediately check if all are bumped
+          // Trigger immediate ticket check
+          if (venueId && order.id) {
+            const checkTickets = async () => {
+              try {
+                const response = await fetch("/api/kds/tickets/check-bumped", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    order_id: order.id,
+                    venue_id: venueId,
+                  }),
+                });
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data.success) {
+                    setAllTicketsBumped(data.data?.all_bumped ?? false);
+                  }
+                }
+              } catch {
+                // Silently fail
+              }
+            };
+            checkTickets();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, [venueId, order.id, onActionComplete]);
 
@@ -383,7 +452,14 @@ export function OrderCard({
         }
       }
 
+      // After status update, refresh order data to get updated status and payment info
       await onActionComplete?.();
+      
+      // If we just marked as SERVED, reset ticket check state so component can re-evaluate
+      // This ensures the payment check happens correctly
+      if (nextStatusRaw === "SERVED") {
+        setAllTicketsBumped(null);
+      }
     } catch (_error) {
       alert(`Error: ${_error instanceof Error ? _error.message : "Failed to update order status"}`);
     } finally {
@@ -411,16 +487,16 @@ export function OrderCard({
 
     // Check if order can show "Mark Served" button
     // Requirements:
-    // 1. Order status is PLACED, IN_PREP, or READY
+    // 1. Order status is PLACED, IN_PREP, PREPARING, or READY
     // 2. Payment status is PAID or UNPAID
     // 3. All KDS tickets are bumped (must be explicitly true, not null or false)
     const canMarkServed =
-      ["PLACED", "IN_PREP", "READY"].includes(orderStatus) &&
+      ["PLACED", "IN_PREP", "PREPARING", "READY"].includes(orderStatus) &&
       (paymentStatus === "PAID" || paymentStatus === "UNPAID") &&
       allTicketsBumped === true; // Only show when explicitly all tickets are bumped
 
-    // If order is PLACED, IN_PREP, or READY, check if all tickets are bumped
-    if (["PLACED", "IN_PREP", "READY"].includes(orderStatus)) {
+    // If order is PLACED, IN_PREP, PREPARING, or READY, check if all tickets are bumped
+    if (["PLACED", "IN_PREP", "PREPARING", "READY"].includes(orderStatus)) {
       if (canMarkServed) {
         // All tickets bumped - can mark as served
         return (
