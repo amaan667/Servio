@@ -208,10 +208,10 @@ BEGIN
     END,
     served_at = COALESCE(served_at, NOW()),
     updated_at = NOW()
-  WHERE id = p_order_id
-    AND venue_id = p_venue_id
-    AND UPPER(completion_status) = 'OPEN'
-    AND UPPER(service_status) <> 'SERVED'
+  WHERE orders.id = p_order_id
+    AND orders.venue_id = p_venue_id
+    AND UPPER(orders.completion_status) = 'OPEN'
+    AND UPPER(orders.service_status) <> 'SERVED'
   RETURNING orders.id, orders.venue_id, orders.kitchen_status, orders.service_status, orders.completion_status, orders.payment_status
   INTO id, venue_id, kitchen_status, service_status, completion_status, payment_status;
 
@@ -248,7 +248,7 @@ DECLARE
 BEGIN
   SELECT * INTO v_order
   FROM orders
-  WHERE id = p_order_id AND venue_id = p_venue_id
+  WHERE orders.id = p_order_id AND orders.venue_id = p_venue_id
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -283,7 +283,7 @@ BEGIN
     forced_completed_by = CASE WHEN p_forced THEN p_forced_by ELSE forced_completed_by END,
     forced_completed_reason = CASE WHEN p_forced THEN p_forced_reason ELSE forced_completed_reason END,
     updated_at = NOW()
-  WHERE id = p_order_id AND venue_id = p_venue_id
+  WHERE orders.id = p_order_id AND orders.venue_id = p_venue_id
   RETURNING orders.id, orders.venue_id, orders.completion_status, orders.payment_status, orders.forced_completed_at
   INTO id, venue_id, completion_status, payment_status, forced_completed_at;
 
@@ -316,11 +316,11 @@ BEGIN
     forced_completed_by = p_forced_by,
     forced_completed_reason = p_forced_reason,
     updated_at = NOW()
-  WHERE venue_id = p_venue_id
-    AND UPPER(completion_status) = 'OPEN'
+  WHERE orders.venue_id = p_venue_id
+    AND UPPER(orders.completion_status) = 'OPEN'
     AND (
       p_order_ids IS NULL
-      OR id = ANY(p_order_ids)
+      OR orders.id = ANY(p_order_ids)
     );
 
   GET DIAGNOSTICS affected_rows = ROW_COUNT;
@@ -350,7 +350,7 @@ DECLARE
 BEGIN
   SELECT total_amount INTO v_total
   FROM orders
-  WHERE id = p_order_id AND venue_id = p_venue_id
+  WHERE orders.id = p_order_id AND orders.venue_id = p_venue_id
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -372,7 +372,7 @@ BEGIN
       ELSE 'PARTIALLY_PAID'
     END,
     updated_at = NOW()
-  WHERE id = p_order_id AND venue_id = p_venue_id;
+  WHERE orders.id = p_order_id AND orders.venue_id = p_venue_id;
 
   RETURN QUERY
   SELECT o.id, o.venue_id, o.payment_status, v_paid AS paid_total, v_total AS order_total
