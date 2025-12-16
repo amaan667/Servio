@@ -162,8 +162,9 @@ export function useOrderManagement(venueId: string) {
 
           if (payload.eventType === "INSERT" && newOrder) {
             handleOrderInsert(newOrder);
-          } else if (payload.eventType === "UPDATE" && newOrder) {
-            handleOrderUpdate(newOrder);
+          } else if (payload.eventType === "UPDATE") {
+            // Always reload on update to get fresh data (especially for payment_status changes)
+            handleOrderUpdate();
           } else if (payload.eventType === "DELETE" && oldOrder) {
             handleOrderDelete(oldOrder);
           }
