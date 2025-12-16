@@ -38,18 +38,53 @@ export async function POST(req: NextRequest) {
       return apiErrors.notFound("Order not found");
     }
 
+    // Get current order to check existing payment_method
+    const { data: currentOrder } = await supabase
+      .from("orders")
+      .select("payment_method, payment_mode")
+      .eq("id", orderId)
+      .eq("venue_id", venue_id)
+      .single();
+
     // Update payment status - allow for any order status (staff may need to mark completed orders as paid)
     const updateData: Record<string, unknown> = {
       payment_status: payment_status || "PAID",
       updated_at: new Date().toISOString(),
     };
 
+    // Determine payment_method and payment_mode
+    let finalPaymentMethod: string | undefined;
+    let finalPaymentMode: string | undefined;
+
     if (payment_method) {
-      updateData.payment_method = payment_method.toUpperCase();
-      // If payment method is "till", set payment_mode to "pay_at_till"
-      if (payment_method.toLowerCase() === "till") {
-        updateData.payment_mode = "pay_at_till";
+      finalPaymentMethod = payment_method.toUpperCase();
+    } else if (currentOrder?.payment_method) {
+      // Use existing payment_method if not provided
+      finalPaymentMethod = currentOrder.payment_method.toUpperCase();
+    } else {
+      // Default to PAY_AT_TILL if no payment method specified (staff marking as paid)
+      finalPaymentMethod = "PAY_AT_TILL";
+    }
+
+    // Set payment_mode based on payment_method to satisfy constraint
+    if (finalPaymentMethod === "PAY_NOW") {
+      finalPaymentMode = "online";
+    } else if (finalPaymentMethod === "PAY_LATER") {
+      // PAY_LATER can be online or deferred, prefer existing mode or default to online
+      finalPaymentMode = currentOrder?.payment_mode?.toLowerCase() || "online";
+      if (finalPaymentMode !== "online" && finalPaymentMode !== "deferred") {
+        finalPaymentMode = "online";
       }
+    } else if (finalPaymentMethod === "PAY_AT_TILL") {
+      finalPaymentMode = "offline";
+    }
+
+    // Always set both to ensure constraint is satisfied
+    if (finalPaymentMethod) {
+      updateData.payment_method = finalPaymentMethod;
+    }
+    if (finalPaymentMode) {
+      updateData.payment_mode = finalPaymentMode;
     }
 
     // Update payment status - no restrictions on order_status or completion_status
