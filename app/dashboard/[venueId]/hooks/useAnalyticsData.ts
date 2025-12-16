@@ -99,6 +99,14 @@ export function useAnalyticsData(venueId: string) {
         console.error("[ANALYTICS] Error fetching menu items:", menuItemsError);
       }
 
+      console.log("[ANALYTICS] Menu items fetched:", {
+        count: menuItems?.length || 0,
+        sample: (menuItems || []).slice(0, 5).map((item: Record<string, unknown>) => ({
+          id: item.id,
+          category: item.category,
+        })),
+      });
+
       // Simple map: menu_item_id -> category
       const menuItemCategoryMap = new Map<string, string>();
       (menuItems || []).forEach((item: Record<string, unknown>) => {
@@ -107,6 +115,11 @@ export function useAnalyticsData(venueId: string) {
         if (id) {
           menuItemCategoryMap.set(id, category);
         }
+      });
+
+      console.log("[ANALYTICS] Menu item category map created:", {
+        size: menuItemCategoryMap.size,
+        sampleEntries: Array.from(menuItemCategoryMap.entries()).slice(0, 5),
       });
 
       // Calculate revenue by category from order items using actual menu categories
@@ -151,17 +164,34 @@ export function useAnalyticsData(venueId: string) {
           // Get category from menu_item_id lookup
           const menuItemId = item.menu_item_id ? String(item.menu_item_id).trim() : null;
           
+          console.log("[ANALYTICS] Processing order item:", {
+            menuItemId,
+            itemName: item.item_name,
+            itemCategory: item.category,
+            itemKeys: Object.keys(item),
+            fullItem: item,
+          });
+          
           // Simple lookup: menu_item_id -> category
           let category = menuItemId ? menuItemCategoryMap.get(menuItemId) : null;
+          
+          console.log("[ANALYTICS] Category lookup result:", {
+            menuItemId,
+            found: !!category,
+            category,
+            mapHasId: menuItemId ? menuItemCategoryMap.has(menuItemId) : false,
+          });
           
           // Fallback to item.category if menu lookup fails
           if (!category && typeof item.category === "string" && item.category.trim()) {
             category = item.category.trim();
+            console.log("[ANALYTICS] Using item.category fallback:", category);
           }
           
           // Default to "Other" if no category found
           if (!category) {
             category = "Other";
+            console.log("[ANALYTICS] No category found, defaulting to 'Other'");
           }
           
           const price = parseFloat(
@@ -218,7 +248,8 @@ export function useAnalyticsData(venueId: string) {
         }
       });
 
-      console.log("[ANALYTICS] Revenue by category:", categoryRevenue);
+      console.log("[ANALYTICS] Revenue by category (raw):", categoryRevenue);
+      console.log("[ANALYTICS] Category revenue entries:", Object.entries(categoryRevenue));
 
       const revenueByCategory = Object.entries(categoryRevenue)
         .map(([name, value], index) => ({
@@ -229,7 +260,9 @@ export function useAnalyticsData(venueId: string) {
         .sort((a, b) => b.value - a.value)
         .slice(0, 6);
 
-      console.log("[ANALYTICS] Final revenueByCategory:", revenueByCategory);
+      console.log("[ANALYTICS] Final revenueByCategory (after sort & slice):", revenueByCategory);
+      console.log("[ANALYTICS] revenueByCategory length:", revenueByCategory.length);
+      console.log("[ANALYTICS] revenueByCategory will be passed to component:", JSON.stringify(revenueByCategory, null, 2));
 
       // Get top selling items - count by QUANTITY added to cart (not number of orders)
       const itemCounts: { [key: string]: { name: string; price: number; count: number } } = {

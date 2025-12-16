@@ -153,9 +153,16 @@ export function TodayAtAGlance({
                     Loading...
                   </div>
                 </div>
-              ) : revenueByCategory.length === 0 ? (
+              ) : !revenueByCategory || revenueByCategory.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No revenue data yet</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No revenue data yet
+                    {process.env.NODE_ENV === "development" && (
+                      <span className="block text-xs mt-1">
+                        Debug: revenueByCategory = {JSON.stringify(revenueByCategory)}
+                      </span>
+                    )}
+                  </p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
