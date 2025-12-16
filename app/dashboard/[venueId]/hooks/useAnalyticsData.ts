@@ -257,7 +257,7 @@ export function useAnalyticsData(venueId: string) {
         itemsProcessed,
         itemsSkipped,
         categoryRevenue,
-        menuItemsCount: menuItemCategories.size,
+        menuItemsCount: menuItemCategoriesById.size,
       });
 
       const revenueByCategory = Object.entries(categoryRevenue)
