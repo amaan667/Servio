@@ -226,6 +226,8 @@ export function useAnalyticsData(venueId: string) {
         .sort((a, b) => b.value - a.value)
         .slice(0, 6);
 
+      console.log("[ANALYTICS] Final revenueByCategory:", revenueByCategory);
+
       // Get top selling items - count by QUANTITY added to cart (not number of orders)
       const itemCounts: { [key: string]: { name: string; price: number; count: number } } = {
         /* Empty */
