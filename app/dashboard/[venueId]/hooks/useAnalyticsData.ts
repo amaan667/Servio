@@ -26,6 +26,7 @@ export function useAnalyticsData(venueId: string) {
 
   const fetchAnalytics = useCallback(async () => {
     try {
+      console.log("[ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
       setLoading(true);
       setError(null);
 
@@ -330,8 +331,9 @@ export function useAnalyticsData(venueId: string) {
   }, [venueId]);
 
   useEffect(() => {
+    console.log("[ANALYTICS] ===== USE EFFECT TRIGGERED =====", { venueId });
     fetchAnalytics();
-  }, [fetchAnalytics]);
+  }, [fetchAnalytics, venueId]);
 
   return { data, loading, error, refetch: fetchAnalytics };
 }
