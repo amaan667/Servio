@@ -83,17 +83,7 @@ export async function POST(req: NextRequest) {
     } else if (normalizedProvidedMethod) {
       // Use provided method
       finalPaymentMethod = normalizedProvidedMethod;
-    } else if (currentOrder?.payment_method) {
-      // Use existing payment_method if not provided
-      finalPaymentMethod = String(currentOrder.payment_method).toUpperCase();
-    } else {
-      // Default to PAY_AT_TILL if no payment method specified (staff marking as paid)
-      finalPaymentMethod = "PAY_AT_TILL";
-    }
-
-    // Set payment_mode based on payment_method to satisfy constraint
-    // Only set if not already determined above
-    if (!finalPaymentMode) {
+      // Set payment_mode based on payment_method
       if (finalPaymentMethod === "PAY_NOW") {
         finalPaymentMode = "online";
       } else if (finalPaymentMethod === "PAY_LATER") {
@@ -115,6 +105,35 @@ export async function POST(req: NextRequest) {
         finalPaymentMethod = "PAY_AT_TILL";
         finalPaymentMode = "offline";
       }
+    } else if (currentOrder?.payment_method) {
+      // Use existing payment_method if not provided
+      finalPaymentMethod = String(currentOrder.payment_method).toUpperCase();
+      // Set payment_mode based on existing payment_method
+      if (finalPaymentMethod === "PAY_NOW") {
+        finalPaymentMode = "online";
+      } else if (finalPaymentMethod === "PAY_LATER") {
+        // PAY_LATER can be online or deferred, prefer existing mode or default to online
+        const existingMode = currentOrder?.payment_mode?.toLowerCase();
+        if (existingMode === "online" || existingMode === "deferred") {
+          finalPaymentMode = existingMode;
+        } else {
+          finalPaymentMode = "online";
+        }
+      } else if (finalPaymentMethod === "PAY_AT_TILL") {
+        finalPaymentMode = "offline";
+      } else {
+        // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
+        logger.warn("[ORDERS PAYMENT] Unknown existing payment_method, defaulting to PAY_AT_TILL", {
+          orderId,
+          finalPaymentMethod,
+        });
+        finalPaymentMethod = "PAY_AT_TILL";
+        finalPaymentMode = "offline";
+      }
+    } else {
+      // Default to PAY_AT_TILL if no payment method specified (staff marking as paid)
+      finalPaymentMethod = "PAY_AT_TILL";
+      finalPaymentMode = "offline";
     }
 
     // Always set both to ensure constraint is satisfied
