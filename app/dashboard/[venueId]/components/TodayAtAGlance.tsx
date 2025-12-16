@@ -154,15 +154,20 @@ export function TodayAtAGlance({
                   </div>
                 </div>
               ) : !revenueByCategory || revenueByCategory.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
+                <div className="h-full flex items-center justify-center flex-col gap-2">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     No revenue data yet
-                    {process.env.NODE_ENV === "development" && (
-                      <span className="block text-xs mt-1">
-                        Debug: revenueByCategory = {JSON.stringify(revenueByCategory)}
-                      </span>
-                    )}
                   </p>
+                  <div className="text-xs text-gray-400 dark:text-gray-500 p-2 bg-gray-50 dark:bg-gray-900 rounded border">
+                    <p className="font-mono">Debug Info:</p>
+                    <p>Type: {typeof revenueByCategory}</p>
+                    <p>Is Array: {String(Array.isArray(revenueByCategory))}</p>
+                    <p>Length: {Array.isArray(revenueByCategory) ? revenueByCategory.length : "N/A"}</p>
+                    <p className="mt-1 break-all">Data: {JSON.stringify(revenueByCategory, null, 2)}</p>
+                    <p className="mt-1 text-blue-600 dark:text-blue-400">
+                      Check console for [ANALYTICS] and [TODAY AT A GLANCE] logs
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">

@@ -26,7 +26,10 @@ export function useAnalyticsData(venueId: string) {
 
   const fetchAnalytics = useCallback(async () => {
     try {
-      console.log("[ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
+      // Use multiple logging methods to ensure visibility
+      console.log("🔍 [ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
+      console.info("🔍 [ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
+      console.warn("🔍 [ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
       setLoading(true);
       setError(null);
 

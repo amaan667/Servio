@@ -737,7 +737,15 @@ const DashboardClient = React.memo(function DashboardClient({
           <TodayAtAGlance
             ordersByHour={ordersByHour}
             tableUtilization={tableUtilization}
-            revenueByCategory={revenueByCategory}
+            revenueByCategory={(() => {
+              console.log("[PAGE CLIENT] Passing revenueByCategory to TodayAtAGlance:", {
+                revenueByCategory,
+                type: typeof revenueByCategory,
+                isArray: Array.isArray(revenueByCategory),
+                length: Array.isArray(revenueByCategory) ? revenueByCategory.length : "N/A",
+              });
+              return revenueByCategory;
+            })()}
             loading={false}
           />
         </div>
