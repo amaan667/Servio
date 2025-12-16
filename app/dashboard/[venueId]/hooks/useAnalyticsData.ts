@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface AnalyticsData {
   ordersByHour: Array<{ hour: string; orders: number }>;
@@ -17,6 +18,182 @@ interface AnalyticsData {
 
 const COLORS = ["#5B21B6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
 
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeId(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+}
+
+function parseOrderItems(rawItems: unknown): UnknownRecord[] {
+  if (Array.isArray(rawItems)) {
+    return rawItems.filter(isRecord);
+  }
+
+  // Some rows return items as a JSON string
+  if (typeof rawItems === "string") {
+    try {
+      const parsed: unknown = JSON.parse(rawItems);
+      return parseOrderItems(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  // Some legacy shapes wrap items
+  if (isRecord(rawItems)) {
+    const maybeItems = rawItems.items;
+    if (Array.isArray(maybeItems)) {
+      return maybeItems.filter(isRecord);
+    }
+  }
+
+  return [];
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function getPaymentStatusString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isPaidStatus(paymentStatus: string): boolean {
+  const normalized = paymentStatus.trim().toLowerCase();
+  if (!normalized) return false;
+  if (normalized === "unpaid") return false;
+  if (normalized === "refunded") return false;
+
+  // Support multiple historical values
+  return (
+    normalized === "paid" ||
+    normalized === "till" ||
+    normalized === "cash" ||
+    normalized === "card" ||
+    normalized === "completed" ||
+    normalized === "complete" ||
+    normalized === "partial" ||
+    normalized === "partially_paid" ||
+    normalized === "partially-paid"
+  );
+}
+
+function getItemRevenue(item: UnknownRecord): number | null {
+  // Prefer subtotal when present (includes modifiers/discounts)
+  const subtotal = toNumber(item.subtotal);
+  if (subtotal !== null && subtotal > 0) return subtotal;
+
+  const quantity =
+    toNumber(item.quantity) ??
+    toNumber(item.qty) ??
+    toNumber(item.count) ??
+    1;
+
+  const unitPrice =
+    toNumber(item.unit_price) ??
+    toNumber(item.unitPrice) ??
+    toNumber(item.price) ??
+    0;
+
+  if (quantity <= 0 || unitPrice <= 0) return null;
+  return unitPrice * quantity;
+}
+
+export function buildRevenueByCategory(params: {
+  orders: UnknownRecord[];
+  menuItems: Array<{ id: string; category_id: string | null }>;
+  categories: Array<{ id: string; name: string }>;
+}): Array<{ name: string; value: number; color: string }> {
+  const categoryNameById = new Map<string, string>(
+    params.categories.map((c) => [c.id, c.name])
+  );
+
+  const menuItemIdToCategoryName = new Map<string, string>();
+  params.menuItems.forEach((mi) => {
+    const categoryName = mi.category_id ? categoryNameById.get(mi.category_id) : null;
+    menuItemIdToCategoryName.set(mi.id, (categoryName || "Other").trim() || "Other");
+  });
+
+  const categoryRevenue = new Map<string, number>();
+
+  params.orders.forEach((order) => {
+    const status = getPaymentStatusString(order.payment_status);
+    if (!isPaidStatus(status)) return;
+
+    const items = parseOrderItems(order.items);
+    if (items.length === 0) {
+      const totalAmount = toNumber(order.total_amount);
+      if (totalAmount !== null && totalAmount > 0) {
+        categoryRevenue.set(
+          "Uncategorized",
+          (categoryRevenue.get("Uncategorized") || 0) + totalAmount
+        );
+      }
+      return;
+    }
+
+    let anyItemCounted = false;
+    items.forEach((item) => {
+      const revenue = getItemRevenue(item);
+      if (revenue === null) return;
+
+      const menuItemId =
+        normalizeId(item.menu_item_id) ??
+        normalizeId(item.menuItemId) ??
+        normalizeId(item.menuItemID);
+
+      const categoryFromLookup = menuItemId ? menuItemIdToCategoryName.get(menuItemId) : null;
+      const categoryFromItem =
+        typeof item.category === "string" && item.category.trim() ? item.category.trim() : null;
+
+      const categoryName = (categoryFromLookup || categoryFromItem || "Other").trim() || "Other";
+      categoryRevenue.set(categoryName, (categoryRevenue.get(categoryName) || 0) + revenue);
+      anyItemCounted = true;
+    });
+
+    // If items exist but we couldn't compute any revenue from them, fall back to total_amount.
+    if (!anyItemCounted) {
+      const totalAmount = toNumber(order.total_amount);
+      if (totalAmount !== null && totalAmount > 0) {
+        categoryRevenue.set(
+          "Uncategorized",
+          (categoryRevenue.get("Uncategorized") || 0) + totalAmount
+        );
+      }
+    }
+  });
+
+  const sorted = Array.from(categoryRevenue.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
+
+  return sorted.map((entry, index) => ({
+    ...entry,
+    color: COLORS[index % COLORS.length],
+  }));
+}
+
 export function useAnalyticsData(venueId: string) {
   // Always start without cached analytics data to avoid stale charts on first load
   // We still write to sessionStorage for potential future use, but we don't read from it
@@ -26,22 +203,12 @@ export function useAnalyticsData(venueId: string) {
 
   const fetchAnalytics = useCallback(async () => {
     try {
-      // Use multiple logging methods to ensure visibility
-      console.log("🔍 [ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
-      console.info("🔍 [ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
-      console.warn("🔍 [ANALYTICS] ===== FETCH ANALYTICS CALLED =====", { venueId });
       setLoading(true);
       setError(null);
 
-      console.log("🔍 [ANALYTICS] Step 1: Creating Supabase client");
       const supabase = supabaseBrowser();
-      console.log("🔍 [ANALYTICS] Step 2: Calculating date range");
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      console.log("🔍 [ANALYTICS] Date range:", {
-        now: now.toISOString(),
-        todayStart: todayStart.toISOString(),
-      });
 
       // Compare apples-to-apples: same time period
       // If it's 2:49 PM today, compare today 12 AM - 2:49 PM vs yesterday 12 AM - 2:49 PM
@@ -51,7 +218,6 @@ export function useAnalyticsData(venueId: string) {
       );
 
       // Fetch today's orders - we'll filter by payment_status in processing
-      console.log("🔍 [ANALYTICS] Step 3: Fetching today's orders");
       const { data: todayOrders, error: ordersError } = await supabase
         .from("orders")
         .select("created_at, items, total_amount, payment_status")
@@ -59,27 +225,10 @@ export function useAnalyticsData(venueId: string) {
         .gte("created_at", todayStart.toISOString())
         .order("created_at", { ascending: true });
 
-      console.log("🔍 [ANALYTICS] Orders query result:", {
-        hasData: !!todayOrders,
-        count: todayOrders?.length || 0,
-        error: ordersError,
-      });
-
       if (ordersError) {
-        console.error("🔍 [ANALYTICS] Orders query error:", ordersError);
+        logger.error("[dashboard analytics] failed to fetch today's orders", ordersError);
         throw ordersError;
       }
-
-      console.log("🔍 [ANALYTICS] Fetched today's orders:", {
-        count: todayOrders?.length || 0,
-        orders: todayOrders?.map((o: Record<string, unknown>) => ({
-          id: o.id,
-          payment_status: o.payment_status,
-          total_amount: o.total_amount,
-          hasItems: Array.isArray(o.items) && o.items.length > 0,
-          itemsCount: Array.isArray(o.items) ? o.items.length : 0,
-        })),
-      });
 
       // Fetch yesterday's orders for comparison
       const { data: yesterdayOrders } = await supabase
@@ -109,180 +258,42 @@ export function useAnalyticsData(venueId: string) {
         orders,
       }));
 
-      // Fetch menu items with categories - simple lookup map
+      // Fetch menu items + categories and build menu_item_id -> category name lookup
       const { data: menuItems, error: menuItemsError } = await supabase
         .from("menu_items")
-        .select("id, category")
+        .select("id, category_id")
         .eq("venue_id", venueId);
 
       if (menuItemsError) {
-        console.error("[ANALYTICS] Error fetching menu items:", menuItemsError);
+        logger.error("[dashboard analytics] failed to fetch menu items", menuItemsError);
       }
 
-      console.log("[ANALYTICS] Menu items fetched:", {
-        count: menuItems?.length || 0,
-        sample: (menuItems || []).slice(0, 5).map((item: Record<string, unknown>) => ({
-          id: item.id,
-          category: item.category,
-        })),
+      const { data: menuCategories, error: categoriesError } = await supabase
+        .from("menu_categories")
+        .select("id, name")
+        .eq("venue_id", venueId);
+
+      if (categoriesError) {
+        logger.error("[dashboard analytics] failed to fetch menu categories", categoriesError);
+      }
+
+      const revenueByCategory = buildRevenueByCategory({
+        orders: (todayOrders || []) as UnknownRecord[],
+        menuItems:
+          (menuItems || [])
+            .map((mi: UnknownRecord) => ({
+              id: normalizeId(mi.id) || "",
+              category_id: normalizeId(mi.category_id),
+            }))
+            .filter((mi) => mi.id.length > 0) || [],
+        categories:
+          (menuCategories || [])
+            .map((c: UnknownRecord) => ({
+              id: normalizeId(c.id) || "",
+              name: typeof c.name === "string" ? c.name : "Other",
+            }))
+            .filter((c) => c.id.length > 0) || [],
       });
-
-      // Simple map: menu_item_id -> category
-      const menuItemCategoryMap = new Map<string, string>();
-      (menuItems || []).forEach((item: Record<string, unknown>) => {
-        const id = String(item.id || "").trim();
-        const category = String(item.category || "Other").trim();
-        if (id) {
-          menuItemCategoryMap.set(id, category);
-        }
-      });
-
-      console.log("[ANALYTICS] Menu item category map created:", {
-        size: menuItemCategoryMap.size,
-        sampleEntries: Array.from(menuItemCategoryMap.entries()).slice(0, 5),
-      });
-
-      // Calculate revenue by category from order items using actual menu categories
-      const categoryRevenue: { [key: string]: number } = {
-        /* Empty */
-      };
-      
-      let processedOrders = 0;
-      let skippedOrders = 0;
-      let itemsProcessed = 0;
-      let itemsSkipped = 0;
-      
-      (todayOrders || []).forEach((order: Record<string, unknown>) => {
-        // Only process paid orders
-        const paymentStatus = (order.payment_status as string) || "";
-        if (paymentStatus !== "PAID" && paymentStatus !== "TILL") {
-          skippedOrders++;
-          return;
-        }
-
-        // Check if order has items array
-        if (!Array.isArray(order.items) || order.items.length === 0) {
-          // If no items but order is paid, add to "Uncategorized" category
-          const totalAmount = parseFloat((order.total_amount as string) || "0");
-          if (totalAmount > 0) {
-            categoryRevenue["Uncategorized"] = (categoryRevenue["Uncategorized"] || 0) + totalAmount;
-            processedOrders++;
-            console.log("[ANALYTICS] Order without items, using total_amount:", {
-              orderId: order.id,
-              totalAmount,
-            });
-          } else {
-            skippedOrders++;
-          }
-          return;
-        }
-
-        processedOrders++;
-        let orderHasValidItems = false;
-
-        order.items.forEach((item: Record<string, unknown>) => {
-          // Get category from menu_item_id lookup
-          const menuItemId = item.menu_item_id ? String(item.menu_item_id).trim() : null;
-          
-          console.log("[ANALYTICS] Processing order item:", {
-            menuItemId,
-            itemName: item.item_name,
-            itemCategory: item.category,
-            itemKeys: Object.keys(item),
-            fullItem: item,
-          });
-          
-          // Simple lookup: menu_item_id -> category
-          let category = menuItemId ? menuItemCategoryMap.get(menuItemId) : null;
-          
-          console.log("[ANALYTICS] Category lookup result:", {
-            menuItemId,
-            found: !!category,
-            category,
-            mapHasId: menuItemId ? menuItemCategoryMap.has(menuItemId) : false,
-          });
-          
-          // Fallback to item.category if menu lookup fails
-          if (!category && typeof item.category === "string" && item.category.trim()) {
-            category = item.category.trim();
-            console.log("[ANALYTICS] Using item.category fallback:", category);
-          }
-          
-          // Default to "Other" if no category found
-          if (!category) {
-            category = "Other";
-            console.log("[ANALYTICS] No category found, defaulting to 'Other'");
-          }
-          
-          const price = parseFloat(
-            typeof item.unit_price === "string"
-              ? item.unit_price
-              : typeof item.price === "string"
-                ? item.price
-                : typeof item.unitPrice === "number"
-                  ? String(item.unitPrice)
-                  : typeof item.unit_price === "number"
-                    ? String(item.unit_price)
-                    : "0"
-          );
-          
-          const qty = parseInt(
-            typeof item.quantity === "string"
-              ? item.quantity
-              : typeof item.qty === "string"
-                ? item.qty
-                : typeof item.quantity === "number"
-                  ? String(item.quantity)
-                  : typeof item.qty === "number"
-                    ? String(item.qty)
-                    : "1"
-          );
-          
-          // Only add if we have valid price and quantity
-          if (price > 0 && qty > 0) {
-            const categoryKey = String(category || "Other");
-            categoryRevenue[categoryKey] = (categoryRevenue[categoryKey] || 0) + price * qty;
-            itemsProcessed++;
-            orderHasValidItems = true;
-          } else {
-            itemsSkipped++;
-            console.log("[ANALYTICS] Item skipped - invalid price or quantity:", {
-              menuItemId,
-              price,
-              qty,
-              item,
-            });
-          }
-        });
-
-        if (!orderHasValidItems) {
-          // If order has items but none were valid, use total_amount as fallback
-          const totalAmount = parseFloat((order.total_amount as string) || "0");
-          if (totalAmount > 0) {
-            categoryRevenue["Uncategorized"] = (categoryRevenue["Uncategorized"] || 0) + totalAmount;
-            console.log("[ANALYTICS] Order with invalid items, using total_amount:", {
-              orderId: order.id,
-              totalAmount,
-            });
-          }
-        }
-      });
-
-      console.log("[ANALYTICS] Revenue by category (raw):", categoryRevenue);
-      console.log("[ANALYTICS] Category revenue entries:", Object.entries(categoryRevenue));
-
-      const revenueByCategory = Object.entries(categoryRevenue)
-        .map(([name, value], index) => ({
-          name,
-          value,
-          color: COLORS[index % COLORS.length],
-        }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 6);
-
-      console.log("[ANALYTICS] Final revenueByCategory (after sort & slice):", revenueByCategory);
-      console.log("[ANALYTICS] revenueByCategory length:", revenueByCategory.length);
-      console.log("[ANALYTICS] revenueByCategory will be passed to component:", JSON.stringify(revenueByCategory, null, 2));
 
       // Get top selling items - count by QUANTITY added to cart (not number of orders)
       const itemCounts: { [key: string]: { name: string; price: number; count: number } } = {
@@ -342,20 +353,14 @@ export function useAnalyticsData(venueId: string) {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch analytics";
-      console.error("🔍 [ANALYTICS] ===== ERROR IN FETCH ANALYTICS =====", {
-        error: err,
-        message: errorMessage,
-        stack: err instanceof Error ? err.stack : undefined,
-      });
+      logger.error("[dashboard analytics] failed to fetch analytics", err);
       setError(errorMessage);
     } finally {
-      console.log("🔍 [ANALYTICS] ===== FETCH ANALYTICS COMPLETE =====");
       setLoading(false);
     }
   }, [venueId]);
 
   useEffect(() => {
-    console.log("[ANALYTICS] ===== USE EFFECT TRIGGERED =====", { venueId });
     fetchAnalytics();
   }, [fetchAnalytics, venueId]);
 

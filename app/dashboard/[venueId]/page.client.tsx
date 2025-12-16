@@ -396,12 +396,6 @@ const DashboardClient = React.memo(function DashboardClient({
 
   const revenueByCategory = useMemo(() => {
     const data = analyticsData.data?.revenueByCategory;
-    console.log("🔍 [PAGE CLIENT] revenueByCategory useMemo:", {
-      hasData: !!data,
-      isArray: Array.isArray(data),
-      length: Array.isArray(data) ? data.length : 0,
-      data,
-    });
     if (data && Array.isArray(data) && data.length > 0) {
       return data;
     }

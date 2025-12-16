@@ -14,6 +14,50 @@ import { POST as paymentPOST } from "@/app/api/orders/payment/route";
 import { POST as completePOST } from "@/app/api/orders/complete/route";
 import { POST as servePOST } from "@/app/api/orders/serve/route";
 
+// These routes use unified auth. For behavioural tests, bypass auth/venue access and
+// provide a consistent context (venueId is derived via the route's extractor when present).
+vi.mock("@/lib/auth/unified-auth", () => {
+  return {
+    withUnifiedAuth:
+      (
+        handler: (
+          req: import("next/server").NextRequest,
+          context: {
+            venueId: string;
+            tier: string;
+            role: string;
+            user: { id: string };
+            venue: {
+              venue_id: string;
+              owner_user_id: string;
+              name: string;
+              created_at: string;
+              updated_at: string;
+            };
+          }
+        ) => Promise<import("next/server").NextResponse>,
+        options?: { extractVenueId?: (req: import("next/server").NextRequest) => Promise<string | null> }
+      ) =>
+      async (req: import("next/server").NextRequest) => {
+        const extracted = options?.extractVenueId ? await options.extractVenueId(req.clone()) : null;
+        const venueId = extracted || "venue-test";
+        return handler(req, {
+          venueId,
+          tier: "free",
+          role: "owner",
+          user: { id: "test-user" },
+          venue: {
+            venue_id: venueId,
+            owner_user_id: "test-user",
+            name: "Test Venue",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        });
+      },
+  };
+});
+
 // Simple in-memory order store for behavioural tests
 const mockOrders: Record<
   string,
@@ -23,6 +67,9 @@ const mockOrders: Record<
     payment_method: string;
     payment_status: string;
     order_status: string;
+    kitchen_status?: string;
+    service_status?: string;
+    completion_status?: string;
     created_at: string;
   }
 > = {};
@@ -144,7 +191,7 @@ describe("Pay at Till lifecycle", () => {
   });
 
   it("marks order as paid via /api/orders/payment and keeps venue scoping", async () => {
-    const orderId = "till-1";
+    const orderId = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
     const venueId = "venue-abc";
 
     mockOrders[orderId] = {
@@ -153,19 +200,20 @@ describe("Pay at Till lifecycle", () => {
       payment_method: "PAY_AT_TILL",
       payment_status: "UNPAID",
       order_status: "IN_PREP",
+      kitchen_status: "BUMPED",
+      completion_status: "OPEN",
+      service_status: "OPEN",
       created_at: new Date().toISOString(),
     };
 
-    const request = createMockRequest(
-      "POST",
-      "http://localhost:3000/api/orders/payment",
-      JSON.stringify({
+    const request = createMockRequest("POST", "http://localhost:3000/api/orders/payment", {
+      body: {
         orderId,
         venue_id: venueId,
         payment_method: "till",
         payment_status: "PAID",
-      })
-    );
+      },
+    });
 
     const response = await paymentPOST(request);
     expect(response.status).toBe(200);
@@ -173,7 +221,7 @@ describe("Pay at Till lifecycle", () => {
   });
 
   it("blocks completion for UNPAID Pay at Till orders and allows after payment", async () => {
-    const orderId = "till-2";
+    const orderId = "0b8887f8-5a7f-4e60-84b6-73c4a67e9f5f";
     const venueId = "venue-abc";
 
     mockOrders[orderId] = {
@@ -182,53 +230,52 @@ describe("Pay at Till lifecycle", () => {
       payment_method: "PAY_AT_TILL",
       payment_status: "UNPAID",
       order_status: "IN_PREP",
+      kitchen_status: "BUMPED",
+      completion_status: "OPEN",
+      service_status: "OPEN",
       created_at: new Date().toISOString(),
     };
 
     // Mark served
-    const serveReq = createMockRequest("POST", "http://localhost:3000/api/orders/serve", JSON.stringify({ orderId }));
+    const serveReq = createMockRequest("POST", "http://localhost:3000/api/orders/serve", {
+      body: { orderId },
+    });
     const serveRes = await servePOST(serveReq as unknown as Request);
     expect(serveRes.status).toBe(200);
     expect(mockOrders[orderId].order_status).toBe("SERVED");
 
     // Try to complete while UNPAID
-    const completeReqUnpaid = createMockRequest(
-      "POST",
-      "http://localhost:3000/api/orders/complete",
-      JSON.stringify({ orderId })
-    );
+    const completeReqUnpaid = createMockRequest("POST", "http://localhost:3000/api/orders/complete", {
+      body: { orderId },
+    });
     const completeResUnpaid = await completePOST(completeReqUnpaid as unknown as Request);
     expect(completeResUnpaid.status).toBe(400);
     expect(mockOrders[orderId].order_status).toBe("SERVED");
 
     // Mark as paid via payment route
-    const payReq = createMockRequest(
-      "POST",
-      "http://localhost:3000/api/orders/payment",
-      JSON.stringify({
+    const payReq = createMockRequest("POST", "http://localhost:3000/api/orders/payment", {
+      body: {
         orderId,
         venue_id: venueId,
         payment_method: "till",
         payment_status: "PAID",
-      })
-    );
+      },
+    });
     const payRes = await paymentPOST(payReq);
     expect(payRes.status).toBe(200);
     expect(mockOrders[orderId].payment_status).toBe("PAID");
 
     // Now completion should succeed
-    const completeReqPaid = createMockRequest(
-      "POST",
-      "http://localhost:3000/api/orders/complete",
-      JSON.stringify({ orderId })
-    );
+    const completeReqPaid = createMockRequest("POST", "http://localhost:3000/api/orders/complete", {
+      body: { orderId },
+    });
     const completeResPaid = await completePOST(completeReqPaid as unknown as Request);
     expect(completeResPaid.status).toBe(200);
     expect(mockOrders[orderId].order_status).toBe("COMPLETED");
   });
 
   it("is idempotent when Mark as Paid is clicked twice", async () => {
-    const orderId = "till-3";
+    const orderId = "5d0f4c4a-f2e1-4baf-a8d1-7d2e7b6f9a1e";
     const venueId = "venue-abc";
 
     mockOrders[orderId] = {
@@ -237,6 +284,9 @@ describe("Pay at Till lifecycle", () => {
       payment_method: "PAY_AT_TILL",
       payment_status: "UNPAID",
       order_status: "IN_PREP",
+      kitchen_status: "BUMPED",
+      completion_status: "OPEN",
+      service_status: "OPEN",
       created_at: new Date().toISOString(),
     };
 
@@ -247,21 +297,13 @@ describe("Pay at Till lifecycle", () => {
       payment_status: "PAID",
     };
 
-    const req1 = createMockRequest(
-      "POST",
-      "http://localhost:3000/api/orders/payment",
-      JSON.stringify(body)
-    );
+    const req1 = createMockRequest("POST", "http://localhost:3000/api/orders/payment", { body });
     const res1 = await paymentPOST(req1);
     expect(res1.status).toBe(200);
     expect(mockOrders[orderId].payment_status).toBe("PAID");
 
     // Second click should not break or double-change anything
-    const req2 = createMockRequest(
-      "POST",
-      "http://localhost:3000/api/orders/payment",
-      JSON.stringify(body)
-    );
+    const req2 = createMockRequest("POST", "http://localhost:3000/api/orders/payment", { body });
     const res2 = await paymentPOST(req2);
     expect([200, 400]).toContain(res2.status);
     expect(mockOrders[orderId].payment_status).toBe("PAID");
