@@ -10,8 +10,8 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const checkBumpedSchema = z.object({
-  order_id: z.string().uuid("Invalid order ID"),
-  venue_id: z.string().uuid("Invalid venue ID").optional(),
+  order_id: z.string().min(1, "Order ID is required"),
+  venue_id: z.string().min(1, "Venue ID is required").optional(),
 });
 
 // POST - Check if all KDS tickets for an order are bumped

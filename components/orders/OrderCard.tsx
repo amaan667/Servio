@@ -127,10 +127,28 @@ export function OrderCard({
           });
           setAllTicketsBumped(allBumped);
         } else {
+          logger.debug("[ORDER CARD] Check bumped API returned success=false", {
+            orderId: order.id,
+            error: data.error,
+          });
           // If API fails, default to false (not ready) to prevent premature "Mark Served"
           setAllTicketsBumped(false);
         }
       } else {
+        // Log the error response for debugging
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = errorText;
+        }
+        logger.debug("[ORDER CARD] Check bumped failed", {
+          orderId: order.id,
+          venueId,
+          status: response.status,
+          error: errorData,
+        });
         // If API fails, default to false (not ready) to prevent premature "Mark Served"
         setAllTicketsBumped(false);
       }
