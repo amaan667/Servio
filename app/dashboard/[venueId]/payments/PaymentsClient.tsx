@@ -184,6 +184,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (fetchError) {
+        console.error("[PAYMENTS] Error fetching paid orders:", fetchError);
         return;
       }
 
@@ -194,7 +195,29 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         const receiptDate = new Date(receipt.created_at);
         const todayStart = new Date(todayWindow.startUtcISO);
         const todayEnd = new Date(todayWindow.endUtcISO);
-        return receiptDate >= todayStart && receiptDate < todayEnd;
+        const isToday = receiptDate >= todayStart && receiptDate < todayEnd;
+        
+        // Debug logging
+        if (isToday) {
+          console.log("[PAYMENTS] Today's receipt found:", {
+            orderId: receipt.id,
+            created_at: receipt.created_at,
+            receiptDate: receiptDate.toISOString(),
+            todayStart: todayStart.toISOString(),
+            todayEnd: todayEnd.toISOString(),
+          });
+        }
+        
+        return isToday;
+      });
+
+      console.log("[PAYMENTS] Receipts categorized", {
+        totalReceipts: allReceipts.length,
+        todayReceipts: todayReceiptsList.length,
+        todayWindow: {
+          start: todayWindow.startUtcISO,
+          end: todayWindow.endUtcISO,
+        },
       });
 
       const historyReceiptsList = allReceipts.filter(

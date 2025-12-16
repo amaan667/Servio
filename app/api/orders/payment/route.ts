@@ -38,13 +38,28 @@ export async function POST(req: NextRequest) {
       return apiErrors.notFound("Order not found");
     }
 
-    // Get current order to check existing payment_method
-    const { data: currentOrder } = await supabase
+    // Get current order to check existing payment_method and payment_mode
+    const { data: currentOrder, error: currentOrderError } = await supabase
       .from("orders")
       .select("payment_method, payment_mode")
       .eq("id", orderId)
       .eq("venue_id", venue_id)
       .single();
+
+    if (currentOrderError) {
+      logger.error("[ORDERS PAYMENT] Failed to fetch current order", {
+        error: currentOrderError.message,
+        orderId,
+        venue_id,
+      });
+    }
+
+    logger.debug("[ORDERS PAYMENT] Current order state", {
+      orderId,
+      currentPaymentMethod: currentOrder?.payment_method,
+      currentPaymentMode: currentOrder?.payment_mode,
+      providedPaymentMethod: payment_method,
+    });
 
     // Update payment status - allow for any order status (staff may need to mark completed orders as paid)
     const updateData: Record<string, unknown> = {
@@ -53,39 +68,63 @@ export async function POST(req: NextRequest) {
     };
 
     // Determine payment_method and payment_mode
-    let finalPaymentMethod: string | undefined;
-    let finalPaymentMode: string | undefined;
+    let finalPaymentMethod: string;
+    let finalPaymentMode: string;
 
-    if (payment_method) {
-      finalPaymentMethod = payment_method.toUpperCase();
+    // Normalize provided payment_method
+    const normalizedProvidedMethod = payment_method
+      ? payment_method.toUpperCase().replace(/[^A-Z_]/g, "")
+      : null;
+
+    // Handle "till" or "PAY_AT_TILL" variations
+    if (normalizedProvidedMethod === "TILL" || normalizedProvidedMethod === "PAY_AT_TILL") {
+      finalPaymentMethod = "PAY_AT_TILL";
+      finalPaymentMode = "offline";
+    } else if (normalizedProvidedMethod) {
+      // Use provided method
+      finalPaymentMethod = normalizedProvidedMethod;
     } else if (currentOrder?.payment_method) {
       // Use existing payment_method if not provided
-      finalPaymentMethod = currentOrder.payment_method.toUpperCase();
+      finalPaymentMethod = String(currentOrder.payment_method).toUpperCase();
     } else {
       // Default to PAY_AT_TILL if no payment method specified (staff marking as paid)
       finalPaymentMethod = "PAY_AT_TILL";
     }
 
     // Set payment_mode based on payment_method to satisfy constraint
-    if (finalPaymentMethod === "PAY_NOW") {
-      finalPaymentMode = "online";
-    } else if (finalPaymentMethod === "PAY_LATER") {
-      // PAY_LATER can be online or deferred, prefer existing mode or default to online
-      finalPaymentMode = currentOrder?.payment_mode?.toLowerCase() || "online";
-      if (finalPaymentMode !== "online" && finalPaymentMode !== "deferred") {
+    // Only set if not already determined above
+    if (!finalPaymentMode) {
+      if (finalPaymentMethod === "PAY_NOW") {
         finalPaymentMode = "online";
+      } else if (finalPaymentMethod === "PAY_LATER") {
+        // PAY_LATER can be online or deferred, prefer existing mode or default to online
+        const existingMode = currentOrder?.payment_mode?.toLowerCase();
+        if (existingMode === "online" || existingMode === "deferred") {
+          finalPaymentMode = existingMode;
+        } else {
+          finalPaymentMode = "online";
+        }
+      } else if (finalPaymentMethod === "PAY_AT_TILL") {
+        finalPaymentMode = "offline";
+      } else {
+        // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
+        logger.warn("[ORDERS PAYMENT] Unknown payment_method, defaulting to PAY_AT_TILL", {
+          orderId,
+          finalPaymentMethod,
+        });
+        finalPaymentMethod = "PAY_AT_TILL";
+        finalPaymentMode = "offline";
       }
-    } else if (finalPaymentMethod === "PAY_AT_TILL") {
-      finalPaymentMode = "offline";
     }
 
     // Always set both to ensure constraint is satisfied
-    if (finalPaymentMethod) {
-      updateData.payment_method = finalPaymentMethod;
-    }
-    if (finalPaymentMode) {
-      updateData.payment_mode = finalPaymentMode;
-    }
+    updateData.payment_method = finalPaymentMethod;
+    updateData.payment_mode = finalPaymentMode;
+
+    logger.debug("[ORDERS PAYMENT] Update data", {
+      orderId,
+      updateData,
+    });
 
     // Update payment status - no restrictions on order_status or completion_status
     // This allows staff to mark any order as paid, even if it's from a previous day or already completed
