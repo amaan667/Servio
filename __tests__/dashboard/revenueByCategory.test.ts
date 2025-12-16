@@ -71,7 +71,7 @@ describe("buildRevenueByCategory", () => {
     expect(result).toEqual([]);
   });
 
-  it("falls back to item.category when menu lookup is unavailable", () => {
+  it("does not emit Other/Uncategorized when menu lookup is unavailable", () => {
     const result = buildRevenueByCategory({
       orders: [
         {
@@ -84,12 +84,10 @@ describe("buildRevenueByCategory", () => {
       categories: [],
     });
 
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("Food");
-    expect(result[0].value).toBe(10);
+    expect(result).toEqual([]);
   });
 
-  it("falls back to total_amount as Uncategorized when items are present but not usable", () => {
+  it("does not emit Uncategorized when items are present but not usable/mappable", () => {
     const result = buildRevenueByCategory({
       orders: [
         {
@@ -102,8 +100,22 @@ describe("buildRevenueByCategory", () => {
       categories: [{ id: "c1", name: "Drinks" }],
     });
 
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("Uncategorized");
-    expect(result[0].value).toBe(5);
+    expect(result).toEqual([]);
+  });
+
+  it("skips items whose menu item has no category_id (never emits Other)", () => {
+    const result = buildRevenueByCategory({
+      orders: [
+        {
+          payment_status: "PAID",
+          total_amount: 10,
+          items: [{ menu_item_id: "m1", price: 10, quantity: 1 }],
+        },
+      ],
+      menuItems: [{ id: "m1", category_id: null }],
+      categories: [{ id: "c1", name: "Drinks" }],
+    });
+
+    expect(result).toEqual([]);
   });
 });

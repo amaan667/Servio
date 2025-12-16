@@ -124,14 +124,20 @@ export function buildRevenueByCategory(params: {
   menuItems: Array<{ id: string; category_id: string | null }>;
   categories: Array<{ id: string; name: string }>;
 }): Array<{ name: string; value: number; color: string }> {
-  const categoryNameById = new Map<string, string>(
-    params.categories.map((c) => [c.id, c.name])
-  );
+  const categoryNameById = new Map<string, string>();
+  params.categories.forEach((c) => {
+    const name = c.name.trim();
+    if (!name) return;
+    categoryNameById.set(c.id, name);
+  });
 
+  // Only allow categories that exist in menu_categories. We never emit "Other"/"Uncategorized".
   const menuItemIdToCategoryName = new Map<string, string>();
   params.menuItems.forEach((mi) => {
-    const categoryName = mi.category_id ? categoryNameById.get(mi.category_id) : null;
-    menuItemIdToCategoryName.set(mi.id, (categoryName || "Other").trim() || "Other");
+    if (!mi.category_id) return;
+    const categoryName = categoryNameById.get(mi.category_id);
+    if (!categoryName) return;
+    menuItemIdToCategoryName.set(mi.id, categoryName);
   });
 
   const categoryRevenue = new Map<string, number>();
@@ -141,18 +147,8 @@ export function buildRevenueByCategory(params: {
     if (!isPaidStatus(status)) return;
 
     const items = parseOrderItems(order.items);
-    if (items.length === 0) {
-      const totalAmount = toNumber(order.total_amount);
-      if (totalAmount !== null && totalAmount > 0) {
-        categoryRevenue.set(
-          "Uncategorized",
-          (categoryRevenue.get("Uncategorized") || 0) + totalAmount
-        );
-      }
-      return;
-    }
+    if (items.length === 0) return;
 
-    let anyItemCounted = false;
     items.forEach((item) => {
       const revenue = getItemRevenue(item);
       if (revenue === null) return;
@@ -162,25 +158,11 @@ export function buildRevenueByCategory(params: {
         normalizeId(item.menuItemId) ??
         normalizeId(item.menuItemID);
 
-      const categoryFromLookup = menuItemId ? menuItemIdToCategoryName.get(menuItemId) : null;
-      const categoryFromItem =
-        typeof item.category === "string" && item.category.trim() ? item.category.trim() : null;
-
-      const categoryName = (categoryFromLookup || categoryFromItem || "Other").trim() || "Other";
+      if (!menuItemId) return;
+      const categoryName = menuItemIdToCategoryName.get(menuItemId);
+      if (!categoryName) return;
       categoryRevenue.set(categoryName, (categoryRevenue.get(categoryName) || 0) + revenue);
-      anyItemCounted = true;
     });
-
-    // If items exist but we couldn't compute any revenue from them, fall back to total_amount.
-    if (!anyItemCounted) {
-      const totalAmount = toNumber(order.total_amount);
-      if (totalAmount !== null && totalAmount > 0) {
-        categoryRevenue.set(
-          "Uncategorized",
-          (categoryRevenue.get("Uncategorized") || 0) + totalAmount
-        );
-      }
-    }
   });
 
   const sorted = Array.from(categoryRevenue.entries())
