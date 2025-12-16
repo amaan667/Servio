@@ -100,42 +100,55 @@ export function OrderCard({
     fetchTableUnpaidCount();
   }, [venueId, order.table_number]);
 
-  // Check if all KDS tickets are bumped for this order
-  React.useEffect(() => {
+  // Helper function to check ticket status (used by real-time subscriptions and polling)
+  const triggerTicketCheck = React.useCallback(async () => {
     if (!venueId || !order.id) return;
-
-    const checkTicketsBumped = async () => {
-      try {
-        setCheckingTickets(true);
-        const response = await fetch("/api/kds/tickets/check-bumped", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            order_id: order.id,
-            venue_id: venueId,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setAllTicketsBumped(data.data?.all_bumped ?? false);
-          } else {
-            // If API fails, default to false (not ready) to prevent premature "Mark Served"
-            setAllTicketsBumped(false);
-          }
+    
+    try {
+      setCheckingTickets(true);
+      const response = await fetch("/api/kds/tickets/check-bumped", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          order_id: order.id,
+          venue_id: venueId,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const allBumped = data.data?.all_bumped ?? false;
+          logger.debug("[ORDER CARD] Check bumped result", {
+            orderId: order.id,
+            allBumped,
+            ticketCount: data.data?.ticket_count,
+            bumpedCount: data.data?.bumped_count,
+          });
+          setAllTicketsBumped(allBumped);
         } else {
           // If API fails, default to false (not ready) to prevent premature "Mark Served"
           setAllTicketsBumped(false);
         }
-      } catch {
-        // Silently fail - default to false (not ready) to prevent premature "Mark Served"
+      } else {
+        // If API fails, default to false (not ready) to prevent premature "Mark Served"
         setAllTicketsBumped(false);
-      } finally {
-        setCheckingTickets(false);
       }
-    };
+    } catch (error) {
+      logger.debug("[ORDER CARD] Check bumped error", {
+        orderId: order.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Silently fail - default to false (not ready) to prevent premature "Mark Served"
+      setAllTicketsBumped(false);
+    } finally {
+      setCheckingTickets(false);
+    }
+  }, [venueId, order.id]);
+
+  // Check if all KDS tickets are bumped for this order
+  React.useEffect(() => {
+    if (!venueId || !order.id) return;
 
     // Check ticket status for orders that:
     // 1. Are not completed/cancelled/refunded
@@ -148,10 +161,10 @@ export function OrderCard({
     const isPaidOrUnpaid = ["PAID", "UNPAID"].includes(paymentStatus);
 
     if (isCompletable && needsTicketCheck && isPaidOrUnpaid) {
-      checkTicketsBumped();
+      triggerTicketCheck();
       // Set up polling to check ticket status periodically (every 3 seconds for faster updates)
       const interval = setInterval(() => {
-        checkTicketsBumped();
+        triggerTicketCheck();
       }, 3000);
 
       return () => clearInterval(interval);
@@ -159,7 +172,7 @@ export function OrderCard({
       // If order is SERVED or COMPLETED, we don't need to check tickets anymore
       setAllTicketsBumped(null);
     }
-  }, [venueId, order.id, order.order_status, order.payment?.status, order.payment_status]);
+  }, [venueId, order.id, order.order_status, order.payment?.status, order.payment_status, triggerTicketCheck]);
 
   // Listen for payment updates to refresh order data
   React.useEffect(() => {
@@ -221,46 +234,26 @@ export function OrderCard({
           });
           
           // Trigger immediate ticket check
-          if (venueId && order.id) {
-            const checkTickets = async () => {
-              try {
-                const response = await fetch("/api/kds/tickets/check-bumped", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  credentials: "include",
-                  body: JSON.stringify({
-                    order_id: order.id,
-                    venue_id: venueId,
-                  }),
-                });
-                if (response.ok) {
-                  const data = await response.json();
-                  if (data.success) {
-                    const allBumped = data.data?.all_bumped ?? false;
-                    logger.debug("[ORDER CARD] Check bumped result", {
-                      orderId: order.id,
-                      allBumped,
-                      ticketCount: data.data?.ticket_count,
-                      bumpedCount: data.data?.bumped_count,
-                    });
-                    setAllTicketsBumped(allBumped);
-                  }
-                } else {
-                  logger.debug("[ORDER CARD] Check bumped failed", {
-                    orderId: order.id,
-                    status: response.status,
-                  });
-                }
-              } catch (error) {
-                logger.debug("[ORDER CARD] Check bumped error", {
-                  orderId: order.id,
-                  error: error instanceof Error ? error.message : String(error),
-                });
-              }
-            };
-            // Add a small delay to ensure database consistency
-            setTimeout(checkTickets, 100);
-          }
+          triggerTicketCheck();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "kds_tickets",
+          filter: `order_id=eq.${order.id}`,
+        },
+        (payload) => {
+          // When KDS ticket is deleted, check if all are now bumped/removed
+          logger.debug("[ORDER CARD] KDS ticket deleted", {
+            orderId: order.id,
+            ticketId: (payload.old as { id?: string })?.id,
+          });
+          
+          // Trigger immediate ticket check (if no tickets remain, all_bumped should be true)
+          triggerTicketCheck();
         }
       )
       .subscribe();
