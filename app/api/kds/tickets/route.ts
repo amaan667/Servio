@@ -298,21 +298,36 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     const backfillCreatedTickets = await autoBackfillMissingTickets(venueId);
 
     // Refetch if backfill created tickets or if no tickets were found initially
+    // CRITICAL: Preserve station_id filter when refetching after backfill
     let finalTickets = tickets || [];
     if (backfillCreatedTickets || !tickets || tickets.length === 0) {
-      const refetchAttempt = await supabase
+      let refetchQuery = supabase
         .from("kds_tickets")
         .select(selectWithLifecycle)
         .eq("venue_id", venueId)
         .eq("orders.completion_status", "OPEN")
         .order("created_at", { ascending: false });
 
+      // Preserve station filter if it was provided
+      if (stationId) {
+        refetchQuery = refetchQuery.eq("station_id", stationId);
+      }
+
+      const refetchAttempt = await refetchQuery;
+
       if (refetchAttempt.error && looksLikeMissingLifecycleColumn(refetchAttempt.error.message)) {
-        const legacyRefetch = await supabase
+        let legacyRefetchQuery = supabase
           .from("kds_tickets")
           .select(selectLegacy)
           .eq("venue_id", venueId)
           .order("created_at", { ascending: false });
+
+        // Preserve station filter in legacy query too
+        if (stationId) {
+          legacyRefetchQuery = legacyRefetchQuery.eq("station_id", stationId);
+        }
+
+        const legacyRefetch = await legacyRefetchQuery;
         finalTickets = (legacyRefetch.data as unknown[] | null) || [];
       } else {
         finalTickets = (refetchAttempt.data as unknown[] | null) || [];
