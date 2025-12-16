@@ -154,10 +154,10 @@ BEGIN
       ELSE 'READY'
     END,
     updated_at = NOW()
-  WHERE id = p_order_id
-    AND venue_id = p_venue_id
-    AND UPPER(completion_status) = 'OPEN'
-    AND UPPER(kitchen_status) <> 'BUMPED'
+  WHERE orders.id = p_order_id
+    AND orders.venue_id = p_venue_id
+    AND UPPER(orders.completion_status) = 'OPEN'
+    AND UPPER(orders.kitchen_status) <> 'BUMPED'
   RETURNING orders.id, orders.venue_id, orders.kitchen_status, orders.service_status, orders.completion_status, orders.payment_status
   INTO id, venue_id, kitchen_status, service_status, completion_status, payment_status;
 
