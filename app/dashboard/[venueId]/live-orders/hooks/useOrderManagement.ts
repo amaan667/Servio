@@ -28,8 +28,7 @@ export function useOrderManagement(venueId: string) {
     null
   );
 
-  useEffect(() => {
-    const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
       const window = todayWindowForTZ("Europe/London");
       if (window.startUtcISO && window.endUtcISO) {
         setTodayWindow({
@@ -135,10 +134,13 @@ export function useOrderManagement(venueId: string) {
       }
 
       setLoading(false);
-    };
+  }, [venueId]);
 
+  useEffect(() => {
     loadOrders();
+  }, [loadOrders]);
 
+  useEffect(() => {
     // Set up real-time subscription
     const channel = createClient()
       .channel("orders")
@@ -172,7 +174,7 @@ export function useOrderManagement(venueId: string) {
     // Listen for custom payment update events
     const handlePaymentUpdate = (event: CustomEvent) => {
       if (event.detail?.orderId) {
-        // Reload orders when payment is updated
+        // Reload orders when payment is updated to get fresh data
         loadOrders();
       }
     };
@@ -187,7 +189,7 @@ export function useOrderManagement(venueId: string) {
         window.removeEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
       }
     };
-  }, [venueId]);
+  }, [venueId, loadOrders, todayWindow]);
 
   const handleOrderInsert = (order: Order) => {
     const isLiveOrder = LIVE_WINDOW_STATUSES.includes(order.order_status);
@@ -236,55 +238,11 @@ export function useOrderManagement(venueId: string) {
     }
   };
 
-  const handleOrderUpdate = (order: Order) => {
-    const isLiveOrder = LIVE_WINDOW_STATUSES.includes(order.order_status);
-    const orderCreatedAt = new Date(order.created_at);
-    const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
-
-    // Sort orders: COMPLETED orders go to bottom, others stay at top (newest first)
-    const sortOrders = (ordersList: Order[]): Order[] => {
-      return [...ordersList].sort((a, b) => {
-        const aIsCompleted = a.order_status === "COMPLETED";
-        const bIsCompleted = b.order_status === "COMPLETED";
-        
-        // If one is completed and the other isn't, completed goes to bottom
-        if (aIsCompleted && !bIsCompleted) return 1;
-        if (!aIsCompleted && bIsCompleted) return -1;
-        
-        // Both same type, sort by creation time (newest first)
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-    };
-
-    if (isLiveOrder && isRecentOrder) {
-      setOrders((prev) => {
-        const exists = prev.find((o) => o.id === order.id);
-        if (!exists) {
-          const updated = [order, ...prev];
-          return sortOrders(updated);
-        }
-        const updated = prev.map((o) => (o.id === order.id ? order : o));
-        return sortOrders(updated);
-      });
-      setAllTodayOrders((prev) => prev.filter((o) => o.id !== order.id));
-    } else {
-      setOrders((prev) => prev.filter((o) => o.id !== order.id));
-
-      if (
-        todayWindow &&
-        orderCreatedAt >= new Date(todayWindow.startUtcISO) &&
-        orderCreatedAt < new Date(todayWindow.endUtcISO)
-      ) {
-        setAllTodayOrders((prev) => {
-          const exists = prev.find((o) => o.id === order.id);
-          if (!exists) return [order, ...prev];
-          return prev.map((o) => (o.id === order.id ? order : o));
-        });
-      }
-    }
-
-    setHistoryOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)));
-  };
+  const handleOrderUpdate = useCallback((order: Order) => {
+    // Always reload orders on update to ensure we get fresh data from database
+    // This is especially important for payment_status updates
+    loadOrders();
+  }, [loadOrders]);
 
   const handleOrderDelete = (order: Order) => {
     setOrders((prev) => prev.filter((o) => o.id !== order.id));

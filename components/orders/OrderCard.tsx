@@ -229,8 +229,15 @@ export function OrderCard({
           table: "orders",
           filter: `id=eq.${order.id}`,
         },
-        () => {
-          // When order status changes, refresh the order data
+        (payload) => {
+          // When order is updated (including payment_status), refresh the order data
+          const updatedOrder = payload.new as { payment_status?: string; order_status?: string } | undefined;
+          logger.debug("[ORDER CARD] Order updated via real-time", {
+            orderId: order.id,
+            newPaymentStatus: updatedOrder?.payment_status,
+            newOrderStatus: updatedOrder?.order_status,
+          });
+          // Trigger refresh to get updated order data
           onActionComplete?.();
         }
       )
