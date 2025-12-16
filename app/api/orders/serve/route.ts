@@ -23,6 +23,54 @@ export const POST = withUnifiedAuth(
 
       const admin = createAdminClient();
 
+      // Check if order's kitchen_status is BUMPED before serving
+      // If not, check if all KDS tickets are bumped and update kitchen_status first
+      const { data: currentOrder } = await admin
+        .from("orders")
+        .select("kitchen_status, completion_status")
+        .eq("id", orderId)
+        .eq("venue_id", venueId)
+        .single();
+
+      if (!currentOrder) {
+        return apiErrors.notFound("Order not found");
+      }
+
+      // If kitchen_status is not BUMPED, check if all tickets are bumped
+      if (currentOrder.kitchen_status?.toUpperCase() !== "BUMPED") {
+        // Check if all KDS tickets for this order are bumped
+        const { data: tickets } = await admin
+          .from("kds_tickets")
+          .select("id, status")
+          .eq("order_id", orderId)
+          .eq("venue_id", venueId);
+
+        // If no tickets exist, consider it as all bumped (order might not have KDS tickets)
+        const allBumped = !tickets || tickets.length === 0 || tickets.every((t) => t.status === "bumped");
+
+        if (allBumped) {
+          // Set kitchen_status to BUMPED first
+          const { error: bumpError } = await admin.rpc("orders_set_kitchen_bumped", {
+            p_order_id: orderId,
+            p_venue_id: venueId,
+          });
+
+          if (bumpError) {
+            logger.error("[ORDERS SERVE] Failed to set kitchen_status to BUMPED", {
+              error: bumpError.message,
+              orderId,
+              venueId,
+            });
+            // Continue anyway - the RPC will handle the validation
+          }
+        } else {
+          // Not all tickets are bumped yet
+          return apiErrors.badRequest(
+            "Cannot mark order as served: not all items have been bumped in the kitchen"
+          );
+        }
+      }
+
       // Canonical transition: SERVE (requires kitchen_status=BUMPED, enforced in RPC)
       const { data, error } = await admin.rpc("orders_set_served", {
         p_order_id: orderId,
@@ -30,6 +78,12 @@ export const POST = withUnifiedAuth(
       });
 
       if (error) {
+        logger.error("[ORDERS SERVE] RPC error", {
+          error: error.message,
+          orderId,
+          venueId,
+          currentKitchenStatus: currentOrder.kitchen_status,
+        });
         const msg = isDevelopment() ? error.message : "Failed to mark order as served";
         return apiErrors.badRequest(msg);
       }
