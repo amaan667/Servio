@@ -357,6 +357,7 @@ function assignStationByKeywords(
   const itemNameLower = itemName.toLowerCase();
 
   // Barista Station - Drinks & Beverages
+  // Check for drink-related keywords FIRST (before checking "bowl" which could match Cold Prep)
   if (
     itemNameLower.includes("coffee") ||
     itemNameLower.includes("latte") ||
@@ -366,13 +367,17 @@ function assignStationByKeywords(
     itemNameLower.includes("americano") ||
     itemNameLower.includes("macchiato") ||
     itemNameLower.includes("tea") ||
+    itemNameLower.includes("matcha") ||
     itemNameLower.includes("chai") ||
     itemNameLower.includes("hot chocolate") ||
     itemNameLower.includes("smoothie") ||
     itemNameLower.includes("juice") ||
     itemNameLower.includes("shake") ||
     itemNameLower.includes("drink") ||
-    itemNameLower.includes("beverage")
+    itemNameLower.includes("beverage") ||
+    itemNameLower.includes("yogurt") ||
+    itemNameLower.includes("acai") ||
+    itemNameLower.includes("parfait")
   ) {
     const baristaStation = stations.find((s) => s.station_type === "barista");
     if (baristaStation) {
@@ -441,6 +446,7 @@ function assignStationByKeywords(
   }
 
   // Cold Prep Station - Salads, sandwiches, cold items
+  // NOTE: "bowl" is checked here, but drink bowls (matcha, yogurt, acai) are caught by Barista first
   if (
     itemNameLower.includes("salad") ||
     itemNameLower.includes("sandwich") ||
@@ -448,7 +454,12 @@ function assignStationByKeywords(
     itemNameLower.includes("cold") ||
     itemNameLower.includes("sushi") ||
     itemNameLower.includes("poke") ||
-    itemNameLower.includes("bowl") ||
+    // Only match "bowl" if it's NOT a drink bowl (matcha, yogurt, acai already caught by Barista)
+    (itemNameLower.includes("bowl") &&
+      !itemNameLower.includes("matcha") &&
+      !itemNameLower.includes("yogurt") &&
+      !itemNameLower.includes("acai") &&
+      !itemNameLower.includes("parfait")) ||
     itemNameLower.includes("hummus") ||
     itemNameLower.includes("mezze") ||
     itemNameLower.includes("dip") ||
