@@ -39,30 +39,24 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
   try {
     const supabase = await createClient();
 
-    // First, check if there are unknown other active orders for this table
+    // Check ALL orders on this table to see if any are still active
     // Active orders are those with completion_status = 'OPEN' (unified lifecycle)
     // Fallback to checking order_status if completion_status column doesn't exist yet
-    let activeOrdersQuery = supabase
+    let allOrdersQuery = supabase
       .from("orders")
       .select("id, order_status, completion_status, table_id, table_number")
       .eq("venue_id", venueId);
 
-    // Try to use completion_status first (unified lifecycle)
-    // If column doesn't exist, the query will fail and we'll fall back
-    // Exclude the current order if provided
-    if (orderId) {
-      activeOrdersQuery = activeOrdersQuery.neq("id", orderId);
-    }
-
     // Filter by table identifier
     if (tableId) {
-      activeOrdersQuery = activeOrdersQuery.eq("table_id", tableId);
+      allOrdersQuery = allOrdersQuery.eq("table_id", tableId);
     } else if (tableNumber) {
-      activeOrdersQuery = activeOrdersQuery.eq("table_number", tableNumber);
+      allOrdersQuery = allOrdersQuery.eq("table_number", tableNumber);
     }
 
-    // Try completion_status first
-    let result = await activeOrdersQuery.eq("completion_status", "OPEN");
+    // Try completion_status first (unified lifecycle)
+    // Check for orders that are still OPEN (not completed)
+    let result = await allOrdersQuery.eq("completion_status", "OPEN");
     let activeOrders = result.data;
     let activeOrdersError = result.error;
 
@@ -74,10 +68,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         .select("id, order_status, table_id, table_number")
         .eq("venue_id", venueId)
         .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "SERVED"]);
-
-      if (orderId) {
-        fallbackQuery = fallbackQuery.neq("id", orderId);
-      }
 
       if (tableId) {
         fallbackQuery = fallbackQuery.eq("table_id", tableId);
@@ -107,10 +97,11 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       return { success: false, error: "Failed to check active orders" };
     }
 
-    // If there are still active orders, don't clean up the table
+    // If there are still active orders on this table, don't clean up the table
+    // Only set table to FREE when ALL orders on the table are completed
     if (activeOrders && activeOrders.length > 0) {
       logger.debug(
-        `[TABLE CLEANUP] Table has ${activeOrders.length} active orders, skipping cleanup`
+        `[TABLE CLEANUP] Table has ${activeOrders.length} active orders, skipping cleanup. Active order IDs: ${activeOrders.map((o) => o.id).join(", ")}`
       );
       return {
         success: true,
@@ -118,10 +109,15 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       };
     }
 
+    logger.debug(
+      `[TABLE CLEANUP] No active orders found on table. All orders are completed. Proceeding with cleanup.`
+    );
+
     let sessionsCleared = 0;
     let runtimeStateCleared = false;
 
-    // 1. Clear table sessions (close active sessions)
+    // 1. Clear ALL table sessions for this table (not just open ones)
+    // This ensures tables are freed even if sessions weren't properly closed
     const sessionUpdateData = {
       status: "FREE",
       order_id: null,
@@ -133,7 +129,7 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       .from("table_sessions")
       .update(sessionUpdateData)
       .eq("venue_id", venueId)
-      .is("closed_at", null);
+      .in("status", ["ACTIVE", "OCCUPIED"]); // Update both ACTIVE and OCCUPIED sessions
 
     if (tableId) {
       sessionQuery = sessionQuery.eq("table_id", tableId);
@@ -147,11 +143,14 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       logger.error("[TABLE CLEANUP] Error clearing table sessions:", sessionClearError);
     } else {
       sessionsCleared = sessionData?.length || 0;
+      if (sessionsCleared > 0) {
+        logger.debug(`[TABLE CLEANUP] Cleared ${sessionsCleared} table session(s)`);
+      }
     }
 
-    // 2. Clear table runtime state
+    // 2. Clear table runtime state - update ALL matching records to ensure table is FREE
     if (tableNumber) {
-      const { error: runtimeClearError } = await supabase
+      const { data: runtimeData, error: runtimeClearError } = await supabase
         .from("table_runtime_state")
         .update({
           primary_status: "FREE",
@@ -159,18 +158,22 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
           updated_at: new Date().toISOString(),
         })
         .eq("venue_id", venueId)
-        .eq("label", `Table ${tableNumber}`);
+        .eq("label", `Table ${tableNumber}`)
+        .select();
 
       if (runtimeClearError) {
         logger.error("[TABLE CLEANUP] Error clearing table runtime state:", runtimeClearError);
       } else {
         runtimeStateCleared = true;
+        if (runtimeData && runtimeData.length > 0) {
+          logger.debug(`[TABLE CLEANUP] Updated ${runtimeData.length} runtime state record(s) for Table ${tableNumber}`);
+        }
       }
     }
 
     // 3. If we have a table_id, also try to clear by table_id in runtime state
     if (tableId) {
-      const { error: runtimeClearErrorById } = await supabase
+      const { data: runtimeDataById, error: runtimeClearErrorById } = await supabase
         .from("table_runtime_state")
         .update({
           primary_status: "FREE",
@@ -178,7 +181,8 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
           updated_at: new Date().toISOString(),
         })
         .eq("venue_id", venueId)
-        .eq("table_id", tableId);
+        .eq("table_id", tableId)
+        .select();
 
       if (runtimeClearErrorById) {
         logger.error(
@@ -187,6 +191,9 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         );
       } else {
         runtimeStateCleared = true;
+        if (runtimeDataById && runtimeDataById.length > 0) {
+          logger.debug(`[TABLE CLEANUP] Updated ${runtimeDataById.length} runtime state record(s) for table_id ${tableId}`);
+        }
       }
     }
 
