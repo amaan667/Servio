@@ -25,32 +25,61 @@ export const POST = withUnifiedAuth(
 
       // Check if order's kitchen_status is BUMPED before serving
       // If not, check if all KDS tickets are bumped and update kitchen_status first
-      const { data: currentOrder } = await admin
+      const { data: currentOrder, error: fetchError } = await admin
         .from("orders")
-        .select("kitchen_status, completion_status")
+        .select("kitchen_status, completion_status, order_status")
         .eq("id", orderId)
         .eq("venue_id", venueId)
         .single();
 
-      if (!currentOrder) {
+      if (fetchError || !currentOrder) {
+        logger.error("[ORDERS SERVE] Failed to fetch order", {
+          error: fetchError?.message,
+          orderId,
+          venueId,
+        });
         return apiErrors.notFound("Order not found");
       }
 
-      // If kitchen_status is not BUMPED, check if all tickets are bumped
-      if (currentOrder.kitchen_status?.toUpperCase() !== "BUMPED") {
+      logger.debug("[ORDERS SERVE] Current order state", {
+        orderId,
+        venueId,
+        kitchen_status: currentOrder.kitchen_status,
+        completion_status: currentOrder.completion_status,
+        order_status: currentOrder.order_status,
+      });
+
+      // If kitchen_status is not BUMPED (including NULL), check if all tickets are bumped
+      const kitchenStatusUpper = (currentOrder.kitchen_status || "").toUpperCase();
+      if (kitchenStatusUpper !== "BUMPED") {
         // Check if all KDS tickets for this order are bumped
-        const { data: tickets } = await admin
+        const { data: tickets, error: ticketsError } = await admin
           .from("kds_tickets")
           .select("id, status")
           .eq("order_id", orderId)
           .eq("venue_id", venueId);
 
+        if (ticketsError) {
+          logger.error("[ORDERS SERVE] Failed to fetch tickets", {
+            error: ticketsError.message,
+            orderId,
+            venueId,
+          });
+        }
+
         // If no tickets exist, consider it as all bumped (order might not have KDS tickets)
         const allBumped = !tickets || tickets.length === 0 || tickets.every((t) => t.status === "bumped");
 
+        logger.debug("[ORDERS SERVE] Ticket check", {
+          orderId,
+          ticketCount: tickets?.length || 0,
+          bumpedCount: tickets?.filter((t) => t.status === "bumped").length || 0,
+          allBumped,
+        });
+
         if (allBumped) {
           // Set kitchen_status to BUMPED first
-          const { error: bumpError } = await admin.rpc("orders_set_kitchen_bumped", {
+          const { data: bumpResult, error: bumpError } = await admin.rpc("orders_set_kitchen_bumped", {
             p_order_id: orderId,
             p_venue_id: venueId,
           });
@@ -60,13 +89,28 @@ export const POST = withUnifiedAuth(
               error: bumpError.message,
               orderId,
               venueId,
+              bumpResult,
             });
-            // Continue anyway - the RPC will handle the validation
+            return apiErrors.badRequest(
+              `Failed to set kitchen status: ${bumpError.message || "Unknown error"}`
+            );
           }
+
+          logger.debug("[ORDERS SERVE] Successfully set kitchen_status to BUMPED", {
+            orderId,
+            venueId,
+            bumpResult,
+          });
         } else {
           // Not all tickets are bumped yet
+          const notBumpedCount = tickets?.filter((t) => t.status !== "bumped").length || 0;
+          logger.debug("[ORDERS SERVE] Not all tickets bumped", {
+            orderId,
+            totalTickets: tickets?.length || 0,
+            notBumpedCount,
+          });
           return apiErrors.badRequest(
-            "Cannot mark order as served: not all items have been bumped in the kitchen"
+            `Cannot mark order as served: ${notBumpedCount} item(s) still need to be bumped in the kitchen`
           );
         }
       }
