@@ -103,20 +103,34 @@ export function useAnalyticsData(venueId: string) {
       const menuItemCategoriesById = new Map<string, string>();
       const menuItemCategoriesByName = new Map<string, string>();
       (menuItems || []).forEach((item: Record<string, unknown>) => {
-        const id = String(item.id || "");
+        const id = String(item.id || "").trim();
         const name = String(item.name || "").toLowerCase().trim();
-        const category = (item.category as string) || "Other";
+        const category = String(item.category || "Other").trim();
+        
         if (id) {
           menuItemCategoriesById.set(id, category);
+          // Also store with lowercase for case-insensitive matching
+          menuItemCategoriesById.set(id.toLowerCase(), category);
         }
         if (name) {
           menuItemCategoriesByName.set(name, category);
+          // Also try variations: exact match, with/without special chars
+          const normalizedName = name.replace(/[^\w\s]/g, "").trim();
+          if (normalizedName && normalizedName !== name) {
+            menuItemCategoriesByName.set(normalizedName, category);
+          }
         }
       });
 
       console.log("[ANALYTICS] Menu items loaded:", {
         count: menuItems?.length || 0,
-        sampleCategories: Array.from(menuItemCategoriesById.values()).slice(0, 5),
+        sampleItems: (menuItems || []).slice(0, 3).map((item: Record<string, unknown>) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+        })),
+        categoriesByIdSize: menuItemCategoriesById.size,
+        categoriesByNameSize: menuItemCategoriesByName.size,
       });
 
       // Calculate revenue by category from order items using actual menu categories
@@ -159,41 +173,87 @@ export function useAnalyticsData(venueId: string) {
 
         order.items.forEach((item: Record<string, unknown>) => {
           // Get category from menu items database
-          const menuItemId = item.menu_item_id ? String(item.menu_item_id) : null;
+          const menuItemId = item.menu_item_id ? String(item.menu_item_id).trim() : null;
           const itemName = item.item_name ? String(item.item_name).toLowerCase().trim() : null;
+          
+          // Log the item for debugging
+          console.log("[ANALYTICS] Processing item:", {
+            menuItemId,
+            itemName,
+            itemCategory: item.category,
+            allKeys: Object.keys(item),
+          });
           
           // Try multiple lookup strategies
           let category: string | null = null;
+          let lookupMethod = "";
           
-          // Strategy 1: Lookup by menu_item_id
-          if (menuItemId) {
+          // Strategy 1: Lookup by menu_item_id (exact match)
+          if (menuItemId && !category) {
             category = menuItemCategoriesById.get(menuItemId) || null;
             if (category) {
-              console.log("[ANALYTICS] Found category by ID:", { menuItemId, category });
+              lookupMethod = "menu_item_id (exact)";
             }
           }
           
-          // Strategy 2: Lookup by item_name if ID lookup failed
+          // Strategy 1b: Lookup by menu_item_id (case-insensitive)
+          if (menuItemId && !category) {
+            category = menuItemCategoriesById.get(menuItemId.toLowerCase()) || null;
+            if (category) {
+              lookupMethod = "menu_item_id (case-insensitive)";
+            }
+          }
+          
+          // Strategy 2: Lookup by item_name (exact match)
           if (!category && itemName) {
             category = menuItemCategoriesByName.get(itemName) || null;
             if (category) {
-              console.log("[ANALYTICS] Found category by name:", { itemName, category });
+              lookupMethod = "item_name (exact)";
+            }
+          }
+          
+          // Strategy 2b: Lookup by item_name (normalized - remove special chars)
+          if (!category && itemName) {
+            const normalizedName = itemName.replace(/[^\w\s]/g, "").trim();
+            category = menuItemCategoriesByName.get(normalizedName) || null;
+            if (category) {
+              lookupMethod = "item_name (normalized)";
+            }
+          }
+          
+          // Strategy 2c: Try partial match (contains)
+          if (!category && itemName) {
+            for (const [menuName, menuCategory] of menuItemCategoriesByName.entries()) {
+              if (itemName.includes(menuName) || menuName.includes(itemName)) {
+                category = menuCategory;
+                lookupMethod = "item_name (partial match)";
+                break;
+              }
             }
           }
           
           // Strategy 3: Use item.category if present
-          if (!category && typeof item.category === "string" && item.category) {
-            category = item.category;
-            console.log("[ANALYTICS] Using item.category:", { category });
+          if (!category && typeof item.category === "string" && item.category.trim()) {
+            category = item.category.trim();
+            lookupMethod = "item.category field";
           }
           
           // Strategy 4: Default to "Other" only if all lookups fail
           if (!category) {
             category = "Other";
-            console.log("[ANALYTICS] No category found, using 'Other':", {
+            lookupMethod = "default (Other)";
+            console.warn("[ANALYTICS] No category found, using 'Other':", {
               menuItemId,
               itemName,
-              itemKeys: Object.keys(item),
+              itemCategory: item.category,
+              availableMenuNames: Array.from(menuItemCategoriesByName.keys()).slice(0, 5),
+            });
+          } else {
+            console.log("[ANALYTICS] Category found:", {
+              category,
+              method: lookupMethod,
+              menuItemId,
+              itemName,
             });
           }
           
