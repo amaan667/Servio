@@ -28,6 +28,7 @@ import { TablePaymentDialog } from "./TablePaymentDialog";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order } from "@/types/order";
 import { Users } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -210,8 +211,15 @@ export function OrderCard({
           table: "kds_tickets",
           filter: `order_id=eq.${order.id}`,
         },
-        () => {
+        (payload) => {
           // When KDS ticket status changes, immediately check if all are bumped
+          // Log the update for debugging
+          logger.debug("[ORDER CARD] KDS ticket updated", {
+            orderId: order.id,
+            ticketId: (payload.new as { id?: string })?.id,
+            newStatus: (payload.new as { status?: string })?.status,
+          });
+          
           // Trigger immediate ticket check
           if (venueId && order.id) {
             const checkTickets = async () => {
@@ -228,14 +236,30 @@ export function OrderCard({
                 if (response.ok) {
                   const data = await response.json();
                   if (data.success) {
-                    setAllTicketsBumped(data.data?.all_bumped ?? false);
+                    const allBumped = data.data?.all_bumped ?? false;
+                    logger.debug("[ORDER CARD] Check bumped result", {
+                      orderId: order.id,
+                      allBumped,
+                      ticketCount: data.data?.ticket_count,
+                      bumpedCount: data.data?.bumped_count,
+                    });
+                    setAllTicketsBumped(allBumped);
                   }
+                } else {
+                  logger.debug("[ORDER CARD] Check bumped failed", {
+                    orderId: order.id,
+                    status: response.status,
+                  });
                 }
-              } catch {
-                // Silently fail
+              } catch (error) {
+                logger.debug("[ORDER CARD] Check bumped error", {
+                  orderId: order.id,
+                  error: error instanceof Error ? error.message : String(error),
+                });
               }
             };
-            checkTickets();
+            // Add a small delay to ensure database consistency
+            setTimeout(checkTickets, 100);
           }
         }
       )

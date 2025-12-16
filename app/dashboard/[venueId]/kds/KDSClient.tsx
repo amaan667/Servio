@@ -410,23 +410,65 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
             if (!isMounted) return;
 
             if (payload.eventType === "INSERT") {
-              // When a new ticket is inserted, refetch to get all tickets with current filter
-              // This ensures the new ticket appears in the correct station view
-              fetchTickets();
+              // When a new ticket is inserted, add it to the view if it matches the filter
+              const newTicket = payload.new as KDSTicket | undefined;
+              if (newTicket) {
+                // If no filter (All Stations), add all new tickets
+                if (!selectedStation) {
+                  setTickets((prev) => {
+                    // Check if ticket already exists (avoid duplicates)
+                    if (prev.some((t) => t.id === newTicket.id)) {
+                      return prev;
+                    }
+                    return [...prev, newTicket];
+                  });
+                } else if (newTicket.station_id === selectedStation) {
+                  // If we have a station filter, only add if it matches
+                  setTickets((prev) => {
+                    // Check if ticket already exists (avoid duplicates)
+                    if (prev.some((t) => t.id === newTicket.id)) {
+                      return prev;
+                    }
+                    return [...prev, newTicket];
+                  });
+                }
+                // If ticket doesn't match filter, don't add it (will appear when filter changes)
+              }
             } else if (payload.eventType === "UPDATE") {
               // For updates, merge the updated ticket data
               // But only if it matches the current station filter (or no filter for "All Stations")
               const updatedTicket = payload.new as KDSTicket | undefined;
               if (updatedTicket) {
-                // If we have a station filter, only update if the ticket belongs to that station
-                // If no filter (All Stations), update all tickets
-                if (!selectedStation || updatedTicket.station_id === selectedStation) {
-                  setTickets((prev) =>
-                    prev.map((t) => (t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t))
-                  );
+                // If no filter (All Stations), update all tickets regardless of station
+                if (!selectedStation) {
+                  setTickets((prev) => {
+                    const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
+                    if (existingIndex >= 0) {
+                      // Update existing ticket
+                      return prev.map((t) => (t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t));
+                    } else {
+                      // Ticket doesn't exist yet, add it (might be a new ticket or from another station)
+                      // Only add if it's for an OPEN order (not completed)
+                      return [...prev, updatedTicket];
+                    }
+                  });
                 } else {
-                  // Ticket was moved to a different station, remove it from current view
-                  setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
+                  // If we have a station filter, only update if the ticket belongs to that station
+                  if (updatedTicket.station_id === selectedStation) {
+                    setTickets((prev) => {
+                      const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
+                      if (existingIndex >= 0) {
+                        // Update existing ticket
+                        return prev.map((t) => (t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t));
+                      } else {
+                        // Ticket doesn't exist yet, add it (might have been moved to this station)
+                        return [...prev, updatedTicket];
+                      }
+                    });
+                  } else {
+                    // Ticket was moved to a different station, remove it from current view
+                    setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
+                  }
                 }
               }
             } else if (payload.eventType === "DELETE") {
