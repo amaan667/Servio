@@ -20,9 +20,10 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
 
     // Verify order exists and belongs to venue
+    // Allow updating payment status for any order (including completed ones) - staff may need to mark old orders as paid
     const { data: orderCheck, error: checkError } = await supabase
       .from("orders")
-      .select("venue_id, payment_status")
+      .select("venue_id, payment_status, order_status")
       .eq("id", orderId)
       .eq("venue_id", venue_id)
       .single();
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       return apiErrors.notFound("Order not found");
     }
 
-    // Update payment status
+    // Update payment status - allow for any order status (staff may need to mark completed orders as paid)
     const updateData: Record<string, unknown> = {
       payment_status: payment_status || "PAID",
       updated_at: new Date().toISOString(),
@@ -50,6 +51,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Update payment status - no restrictions on order_status or completion_status
+    // This allows staff to mark any order as paid, even if it's from a previous day or already completed
     const { data: updatedOrder, error: updateError } = await supabase
       .from("orders")
       .update(updateData)

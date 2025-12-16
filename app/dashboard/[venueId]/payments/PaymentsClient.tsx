@@ -127,7 +127,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         show_vat_breakdown: venue?.show_vat_breakdown ?? true,
       });
 
-      // Fetch ALL unpaid operational orders (Pay at Till + Pay Later)
+      // Fetch unpaid operational orders for TODAY ONLY (cloud-based POS best practice)
       // NOTE: payment_mode differences (offline/deferred) are just presentation; we only care about:
       // - payment_status = UNPAID
       // - payment_method IN (PAY_AT_TILL, PAY_LATER)
@@ -139,6 +139,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         "SERVING",
         "SERVED",
       ];
+
+      // Use today's window for filtering - cloud POS should focus on today's operations
+      const todayStart = new Date(todayWindow.startUtcISO);
+      const todayEnd = new Date(todayWindow.endUtcISO);
 
       const { data: unpaidData } = await supabase
         .from("orders")
@@ -152,12 +156,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         // Explicitly exclude completed and cancelled orders (safety check)
         .neq("order_status", "COMPLETED")
         .neq("order_status", "CANCELLED")
-        // Filter out very old unpaid orders (cleanup for stale historical entries)
-        // Reduced to 7 days to prevent showing very old unpaid orders
-        .gte(
-          "created_at",
-          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // last 7 days
-        )
+        // Filter to TODAY ONLY - cloud POS should focus on current operations
+        // Historical orders can be accessed via Receipt History tab
+        .gte("created_at", todayStart.toISOString())
+        .lt("created_at", todayEnd.toISOString())
         .order("created_at", { ascending: false });
 
       setUnpaidOrders((unpaidData || []) as PaymentOrder[]);
