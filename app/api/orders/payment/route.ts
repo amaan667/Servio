@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import { isDevelopment } from "@/lib/env";
 
 /**
  * Payment API Route - No authentication required for ordering UI
@@ -61,13 +62,38 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (updateError || !updatedOrder) {
+    if (updateError) {
       logger.error("[ORDERS PAYMENT] Failed to update payment", {
         error: updateError?.message,
+        errorCode: updateError?.code,
+        errorDetails: updateError?.details,
+        orderId,
+        venue_id,
+        updateData,
+        currentOrderStatus: orderCheck.order_status,
+        currentPaymentStatus: orderCheck.payment_status,
+      });
+      
+      // Provide more specific error message
+      if (updateError.code === "PGRST116") {
+        return apiErrors.notFound("Order not found or access denied");
+      }
+      if (updateError.code === "23505") {
+        return apiErrors.badRequest("Payment status update conflict - order may have been modified");
+      }
+      
+      return apiErrors.internal(
+        `Failed to update payment status: ${updateError.message || "Unknown error"}`,
+        isDevelopment() ? updateError : undefined
+      );
+    }
+
+    if (!updatedOrder) {
+      logger.error("[ORDERS PAYMENT] Update succeeded but no order returned", {
         orderId,
         venue_id,
       });
-      return apiErrors.internal("Failed to update payment status");
+      return apiErrors.internal("Payment update succeeded but order data not returned");
     }
 
     logger.info("[ORDERS PAYMENT] Payment updated successfully", {

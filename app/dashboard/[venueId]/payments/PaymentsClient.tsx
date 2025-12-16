@@ -144,7 +144,14 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       const todayStart = new Date(todayWindow.startUtcISO);
       const todayEnd = new Date(todayWindow.endUtcISO);
 
-      const { data: unpaidData } = await supabase
+      // Debug: Log the date range being used
+      console.log("[PAYMENTS] Filtering unpaid orders for today:", {
+        todayStart: todayStart.toISOString(),
+        todayEnd: todayEnd.toISOString(),
+        venueTz: venueTz,
+      });
+
+      const { data: unpaidData, error: unpaidError } = await supabase
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
@@ -161,6 +168,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .gte("created_at", todayStart.toISOString())
         .lt("created_at", todayEnd.toISOString())
         .order("created_at", { ascending: false });
+
+      if (unpaidError) {
+        console.error("[PAYMENTS] Error fetching unpaid orders:", unpaidError);
+      }
 
       setUnpaidOrders((unpaidData || []) as PaymentOrder[]);
 
