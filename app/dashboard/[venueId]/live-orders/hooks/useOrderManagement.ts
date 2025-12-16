@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { PersistentCache } from "@/lib/persistent-cache";
@@ -238,7 +238,7 @@ export function useOrderManagement(venueId: string) {
     }
   };
 
-  const handleOrderUpdate = useCallback((order: Order) => {
+  const handleOrderUpdate = useCallback(() => {
     // Always reload orders on update to ensure we get fresh data from database
     // This is especially important for payment_status updates
     loadOrders();
