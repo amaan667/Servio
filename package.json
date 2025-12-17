@@ -28,7 +28,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "docs:api": "swagger-jsdoc -d docs/swagger.config.js -o api-docs.json",
-    "migrate": "tsx scripts/migrate.ts",
+    "migrate": "tsx scripts/run-migrations.ts",
     "migrate:create": "tsx scripts/create-migration.ts",
     "migrate:auto": "tsx scripts/run-migrations.ts",
     "migrate:prod": "NODE_ENV=production tsx scripts/run-migrations.ts",

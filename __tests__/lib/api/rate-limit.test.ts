@@ -1,40 +1,38 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/api/rate-limit";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 
 describe("Rate Limiting", () => {
   beforeEach(() => {
     // Clear rate limit store between tests
-    const store = (checkRateLimit as unknown as { rateLimitStore?: Map<string, unknown> })
-      .rateLimitStore;
-    store?.clear();
+    // `rateLimit` uses an internal in-memory store when Redis isn't available.
+    // In tests we avoid reaching into module internals and instead use unique identifiers per test.
   });
 
-  it("should allow requests within rate limit", () => {
+  it("should allow requests within rate limit", async () => {
     const request = new NextRequest("http://localhost:3000/api/test");
-    const result = checkRateLimit(request, RATE_LIMITS.public);
+    const result = await rateLimit(request, { ...RATE_LIMITS.GENERAL, identifier: "test-allow" });
 
-    expect(result.allowed).toBe(true);
-    expect(result.remaining).toBeLessThan(RATE_LIMITS.public.uniqueTokenPerInterval);
+    expect(result.success).toBe(true);
+    expect(result.remaining).toBeLessThan(RATE_LIMITS.GENERAL.limit);
   });
 
-  it("should block requests exceeding rate limit", () => {
+  it("should block requests exceeding rate limit", async () => {
     const request = new NextRequest("http://localhost:3000/api/test");
+    const identifier = "test-block";
 
     // Exhaust rate limit
-    for (let i = 0; i < RATE_LIMITS.public.uniqueTokenPerInterval; i++) {
-      checkRateLimit(request, RATE_LIMITS.public);
+    for (let i = 0; i < RATE_LIMITS.STRICT.limit; i++) {
+      await rateLimit(request, { ...RATE_LIMITS.STRICT, identifier });
     }
 
     // Next request should be blocked
-    const result = checkRateLimit(request, RATE_LIMITS.public);
-    expect(result.allowed).toBe(false);
+    const result = await rateLimit(request, { ...RATE_LIMITS.STRICT, identifier });
+    expect(result.success).toBe(false);
     expect(result.remaining).toBe(0);
   });
 
-  it("should have stricter limits for AI endpoints", () => {
-    expect(RATE_LIMITS.ai.uniqueTokenPerInterval).toBeLessThan(
-      RATE_LIMITS.authenticated.uniqueTokenPerInterval
-    );
+  it("should have stricter limits for auth endpoints vs general endpoints", () => {
+    expect(RATE_LIMITS.AUTH.limit).toBeLessThan(RATE_LIMITS.GENERAL.limit);
   });
 });

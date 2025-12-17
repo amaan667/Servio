@@ -24,6 +24,11 @@ jobs:
           
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Run database migrations
+        run: pnpm run migrate:prod
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         
       - name: Run tests
         run: pnpm test

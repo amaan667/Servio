@@ -17,7 +17,8 @@ export {};
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: "https://f4b818f4487f44eaf62a4e5ea70f36dd@o4510442478764032.ingest.de.sentry.io/4510442493313104",
+  // Never hardcode DSNs. Configure via environment only.
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN,
 
   // Add optional integrations for additional features
   integrations: [Sentry.replayIntegration()],
@@ -37,7 +38,8 @@ Sentry.init({
 
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  // Default: do NOT send PII unless explicitly enabled.
+  sendDefaultPii: process.env.SENTRY_SEND_DEFAULT_PII === "true",
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

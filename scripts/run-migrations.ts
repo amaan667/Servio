@@ -1,181 +1,115 @@
 /**
- * Automated Database Migration Runner
- * Runs pending Supabase migrations automatically on deployment
+ * Automated Database Migration Runner (DATABASE_URL)
+ *
+ * Runs SQL migrations from `supabase/migrations/*.sql` directly against Postgres.
+ * This removes any reliance on Supabase Dashboard manual migration steps or custom RPCs.
  */
-import { createClient } from "@supabase/supabase-js";
-import * as fs from "fs";
-import * as path from "path";
-import { logger } from "../lib/logger/production-logger";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { readdir, readFile } from "fs/promises";
+import { join } from "path";
+import crypto from "crypto";
+import { Client } from "pg";
+import { logger } from "@/lib/logger";
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  logger.error("❌ Missing Supabase credentials");
-  process.exit(1);
+const MIGRATIONS_DIR = join(process.cwd(), "supabase", "migrations");
+const MIGRATIONS_LOCK_KEY = "servio_migrations_lock_v1";
+
+function getDatabaseUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_URL is required to run migrations");
+  }
+  return url;
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+function checksumSql(sql: string): string {
+  return crypto.createHash("sha256").update(sql, "utf8").digest("hex");
+}
 
-/**
- * Ensure migrations tracking table exists
- */
-async function ensureMigrationsTable() {
-  const { error } = await supabase.rpc("exec_sql", {
-    sql: `
-      CREATE TABLE IF NOT EXISTS _migrations (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
-        executed_at TIMESTAMP DEFAULT NOW(),
-        checksum TEXT
-      );
-      
-      CREATE INDEX IF NOT EXISTS idx_migrations_name ON _migrations(name);
-    `,
-  });
+async function listMigrationFiles(): Promise<string[]> {
+  const entries = await readdir(MIGRATIONS_DIR);
+  return entries.filter((f) => f.endsWith(".sql")).sort();
+}
 
-  if (error) {
-    logger.error("❌ Failed to create migrations table:", error);
+async function ensureMigrationsTable(client: Client): Promise<void> {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      name TEXT PRIMARY KEY,
+      checksum TEXT NOT NULL,
+      executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+}
+
+async function getAppliedMigrations(client: Client): Promise<Set<string>> {
+  const res = await client.query<{ name: string }>("SELECT name FROM _migrations ORDER BY name ASC;");
+  return new Set(res.rows.map((r) => r.name));
+}
+
+async function acquireMigrationLock(client: Client): Promise<void> {
+  // Prevent concurrent deploys from racing migrations.
+  await client.query("SELECT pg_advisory_lock(hashtext($1));", [MIGRATIONS_LOCK_KEY]);
+}
+
+async function releaseMigrationLock(client: Client): Promise<void> {
+  await client.query("SELECT pg_advisory_unlock(hashtext($1));", [MIGRATIONS_LOCK_KEY]);
+}
+
+async function runSingleMigration(client: Client, filename: string): Promise<void> {
+  const filepath = join(MIGRATIONS_DIR, filename);
+  const sql = await readFile(filepath, "utf8");
+  const checksum = checksumSql(sql);
+
+  await client.query("BEGIN;");
+  try {
+    await client.query(sql);
+    await client.query("INSERT INTO _migrations(name, checksum) VALUES($1, $2);", [
+      filename,
+      checksum,
+    ]);
+    await client.query("COMMIT;");
+    logger.info("[migrations] applied", { filename });
+  } catch (error) {
+    await client.query("ROLLBACK;");
     throw error;
   }
-
-  logger.debug("✅ Migrations table ready");
 }
 
-/**
- * Get list of applied migrations
- */
-async function getAppliedMigrations(): Promise<string[]> {
-  const { data, error } = await supabase.from("_migrations").select("name").order("name");
+async function main(): Promise<void> {
+  const databaseUrl = getDatabaseUrl();
+  const client = new Client({ connectionString: databaseUrl });
 
-  if (error) {
-    logger.error("❌ Failed to get applied migrations:", error);
-    return [];
-  }
-
-  return (data || []).map((row) => row.name);
-}
-
-/**
- * Get pending migrations from filesystem
- */
-async function getPendingMigrations(applied: string[]): Promise<string[]> {
-  const migrationsDir = path.join(process.cwd(), "supabase/migrations");
-
-  if (!fs.existsSync(migrationsDir)) {
-    return [];
-  }
-
-  const allMigrations = fs
-    .readdirSync(migrationsDir)
-    .filter((file) => file.endsWith(".sql"))
-    .sort();
-
-  const pending = allMigrations.filter((file) => !applied.includes(file));
-
-  return pending;
-}
-
-/**
- * Execute a single migration
- */
-async function executeMigration(filename: string): Promise<boolean> {
-  const migrationsDir = path.join(process.cwd(), "supabase/migrations");
-  const filepath = path.join(migrationsDir, filename);
-
+  await client.connect();
   try {
-    const sql = fs.readFileSync(filepath, "utf-8");
+    await acquireMigrationLock(client);
+    try {
+      await ensureMigrationsTable(client);
 
-    // Execute SQL
-    const { error } = await supabase.rpc("exec_sql", { sql });
+      const all = await listMigrationFiles();
+      const applied = await getAppliedMigrations(client);
+      const pending = all.filter((f) => !applied.has(f));
 
-    if (error) {
-      logger.error(`❌ Migration failed: ${filename}`, error);
-      return false;
-    }
-
-    // Record migration as applied
-    const { error: recordError } = await supabase.from("_migrations").insert({
-      name: filename,
-      checksum: generateChecksum(sql),
-    });
-
-    if (recordError) {
-      logger.error(`❌ Failed to record migration: ${filename}`, recordError);
-      return false;
-    }
-
-    logger.debug(`✅ Migration successful: ${filename}`);
-    return true;
-  } catch (error) {
-    logger.error(`❌ Migration error: ${filename}`, error);
-    return false;
-  }
-}
-
-/**
- * Generate checksum for migration file
- */
-function generateChecksum(content: string): string {
-  let hash = 0;
-  for (let i = 0; i < content.length; i++) {
-    const char = content.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return hash.toString(16);
-}
-
-/**
- * Main migration runner
- */
-async function runMigrations() {
-  try {
-    // Step 1: Ensure migrations table exists
-    await ensureMigrationsTable();
-
-    // Step 2: Get applied migrations
-    const applied = await getAppliedMigrations();
-
-    // Step 3: Get pending migrations
-    const pending = await getPendingMigrations(applied);
-
-    if (pending.length === 0) {
-      return;
-    }
-
-    logger.debug(`Pending migrations: ${pending.join(", ")}`);
-
-    // Step 4: Execute pending migrations
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const migration of pending) {
-      const success = await executeMigration(migration);
-
-      if (success) {
-        successCount++;
-      } else {
-        failCount++;
-        // Stop on first failure to prevent cascading issues
-        logger.error("\n❌ Migration failed - stopping execution");
-        break;
+      if (pending.length === 0) {
+        logger.info("[migrations] no pending migrations");
+        return;
       }
-    }
 
-    // Step 5: Summary
-    logger.debug("📊 Migration Summary:");
-    logger.debug(`  ✅ Successful: ${successCount}`);
-    logger.debug(`  ❌ Failed: ${failCount}`);
-
-    if (failCount > 0) {
-      process.exit(1);
+      logger.info("[migrations] pending migrations", { count: pending.length, pending });
+      for (const filename of pending) {
+        await runSingleMigration(client, filename);
+      }
+      logger.info("[migrations] complete", { applied: pending.length });
+    } finally {
+      await releaseMigrationLock(client);
     }
-  } catch (error) {
-    logger.error("\n❌ Migration runner failed:", error);
-    process.exit(1);
+  } finally {
+    await client.end();
   }
 }
 
-// Run migrations
-runMigrations();
+main().catch((error) => {
+  logger.error("[migrations] failed", {
+    error: error instanceof Error ? error.message : String(error),
+  });
+  process.exit(1);
+});
