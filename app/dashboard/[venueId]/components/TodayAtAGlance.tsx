@@ -14,6 +14,7 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
+import { logger } from "@/lib/logger";
 
 interface TodayAtAGlanceProps {
   ordersByHour: Array<{ hour: string; orders: number }>;
@@ -30,18 +31,13 @@ export function TodayAtAGlance({
 }: TodayAtAGlanceProps) {
   const COLORS = ["#5B21B6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
 
-  // Log what this component receives so we can debug data flow
-  try {
-    console.log("🔍 [TODAY AT A GLANCE] Props received:", {
-      ordersByHour,
-      revenueByCategory,
+  // Lightweight debug hook for development / diagnostics
+  if (process.env.NODE_ENV !== "production") {
+    logger.debug("[TODAY AT A GLANCE] Props received", {
+      ordersByHourLength: ordersByHour.length,
+      revenueByCategoryLength: revenueByCategory.length,
       loading,
-      revenueByCategoryType: typeof revenueByCategory,
-      isRevenueArray: Array.isArray(revenueByCategory),
-      revenueLength: Array.isArray(revenueByCategory) ? revenueByCategory.length : "N/A",
     });
-  } catch {
-    // Swallow logging errors to avoid impacting UI
   }
 
   // Never show loading state - render immediately with data

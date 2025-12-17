@@ -1,5 +1,25 @@
 -- Migration: Unified order lifecycle state model
 -- Adds canonical lifecycle fields + auditable forced completion + payments ledger for partial payments.
+--
+-- Canonical lifecycle enforced across app and RPCs:
+--   - Kitchen:   PREPARING -> READY -> BUMPED
+--   - Service:   NOT_SERVED -> SERVED
+--   - Completion: OPEN -> COMPLETED
+--   - Order row: order_status kept in sync for backwards compatibility.
+--
+-- Completion gating (normal path):
+--   1) Order created: completion_status=OPEN, service_status=NOT_SERVED, kitchen_status=PREPARING
+--   2) KDS bumps all items    => orders_set_kitchen_bumped() sets kitchen_status=BUMPED (may also set order_status=READY)
+--   3) Front of house serves  => orders_set_served() sets service_status=SERVED and (usually) order_status=SERVED
+--   4) Completion allowed ONLY when:
+--        - completion_status=OPEN
+--        - service_status=SERVED
+--        - payment_status=PAID
+--      orders_complete() enforces this and transitions completion_status/order_status to COMPLETED.
+--
+-- Forced completion:
+--   - orders_force_complete_all() and orders_complete(p_forced=>TRUE, ...) set forced_* fields
+--     but still write a full audit trail so pilot venues can recover from edge cases.
 
 -- Required for gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

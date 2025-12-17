@@ -12,6 +12,7 @@ import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order, type OrderStatus } from "@/types/order";
 import { detectColorsFromImage } from "@/app/dashboard/[venueId]/menu-management/utils/colorDetection";
 import { BillSplittingDialog } from "@/components/pos/BillSplittingDialog";
+import { logger } from "@/lib/logger";
 
 type PaymentsClientProps = {
   venueId: string;
@@ -144,12 +145,14 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       const todayStart = new Date(todayWindow.startUtcISO);
       const todayEnd = new Date(todayWindow.endUtcISO);
 
-      // Debug: Log the date range being used
-      console.log("[PAYMENTS] Filtering unpaid orders for today:", {
-        todayStart: todayStart.toISOString(),
-        todayEnd: todayEnd.toISOString(),
-        venueTz: venueTz,
-      });
+      // Debug: Log the date range being used (non-production only)
+      if (process.env.NODE_ENV !== "production") {
+        logger.debug("[PAYMENTS] Filtering unpaid orders for today", {
+          todayStart: todayStart.toISOString(),
+          todayEnd: todayEnd.toISOString(),
+          venueTz,
+        });
+      }
 
       const { data: unpaidData, error: unpaidError } = await supabase
         .from("orders")
@@ -170,7 +173,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (unpaidError) {
-        console.error("[PAYMENTS] Error fetching unpaid orders:", unpaidError);
+        logger.error("[PAYMENTS] Error fetching unpaid orders", unpaidError);
       }
 
       setUnpaidOrders((unpaidData || []) as PaymentOrder[]);
@@ -184,7 +187,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (fetchError) {
-        console.error("[PAYMENTS] Error fetching paid orders:", fetchError);
+        logger.error("[PAYMENTS] Error fetching paid orders", fetchError);
         return;
       }
 
@@ -196,10 +199,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         const todayStart = new Date(todayWindow.startUtcISO);
         const todayEnd = new Date(todayWindow.endUtcISO);
         const isToday = receiptDate >= todayStart && receiptDate < todayEnd;
-        
-        // Debug logging
-        if (isToday) {
-          console.log("[PAYMENTS] Today's receipt found:", {
+
+        if (isToday && process.env.NODE_ENV !== "production") {
+          logger.debug("[PAYMENTS] Today's receipt included in TODAY filter", {
             orderId: receipt.id,
             created_at: receipt.created_at,
             receiptDate: receiptDate.toISOString(),
@@ -207,18 +209,20 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
             todayEnd: todayEnd.toISOString(),
           });
         }
-        
+
         return isToday;
       });
 
-      console.log("[PAYMENTS] Receipts categorized", {
-        totalReceipts: allReceipts.length,
-        todayReceipts: todayReceiptsList.length,
-        todayWindow: {
-          start: todayWindow.startUtcISO,
-          end: todayWindow.endUtcISO,
-        },
-      });
+      if (process.env.NODE_ENV !== "production") {
+        logger.debug("[PAYMENTS] Receipts categorized for TODAY", {
+          totalReceipts: allReceipts.length,
+          todayReceipts: todayReceiptsList.length,
+          todayWindow: {
+            start: todayWindow.startUtcISO,
+            end: todayWindow.endUtcISO,
+          },
+        });
+      }
 
       const historyReceiptsList = allReceipts.filter(
         (receipt) => new Date(receipt.created_at) < new Date(todayWindow.startUtcISO)
@@ -324,13 +328,23 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData?.error?.message || errorData?.error || "Failed to mark order as paid";
-        console.error("[PAYMENTS] Failed to mark order as paid:", errorMessage);
+        logger.error("[PAYMENTS] Failed to mark order as paid", {
+          orderId,
+          venueId,
+          error: errorMessage,
+        });
         alert(`Failed to mark order as paid: ${errorMessage}`);
         return;
       }
 
-      const result = await response.json();
-      console.log("[PAYMENTS] Order marked as paid successfully:", result);
+      if (process.env.NODE_ENV !== "production") {
+        const result = await response.json().catch(() => ({}));
+        logger.debug("[PAYMENTS] Order marked as paid successfully", {
+          orderId,
+          venueId,
+          result,
+        });
+      }
 
       // Reload payments to reflect the change
       await loadPayments();
@@ -341,7 +355,11 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         window.dispatchEvent(new CustomEvent("order-payment-updated", { detail: { orderId } }));
       }
     } catch (error) {
-      console.error("[PAYMENTS] Error marking order as paid:", error);
+      logger.error("[PAYMENTS] Error marking order as paid", {
+        orderId,
+        venueId,
+        error,
+      });
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       alert(`Error: ${errorMessage}`);
     } finally {
