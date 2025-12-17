@@ -65,7 +65,7 @@ export const GET = withUnifiedAuth(
       });
 
       // STEP 4: Return success response
-      return success({ data: data || [] });
+      return success(data || []);
     } catch (error) {
       logger.error("[INVENTORY API] Unexpected error:", {
         error: error instanceof Error ? error.message : String(error),
@@ -176,7 +176,7 @@ export const POST = withUnifiedAuth(
       });
 
       // STEP 4: Return success response
-      return success({ data: ingredient });
+      return success(ingredient);
     } catch (error) {
       logger.error("[INVENTORY API] Unexpected error:", {
         error: error instanceof Error ? error.message : String(error),
