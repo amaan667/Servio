@@ -30,6 +30,20 @@ export function TodayAtAGlance({
 }: TodayAtAGlanceProps) {
   const COLORS = ["#5B21B6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
 
+  // Log what this component receives so we can debug data flow
+  try {
+    console.log("🔍 [TODAY AT A GLANCE] Props received:", {
+      ordersByHour,
+      revenueByCategory,
+      loading,
+      revenueByCategoryType: typeof revenueByCategory,
+      isRevenueArray: Array.isArray(revenueByCategory),
+      revenueLength: Array.isArray(revenueByCategory) ? revenueByCategory.length : "N/A",
+    });
+  } catch {
+    // Swallow logging errors to avoid impacting UI
+  }
+
   // Never show loading state - render immediately with data
   const isLoading = false;
 
@@ -154,20 +168,10 @@ export function TodayAtAGlance({
                   </div>
                 </div>
               ) : !revenueByCategory || revenueByCategory.length === 0 ? (
-                <div className="h-full flex items-center justify-center flex-col gap-2">
+                <div className="h-full flex items-center justify-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     No revenue data yet
                   </p>
-                  <div className="text-xs text-gray-400 dark:text-gray-500 p-2 bg-gray-50 dark:bg-gray-900 rounded border">
-                    <p className="font-mono">Debug Info:</p>
-                    <p>Type: {typeof revenueByCategory}</p>
-                    <p>Is Array: {String(Array.isArray(revenueByCategory))}</p>
-                    <p>Length: {Array.isArray(revenueByCategory) ? revenueByCategory.length : "N/A"}</p>
-                    <p className="mt-1 break-all">Data: {JSON.stringify(revenueByCategory, null, 2)}</p>
-                    <p className="mt-1 text-blue-600 dark:text-blue-400">
-                      Check console for [ANALYTICS] and [TODAY AT A GLANCE] logs
-                    </p>
-                  </div>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
