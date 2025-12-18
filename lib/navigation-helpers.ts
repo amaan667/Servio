@@ -29,7 +29,9 @@ export async function canAccessNavigationItem(
 
   // If tier check is required, check subscription tier
   if (item.tierFeature) {
-    const tierKey = String(tier || "starter").toLowerCase().trim();
+    const tierKey = String(tier || "starter")
+      .toLowerCase()
+      .trim();
     const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
     const featureValue = limits.features[item.tierFeature];
     return typeof featureValue === "boolean" ? featureValue : true;
@@ -37,7 +39,9 @@ export async function canAccessNavigationItem(
 
   // If specific tier is required, check it
   if (item.requiredTier) {
-    const tierKey = String(tier || "starter").toLowerCase().trim();
+    const tierKey = String(tier || "starter")
+      .toLowerCase()
+      .trim();
     const tierOrder: Record<string, number> = { starter: 1, pro: 2, enterprise: 3 };
     return (tierOrder[tierKey] || 0) >= tierOrder[item.requiredTier];
   }

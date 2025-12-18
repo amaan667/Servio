@@ -336,7 +336,10 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     );
   }
 
-  const paymentMessage = getPaymentSuccessMessage(order.payment_method || "unknown", order.payment_status);
+  const paymentMessage = getPaymentSuccessMessage(
+    order.payment_method || "unknown",
+    order.payment_status
+  );
   const paymentMethodRaw = (order.payment_method || "").toString().toUpperCase();
   const paymentModeRaw = (order.payment_mode || "").toString().toLowerCase();
   const isPayLaterUnpaid =
@@ -361,7 +364,8 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             {isPayLaterUnpaid && (
               <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <span className="text-sm text-gray-900">
-                  You chose <span className="font-semibold">Pay Later</span>. You can pay now at any time.
+                  You chose <span className="font-semibold">Pay Later</span>. You can pay now at any
+                  time.
                 </span>
                 <Button
                   variant="default"

@@ -258,10 +258,6 @@ export function usePaymentProcessing() {
         });
 
         // Also log to browser console for debugging
-        console.log(
-          "📤 [PAYMENT PROCESSING] ===== SENDING ORDER CREATION REQUEST =====",
-          logPayload.details
-        );
 
         logger.info("🌐 [PAYMENT PROCESSING] Sending order creation request...", {
           url: "/api/orders",
@@ -309,16 +305,11 @@ export function usePaymentProcessing() {
 
           try {
             const responseText = await createOrderResponse.text();
-            console.error("❌ [PAYMENT PROCESSING] Full error response text:", responseText);
 
             if (responseText) {
               try {
                 const errorData = JSON.parse(responseText);
                 fullErrorResponse = errorData;
-                console.error(
-                  "❌ [PAYMENT PROCESSING] Parsed error response:",
-                  JSON.stringify(errorData, null, 2)
-                );
 
                 // Handle multiple possible error response formats
                 if (errorData.message && typeof errorData.message === "string") {
@@ -341,7 +332,6 @@ export function usePaymentProcessing() {
 
                 // Log validation errors in detail - SEND TO SERVER FOR RAILWAY LOGS
                 if (errorData.details && Array.isArray(errorData.details)) {
-                  console.error("❌ [PAYMENT PROCESSING] Validation errors:", errorData.details);
                   logger.error("[PAYMENT] ❌ Validation error details:", {
                     details: errorData.details,
                     fullError: errorData,
@@ -367,14 +357,14 @@ export function usePaymentProcessing() {
                 }
               } catch {
                 // If not JSON, use the text directly (limit length)
-                console.error("❌ [PAYMENT PROCESSING] Error response is not JSON:", responseText);
+
                 errorMessage =
                   responseText.length > 200 ? responseText.substring(0, 200) + "..." : responseText;
               }
             }
           } catch (textError) {
             logger.error("[PAYMENT] ❌ Error parsing order creation error:", textError);
-            console.error("❌ [PAYMENT PROCESSING] Failed to read error response:", textError);
+
             // Keep default error message
           }
 
@@ -450,10 +440,6 @@ export function usePaymentProcessing() {
           });
 
           // Also log to browser console for debugging
-          console.error(
-            "❌ [PAYMENT PROCESSING] ===== ORDER CREATION FAILED =====",
-            errorLogPayload.details
-          );
 
           logger.error("[PAYMENT] ❌ Order creation failed:", {
             status: createOrderResponse.status,
@@ -462,12 +448,6 @@ export function usePaymentProcessing() {
             fullErrorResponse,
             url: "/api/orders",
             orderData: JSON.stringify(orderData, null, 2),
-          });
-
-          console.error("❌ [PAYMENT PROCESSING] Order creation failed with:", {
-            status: createOrderResponse.status,
-            errorMessage,
-            fullError: fullErrorResponse,
           });
 
           throw new Error(errorMessage);
@@ -496,25 +476,15 @@ export function usePaymentProcessing() {
       };
 
       // Process payment based on selected method
-      console.log(`🎯 [PAYMENT METHOD CLICKED] ===== ${action.toUpperCase()} =====`, {
-        timestamp: new Date().toISOString(),
-        action,
-        venueId: checkoutData.venueId,
-        tableNumber: checkoutData.tableNumber,
-        customerName: checkoutData.customerName,
-        total: checkoutData.total,
-        itemCount: checkoutData.cart?.length || 0,
-      });
+
       logger.info("🔄 [PAYMENT PROCESSING] Processing payment method:", { action });
 
       if (action === "demo") {
-        console.log("🎮 [DEMO PAYMENT] Step 1: Creating demo order...");
         logger.info("🎮 [PAYMENT PROCESSING] Processing DEMO payment...");
         // Create order immediately for demo
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
 
-        console.log("🎮 [DEMO PAYMENT] Step 2: Order created successfully", { orderId });
         logger.info("🎮 [PAYMENT PROCESSING] Demo order created:", { orderId });
         // Demo payment - just mark as paid (with offline support)
         if (!navigator.onLine) {
@@ -566,17 +536,12 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
-        console.log("💳 [PAY NOW - STRIPE] ===== STARTING STRIPE PAYMENT FLOW =====");
-        console.log("💳 [PAY NOW] Step 1: Processing Stripe payment...");
         logger.info("💳 [PAYMENT PROCESSING] Processing STRIPE payment...");
 
         let orderId: string;
 
         // If orderId exists in checkoutData, use existing order instead of creating new one
         if (checkoutData.orderId) {
-          console.log("💳 [PAY NOW] Using existing order for Stripe checkout...", {
-            orderId: checkoutData.orderId,
-          });
           orderId = checkoutData.orderId;
 
           // Update existing order to PAY_NOW (will be set to PAID by webhook after payment)
@@ -596,17 +561,14 @@ export function usePaymentProcessing() {
             throw new Error(errorData.error || "Failed to update order payment method");
           }
         } else {
-        // Create order first with UNPAID status
-        const orderResult = await createOrder();
+          // Create order first with UNPAID status
+          const orderResult = await createOrder();
           orderId = orderResult.order?.id;
 
-        if (!orderId) {
-          console.error("💳 [PAY NOW] ❌ No order ID returned");
-          throw new Error("Failed to create order before Stripe checkout");
+          if (!orderId) {
+            throw new Error("Failed to create order before Stripe checkout");
           }
         }
-
-        console.log("💳 [PAY NOW] Step 2: Order ready, creating Stripe session...", { orderId });
 
         let result;
         try {
@@ -622,12 +584,6 @@ export function usePaymentProcessing() {
             ...(checkoutData.customerEmail && { customerEmail: checkoutData.customerEmail }),
             venueId: checkoutData.venueId,
           };
-
-          console.log("💳 [PAY NOW] Step 3: Calling /api/checkout with orderId", {
-            orderId,
-            amount: checkoutPayload.amount,
-            itemCount: checkoutPayload.items.length,
-          });
 
           logger.info("💳 [PAYMENT PROCESSING] Sending Stripe checkout request:", {
             url: "/api/checkout",
@@ -672,14 +628,7 @@ export function usePaymentProcessing() {
           // Redirect to Stripe checkout
           if (result?.url || result?.data?.url) {
             const checkoutUrl = result.url || result.data?.url;
-            console.log(
-              "💳 [PAY NOW] Step 4: ✅ Redirecting to Stripe (webhook will mark as PAID)",
-              {
-                orderId,
-                url: checkoutUrl.substring(0, 50) + "...",
-                sessionId: result?.id || result?.data?.sessionId,
-              }
-            );
+
             logger.info("💳 [PAYMENT PROCESSING] ✅ Stripe checkout URL received, redirecting...", {
               url: checkoutUrl,
               sessionId: result?.id || result?.data?.sessionId,
@@ -692,12 +641,6 @@ export function usePaymentProcessing() {
             window.location.href = checkoutUrl;
             return; // Order created, webhook will mark as PAID after payment
           } else {
-            console.error("💳 [PAY NOW] ❌ FAILED: No Stripe URL in response", {
-              result,
-              hasData: !!result?.data,
-              hasUrl: !!result?.url,
-              dataUrl: result?.data?.url,
-            });
             logger.error("💳 [PAYMENT PROCESSING] ❌ No checkout URL in response:", { result });
             throw new Error("No Stripe checkout URL returned from server");
           }
@@ -716,17 +659,12 @@ export function usePaymentProcessing() {
           }
         }
       } else if (action === "till") {
-        console.log("🧾 [PAY AT TILL] ===== STARTING PAY AT TILL FLOW =====");
         logger.info("🧾 [PAYMENT PROCESSING] Processing PAY AT TILL payment...");
 
         let orderId: string;
 
         // If orderId exists in checkoutData, update existing order instead of creating new one
         if (checkoutData.orderId) {
-          console.log("🧾 [PAY AT TILL] Step 1: Updating existing order payment method...", {
-            orderId: checkoutData.orderId,
-          });
-
           // Update existing order to PAY_AT_TILL
           const updateResponse = await fetch("/api/pay/till", {
             method: "POST",
@@ -744,41 +682,24 @@ export function usePaymentProcessing() {
           }
 
           orderId = checkoutData.orderId;
-          console.log("🧾 [PAY AT TILL] Step 2: ✅ Order updated to PAY_AT_TILL", {
-            orderId,
-            paymentMethod: "PAY_AT_TILL",
-            paymentStatus: "UNPAID",
-          });
         } else {
-          console.log("🧾 [PAY AT TILL] Step 1: Creating order IMMEDIATELY...");
-        // IMMEDIATELY create order in DB (per spec)
-        const orderResult = await createOrder();
+          // IMMEDIATELY create order in DB (per spec)
+          const orderResult = await createOrder();
           orderId = orderResult.order?.id;
 
-        if (!orderId) {
-          console.error("🧾 [PAY AT TILL] ❌ No order ID returned");
-          throw new Error("Failed to create order");
-        }
-
-        console.log("🧾 [PAY AT TILL] Step 2: ✅ Order created (UNPAID, PAY_AT_TILL)", {
-          orderId,
-          paymentMethod: "PAY_AT_TILL",
-          paymentStatus: "UNPAID",
-        });
+          if (!orderId) {
+            throw new Error("Failed to create order");
+          }
         }
 
         // Clear cart
         localStorage.removeItem("servio-order-cart");
         localStorage.removeItem("servio-checkout-data");
 
-        console.log("🧾 [PAY AT TILL] Step 3: Redirecting to order summary", { orderId });
-
         // Redirect to order summary with orderId
         window.location.href = `/order-summary?orderId=${orderId}`;
         return;
       } else if (action === "later") {
-        console.log("⏰ [PAY LATER] ===== STARTING PAY LATER FLOW =====");
-        console.log("⏰ [PAY LATER] Step 1: Creating order IMMEDIATELY...");
         logger.info("⏰ [PAYMENT PROCESSING] Processing PAY LATER payment...");
 
         // IMMEDIATELY create order in DB (per spec)
@@ -786,15 +707,8 @@ export function usePaymentProcessing() {
         const orderId = orderResult.order?.id;
 
         if (!orderId) {
-          console.error("⏰ [PAY LATER] ❌ No order ID returned");
           throw new Error("Failed to create order");
         }
-
-        console.log("⏰ [PAY LATER] Step 2: ✅ Order created (UNPAID, PAY_LATER)", {
-          orderId,
-          paymentMethod: "PAY_LATER",
-          paymentStatus: "UNPAID",
-        });
 
         // Store session for QR re-scan logic
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
@@ -812,8 +726,6 @@ export function usePaymentProcessing() {
         // Clear cart
         localStorage.removeItem("servio-order-cart");
         localStorage.removeItem("servio-checkout-data");
-
-        console.log("⏰ [PAY LATER] Step 3: Redirecting to order summary", { orderId });
 
         // Redirect to order summary with orderId
         window.location.href = `/order-summary?orderId=${orderId}`;
@@ -890,11 +802,6 @@ export function usePaymentProcessing() {
 
       // CRITICAL: Ensure errorMessage is always a string
       if (typeof errorMessage !== "string") {
-        console.error("⚠️ [PAYMENT PROCESSING] Error message is not a string!", {
-          type: typeof errorMessage,
-          value: errorMessage,
-          error: _err,
-        });
         errorMessage = "An unexpected error occurred. Please try again.";
       }
 
@@ -914,13 +821,6 @@ export function usePaymentProcessing() {
         extractedMessage: errorMessage,
         safeErrorMessage: cleanedErrorMessage,
         action,
-      });
-
-      console.error("❌ [PAYMENT PROCESSING] Payment Error (console):", {
-        action,
-        error: _err instanceof Error ? _err.message : String(_err),
-        cleanedMessage: cleanedErrorMessage,
-        timestamp: new Date().toISOString(),
       });
 
       logger.info("❌ [PAYMENT PROCESSING] ===== ERROR HANDLING COMPLETE =====", {

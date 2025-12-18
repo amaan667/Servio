@@ -18,9 +18,8 @@ vi.mock("@/lib/middleware/authorization", () => ({
 
 const getUserTierMock = vi.fn();
 vi.mock("@/lib/tier-restrictions", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/tier-restrictions")>(
-    "@/lib/tier-restrictions"
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/tier-restrictions")>("@/lib/tier-restrictions");
   return {
     ...actual,
     getUserTier: (...args: unknown[]) => getUserTierMock(...args),
@@ -55,17 +54,22 @@ describe("Tier Check API", () => {
       userId === ownerUserId ? "enterprise" : "starter"
     );
 
-    const request = createAuthenticatedRequest("POST", "http://localhost:3000/api/tier-check", staffUserId, {
-      body: { venueId, action: "access", resource: "kds" },
-    });
+    const request = createAuthenticatedRequest(
+      "POST",
+      "http://localhost:3000/api/tier-check",
+      staffUserId,
+      {
+        body: { venueId, action: "access", resource: "kds" },
+      }
+    );
 
-      const response = await postPOST(request);
+    const response = await postPOST(request);
     expect(response.status).toBe(200);
 
     const json = await parseJsonResponse<{ data?: { tier?: string } }>(response);
     expect(json.data?.tier).toBe("enterprise");
     expect(getUserTierMock).toHaveBeenCalledWith(ownerUserId);
-    });
+  });
 
   it("enforces limits based on venue owner's tier", async () => {
     const staffUserId = "staff-2";
@@ -86,9 +90,14 @@ describe("Tier Check API", () => {
 
     getUserTierMock.mockResolvedValue("starter");
 
-    const request = createAuthenticatedRequest("POST", "http://localhost:3000/api/tier-check", staffUserId, {
-      body: { venueId, action: "create", resource: "maxStaff", currentCount: 999 },
-    });
+    const request = createAuthenticatedRequest(
+      "POST",
+      "http://localhost:3000/api/tier-check",
+      staffUserId,
+      {
+        body: { venueId, action: "create", resource: "maxStaff", currentCount: 999 },
+      }
+    );
 
     const response = await postPOST(request);
     expect(response.status).toBe(200);

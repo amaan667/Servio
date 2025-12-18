@@ -202,7 +202,9 @@ export function checkAnalyticsAccessByTier(
     };
   }
 
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
 
   if (requireExports) {

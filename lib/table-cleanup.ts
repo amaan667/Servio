@@ -62,7 +62,9 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
 
     // If completion_status column doesn't exist, fall back to order_status check
     if (activeOrdersError && activeOrdersError.message?.includes("completion_status")) {
-      logger.debug("[TABLE CLEANUP] completion_status column not found, using order_status fallback");
+      logger.debug(
+        "[TABLE CLEANUP] completion_status column not found, using order_status fallback"
+      );
       let fallbackQuery = supabase
         .from("orders")
         .select("id, order_status, table_id, table_number")
@@ -166,7 +168,9 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       } else {
         runtimeStateCleared = true;
         if (runtimeData && runtimeData.length > 0) {
-          logger.debug(`[TABLE CLEANUP] Updated ${runtimeData.length} runtime state record(s) for Table ${tableNumber}`);
+          logger.debug(
+            `[TABLE CLEANUP] Updated ${runtimeData.length} runtime state record(s) for Table ${tableNumber}`
+          );
         }
       }
     }
@@ -192,7 +196,9 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       } else {
         runtimeStateCleared = true;
         if (runtimeDataById && runtimeDataById.length > 0) {
-          logger.debug(`[TABLE CLEANUP] Updated ${runtimeDataById.length} runtime state record(s) for table_id ${tableId}`);
+          logger.debug(
+            `[TABLE CLEANUP] Updated ${runtimeDataById.length} runtime state record(s) for table_id ${tableId}`
+          );
         }
       }
     }
@@ -231,10 +237,7 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
     const supabase = await createClient();
 
     // Try completion_status first (unified lifecycle), fallback to order_status
-    let query = supabase
-      .from("orders")
-      .select("id", { count: "exact" })
-      .eq("venue_id", venueId);
+    let query = supabase.from("orders").select("id", { count: "exact" }).eq("venue_id", venueId);
 
     if (orderId) {
       query = query.neq("id", orderId);
@@ -253,7 +256,9 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
 
     // If completion_status column doesn't exist, fall back to order_status check
     if (error && (error.message?.includes("completion_status") || error.code === "PGRST116")) {
-      logger.debug("[TABLE CLEANUP] completion_status column not found, using order_status fallback");
+      logger.debug(
+        "[TABLE CLEANUP] completion_status column not found, using order_status fallback"
+      );
       let fallbackQuery = supabase
         .from("orders")
         .select("id", { count: "exact" })

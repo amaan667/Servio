@@ -224,14 +224,10 @@ function QuickLinksGrid({ links }: { links: QuickLink[] }) {
         unique.push(link);
       }
     }
-    console.error("[HELP CENTER] QuickLinksGrid - Input:", links.length, "Unique:", unique.length);
-    if (links.length !== unique.length) {
-      console.error("[HELP CENTER] DUPLICATES REMOVED:", links.length - unique.length);
-    }
+
+    // Duplicate links removed
     return unique;
   }, [links]);
-
-  console.error("[HELP CENTER] QuickLinksGrid rendering", uniqueLinks.length, "links");
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -277,14 +273,12 @@ export function HelpCenterClient() {
   // Fetch venueId from user's session
   useEffect(() => {
     const fetchVenueId = async () => {
-      console.error("[HELP CENTER] Starting venueId fetch");
       try {
         const supabase = await createClient();
         const { data: sessionData } = await supabase.auth.getSession();
         const user = sessionData?.session?.user;
 
         if (!user) {
-          console.error("[HELP CENTER] No user found");
           setIsLoading(false);
           return;
         }
@@ -328,13 +322,10 @@ export function HelpCenterClient() {
           }
         }
 
-        console.error("[HELP CENTER] Found venueId:", foundVenueId);
         setVenueId(foundVenueId);
       } catch (error) {
-        console.error("[HELP CENTER] Error fetching venueId:", error);
       } finally {
         setIsLoading(false);
-        console.error("[HELP CENTER] Loading complete");
       }
     };
 
@@ -343,14 +334,7 @@ export function HelpCenterClient() {
 
   // Build exactly 7 links - no duplicates possible
   const quickLinks: QuickLink[] = useMemo(() => {
-    // Log only primitive values, not React components
-    if (process.env.NODE_ENV === "development") {
-      console.log("[HELP CENTER] Building quickLinks", {
-        isLoading,
-        venueId,
-        timestamp: Date.now(),
-      });
-    }
+    // Quick links memoized
 
     if (isLoading) {
       return [];
@@ -365,7 +349,7 @@ export function HelpCenterClient() {
           external: true,
         },
       ];
-      console.error("[HELP CENTER] No venueId, returning 1 link");
+
       return links;
     }
 

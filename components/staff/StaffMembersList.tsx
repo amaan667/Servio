@@ -1,13 +1,5 @@
 "use client";
 
-// Immediate logging when module loads
-if (typeof window !== "undefined") {
-  console.log("=".repeat(80));
-  console.log("[STAFF MEMBERS LIST] Module loaded - component file executed");
-  console.log("[STAFF MEMBERS LIST] Timestamp:", new Date().toISOString());
-  console.log("=".repeat(80));
-}
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,14 +47,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   onStaffToggle,
 }) => {
   // Log when component renders
-  useEffect(() => {
-    console.log("=".repeat(80));
-    console.log("[STAFF MEMBERS LIST] Component rendered/mounted");
-    console.log("[STAFF MEMBERS LIST] Props - venueId:", venueId);
-    console.log("[STAFF MEMBERS LIST] Props - staff count:", staff?.length || 0);
-    console.log("[STAFF MEMBERS LIST] Render timestamp:", new Date().toISOString());
-    console.log("=".repeat(80));
-  }, []);
+  useEffect(() => {}, []);
 
   const [name, setName] = useState("");
   const [role, setRole] = useState("Server");
@@ -84,13 +69,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   });
 
   const handleAddStaff = async () => {
-    console.log("=".repeat(80));
-    console.log("[ADD STAFF CLICK] Button clicked - starting add staff process");
-    console.log("[ADD STAFF CLICK] Form data - name:", name, "role:", role);
-    console.log("[ADD STAFF CLICK] Raw venueId:", venueId);
-
     if (!name.trim()) {
-      console.log("[ADD STAFF CLICK] VALIDATION FAILED - Name is empty");
       setError("Please enter a name");
       return;
     }
@@ -102,14 +81,11 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       // Add venueId to query string for withUnifiedAuth
       // Normalize venueId - ensure it has venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      console.log("[ADD STAFF CLICK] Normalized venueId:", normalizedVenueId);
 
       const url = new URL("/api/staff/add", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
-      console.log("[ADD STAFF CLICK] API URL:", url.toString());
 
       const requestBody = { venue_id: normalizedVenueId, name: name.trim(), role };
-      console.log("[ADD STAFF CLICK] Request body:", JSON.stringify(requestBody, null, 2));
 
       const requestStart = Date.now();
       const res = await fetch(url.toString(), {
@@ -120,54 +96,25 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       });
       const requestTime = Date.now() - requestStart;
 
-      console.log("[ADD STAFF CLICK] API request completed in", requestTime, "ms");
-      console.log("[ADD STAFF CLICK] Response status:", res.status, res.statusText);
-      console.log("[ADD STAFF CLICK] Response headers:", Object.fromEntries(res.headers.entries()));
-
       const data = await res.json();
-      console.log("[ADD STAFF CLICK] Response data:", JSON.stringify(data, null, 2));
 
       if (!res.ok) {
         const errorMessage =
           data.error?.message || data.error || data.message || "Failed to add staff member";
-        console.error("[ADD STAFF CLICK] ERROR - API request failed:");
-        console.error("[ADD STAFF CLICK] Status:", res.status);
-        console.error("[ADD STAFF CLICK] Error message:", errorMessage);
-        console.error("[ADD STAFF CLICK] Full error response:", JSON.stringify(data, null, 2));
+
         throw new Error(errorMessage);
       }
 
-      console.log("[ADD STAFF CLICK] SUCCESS - Staff member added successfully");
-      console.log("[ADD STAFF CLICK] Added staff data:", JSON.stringify(data, null, 2));
       setName("");
       setRole("Server");
       if (onStaffAdded) {
-        console.log("[ADD STAFF CLICK] Calling onStaffAdded callback to reload staff list");
         await onStaffAdded();
-        console.log("[ADD STAFF CLICK] onStaffAdded callback completed");
       }
-      console.log("[ADD STAFF CLICK] Add staff process completed successfully");
-      console.log("=".repeat(80));
     } catch (err) {
-      console.error("[ADD STAFF CLICK] EXCEPTION - Unexpected error:");
-      console.error(
-        "[ADD STAFF CLICK] Exception type:",
-        err instanceof Error ? err.constructor.name : typeof err
-      );
-      console.error(
-        "[ADD STAFF CLICK] Exception message:",
-        err instanceof Error ? err.message : String(err)
-      );
-      console.error(
-        "[ADD STAFF CLICK] Exception stack:",
-        err instanceof Error ? err.stack : "no stack"
-      );
       const errorMessage = err instanceof Error ? err.message : "Failed to add staff member";
       setError(errorMessage);
-      console.log("=".repeat(80));
     } finally {
       setAdding(false);
-      console.log("[ADD STAFF CLICK] Loading state set to false");
     }
   };
 
@@ -208,7 +155,6 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       setDeleteConfirmOpen(false);
       setStaffToDelete(null);
     } catch (err) {
-      console.error("[DELETE STAFF] Error:", err);
       setError(err instanceof Error ? err.message : "Failed to delete staff member");
     } finally {
       setDeletingStaffId(null);
@@ -244,7 +190,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
                   id="role"
                   className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 [&>span]:text-white hover:[&>span]:text-white"
                 >
-                  <SelectValue className="text-white !text-white" />
+                  <SelectValue className="!text-white" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Server">Server</SelectItem>

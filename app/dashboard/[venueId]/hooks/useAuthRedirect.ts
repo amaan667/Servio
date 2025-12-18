@@ -24,14 +24,6 @@ export function useAuthRedirect() {
   const maxCheckTime = 10000; // 10 seconds max
 
   useEffect(() => {
-    console.log("[useAuthRedirect] Effect triggered", {
-      hasUser: !!user,
-      hasSession: !!session,
-      authLoading,
-      checkingAuth,
-      retryCount: retryCount.current,
-      timestamp: new Date().toISOString(),
-    });
     // Clear any pending timeouts
     if (checkTimeoutRef.current) {
       clearTimeout(checkTimeoutRef.current);
@@ -48,12 +40,6 @@ export function useAuthRedirect() {
 
       // Timeout: If we've been checking for too long, stop blocking
       if (elapsed > maxCheckTime) {
-        console.log("[useAuthRedirect] Timeout - stopping auth check", {
-          elapsed,
-          maxCheckTime,
-          hasUser: !!user,
-          hasSession: !!session,
-        });
         setCheckingAuth(false);
         return;
       }
@@ -66,10 +52,6 @@ export function useAuthRedirect() {
 
       // If we have a user, we're authenticated - stop checking immediately
       if (user) {
-        console.log("[useAuthRedirect] User found - authenticated", {
-          userId: user.id,
-          timestamp: new Date().toISOString(),
-        });
         setCheckingAuth(false);
         retryCount.current = 0; // Reset retry count on success
         hasRedirected.current = false; // Reset redirect flag
@@ -79,10 +61,6 @@ export function useAuthRedirect() {
 
       // If we have a session, we're likely authenticated - don't block
       if (session?.user) {
-        console.log("[useAuthRedirect] Session found - not blocking", {
-          hasUser: !!user,
-          hasSession: !!session,
-        });
         setCheckingAuth(false);
         return;
       }
@@ -91,11 +69,6 @@ export function useAuthRedirect() {
       if (authLoading) {
         // If auth has been loading for more than 5 seconds, proceed anyway
         if (elapsed > 5000) {
-          console.log("[useAuthRedirect] Auth loading timeout - proceeding", {
-            elapsed,
-            hasUser: !!user,
-            hasSession: !!session,
-          });
           setCheckingAuth(false);
           return;
         }
@@ -106,10 +79,6 @@ export function useAuthRedirect() {
       // If we have a session but no user yet, wait for state to sync
       // This can happen when session is refreshing
       if (session && !user) {
-        console.log("[useAuthRedirect] Session exists but no user - waiting briefly", {
-          hasSession: !!session,
-          hasUser: !!user,
-        });
         // Give it a moment for user state to update from session, but don't block
         setCheckingAuth(false);
         checkTimeoutRef.current = setTimeout(() => {
@@ -125,11 +94,6 @@ export function useAuthRedirect() {
       if (!user && !session && retryCount.current < maxRetries) {
         retryCount.current += 1;
 
-        console.log("[useAuthRedirect] Attempting session refresh", {
-          retryCount: retryCount.current,
-          maxRetries,
-          elapsed,
-        });
         setCheckingAuth(true);
 
         try {
@@ -141,9 +105,6 @@ export function useAuthRedirect() {
           } = await supabase.auth.getSession();
 
           if (refreshedSession && !error && refreshedSession.user) {
-            console.log("[useAuthRedirect] Session refreshed successfully", {
-              hasUser: !!refreshedSession.user,
-            });
             // Session refreshed successfully - wait for AuthProvider to update state
             // The AuthProvider will pick up the refreshed session via onAuthStateChange
             setCheckingAuth(false);
@@ -153,23 +114,13 @@ export function useAuthRedirect() {
               }
             }, 300);
             return;
-          } else {
-            console.log("[useAuthRedirect] Session refresh failed", {
-              error: error?.message,
-              hasSession: !!refreshedSession,
-            });
           }
         } catch (error) {
-          console.error("[useAuthRedirect] Session refresh error", error);
           // If refresh fails, continue to redirect after all retries
         }
 
         // Timeout per retry attempt (2 seconds)
         if (elapsed > 2000 * retryCount.current) {
-          console.log("[useAuthRedirect] Retry timeout", {
-            retryCount: retryCount.current,
-            elapsed,
-          });
           setCheckingAuth(false);
         }
       }
@@ -177,10 +128,6 @@ export function useAuthRedirect() {
       // After all retries, if still no user, redirect
       // Only redirect if we've exhausted all retry attempts
       if (!user && !session && retryCount.current >= maxRetries && !hasRedirected.current) {
-        console.log("[useAuthRedirect] All retries exhausted - redirecting", {
-          retryCount: retryCount.current,
-          maxRetries,
-        });
         hasRedirected.current = true;
         setCheckingAuth(false);
         checkStartTime.current = null;
@@ -218,9 +165,6 @@ export function useAuthRedirect() {
   // Reset redirect flag if user appears (session refreshed successfully)
   useEffect(() => {
     if (user) {
-      console.log("[useAuthRedirect] User appeared - resetting state", {
-        userId: user.id,
-      });
       hasRedirected.current = false;
       retryCount.current = 0;
       setCheckingAuth(false);
@@ -230,15 +174,6 @@ export function useAuthRedirect() {
 
   // Don't block if we have a session even without user (user state may be updating)
   const isLoading = (authLoading || checkingAuth) && !user && !session;
-
-  console.log("[useAuthRedirect] Return state", {
-    hasUser: !!user,
-    hasSession: !!session,
-    authLoading,
-    checkingAuth,
-    isLoading,
-    timestamp: new Date().toISOString(),
-  });
 
   return {
     user,

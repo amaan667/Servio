@@ -165,9 +165,7 @@ export function TodayAtAGlance({
                 </div>
               ) : !revenueByCategory || revenueByCategory.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    No revenue data yet
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No revenue data yet</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">

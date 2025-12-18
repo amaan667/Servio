@@ -146,10 +146,8 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         }
       } else {
         setError(data.error?.message || "Failed to load tickets");
-        console.error("[KDS] Tickets API error:", data);
       }
     } catch (error) {
-      console.error("[KDS] Tickets fetch error:", error);
       setError(error instanceof Error ? error.message : "Failed to load tickets");
     } finally {
       setLoading(false);
@@ -160,55 +158,18 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
   const updateTicketStatus = useCallback(
     async (ticketId: string, status: string) => {
       try {
-        console.log("[KDS CLIENT] ===== UPDATING TICKET STATUS =====", {
-          ticketId,
-          status,
-          venueId,
-          timestamp: new Date().toISOString(),
-        });
-
         const { apiClient } = await import("@/lib/api-client");
         const payload = { ticket_id: ticketId, status, venueId };
 
-        console.log("[KDS CLIENT] Sending PATCH request:", {
-          url: "/api/kds/tickets",
-          payload: JSON.stringify(payload, null, 2),
-        });
-
         const response = await apiClient.patch("/api/kds/tickets", payload);
 
-        console.log("[KDS CLIENT] Response received:", {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-        });
-
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("[KDS CLIENT] ❌ HTTP Error Response:", {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText,
-          });
-
-          try {
-            const errorData = JSON.parse(errorText);
-            console.error("[KDS CLIENT] ❌ Parsed Error:", JSON.stringify(errorData, null, 2));
-          } catch {
-            console.error("[KDS CLIENT] ❌ Could not parse error response as JSON");
-          }
           return;
         }
 
         const data = await response.json();
 
-        console.log("[KDS CLIENT] Response data:", JSON.stringify(data, null, 2));
-
         if (data.success) {
-          console.log("[KDS CLIENT] ✅ Ticket updated successfully", {
-            ticketId,
-            newStatus: status,
-          });
           // Update local state immediately for instant feedback
           setTickets((prev) =>
             prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t))
@@ -217,18 +178,13 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
           setTimeout(() => {
             fetchTickets();
           }, 500);
-        } else {
-          console.error("[KDS CLIENT] ❌ Update failed:", JSON.stringify(data, null, 2));
         }
       } catch (error) {
-        console.error("[KDS CLIENT] ❌ Exception during ticket update:", {
-          error: error instanceof Error ? error.message : String(error),
-          ticketId,
-          status,
-        });
+        // Error handled by UI state
+        setError(error instanceof Error ? error.message : "Failed to update ticket");
       }
     },
-    [venueId]
+    [venueId, fetchTickets]
   );
 
   // Bump all ready tickets for an order
@@ -298,7 +254,6 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       // If still no tickets, trigger backfill
       if (tickets.length === 0 && !loading) {
         try {
-          console.log("[KDS CLIENT] No tickets found, triggering backfill...");
           const { apiClient } = await import("@/lib/api-client");
           const response = await apiClient.post("/api/kds/backfill", {
             venueId,
@@ -307,14 +262,13 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
           const data = await response.json();
 
           if (data.ok && data.tickets_created > 0) {
-            console.log("[KDS CLIENT] Backfill created tickets, refreshing...");
             // Wait a moment then refresh tickets
             setTimeout(() => {
               fetchTickets();
             }, 1000);
           }
-        } catch (error) {
-          console.error("[KDS CLIENT] Backfill error:", error);
+        } catch {
+          // Backfill failed, continue without tickets
         }
       }
     };
@@ -352,10 +306,6 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       // Exponential backoff: 1s, 2s, 4s, 8s, 16s
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
 
-      console.log(
-        `[KDS RECONNECT] Attempting reconnection in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`
-      );
-
       reconnectTimeout = setTimeout(async () => {
         try {
           const {
@@ -382,8 +332,7 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
             setConnectionStatus("error");
             setError("Authentication expired. Please refresh the page.");
           }
-        } catch (_error) {
-          console.error("[KDS RECONNECT] Failed to get session:", _error);
+        } catch {
           attemptReconnect();
         }
       }, delay);
@@ -445,7 +394,9 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
                     const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
                     if (existingIndex >= 0) {
                       // Update existing ticket
-                      return prev.map((t) => (t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t));
+                      return prev.map((t) =>
+                        t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t
+                      );
                     } else {
                       // Ticket doesn't exist yet, add it (might be a new ticket or from another station)
                       // Only add if it's for an OPEN order (not completed)
@@ -459,7 +410,9 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
                       const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
                       if (existingIndex >= 0) {
                         // Update existing ticket
-                        return prev.map((t) => (t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t));
+                        return prev.map((t) =>
+                          t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t
+                        );
                       } else {
                         // Ticket doesn't exist yet, add it (might have been moved to this station)
                         return [...prev, updatedTicket];
@@ -478,8 +431,6 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
         )
         .subscribe((status: string) => {
           if (!isMounted) return;
-
-          console.log(`[KDS REALTIME] Status: ${status}`);
 
           if (status === "SUBSCRIBED") {
             setConnectionStatus("connected");

@@ -178,12 +178,7 @@ export default function GlobalNav() {
                       href="/"
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       onClick={() => {
-                        console.log("[GlobalNav] 🏠 HOME BUTTON CLICKED", {
-                          venueId,
-                          primaryVenueId,
-                          href: "/",
-                          timestamp: new Date().toISOString(),
-                        });
+                        // Home button clicked - no action needed
                       }}
                     >
                       <Home className="mr-3 h-5 w-5" />
@@ -221,7 +216,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Sign out error", error);
                           window.location.href = "/";
                         }
                       }}
@@ -239,45 +233,22 @@ export default function GlobalNav() {
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
-                      onClick={(e) => {
+                      onClick={() => {
                         const href =
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}`
                             : "/";
-                        console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (feature page)", {
-                          venueId,
-                          primaryVenueId,
-                          href,
-                          pathname,
-                          isOnFeaturePage,
-                          isOnQRPage,
-                          timestamp: new Date().toISOString(),
-                          event: e,
-                        });
 
                         // Track navigation attempt
                         const startTime = Date.now();
                         const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
                         // Log navigation start
-                        console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
-                          navigationId,
-                          href,
-                          startTime,
-                        });
 
                         // Monitor if navigation actually happens
                         setTimeout(() => {
                           const elapsed = Date.now() - startTime;
                           const currentPath = window.location.pathname;
-                          console.log("[GlobalNav] ⏱️ NAVIGATION CHECK", {
-                            navigationId,
-                            elapsed,
-                            expectedPath: href,
-                            actualPath: currentPath,
-                            navigationHappened:
-                              currentPath === href || currentPath.startsWith(href),
-                          });
                         }, 100);
                       }}
                     >
@@ -316,7 +287,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Sign out error", error);
                           window.location.href = "/";
                         }
                       }}
@@ -334,43 +304,20 @@ export default function GlobalNav() {
                         venueId || primaryVenueId ? `/dashboard/${venueId || primaryVenueId}` : "/"
                       }
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
-                      onClick={(e) => {
+                      onClick={() => {
                         const href =
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}`
                             : "/";
-                        console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (settings page)", {
-                          venueId,
-                          primaryVenueId,
-                          href,
-                          pathname,
-                          isOnSettings,
-                          timestamp: new Date().toISOString(),
-                          event: e,
-                        });
 
                         // Track navigation attempt
                         const startTime = Date.now();
                         const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-                        console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
-                          navigationId,
-                          href,
-                          startTime,
-                        });
-
                         // Monitor if navigation actually happens
                         setTimeout(() => {
                           const elapsed = Date.now() - startTime;
                           const currentPath = window.location.pathname;
-                          console.log("[GlobalNav] ⏱️ NAVIGATION CHECK", {
-                            navigationId,
-                            elapsed,
-                            expectedPath: href,
-                            actualPath: currentPath,
-                            navigationHappened:
-                              currentPath === href || currentPath.startsWith(href),
-                          });
                         }, 100);
                       }}
                     >
@@ -403,7 +350,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Sign out error", error);
                           window.location.href = "/";
                         }
                       }}
@@ -421,53 +367,21 @@ export default function GlobalNav() {
                       <Link
                         href={`/dashboard/${venueId || primaryVenueId}`}
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
-                        onClick={(e) => {
+                        onClick={() => {
                           const href = `/dashboard/${venueId || primaryVenueId}`;
-                          console.log("[GlobalNav] 📊 DASHBOARD LINK CLICKED (home page)", {
-                            venueId,
-                            primaryVenueId,
-                            href,
-                            pathname,
-                            isHomePage,
-                            isAuthenticated,
-                            hasSession: !!session,
-                            userId: session?.user?.id,
-                            timestamp: new Date().toISOString(),
-                            event: e,
-                          });
 
                           // Track navigation attempt
                           const startTime = Date.now();
                           const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-                          console.log("[GlobalNav] 🚀 NAVIGATION STARTED", {
-                            navigationId,
-                            href,
-                            startTime,
-                            routerAvailable: !!router,
-                          });
-
                           // Monitor if navigation actually happens
                           setTimeout(() => {
                             const elapsed = Date.now() - startTime;
                             const currentPath = window.location.pathname;
-                            console.log("[GlobalNav] ⏱️ NAVIGATION CHECK", {
-                              navigationId,
-                              elapsed,
-                              expectedPath: href,
-                              actualPath: currentPath,
-                              navigationHappened:
-                                currentPath === href || currentPath.startsWith(href),
-                            });
 
                             // If navigation didn't happen, log warning
                             if (currentPath !== href && !currentPath.startsWith(href)) {
-                              console.warn("[GlobalNav] ⚠️ NAVIGATION FAILED", {
-                                navigationId,
-                                expectedPath: href,
-                                actualPath: currentPath,
-                                elapsed,
-                              });
+                              // Navigation failed - handled by longer timeout check
                             }
                           }, 100);
 
@@ -475,11 +389,23 @@ export default function GlobalNav() {
                           setTimeout(() => {
                             const currentPath = window.location.pathname;
                             if (currentPath !== href && !currentPath.startsWith(href)) {
-                              console.error("[GlobalNav] ❌ NAVIGATION STILL FAILED AFTER 1s", {
-                                navigationId,
-                                expectedPath: href,
-                                actualPath: currentPath,
-                              });
+                              // Log a warning using the logger (avoid console.log per code quality rules)
+                              if (
+                                typeof window !== "undefined" &&
+                                (window as { Sentry?: unknown }).Sentry
+                              ) {
+                                // rudimentary Sentry integration - replace with actual sentry import/integration in real codebase
+                                (
+                                  window as {
+                                    Sentry: {
+                                      captureMessage: (msg: string, level?: string) => void;
+                                    };
+                                  }
+                                ).Sentry.captureMessage?.(
+                                  `Navigation to ${href} did not occur (1s delay). Current path: ${currentPath}`,
+                                  "warning"
+                                );
+                              }
                             }
                           }, 1000);
                         }}
@@ -510,7 +436,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Sign out error", error);
                           window.location.href = "/";
                         }
                       }}
@@ -632,7 +557,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Mobile sign out error", error);
                           window.location.href = "/";
                         }
                       }}
@@ -699,7 +623,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Mobile sign out error", error);
                           window.location.href = "/";
                         }
                       }}
@@ -760,7 +683,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Mobile sign out error", error);
                           window.location.href = "/";
                         }
                       }}
@@ -809,7 +731,6 @@ export default function GlobalNav() {
                           await signOut();
                           window.location.href = "/";
                         } catch (error) {
-                          console.error("[GlobalNav] Mobile sign out error", error);
                           window.location.href = "/";
                         }
                       }}

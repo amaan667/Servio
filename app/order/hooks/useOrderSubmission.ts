@@ -173,7 +173,6 @@ export function useOrderSubmission() {
       });
 
       // Also log to browser console
-      console.log("🛒 [ORDER SUBMISSION] ===== ORDER SUBMITTED =====", submissionLog.details);
 
       localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
 

@@ -40,39 +40,6 @@ export default function PaymentPage() {
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "unknown";
     const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
-    console.log("📱 [MOBILE PAYMENT UI] ===== PAYMENT PAGE LOADED =====", {
-      timestamp: new Date().toISOString(),
-      isMobile,
-      userAgent,
-      viewport: {
-        width: typeof window !== "undefined" ? window.innerWidth : "unknown",
-        height: typeof window !== "undefined" ? window.innerHeight : "unknown",
-      },
-      url: typeof window !== "undefined" ? window.location.href : "unknown",
-      initialState: {
-        hasCheckoutData: !!paymentState.checkoutData,
-        isProcessing: paymentState.isProcessing,
-        paymentComplete: paymentState.paymentComplete,
-        hasError: !!paymentState.error,
-        isDemo: paymentState.isDemo,
-      },
-      checkoutData: paymentState.checkoutData
-        ? {
-            venueId: paymentState.checkoutData.venueId,
-            tableNumber: paymentState.checkoutData.tableNumber,
-            total: paymentState.checkoutData.total,
-            itemCount: paymentState.checkoutData.cart?.length || 0,
-          }
-        : null,
-      localStorage:
-        typeof localStorage !== "undefined"
-          ? {
-              hasCheckoutData: !!localStorage.getItem("servio-checkout-data"),
-              hasSession: !!localStorage.getItem("servio-current-session"),
-            }
-          : "unavailable",
-    });
-
     logger.info("📱 [MOBILE PAYMENT UI] Payment page loaded", {
       timestamp: new Date().toISOString(),
       isMobile,
@@ -80,33 +47,7 @@ export default function PaymentPage() {
     });
   }, []); // Only run on mount
 
-  // Log state changes
-  React.useEffect(() => {
-    if (paymentState.isProcessing) {
-      console.log("🔄 [MOBILE PAYMENT UI] State change: Processing started", {
-        timestamp: new Date().toISOString(),
-        paymentAction: paymentState.paymentAction,
-      });
-    }
-  }, [paymentState.isProcessing]);
-
-  React.useEffect(() => {
-    if (paymentState.paymentComplete) {
-      console.log("✅ [MOBILE PAYMENT UI] State change: Payment completed", {
-        timestamp: new Date().toISOString(),
-        orderNumber: paymentState.orderNumber,
-      });
-    }
-  }, [paymentState.paymentComplete]);
-
-  React.useEffect(() => {
-    if (paymentState.error) {
-      console.error("❌ [MOBILE PAYMENT UI] State change: Error occurred", {
-        timestamp: new Date().toISOString(),
-        error: paymentState.error,
-      });
-    }
-  }, [paymentState.error]);
+  // Payment state effects handled by component logic
 
   const handlePayment = async (action: "demo" | "stripe" | "till" | "later") => {
     const timestamp = new Date().toISOString();
@@ -114,53 +55,6 @@ export default function PaymentPage() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
     // Comprehensive logging for mobile payment method selection
-    console.log("📱 [MOBILE PAYMENT UI] ===== PAYMENT METHOD BUTTON CLICKED =====", {
-      action,
-      timestamp,
-      isMobile,
-      userAgent,
-      viewport: {
-        width: typeof window !== "undefined" ? window.innerWidth : "unknown",
-        height: typeof window !== "undefined" ? window.innerHeight : "unknown",
-      },
-      currentState: {
-        isProcessing: paymentState.isProcessing,
-        paymentComplete: paymentState.paymentComplete,
-        hasError: !!paymentState.error,
-        error: paymentState.error,
-        currentPaymentAction: paymentState.paymentAction,
-      },
-      hasCheckoutData: !!paymentState.checkoutData,
-      checkoutData: paymentState.checkoutData
-        ? {
-            venueId: paymentState.checkoutData.venueId,
-            venueName: paymentState.checkoutData.venueName,
-            tableNumber: paymentState.checkoutData.tableNumber,
-            customerName: paymentState.checkoutData.customerName,
-            customerPhone: paymentState.checkoutData.customerPhone,
-            total: paymentState.checkoutData.total,
-            itemCount: paymentState.checkoutData.cart?.length || 0,
-            items: paymentState.checkoutData.cart?.map((item) => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              hasSpecialInstructions: !!item.specialInstructions,
-            })),
-            source: undefined, // Source not in CheckoutData interface
-            isDemo: paymentState.checkoutData.isDemo,
-          }
-        : null,
-      localStorage: {
-        hasCheckoutData:
-          typeof localStorage !== "undefined"
-            ? !!localStorage.getItem("servio-checkout-data")
-            : "unknown",
-        hasSession:
-          typeof localStorage !== "undefined"
-            ? !!localStorage.getItem("servio-current-session")
-            : "unknown",
-      },
-    });
 
     logger.info("📱 [MOBILE PAYMENT UI] Payment method button clicked", {
       action,
@@ -186,103 +80,39 @@ export default function PaymentPage() {
     });
 
     if (!paymentState.checkoutData) {
-      console.error("❌ [MOBILE PAYMENT UI] No checkout data available!", {
-        timestamp,
-        localStorage:
-          typeof localStorage !== "undefined"
-            ? {
-                checkoutData: localStorage.getItem("servio-checkout-data"),
-                session: localStorage.getItem("servio-current-session"),
-              }
-            : "localStorage unavailable",
-      });
       logger.error("[MOBILE PAYMENT UI] No checkout data available", { timestamp });
       return;
     }
 
     if (paymentState.isProcessing) {
-      console.warn("⚠️ [MOBILE PAYMENT UI] Payment already processing, ignoring click", {
-        action,
-        timestamp,
-        currentAction: paymentState.paymentAction,
-      });
       return;
     }
-
-    console.log("✅ [MOBILE PAYMENT UI] Setting payment action and starting processing...", {
-      action,
-      timestamp,
-      previousAction: paymentState.paymentAction,
-    });
 
     paymentState.setPaymentAction(action);
     paymentState.setIsProcessing(true);
     paymentState.setError(null);
 
     try {
-      console.log("🔄 [MOBILE PAYMENT UI] Calling processPayment function...", {
-        action,
-        timestamp,
-        checkoutDataSummary: {
-          venueId: paymentState.checkoutData.venueId,
-          total: paymentState.checkoutData.total,
-          itemCount: paymentState.checkoutData.cart.length,
-        },
-      });
-
       await processPayment(
         action,
         paymentState.checkoutData,
         (orderNumber: string) => {
-          console.log("✅ [MOBILE PAYMENT UI] Order number set:", { orderNumber, timestamp });
           paymentState.setOrderNumber(orderNumber);
         },
         (complete: boolean) => {
-          console.log("✅ [MOBILE PAYMENT UI] Payment complete status updated:", {
-            complete,
-            timestamp,
-          });
           paymentState.setPaymentComplete(complete);
         },
         (processing: boolean) => {
-          console.log("🔄 [MOBILE PAYMENT UI] Processing status updated:", {
-            processing,
-            timestamp,
-          });
           paymentState.setIsProcessing(processing);
         },
         (error: string | null) => {
           const safeError =
             error && typeof error === "string" ? error : error ? String(error) : null;
-          console.error("❌ [MOBILE PAYMENT UI] Error set:", { error: safeError, timestamp });
+
           paymentState.setError(safeError);
         }
       );
-
-      console.log("✅ [MOBILE PAYMENT UI] processPayment completed successfully", {
-        action,
-        timestamp,
-        finalState: {
-          isProcessing: paymentState.isProcessing,
-          paymentComplete: paymentState.paymentComplete,
-          hasError: !!paymentState.error,
-        },
-      });
     } catch (unhandledError) {
-      console.error("❌ [MOBILE PAYMENT UI] Unhandled error in handlePayment:", {
-        error: unhandledError,
-        errorType: typeof unhandledError,
-        errorMessage:
-          unhandledError instanceof Error ? unhandledError.message : String(unhandledError),
-        errorStack: unhandledError instanceof Error ? unhandledError.stack : undefined,
-        timestamp,
-        action,
-        state: {
-          isProcessing: paymentState.isProcessing,
-          paymentComplete: paymentState.paymentComplete,
-        },
-      });
-
       logger.error("[MOBILE PAYMENT UI] Unhandled error", {
         error: unhandledError instanceof Error ? unhandledError.message : String(unhandledError),
         stack: unhandledError instanceof Error ? unhandledError.stack : undefined,
@@ -446,7 +276,6 @@ export default function PaymentPage() {
                   <>
                     <Button
                       onClick={() => {
-                        console.log("🖱️ [MOBILE PAYMENT UI] Stripe/Pay Now button clicked");
                         handlePayment("stripe");
                       }}
                       disabled={paymentState.isProcessing}
@@ -472,7 +301,6 @@ export default function PaymentPage() {
                 <Button
                   variant="default"
                   onClick={() => {
-                    console.log("🖱️ [MOBILE PAYMENT UI] Pay at Till button clicked");
                     handlePayment("till");
                   }}
                   disabled={paymentState.isProcessing}
@@ -495,7 +323,6 @@ export default function PaymentPage() {
                 <Button
                   variant="default"
                   onClick={() => {
-                    console.log("🖱️ [MOBILE PAYMENT UI] Pay Later button clicked");
                     handlePayment("later");
                   }}
                   disabled={paymentState.isProcessing}

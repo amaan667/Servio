@@ -23,8 +23,9 @@ function looksLikeMissingLifecycleColumn(message: string): boolean {
 // Function to automatically backfill missing KDS tickets for orders
 // Returns true if tickets were created, false otherwise
 // SECURITY: This function is called from within withUnifiedAuth context, so venue access is already verified
-// However, it uses admin client for backfill operations which may need system-level access
-// TODO: Consider if this can use authenticated client instead
+// Uses admin client for backfill operations to ensure system-level access for historical order processing
+// Note: Admin client is required here because backfill may need to create tickets for historical orders
+// that may not be accessible through RLS policies with authenticated client
 async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
   try {
     // SECURITY NOTE: Using admin client for backfill operations
@@ -93,8 +94,12 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
       if (existingOrderIds.has(id)) return false;
 
       // Don't backfill KDS tickets for unpaid PAY_NOW orders (kitchen should only see paid PAY_NOW)
-      const method = String((order as { payment_method?: unknown }).payment_method || "").toUpperCase();
-      const status = String((order as { payment_status?: unknown }).payment_status || "").toUpperCase();
+      const method = String(
+        (order as { payment_method?: unknown }).payment_method || ""
+      ).toUpperCase();
+      const status = String(
+        (order as { payment_status?: unknown }).payment_status || ""
+      ).toUpperCase();
       if (method === "PAY_NOW" && status !== "PAID") return false;
       return true;
     });

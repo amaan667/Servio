@@ -54,9 +54,7 @@ export function getTableState(table: TableData): TableStateInfo {
   const isOrderCompleted =
     table.completion_status?.toUpperCase() === "COMPLETED" ||
     (table.order_status &&
-      ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(
-        table.order_status.toUpperCase()
-      ));
+      ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(table.order_status.toUpperCase()));
   const hasActiveOrder = !!table.order_id && !isOrderCompleted;
   const hasReservation = !!(table.reserved_now_id || table.reserved_later_id);
   const sessionStatus = table.status;

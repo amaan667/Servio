@@ -183,15 +183,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Continue without initial data - client will load it
   }
 
-  // Log server-side render completion
-  if (typeof process !== "undefined") {
-    console.log("[DashboardPage] Server-side render complete", {
-      venueId,
-      hasInitialCounts: !!initialCounts,
-      hasInitialStats: !!initialStats,
-      timestamp: new Date().toISOString(),
-    });
-  }
+  // Server-side render completed
 
   return (
     <>
@@ -199,31 +191,21 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       <script
         dangerouslySetInnerHTML={{
           __html: `
-            console.log("[DashboardPage] PAGE HTML LOADED", {
-              venueId: "${venueId}",
-              timestamp: new Date().toISOString(),
-            });
-            console.log("[DashboardPage] ⚡ Page script executed - component will mount next");
             
+
             // Catch any JavaScript errors that might prevent component mounting
             window.addEventListener('error', function(e) {
-              console.error("[DashboardPage] ❌ JAVASCRIPT ERROR:", e.error);
-              console.error("[DashboardPage] Error message:", e.message);
-              console.error("[DashboardPage] Error filename:", e.filename);
-              console.error("[DashboardPage] Error lineno:", e.lineno);
+
             });
             
             // Catch unhandled promise rejections
             window.addEventListener('unhandledrejection', function(e) {
-              console.error("[DashboardPage] ❌ UNHANDLED PROMISE REJECTION:", e.reason);
+
             });
             
             // Log when React starts hydrating
             if (typeof window !== 'undefined' && window.__NEXT_DATA__) {
-              console.log("[DashboardPage] ✅ Next.js data available", {
-                page: window.__NEXT_DATA__.page,
-                props: !!window.__NEXT_DATA__.props,
-              });
+
             }
           `,
         }}

@@ -334,7 +334,9 @@ export async function processCustomerCheckoutSession(
 
       const { data: fullOrder } = await supabaseAdmin
         .from("orders")
-        .select("id, venue_id, items, customer_name, table_number, table_id, payment_method, completion_status")
+        .select(
+          "id, venue_id, items, customer_name, table_number, table_id, payment_method, completion_status"
+        )
         .eq("id", ord.id)
         .single();
 

@@ -68,7 +68,8 @@ export const POST = withUnifiedAuth(
         }
 
         // If no tickets exist, consider it as all bumped (order might not have KDS tickets)
-        const allBumped = !tickets || tickets.length === 0 || tickets.every((t) => t.status === "bumped");
+        const allBumped =
+          !tickets || tickets.length === 0 || tickets.every((t) => t.status === "bumped");
 
         logger.debug("[ORDERS SERVE] Ticket check", {
           orderId,
@@ -79,10 +80,13 @@ export const POST = withUnifiedAuth(
 
         if (allBumped) {
           // Set kitchen_status to BUMPED first
-          const { data: bumpResult, error: bumpError } = await admin.rpc("orders_set_kitchen_bumped", {
-            p_order_id: orderId,
-            p_venue_id: venueId,
-          });
+          const { data: bumpResult, error: bumpError } = await admin.rpc(
+            "orders_set_kitchen_bumped",
+            {
+              p_order_id: orderId,
+              p_venue_id: venueId,
+            }
+          );
 
           if (bumpError) {
             logger.error("[ORDERS SERVE] Failed to set kitchen_status to BUMPED", {
@@ -234,7 +238,11 @@ export const POST = withUnifiedAuth(
         const orderId = body?.orderId;
         if (!orderId) return null;
         const admin = createAdminClient();
-        const { data: order } = await admin.from("orders").select("venue_id").eq("id", orderId).single();
+        const { data: order } = await admin
+          .from("orders")
+          .select("venue_id")
+          .eq("id", orderId)
+          .single();
         return (order?.venue_id as string | undefined) ?? null;
       } catch {
         return null;

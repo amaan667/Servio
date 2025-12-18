@@ -907,10 +907,14 @@ export async function POST(req: NextRequest) {
     // Create KDS tickets for the order
     try {
       const orderForTickets = createdOrder;
-      const paymentMethod = String((orderForTickets as { payment_method?: unknown }).payment_method || "")
+      const paymentMethod = String(
+        (orderForTickets as { payment_method?: unknown }).payment_method || ""
+      )
         .toUpperCase()
         .trim();
-      const paymentStatus = String((orderForTickets as { payment_status?: unknown }).payment_status || "")
+      const paymentStatus = String(
+        (orderForTickets as { payment_status?: unknown }).payment_status || ""
+      )
         .toUpperCase()
         .trim();
 
@@ -923,7 +927,7 @@ export async function POST(req: NextRequest) {
         logger.info("[ORDER CREATION DEBUG] Creating KDS tickets for order:", {
           orderId: (orderForTickets as { id: string }).id,
           itemCount: Array.isArray((orderForTickets as { items?: unknown }).items)
-            ? ((orderForTickets as { items: unknown[] }).items.length || 0)
+            ? (orderForTickets as { items: unknown[] }).items.length || 0
             : 0,
           venueId: (orderForTickets as { venue_id: string }).venue_id,
           paymentMethod,
@@ -955,8 +959,8 @@ export async function POST(req: NextRequest) {
             logger.error("[ORDER CREATION DEBUG] Failed to update order status to IN_PREP", {
               orderId: (orderForTickets as { id: string }).id,
               error: statusUpdateError,
-          requestId,
-        });
+              requestId,
+            });
           } else {
             logger.info("[ORDER CREATION DEBUG] ✅ Updated order status to IN_PREP", {
               orderId: (orderForTickets as { id: string }).id,
@@ -966,12 +970,15 @@ export async function POST(req: NextRequest) {
           }
         }
       } else {
-        logger.info("[ORDER CREATION DEBUG] Skipping KDS ticket creation for unpaid PAY_NOW order", {
-          orderId: (orderForTickets as { id: string }).id,
-          paymentMethod,
-          paymentStatus,
-          requestId,
-        });
+        logger.info(
+          "[ORDER CREATION DEBUG] Skipping KDS ticket creation for unpaid PAY_NOW order",
+          {
+            orderId: (orderForTickets as { id: string }).id,
+            paymentMethod,
+            paymentStatus,
+            requestId,
+          }
+        );
       }
     } catch (kdsError) {
       // Log detailed error but don't fail order creation
@@ -982,7 +989,7 @@ export async function POST(req: NextRequest) {
         error: errorMessage,
         stack: errorStack,
         orderItems: Array.isArray((createdOrder as { items?: unknown }).items)
-          ? ((createdOrder as { items: unknown[] }).items.length || 0)
+          ? (createdOrder as { items: unknown[] }).items.length || 0
           : 0,
         venueId: (createdOrder as { venue_id: string }).venue_id,
         requestId,

@@ -66,7 +66,7 @@ export function OrderStatusChip({
   };
 
   const variant = statusMap[status.toUpperCase()] || "placed";
-  
+
   // Custom display text for specific statuses
   let displayText: string;
   const upperStatus = status.toUpperCase();

@@ -56,18 +56,7 @@ import { loadFontForFamily } from "./utils/fontLoader";
 // Types
 import { MenuItem, ActiveTab, PreviewMode } from "./types";
 
-export default function MenuManagementClient({
-  venueId,
-  initialMenuItemCount = 0,
-}: {
-  venueId: string;
-  initialMenuItemCount?: number;
-}) {
-  console.log("[MENU BUILDER] Component mounting:", {
-    venueId,
-    timestamp: new Date().toISOString(),
-  });
-
+export default function MenuManagementClient({ venueId }: { venueId: string }) {
   const searchParams = useSearchParams();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -91,27 +80,10 @@ export default function MenuManagementClient({
     useMenuItems(venueId);
 
   // Log component state changes
-  useEffect(() => {
-    console.log("[MENU BUILDER] Component state update:", {
-      venueId,
-      activeTab,
-      menuItemsCount: menuItems.length,
-      loading,
-      isClearing,
-      hasCategoryOrder: !!categoryOrder,
-      timestamp: new Date().toISOString(),
-    });
-  }, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);
+  useEffect(() => {}, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);
 
   // Log tab changes
-  useEffect(() => {
-    console.log("[MENU BUILDER] Tab changed:", {
-      venueId,
-      newTab: activeTab,
-      menuItemsCount: menuItems.length,
-      timestamp: new Date().toISOString(),
-    });
-  }, [activeTab, venueId, menuItems.length]);
+  useEffect(() => {}, [activeTab, venueId, menuItems.length]);
   const { designSettings, setDesignSettings, isSavingDesign, saveDesignSettings } =
     useDesignSettings(venueId);
   const { handleItemDragEnd, handleCategoryDragEnd } = useDragAndDrop(
@@ -148,24 +120,7 @@ export default function MenuManagementClient({
 
   useEffect(() => {
     // CRITICAL LOG: Menu builder page opened
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("🔧 [MENU BUILDER PAGE OPENED]");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("Venue ID:", venueId);
-    console.log("Initial Menu Items Count (from hook):", menuItems.length);
-    console.log("Initial Menu Items Count (from server prop):", initialMenuItemCount);
-    if (menuItems.length !== initialMenuItemCount) {
-      console.warn(
-        "⚠️ COUNT MISMATCH: Hook says",
-        menuItems.length,
-        "but server says",
-        initialMenuItemCount
-      );
-    }
-    console.log("Loading:", loading);
-    console.log("⚠️  This count should match the dashboard count!");
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("═══════════════════════════════════════════════════════════");
+    // Menu items loaded
   }, []); // Run once on mount
 
   useEffect(() => {
@@ -267,7 +222,6 @@ export default function MenuManagementClient({
               detail: { venueId, action: editingItem ? "updated" : "created", itemCount: newCount },
             })
           );
-          console.log("✅ Dispatched menuItemsChanged event with count:", newCount);
         }
       }, 100);
     } catch (_error) {
@@ -317,7 +271,6 @@ export default function MenuManagementClient({
               detail: { venueId, action: "deleted", itemCount: newCount },
             })
           );
-          console.log("✅ Dispatched menuItemsChanged event with count:", newCount);
         }
       }, 100);
     } catch (_error) {
@@ -379,34 +332,15 @@ export default function MenuManagementClient({
 
   const clearAllMenu = async () => {
     // CRITICAL LOG: Clear menu button clicked
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("🗑️  [CLEAR MENU BUTTON CLICKED]");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("Venue ID:", venueId);
-    console.log("Current Item Count:", menuItems.length);
-    console.log(
-      "Current Items:",
-      menuItems.map((i) => ({ id: i.id, name: i.name }))
-    );
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("═══════════════════════════════════════════════════════════");
 
     if (!confirm("Are you sure you want to clear the entire menu? This action cannot be undone.")) {
-      console.log("[MENU BUILDER] clearAllMenu cancelled by user");
       return;
     }
 
     try {
-      console.log("[MENU BUILDER] Starting clear menu process...");
       setIsClearing(true);
 
       const requestBody = { venue_id: venueId };
-      console.log("[MENU BUILDER] Clear menu API request:", {
-        url: "/api/menu/clear",
-        method: "POST",
-        body: requestBody,
-        timestamp: new Date().toISOString(),
-      });
 
       const response = await fetch("/api/menu/clear", {
         method: "POST",
@@ -416,34 +350,15 @@ export default function MenuManagementClient({
         body: JSON.stringify(requestBody),
       });
 
-      console.log("[MENU BUILDER] Clear menu API response:", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        timestamp: new Date().toISOString(),
-      });
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("[MENU BUILDER] Clear menu API error:", {
-          status: response.status,
-          error: errorData,
-          timestamp: new Date().toISOString(),
-        });
+
         throw new Error(errorData.error || "Failed to clear menu");
       }
 
       const result = await response.json();
 
       // CRITICAL LOG: Clear menu API response
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("📥 [CLEAR MENU API RESPONSE]");
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("Status:", response.status);
-      console.log("OK:", result.ok);
-      console.log("Result:", JSON.stringify(result, null, 2));
-      console.log("Timestamp:", new Date().toISOString());
-      console.log("═══════════════════════════════════════════════════════════");
 
       if (result.ok) {
         toast({
@@ -451,16 +366,12 @@ export default function MenuManagementClient({
           description: `All menu items, categories, and options have been cleared successfully.`,
         });
 
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("🔄 [CLEAR MENU] Reloading menu items...");
-        console.log("═══════════════════════════════════════════════════════════");
         await loadMenuItems();
 
         // Clear dashboard cache to force fresh count
         if (typeof window !== "undefined") {
           sessionStorage.removeItem(`dashboard_stats_${venueId}`);
           sessionStorage.removeItem(`dashboard_counts_${venueId}`);
-          console.log("✅ Cleared dashboard cache");
 
           // Dispatch custom event to trigger dashboard refresh
           window.dispatchEvent(
@@ -468,31 +379,16 @@ export default function MenuManagementClient({
               detail: { venueId, action: "cleared" },
             })
           );
-          console.log("✅ Dispatched menuChanged event to refresh dashboard");
         }
 
         // Force router refresh to update server-rendered data
         router.refresh();
 
         // CRITICAL LOG: Clear menu success
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("✅ [CLEAR MENU SUCCESS]");
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("Venue ID:", venueId);
-        console.log("⚠️  Dashboard count should now update to: 0");
-        console.log("⚠️  Menu builder count should now be: 0");
-        console.log("⚠️  Router refresh triggered - dashboard should auto-update");
-        console.log("Timestamp:", new Date().toISOString());
-        console.log("═══════════════════════════════════════════════════════════");
       } else {
         throw new Error(result.error || "Failed to clear menu");
       }
     } catch (_error) {
-      console.error("[MENU BUILDER] Clear menu error:", {
-        error: _error instanceof Error ? _error.message : String(_error),
-        stack: _error instanceof Error ? _error.stack : undefined,
-        timestamp: new Date().toISOString(),
-      });
       toast({
         title: "Error",
         description: _error instanceof Error ? _error.message : "Failed to clear menu",
@@ -500,7 +396,6 @@ export default function MenuManagementClient({
       });
     } finally {
       setIsClearing(false);
-      console.log("[MENU BUILDER] Clear menu process completed");
     }
   };
 
@@ -545,7 +440,6 @@ export default function MenuManagementClient({
                       detail: { venueId, action: "uploaded" },
                     })
                   );
-                  console.log("✅ Dispatched menuChanged event to refresh dashboard");
                 }
 
                 // Force router refresh to update server-rendered dashboard stats

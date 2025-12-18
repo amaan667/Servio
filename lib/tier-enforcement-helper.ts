@@ -48,7 +48,9 @@ export async function canCreateResource(
     return { allowed: false, reason: "Invalid resource type" };
   }
 
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits: TierLimits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
   const limit = limits[limitType];
 

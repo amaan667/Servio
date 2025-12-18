@@ -226,7 +226,15 @@ export function useNoShowReservation() {
 export function useRemoveTable() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ tableId, venueId: _venueId, force = false }: { tableId: string; venueId: string; force?: boolean }) => {
+    mutationFn: async ({
+      tableId,
+      venueId: _venueId,
+      force = false,
+    }: {
+      tableId: string;
+      venueId: string;
+      force?: boolean;
+    }) => {
       // Build URL with force parameter if needed
       const url = new URL(`/api/tables/${tableId}`, window.location.origin);
       if (force) {
@@ -242,7 +250,8 @@ export function useRemoveTable() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData?.error?.message || errorData?.error || "Failed to delete table";
+        const errorMessage =
+          errorData?.error?.message || errorData?.error || "Failed to delete table";
         logger.error("[TABLE HOOK] Delete table error:", {
           errorData,
           status: response.status,

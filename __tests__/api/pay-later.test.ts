@@ -35,10 +35,14 @@ vi.mock("@/lib/auth/unified-auth", () => {
             };
           }
         ) => Promise<import("next/server").NextResponse>,
-        options?: { extractVenueId?: (req: import("next/server").NextRequest) => Promise<string | null> }
+        options?: {
+          extractVenueId?: (req: import("next/server").NextRequest) => Promise<string | null>;
+        }
       ) =>
       async (req: import("next/server").NextRequest) => {
-        const extracted = options?.extractVenueId ? await options.extractVenueId(req.clone()) : null;
+        const extracted = options?.extractVenueId
+          ? await options.extractVenueId(req.clone())
+          : null;
         const venueId = extracted || "venue-test";
         return handler(req, {
           venueId,
@@ -123,8 +127,10 @@ vi.mock("@/lib/supabase", () => {
                           order_status: (updateData.order_status as string) || order.order_status,
                           completion_status:
                             (updateData.completion_status as string) || order.completion_status,
-                          kitchen_status: (updateData.kitchen_status as string) || order.kitchen_status,
-                          service_status: (updateData.service_status as string) || order.service_status,
+                          kitchen_status:
+                            (updateData.kitchen_status as string) || order.kitchen_status,
+                          service_status:
+                            (updateData.service_status as string) || order.service_status,
                         };
                       }
                       return { data: mockOrders[value] || null, error: null };
@@ -140,7 +146,9 @@ vi.mock("@/lib/supabase", () => {
           return {
             update: vi.fn(() => ({
               eq: vi.fn(() => ({
-                eq: vi.fn(() => ({ maybeSingle: vi.fn(async () => ({ data: null, error: null })) })),
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+                })),
               })),
             })),
           };
@@ -149,8 +157,8 @@ vi.mock("@/lib/supabase", () => {
           select: vi.fn(() => ({
             eq: vi.fn(() => ({
               single: vi.fn(async () => ({ data: null, error: null })),
-    })),
-  })),
+            })),
+          })),
         };
       }),
       rpc: vi.fn((fnName: string, args: Record<string, unknown>) => {
@@ -263,9 +271,13 @@ describe("Pay Later API & lifecycle", () => {
       expect(mockOrders[orderId].order_status).toBe("SERVED");
 
       // 2) Try to complete while UNPAID → should be rejected by orders_complete RPC
-      const completeReqUnpaid = createMockRequest("POST", "http://localhost:3000/api/orders/complete", {
-        body: { orderId },
-      });
+      const completeReqUnpaid = createMockRequest(
+        "POST",
+        "http://localhost:3000/api/orders/complete",
+        {
+          body: { orderId },
+        }
+      );
       const completeResUnpaid = await completePOST(completeReqUnpaid as unknown as Request);
       expect(completeResUnpaid.status).toBe(400);
       // Status should remain SERVED, not COMPLETED
@@ -284,9 +296,13 @@ describe("Pay Later API & lifecycle", () => {
       expect(mockOrders[orderId].payment_status).toBe("PAID");
 
       // 4) Now completion should succeed and set order_status = COMPLETED
-      const completeReqPaid = createMockRequest("POST", "http://localhost:3000/api/orders/complete", {
-        body: { orderId },
-      });
+      const completeReqPaid = createMockRequest(
+        "POST",
+        "http://localhost:3000/api/orders/complete",
+        {
+          body: { orderId },
+        }
+      );
       const completeResPaid = await completePOST(completeReqPaid as unknown as Request);
       expect(completeResPaid.status).toBe(200);
       expect(mockOrders[orderId].order_status).toBe("COMPLETED");

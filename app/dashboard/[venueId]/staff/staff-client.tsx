@@ -128,15 +128,9 @@ export default function StaffClient({
               venueId={venueId}
               staff={staffManagement.staff || []}
               onStaffAdded={async () => {
-                console.log(
-                  "[STAFF CLIENT] onStaffAdded callback triggered - reloading staff list"
-                );
                 // Use the reloadStaff function from the hook which uses the API route
                 if (staffManagement.reloadStaff) {
                   await staffManagement.reloadStaff();
-                  console.log("[STAFF CLIENT] Staff list reloaded successfully");
-                } else {
-                  console.error("[STAFF CLIENT] ERROR - reloadStaff function not available");
                 }
               }}
               onStaffToggle={staffManagement.toggleStaffActive}

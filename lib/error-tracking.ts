@@ -81,7 +81,7 @@ class ErrorTracker {
 
     // Log to console in development
     if (this.environment === "development") {
-      // console.error('Error captured:', error, errorContext);
+      //
     }
 
     // Send to Sentry
@@ -110,7 +110,7 @@ class ErrorTracker {
 
     // Log to console in development
     if (this.environment === "development") {
-      // console.log(`[${level.toUpperCase()}] ${message}`, errorContext);
+      //
     }
 
     // Send to Sentry

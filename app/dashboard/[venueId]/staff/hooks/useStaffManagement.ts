@@ -43,18 +43,7 @@ export function useStaffManagement(
   initialStaff?: StaffRow[],
   _initialCounts?: StaffCounts
 ) {
-  // Immediate logging when hook is called
-  if (typeof window !== "undefined") {
-    console.log("=".repeat(80));
-    console.log("[STAFF HOOK] useStaffManagement hook called");
-    console.log("[STAFF HOOK] venueId parameter:", venueId);
-    console.log(
-      "[STAFF HOOK] initialStaff parameter:",
-      initialStaff ? `${initialStaff.length} members` : "none"
-    );
-    console.log("[STAFF HOOK] Hook call timestamp:", new Date().toISOString());
-    console.log("=".repeat(80));
-  }
+  // Hook initialized
 
   // Use initialStaff as initial state, but always fetch from database to ensure accuracy
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
@@ -68,20 +57,10 @@ export function useStaffManagement(
 
   // Load staff data using API route to ensure proper authentication and RLS
   const loadStaff = useCallback(async () => {
-    console.log("=".repeat(80));
-    console.log("[STAFF PAGE LOAD] Starting staff load process");
-    console.log("[STAFF PAGE LOAD] Raw venueId from props:", venueId);
-    console.log(
-      "[STAFF PAGE LOAD] initialStaff provided:",
-      initialStaff ? `${initialStaff.length} members` : "none"
-    );
-
     setLoading(true);
     try {
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      console.log("[STAFF PAGE LOAD] Normalized venueId:", normalizedVenueId);
-      console.log("[STAFF PAGE LOAD] Calling API route: /api/staff/list");
 
       const queryStart = Date.now();
       const url = new URL("/api/staff/list", window.location.origin);
@@ -94,60 +73,31 @@ export function useStaffManagement(
       });
       const queryTime = Date.now() - queryStart;
 
-      console.log("[STAFF PAGE LOAD] API request completed in", queryTime, "ms");
-      console.log("[STAFF PAGE LOAD] Response status:", res.status, res.statusText);
-
       const data = await res.json();
-      console.log("[STAFF PAGE LOAD] Response data:", JSON.stringify(data, null, 2));
 
       if (!res.ok) {
         const errorMessage =
           data.error?.message || data.error || data.message || "Failed to load staff";
-        console.error("[STAFF PAGE LOAD] ERROR - API request failed:");
-        console.error("[STAFF PAGE LOAD] Status:", res.status);
-        console.error("[STAFF PAGE LOAD] Error message:", errorMessage);
+
         setError(errorMessage);
         setStaff([]);
       } else if (data.data?.staff) {
         const staffData = data.data.staff;
-        console.log("[STAFF PAGE LOAD] SUCCESS - Loaded", staffData.length, "staff members");
-        console.log("[STAFF PAGE LOAD] Staff data:", JSON.stringify(staffData, null, 2));
+
         setStaff(staffData);
       } else {
-        console.log("[STAFF PAGE LOAD] WARNING - No staff data in response");
-        console.log(
-          "[STAFF PAGE LOAD] This might mean no staff exists for venue:",
-          normalizedVenueId
-        );
         setStaff([]);
       }
-      console.log("[STAFF PAGE LOAD] Load process completed");
-      console.log("=".repeat(80));
     } catch (e) {
-      console.error("[STAFF PAGE LOAD] EXCEPTION - Unexpected error:");
-      console.error(
-        "[STAFF PAGE LOAD] Exception type:",
-        e instanceof Error ? e.constructor.name : typeof e
-      );
-      console.error(
-        "[STAFF PAGE LOAD] Exception message:",
-        e instanceof Error ? e.message : String(e)
-      );
-      console.error(
-        "[STAFF PAGE LOAD] Exception stack:",
-        e instanceof Error ? e.stack : "no stack"
-      );
       setError(e instanceof Error ? e.message : "Failed to load staff");
       setStaff([]);
     } finally {
       setLoading(false);
-      console.log("[STAFF PAGE LOAD] Loading state set to false");
     }
   }, [venueId, initialStaff]);
 
   // Load staff on component mount
   useEffect(() => {
-    console.log("[STAFF HOOK] useEffect for loadStaff triggered");
     // Always load staff on mount, regardless of initialStaff
     loadStaff();
   }, [loadStaff]);

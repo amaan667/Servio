@@ -64,8 +64,13 @@ export const POST = withUnifiedAuth(
       const orderId = (params as { orderId?: string } | undefined)?.orderId;
       if (!orderId) return null;
       const admin = createAdminClient();
-      const { data: order } = await admin.from("orders").select("venue_id").eq("id", orderId).single();
+      const { data: order } = await admin
+        .from("orders")
+        .select("venue_id")
+        .eq("id", orderId)
+        .single();
       return (order?.venue_id as string | undefined) ?? null;
     },
   }
 );
+

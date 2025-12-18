@@ -113,21 +113,8 @@ export default function QuestionsClient({
             errorData.details ||
             errorMessage;
           errorDetails = errorData;
-          console.error("[QuestionsClient] API error response:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorData,
-            url: response.url,
-            venueId: normalizedVenueId,
-          });
         } catch {
           // If response isn't JSON, use status text
-          console.error("[QuestionsClient] API error (non-JSON):", {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url,
-            venueId: normalizedVenueId,
-          });
         }
         throw new Error(errorMessage);
       }
@@ -144,7 +131,6 @@ export default function QuestionsClient({
         .filter((q: FeedbackQuestion) => {
           // Only include questions with valid prompts
           if (!q.prompt || q.prompt.trim().length === 0) {
-            console.warn("[QuestionsClient] Question missing prompt, filtering out:", q.id);
             return false;
           }
           return true;
@@ -174,7 +160,6 @@ export default function QuestionsClient({
       setQuestions(sortedQuestions);
       setTotalCount(data.data.totalCount || sortedQuestions.length);
     } catch (error) {
-      console.error("[QuestionsClient] Error fetching questions:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Couldn't load questions",
@@ -269,7 +254,7 @@ export default function QuestionsClient({
         responseData = await response.json();
       } catch (parseError) {
         // If JSON parsing fails, it's likely a server error
-        console.error("[QuestionsClient] Failed to parse response:", parseError);
+
         toast({
           title: "Error",
           description: `Server error (${response.status}). Please try again.`,
@@ -328,12 +313,6 @@ export default function QuestionsClient({
         }
 
         // Use console.error for client-side debugging (logger is server-side)
-        console.error("[QuestionsClient] API error", {
-          status: response.status,
-          statusText: response.statusText,
-          data: responseData,
-          hasQuestion: !!responseData?.data?.question,
-        });
 
         toast({
           title: "Error",
@@ -347,8 +326,6 @@ export default function QuestionsClient({
         error instanceof Error
           ? `Network error: ${error.message}`
           : "Couldn't save question. Please check your connection and try again.";
-
-      console.error("[QuestionsClient] Error creating question:", error);
 
       toast({
         title: "Error",
@@ -460,11 +437,11 @@ export default function QuestionsClient({
     try {
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      
+
       // Add venueId to query string to help withUnifiedAuth extract it
       const url = new URL("/api/feedback/questions", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
-      
+
       const response = await fetch(url.toString(), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -476,7 +453,6 @@ export default function QuestionsClient({
       try {
         responseData = await response.json();
       } catch (parseError) {
-        console.error("[QuestionsClient] Failed to parse delete response:", parseError);
         toast({
           title: "Error",
           description: `Server error (${response.status}). Please try again.`,
@@ -509,15 +485,7 @@ export default function QuestionsClient({
           responseData?.message ||
           (typeof responseData?.error === "string" ? responseData.error : null) ||
           `Failed to delete question (${response.status})`;
-        
-        console.error("[QuestionsClient] Delete error:", {
-          status: response.status,
-          statusText: response.statusText,
-          errorData: responseData,
-          questionId: id,
-          venueId: normalizedVenueId,
-        });
-        
+
         toast({
           title: "Error",
           description: errorMessage,
@@ -525,7 +493,6 @@ export default function QuestionsClient({
         });
       }
     } catch (error) {
-      console.error("[QuestionsClient] Unexpected error deleting question:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Couldn't delete question",
@@ -671,9 +638,7 @@ export default function QuestionsClient({
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground">
-                            {question.prompt}
-                          </p>
+                          <p className="font-medium text-foreground">{question.prompt}</p>
                           <div className="flex items-center gap-2 mt-1">
                             {getTypeBadge(question?.type)}
                             {getStatusBadge(question?.is_active ?? true)}

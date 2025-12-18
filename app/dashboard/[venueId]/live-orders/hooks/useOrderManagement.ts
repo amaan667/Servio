@@ -29,111 +29,111 @@ export function useOrderManagement(venueId: string) {
   );
 
   const loadOrders = useCallback(async () => {
-      const window = todayWindowForTZ("Europe/London");
-      if (window.startUtcISO && window.endUtcISO) {
-        setTodayWindow({
-          startUtcISO: window.startUtcISO,
-          endUtcISO: window.endUtcISO,
-        });
-      }
+    const window = todayWindowForTZ("Europe/London");
+    if (window.startUtcISO && window.endUtcISO) {
+      setTodayWindow({
+        startUtcISO: window.startUtcISO,
+        endUtcISO: window.endUtcISO,
+      });
+    }
 
-      const liveOrdersCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
+    const liveOrdersCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
 
-      const { data: liveData, error: liveError } = await createClient()
-        .from("orders")
-        .select("*")
-        .eq("venue_id", venueId)
-        .in("order_status", LIVE_WINDOW_STATUSES)
-        .gte("created_at", window.startUtcISO)
-        .lt("created_at", window.endUtcISO)
-        .gte("created_at", liveOrdersCutoff)
-        // Show both paid and unpaid orders so freshly placed orders always appear.
-        // This avoids the "count shows 1 but list is empty" mismatch.
-        .in("payment_status", ["PAID", "UNPAID", "TILL"])
-        .order("created_at", { ascending: false }); // Sort by creation time, then we'll re-sort to put COMPLETED at bottom
+    const { data: liveData, error: liveError } = await createClient()
+      .from("orders")
+      .select("*")
+      .eq("venue_id", venueId)
+      .in("order_status", LIVE_WINDOW_STATUSES)
+      .gte("created_at", window.startUtcISO)
+      .lt("created_at", window.endUtcISO)
+      .gte("created_at", liveOrdersCutoff)
+      // Show both paid and unpaid orders so freshly placed orders always appear.
+      // This avoids the "count shows 1 but list is empty" mismatch.
+      .in("payment_status", ["PAID", "UNPAID", "TILL"])
+      .order("created_at", { ascending: false }); // Sort by creation time, then we'll re-sort to put COMPLETED at bottom
 
-      const { data: allData, error: allError } = await createClient()
-        .from("orders")
-        .select("*")
-        .eq("venue_id", venueId)
-        .gte("created_at", window.startUtcISO)
-        .lt("created_at", liveOrdersCutoff)
-        .in("payment_status", ["PAID", "UNPAID", "TILL"])
-        .order("created_at", { ascending: false });
+    const { data: allData, error: allError } = await createClient()
+      .from("orders")
+      .select("*")
+      .eq("venue_id", venueId)
+      .gte("created_at", window.startUtcISO)
+      .lt("created_at", liveOrdersCutoff)
+      .in("payment_status", ["PAID", "UNPAID", "TILL"])
+      .order("created_at", { ascending: false });
 
-      const { data: historyData, error: historyError } = await createClient()
-        .from("orders")
-        .select("*")
-        .eq("venue_id", venueId)
-        .lt("created_at", window.startUtcISO)
-        .in("payment_status", ["PAID", "UNPAID", "TILL"])
-        .order("created_at", { ascending: false })
-        .limit(100);
+    const { data: historyData, error: historyError } = await createClient()
+      .from("orders")
+      .select("*")
+      .eq("venue_id", venueId)
+      .lt("created_at", window.startUtcISO)
+      .in("payment_status", ["PAID", "UNPAID", "TILL"])
+      .order("created_at", { ascending: false })
+      .limit(100);
 
-      if (!liveError && liveData) {
-        const liveOrders = liveData as Order[];
-        // Sort orders: COMPLETED orders go to bottom, active orders at top (newest first)
-        const sortedLiveOrders = [...liveOrders].sort((a, b) => {
-          const aIsCompleted = a.order_status === "COMPLETED";
-          const bIsCompleted = b.order_status === "COMPLETED";
-          
-          // If one is completed and the other isn't, completed goes to bottom
-          if (aIsCompleted && !bIsCompleted) return 1;
-          if (!aIsCompleted && bIsCompleted) return -1;
-          
-          // Both same type, sort by creation time (newest first)
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-        
-        setOrders(sortedLiveOrders);
-        // ANTI-FLICKER: Cache live orders
-        PersistentCache.set(`live_orders_${venueId}`, sortedLiveOrders, 2 * 60 * 1000); // 2 min TTL
-      }
+    if (!liveError && liveData) {
+      const liveOrders = liveData as Order[];
+      // Sort orders: COMPLETED orders go to bottom, active orders at top (newest first)
+      const sortedLiveOrders = [...liveOrders].sort((a, b) => {
+        const aIsCompleted = a.order_status === "COMPLETED";
+        const bIsCompleted = b.order_status === "COMPLETED";
 
-      if (!allError && allData) {
-        const liveOrderIds = new Set(
-          (liveData || []).map((order: Record<string, unknown>) => order.id)
-        );
-        const allTodayFiltered = allData.filter(
-          (order: Record<string, unknown>) => !liveOrderIds.has(order.id)
-        ) as Order[];
-        setAllTodayOrders(allTodayFiltered);
-        // ANTI-FLICKER: Cache all today orders
-        PersistentCache.set(`all_today_orders_${venueId}`, allTodayFiltered, 5 * 60 * 1000); // 5 min TTL
-      }
+        // If one is completed and the other isn't, completed goes to bottom
+        if (aIsCompleted && !bIsCompleted) return 1;
+        if (!aIsCompleted && bIsCompleted) return -1;
 
-      if (!historyError && historyData) {
-        const processedHistory = (historyData as Order[]).map((order: Order) => ({
-          ...order,
-          payment_status: "PAID",
-          order_status: "COMPLETED" as const,
-        }));
+        // Both same type, sort by creation time (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
-        setHistoryOrders(processedHistory);
-        // ANTI-FLICKER: Cache history orders
-        PersistentCache.set(`history_orders_${venueId}`, processedHistory, 10 * 60 * 1000); // 10 min TTL
+      setOrders(sortedLiveOrders);
+      // ANTI-FLICKER: Cache live orders
+      PersistentCache.set(`live_orders_${venueId}`, sortedLiveOrders, 2 * 60 * 1000); // 2 min TTL
+    }
 
-        const grouped = processedHistory.reduce(
-          (acc: Record<string, Order[]>, order) => {
-            const date = new Date(order.created_at).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            });
-            if (!acc[date]) acc[date] = [];
-            acc[date].push(order);
-            return acc;
-          },
-          {
-            /* Empty */
-          }
-        );
-        setGroupedHistoryOrders(grouped);
-        // ANTI-FLICKER: Cache grouped history
-        PersistentCache.set(`grouped_history_${venueId}`, grouped, 10 * 60 * 1000); // 10 min TTL
-      }
+    if (!allError && allData) {
+      const liveOrderIds = new Set(
+        (liveData || []).map((order: Record<string, unknown>) => order.id)
+      );
+      const allTodayFiltered = allData.filter(
+        (order: Record<string, unknown>) => !liveOrderIds.has(order.id)
+      ) as Order[];
+      setAllTodayOrders(allTodayFiltered);
+      // ANTI-FLICKER: Cache all today orders
+      PersistentCache.set(`all_today_orders_${venueId}`, allTodayFiltered, 5 * 60 * 1000); // 5 min TTL
+    }
 
-      setLoading(false);
+    if (!historyError && historyData) {
+      const processedHistory = (historyData as Order[]).map((order: Order) => ({
+        ...order,
+        payment_status: "PAID",
+        order_status: "COMPLETED" as const,
+      }));
+
+      setHistoryOrders(processedHistory);
+      // ANTI-FLICKER: Cache history orders
+      PersistentCache.set(`history_orders_${venueId}`, processedHistory, 10 * 60 * 1000); // 10 min TTL
+
+      const grouped = processedHistory.reduce(
+        (acc: Record<string, Order[]>, order) => {
+          const date = new Date(order.created_at).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+          if (!acc[date]) acc[date] = [];
+          acc[date].push(order);
+          return acc;
+        },
+        {
+          /* Empty */
+        }
+      );
+      setGroupedHistoryOrders(grouped);
+      // ANTI-FLICKER: Cache grouped history
+      PersistentCache.set(`grouped_history_${venueId}`, grouped, 10 * 60 * 1000); // 10 min TTL
+    }
+
+    setLoading(false);
   }, [venueId]);
 
   useEffect(() => {

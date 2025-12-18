@@ -56,15 +56,15 @@ export const GET = withUnifiedAuth(
         limit: z.coerce.number().int().min(1).max(500).default(200),
         offset: z.coerce.number().int().min(0).default(0),
       });
-      
+
       let limit = 200;
       let offset = 0;
-      
+
       try {
         const pagination = validateQuery(paginationSchema, {
-        limit: req.nextUrl.searchParams.get("limit"),
-        offset: req.nextUrl.searchParams.get("offset"),
-      });
+          limit: req.nextUrl.searchParams.get("limit"),
+          offset: req.nextUrl.searchParams.get("offset"),
+        });
         limit = pagination.limit;
         offset = pagination.offset;
       } catch (error) {
@@ -153,24 +153,23 @@ export const GET = withUnifiedAuth(
       // Filter out questions without valid prompts and ensure prompt is always present
       const transformedQuestions = (questions || [])
         .map(
-        (q: {
-          id: string;
-          question_text?: string;
-          question?: string;
+          (q: {
+            id: string;
+            question_text?: string;
+            question?: string;
             text?: string;
             prompt?: string;
-          question_type: string;
-          options?: string[] | null;
-          is_active: boolean;
-          display_order?: number;
-          created_at: string;
-          updated_at: string;
-          venue_id: string;
+            question_type: string;
+            options?: string[] | null;
+            is_active: boolean;
+            display_order?: number;
+            created_at: string;
+            updated_at: string;
+            venue_id: string;
           }) => {
             // Try all possible column names for the question text
-            const prompt =
-              q.question_text || q.question || q.text || q.prompt || "";
-            
+            const prompt = q.question_text || q.question || q.text || q.prompt || "";
+
             // Only include questions with valid prompts
             if (!prompt || prompt.trim().length === 0) {
               logger.warn("[FEEDBACK QUESTIONS GET] Question missing prompt, skipping", {
@@ -182,15 +181,15 @@ export const GET = withUnifiedAuth(
             }
 
             return {
-          id: q.id,
+              id: q.id,
               prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
-          type: q.question_type, // Map 'question_type' to 'type' for frontend
-          choices: q.options || [], // Map 'options' to 'choices' for frontend
-          is_active: q.is_active,
-          sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
-          created_at: q.created_at,
-          updated_at: q.updated_at,
-          venue_id: q.venue_id,
+              type: q.question_type, // Map 'question_type' to 'type' for frontend
+              choices: q.options || [], // Map 'options' to 'choices' for frontend
+              is_active: q.is_active,
+              sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
+              created_at: q.created_at,
+              updated_at: q.updated_at,
+              venue_id: q.venue_id,
             };
           }
         )
@@ -226,7 +225,7 @@ export const GET = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-      const { searchParams } = new URL(req.url);
+        const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
         if (!venueId) {
           logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
@@ -789,7 +788,7 @@ export const POST = withUnifiedAuth(
       logger.info(
         `[FEEDBACK QUESTIONS POST ${requestId}] Step 5: Transforming question for frontend`
       );
-      
+
       // Extract prompt from all possible column names
       const prompt =
         (question as { question?: string }).question ||
@@ -798,7 +797,7 @@ export const POST = withUnifiedAuth(
         (question as { prompt?: string }).prompt ||
         body.prompt || // Fallback to the original prompt from request body
         "";
-      
+
       if (!prompt || prompt.trim().length === 0) {
         const errorMsg = `${logPrefix} ERROR: Question created but prompt is missing`;
         logger.error(errorMsg, {
@@ -896,7 +895,7 @@ export const POST = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-      const { searchParams } = new URL(req.url);
+        const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
         if (!venueId) {
           logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
@@ -1059,7 +1058,7 @@ export const PATCH = withUnifiedAuth(
         (question as { prompt?: string }).prompt ||
         body.prompt || // Fallback to the original prompt from request body
         "";
-      
+
       if (!prompt || prompt.trim().length === 0) {
         logger.error("[FEEDBACK QUESTIONS PATCH] Question updated but prompt is missing", {
           questionId: question.id,
@@ -1101,7 +1100,7 @@ export const PATCH = withUnifiedAuth(
   {
     extractVenueId: async (req) => {
       try {
-      const { searchParams } = new URL(req.url);
+        const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
         if (!venueId) {
           logger.warn("[FEEDBACK QUESTIONS] venueId not found in query params", {
@@ -1228,9 +1227,9 @@ export const DELETE = withUnifiedAuth(
     extractVenueId: async (req) => {
       try {
         // For DELETE requests, check both query params and body
-      const { searchParams } = new URL(req.url);
+        const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId");
-        
+
         // If not in query params and it's a DELETE request, check body
         if (!venueId && req.method === "DELETE") {
           try {
@@ -1243,10 +1242,12 @@ export const DELETE = withUnifiedAuth(
             });
           } catch {
             // Body parsing failed, continue with query param only
-            logger.debug("[FEEDBACK QUESTIONS DELETE] Body parsing failed, using query params only");
+            logger.debug(
+              "[FEEDBACK QUESTIONS DELETE] Body parsing failed, using query params only"
+            );
           }
         }
-        
+
         if (!venueId) {
           logger.warn("[FEEDBACK QUESTIONS DELETE] venueId not found in query params or body", {
             url: req.url,

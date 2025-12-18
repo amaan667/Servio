@@ -18,9 +18,8 @@ vi.mock("@/lib/middleware/authorization", () => ({
 
 const getUserTierMock = vi.fn();
 vi.mock("@/lib/tier-restrictions", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/tier-restrictions")>(
-    "@/lib/tier-restrictions"
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/tier-restrictions")>("@/lib/tier-restrictions");
   return {
     ...actual,
     getUserTier: (...args: unknown[]) => getUserTierMock(...args),
@@ -60,8 +59,8 @@ describe("Inventory Export Csv API", () => {
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             order: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      })),
-  })),
+          })),
+        })),
       })),
     });
 
@@ -70,11 +69,11 @@ describe("Inventory Export Csv API", () => {
       `http://localhost:3000/api/inventory/export/csv?venue_id=${venueId}`,
       staffUserId
     );
-      const response = await getGET(request);
+    const response = await getGET(request);
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/csv");
     expect(getUserTierMock).toHaveBeenCalledWith(ownerUserId);
-    });
+  });
 
   it("denies when venue owner is not enterprise (even if requester is staff)", async () => {
     const staffUserId = "staff-2";

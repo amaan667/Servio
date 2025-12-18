@@ -24,13 +24,6 @@ export function useMenuItems(venueId: string) {
         const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
         const hasAnonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-        console.log("[MENU BUILDER] Environment check:", {
-          hasUrl,
-          hasAnonKey,
-          urlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) || "none",
-          anonKeyPrefix: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) || "none",
-        });
-
         if (!hasUrl || !hasAnonKey) {
           throw new Error(
             `Supabase environment variables missing. URL: ${hasUrl ? "✓" : "✗"}, AnonKey: ${hasAnonKey ? "✓" : "✗"}`
@@ -46,13 +39,7 @@ export function useMenuItems(venueId: string) {
       } catch (clientError) {
         const errorMessage =
           clientError instanceof Error ? clientError.message : String(clientError);
-        console.error("[MENU BUILDER] Failed to create Supabase client:", {
-          error: errorMessage,
-          venueId,
-          normalizedVenueId,
-          timestamp: new Date().toISOString(),
-          stack: clientError instanceof Error ? clientError.stack : undefined,
-        });
+
         toast({
           title: "Configuration Error",
           description: `Database connection failed: ${errorMessage}. Please refresh the page or contact support.`,
@@ -60,13 +47,6 @@ export function useMenuItems(venueId: string) {
         });
         return;
       }
-
-      console.log("[MENU BUILDER] Loading menu items:", {
-        originalVenueId: venueId,
-        normalizedVenueId,
-        hasSupabaseClient: !!supabase,
-        timestamp: new Date().toISOString(),
-      });
 
       // Query ALL menu items (not filtered by is_available) to match dashboard count
       // ALWAYS use actual array length - it's the source of truth
@@ -79,44 +59,10 @@ export function useMenuItems(venueId: string) {
       const actualItemCount = items?.length || 0;
 
       // Use console.warn for maximum visibility
-      console.warn("═══════════════════════════════════════════════════════════");
-      console.warn("📊 [MENU BUILDER] Menu Items Loaded");
-      console.warn("═══════════════════════════════════════════════════════════");
-      console.warn("Venue ID:", venueId);
-      console.warn("Normalized Venue ID:", normalizedVenueId);
-      console.warn("Items Array Length:", actualItemCount);
-      console.warn("Error:", error?.message || "None");
-      console.warn("Sample Item IDs:", items?.slice(0, 5).map((m) => m.id) || []);
-      console.warn("⚠️  THIS COUNT SHOULD MATCH DASHBOARD COUNT");
-      console.warn("Timestamp:", new Date().toISOString());
-      console.warn("═══════════════════════════════════════════════════════════");
 
       // Also log as plain console.log
-      console.log("MENU BUILDER COUNT:", actualItemCount, "items");
-
-      console.log("[MENU BUILDER] Query result:", {
-        itemsArrayLength: actualItemCount,
-        normalizedVenueId,
-      });
-
-      console.log("[MENU BUILDER] Query result:", {
-        itemCount: items?.length || 0,
-        error: error?.message || null,
-        errorCode: error?.code || null,
-        errorDetails: error?.details || null,
-        sampleItem: items?.[0] || null,
-      });
 
       if (error) {
-        console.error("[MENU BUILDER] Error loading menu items:", {
-          error: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-          normalizedVenueId,
-          fullError: error,
-          timestamp: new Date().toISOString(),
-        });
         logger.error("[MENU ITEMS] Error loading:", error);
         toast({
           title: "Error",
@@ -144,19 +90,6 @@ export function useMenuItems(venueId: string) {
         timestamp: new Date().toISOString(),
       };
 
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("🔧 [MENU BUILDER LOAD] Menu Items Count");
-      console.log("═══════════════════════════════════════════════════════════");
-      console.log("Venue ID:", venueId);
-      console.log("Normalized Venue ID:", normalizedVenueId);
-      console.log("Total Menu Items:", itemCount);
-      console.log("Items Array Length:", items?.length || 0);
-      console.log("First 3 Items:", menuBuilderLogData.first3Items);
-      console.log("⚠️  THIS IS THE COUNT THAT SHOULD MATCH DASHBOARD");
-      console.log("⚠️  Dashboard should show:", itemCount);
-      console.log("Timestamp:", new Date().toISOString());
-      console.log("═══════════════════════════════════════════════════════════");
-
       // Log to Railway
       logger.info("[MENU BUILDER LOAD] Menu Items Count", menuBuilderLogData);
 
@@ -176,13 +109,6 @@ export function useMenuItems(venueId: string) {
         }
       }
     } catch (_error) {
-      console.error("[MENU BUILDER] Exception loading menu items:", {
-        error: _error instanceof Error ? _error.message : String(_error),
-        stack: _error instanceof Error ? _error.stack : undefined,
-        venueId,
-        normalizedVenueId,
-        timestamp: new Date().toISOString(),
-      });
       toast({
         title: "Error",
         description: `Failed to load menu items: ${_error instanceof Error ? _error.message : "Unknown error"}`,
@@ -191,18 +117,11 @@ export function useMenuItems(venueId: string) {
       setMenuItems([]);
     } finally {
       setLoading(false);
-      console.log("[MENU BUILDER] loadMenuItems completed:", {
-        venueId,
-        loading: false,
-        itemCount: menuItems.length,
-        timestamp: new Date().toISOString(),
-      });
     }
   };
 
   // Load items immediately on mount
   useEffect(() => {
-    console.log("[MENU BUILDER] useEffect triggered, loading menu items for venueId:", venueId);
     if (venueId) {
       loadMenuItems();
     }

@@ -119,15 +119,15 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
           table_id: tableRecord.id as string, // Add table_id field for consistency with TableRuntimeState interface
           merged_with_table_id: (tableRecord.merged_with_table_id as string | null) || null, // Include merge relationship
           session_id: (effectiveSession?.id as string | null) || null,
-          status: isOrderCompleted ? "FREE" : ((effectiveSession?.status as string) || "FREE"),
-          order_id: isOrderCompleted ? null : ((effectiveSession?.order_id as string | null) || null),
+          status: isOrderCompleted ? "FREE" : (effectiveSession?.status as string) || "FREE",
+          order_id: isOrderCompleted ? null : (effectiveSession?.order_id as string | null) || null,
           opened_at: (effectiveSession?.opened_at as string | null) || null,
           closed_at: (effectiveSession?.closed_at as string | null) || null,
           total_amount: (effectiveSession?.total_amount as number | null) || null,
           customer_name: (effectiveSession?.customer_name as string | null) || null,
           order_status: isOrderCompleted
             ? null
-            : ((effectiveSession?.order_status as string | null) || null),
+            : (effectiveSession?.order_status as string | null) || null,
           completion_status: order?.completion_status || null, // Include completion_status for table state logic
           // If order is completed, automatically close the session (cleanup)
           ...(isOrderCompleted && effectiveSession
@@ -142,7 +142,8 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
           reservation_duration_minutes:
             (effectiveSession?.reservation_duration_minutes as number | null) || null,
           reservation_end_time: (effectiveSession?.reservation_end_time as string | null) || null,
-          reservation_created_at: (effectiveSession?.reservation_created_at as string | null) || null,
+          reservation_created_at:
+            (effectiveSession?.reservation_created_at as string | null) || null,
           most_recent_activity:
             (effectiveSession?.most_recent_activity as string) ||
             (tableRecord.table_created_at as string),

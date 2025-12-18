@@ -43,7 +43,6 @@ export function useFeedbackManagement(venueId: string) {
         setFeedbackQuestions(questions);
       } catch (_err) {
         // Error silently handled - questions will remain empty
-        console.error("[useFeedbackManagement] Error fetching questions:", _err);
       }
     };
 

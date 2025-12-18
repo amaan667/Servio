@@ -103,17 +103,10 @@ function getItemRevenue(item: UnknownRecord): number | null {
   const subtotal = toNumber(item.subtotal);
   if (subtotal !== null && subtotal > 0) return subtotal;
 
-  const quantity =
-    toNumber(item.quantity) ??
-    toNumber(item.qty) ??
-    toNumber(item.count) ??
-    1;
+  const quantity = toNumber(item.quantity) ?? toNumber(item.qty) ?? toNumber(item.count) ?? 1;
 
   const unitPrice =
-    toNumber(item.unit_price) ??
-    toNumber(item.unitPrice) ??
-    toNumber(item.price) ??
-    0;
+    toNumber(item.unit_price) ?? toNumber(item.unitPrice) ?? toNumber(item.price) ?? 0;
 
   if (quantity <= 0 || unitPrice <= 0) return null;
   return unitPrice * quantity;

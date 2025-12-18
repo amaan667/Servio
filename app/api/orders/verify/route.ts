@@ -81,7 +81,9 @@ export async function GET(req: Request) {
     // Update payment status to PAID (fallback when webhook is delayed/missed)
     const nowIso = new Date().toISOString();
     const existingPaymentMethod = String(order.payment_method || "").toUpperCase();
-    const safePaymentMethod = ["PAY_NOW", "PAY_LATER", "PAY_AT_TILL"].includes(existingPaymentMethod)
+    const safePaymentMethod = ["PAY_NOW", "PAY_LATER", "PAY_AT_TILL"].includes(
+      existingPaymentMethod
+    )
       ? existingPaymentMethod
       : "PAY_NOW";
     const { data: updatedOrder, error: updateError } = await supabaseAdmin

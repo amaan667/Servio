@@ -13,9 +13,8 @@ vi.mock("@/utils/getUserSafe", () => ({
 
 const checkLimitMock = vi.fn();
 vi.mock("@/lib/tier-restrictions", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/tier-restrictions")>(
-    "@/lib/tier-restrictions"
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/tier-restrictions")>("@/lib/tier-restrictions");
   return {
     ...actual,
     checkLimit: (...args: unknown[]) => checkLimitMock(...args),

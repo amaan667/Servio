@@ -103,7 +103,7 @@ export function OrderCard({
   // Helper function to check ticket status (used by real-time subscriptions and polling)
   const triggerTicketCheck = React.useCallback(async () => {
     if (!venueId || !order.id) return;
-    
+
     try {
       setCheckingTickets(true);
       const response = await fetch("/api/kds/tickets/check-bumped", {
@@ -190,7 +190,14 @@ export function OrderCard({
       // If order is SERVED or COMPLETED, we don't need to check tickets anymore
       setAllTicketsBumped(null);
     }
-  }, [venueId, order.id, order.order_status, order.payment?.status, order.payment_status, triggerTicketCheck]);
+  }, [
+    venueId,
+    order.id,
+    order.order_status,
+    order.payment?.status,
+    order.payment_status,
+    triggerTicketCheck,
+  ]);
 
   // Listen for payment updates to refresh order data
   React.useEffect(() => {
@@ -231,7 +238,9 @@ export function OrderCard({
         },
         (payload) => {
           // When order is updated (including payment_status), refresh the order data
-          const updatedOrder = payload.new as { payment_status?: string; order_status?: string } | undefined;
+          const updatedOrder = payload.new as
+            | { payment_status?: string; order_status?: string }
+            | undefined;
           logger.debug("[ORDER CARD] Order updated via real-time", {
             orderId: order.id,
             newPaymentStatus: updatedOrder?.payment_status,
@@ -257,7 +266,7 @@ export function OrderCard({
             ticketId: (payload.new as { id?: string })?.id,
             newStatus: (payload.new as { status?: string })?.status,
           });
-          
+
           // Trigger immediate ticket check
           triggerTicketCheck();
         }
@@ -276,7 +285,7 @@ export function OrderCard({
             orderId: order.id,
             ticketId: (payload.old as { id?: string })?.id,
           });
-          
+
           // Trigger immediate ticket check (if no tickets remain, all_bumped should be true)
           triggerTicketCheck();
         }
@@ -496,7 +505,7 @@ export function OrderCard({
 
       // After status update, refresh order data to get updated status and payment info
       await onActionComplete?.();
-      
+
       // If we just marked as SERVED, reset ticket check state so component can re-evaluate
       // This ensures the payment check happens correctly
       if (nextStatusRaw === "SERVED") {
@@ -579,9 +588,7 @@ export function OrderCard({
         <div className="mt-4 pt-4 border-t-2 border-slate-200">
           <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
             <Clock className="h-5 w-5 text-blue-600 animate-pulse" />
-            <span className="text-base font-semibold text-blue-700">
-              {statusMessage}
-            </span>
+            <span className="text-base font-semibold text-blue-700">{statusMessage}</span>
           </div>
         </div>
       );
@@ -741,7 +748,9 @@ export function OrderCard({
 
             {/* Entity Badge - Second Row */}
             <div className="mb-3">
-              <Badge className={`inline-flex items-center text-sm px-4 py-2 font-semibold ${badgeColor}`}>
+              <Badge
+                className={`inline-flex items-center text-sm px-4 py-2 font-semibold ${badgeColor}`}
+              >
                 {icon}
                 <span className="ml-2">{label}</span>
               </Badge>
@@ -786,51 +795,51 @@ export function OrderCard({
             </div>
             <div className="flex items-center gap-2">
               {/* Receipt Button */}
-            {showActions && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                      onClick={() => setShowReceipt(true)}
-                    >
-                      <Receipt className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View Receipt</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            {/* Remove Button - On Hover */}
-            {showActions && venueId && (
-              <div
-                className={`transition-opacity duration-200 ${showHoverRemove ? "opacity-100" : "opacity-0"}`}
-              >
+              {showActions && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={handleRemoveOrder}
-                        disabled={isProcessing}
+                        className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                        onClick={() => setShowReceipt(true)}
                       >
-                        <X className="h-4 w-4" />
+                        <Receipt className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Remove Order</p>
+                      <p>View Receipt</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </div>
-            )}
+              )}
+
+              {/* Remove Button - On Hover */}
+              {showActions && venueId && (
+                <div
+                  className={`transition-opacity duration-200 ${showHoverRemove ? "opacity-100" : "opacity-0"}`}
+                >
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={handleRemoveOrder}
+                          disabled={isProcessing}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Remove Order</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
             </div>
           </div>
         </div>

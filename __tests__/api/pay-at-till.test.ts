@@ -36,10 +36,14 @@ vi.mock("@/lib/auth/unified-auth", () => {
             };
           }
         ) => Promise<import("next/server").NextResponse>,
-        options?: { extractVenueId?: (req: import("next/server").NextRequest) => Promise<string | null> }
+        options?: {
+          extractVenueId?: (req: import("next/server").NextRequest) => Promise<string | null>;
+        }
       ) =>
       async (req: import("next/server").NextRequest) => {
-        const extracted = options?.extractVenueId ? await options.extractVenueId(req.clone()) : null;
+        const extracted = options?.extractVenueId
+          ? await options.extractVenueId(req.clone())
+          : null;
         const venueId = extracted || "venue-test";
         return handler(req, {
           venueId,
@@ -144,7 +148,9 @@ vi.mock("@/lib/supabase", () => {
           return {
             update: vi.fn(() => ({
               eq: vi.fn(() => ({
-                eq: vi.fn(() => ({ maybeSingle: vi.fn(async () => ({ data: null, error: null })) })),
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+                })),
               })),
             })),
           };
@@ -245,9 +251,13 @@ describe("Pay at Till lifecycle", () => {
     expect(mockOrders[orderId].order_status).toBe("SERVED");
 
     // Try to complete while UNPAID
-    const completeReqUnpaid = createMockRequest("POST", "http://localhost:3000/api/orders/complete", {
-      body: { orderId },
-    });
+    const completeReqUnpaid = createMockRequest(
+      "POST",
+      "http://localhost:3000/api/orders/complete",
+      {
+        body: { orderId },
+      }
+    );
     const completeResUnpaid = await completePOST(completeReqUnpaid as unknown as Request);
     expect(completeResUnpaid.status).toBe(400);
     expect(mockOrders[orderId].order_status).toBe("SERVED");
@@ -309,4 +319,3 @@ describe("Pay at Till lifecycle", () => {
     expect(mockOrders[orderId].payment_status).toBe("PAID");
   });
 });
-

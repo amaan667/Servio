@@ -35,7 +35,9 @@ export const POST = withUnifiedAuth(
       // IMPORTANT: Tier limits and feature gates are based on the venue owner's subscription.
       // `withUnifiedAuth` already computed `context.tier` from the billing owner, so all checks
       // below should be purely derived from `context.tier` (no extra DB reads).
-      const tierKey = String(context.tier || "starter").toLowerCase().trim();
+      const tierKey = String(context.tier || "starter")
+        .toLowerCase()
+        .trim();
       const tierLimits: TierLimits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
 
       // Check based on action type

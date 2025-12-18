@@ -112,12 +112,15 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
             userId: context.user.id,
           });
         } else {
-          logger.info("[KDS BULK UPDATE] Order kitchen_status updated to BUMPED - all items bumped", {
-            orderId,
-            previousStatus: currentOrder?.order_status,
-            venueId,
-            userId: context.user.id,
-          });
+          logger.info(
+            "[KDS BULK UPDATE] Order kitchen_status updated to BUMPED - all items bumped",
+            {
+              orderId,
+              previousStatus: currentOrder?.order_status,
+              venueId,
+              userId: context.user.id,
+            }
+          );
         }
       } else {
         logger.debug("[KDS BULK UPDATE] Not all tickets bumped yet - order status unchanged", {

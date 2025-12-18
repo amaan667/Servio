@@ -108,13 +108,16 @@ export async function POST(req: Request) {
 
     for (const orderId of targetOrderIds) {
       try {
-        const { data: completedRows, error: completeError } = await supabase.rpc("orders_complete", {
-          p_order_id: orderId,
-          p_venue_id: venueId,
-          p_forced: false,
-          p_forced_by: null,
-          p_forced_reason: null,
-        });
+        const { data: completedRows, error: completeError } = await supabase.rpc(
+          "orders_complete",
+          {
+            p_order_id: orderId,
+            p_venue_id: venueId,
+            p_forced: false,
+            p_forced_by: null,
+            p_forced_reason: null,
+          }
+        );
 
         if (completeError) {
           logger.warn("[BULK COMPLETE] Failed to complete order via RPC:", {
@@ -129,13 +132,13 @@ export async function POST(req: Request) {
             .single();
           if (fallbackOrder) {
             await supabase
-      .from("orders")
-      .update({
-        order_status: "COMPLETED",
+              .from("orders")
+              .update({
+                order_status: "COMPLETED",
                 completion_status: "COMPLETED",
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+                completed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
               .eq("id", orderId);
             completedOrders.push(fallbackOrder);
           }

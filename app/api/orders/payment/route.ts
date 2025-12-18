@@ -166,15 +166,17 @@ export async function POST(req: NextRequest) {
         currentOrderStatus: orderCheck.order_status,
         currentPaymentStatus: orderCheck.payment_status,
       });
-      
+
       // Provide more specific error message
       if (updateError.code === "PGRST116") {
         return apiErrors.notFound("Order not found or access denied");
       }
       if (updateError.code === "23505") {
-        return apiErrors.badRequest("Payment status update conflict - order may have been modified");
+        return apiErrors.badRequest(
+          "Payment status update conflict - order may have been modified"
+        );
       }
-      
+
       return apiErrors.internal(
         `Failed to update payment status: ${updateError.message || "Unknown error"}`,
         isDevelopment() ? updateError : undefined

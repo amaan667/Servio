@@ -36,24 +36,12 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         // Normalize venueId format
         const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-        console.log("[MENU UPLOAD CARD] Checking for existing items:", {
-          originalVenueId: venueId,
-          normalizedVenueId,
-        });
-
         // Use a simple query to check if any items exist - avoid limit(1) with count to prevent 406 errors
         // Just get the count without fetching data
         const { count, error } = await supabase
           .from("menu_items")
           .select("*", { count: "exact", head: true }) // head: true means we only get count, not data
           .eq("venue_id", normalizedVenueId);
-
-        console.log("[MENU UPLOAD CARD] Existing items check result:", {
-          totalCount: count || 0,
-          error: error?.message || null,
-          errorCode: error?.code || null,
-          hasExistingUpload: !!(count && count > 0 && !error),
-        });
 
         // Use count to determine if items exist (more reliable than data.length)
         if (count && count > 0 && !error) {
@@ -62,7 +50,6 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           setHasExistingUpload(false);
         }
       } catch (err) {
-        console.error("[MENU UPLOAD CARD] Error checking existing items:", err);
         // No existing items
         setHasExistingUpload(false);
       }
@@ -83,20 +70,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       // Get venue name - normalize venueId first
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-      console.log("[MENU UPLOAD CARD] Fetching venue:", {
-        originalVenueId: venueId,
-        normalizedVenueId,
-      });
-
       const { data: venue, error: venueError } = await supabase
         .from("venues")
         .select("venue_name")
         .eq("venue_id", normalizedVenueId)
         .maybeSingle();
 
-      if (venueError) {
-        console.error("[MENU UPLOAD CARD] Error fetching venue:", venueError);
-      }
+      // Venue error handled by error state
 
       // Upsert style settings
       const { error } = await supabase.from("menu_design_settings").upsert(
@@ -129,21 +109,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
   const processFile = async (file: File) => {
     // CRITICAL LOG: PDF upload started
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("📤 [PDF UPLOAD START]");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("File Name:", file?.name);
-    console.log("File Size:", file?.size, "bytes");
-    console.log("File Type:", file?.type);
-    console.log("Venue ID:", venueId);
-    console.log("Replace Mode:", isReplacing ? "REPLACE" : "APPEND");
-    console.log("Has Menu URL:", !!menuUrl);
-    console.log("Menu URL:", menuUrl || "None");
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("═══════════════════════════════════════════════════════════");
 
     if (!file) {
-      console.error("[PDF UPLOAD] No file provided");
       return;
     }
 
@@ -151,14 +118,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     const validTypes = [".txt", ".md", ".json", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".heic"];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
 
-    console.log("[PDF UPLOAD] File validation:", {
-      fileExtension,
-      isValidType: validTypes.includes(fileExtension),
-      fileSize: file.size,
-    });
-
     if (!validTypes.includes(fileExtension)) {
-      console.error("[PDF UPLOAD] Invalid file type:", fileExtension);
       toast({
         title: "Invalid file type",
         description: "Please upload a .txt, .md, .json, or .pdf file",
@@ -174,11 +134,6 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         ? 10 * 1024 * 1024
         : 1024 * 1024;
     if (file.size > maxSize) {
-      console.error("[PDF UPLOAD] File too large:", {
-        fileSize: file.size,
-        maxSize,
-        fileExtension,
-      });
       toast({
         title: "File too large",
         description: `Please upload a file smaller than ${fileExtension === ".pdf" ? "10MB" : "1MB"}`,
@@ -187,12 +142,10 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       return;
     }
 
-    console.log("[PDF UPLOAD] File validation passed, starting processing...");
     setIsProcessing(true);
 
     try {
       if (fileExtension === ".pdf") {
-        console.log("[PDF UPLOAD] Processing PDF file...");
         // Use catalog replace endpoint
         const formData = new FormData();
         formData.append("file", file);
@@ -207,22 +160,12 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         const hasUrl = menuUrl && menuUrl.trim();
         if (hasUrl) {
           formData.append("menu_url", menuUrl.trim());
-          console.log("[PDF UPLOAD] Hybrid mode enabled with URL:", menuUrl.trim());
+
           toast({
             title: "Hybrid extraction starting...",
             description: "Combining PDF structure with website images and data",
           });
         }
-
-        console.log("[PDF UPLOAD] Sending request to /api/catalog/replace:", {
-          venueId,
-          isReplacing,
-          hasUrl,
-          fileSize: file.size,
-          fileName: file.name,
-          url: url.toString(),
-          timestamp: new Date().toISOString(),
-        });
 
         const response = await fetch(url.toString(), {
           method: "POST",
@@ -230,39 +173,14 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           credentials: "include", // Ensure cookies are sent
         });
 
-        console.log("[PDF UPLOAD] API response received:", {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          headers: Object.fromEntries(response.headers.entries()),
-          timestamp: new Date().toISOString(),
-        });
-
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("[PDF UPLOAD] API error response:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorText,
-            timestamp: new Date().toISOString(),
-          });
+
           throw new Error(`Catalog replacement failed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
         // CRITICAL LOG: PDF upload API response
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("📥 [PDF UPLOAD API RESPONSE]");
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("Status:", response.status);
-        console.log("OK:", result.ok);
-        console.log("Mode:", result.mode || "unknown");
-        console.log("Items Imported:", result.items || 0);
-        console.log("Duration:", result.duration);
-        console.log("Error:", result.error || "None");
-        console.log("Full Result:", JSON.stringify(result, null, 2));
-        console.log("Timestamp:", new Date().toISOString());
-        console.log("═══════════════════════════════════════════════════════════");
 
         if (result.ok) {
           const mode = result.mode || "unknown";
@@ -273,16 +191,6 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           };
 
           // CRITICAL LOG: PDF upload success
-          console.log("═══════════════════════════════════════════════════════════");
-          console.log("✅ [PDF UPLOAD SUCCESS]");
-          console.log("═══════════════════════════════════════════════════════════");
-          console.log("Mode:", modeLabels[mode] || mode);
-          console.log("Items Imported:", result.items || 0);
-          console.log("Duration:", result.duration);
-          console.log("Venue ID:", venueId);
-          console.log("⚠️  Dashboard count should now update to:", result.items || 0);
-          console.log("Timestamp:", new Date().toISOString());
-          console.log("═══════════════════════════════════════════════════════════");
 
           toast({
             title: isReplacing ? "Menu replaced successfully" : "Menu items added successfully",
@@ -291,17 +199,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
           // Save extracted style to database if available
           if (result.result?.extracted_text) {
-            console.log("[PDF UPLOAD] Saving extracted style...");
             await saveExtractedStyle(result.result.extracted_text);
           }
-
-          console.log("[PDF UPLOAD] Calling onSuccess callback...");
 
           // Clear dashboard cache to force fresh count after upload
           if (typeof window !== "undefined" && venueId) {
             sessionStorage.removeItem(`dashboard_stats_${venueId}`);
             sessionStorage.removeItem(`dashboard_counts_${venueId}`);
-            console.log("[PDF UPLOAD] Cleared dashboard cache after successful upload");
 
             // Dispatch custom event to trigger dashboard refresh
             window.dispatchEvent(
@@ -309,16 +213,10 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
                 detail: { venueId, action: "uploaded", itemCount: result.items || 0 },
               })
             );
-            console.log("[PDF UPLOAD] Dispatched menuChanged event to refresh dashboard");
           }
 
           onSuccess?.();
         } else {
-          console.error("[PDF UPLOAD] Upload failed:", {
-            error: result.error,
-            result,
-            timestamp: new Date().toISOString(),
-          });
           throw new Error(`Catalog replacement failed: ${result.error}`);
         }
       } else {
@@ -385,13 +283,6 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
   const handleProcessWithUrl = async () => {
     // CRITICAL LOG: Hybrid merge with URL started
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("🔀 [HYBRID MERGE WITH URL START]");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("Venue ID:", venueId);
-    console.log("Menu URL:", menuUrl);
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("═══════════════════════════════════════════════════════════");
 
     if (!menuUrl || !menuUrl.trim()) {
       toast({
@@ -417,20 +308,12 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         .limit(1)
         .maybeSingle();
 
-      console.log("[HYBRID MERGE] PDF upload check:", {
-        normalizedVenueId,
-        hasUpload: !!uploadData,
-        hasPdfImages: !!uploadData?.pdf_images,
-        pdfImageCount: uploadData?.pdf_images?.length || 0,
-        error: uploadError?.message || null,
-      });
-
       if (!uploadData || !uploadData.pdf_images || uploadData.pdf_images.length === 0) {
         throw new Error("No existing PDF menu found. Please upload a PDF first.");
       }
 
       // Call hybrid merge API
-      console.log("[HYBRID MERGE] Calling API...");
+
       const response = await fetch("/api/menu/hybrid-merge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -440,38 +323,16 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         }),
       });
 
-      console.log("[HYBRID MERGE] API response:", {
-        status: response.status,
-        ok: response.ok,
-        timestamp: new Date().toISOString(),
-      });
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("[HYBRID MERGE] API error:", {
-          status: response.status,
-          error: errorData,
-        });
+
         throw new Error(errorData.error || `Processing failed: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log("[HYBRID MERGE] API result:", {
-        ok: result.ok,
-        items: result.items,
-        mode: result.mode,
-        fullResult: result,
-      });
 
       if (result.ok) {
         // CRITICAL LOG: Hybrid merge success
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("✅ [HYBRID MERGE SUCCESS]");
-        console.log("═══════════════════════════════════════════════════════════");
-        console.log("Items Created:", result.items || 0);
-        console.log("Mode:", result.mode || "unknown");
-        console.log("⚠️  Dashboard count should now update to:", result.items || 0);
-        console.log("═══════════════════════════════════════════════════════════");
 
         toast({
           title: "🎉 Menu Enhanced Successfully!",
@@ -495,13 +356,6 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         onSuccess?.();
       }
     } catch (_error) {
-      console.error("═══════════════════════════════════════════════════════════");
-      console.error("❌ [HYBRID MERGE FAILED]");
-      console.error("═══════════════════════════════════════════════════════════");
-      console.error("Error:", _error instanceof Error ? _error.message : String(_error));
-      console.error("Stack:", _error instanceof Error ? _error.stack : undefined);
-      console.error("═══════════════════════════════════════════════════════════");
-
       toast({
         title: "Hybrid Merge Failed",
         description: _error instanceof Error ? _error.message : "Unknown error",
@@ -715,3 +569,4 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     </Card>
   );
 }
+

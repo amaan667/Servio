@@ -86,7 +86,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error("[EnhancedFeedbackSystem] Questions API error:", errorData);
         } catch {
           // If response isn't JSON, use status text
         }
@@ -102,7 +101,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       const active = apiQuestions.filter((q) => q.is_active);
       setQuestions(active);
     } catch (error) {
-      console.error("[EnhancedFeedbackSystem] Error fetching questions:", error);
       // Set empty array on error to prevent UI issues
       setQuestions([]);
     }

@@ -327,7 +327,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData?.error?.message || errorData?.error || "Failed to mark order as paid";
+        const errorMessage =
+          errorData?.error?.message || errorData?.error || "Failed to mark order as paid";
         logger.error("[PAYMENTS] Failed to mark order as paid", {
           orderId,
           venueId,
@@ -421,7 +422,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 </Badge>
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
                   <Clock className="h-4 w-4" />
-                  <span>{formattedDate} at {formattedTime}</span>
+                  <span>
+                    {formattedDate} at {formattedTime}
+                  </span>
                 </div>
                 <div className="text-2xl font-bold text-green-600 ml-auto">
                   £{order.total_amount.toFixed(2)}
@@ -437,11 +440,17 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                   {isPayLater ? "Pay Later" : "Pay at Till"}
                 </Badge>
                 {isServed ? (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-semibold">
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 border-green-200 font-semibold"
+                  >
                     Served
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 font-semibold">
+                  <Badge
+                    variant="outline"
+                    className="bg-yellow-50 text-yellow-700 border-yellow-200 font-semibold"
+                  >
                     Not Served
                   </Badge>
                 )}
@@ -652,12 +661,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No Unpaid Orders
-                    </h3>
-                    <p className="text-gray-600">
-                      No unpaid Pay Later or Pay at Till orders found
-                    </p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Unpaid Orders</h3>
+                    <p className="text-gray-600">No unpaid Pay Later or Pay at Till orders found</p>
                   </CardContent>
                 </Card>
               ) : (

@@ -610,7 +610,8 @@ export function withUnifiedAuth(
           {
             error: "Bad Request",
             message: "venueId is required",
-            details: "The venueId could not be extracted from the request. Please ensure venueId is provided in the query parameters or request body.",
+            details:
+              "The venueId could not be extracted from the request. Please ensure venueId is provided in the query parameters or request body.",
           },
           { status: 400 }
         );
