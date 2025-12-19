@@ -58,10 +58,6 @@ export function useMenuItems(venueId: string) {
 
       const actualItemCount = items?.length || 0;
 
-      // Use console.warn for maximum visibility
-
-      // Also log as plain console.log
-
       if (error) {
         logger.error("[MENU ITEMS] Error loading:", error);
         toast({

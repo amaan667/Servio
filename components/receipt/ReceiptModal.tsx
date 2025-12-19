@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
-  Receipt,
   Mail,
   MessageSquare,
   Download,
@@ -37,10 +36,10 @@ interface ReceiptModalProps {
 
 export function ReceiptModal({
   order,
-  venueEmail,
-  venueAddress,
-  logoUrl,
-  primaryColor = "#8b5cf6",
+  venueEmail: _venueEmail,
+  venueAddress: _venueAddress,
+  logoUrl: _logoUrl,
+  primaryColor: _primaryColor = "#8b5cf6",
   isOpen,
   onClose,
   showVAT = true,
@@ -167,299 +166,60 @@ export function ReceiptModal({
   };
 
   return (
-    <>
-      {/* Print Styles */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-          @media print {
-            body * {
-              visibility: hidden;
-            }
-            .receipt-print-content,
-            .receipt-print-content * {
-              visibility: visible;
-            }
-            .receipt-print-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              padding: 20px;
-              background: white;
-            }
-            .no-print {
-              display: none !important;
-            }
-            @page {
-              margin: 15mm;
-              size: A4;
-            }
-          }
-        `,
-        }}
-      />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Receipt - Order #{getShortOrderNumber(order.id)}</DialogTitle>
+          <DialogDescription>
+            {order.customer_name} - Table {order.table_number}
+          </DialogDescription>
+        </DialogHeader>
 
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto print:max-w-none print:shadow-none print:border-none receipt-print-content">
-          <DialogHeader className="no-print">
-            <DialogTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5" />
-              Receipt #{getShortOrderNumber(order.id)}
-            </DialogTitle>
-            <DialogDescription>
-              {order.created_at ? new Date(order.created_at).toLocaleString() : "N/A"}
-            </DialogDescription>
-          </DialogHeader>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-              {error}
+        <div className="space-y-4">
+          <div className="border rounded-lg p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Order Date:</span>
+              <span>{order.created_at ? new Date(order.created_at).toLocaleString() : "N/A"}</span>
             </div>
-          )}
-
-          {/* Receipt Content */}
-          <div className="space-y-6 print:space-y-4">
-            {/* Venue Info */}
-            <div
-              className="text-center border-b pb-6 print:border-b-2 print:pb-8"
-              style={{ borderBottomColor: primaryColor }}
-            >
-              {logoUrl && (
-                <img
-                  src={logoUrl}
-                  alt=""
-                  className="h-32 mx-auto mb-4 print:h-40 print:mb-6 max-w-full object-contain"
-                />
-              )}
-              {venueAddress && (
-                <p className="text-sm text-gray-600 mt-2 print:text-base">{venueAddress}</p>
-              )}
-              {venueEmail && <p className="text-sm text-gray-600 print:text-base">{venueEmail}</p>}
+            <div className="flex justify-between text-sm">
+              <span>Table:</span>
+              <span>{order.table_number}</span>
             </div>
-
-            {/* Order Details */}
-            <div className="bg-gray-50 p-4 rounded-lg print:bg-transparent print:p-0 print:border print:border-gray-200 print:rounded print:p-3">
-              <div className="mb-3 pb-2 border-b border-gray-300 print:border-b-2">
-                <span className="text-lg font-bold print:text-xl" style={{ color: primaryColor }}>
-                  Order #{getShortOrderNumber(order.id)}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {order.table_number && (
-                  <div className="flex justify-between text-sm print:text-base">
-                    <span className="text-gray-600 font-medium">Table:</span>
-                    <span className="font-semibold">{order.table_number}</span>
-                  </div>
-                )}
-                {order.customer_name && (
-                  <div className="flex justify-between text-sm print:text-base">
-                    <span className="text-gray-600 font-medium">Customer:</span>
-                    <span className="font-semibold">{order.customer_name}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm print:text-base">
-                  <span className="text-gray-600 font-medium">Date:</span>
-                  <span className="font-semibold">
-                    {order.created_at
-                      ? new Date(order.created_at).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "long",
-                          year: "numeric",
-                        })
-                      : "N/A"}
-                  </span>
+            {showVAT && (
+              <>
+                <Separator />
+                <div className="flex justify-between text-sm">
+                  <span>Net Amount:</span>
+                  <span>£{netAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm print:text-base">
-                  <span className="text-gray-600 font-medium">Time:</span>
-                  <span className="font-semibold">
-                    {order.created_at
-                      ? new Date(order.created_at).toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "N/A"}
-                  </span>
+                <div className="flex justify-between text-sm">
+                  <span>VAT (20%):</span>
+                  <span>£{vatAmount.toFixed(2)}</span>
                 </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Order Items */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg print:text-xl print:border-b print:border-gray-300 print:pb-2">
-                Items
-              </h3>
-              {order.items && order.items.length > 0 ? (
-                <div className="space-y-3 print:space-y-2">
-                  {order.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-start pb-2 border-b border-gray-100 print:border-gray-200 last:border-b-0"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-base print:text-lg">
-                          {item.item_name || `Item ${index + 1}`} × {item.quantity}
-                        </div>
-                        {(item.special_instructions ||
-                          (item as { specialInstructions?: string }).specialInstructions) && (
-                          <div className="text-sm text-gray-600 italic mt-1 print:text-base">
-                            Note:{" "}
-                            {item.special_instructions ||
-                              (item as { specialInstructions?: string }).specialInstructions}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right ml-4">
-                        <div className="font-semibold text-base print:text-lg">
-                          £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                        </div>
-                        <div className="text-sm text-gray-600 print:text-base">
-                          £{(item.price || 0).toFixed(2)} each
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600 text-sm print:text-base">No items found</p>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Totals */}
-            <div className="space-y-2 pt-4 border-t-2 border-gray-300 print:border-t-2 print:border-gray-400">
-              {showVAT && (
-                <>
-                  <div className="flex justify-between text-sm print:text-base">
-                    <span className="text-gray-600 font-medium">Subtotal:</span>
-                    <span className="font-semibold">£{netAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm print:text-base">
-                    <span className="text-gray-600 font-medium">VAT (20%):</span>
-                    <span className="font-semibold">£{vatAmount.toFixed(2)}</span>
-                  </div>
-                </>
-              )}
-              <div className="flex justify-between text-xl font-bold pt-3 border-t border-gray-300 print:text-2xl print:pt-4 print:border-t-2 print:border-gray-400">
-                <span>Total:</span>
-                <span style={{ color: primaryColor }}>£{subtotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Payment Info */}
-            {order.payment_method && (
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200 print:bg-transparent print:border print:border-gray-300 print:p-3">
-                <div className="flex justify-between text-sm print:text-base mb-2">
-                  <span className="text-gray-600 font-medium">Payment Method:</span>
-                  <span className="font-semibold capitalize">
-                    {order.payment_method.replace(/_/g, " ").toUpperCase()}
-                  </span>
-                </div>
-                {order.payment_status && (
-                  <div className="flex justify-between text-sm print:text-base">
-                    <span className="text-gray-600 font-medium">Payment Status:</span>
-                    <span className="font-semibold text-green-700 capitalize">
-                      {order.payment_status}
-                    </span>
-                  </div>
-                )}
-              </div>
+              </>
             )}
-
-            {/* Footer */}
-            <div className="text-center text-xs text-gray-500 pt-4 border-t print:text-sm print:pt-6 print:border-t-2 print:border-gray-300">
-              <p className="font-medium">Thank you for your order!</p>
-              {isCustomerView && (
-                <p className="mt-2 print:mt-3">
-                  You can always re-open this receipt from the link in your email/SMS.
-                </p>
-              )}
-              <p className="mt-2 print:mt-3 text-gray-400">
-                Receipt #{getShortOrderNumber(order.id)}
-              </p>
+            <Separator />
+            <div className="flex justify-between font-bold">
+              <span>Total:</span>
+              <span>£{subtotal.toFixed(2)}</span>
             </div>
           </div>
 
-          {/* Actions - Hidden when printing */}
-          <div className="flex flex-col gap-3 pt-4 border-t no-print">
-            {isCustomerView ? (
-              <>
-                {/* Customer View: Email/SMS Input */}
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="receipt-email">Email Address</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        id="receipt-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={sendingEmail || emailSent}
-                      />
-                      <Button
-                        onClick={handleSendEmail}
-                        disabled={sendingEmail || emailSent || !email}
-                        size="sm"
-                        className="shrink-0"
-                      >
-                        {sendingEmail ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : emailSent ? (
-                          <CheckCircle2 className="h-4 w-4" />
-                        ) : (
-                          <>
-                            <Mail className="h-4 w-4 mr-1" />
-                            Email
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="receipt-phone">Phone Number</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        id="receipt-phone"
-                        type="tel"
-                        placeholder="+44 7XXX XXXXXX"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        disabled={sendingSMS || smsSent}
-                      />
-                      <Button
-                        onClick={handleSendSMS}
-                        disabled={sendingSMS || smsSent || !phone}
-                        size="sm"
-                        variant="outline"
-                        className="shrink-0"
-                      >
-                        {sendingSMS ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : smsSent ? (
-                          <CheckCircle2 className="h-4 w-4" />
-                        ) : (
-                          <>
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            SMS
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Merchant View: Quick Actions */}
-                <div className="grid grid-cols-2 gap-2">
+          {!isCustomerView && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="customer@example.com"
+                  />
                   <Button
                     onClick={handleSendEmail}
-                    disabled={sendingEmail || emailSent || !order.customer_email}
+                    disabled={sendingEmail || emailSent || !email}
                     variant="outline"
                     size="sm"
                   >
@@ -470,11 +230,24 @@ export function ReceiptModal({
                     ) : (
                       <Mail className="h-4 w-4 mr-1" />
                     )}
-                    Email
+                    Send
                   </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+44 7XXX XXXXXX"
+                  />
                   <Button
                     onClick={handleSendSMS}
-                    disabled={sendingSMS || smsSent || !order.customer_phone}
+                    disabled={sendingSMS || smsSent || !phone}
                     variant="outline"
                     size="sm"
                   >
@@ -485,26 +258,31 @@ export function ReceiptModal({
                     ) : (
                       <MessageSquare className="h-4 w-4 mr-1" />
                     )}
-                    SMS
-                  </Button>
-                  <Button onClick={handleDownloadPDF} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-1" />
-                    PDF
-                  </Button>
-                  <Button onClick={handlePrint} variant="outline" size="sm">
-                    <Printer className="h-4 w-4 mr-1" />
-                    Print
+                    Send
                   </Button>
                 </div>
-              </>
-            )}
+              </div>
 
-            <Button onClick={onClose} className="w-full" variant="outline">
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+              <div className="grid grid-cols-2 gap-2">
+                <Button onClick={handleDownloadPDF} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+                <Button onClick={handlePrint} variant="outline" size="sm">
+                  <Printer className="h-4 w-4 mr-1" />
+                  Print
+                </Button>
+              </div>
+            </>
+          )}
+
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+
+          <Button onClick={onClose} className="w-full" variant="outline">
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

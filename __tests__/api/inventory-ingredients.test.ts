@@ -18,7 +18,12 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
-  rateLimit: vi.fn(async () => ({ success: true, reset: Date.now() + 10000, remaining: 99, limit: 100 })),
+  rateLimit: vi.fn(async () => ({
+    success: true,
+    reset: Date.now() + 10000,
+    remaining: 99,
+    limit: 100,
+  })),
   RATE_LIMITS: { GENERAL: {} },
 }));
 
@@ -29,9 +34,8 @@ vi.mock("@/lib/middleware/authorization", () => ({
 
 const getUserTierMock = vi.fn();
 vi.mock("@/lib/tier-restrictions", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/tier-restrictions")>(
-    "@/lib/tier-restrictions"
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/tier-restrictions")>("@/lib/tier-restrictions");
   return {
     ...actual,
     getUserTier: (...args: unknown[]) => getUserTierMock(...args),

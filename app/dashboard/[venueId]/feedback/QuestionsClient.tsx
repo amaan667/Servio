@@ -312,8 +312,6 @@ export default function QuestionsClient({
             "Question created but response format is invalid. Please refresh the page.";
         }
 
-        // Use console.error for client-side debugging (logger is server-side)
-
         toast({
           title: "Error",
           description: errorMessage,

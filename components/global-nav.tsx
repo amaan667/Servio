@@ -389,12 +389,10 @@ export default function GlobalNav() {
                           setTimeout(() => {
                             const currentPath = window.location.pathname;
                             if (currentPath !== href && !currentPath.startsWith(href)) {
-                              // Log a warning using the logger (avoid console.log per code quality rules)
                               if (
                                 typeof window !== "undefined" &&
                                 (window as { Sentry?: unknown }).Sentry
                               ) {
-                                // rudimentary Sentry integration - replace with actual sentry import/integration in real codebase
                                 (
                                   window as {
                                     Sentry: {

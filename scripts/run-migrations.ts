@@ -42,7 +42,9 @@ async function ensureMigrationsTable(client: Client): Promise<void> {
 }
 
 async function getAppliedMigrations(client: Client): Promise<Set<string>> {
-  const res = await client.query<{ name: string }>("SELECT name FROM _migrations ORDER BY name ASC;");
+  const res = await client.query<{ name: string }>(
+    "SELECT name FROM _migrations ORDER BY name ASC;"
+  );
   return new Set(res.rows.map((r) => r.name));
 }
 

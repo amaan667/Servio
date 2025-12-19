@@ -569,4 +569,3 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     </Card>
   );
 }
-

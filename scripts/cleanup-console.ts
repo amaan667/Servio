@@ -104,4 +104,3 @@ for (const dir of dirs) {
 }
 
 console.log(`\n✓ Total console statements removed: ${total}`);
-
