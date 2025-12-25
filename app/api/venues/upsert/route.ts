@@ -38,6 +38,39 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       return apiErrors.forbidden("Forbidden");
     }
 
+    // Check tier limits for venue count (only when creating new venue)
+    if (!existingVenue) {
+      const { checkLimit } = await import("@/lib/tier-restrictions");
+
+      // Count current venues owned by user
+      const { count: currentVenueCount } = await admin
+        .from("venues")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_user_id", user.id);
+
+      const venueCount = currentVenueCount || 0;
+
+      // Check tier limit
+      const limitCheck = await checkLimit(user.id, "maxVenues", venueCount);
+      if (!limitCheck.allowed) {
+        logger.warn("[VENUES UPSERT] Venue limit reached", {
+          userId: user.id,
+          currentCount: venueCount,
+          limit: limitCheck.limit,
+          tier: limitCheck.currentTier,
+        });
+        return apiErrors.forbidden(
+          `Location limit reached. You have ${venueCount}/${limitCheck.limit} location${venueCount !== 1 ? "s" : ""}. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more locations.`,
+          {
+            limitReached: true,
+            currentCount: venueCount,
+            limit: limitCheck.limit,
+            tier: limitCheck.currentTier,
+          }
+        );
+      }
+    }
+
     const venueData = {
       venue_id: finalVenueId,
       venue_name: name,

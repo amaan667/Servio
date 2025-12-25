@@ -226,4 +226,14 @@ export const AICache = {
     set: (pdfItem: string, urlItem: string, result: unknown) =>
       cache.set(`ai:match:${pdfItem}:${urlItem}`, result, { ttl: cacheTTL.long }), // 30 min
   },
+  kdsStation: {
+    get: (itemName: string, venueId: string, stationTypes: string[]) => {
+      const key = `ai:kds:${venueId}:${itemName.toLowerCase()}:${stationTypes.sort().join(",")}`;
+      return cache.get(key);
+    },
+    set: (itemName: string, venueId: string, stationTypes: string[], result: unknown) => {
+      const key = `ai:kds:${venueId}:${itemName.toLowerCase()}:${stationTypes.sort().join(",")}`;
+      return cache.set(key, result, { ttl: cacheTTL.long }); // 30 min cache
+    },
+  },
 };

@@ -338,7 +338,54 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       return apiErrors.badRequest("label is required");
     }
 
-    // STEP 3: Business logic
+    // STEP 3: Check tier limits for table count
+    const { checkLimit } = await import("@/lib/tier-restrictions");
+    const { createAdminClient } = await import("@/lib/supabase");
+    const adminSupabase = createAdminClient();
+
+    // Get venue owner to check tier limits
+    const { data: venue } = await adminSupabase
+      .from("venues")
+      .select("owner_user_id")
+      .eq("venue_id", context.venueId)
+      .single();
+
+    if (!venue) {
+      return apiErrors.notFound("Venue not found");
+    }
+
+    // Count current tables (active only)
+    const { count: currentTableCount } = await adminSupabase
+      .from("tables")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", context.venueId)
+      .eq("is_active", true);
+
+    const tableCount = currentTableCount || 0;
+
+    // Check tier limit
+    // IMPORTANT: Tier limits are based on the venue owner's subscription
+    const limitCheck = await checkLimit(venue.owner_user_id, "maxTables", tableCount);
+    if (!limitCheck.allowed) {
+      logger.warn("[TABLES POST] Table limit reached", {
+        userId: context.user.id,
+        ownerUserId: venue.owner_user_id,
+        currentCount: tableCount,
+        limit: limitCheck.limit,
+        tier: limitCheck.currentTier,
+      });
+      return apiErrors.forbidden(
+        `Table limit reached. You have ${tableCount}/${limitCheck.limit} tables. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more tables.`,
+        {
+          limitReached: true,
+          currentCount: tableCount,
+          limit: limitCheck.limit,
+          tier: limitCheck.currentTier,
+        }
+      );
+    }
+
+    // STEP 4: Business logic
     // Use authenticated client that respects RLS (not admin client)
     // RLS policies ensure users can only create tables for venues they have access to
     const supabase = await createClient();

@@ -3,7 +3,6 @@
 import { EnhancedFeedbackSystem } from "@/components/enhanced-feedback-system";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
-import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 
 interface FeedbackClientPageProps {
   venueId: string;
@@ -18,23 +17,7 @@ export default function FeedbackClientPage({
   role,
   hasAccess,
 }: FeedbackClientPageProps) {
-  // Show tier restriction if no access
-  if (!hasAccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-          <RoleBasedNavigation venueId={venueId} userRole={role as UserRole} userName="User" />
-          <TierRestrictionBanner
-            currentTier={tier}
-            requiredTier="pro"
-            featureName="Customer Feedback System"
-            venueId={venueId}
-            reason="Customer Feedback requires Pro tier or higher"
-          />
-        </div>
-      </div>
-    );
-  }
+  // Customer feedback is available to all tiers - no restriction needed
 
   return (
     <div className="min-h-screen bg-background">

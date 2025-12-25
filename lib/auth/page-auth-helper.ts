@@ -22,6 +22,8 @@ export type FeatureKey =
   | "inventory"
   | "analytics"
   | "customerFeedback"
+  | "loyaltyTracking"
+  | "branding"
   | "customBranding"
   | "apiAccess"
   | "aiAssistant"
@@ -127,6 +129,10 @@ const getBasePageAuth = cache(
       if (typeof featureValue === "boolean") {
         return featureValue;
       }
+      // For KDS tier (basic/advanced/enterprise), return true if not false
+      if (feature === "kds") {
+        return featureValue !== false;
+      }
       // For analytics and supportLevel, they're always allowed (just different levels)
       return true;
     };
@@ -201,6 +207,10 @@ export async function getOptionalPageAuth(venueId?: string): Promise<PageAuthCon
       const featureValue = tierLimits.features[feature];
       if (typeof featureValue === "boolean") {
         return featureValue;
+      }
+      // For KDS tier (basic/advanced/enterprise), return true if not false
+      if (feature === "kds") {
+        return featureValue !== false;
       }
       return true;
     };

@@ -36,10 +36,55 @@ export const POST = withUnifiedAuth(
         return apiErrors.badRequest("name is required");
       }
 
-      // Normalize venueId - database stores with venue- prefix
+      // Check tier limits for staff count
+      const { checkLimit } = await import("@/lib/tier-restrictions");
+      const supabase = createAdminClient();
+
+      // Get venue owner to check tier limits
       const normalizedVenueId = context.venueId.startsWith("venue-")
         ? context.venueId
         : `venue-${context.venueId}`;
+
+      const { data: venue } = await supabase
+        .from("venues")
+        .select("owner_user_id")
+        .eq("venue_id", normalizedVenueId)
+        .single();
+
+      if (!venue) {
+        return apiErrors.notFound("Venue not found");
+      }
+
+      // Count current staff (active user_venue_roles)
+      const { count: currentStaffCount } = await supabase
+        .from("user_venue_roles")
+        .select("id", { count: "exact", head: true })
+        .eq("venue_id", normalizedVenueId);
+
+      const staffCount = currentStaffCount || 0;
+
+      // Check tier limit
+      // IMPORTANT: Tier limits are based on the venue owner's subscription
+      const limitCheck = await checkLimit(venue.owner_user_id, "maxStaff", staffCount);
+      if (!limitCheck.allowed) {
+        logger.warn("[STAFF ADD API] Staff limit reached", {
+          userId: context.user.id,
+          ownerUserId: venue.owner_user_id,
+          currentCount: staffCount,
+          limit: limitCheck.limit,
+          tier: limitCheck.currentTier,
+        });
+        return apiErrors.forbidden(
+          `Staff limit reached. You have ${staffCount}/${limitCheck.limit} staff members. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more staff.`,
+          {
+            limitReached: true,
+            currentCount: staffCount,
+            limit: limitCheck.limit,
+            tier: limitCheck.currentTier,
+          }
+        );
+      }
+
       logger.debug("[STAFF ADD API] Normalized venueId", { normalizedVenueId });
 
       const insertData = {
@@ -52,7 +97,7 @@ export const POST = withUnifiedAuth(
 
       // Use service role client to avoid RLS write failures.
       // Access is enforced by withUnifiedAuth (venue access + role requirements).
-      const supabase = createAdminClient();
+      // Note: supabase already created above for limit check
       const queryStart = Date.now();
       const { data, error } = await supabase.from("staff").insert([insertData]).select("*");
       const queryTime = Date.now() - queryStart;

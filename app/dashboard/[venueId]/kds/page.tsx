@@ -7,13 +7,18 @@ import { logger } from "@/lib/logger";
 export default async function KDSPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Server-side auth check - KDS requires Enterprise tier
+  // Server-side auth check - KDS is NOT included in Starter tier (available as add-on)
   // NO REDIRECTS - Dashboard always loads
-  const auth = await requirePageAuth(venueId, {
-    requireFeature: "kds",
-  }).catch(() => null);
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
-  const hasKDSAccess = auth?.hasFeatureAccess("kds") ?? false;
+  // Check KDS access - Starter tier does NOT have KDS (available as add-on)
+  // Pro has Advanced KDS, Enterprise has Enterprise KDS
+  const currentTier = auth?.tier ?? "starter";
+  const hasKDSAccess = currentTier !== "starter"; // Starter doesn't have KDS, Pro+ does
+  // Note: Basic KDS would be for Starter add-on, but since Starter doesn't have KDS by default,
+  // we only have "advanced" (Pro) and "enterprise" (Enterprise) tiers here
+  const kdsTier: "advanced" | "enterprise" | false =
+    currentTier === "enterprise" ? "enterprise" : currentTier === "pro" ? "advanced" : false;
 
   // Fetch initial KDS data on server to show accurate counts on first visit
   let initialTickets = null;
@@ -181,6 +186,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       initialTickets={initialTickets}
       initialStations={initialStations}
       tier={auth?.tier ?? "starter"}
+      kdsTier={kdsTier}
       role={auth?.role ?? "viewer"}
       hasAccess={hasKDSAccess}
     />

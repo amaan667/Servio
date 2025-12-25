@@ -9,12 +9,14 @@ import { checkAccessByTier } from "@/lib/access-control";
 
 /**
  * Check if user can export data (CSV, etc.)
- * Exports require Enterprise tier
+ * Exports require Pro+ tier (Pro has CSV exports, Enterprise has CSV + financial exports)
  */
 export async function canExportData(tier: string, userRole: UserRole): Promise<boolean> {
   // Also check role permission
   const access = checkAccessByTier(userRole, tier, "analytics", "analytics");
-  return access.allowed && String(tier).toLowerCase().trim() === "enterprise";
+  const tierKey = String(tier).toLowerCase().trim();
+  // Pro and Enterprise both have exports (Pro = CSV, Enterprise = CSV + financial)
+  return access.allowed && (tierKey === "pro" || tierKey === "enterprise");
 }
 
 /**

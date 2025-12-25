@@ -142,8 +142,68 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       return apiErrors.badRequest("venue_id is required");
     }
 
-    // STEP 4: Business logic - Create station
+    // STEP 4: Check KDS station limit based on tier
+    const { checkKDSStationLimit } = await import("@/lib/tier-restrictions");
     const supabase = createAdminClient();
+
+    // Get venue owner for tier check
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("owner_user_id")
+      .eq("venue_id", venueId)
+      .single();
+
+    if (!venue) {
+      return apiErrors.notFound("Venue not found");
+    }
+
+    // Count current stations for this venue
+    const { count: currentStationCount } = await supabase
+      .from("kds_stations")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", venueId)
+      .eq("is_active", true);
+
+    const stationLimitCheck = await checkKDSStationLimit(
+      venue.owner_user_id,
+      currentStationCount || 0
+    );
+
+    if (!stationLimitCheck.allowed) {
+      logger.warn("[KDS STATIONS POST] Station limit reached", {
+        userId: context.user.id,
+        ownerUserId: venue.owner_user_id,
+        currentCount: currentStationCount || 0,
+        limit: stationLimitCheck.limit,
+        tier: stationLimitCheck.currentTier,
+        kdsTier: stationLimitCheck.kdsTier,
+      });
+
+      if (stationLimitCheck.kdsTier === "basic") {
+        return apiErrors.forbidden(
+          `Station limit reached. Basic KDS supports only 1 station. Upgrade to Pro or Enterprise for unlimited stations.`,
+          {
+            limitReached: true,
+            currentCount: currentStationCount || 0,
+            limit: stationLimitCheck.limit,
+            tier: stationLimitCheck.currentTier,
+            kdsTier: stationLimitCheck.kdsTier,
+          }
+        );
+      }
+
+      return apiErrors.forbidden(
+        `Station limit reached. You have ${currentStationCount || 0}/${stationLimitCheck.limit} stations.`,
+        {
+          limitReached: true,
+          currentCount: currentStationCount || 0,
+          limit: stationLimitCheck.limit,
+          tier: stationLimitCheck.currentTier,
+        }
+      );
+    }
+
+    // STEP 5: Business logic - Create station
 
     const { data: station, error: insertError } = await supabase
       .from("kds_stations")

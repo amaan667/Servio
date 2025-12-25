@@ -50,9 +50,17 @@ interface KDSClientProps {
   venueName?: string;
   initialTickets?: unknown;
   initialStations?: unknown;
+  kdsTier?: "basic" | "advanced" | "enterprise" | false;
+  tier?: string;
 }
 
-export default function KDSClient({ venueId, initialTickets, initialStations }: KDSClientProps) {
+export default function KDSClient({
+  venueId,
+  initialTickets,
+  initialStations,
+  kdsTier = false,
+  tier = "starter",
+}: KDSClientProps) {
   // Cache KDS stations to prevent flicker
   const getCachedStations = () => {
     if (typeof window === "undefined") return [];
@@ -612,29 +620,62 @@ export default function KDSClient({ venueId, initialTickets, initialStations }: 
       </div>
 
       {/* Station Selector */}
-      <div className="flex gap-2 overflow-x-auto pb-2 px-2">
-        <Button
-          variant={selectedStation === null ? "default" : "outline"}
-          onClick={() => setSelectedStation(null)}
-          className="whitespace-nowrap"
-        >
-          All Stations
-        </Button>
-        {stations.map((station) => (
+      <div className="space-y-2 px-2">
+        <div className="flex gap-2 overflow-x-auto pb-2">
           <Button
-            key={station.id}
-            variant={selectedStation === station.id ? "default" : "outline"}
-            onClick={() => setSelectedStation(station.id)}
+            variant={selectedStation === null ? "default" : "outline"}
+            onClick={() => setSelectedStation(null)}
             className="whitespace-nowrap"
-            style={{
-              backgroundColor: selectedStation === station.id ? station.color_code : undefined,
-              borderColor: station.color_code,
-            }}
           >
-            <ChefHat className="h-4 w-4 mr-2" />
-            {station.station_name}
+            All Stations
           </Button>
-        ))}
+          {stations.map((station) => (
+            <Button
+              key={station.id}
+              variant={selectedStation === station.id ? "default" : "outline"}
+              onClick={() => setSelectedStation(station.id)}
+              className="whitespace-nowrap"
+              style={{
+                backgroundColor: selectedStation === station.id ? station.color_code : undefined,
+                borderColor: station.color_code,
+              }}
+            >
+              <ChefHat className="h-4 w-4 mr-2" />
+              {station.station_name}
+            </Button>
+          ))}
+        </div>
+        {/* Tier-specific station limit info */}
+        {kdsTier === "basic" && (
+          <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+            <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+              Basic KDS
+            </Badge>
+            <span>
+              {stations.length >= 1
+                ? "Station limit reached (1/1). Upgrade to Pro or Enterprise for unlimited stations."
+                : `Single station mode (${stations.length}/1)`}
+            </span>
+          </div>
+        )}
+        {kdsTier === "advanced" && (
+          <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+              Advanced KDS
+            </Badge>
+            <span>Multi-station enabled ({stations.length} active stations)</span>
+          </div>
+        )}
+        {kdsTier === "enterprise" && (
+          <div className="flex items-center gap-2 text-sm text-purple-600 bg-purple-50 border border-purple-200 rounded-md px-3 py-2">
+            <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
+              Enterprise KDS
+            </Badge>
+            <span>
+              Multi-venue, multi-station enabled ({stations.length} active stations in this venue)
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Tickets Grid - Kanban Style (2 columns: Preparing + Ready) */}

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export type AnalyticsTier = "basic" | "advanced" | "advanced+exports";
+export type KDSTier = "basic" | "advanced" | "enterprise";
+export type BrandingTier = "logo+color" | "full+subdomain" | "white-label";
 export type SupportLevel = "email" | "priority" | "24/7";
 
 export interface TierLimits {
@@ -12,11 +14,12 @@ export interface TierLimits {
   maxStaff: number;
   maxVenues: number;
   features: {
-    kds: boolean;
+    kds: KDSTier | false; // "basic" | "advanced" | "enterprise" | false
     inventory: boolean;
     analytics: AnalyticsTier; // "basic" | "advanced" | "advanced+exports"
     customerFeedback: boolean;
-    customBranding: boolean;
+    loyaltyTracking: boolean;
+    branding: BrandingTier; // "logo+color" | "full+subdomain" | "white-label"
     apiAccess: boolean;
     aiAssistant: boolean;
     multiVenue: boolean;
@@ -25,20 +28,21 @@ export interface TierLimits {
   };
 }
 
-// Tier limits based on homepage pricing table
+// Tier limits based on pricing page: Starter (£99), Pro (£249), Enterprise (£499+)
 export const TIER_LIMITS: Record<string, TierLimits> = {
   starter: {
-    maxTables: 20,
+    maxTables: 25, // Up to 25 tables
     maxMenuItems: 50,
-    maxStaff: 3,
-    maxVenues: 1,
+    maxStaff: 5, // Up to 5 staff accounts
+    maxVenues: 1, // 1 location
     features: {
-      kds: false,
-      inventory: false,
-      analytics: "basic", // Basic dashboard only
-      customerFeedback: false,
-      customBranding: false,
-      apiAccess: false,
+      kds: false, // KDS not included - available as add-on
+      inventory: false, // Not included
+      analytics: "basic", // Basic dashboard & daily reports
+      customerFeedback: true, // Included
+      loyaltyTracking: false, // Not included
+      branding: "logo+color", // Logo + colour theme
+      apiAccess: false, // Not included
       aiAssistant: false,
       multiVenue: false,
       customIntegrations: false,
@@ -46,39 +50,41 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     },
   },
   pro: {
-    maxTables: 50,
+    maxTables: 100, // Up to 100 tables
     maxMenuItems: 200,
-    maxStaff: 10,
-    maxVenues: 1,
+    maxStaff: 15, // Up to 15 staff accounts
+    maxVenues: 3, // Up to 3 locations
     features: {
-      kds: false, // KDS is Enterprise only
-      inventory: true, // Inventory management
-      analytics: "advanced", // Advanced analytics & AI insights
-      customerFeedback: true, // Customer feedback system
-      customBranding: false, // Custom branding is Enterprise only
-      apiAccess: false, // API access is Enterprise only
+      kds: "advanced", // Advanced KDS (multi-station)
+      inventory: true, // Inventory & stock management
+      analytics: "advanced+exports", // Advanced analytics + CSV exports
+      customerFeedback: true, // Included
+      loyaltyTracking: true, // Loyalty & repeat customer tracking
+      branding: "full+subdomain", // Full branding + custom subdomain
+      apiAccess: false, // Available as add-on (light API)
       aiAssistant: false, // AI Assistant is Enterprise only (Pro has AI insights in analytics, not full AI Assistant)
-      multiVenue: false, // Multi-venue is Enterprise only
+      multiVenue: true, // Up to 3 locations
       customIntegrations: false,
-      supportLevel: "priority", // Priority email support
+      supportLevel: "priority", // Priority email & live chat
     },
   },
   enterprise: {
-    maxTables: -1, // Unlimited
+    maxTables: -1, // Unlimited tables
     maxMenuItems: -1, // Unlimited
-    maxStaff: -1, // Unlimited
-    maxVenues: -1, // Unlimited
+    maxStaff: -1, // Unlimited staff accounts
+    maxVenues: -1, // Unlimited locations
     features: {
-      kds: true,
-      inventory: true,
-      analytics: "advanced+exports", // Advanced + exports
-      customerFeedback: true,
-      customBranding: true,
-      apiAccess: true,
+      kds: "enterprise", // Enterprise KDS (multi-venue)
+      inventory: true, // Advanced inventory + supplier ordering
+      analytics: "advanced+exports", // Enterprise analytics suite & financial exports
+      customerFeedback: true, // Included
+      loyaltyTracking: true, // Included
+      branding: "white-label", // Full white-label + custom domains
+      apiAccess: true, // API access, webhooks & POS/accounting integrations
       aiAssistant: true,
-      multiVenue: true,
+      multiVenue: true, // Unlimited locations
       customIntegrations: true,
-      supportLevel: "24/7", // 24/7 priority support
+      supportLevel: "24/7", // 24/7 phone support, SLA & account manager
     },
   },
 };
@@ -170,6 +176,27 @@ export async function checkFeatureAccess(
     return { allowed: true, currentTier: tier };
   }
 
+  // Special handling for KDS tier
+  if (feature === "kds") {
+    const currentKDS = limits.features.kds;
+    if (currentKDS === "enterprise") {
+      return { allowed: true, currentTier: tier };
+    }
+    if (currentKDS === "advanced") {
+      return { allowed: true, currentTier: tier };
+    }
+    if (currentKDS === "basic") {
+      return { allowed: true, currentTier: tier };
+    }
+    return { allowed: false, currentTier: tier, requiredTier: "starter" };
+  }
+
+  // Special handling for branding tier
+  if (feature === "branding") {
+    // All tiers have branding, just different levels
+    return { allowed: true, currentTier: tier };
+  }
+
   // Find the minimum tier that has this feature
   let requiredTier = "enterprise";
   if (TIER_LIMITS.pro.features[feature]) {
@@ -195,11 +222,121 @@ export async function hasAdvancedAnalytics(userId: string): Promise<boolean> {
 
 /**
  * Check if user has access to analytics exports
+ * Pro tier has CSV exports, Enterprise has CSV + financial exports
  */
 export async function hasAnalyticsExports(userId: string): Promise<boolean> {
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
+  // Both Pro and Enterprise have exports (Pro = CSV, Enterprise = CSV + financial)
   return limits.features.analytics === "advanced+exports";
+}
+
+/**
+ * Get KDS tier for user
+ */
+export async function getKDSTier(userId: string): Promise<KDSTier | false> {
+  const tier = await getUserTier(userId);
+  const limits = TIER_LIMITS[tier];
+  return limits.features.kds || false;
+}
+
+/**
+ * Check if user has access to KDS (any tier)
+ * Starter tier does NOT have KDS (available as add-on)
+ * Pro has Advanced KDS, Enterprise has Enterprise KDS
+ */
+export async function hasBasicKDS(userId: string): Promise<boolean> {
+  const kdsTier = await getKDSTier(userId);
+  return kdsTier === "advanced" || kdsTier === "enterprise";
+}
+
+/**
+ * Check if user has access to advanced KDS (multi-station)
+ */
+export async function hasAdvancedKDS(userId: string): Promise<boolean> {
+  const kdsTier = await getKDSTier(userId);
+  return kdsTier === "advanced" || kdsTier === "enterprise";
+}
+
+/**
+ * Check if user has access to enterprise KDS (multi-venue)
+ */
+export async function hasEnterpriseKDS(userId: string): Promise<boolean> {
+  const kdsTier = await getKDSTier(userId);
+  return kdsTier === "enterprise";
+}
+
+/**
+ * Get maximum number of KDS stations allowed for a user
+ * Basic KDS (add-on): 1 station
+ * Advanced KDS (Pro): Unlimited (per venue)
+ * Enterprise KDS: Unlimited (per venue, multi-venue support)
+ */
+export async function getMaxKDSStations(userId: string): Promise<number> {
+  const kdsTier = await getKDSTier(userId);
+  if (kdsTier === "basic") {
+    return 1; // Basic KDS (add-on) - single station only
+  }
+  if (kdsTier === "advanced" || kdsTier === "enterprise") {
+    return -1; // Unlimited stations per venue
+  }
+  return 0; // No KDS access
+}
+
+/**
+ * Check station creation limit based on KDS tier
+ */
+export async function checkKDSStationLimit(
+  userId: string,
+  currentStationCount: number
+): Promise<{ allowed: boolean; limit: number; currentTier: string; kdsTier: KDSTier | false }> {
+  const kdsTier = await getKDSTier(userId);
+  const tier = await getUserTier(userId);
+
+  if (!kdsTier) {
+    return {
+      allowed: false,
+      limit: 0,
+      currentTier: tier,
+      kdsTier: false,
+    };
+  }
+
+  const maxStations = await getMaxKDSStations(userId);
+
+  if (maxStations === -1) {
+    return {
+      allowed: true,
+      limit: -1,
+      currentTier: tier,
+      kdsTier,
+    };
+  }
+
+  return {
+    allowed: currentStationCount < maxStations,
+    limit: maxStations,
+    currentTier: tier,
+    kdsTier,
+  };
+}
+
+/**
+ * Check if user has access to loyalty tracking
+ */
+export async function hasLoyaltyTracking(userId: string): Promise<boolean> {
+  const tier = await getUserTier(userId);
+  const limits = TIER_LIMITS[tier];
+  return limits.features.loyaltyTracking === true;
+}
+
+/**
+ * Get branding tier for user
+ */
+export async function getBrandingTier(userId: string): Promise<BrandingTier> {
+  const tier = await getUserTier(userId);
+  const limits = TIER_LIMITS[tier];
+  return limits.features.branding;
 }
 
 export async function checkLimit(

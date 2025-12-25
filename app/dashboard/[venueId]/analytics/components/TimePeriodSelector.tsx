@@ -23,7 +23,7 @@ interface TimePeriodSelectorProps {
   onExportCSV: () => void;
   isDownloading: boolean;
   hasData: boolean;
-  canExport?: boolean; // Enterprise tier required for exports
+  canExport?: boolean; // Pro+ tier required for exports (Pro = CSV, Enterprise = CSV + financial)
 }
 
 export function TimePeriodSelector({
@@ -129,7 +129,7 @@ export function TimePeriodSelector({
                   title={
                     canExport
                       ? "Exports the rows you're viewing"
-                      : "CSV exports require Enterprise tier"
+                      : "CSV exports require Pro tier or higher"
                   }
                 >
                   <Download className="h-4 w-4" />
@@ -139,7 +139,7 @@ export function TimePeriodSelector({
             </TooltipTrigger>
             {!canExport && (
               <TooltipContent>
-                <p>CSV exports require Enterprise tier</p>
+                <p>CSV exports require Pro tier or higher</p>
               </TooltipContent>
             )}
           </Tooltip>

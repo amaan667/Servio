@@ -151,9 +151,9 @@ export async function checkAnalyticsAccess(
     if (!hasExports) {
       return {
         allowed: false,
-        reason: "Analytics exports require Enterprise tier",
+        reason: "Analytics exports require Pro tier or higher",
         currentTier: tier,
-        requiredTier: "enterprise",
+        requiredTier: "pro",
         userRole,
       };
     }
@@ -208,12 +208,13 @@ export function checkAnalyticsAccessByTier(
   const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
 
   if (requireExports) {
+    // Pro and Enterprise both have exports (Pro = CSV, Enterprise = CSV + financial)
     if (limits.features.analytics !== "advanced+exports") {
       return {
         allowed: false,
-        reason: "Analytics exports require Enterprise tier",
+        reason: "Analytics exports require Pro tier or higher",
         currentTier: tierKey,
-        requiredTier: "enterprise",
+        requiredTier: "pro",
         userRole,
       };
     }

@@ -56,6 +56,60 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       }
     );
 
+    // Check tier limits for table count (only when creating new table)
+    const { checkLimit } = await import("@/lib/tier-restrictions");
+    const { createAdminClient } = await import("@/lib/supabase");
+    const adminSupabase = createAdminClient();
+
+    // Get venue owner to check tier limits
+    const { data: venue } = await adminSupabase
+      .from("venues")
+      .select("owner_user_id")
+      .eq("venue_id", finalVenueId)
+      .single();
+
+    if (!venue) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Venue not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Count current tables (active only)
+    const { count: currentTableCount } = await adminSupabase
+      .from("tables")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", finalVenueId)
+      .eq("is_active", true);
+
+    const tableCount = currentTableCount || 0;
+
+    // Check tier limit
+    const limitCheck = await checkLimit(venue.owner_user_id, "maxTables", tableCount);
+    if (!limitCheck.allowed) {
+      logger.warn("[AUTO CREATE TABLE] Table limit reached", {
+        userId: context.user.id,
+        ownerUserId: venue.owner_user_id,
+        currentCount: tableCount,
+        limit: limitCheck.limit,
+        tier: limitCheck.currentTier,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Table limit reached. You have ${tableCount}/${limitCheck.limit} tables. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more tables.`,
+          limitReached: true,
+          currentCount: tableCount,
+          limit: limitCheck.limit,
+          tier: limitCheck.currentTier,
+        },
+        { status: 403 }
+      );
+    }
+
     // Check if table already exists first
     const { data: existingTable } = await supabase
       .from("tables")

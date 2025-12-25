@@ -4,12 +4,11 @@ import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 export default async function FeedbackPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Server-side auth check - Customer Feedback requires Pro+ tier
-  const auth = await requirePageAuth(venueId, {
-    requireFeature: "customerFeedback",
-  }).catch(() => null);
+  // Server-side auth check - Customer Feedback is available to all tiers
+  const auth = await requirePageAuth(venueId).catch(() => null);
 
-  const hasFeedbackAccess = auth?.hasFeatureAccess("customerFeedback") ?? false;
+  // Customer feedback is available to all tiers (Starter, Pro, Enterprise)
+  const hasFeedbackAccess = auth !== null;
 
   return (
     <FeedbackClientPage
