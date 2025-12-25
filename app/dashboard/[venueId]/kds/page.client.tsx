@@ -72,11 +72,6 @@ export default function KDSClientPage({
           </div>
           {kdsTier && (
             <div className="flex items-center gap-2">
-              {kdsTier === "basic" && (
-                <Badge className="bg-amber-100 text-amber-800 border-amber-300">
-                  Basic KDS
-                </Badge>
-              )}
               {kdsTier === "advanced" && (
                 <Badge className="bg-blue-100 text-blue-800 border-blue-300">
                   Advanced KDS

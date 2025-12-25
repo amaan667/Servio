@@ -64,7 +64,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
       multiVenue: "multiVenue",
       analytics: "analytics",
       customerFeedback: "customerFeedback",
-      customBranding: "customBranding",
+      customBranding: "branding",
     };
 
     const featureKey = featureMap[feature];

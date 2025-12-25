@@ -11,12 +11,7 @@ interface FeedbackClientPageProps {
   hasAccess: boolean;
 }
 
-export default function FeedbackClientPage({
-  venueId,
-  tier,
-  role,
-  hasAccess,
-}: FeedbackClientPageProps) {
+export default function FeedbackClientPage({ venueId, role }: FeedbackClientPageProps) {
   // Customer feedback is available to all tiers - no restriction needed
 
   return (

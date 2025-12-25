@@ -124,14 +124,16 @@ const getBasePageAuth = cache(
       const tierLimits = TIER_LIMITS[tier];
       if (!tierLimits) return false;
 
-      const featureValue = tierLimits.features[feature];
+      // Handle legacy "customBranding" -> "branding" mapping
+      const featureKey = feature === "customBranding" ? "branding" : feature;
+      const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
+      // For KDS tier (basic/advanced/enterprise), return true if not false (check before boolean check)
+      if (feature === "kds" || featureKey === "kds") {
+        return featureValue !== false;
+      }
       // For boolean features, return the value directly
       if (typeof featureValue === "boolean") {
         return featureValue;
-      }
-      // For KDS tier (basic/advanced/enterprise), return true if not false
-      if (feature === "kds") {
-        return featureValue !== false;
       }
       // For analytics and supportLevel, they're always allowed (just different levels)
       return true;
@@ -204,13 +206,16 @@ export async function getOptionalPageAuth(venueId?: string): Promise<PageAuthCon
     const tierLimits = TIER_LIMITS[tier] || TIER_LIMITS.starter;
 
     const hasFeatureAccess = (feature: FeatureKey): boolean => {
-      const featureValue = tierLimits.features[feature];
+      // Handle legacy "customBranding" -> "branding" mapping
+      const featureKey = feature === "customBranding" ? "branding" : feature;
+      const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
+      // For KDS tier (basic/advanced/enterprise), return true if not false (check before boolean check)
+      if (feature === "kds" || featureKey === "kds") {
+        return featureValue !== false;
+      }
+      // For boolean features, return the value directly
       if (typeof featureValue === "boolean") {
         return featureValue;
-      }
-      // For KDS tier (basic/advanced/enterprise), return true if not false
-      if (feature === "kds") {
-        return featureValue !== false;
       }
       return true;
     };

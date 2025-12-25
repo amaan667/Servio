@@ -246,6 +246,16 @@ export async function createKDSTicketsWithAI(
         }
       }
 
+      // Ensure assignedStation is never null (should be set by assignment at this point)
+      if (!assignedStation) {
+        logger.error("[KDS TICKETS] No station assigned, using default", {
+          ...baseContext,
+          itemName,
+        });
+        assignedStation = expoStation;
+        assignment = { station: expoStation, confidence: 0.5 };
+      }
+
       logger.debug("[KDS TICKETS] Final station assignment", {
         ...baseContext,
         itemName,
