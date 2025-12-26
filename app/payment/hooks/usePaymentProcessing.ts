@@ -93,6 +93,8 @@ export function usePaymentProcessing() {
           customer_email: string | null;
           table_number: string | null;
           table_id: null;
+          fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
+          counter_label?: string | null;
           items: OrderItemPayload[];
           total_amount: number;
           notes: string | null;
@@ -103,6 +105,16 @@ export function usePaymentProcessing() {
           // Note: is_active is a GENERATED column - do NOT include it in the payload
         }
 
+        // Determine fulfillment_type and counter_label from checkoutData
+        const fulfillmentType =
+          checkoutData.source === "counter" ? "counter" : "table";
+        const counterLabel =
+          fulfillmentType === "counter"
+            ? (checkoutData as { counterLabel?: string }).counterLabel ||
+              (checkoutData as { counterNumber?: string }).counterNumber ||
+              null
+            : null;
+
         const orderData: OrderPayload = {
           venue_id: checkoutData.venueId,
           customer_name: checkoutData.customerName?.trim() || "",
@@ -111,8 +123,13 @@ export function usePaymentProcessing() {
           // Note: Email is optional for all payment methods
           // For Pay Now (Stripe), email will be collected in Stripe Checkout
           // If provided upfront, it will be used; otherwise Stripe Checkout collects it
-          table_number: checkoutData.tableNumber ? String(checkoutData.tableNumber) : null,
+          table_number:
+            fulfillmentType === "table" && checkoutData.tableNumber
+              ? String(checkoutData.tableNumber)
+              : null,
           table_id: null,
+          fulfillment_type: fulfillmentType,
+          counter_label: counterLabel,
           items: checkoutData.cart.map((item) => {
             // Validate and fix menu_item_id - must be valid UUID or null
             let menuItemId: string | null = null;

@@ -16,6 +16,8 @@ export interface CheckoutData {
   venueId: string;
   venueName?: string;
   tableNumber?: number | string;
+  counterNumber?: string; // Counter number for counter orders
+  counterLabel?: string; // Counter label (e.g., "Counter 1", "Counter A")
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;

@@ -109,6 +109,7 @@ export function useOrderSubmission() {
         venueName: "Restaurant",
         tableNumber: parseInt(orderLocation) || 1,
         counterNumber: counterNumber,
+        counterLabel: counterNumber ? `Counter ${counterNumber}` : null, // New: counter label
         orderType: orderType,
         orderLocation: orderLocation,
         customerName: customerInfo.name.trim(),

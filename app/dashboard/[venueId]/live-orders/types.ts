@@ -1,9 +1,11 @@
 export interface Order {
   id: string;
   venue_id: string;
-  table_number: number | null;
+  table_number: number | null; // Only for table orders
   table_id?: string | null;
   session_id?: string | null;
+  fulfillment_type?: "table" | "counter" | "delivery" | "pickup"; // New: proper fulfillment type
+  counter_label?: string | null; // New: counter label for counter orders
   customer_name: string | null;
   customer_phone?: string | null;
   customer_email?: string | null;
@@ -34,9 +36,9 @@ export interface Order {
   notes?: string;
   scheduled_for?: string;
   prep_lead_minutes?: number;
-  source?: "qr" | "counter";
+  source?: "qr" | "counter"; // Legacy: kept for backward compatibility
   table_label?: string;
-  counter_label?: string;
+  counter_label?: string; // Duplicate for backward compatibility
   table?: { is_configured: boolean } | null;
 }
 

@@ -145,8 +145,10 @@ type OrderItem = {
 
 type OrderPayload = {
   venue_id: string;
-  table_number?: number | null;
+  table_number?: number | null; // Only for table orders
   table_id?: string | null; // Add table_id field
+  fulfillment_type?: "table" | "counter" | "delivery" | "pickup"; // New: proper fulfillment type
+  counter_label?: string | null; // New: counter label for counter orders
   customer_name: string;
   customer_phone: string; // Make required since database requires it
   items: OrderItem[];
@@ -408,9 +410,14 @@ export async function POST(req: NextRequest) {
       return bad("Venue not found", 404, requestId);
     }
 
-    // Auto-create table if it doesn't exist (for QR code scenarios)
+    // Determine order source early to know if this is a table or counter order
+    const orderSource =
+      (body as { source?: "qr" | "counter" }).source || ("qr" as "qr" | "counter");
+    const isTableOrder = orderSource === "qr";
+
+    // Auto-create table if it doesn't exist (only for table orders)
     let tableId = null;
-    if (validatedOrderBody.table_number) {
+    if (isTableOrder && validatedOrderBody.table_number) {
       // Check if table exists - first try to find by table number directly
       const { data: existingTable, error: lookupError } = await supabase
         .from("tables")
@@ -553,10 +560,26 @@ export async function POST(req: NextRequest) {
     const orderSource =
       (body as { source?: "qr" | "counter" }).source || ("qr" as "qr" | "counter"); // Default to 'qr' if not provided
 
+    // Determine fulfillment_type and counter_label based on source
+    const fulfillmentType: "table" | "counter" =
+      orderSource === "counter" ? "counter" : "table";
+    const counterLabel =
+      orderSource === "counter"
+        ? (body as { counter_label?: string }).counter_label ||
+          (body as { counterNumber?: string }).counterNumber ||
+          (table_number ? `Counter ${table_number}` : "Counter A")
+        : null;
+
+    // For counter orders, set table_number to null (don't repurpose it)
+    // For table orders, keep table_number as is
+    const finalTableNumber = fulfillmentType === "counter" ? null : table_number;
+
     const payload: OrderPayload = {
       venue_id: venueId,
-      table_number,
-      table_id: tableId, // Add table_id to the payload
+      table_number: finalTableNumber, // Only set for table orders
+      table_id: fulfillmentType === "table" ? tableId : null, // Only set for table orders
+      fulfillment_type: fulfillmentType,
+      counter_label: counterLabel,
       customer_name: validatedOrderBody.customer_name.trim(),
       customer_phone: validatedOrderBody.customer_phone.trim(), // Required field, already validated
       items: safeItems,
@@ -597,17 +620,26 @@ export async function POST(req: NextRequest) {
     };
 
     // Check for duplicate orders (idempotency check)
-    // Look for orders with same customer, table, venue, and recent timestamp (within 5 minutes)
+    // Look for orders with same customer, fulfillment type, venue, and recent timestamp (within 5 minutes)
     // CRITICAL: All queries MUST filter by venue_id to prevent cross-venue data access
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const { data: existingOrder, error: duplicateCheckError } = await supabase
+    let duplicateQuery = supabase
       .from("orders")
       .select("id, created_at, order_status, payment_status")
       .eq("venue_id", venueId) // CRITICAL: Explicit venue filter
       .eq("customer_name", payload.customer_name)
       .eq("customer_phone", payload.customer_phone)
-      .eq("table_number", payload.table_number)
-      .gte("created_at", fiveMinutesAgo)
+      .eq("fulfillment_type", payload.fulfillment_type)
+      .gte("created_at", fiveMinutesAgo);
+
+    // For table orders, check table_number; for counter orders, check counter_label
+    if (payload.fulfillment_type === "table" && payload.table_number) {
+      duplicateQuery = duplicateQuery.eq("table_number", payload.table_number);
+    } else if (payload.fulfillment_type === "counter" && payload.counter_label) {
+      duplicateQuery = duplicateQuery.eq("counter_label", payload.counter_label);
+    }
+
+    const { data: existingOrder, error: duplicateCheckError } = await duplicateQuery
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -629,7 +661,9 @@ export async function POST(req: NextRequest) {
         session_id: ((body as Record<string, unknown>).session_id as string) || null,
         source: orderSource,
         display_name:
-          orderSource === "counter" ? `Counter ${table_number}` : `Table ${table_number}`,
+          payload.fulfillment_type === "counter"
+            ? payload.counter_label || "Counter A"
+            : `Table ${payload.table_number}`,
         duplicate: true,
       });
     }

@@ -18,9 +18,11 @@ export interface OrderItem {
 export interface Order {
   id: string;
   venue_id: string;
-  table_number?: number | null;
+  table_number?: number | null; // Only for table orders
   table_id?: string | null;
   session_id?: string | null;
+  fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
+  counter_label?: string | null; // For counter orders
   customer_name?: string | null;
   customer_phone?: string | null;
   customer_email?: string | null;
@@ -152,6 +154,8 @@ export class OrderService extends BaseService {
       table_number?: number | null;
       seat_count?: number;
       source?: "qr" | "counter";
+      fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
+      counter_label?: string | null;
       order_status?: Order["order_status"];
       payment_status?: Order["payment_status"];
       payment_method?: Order["payment_method"];
@@ -159,10 +163,19 @@ export class OrderService extends BaseService {
   ): Promise<Order & { table_auto_created?: boolean; session_id?: string }> {
     const supabase = await createSupabaseClient();
 
+    // Determine fulfillment_type from source if not provided
+    const fulfillmentType =
+      orderData.fulfillment_type ||
+      (orderData.source === "counter" ? "counter" : "table");
+
     // Use RPC function for transactional order creation
+    // Note: RPC function needs to be updated to accept p_fulfillment_type and p_counter_label
+    // For now, we'll insert directly if RPC doesn't support new params
     const { data, error } = await supabase.rpc("create_order_with_session", {
       p_venue_id: venueId,
-      p_table_number: orderData.table_number ?? null,
+      p_table_number: fulfillmentType === "table" ? orderData.table_number ?? null : null,
+      p_fulfillment_type: fulfillmentType,
+      p_counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
       p_customer_name: orderData.customer_name ?? "",
       p_customer_phone: orderData.customer_phone ?? "",
       p_customer_email: orderData.customer_email ?? null,
