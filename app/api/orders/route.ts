@@ -555,12 +555,8 @@ export async function POST(req: NextRequest) {
       modifierPrice: (it as { modifierPrice?: number }).modifierPrice || 0,
     }));
 
-    // Use the source provided by the client (determined from URL parameters)
-    // The client determines this based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter'
-    const orderSource =
-      (body as { source?: "qr" | "counter" }).source || ("qr" as "qr" | "counter"); // Default to 'qr' if not provided
-
     // Determine fulfillment_type and counter_label based on source
+    // (orderSource was already determined earlier)
     const fulfillmentType: "table" | "counter" =
       orderSource === "counter" ? "counter" : "table";
     const counterLabel =

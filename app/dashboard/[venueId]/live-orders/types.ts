@@ -38,7 +38,6 @@ export interface Order {
   prep_lead_minutes?: number;
   source?: "qr" | "counter"; // Legacy: kept for backward compatibility
   table_label?: string;
-  counter_label?: string; // Duplicate for backward compatibility
   table?: { is_configured: boolean } | null;
 }
 
