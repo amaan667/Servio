@@ -1,20 +1,9 @@
 import { Order } from "../types";
 
 export const isCounterOrder = (order: Order) => {
-  // Use source field first, but fallback to table_id check for accuracy
-  if (order.source === "counter") {
-    return true;
-  }
-  if (order.source === "qr") {
-    return false;
-  }
-  // If source is not set, check if it has a table_id (indicates table order)
-  if (order.table_id) {
-    return false; // Has table_id means it's a table order
-  }
-  // Default: if no source and no table_id, it might be misclassified
-  // Check if table_number exists but no counter indicator
-  return false; // Default to table order if ambiguous
+  // Counter orders include both till orders and pickup orders (both use source: "counter")
+  // The difference is payment method: till = pay_at_till, pickup = online
+  return order.source === "counter";
 };
 
 export const groupOrdersByTable = (orders: Order[]) => {

@@ -165,7 +165,7 @@ type OrderPayload = {
   payment_mode?: "online" | "deferred" | "offline";
   payment_method?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL" | string; // Standardized payment method values
   // NOTE: session_id is NOT a database column - it's only used for client-side tracking
-  source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
+  source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter/pickup orders (QR or till)
   stripe_session_id?: string | null;
   stripe_payment_intent_id?: string | null;
   scheduled_for?: string | null;
@@ -549,7 +549,7 @@ export async function POST(req: NextRequest) {
     }));
 
     // Use the source provided by the client (determined from URL parameters)
-    // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
+    // The client determines this based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter'
     const orderSource =
       (body as { source?: "qr" | "counter" }).source || ("qr" as "qr" | "counter"); // Default to 'qr' if not provided
 

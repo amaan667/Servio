@@ -59,7 +59,9 @@ export function useOrderSubmission() {
 
     try {
       const safeTable = isCounterOrder ? parseInt(counterNumber) || 1 : parseInt(tableNumber) || 1;
-      const paymentMode = isCounterOrder ? "pay_at_till" : "online";
+      // Counter orders: Customer can choose payment method (Pay Now for QR pickup, Pay at Till for till orders)
+      // Default to online so customer can pay via QR code (like McDonald's/Tim Hortons pickup)
+      const paymentMode = isCounterOrder ? "online" : "online";
 
       // For demo orders - skip customer info and go straight to order summary
       if (isDemo || isDemoFallback) {

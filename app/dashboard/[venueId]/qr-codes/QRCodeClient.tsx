@@ -96,6 +96,7 @@ export default function QRCodeClient({
       // Generate QR code immediately - no database counter needed
       qrManagement.generateQRForName(counterName, "counter");
     }
+
   }, [searchParams, qrManagement.generateQRForName]);
 
   // Generate single QR code
@@ -300,7 +301,7 @@ export default function QRCodeClient({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="table">Tables</SelectItem>
-                <SelectItem value="counter">Counters</SelectItem>
+                <SelectItem value="counter">Counters (Pickup & Till Orders)</SelectItem>
               </SelectContent>
             </Select>
           </div>

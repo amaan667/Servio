@@ -43,7 +43,7 @@ interface Order {
   scheduled_for?: string;
   prep_lead_minutes?: number;
   estimated_prep_time?: number;
-  source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
+  source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter/pickup orders
   items: OrderItem[];
   created_at: string;
   updated_at: string;

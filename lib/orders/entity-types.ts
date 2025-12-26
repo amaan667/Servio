@@ -38,7 +38,7 @@ export function deriveEntityKind(
     return "table";
   }
 
-  // If source is explicitly 'counter', it's a counter order
+  // If source is explicitly 'counter', it's a counter order (can be till order or pickup QR order)
   if (order.source === "qr_counter" || order.source === "counter") {
     return "counter";
   }
