@@ -2,9 +2,11 @@
  * Hook to fetch live analytics data for dashboard charts
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { getRealtimeChannelName } from "@/lib/realtime-device-id";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface AnalyticsData {
   ordersByHour: Array<{ hour: string; orders: number }>;
@@ -175,6 +177,12 @@ export function useAnalyticsData(venueId: string) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false); // Start with false
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const isMountedRef = useRef(true);
+  const fetchAnalyticsRef = useRef<(() => Promise<void>) | null>(null);
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -335,9 +343,168 @@ export function useAnalyticsData(venueId: string) {
     }
   }, [venueId]);
 
+  // Store fetchAnalytics in ref for real-time subscription
+  useEffect(() => {
+    fetchAnalyticsRef.current = fetchAnalytics;
+  }, [fetchAnalytics]);
+
+  // Initial fetch
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics, venueId]);
+
+  // Real-time subscription for order changes
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    const supabase = supabaseBrowser();
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Debounced refetch to avoid excessive API calls
+    const debouncedRefetch = () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      debounceTimeoutRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        if (fetchAnalyticsRef.current) {
+          fetchAnalyticsRef.current();
+        }
+      }, 500); // 500ms debounce
+    };
+
+    // Set up session refresh listener to reconnect when token refreshes
+    const {
+      data: { subscription: authSubscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" && channelRef.current) {
+        // Token refreshed - ensure channel is still connected
+        const channel = channelRef.current;
+        if (channel && channel.state !== "joined") {
+          // Reconnect if disconnected
+          channel.subscribe();
+        }
+      }
+    });
+    authSubscriptionRef.current = authSubscription;
+
+    const setupChannel = () => {
+      // Use unique channel name with device ID to prevent conflicts
+      const channelName = getRealtimeChannelName("analytics-realtime", venueId);
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "orders",
+            filter: `venue_id=eq.${venueId}`,
+          },
+          (payload) => {
+            if (!isMountedRef.current) return;
+
+            const order = payload.new as {
+              payment_status?: string;
+              created_at?: string;
+              total_amount?: number;
+            } | null;
+
+            // Only refetch if:
+            // 1. New order was created today (INSERT)
+            // 2. Order payment status changed to paid (UPDATE)
+            // 3. Order was deleted (DELETE - rare but possible)
+            if (payload.eventType === "INSERT") {
+              const orderCreatedAt = order?.created_at;
+              if (orderCreatedAt && new Date(orderCreatedAt) >= todayStart) {
+                // New order created today - check if it's paid
+                const status = getPaymentStatusString(order?.payment_status);
+                if (isPaidStatus(status)) {
+                  debouncedRefetch();
+                }
+              }
+            } else if (payload.eventType === "UPDATE") {
+              // Order updated - check if payment status changed to paid
+              const oldOrder = payload.old as { payment_status?: string } | null;
+              const oldStatus = getPaymentStatusString(oldOrder?.payment_status);
+              const newStatus = getPaymentStatusString(order?.payment_status);
+
+              // Only refetch if status changed to paid or from paid
+              if (
+                (isPaidStatus(newStatus) && !isPaidStatus(oldStatus)) ||
+                (!isPaidStatus(newStatus) && isPaidStatus(oldStatus))
+              ) {
+                const orderCreatedAt = order?.created_at;
+                if (orderCreatedAt && new Date(orderCreatedAt) >= todayStart) {
+                  debouncedRefetch();
+                }
+              }
+            } else if (payload.eventType === "DELETE") {
+              // Order deleted - refetch to update analytics
+              debouncedRefetch();
+            }
+          }
+        )
+        .subscribe((status: string) => {
+          if (status === "SUBSCRIBED") {
+            channelRef.current = channel;
+            logger.debug("[Analytics Realtime] Subscribed to order changes", { venueId });
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            logger.error("[Analytics Realtime] Channel error or timeout", { status, venueId });
+            // Clear any existing reconnect timeout
+            if (reconnectTimeoutRef.current) {
+              clearTimeout(reconnectTimeoutRef.current);
+            }
+
+            // Try to reconnect after a delay, but only if we still have a valid session
+            reconnectTimeoutRef.current = setTimeout(async () => {
+              try {
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession();
+                if (session) {
+                  // Session is valid, resubscribe
+                  if (channelRef.current) {
+                    channelRef.current.subscribe();
+                  } else {
+                    // Channel lost, recreate it
+                    setupChannel();
+                  }
+                }
+              } catch (_error) {
+                // Session invalid - will need to refresh page or re-login
+              }
+            }, 3000);
+          }
+        });
+
+      return channel;
+    };
+
+    const channel = setupChannel();
+    channelRef.current = channel;
+
+    return () => {
+      isMountedRef.current = false;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (authSubscriptionRef.current) {
+        authSubscriptionRef.current.unsubscribe();
+        authSubscriptionRef.current = null;
+      }
+    };
+  }, [venueId]);
 
   return { data, loading, error, refetch: fetchAnalytics };
 }
