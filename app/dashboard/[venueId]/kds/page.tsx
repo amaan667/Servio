@@ -11,12 +11,12 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
   // NO REDIRECTS - Dashboard always loads
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  // Check KDS access - Starter tier does NOT have KDS (available as add-on)
-  // Pro has Advanced KDS, Enterprise has Enterprise KDS
+  // Check KDS access using the auth context's feature access helper
+  // This properly checks tier limits: Starter = false, Pro = "advanced", Enterprise = "enterprise"
   const currentTier = auth?.tier ?? "starter";
-  const hasKDSAccess = currentTier !== "starter"; // Starter doesn't have KDS, Pro+ does
-  // Note: Basic KDS would be for Starter add-on, but since Starter doesn't have KDS by default,
-  // we only have "advanced" (Pro) and "enterprise" (Enterprise) tiers here
+  const hasKDSAccess = auth?.hasFeatureAccess("kds") ?? false;
+  
+  // Determine KDS tier from tier limits - matches TIER_LIMITS configuration
   const kdsTier: "advanced" | "enterprise" | false =
     currentTier === "enterprise" ? "enterprise" : currentTier === "pro" ? "advanced" : false;
 
