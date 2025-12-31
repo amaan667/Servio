@@ -11,6 +11,7 @@
 import { createServerSupabase } from "@/lib/supabase";
 import { verifyVenueAccess } from "@/lib/middleware/authorization";
 import { getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
+import { logger } from "@/lib/logger";
 import { cache } from "react";
 
 export type UserRole = "owner" | "manager" | "server" | "staff" | "viewer";

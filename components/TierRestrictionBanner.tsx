@@ -14,7 +14,7 @@ export function TierRestrictionBanner({
   currentTier,
   requiredTier,
   featureName,
-  venueId,
+  venueId: _venueId, // Keep for API compatibility but not used in link
   reason,
 }: TierRestrictionBannerProps) {
   const tierNames: Record<string, string> = {
