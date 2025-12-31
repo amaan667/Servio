@@ -210,7 +210,7 @@ export async function checkFeatureAccess(
 }
 
 /**
- * Check if user has access to advanced analytics features
+ * Check if user has access to advanced analytics features (async - requires userId)
  */
 export async function hasAdvancedAnalytics(userId: string): Promise<boolean> {
   const tier = await getUserTier(userId);
@@ -218,6 +218,35 @@ export async function hasAdvancedAnalytics(userId: string): Promise<boolean> {
   return (
     limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
   );
+}
+
+/**
+ * Check if tier has access to advanced analytics features (synchronous - for client components)
+ * Use this when you already have the tier from auth context
+ */
+export function hasAdvancedAnalyticsByTier(tier: string): boolean {
+  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  return (
+    limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
+  );
+}
+
+/**
+ * Get analytics tier label for display (synchronous - for client components)
+ * Returns: "basic" | "advanced" | "enterprise"
+ */
+export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "enterprise" {
+  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  
+  if (tierKey === "enterprise") {
+    return "enterprise";
+  }
+  if (limits.features.analytics === "advanced+exports" || limits.features.analytics === "advanced") {
+    return "advanced";
+  }
+  return "basic";
 }
 
 /**
