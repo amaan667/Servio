@@ -82,7 +82,7 @@ export default function AnalyticsClientPage({
                 </p>
                 <div className="mt-2">
                   <Link
-                    href={`/dashboard/${venueId}/select-plan`}
+                    href={`/select-plan?change=true`}
                     className="text-sm font-medium text-yellow-800 underline"
                   >
                     Upgrade your plan to access this feature
@@ -112,7 +112,7 @@ export default function AnalyticsClientPage({
             {analyticsTier === "basic" && (
               <div className="mt-2 text-sm text-gray-600">
                 <Link
-                  href={`/dashboard/${venueId}/select-plan`}
+                  href={`/select-plan?change=true`}
                   className="text-purple-600 hover:underline"
                 >
                   Upgrade to Pro for advanced analytics & AI insights

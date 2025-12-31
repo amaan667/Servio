@@ -45,7 +45,7 @@ export function TierRestrictionBanner({
           </p>
           <div className="mt-3">
             <Link
-              href={`/dashboard/${venueId}/select-plan`}
+              href={`/select-plan?change=true`}
               className="text-sm font-medium text-yellow-800 underline hover:text-yellow-900"
             >
               Upgrade to {tierNames[requiredTier] || requiredTier} →

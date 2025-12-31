@@ -117,19 +117,45 @@ const getBasePageAuth = cache(
     // STEP 4: Get subscription tier
     // IMPORTANT: Tier is owned by the venue's billing owner/org, not the staff user.
     // This prevents staff accounts incorrectly defaulting to Starter.
-    const tier = (await getUserTier(access.venue.owner_user_id)) as Tier;
+    const rawTier = await getUserTier(access.venue.owner_user_id);
+    // Normalize tier to lowercase to ensure consistency
+    const tier = (rawTier.toLowerCase().trim() as Tier) || "starter";
+
+    // Log tier resolution for debugging
+    logger.info("[PAGE AUTH] Tier resolved", {
+      venueId,
+      ownerUserId: access.venue.owner_user_id,
+      rawTier,
+      normalizedTier: tier,
+      userId: user.id,
+    });
 
     // STEP 5: Create feature access helper
     const hasFeatureAccess = (feature: FeatureKey): boolean => {
       const tierLimits = TIER_LIMITS[tier];
-      if (!tierLimits) return false;
+      if (!tierLimits) {
+        logger.warn("[PAGE AUTH] Invalid tier limits", {
+          tier,
+          feature,
+          venueId,
+        });
+        return false;
+      }
 
       // Handle legacy "customBranding" -> "branding" mapping
       const featureKey = feature === "customBranding" ? "branding" : feature;
       const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
+      
       // For KDS tier (basic/advanced/enterprise), return true if not false (check before boolean check)
       if (feature === "kds" || featureKey === "kds") {
-        return featureValue !== false;
+        const hasAccess = featureValue !== false;
+        logger.info("[PAGE AUTH] KDS access check", {
+          tier,
+          featureValue,
+          hasAccess,
+          venueId,
+        });
+        return hasAccess;
       }
       // For boolean features, return the value directly
       if (typeof featureValue === "boolean") {
