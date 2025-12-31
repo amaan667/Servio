@@ -95,13 +95,77 @@ export async function getUserTier(userId: string): Promise<string> {
   // Get user's organization and tier
   const { data: org } = await supabase
     .from("organizations")
-    .select("subscription_tier, subscription_status")
+    .select("id, subscription_tier, subscription_status, stripe_customer_id")
     .eq("owner_user_id", userId)
     .single();
 
   // If subscription is not active, downgrade to starter (but require payment for new users)
   if (!org || org.subscription_status !== "active") {
     return "starter";
+  }
+
+  // AUTO-SYNC: Sync tier from Stripe if organization has Stripe customer
+  // This ensures tier is always up-to-date, matching settings page behavior
+  if (org.stripe_customer_id && org.id) {
+    try {
+      const { stripe } = await import("@/lib/stripe-client");
+      const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
+
+      // Get active subscription from Stripe
+      const subscriptions = await stripe.subscriptions.list({
+        customer: org.stripe_customer_id,
+        status: "active",
+        limit: 1,
+      });
+
+      if (subscriptions.data.length > 0) {
+        const subscription = subscriptions.data[0];
+        const stripeTier = await getTierFromStripeSubscription(subscription, stripe);
+
+        // Only update if tier differs from database (use Stripe as source of truth)
+        if (stripeTier !== org.subscription_tier) {
+          logger.info("[TIER RESTRICTIONS] Auto-syncing tier from Stripe", {
+            organizationId: org.id,
+            databaseTier: org.subscription_tier,
+            stripeTier,
+            userId,
+          });
+
+          const { error: updateError } = await supabase
+            .from("organizations")
+            .update({
+              subscription_tier: stripeTier,
+              subscription_status: subscription.status,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", org.id);
+
+          if (!updateError) {
+            // Use the synced tier from Stripe
+            const tierLower = stripeTier.toLowerCase().trim();
+            if (["starter", "pro", "enterprise"].includes(tierLower)) {
+              logger.info("[TIER RESTRICTIONS] Tier auto-synced successfully", {
+                organizationId: org.id,
+                newTier: stripeTier,
+              });
+              return tierLower as "starter" | "pro" | "enterprise";
+            }
+          } else {
+            logger.error("[TIER RESTRICTIONS] Failed to auto-sync tier", {
+              error: updateError,
+              organizationId: org.id,
+            });
+          }
+        }
+      }
+    } catch (syncError) {
+      // Log but don't fail - webhooks will handle sync eventually
+      logger.warn("[TIER RESTRICTIONS] Auto-sync tier failed (non-critical)", {
+        error: syncError instanceof Error ? syncError.message : String(syncError),
+        organizationId: org.id,
+        userId,
+      });
+    }
   }
 
   const tier = org.subscription_tier || "starter";
@@ -114,7 +178,6 @@ export async function getUserTier(userId: string): Promise<string> {
   }
 
   // If invalid, default to starter
-
   logger.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
   return "starter";
 }
