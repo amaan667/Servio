@@ -16,6 +16,14 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
   const currentTier = auth?.tier ?? "starter";
   const hasKDSAccess = auth?.hasFeatureAccess("kds") ?? false;
   
+  // Log tier info for debugging
+  logger.info("[KDS PAGE] Tier check", {
+    venueId,
+    currentTier,
+    hasKDSAccess,
+    userId: auth?.user?.id,
+  });
+  
   // Determine KDS tier from tier limits - matches TIER_LIMITS configuration
   const kdsTier: "advanced" | "enterprise" | false =
     currentTier === "enterprise" ? "enterprise" : currentTier === "pro" ? "advanced" : false;
