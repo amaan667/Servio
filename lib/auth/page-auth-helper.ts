@@ -13,8 +13,9 @@ import { TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
 import { cache } from "react";
 import { getAccessContext } from "@/lib/access/getAccessContext";
+import type { UserRole } from "@/lib/permissions";
 
-export type UserRole = "owner" | "manager" | "server" | "staff" | "viewer";
+export type { UserRole };
 
 export type Tier = "starter" | "pro" | "enterprise";
 

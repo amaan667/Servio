@@ -4,67 +4,29 @@ import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
 import QRCodeClient from "./QRCodeClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import type { UserRole } from "@/lib/permissions";
-import { isValidUserRole, toUserRole } from "@/lib/utils/userRole";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
+import { useAccessContext } from "@/lib/access/useAccessContext";
 
 export default function QRCodeClientPage({ venueId }: { venueId: string }) {
   const { user, isLoading: authLoading } = useAuthRedirect();
+  const { role: userRole } = useAccessContext(venueId);
   const [venueName, setVenueName] = useState<string>("My Venue");
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
 
+  // Fetch venue name (not part of access context)
   useEffect(() => {
-    const fetchVenueData = async () => {
-      if (!user?.id) return;
-
-      const supabase = supabaseBrowser();
-
-      // Fetch venue name
-      const { data: venueData } = await supabase
-        .from("venues")
-        .select("venue_name")
-        .eq("venue_id", venueId)
-        .single();
-
-      if (venueData) {
-        setVenueName(venueData.venue_name);
-      }
-
-      // Fetch user role
-      const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole && isValidUserRole(cachedRole)) {
-        setUserRole(cachedRole);
-      } else {
-        // Check if owner
-        const { data: ownerVenue } = await supabase
-          .from("venues")
-          .select("venue_id")
-          .eq("owner_user_id", user.id)
-          .eq("venue_id", venueId)
-          .single();
-
-        if (ownerVenue) {
-          setUserRole("owner");
-          sessionStorage.setItem(`user_role_${user.id}`, "owner");
-        } else {
-          // Check staff role
-          const { data: staffRole } = await supabase
-            .from("user_venue_roles")
-            .select("role")
-            .eq("user_id", user.id)
-            .eq("venue_id", venueId)
-            .single();
-
-          if (staffRole && isValidUserRole(staffRole.role)) {
-            setUserRole(staffRole.role);
-            sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
-          }
+    if (!user?.id) return;
+    const supabase = supabaseBrowser();
+    void supabase
+      .from("venues")
+      .select("venue_name")
+      .eq("venue_id", venueId)
+      .single()
+      .then(({ data }) => {
+        if (data?.venue_name) {
+          setVenueName(data.venue_name);
         }
-      }
-    };
-
-    fetchVenueData();
-  }, [user, venueId]);
+      });
+  }, [user?.id, venueId]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -90,7 +52,7 @@ export default function QRCodeClientPage({ venueId }: { venueId: string }) {
         {venueId && (
           <RoleBasedNavigation
             venueId={venueId}
-            userRole={userRole || toUserRole(null, "staff")}
+            userRole={userRole || "staff"}
             userName={user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
           />
         )}

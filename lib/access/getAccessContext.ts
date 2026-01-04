@@ -8,7 +8,7 @@ import { createServerSupabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
-export type UserRole = "owner" | "manager" | "server" | "staff" | "viewer";
+import type { UserRole } from "@/lib/permissions";
 export type Tier = "starter" | "pro" | "enterprise";
 export type FeatureKey =
   | "kds"

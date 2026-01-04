@@ -3,16 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/AuthProvider";
-import { supabaseBrowser } from "@/lib/supabase";
 import MenuManagementClient from "./MenuManagementClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import type { UserRole } from "@/lib/permissions";
-import { isValidUserRole } from "@/lib/utils/userRole";
+import { useAccessContext } from "@/lib/access/useAccessContext";
 
 export default function MenuManagementClientPage({ venueId }: { venueId: string }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const { role: userRole } = useAccessContext(venueId);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Auth check - redirect non-signed-in users to select-plan page
@@ -32,49 +30,6 @@ export default function MenuManagementClientPage({ venueId }: { venueId: string 
 
     checkAuth();
   }, [user, authLoading, router]);
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.id || checkingAuth) return;
-
-      const supabase = supabaseBrowser();
-
-      // Check cached role first
-      const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole && isValidUserRole(cachedRole)) {
-        setUserRole(cachedRole);
-        return;
-      }
-
-      // Check if owner
-      const { data: ownerVenue } = await supabase
-        .from("venues")
-        .select("venue_id")
-        .eq("owner_user_id", user.id)
-        .eq("venue_id", venueId)
-        .single();
-
-      if (ownerVenue) {
-        setUserRole("owner");
-        sessionStorage.setItem(`user_role_${user.id}`, "owner");
-      } else {
-        // Check staff role
-        const { data: staffRole } = await supabase
-          .from("user_venue_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("venue_id", venueId)
-          .single();
-
-        if (staffRole && isValidUserRole(staffRole.role)) {
-          setUserRole(staffRole.role);
-          sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
-        }
-      }
-    };
-
-    fetchUserRole();
-  }, [user, venueId, checkingAuth]);
 
   // Show loading while checking auth
   if (authLoading || checkingAuth) {

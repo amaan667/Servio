@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { WifiOff, Wifi, RefreshCw } from "lucide-react";
 import { getOfflineQueue } from "@/lib/offline-queue";
@@ -17,6 +17,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
   const pathname = usePathname();
   const [isOnline, setIsOnline] = useState(true);
   const [queueCount, setQueueCount] = useState(0);
+  const unsubscribeConnectionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     // Initialize online status - default to true to avoid false offline warnings
@@ -51,23 +52,22 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    // Double check with a real network request
-    const checkConnectivity = async () => {
-      try {
-        const response = await fetch("/api/auth/health", {
-          method: "GET",
-          cache: "no-cache",
-          signal: AbortSignal.timeout(3000),
+    // Use ConnectionMonitor singleton instead of duplicate health check
+    // ConnectionMonitor already handles health checks efficiently
+    import("@/lib/connection-monitor")
+      .then(({ getConnectionMonitor }) => {
+        const connectionMonitor = getConnectionMonitor();
+        const connectionState = connectionMonitor.getState();
+        setIsOnline(connectionState.isOnline);
+        unsubscribeConnectionRef.current = connectionMonitor.subscribe((state) => {
+          setIsOnline(state.isOnline);
         });
-        setIsOnline(response.ok);
-      } catch {
-        // Only set offline if navigator.onLine also says offline
+      })
+      .catch(() => {
+        // Fallback to navigator.onLine if ConnectionMonitor fails
         setIsOnline(navigator.onLine);
-      }
-    };
+      });
 
-    // Check connectivity on mount
-    checkConnectivity();
     updateQueueStatus();
 
     // Update queue status periodically
@@ -114,6 +114,10 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       clearInterval(queueInterval);
+      if (unsubscribeConnectionRef.current) {
+        unsubscribeConnectionRef.current();
+        unsubscribeConnectionRef.current = null;
+      }
     };
   }, []);
 

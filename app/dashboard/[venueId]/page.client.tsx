@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useDashboardPrefetch } from "@/hooks/usePrefetch";
 import { useConnectionMonitor } from "@/lib/connection-monitor";
 // RoleManagementPopup and VenueSwitcherPopup removed - not used in this component
-import { supabaseBrowser } from "@/lib/supabase";
 import TrialStatusBanner from "@/components/TrialStatusBanner";
 import { useAuthRedirect } from "./hooks/useAuthRedirect";
 
@@ -402,169 +401,18 @@ const DashboardClient = React.memo(function DashboardClient({
     return [];
   }, [analyticsData.data?.revenueByCategory]);
 
-  // Check authentication and venue access (must be before early returns)
+  // Auth check removed - server already did getAccessContext() RPC via requirePageAuth()
+  // User comes from useAuthRedirect() hook which uses AuthProvider
+  // Role/venue from cache or server data - no redundant client-side queries needed
   useEffect(() => {
-    async function checkAuth() {
-      // ALWAYS fetch role if we don't have it, regardless of cache
-      // This ensures fresh sign-ins get the correct role immediately
-      if (userRole && authCheckComplete) {
-        // Only skip if we have role AND auth check is already complete
-        return;
-      }
-
-      try {
-        const supabase = supabaseBrowser();
-
-        // Try BOTH getSession() and getUser() to ensure we have valid auth
-        let session = null;
-        let sessionError = null;
-        let retries = 0;
-        const maxRetries = 3;
-
-        while (retries < maxRetries) {
-          // Try getSession first
-          const sessionResult = await supabase.auth.getSession();
-          sessionError = sessionResult.error;
-          session = sessionResult.data.session;
-
-          // If getSession fails, try getUser() which makes a server request
-          if (!session?.user) {
-            const userResult = await supabase.auth.getUser();
-            // User data fetched - no need to store separately
-
-            if (userResult.data?.user && !userResult.error) {
-              // After getUser(), try getSession again
-              const retrySession = await supabase.auth.getSession();
-              session = retrySession.data.session;
-              sessionError = retrySession.error;
-              // Session check complete
-            }
-          }
-
-          if (session?.user) {
-            break;
-          }
-
-          if (retries < maxRetries - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-          retries++;
-        }
-
-        if (sessionError) {
-          // Session error logged
-          // NO REDIRECTS - User requested ZERO sign-in redirects
-          // Just log and continue - might be a temporary error
-        }
-
-        if (!session?.user) {
-          // NO REDIRECTS - User requested ZERO sign-in redirects
-          // Use cached user if available
-          // Empty blocks removed - no action needed here
-          // Don't return - continue with cached data or proceed without auth
-        } else {
-          setUser(session.user);
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(session.user));
-          }
-        }
-
-        const userId = user?.id || session?.user?.id;
-
-        if (!userId) {
-          if (venue) {
-            setAuthCheckComplete(true);
-          }
-          return;
-        }
-
-        // Check if user is the venue owner
-        const { data: venueData, error: venueError } = await supabase
-          .from("venues")
-          .select("*")
-          .eq("venue_id", venueId)
-          .eq("owner_user_id", userId)
-          .maybeSingle();
-
-        // Venue data fetched
-
-        // If venue query fails with 406 or other errors, log but don't block
-        if (venueError) {
-          // Venue error logged
-          // Don't redirect - might be a temporary Supabase issue
-          // The user might still have access via staff role or cached data
-        }
-
-        const isOwner = !!venueData;
-
-        // Check if user has a staff role for this venue
-        const { data: roleData, error: roleError } = await supabase
-          .from("user_venue_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .eq("venue_id", venueId)
-          .maybeSingle();
-
-        // Role data fetched
-
-        // If role query fails, log but don't block
-        if (roleError) {
-          // Role error logged
-        }
-
-        const isStaff = !!roleData;
-
-        // NO REDIRECTS - User requested ZERO sign-in redirects
-        // Always allow access - fail open approach
-        if (!isOwner && !isStaff && !venueError && !roleError) {
-          // Use cached venue if available - no action needed
-        }
-
-        // If queries failed but we have a cached venue, allow access
-        // Empty block removed - no action needed
-
-        // Set venue data and role
-        if (venueData) {
-          setVenue(venueData);
-          dashboardData.setVenue(venueData);
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem(`dashboard_venue_${venueId}`, JSON.stringify(venueData));
-          }
-          setUserRole("owner");
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem(`user_role_${venueId}`, "owner");
-          }
-        } else if (isStaff) {
-          const { data: staffVenue } = await supabase
-            .from("venues")
-            .select("*")
-            .eq("venue_id", venueId)
-            .single();
-
-          if (staffVenue) {
-            setVenue(staffVenue);
-            dashboardData.setVenue(staffVenue);
-            const role = roleData?.role || "staff";
-            setUserRole(role);
-            if (typeof window !== "undefined") {
-              sessionStorage.setItem(`user_role_${venueId}`, role);
-            }
-          }
-        }
-
-        // CRITICAL LOG: Role assignment result
-        // No role assigned - continue without blocking
-
-        setAuthCheckComplete(true);
-      } catch {
-        setAuthCheckComplete(true);
+    if (authUser && !user) {
+      setUser(authUser);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(authUser));
       }
     }
-
-    checkAuth().catch(() => {
-      // Error handled in checkAuth
-    });
-  }, [venueId]);
+    setAuthCheckComplete(true);
+  }, [authUser, user, venueId]);
 
   // Log whenever userRole changes for dashboard rendering
   useEffect(() => {}, [userRole]);

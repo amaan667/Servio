@@ -1,59 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabaseBrowser } from "@/lib/supabase";
 import { TableManagementClientNew } from "./table-management-client-new";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
-import type { UserRole } from "@/lib/permissions";
-import { isValidUserRole } from "@/lib/utils/userRole";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
+import { useAccessContext } from "@/lib/access/useAccessContext";
 
 export default function TablesClientPage({ venueId }: { venueId: string }) {
   const { user, isLoading: authLoading } = useAuthRedirect();
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.id) return;
-
-      const supabase = supabaseBrowser();
-
-      // Check cached role first
-      const cachedRole = sessionStorage.getItem(`user_role_${user.id}`);
-      if (cachedRole && isValidUserRole(cachedRole)) {
-        setUserRole(cachedRole);
-        return;
-      }
-
-      // Check if owner
-      const { data: ownerVenue } = await supabase
-        .from("venues")
-        .select("venue_id")
-        .eq("owner_user_id", user.id)
-        .eq("venue_id", venueId)
-        .single();
-
-      if (ownerVenue) {
-        setUserRole("owner");
-        sessionStorage.setItem(`user_role_${user.id}`, "owner");
-      } else {
-        // Check staff role
-        const { data: staffRole } = await supabase
-          .from("user_venue_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("venue_id", venueId)
-          .single();
-
-        if (staffRole && isValidUserRole(staffRole.role)) {
-          setUserRole(staffRole.role);
-          sessionStorage.setItem(`user_role_${user.id}`, staffRole.role);
-        }
-      }
-    };
-
-    fetchUserRole();
-  }, [user, venueId]);
+  const { role: userRole } = useAccessContext(venueId);
 
   // Show loading while checking auth
   if (authLoading) {
