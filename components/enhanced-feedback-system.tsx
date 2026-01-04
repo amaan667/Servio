@@ -494,6 +494,13 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
             </TabsContent>
 
             <TabsContent value="feedback" className="space-y-6 mt-6">
+              {feedbackLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-gray-900">Loading feedback...</span>
+                </div>
+              ) : (
+                <>
               {/* Filters and Search */}
               <div className="space-y-4">
                 {/* Search Bar */}
@@ -587,13 +594,15 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   </Card>
                 ))}
 
-                {feedback.length === 0 && (
+                {feedback.length === 0 && !feedbackLoading && (
                   <div className="text-center py-8 text-gray-900">
                     <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-900" />
                     <p>No feedback found matching your criteria.</p>
                   </div>
                 )}
               </div>
+              </>
+              )}
             </TabsContent>
 
             <TabsContent value="create" className="space-y-6 mt-6">
