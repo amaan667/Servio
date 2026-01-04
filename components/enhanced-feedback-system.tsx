@@ -68,6 +68,11 @@ export function EnhancedFeedbackSystem({
   const [questions, setQuestions] = useState<FeedbackQuestion[]>(initialQuestions);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
+  
+  // Use initialQuestions if available, otherwise use state (prevents flash)
+  const displayQuestions = useMemo(() => {
+    return questions.length > 0 ? questions : initialQuestions;
+  }, [questions, initialQuestions]);
   const [filters, setFilters] = useState({
     rating: 0,
     sentiment: "all",
