@@ -467,7 +467,7 @@ export function EnhancedFeedbackSystem({
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {questions.map((question, index) => (
+                      {displayQuestions.map((question, index) => (
                         <div
                           key={question.id}
                           className="flex items-center justify-between p-4 border rounded-lg"
