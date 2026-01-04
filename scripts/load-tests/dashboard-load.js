@@ -1,3 +1,4 @@
+/* eslint-env k6 */
 /**
  * k6 Load Test: Dashboard Load
  *
