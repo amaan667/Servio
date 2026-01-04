@@ -73,39 +73,21 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     // Update queue status periodically
     const queueInterval = setInterval(updateQueueStatus, 5000);
 
-    // Register service worker for offline support (only if enabled)
+    // Service worker registration disabled - file not available
+    // Unregister any existing service workers to prevent 404 errors
     if ("serviceWorker" in navigator) {
-      // Prefer explicit env version; otherwise use Next build id (changes every deploy) to bust SW cache.
-      const buildId =
-        typeof window !== "undefined"
-          ? (
-              window as unknown as {
-                __NEXT_DATA__?: {
-                  buildId?: string;
-                };
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration
+            .unregister()
+            .then((success) => {
+              if (success) {
+                logger.info("[SW] Service worker unregistered");
               }
-            ).__NEXT_DATA__?.buildId
-          : undefined;
-      const cacheVersion = envCacheVersion || buildId || "v-current";
-
-      navigator.serviceWorker
-        .register(`/sw.js?ver=${cacheVersion}`, { scope: "/" })
-        .then((registration) => {
-          logger.info("[SW] Service worker registered:", registration.scope);
-
-          // Check for updates periodically
-          setInterval(() => {
-            registration.update();
-          }, 60000); // Check every minute
-        })
-        .catch((error) => {
-          logger.error("[SW] Service worker registration failed:", error);
-        });
-
-      // Listen for messages from service worker
-      navigator.serviceWorker.addEventListener("message", (event) => {
-        if (event.data && event.data.type === "SKIP_WAITING") {
-          window.location.reload();
+            })
+            .catch((error) => {
+              logger.error("[SW] Service worker unregistration failed:", error);
+            });
         }
       });
     }
