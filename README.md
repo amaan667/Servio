@@ -172,6 +172,18 @@ Quick deploy to Railway:
 2. Configure environment variables
 3. Railway automatically builds and deploys on push to `main`
 
+## Documentation
+
+- **[API Documentation](./docs/API.md)** - Complete API reference
+- **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment instructions
+- **[Monitoring & Operations](./docs/MONITORING.md)** - Monitoring, alerting, and SLAs
+- **[Incident Response](./docs/INCIDENT_RESPONSE.md)** - Incident response procedures
+- **[Backup & Disaster Recovery](./docs/BACKUP_DISASTER_RECOVERY.md)** - Backup and DR plan
+- **[Security Audit Checklist](./docs/SECURITY_AUDIT_CHECKLIST.md)** - Security verification checklist
+- **[Load Testing](./docs/LOAD_TESTING.md)** - Load testing strategy and scripts
+- **[Testing Checklist](./docs/FINAL_TESTING_CHECKLIST.md)** - Pre-launch testing checklist
+- **[Support Guide](./docs/SUPPORT_PREPARATION.md)** - Support team preparation
+
 ## API Documentation
 
 See [API.md](./docs/API.md) for complete API documentation.
