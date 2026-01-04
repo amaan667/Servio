@@ -9,9 +9,20 @@ interface FeedbackClientPageProps {
   tier: string;
   role: string;
   hasAccess: boolean;
+  initialQuestions?: Array<{
+    id: string;
+    prompt: string;
+    type: string;
+    choices: string[];
+    is_active: boolean;
+  }>;
 }
 
-export default function FeedbackClientPage({ venueId, role }: FeedbackClientPageProps) {
+export default function FeedbackClientPage({
+  venueId,
+  role,
+  initialQuestions = [],
+}: FeedbackClientPageProps) {
   // Customer feedback is available to all tiers - no restriction needed
 
   return (
@@ -26,7 +37,7 @@ export default function FeedbackClientPage({ venueId, role }: FeedbackClientPage
           </p>
         </div>
 
-        <EnhancedFeedbackSystem venueId={venueId} />
+        <EnhancedFeedbackSystem venueId={venueId} initialQuestions={initialQuestions} />
       </div>
     </div>
   );

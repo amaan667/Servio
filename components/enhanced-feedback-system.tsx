@@ -56,12 +56,16 @@ interface FeedbackStats {
 
 interface FeedbackSystemProps {
   venueId: string;
+  initialQuestions?: FeedbackQuestion[];
 }
 
-export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
+export function EnhancedFeedbackSystem({
+  venueId,
+  initialQuestions = [],
+}: FeedbackSystemProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
-  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>(initialQuestions);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
   const [filters, setFilters] = useState({
