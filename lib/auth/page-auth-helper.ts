@@ -9,10 +9,10 @@
 
 // redirect import removed - NO REDIRECTS
 import { createServerSupabase } from "@/lib/supabase";
-import { verifyVenueAccess } from "@/lib/middleware/authorization";
-import { getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
+import { TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
 import { cache } from "react";
+import { getAccessContext } from "@/lib/access/getAccessContext";
 
 export type UserRole = "owner" | "manager" | "server" | "staff" | "viewer";
 
@@ -67,22 +67,7 @@ export interface RequirePageAuthOptions {
  */
 const getBasePageAuth = cache(
   async (venueIdFromPage?: string, allowNoVenue = false): Promise<PageAuthContext | null> => {
-    // STEP 1: Get user from Supabase session (cookie-aware)
-    // Use createServerSupabase directly for better cookie handling in production
-    const supabase = await createServerSupabase();
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      // NO REDIRECTS - User requested ZERO sign-in redirects
-      // Return null instead of redirecting - let client handle auth
-      return null;
-    }
-
-    // STEP 2: Resolve venueId
+    // STEP 1: Resolve venueId
     const venueId = venueIdFromPage;
 
     if (!venueId && !allowNoVenue) {
@@ -91,52 +76,21 @@ const getBasePageAuth = cache(
       return null;
     }
 
-    // Pages like /dashboard (no venue) can skip membership check
-    if (!venueId) {
-      // Return minimal context for pages without venue
-      const tier = await getUserTier(user.id);
-      return {
-        user: { id: user.id, email: user.email },
-        venueId: "", // Empty for no-venue pages
-        role: "owner" as UserRole, // Default
-        tier: tier as Tier,
-        hasFeatureAccess: () => false, // No features without venue
-      };
-    }
+    // STEP 2: Get unified access context via RPC (single database call)
+    const accessContext = await getAccessContext(venueId || null);
 
-    // STEP 3: Verify venue access (uses existing verifyVenueAccess function)
-    const access = await verifyVenueAccess(venueId, user.id);
-
-    if (!access) {
+    if (!accessContext) {
       // NO REDIRECTS - User requested ZERO sign-in redirects
-      // Return null instead of redirecting - but user IS authenticated
+      // Return null instead of redirecting - let client handle auth
       return null;
     }
 
-    const role = access.role as UserRole;
-
-    // STEP 4: Get subscription tier
-    // IMPORTANT: Tier is owned by the venue's billing owner/org, not the staff user.
-    // This prevents staff accounts incorrectly defaulting to Starter.
-    const rawTier = await getUserTier(access.venue.owner_user_id);
-    // Normalize tier to lowercase to ensure consistency
-    const tier = (rawTier.toLowerCase().trim() as Tier) || "starter";
-
-    // Log tier resolution for debugging
-    logger.info("[PAGE AUTH] Tier resolved", {
-      venueId,
-      ownerUserId: access.venue.owner_user_id,
-      rawTier,
-      normalizedTier: tier,
-      userId: user.id,
-    });
-
-    // STEP 5: Create feature access helper
+    // STEP 3: Create feature access helper
     const hasFeatureAccess = (feature: FeatureKey): boolean => {
-      const tierLimits = TIER_LIMITS[tier];
+      const tierLimits = TIER_LIMITS[accessContext.tier];
       if (!tierLimits) {
         logger.warn("[PAGE AUTH] Invalid tier limits", {
-          tier,
+          tier: accessContext.tier,
           feature,
           venueId,
         });
@@ -151,7 +105,7 @@ const getBasePageAuth = cache(
       if (feature === "kds" || featureKey === "kds") {
         const hasAccess = featureValue !== false;
         logger.info("[PAGE AUTH] KDS access check", {
-          tier,
+          tier: accessContext.tier,
           featureValue,
           hasAccess,
           venueId,
@@ -166,12 +120,18 @@ const getBasePageAuth = cache(
       return true;
     };
 
+    // Get user email if available
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     // All good → return base context
     return {
-      user: { id: user.id, email: user.email },
-      venueId,
-      role,
-      tier,
+      user: { id: accessContext.user_id, email: user?.email || null },
+      venueId: accessContext.venue_id || "",
+      role: accessContext.role,
+      tier: accessContext.tier,
       hasFeatureAccess,
     };
   }
@@ -202,35 +162,14 @@ export async function requirePageAuth(
  */
 export async function getOptionalPageAuth(venueId?: string): Promise<PageAuthContext | null> {
   try {
-    const supabase = await createServerSupabase();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+    // Use unified access context via RPC
+    const accessContext = await getAccessContext(venueId || null);
 
-    if (error || !user) {
+    if (!accessContext) {
       return null;
     }
 
-    if (!venueId) {
-      const tier = await getUserTier(user.id);
-      return {
-        user: { id: user.id, email: user.email },
-        venueId: "",
-        role: "owner" as UserRole,
-        tier: tier as Tier,
-        hasFeatureAccess: () => false,
-      };
-    }
-
-    const access = await verifyVenueAccess(venueId, user.id);
-    if (!access) {
-      return null;
-    }
-
-    // IMPORTANT: Tier is owned by the venue's billing owner/org, not the staff user.
-    const tier = (await getUserTier(access.venue.owner_user_id)) as Tier;
-    const tierLimits = TIER_LIMITS[tier] || TIER_LIMITS.starter;
+    const tierLimits = TIER_LIMITS[accessContext.tier] || TIER_LIMITS.starter;
 
     const hasFeatureAccess = (feature: FeatureKey): boolean => {
       // Handle legacy "customBranding" -> "branding" mapping
@@ -247,11 +186,16 @@ export async function getOptionalPageAuth(venueId?: string): Promise<PageAuthCon
       return true;
     };
 
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     return {
-      user: { id: user.id, email: user.email },
-      venueId,
-      role: access.role as UserRole,
-      tier,
+      user: { id: accessContext.user_id, email: user?.email || null },
+      venueId: accessContext.venue_id || "",
+      role: accessContext.role,
+      tier: accessContext.tier,
       hasFeatureAccess,
     };
   } catch {

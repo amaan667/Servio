@@ -35,6 +35,7 @@ import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { cn } from "@/lib/utils";
 
 // Hooks
 import { useMenuItems } from "./hooks/useMenuItems";
@@ -529,11 +530,11 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                                 <div
                                   ref={categoryProvided.innerRef}
                                   {...categoryProvided.draggableProps}
-                                  className={`border rounded-lg ${
-                                    categorySnapshot.isDragging
-                                      ? "shadow-lg ring-2 ring-purple-500 bg-purple-50"
-                                      : ""
-                                  }`}
+                                  className={cn(
+                                    "border rounded-lg",
+                                    categorySnapshot.isDragging &&
+                                      "shadow-lg ring-2 ring-purple-500 bg-purple-50"
+                                  )}
                                 >
                                   {/* Category Header with Drag Handle */}
                                   <div className="flex items-center justify-between p-4 hover:bg-muted/50 bg-gradient-to-r from-purple-50 to-transparent">
@@ -572,7 +573,10 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                                         <div
                                           ref={provided.innerRef}
                                           {...provided.droppableProps}
-                                          className={`border-t ${snapshot.isDraggingOver ? "bg-blue-50" : ""}`}
+                                          className={cn(
+                                            "border-t",
+                                            snapshot.isDraggingOver && "bg-blue-50"
+                                          )}
                                         >
                                           {getItemsByCategory(category)
                                             .sort((a, b) => (a.position || 0) - (b.position || 0))
@@ -586,11 +590,11 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                                                   <div
                                                     ref={provided.innerRef}
                                                     {...provided.draggableProps}
-                                                    className={`flex items-center justify-between p-4 hover:bg-muted/25 transition-colors ${
-                                                      snapshot.isDragging
-                                                        ? "bg-blue-50 border-l-4 border-blue-500 shadow-md"
-                                                        : ""
-                                                    }`}
+                                                    className={cn(
+                                                      "flex items-center justify-between p-4 hover:bg-muted/25 transition-colors",
+                                                      snapshot.isDragging &&
+                                                        "bg-blue-50 border-l-4 border-blue-500 shadow-md"
+                                                    )}
                                                   >
                                                     <div className="flex items-center space-x-3 flex-1">
                                                       <div

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Banknote, CreditCard, Receipt, Users, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface Order {
   id: string;
@@ -271,21 +272,24 @@ export function TablePaymentDialog({
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setSelectedMethod("cash")}
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
+                    className={cn(
+                      "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
                       selectedMethod === "cash"
                         ? "border-purple-600 bg-purple-50"
                         : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    )}
                   >
                     <Banknote
-                      className={`h-8 w-8 mb-2 ${
+                      className={cn(
+                        "h-8 w-8 mb-2",
                         selectedMethod === "cash" ? "text-purple-600" : "text-gray-400"
-                      }`}
+                      )}
                     />
                     <span
-                      className={`font-medium ${
+                      className={cn(
+                        "font-medium",
                         selectedMethod === "cash" ? "text-purple-600" : "text-gray-700"
-                      }`}
+                      )}
                     >
                       Cash
                     </span>
@@ -293,21 +297,24 @@ export function TablePaymentDialog({
 
                   <button
                     onClick={() => setSelectedMethod("card")}
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
+                    className={cn(
+                      "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
                       selectedMethod === "card"
                         ? "border-purple-600 bg-purple-50"
                         : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    )}
                   >
                     <CreditCard
-                      className={`h-8 w-8 mb-2 ${
+                      className={cn(
+                        "h-8 w-8 mb-2",
                         selectedMethod === "card" ? "text-purple-600" : "text-gray-400"
-                      }`}
+                      )}
                     />
                     <span
-                      className={`font-medium ${
+                      className={cn(
+                        "font-medium",
                         selectedMethod === "card" ? "text-purple-600" : "text-gray-700"
-                      }`}
+                      )}
                     >
                       Card
                     </span>
