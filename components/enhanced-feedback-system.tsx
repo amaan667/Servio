@@ -276,15 +276,19 @@ export function EnhancedFeedbackSystem({
     }
   };
 
-  // Only fetch questions on client if we don't have initial data from server
-  // Use a ref to track if we've initialized to prevent unnecessary fetches
-  const hasInitialized = initialQuestions.length > 0;
-  
+  // Sync questions state with initialQuestions prop (server-side data)
   useEffect(() => {
-    if (!hasInitialized && questions.length === 0) {
+    if (initialQuestions.length > 0 && questions.length === 0) {
+      setQuestions(initialQuestions);
+    }
+  }, [initialQuestions, questions.length]);
+
+  // Only fetch questions on client if we don't have initial data from server
+  useEffect(() => {
+    if (initialQuestions.length === 0 && questions.length === 0) {
       fetchQuestions();
     }
-  }, [fetchQuestions, hasInitialized, questions.length]);
+  }, [fetchQuestions, initialQuestions.length, questions.length]);
 
   // Only fetch feedback when the feedback tab is active
   useEffect(() => {
