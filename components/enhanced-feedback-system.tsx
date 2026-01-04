@@ -276,10 +276,12 @@ export function EnhancedFeedbackSystem({
     }
   };
 
-  // Load questions immediately (needed for Overview tab)
+  // Only fetch questions on client if we don't have initial data from server
   useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
+    if (initialQuestions.length === 0 && questions.length === 0) {
+      fetchQuestions();
+    }
+  }, [fetchQuestions, initialQuestions.length, questions.length]);
 
   // Only fetch feedback when the feedback tab is active
   useEffect(() => {
