@@ -83,8 +83,13 @@ export function useStaffManagement(
         setStaff([]);
       } else if (data.data?.staff) {
         const staffData = data.data.staff;
-
         setStaff(staffData);
+      } else if (data.staff) {
+        // Handle direct staff array in data (legacy format)
+        setStaff(data.staff);
+      } else if (Array.isArray(data.data)) {
+        // Handle array directly in data.data
+        setStaff(data.data);
       } else {
         setStaff([]);
       }
