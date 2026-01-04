@@ -62,7 +62,8 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
   const [filters, setFilters] = useState({
@@ -75,6 +76,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
   const fetchQuestions = useCallback(async () => {
     try {
+      setQuestionsLoading(true);
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
       const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
         credentials: "include",
@@ -103,11 +105,13 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     } catch (error) {
       // Set empty array on error to prevent UI issues
       setQuestions([]);
+    } finally {
+      setQuestionsLoading(false);
     }
   }, [venueId]);
 
   const fetchFeedback = useCallback(async () => {
-    setLoading(true);
+    setFeedbackLoading(true);
     setError(null);
 
     try {
@@ -172,7 +176,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     } catch (_err) {
       setError(_err instanceof Error ? _err.message : "Failed to submit feedback");
     } finally {
-      setLoading(false);
+      setFeedbackLoading(false);
     }
   }, [venueId, filters, searchQuery]);
 
@@ -276,10 +280,17 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     }
   };
 
+  // Load questions immediately (needed for Overview tab)
   useEffect(() => {
-    fetchFeedback();
     fetchQuestions();
-  }, [fetchFeedback, fetchQuestions]);
+  }, [fetchQuestions]);
+
+  // Only fetch feedback when the feedback tab is active
+  useEffect(() => {
+    if (activeTab === "feedback") {
+      fetchFeedback();
+    }
+  }, [activeTab, fetchFeedback]);
 
   // Add listener for when questions are updated from the Create tab
   useEffect(() => {
@@ -295,14 +306,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     };
   }, [fetchQuestions]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="ml-2 text-gray-900">Loading feedback...</span>
-      </div>
-    );
-  }
+  // Don't block rendering - show tabs immediately, load data in background
 
   return (
     <div className="space-y-8">
