@@ -454,7 +454,7 @@ export function EnhancedFeedbackSystem({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {questions.length === 0 ? (
+                  {displayQuestions.length === 0 ? (
                     <div className="text-center py-8">
                       <MessageSquare className="h-12 w-12 text-gray-700 mx-auto mb-4" />
                       <p className="text-gray-900 mb-4">No custom questions created yet</p>
