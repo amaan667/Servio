@@ -1,8 +1,9 @@
-/* eslint-env k6 */
+/* eslint-disable */
 /**
  * k6 Load Test: Dashboard Load
  *
  * This script tests dashboard endpoints under load.
+ * Note: k6 scripts use k6-specific globals (__VU, __ITER, etc.) which are not standard JavaScript.
  *
  * Usage:
  *   k6 run scripts/load-tests/dashboard-load.js

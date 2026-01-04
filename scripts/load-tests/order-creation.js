@@ -1,8 +1,9 @@
-/* eslint-env k6 */
+/* eslint-disable */
 /**
  * k6 Load Test: Order Creation Flow
  *
  * This script tests the order creation endpoint under load.
+ * Note: k6 scripts use k6-specific globals (__VU, __ITER, etc.) which are not standard JavaScript.
  *
  * Usage:
  *   k6 run scripts/load-tests/order-creation.js
