@@ -105,14 +105,7 @@ export function TodayAtAGlance({
           </CardHeader>
           <CardContent>
             <div className="h-[200px]">
-              {loading ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="animate-pulse text-sm text-gray-500 dark:text-gray-400">
-                    Loading...
-                  </div>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={ordersByHour}>
                     <defs>
                       <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
@@ -140,7 +133,6 @@ export function TodayAtAGlance({
                     />
                   </AreaChart>
                 </ResponsiveContainer>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -157,13 +149,7 @@ export function TodayAtAGlance({
           </CardHeader>
           <CardContent>
             <div className="h-[200px]">
-              {loading ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="animate-pulse text-sm text-gray-500 dark:text-gray-400">
-                    Loading...
-                  </div>
-                </div>
-              ) : !revenueByCategory || revenueByCategory.length === 0 ? (
+              {!revenueByCategory || revenueByCategory.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">No revenue data yet</p>
                 </div>

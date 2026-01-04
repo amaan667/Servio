@@ -30,8 +30,8 @@ interface SettingsPageClientProps {
 
 export default function SettingsPageClient({ venueId, initialData }: SettingsPageClientProps) {
   const router = useRouter();
-  const { user, isLoading: authRedirectLoading } = useAuthRedirect();
-  const { session, loading: authLoading } = useAuth(); // Get session from AuthProvider
+  const { user } = useAuthRedirect();
+  const { session } = useAuth(); // Get session from AuthProvider
 
   // Track if component has mounted to prevent hydration mismatches
   const [mounted, setMounted] = useState(false);
@@ -57,7 +57,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     const fetchData = async () => {
       try {
         // Wait for auth to finish loading
-        if (authLoading || !mounted) {
+        if (!mounted) {
           return;
         }
 
@@ -153,18 +153,11 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     if (mounted && !initialData) {
       fetchData();
     }
-  }, [venueId, initialData, session, authLoading, mounted]);
+  }, [venueId, initialData, session, mounted]);
 
-  // Show loading while checking auth or before mount (prevents hydration mismatch)
-  if (!mounted || authRedirectLoading || authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+  // Render immediately - no blocking (mounted check still needed for hydration)
+  if (!mounted) {
+    return null;
   }
 
   // Don't render if no user (will redirect)
@@ -172,14 +165,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
     return null;
   }
 
-  // Show loading state while fetching
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // Render immediately - no blocking
 
   // If no data after loading, wait for session or show minimal UI
   if (!data || !data.user || !data.venue) {

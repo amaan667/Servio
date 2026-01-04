@@ -114,28 +114,17 @@ export default function StaffClient({
         </TabsList>
 
         <TabsContent value="staff" className="mt-6">
-          {staffManagement.loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                  <span className="ml-3 text-gray-600">Loading staff members...</span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <StaffMembersList
-              venueId={venueId}
-              staff={staffManagement.staff || []}
-              onStaffAdded={async () => {
-                // Use the reloadStaff function from the hook which uses the API route
-                if (staffManagement.reloadStaff) {
-                  await staffManagement.reloadStaff();
-                }
-              }}
-              onStaffToggle={staffManagement.toggleStaffActive}
-            />
-          )}
+          <StaffMembersList
+            venueId={venueId}
+            staff={staffManagement.staff || []}
+            onStaffAdded={async () => {
+              // Use the reloadStaff function from the hook which uses the API route
+              if (staffManagement.reloadStaff) {
+                await staffManagement.reloadStaff();
+              }
+            }}
+            onStaffToggle={staffManagement.toggleStaffActive}
+          />
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-6">

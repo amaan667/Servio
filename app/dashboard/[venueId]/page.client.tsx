@@ -419,20 +419,7 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // CRITICAL: Render immediately - don't block on auth loading
   // Auth check happens in background, page renders with cached data
-  const hasCachedData = !!(user || venue || userRole || initialCounts || initialStats);
-  const shouldBlockOnAuth = false; // Never block - render immediately
-
-  // Only show spinner if we have NO cached data AND auth is still loading
-  // This allows instant rendering when we have cached data
-  const shouldShowSpinner = shouldBlockOnAuth && authRedirectLoading && !hasCachedData;
-
-  if (authRedirectLoading) {
-    return (
-      <div role="status" className="p-4 text-sm text-muted-foreground">
-        Loading dashboard...
-      </div>
-    );
-  }
+  // Never block - render immediately
 
   if (!authUser) {
     router.push("/sign-in");
@@ -443,16 +430,7 @@ const DashboardClient = React.memo(function DashboardClient({
     );
   }
 
-  if (shouldShowSpinner) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Render immediately - no blocking
 
   // Always render even if authUser isn't available yet.
   // Background auth check + cached data avoid blocking initial paint.

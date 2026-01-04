@@ -62,8 +62,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
-  const [questionsLoading, setQuestionsLoading] = useState(true);
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
   const [filters, setFilters] = useState({
@@ -76,7 +74,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
   const fetchQuestions = useCallback(async () => {
     try {
-      setQuestionsLoading(true);
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
       const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
         credentials: "include",
@@ -105,13 +102,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     } catch (error) {
       // Set empty array on error to prevent UI issues
       setQuestions([]);
-    } finally {
-      setQuestionsLoading(false);
     }
   }, [venueId]);
 
   const fetchFeedback = useCallback(async () => {
-    setFeedbackLoading(true);
     setError(null);
 
     try {
@@ -175,8 +169,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       calculateStats(filteredFeedback);
     } catch (_err) {
       setError(_err instanceof Error ? _err.message : "Failed to submit feedback");
-    } finally {
-      setFeedbackLoading(false);
     }
   }, [venueId, filters, searchQuery]);
 
@@ -494,13 +486,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
             </TabsContent>
 
             <TabsContent value="feedback" className="space-y-6 mt-6">
-              {feedbackLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  <span className="ml-2 text-gray-900">Loading feedback...</span>
-                </div>
-              ) : (
-                <>
               {/* Filters and Search */}
               <div className="space-y-4">
                 {/* Search Bar */}
@@ -594,15 +579,13 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   </Card>
                 ))}
 
-                {feedback.length === 0 && !feedbackLoading && (
+                {feedback.length === 0 && (
                   <div className="text-center py-8 text-gray-900">
                     <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-900" />
                     <p>No feedback found matching your criteria.</p>
                   </div>
                 )}
               </div>
-              </>
-              )}
             </TabsContent>
 
             <TabsContent value="create" className="space-y-6 mt-6">
