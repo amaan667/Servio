@@ -66,35 +66,23 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  -- Get tier directly from user's organization (same as settings page)
+  -- This is the source of truth synced with Stripe via webhooks
+  SELECT 
+    subscription_tier,
+    subscription_status
+  INTO v_org_row
+  FROM organizations
+  WHERE owner_user_id = v_user_id
+  LIMIT 1;
+
+  v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
+  IF v_org_row.subscription_status != 'active' THEN
+    v_tier := 'starter';
+  END IF;
+
   -- Check if user owns the venue
   IF v_venue_row.owner_user_id = v_user_id THEN
-    -- User is owner - get tier from organization
-    -- Prefer organization_id from venue (direct link), fall back to owner_user_id lookup
-    IF v_venue_row.organization_id IS NOT NULL THEN
-      SELECT 
-        subscription_tier,
-        subscription_status,
-        owner_user_id
-      INTO v_org_row
-      FROM organizations
-      WHERE id = v_venue_row.organization_id
-      LIMIT 1;
-    ELSE
-      -- Fallback: lookup by owner_user_id (legacy support)
-      SELECT 
-        subscription_tier,
-        subscription_status,
-        owner_user_id
-      INTO v_org_row
-      FROM organizations
-      WHERE owner_user_id = v_venue_row.owner_user_id
-      LIMIT 1;
-    END IF;
-
-    v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
-    IF v_org_row.subscription_status != 'active' THEN
-      v_tier := 'starter';
-    END IF;
 
     RETURN jsonb_build_object(
       'user_id', v_user_id,

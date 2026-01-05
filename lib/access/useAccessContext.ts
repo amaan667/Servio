@@ -34,84 +34,65 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
 
       const supabase = supabaseBrowser();
 
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        setContext(null);
-        return;
-      }
-
-      // SIMPLIFIED: Get tier directly from user's organization (same as server-side)
-      // This is the source of truth synced with Stripe via webhooks
-      const { data: userOrg } = await supabase
-        .from("organizations")
-        .select("subscription_tier, subscription_status")
-        .eq("owner_user_id", user.id)
-        .maybeSingle();
-
-      const tier = (userOrg?.subscription_tier?.toLowerCase().trim() || "starter") as Tier;
-
-      // Ensure valid tier
-      if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.warn("[USE ACCESS CONTEXT] Invalid tier", { tier, userId: user.id });
-        setContext(null);
-        return;
-      }
-
-      // If subscription is not active, downgrade to starter
-      const finalTier =
-        userOrg?.subscription_status === "active" ? tier : ("starter" as Tier);
-
-      // Normalize venueId for role check
+      // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId
         ? venueId.startsWith("venue-")
           ? venueId
           : `venue-${venueId}`
         : null;
 
-      // Get role if venueId provided
-      let role: "owner" | "manager" | "staff" = "owner";
-      if (normalizedVenueId) {
-        const { data: venue } = await supabase
-          .from("venues")
-          .select("owner_user_id")
-          .eq("venue_id", normalizedVenueId)
-          .maybeSingle();
+      // Call get_access_context RPC - single database call for all access context
+      // RPC now gets tier directly from user's organization (same as settings page)
+      const { data, error: rpcError } = await supabase.rpc("get_access_context", {
+        p_venue_id: normalizedVenueId,
+      });
 
-        if (venue?.owner_user_id === user.id) {
-          role = "owner";
-        } else {
-          const { data: userRole } = await supabase
-            .from("user_venue_roles")
-            .select("role")
-            .eq("venue_id", normalizedVenueId)
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          role = (userRole?.role as "manager" | "staff") || "owner";
-        }
+      if (rpcError) {
+        logger.warn("[USE ACCESS CONTEXT] RPC error", {
+          error: rpcError.message,
+          venueId,
+        });
+        setError(rpcError.message);
+        setContext(null);
+        return;
       }
 
-      const accessContext: AccessContext = {
-        user_id: user.id,
-        venue_id: normalizedVenueId,
-        role,
-        tier: finalTier,
-        venue_ids: normalizedVenueId ? [normalizedVenueId] : [],
-        permissions: {},
-      };
+      if (!data) {
+        setContext(null);
+        return;
+      }
 
-      setContext(accessContext);
+      // Parse JSONB response
+      const accessContext = data as AccessContext;
+
+      // Normalize tier
+      const tier = (accessContext.tier?.toLowerCase().trim() || "starter") as Tier;
+      if (!["starter", "pro", "enterprise"].includes(tier)) {
+        logger.warn("[USE ACCESS CONTEXT] Invalid tier", { tier, venueId });
+        setContext({
+          ...accessContext,
+          tier: "starter" as Tier,
+        });
+        return;
+      }
+
+      setContext({
+        ...accessContext,
+        tier,
+      });
 
       // Cache context in sessionStorage
       if (typeof window !== "undefined") {
         const cacheKey = normalizedVenueId
           ? `access_context_${normalizedVenueId}`
-          : `access_context_user_${user.id}`;
-        sessionStorage.setItem(cacheKey, JSON.stringify(accessContext));
+          : `access_context_user_${accessContext.user_id}`;
+        sessionStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            ...accessContext,
+            tier,
+          })
+        );
       }
     } catch (err) {
       logger.error("[USE ACCESS CONTEXT] Error", {

@@ -42,80 +42,58 @@ export const getAccessContext = cache(
     try {
       const supabase = await createServerSupabase();
 
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        return null;
-      }
-
-      // SIMPLIFIED: Get tier directly from user's organization (same as settings page)
-      // This is the source of truth synced with Stripe via webhooks
-      const { data: userOrg } = await supabase
-        .from("organizations")
-        .select("subscription_tier, subscription_status")
-        .eq("owner_user_id", user.id)
-        .maybeSingle();
-
-      const tier = (userOrg?.subscription_tier?.toLowerCase().trim() || "starter") as Tier;
-
-      // Ensure valid tier
-      if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.warn("[ACCESS CONTEXT] Invalid tier from database", { tier, userId: user.id });
-        return null;
-      }
-
-      // If subscription is not active, downgrade to starter
-      const finalTier =
-        userOrg?.subscription_status === "active" ? tier : ("starter" as Tier);
-
-      // Normalize venueId for role check
+      // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId
         ? venueId.startsWith("venue-")
           ? venueId
           : `venue-${venueId}`
         : null;
 
-      // Get role if venueId provided
-      let role: "owner" | "manager" | "staff" = "owner";
-      if (normalizedVenueId) {
-        const { data: venue } = await supabase
-          .from("venues")
-          .select("owner_user_id")
-          .eq("venue_id", normalizedVenueId)
-          .maybeSingle();
-
-        if (venue?.owner_user_id === user.id) {
-          role = "owner";
-        } else {
-          const { data: userRole } = await supabase
-            .from("user_venue_roles")
-            .select("role")
-            .eq("venue_id", normalizedVenueId)
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          role = (userRole?.role as "manager" | "staff") || "owner";
-        }
-      }
-
-      logger.info("[ACCESS CONTEXT] Simplified tier lookup", {
-        userId: user.id,
-        tier: finalTier,
-        subscriptionStatus: userOrg?.subscription_status,
-        venueId: normalizedVenueId,
-        role,
+      // Call RPC function - single database call for all access context
+      // RPC now gets tier directly from user's organization (same as settings page)
+      const { data, error } = await supabase.rpc("get_access_context", {
+        p_venue_id: normalizedVenueId,
       });
 
+      if (error) {
+        logger.warn("[ACCESS CONTEXT] RPC error", {
+          error: error.message,
+          venueId,
+        });
+        return null;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      // Parse JSONB response
+      const context = data as AccessContext;
+
+      // Normalize tier to lowercase - database is source of truth
+      const rawTierValue = context.tier;
+      const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
+
+      logger.info("[ACCESS CONTEXT] RPC response", {
+        originalVenueId: venueId,
+        normalizedVenueId,
+        normalizedTier: tier,
+        rawTier: rawTierValue,
+      });
+
+      // Ensure valid tier
+      if (!["starter", "pro", "enterprise"].includes(tier)) {
+        logger.warn("[ACCESS CONTEXT] Invalid tier from database", { tier, venueId });
+        return {
+          ...context,
+          tier: "starter" as Tier,
+        };
+      }
+
+      // Return tier from database (webhooks handle Stripe sync automatically)
       return {
-        user_id: user.id,
-        venue_id: normalizedVenueId,
-        role,
-        tier: finalTier,
-        venue_ids: normalizedVenueId ? [normalizedVenueId] : [],
-        permissions: {},
+        ...context,
+        tier,
       };
     } catch (error) {
       logger.error("[ACCESS CONTEXT] Error", {
