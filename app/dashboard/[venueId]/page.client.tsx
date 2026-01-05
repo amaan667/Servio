@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
-import Link from "next/link";
 import { useDashboardPrefetch } from "@/hooks/usePrefetch";
 import { useConnectionMonitor } from "@/lib/connection-monitor";
 // RoleManagementPopup and VenueSwitcherPopup removed - not used in this component
@@ -467,79 +466,75 @@ const DashboardClient = React.memo(function DashboardClient({
         {/* Enhanced KPI Cards - Responsive Grid (Always 4 Cards) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {/* Card 1: Today's Orders */}
-          <Link href={`/dashboard/${venueId}/live-orders?since=today`} className="block">
-            <EnhancedStatCard
-              title="Today's Orders"
-              value={dashboardData.counts.today_orders_count}
-              icon={Clock}
-              iconColor="text-blue-600"
-              iconBgColor="bg-blue-100"
-              trend={
-                analyticsData.data?.yesterdayComparison
-                  ? {
-                      value:
-                        ((dashboardData.counts.today_orders_count -
-                          analyticsData.data.yesterdayComparison.orders) /
-                          (analyticsData.data.yesterdayComparison.orders || 1)) *
-                        100,
-                      label: "vs yesterday",
-                    }
-                  : undefined
-              }
-              tooltip="View all orders placed today"
-            />
-          </Link>
+          <EnhancedStatCard
+            title="Today's Orders"
+            value={dashboardData.counts.today_orders_count}
+            icon={Clock}
+            iconColor="text-blue-600"
+            iconBgColor="bg-blue-100"
+            trend={
+              analyticsData.data?.yesterdayComparison
+                ? {
+                    value:
+                      ((dashboardData.counts.today_orders_count -
+                        analyticsData.data.yesterdayComparison.orders) /
+                        (analyticsData.data.yesterdayComparison.orders || 1)) *
+                      100,
+                    label: "vs yesterday",
+                  }
+                : undefined
+            }
+            tooltip="View all orders placed today"
+            href={`/dashboard/${venueId}/live-orders?since=today`}
+          />
 
           {/* Card 2: Revenue */}
-          <Link href={`/dashboard/${venueId}/analytics`} className="block">
-            <EnhancedStatCard
-              title="Revenue"
-              value={dashboardData.stats.revenue || 0}
-              icon={TrendingUp}
-              iconColor="text-green-600"
-              iconBgColor="bg-green-100"
-              isCurrency
-              trend={
-                analyticsData.data?.yesterdayComparison
-                  ? {
-                      value:
-                        ((dashboardData.stats.revenue -
-                          analyticsData.data.yesterdayComparison.revenue) /
-                          (analyticsData.data.yesterdayComparison.revenue || 1)) *
-                        100,
-                      label: "vs yesterday",
-                    }
-                  : undefined
-              }
-              tooltip="View detailed revenue analytics"
-            />
-          </Link>
+          <EnhancedStatCard
+            title="Revenue"
+            value={dashboardData.stats.revenue || 0}
+            icon={TrendingUp}
+            iconColor="text-green-600"
+            iconBgColor="bg-green-100"
+            isCurrency
+            trend={
+              analyticsData.data?.yesterdayComparison
+                ? {
+                    value:
+                      ((dashboardData.stats.revenue -
+                        analyticsData.data.yesterdayComparison.revenue) /
+                        (analyticsData.data.yesterdayComparison.revenue || 1)) *
+                      100,
+                    label: "vs yesterday",
+                  }
+                : undefined
+            }
+            tooltip="View detailed revenue analytics"
+            href={`/dashboard/${venueId}/analytics`}
+          />
 
           {/* Card 3: Tables Set Up */}
-          <Link href={`/dashboard/${venueId}/tables`} className="block">
-            <EnhancedStatCard
-              title="Tables Set Up"
-              value={displayTables}
-              icon={Table}
-              iconColor="text-purple-600"
-              iconBgColor="bg-purple-100"
-              subtitle="all active"
-              tooltip="Manage table setup and reservations"
-            />
-          </Link>
+          <EnhancedStatCard
+            title="Tables Set Up"
+            value={displayTables}
+            icon={Table}
+            iconColor="text-purple-600"
+            iconBgColor="bg-purple-100"
+            subtitle="all active"
+            tooltip="Manage table setup and reservations"
+            href={`/dashboard/${venueId}/tables`}
+          />
 
           {/* Card 4: Menu Items */}
-          <Link href={`/dashboard/${venueId}/menu-management`} className="block">
-            <EnhancedStatCard
-              title="Menu Items"
-              value={displayMenuItems}
-              icon={ShoppingBag}
-              iconColor="text-orange-600"
-              iconBgColor="bg-orange-100"
-              subtitle="available"
-              tooltip="Edit your menu items"
-            />
-          </Link>
+          <EnhancedStatCard
+            title="Menu Items"
+            value={displayMenuItems}
+            icon={ShoppingBag}
+            iconColor="text-orange-600"
+            iconBgColor="bg-orange-100"
+            subtitle="available"
+            tooltip="Edit your menu items"
+            href={`/dashboard/${venueId}/menu-management`}
+          />
         </div>
 
         {/* AI Insights & Today at a Glance - Side by Side */}
