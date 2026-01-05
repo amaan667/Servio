@@ -13,7 +13,6 @@ import { TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
 import { cache } from "react";
 import { getAccessContext } from "@/lib/access/getAccessContext";
-import { getAuthenticatedUser } from "@/lib/supabase";
 import type { UserRole } from "@/lib/permissions";
 
 export type { UserRole };
@@ -82,30 +81,11 @@ const getBasePageAuth = cache(
     const accessContext = await getAccessContext(venueId || null);
 
     if (!accessContext) {
-      // CRITICAL: If user is properly authenticated, this should never happen
-      // Log detailed error information to diagnose auth issues
-      logger.error("[PAGE AUTH] CRITICAL: Access context failed - this should never happen for authenticated users", {
+      // Server-side auth failed - client-side will handle authentication
+      // With Supabase's official SSR client, this should be very rare
+      logger.warn("[PAGE AUTH] Access context failed - falling back to client-side auth", {
         venueId: venueId || "none",
-        timestamp: new Date().toISOString(),
       });
-
-      // Try to get user info directly to diagnose the issue
-      try {
-        const { user, error: authError } = await getAuthenticatedUser();
-        logger.error("[PAGE AUTH] Auth diagnostics", {
-          hasUser: !!user,
-          userId: user?.id,
-          authError: authError,
-          venueId: venueId || "none",
-        });
-      } catch (diagError) {
-        logger.error("[PAGE AUTH] Auth diagnostics failed", {
-          error: diagError instanceof Error ? diagError.message : String(diagError),
-          venueId: venueId || "none",
-        });
-      }
-
-      // Still return null to prevent crashes, but this indicates a serious auth issue
       return null;
     }
 

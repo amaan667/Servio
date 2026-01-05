@@ -4,9 +4,11 @@
  */
 
 import { cache } from "react";
-import { supabaseServer, getAuthenticatedUser } from "@/lib/supabase";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
+import { env } from "@/lib/env";
 
 import type { UserRole } from "@/lib/permissions";
 export type Tier = "starter" | "pro" | "enterprise";
@@ -40,88 +42,47 @@ export interface AccessContext {
 export const getAccessContext = cache(
   async (venueId?: string | null): Promise<AccessContext | null> => {
     try {
-      // CRITICAL: Authentication should NEVER fail for properly signed-in users
-      const { user, error: authError } = await getAuthenticatedUser();
-
-      if (authError || !user) {
-        // LOG CRITICAL ERROR: This should never happen for authenticated users
-        logger.error("[ACCESS CONTEXT] CRITICAL AUTH FAILURE - User should be authenticated", {
-          error: authError,
-          venueId,
-          timestamp: new Date().toISOString(),
-          stack: new Error().stack, // Capture stack trace for debugging
-        });
-
-        // Try alternative auth method as fallback
-        try {
-          const { cookies } = await import("next/headers");
-          const cookieStore = await cookies();
-
-          // Log all cookies for debugging
-          const allCookies = cookieStore.getAll();
-          logger.error("[ACCESS CONTEXT] Cookie diagnostics", {
-            totalCookies: allCookies.length,
-            cookieNames: allCookies.map(c => c.name),
-            hasSupabaseCookies: allCookies.some(c => c.name.includes('sb-')),
-            venueId,
-          });
-
-          // Try creating a basic client and checking auth
-          const basicSupabase = supabaseServer({
-            get: (name) => cookieStore.get(name)?.value,
-            set: () => {},
-          });
-
-          const { data: { user: fallbackUser }, error: fallbackError } = await basicSupabase.auth.getUser();
-
-          if (fallbackUser && !fallbackError) {
-            logger.warn("[ACCESS CONTEXT] Fallback auth succeeded", {
-              userId: fallbackUser.id,
-              venueId,
-            });
-            // Use fallback user
-            // Continue with fallback user...
-          } else {
-            logger.error("[ACCESS CONTEXT] Fallback auth also failed", {
-              fallbackError: fallbackError?.message,
-              venueId,
-            });
-            return null;
-          }
-        } catch (fallbackError) {
-          logger.error("[ACCESS CONTEXT] Complete auth failure", {
-            fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-            venueId,
-          });
-          return null;
-        }
-      }
-
-      // If we get here, we should have a valid user
-      const authenticatedUser = user!;
-
-      // Create authenticated supabase client
-      const { cookies } = await import("next/headers");
+      // Use Supabase's official SSR client - this should work reliably
       const cookieStore = await cookies();
 
-      const supabase = supabaseServer({
-        get: (name) => {
-          try {
-            const cookie = cookieStore.get(name);
-            return cookie?.value;
-          } catch (error) {
-            logger.warn("[ACCESS CONTEXT] Cookie access error", {
-              cookieName: name,
-              error: error instanceof Error ? error.message : String(error),
-              venueId,
-            });
-            return undefined;
-          }
-        },
-        set: () => {
-          // Read-only mode for access context
-        },
-      });
+      const supabase = createServerClient(
+        env("NEXT_PUBLIC_SUPABASE_URL"),
+        env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: CookieOptions) {
+              // Read-only for access context - don't set cookies
+            },
+            remove(name: string, options: CookieOptions) {
+              // Read-only for access context - don't remove cookies
+            },
+          },
+        }
+      );
+
+      // Get authenticated user - Supabase's built-in method should work reliably
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        logger.error("[ACCESS CONTEXT] Auth error with official Supabase client", {
+          error: authError.message,
+          venueId,
+        });
+        return null;
+      }
+
+      if (!user) {
+        logger.error("[ACCESS CONTEXT] No user found with official Supabase client", {
+          venueId,
+        });
+        return null;
+      }
 
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId
@@ -130,55 +91,50 @@ export const getAccessContext = cache(
           : `venue-${venueId}`
         : null;
 
-      // Call RPC function - single database call for all access context
-      const { data, error } = await supabase.rpc("get_access_context", {
+      // Call RPC function using the authenticated Supabase client
+      const { data, error: rpcError } = await supabase.rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
       });
 
-      if (error) {
-        logger.error("[ACCESS CONTEXT] RPC execution failed", {
-          error: error.message,
+      if (rpcError) {
+        logger.error("[ACCESS CONTEXT] RPC error", {
+          error: rpcError.message,
           venueId,
-          userId: authenticatedUser.id,
+          userId: user.id,
           normalizedVenueId,
         });
         return null;
       }
 
       if (!data) {
-        logger.error("[ACCESS CONTEXT] RPC returned no data", {
+        logger.warn("[ACCESS CONTEXT] No data returned from RPC", {
           venueId,
-          userId: authenticatedUser.id,
+          userId: user.id,
           normalizedVenueId,
         });
         return null;
       }
 
-      // Parse JSONB response
+      // Parse and validate response
       const context = data as AccessContext;
 
-      // Validate RPC response
       if (!context.user_id || !context.role) {
-        logger.error("[ACCESS CONTEXT] Invalid RPC response structure", {
+        logger.error("[ACCESS CONTEXT] Invalid RPC response", {
           context,
           venueId,
-          userId: authenticatedUser.id,
+          userId: user.id,
         });
         return null;
       }
 
-      // Normalize tier to lowercase - database is source of truth
-      const rawTierValue = context.tier;
-      const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
+      // Normalize tier
+      const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
 
-      // Ensure valid tier
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.error("[ACCESS CONTEXT] Invalid tier from RPC", {
+        logger.warn("[ACCESS CONTEXT] Invalid tier, defaulting to starter", {
           tier,
-          rawTier: rawTierValue,
           venueId,
-          userId: authenticatedUser.id,
-          fullContext: JSON.stringify(context),
+          userId: user.id,
         });
         return {
           ...context,
@@ -186,22 +142,13 @@ export const getAccessContext = cache(
         };
       }
 
-      logger.info("[ACCESS CONTEXT] Successfully loaded", {
-        userId: authenticatedUser.id,
-        venueId: context.venue_id,
-        role: context.role,
-        tier,
-        venueIds: context.venue_ids?.length || 0,
-      });
-
       return {
         ...context,
         tier,
       };
     } catch (error) {
-      logger.error("[ACCESS CONTEXT] Unexpected error in getAccessContext", {
+      logger.error("[ACCESS CONTEXT] Unexpected error", {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
         venueId,
       });
       return null;
