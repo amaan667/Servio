@@ -147,21 +147,30 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       // Use read-only client in layout to prevent cookie modification errors
       const supabase = await createServerSupabaseReadOnly();
 
-      // Use getSession() to get the full session with tokens
+      // Use getUser() for secure authentication (validates with Supabase Auth server)
       // Add timeout to prevent hanging
       try {
         const {
-          data: { session: authSession },
+          data: { user: authUser },
           error,
         } = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<{ data: { session: null }; error: null }>((resolve) =>
-            setTimeout(() => resolve({ data: { session: null }, error: null }), 1000)
+          supabase.auth.getUser(),
+          new Promise<{ data: { user: null }; error: null }>((resolve) =>
+            setTimeout(() => resolve({ data: { user: null }, error: null }), 1000)
           ),
         ]);
 
-        if (!error && authSession) {
-          session = authSession;
+        if (!error && authUser) {
+          // Construct session object from authenticated user
+          // getUser() validates with server, getSession() just reads cookies (insecure)
+          session = {
+            user: authUser,
+            access_token: "", // Not needed for layout, only user info is required
+            refresh_token: "",
+            expires_in: 0,
+            expires_at: null,
+            token_type: "bearer",
+          } as Session;
         }
       } catch (err) {
         // Error handled
