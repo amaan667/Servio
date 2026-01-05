@@ -68,29 +68,53 @@ export const getAccessContext = cache(
       // Parse JSONB response
       const context = data as AccessContext;
 
-      // Debug logging to track tier resolution
-      logger.info("[ACCESS CONTEXT] RPC response", {
-        originalVenueId: venueId,
-        normalizedVenueId,
-        rawTier: context.tier,
-        rawTierType: typeof context.tier,
-        contextData: JSON.stringify(context),
-      });
-
       // Normalize tier to lowercase - database is source of truth
-      // Webhooks keep database in sync with Stripe automatically
       const rawTierValue = context.tier;
-      const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
+      let tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
+
+      // FALLBACK: If RPC returns starter but venue has organization_id, verify directly
+      // This handles cases where RPC hasn't been updated in Supabase yet
+      if (tier === "starter" && normalizedVenueId) {
+        try {
+          const { data: venueData } = await supabase
+            .from("venues")
+            .select("organization_id")
+            .eq("venue_id", normalizedVenueId)
+            .single();
+
+          if (venueData?.organization_id) {
+            const { data: orgData } = await supabase
+              .from("organizations")
+              .select("subscription_tier, subscription_status")
+              .eq("id", venueData.organization_id)
+              .single();
+
+            if (orgData?.subscription_tier && orgData.subscription_status === "active") {
+              const directTier = (orgData.subscription_tier.toLowerCase().trim() || "starter") as Tier;
+              if (["starter", "pro", "enterprise"].includes(directTier) && directTier !== "starter") {
+                logger.info("[ACCESS CONTEXT] RPC returned starter, but direct lookup shows", {
+                  directTier,
+                  venueId: normalizedVenueId,
+                  organizationId: venueData.organization_id,
+                });
+                tier = directTier;
+              }
+            }
+          }
+        } catch (fallbackError) {
+          // Log but continue with RPC tier
+          logger.warn("[ACCESS CONTEXT] Fallback lookup failed", {
+            error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+            venueId: normalizedVenueId,
+          });
+        }
+      }
 
       logger.info("[ACCESS CONTEXT] Final tier", {
         originalVenueId: venueId,
         normalizedVenueId,
-        normalizedTier: tier,
+        finalTier: tier,
         rawTier: rawTierValue,
-        rawTierStringified: String(rawTierValue),
-        isEnterprise: tier === "enterprise",
-        isPro: tier === "pro",
-        isStarter: tier === "starter",
       });
 
       // Ensure valid tier
