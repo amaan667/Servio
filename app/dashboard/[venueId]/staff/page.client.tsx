@@ -3,9 +3,10 @@
 import StaffManagementClient from "./staff-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
+import type { UserRole } from "@/lib/permissions";
+
 export default function StaffClientPage({
   venueId,
-  tier,
   role,
 }: {
   venueId: string;
@@ -13,7 +14,7 @@ export default function StaffClientPage({
   role: string;
 }) {
   const { user } = useAuthRedirect();
-  const userRole = role;
+  const userRole = role as UserRole;
 
   // Render immediately - no blocking
 

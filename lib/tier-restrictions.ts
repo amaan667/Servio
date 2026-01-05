@@ -1,6 +1,5 @@
 // Tier-based feature restrictions
 // Based on pricing table: Starter (£99), Pro (£249), Enterprise (£449+)
-import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export type AnalyticsTier = "basic" | "advanced" | "advanced+exports";
@@ -89,105 +88,21 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
   },
 };
 
+/**
+ * @deprecated Use getAccessContext() RPC instead - single call for all access context
+ * This function is kept for backward compatibility but should be replaced with RPC
+ */
 export async function getUserTier(userId: string): Promise<string> {
-  const supabase = await createClient();
+  // Use RPC instead of direct query - single call, no Stripe sync (webhooks handle it)
+  const { getAccessContext } = await import("@/lib/access/getAccessContext");
+  const accessContext = await getAccessContext(null); // null venueId = user-only context
 
-  // Get user's organization and tier
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("id, subscription_tier, subscription_status, stripe_customer_id")
-    .eq("owner_user_id", userId)
-    .single();
-
-  // If subscription is not active, downgrade to starter (but require payment for new users)
-  if (!org || org.subscription_status !== "active") {
+  if (!accessContext || accessContext.user_id !== userId) {
+    logger.warn("[TIER RESTRICTIONS] No access context found for user", { userId });
     return "starter";
   }
 
-  // AUTO-SYNC: Sync tier from Stripe if organization has Stripe customer
-  // This ensures tier is always up-to-date, matching settings page behavior
-  // ALWAYS use Stripe as source of truth - even if database matches
-  if (org.stripe_customer_id && org.id) {
-    try {
-      const { stripe } = await import("@/lib/stripe-client");
-      const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
-
-      // Get active subscription from Stripe
-      const subscriptions = await stripe.subscriptions.list({
-        customer: org.stripe_customer_id,
-        status: "active",
-        limit: 1,
-      });
-
-      if (subscriptions.data.length > 0) {
-        const subscription = subscriptions.data[0];
-        const stripeTier = await getTierFromStripeSubscription(subscription, stripe);
-
-        logger.info("[TIER RESTRICTIONS] Fetched tier from Stripe", {
-          organizationId: org.id,
-          databaseTier: org.subscription_tier,
-          stripeTier,
-          userId,
-        });
-
-        // Always update database to match Stripe (use Stripe as source of truth)
-        // This ensures database stays in sync even if tiers match
-        const { error: updateError } = await supabase
-          .from("organizations")
-          .update({
-            subscription_tier: stripeTier,
-            subscription_status: subscription.status,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", org.id);
-
-        if (!updateError) {
-          // Always use the tier from Stripe (source of truth)
-          const tierLower = stripeTier.toLowerCase().trim();
-          if (["starter", "pro", "enterprise"].includes(tierLower)) {
-            logger.info("[TIER RESTRICTIONS] Using tier from Stripe", {
-              organizationId: org.id,
-              tier: stripeTier,
-              wasDifferent: stripeTier !== org.subscription_tier,
-            });
-            return tierLower as "starter" | "pro" | "enterprise";
-          }
-        } else {
-          logger.error("[TIER RESTRICTIONS] Failed to update database with Stripe tier", {
-            error: updateError,
-            organizationId: org.id,
-            stripeTier,
-          });
-          // Fall through to use database tier if update fails
-        }
-      } else {
-        logger.warn("[TIER RESTRICTIONS] No active Stripe subscription found", {
-          organizationId: org.id,
-          stripeCustomerId: org.stripe_customer_id,
-        });
-      }
-    } catch (syncError) {
-      // Log but don't fail - webhooks will handle sync eventually
-      logger.warn("[TIER RESTRICTIONS] Auto-sync tier failed (non-critical)", {
-        error: syncError instanceof Error ? syncError.message : String(syncError),
-        organizationId: org.id,
-        userId,
-      });
-    }
-  }
-
-  const tier = org.subscription_tier || "starter";
-
-  // Use tier directly from database (should match Stripe exactly)
-  // Validate it's a valid tier
-  const tierLower = tier.toLowerCase().trim();
-  if (["starter", "pro", "enterprise"].includes(tierLower)) {
-    return tierLower as "starter" | "pro" | "enterprise";
-  }
-
-  // If invalid, default to starter
-  logger.warn("[TIER RESTRICTIONS] Invalid tier value in database:", tier, "defaulting to starter");
-  return "starter";
+  return accessContext.tier;
 }
 
 export async function checkFeatureAccess(

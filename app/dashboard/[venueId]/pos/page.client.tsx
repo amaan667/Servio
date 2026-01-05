@@ -3,9 +3,10 @@
 import POSClient from "./pos-dashboard-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
+import type { UserRole } from "@/lib/permissions";
+
 export default function POSClientPage({
   venueId,
-  tier,
   role,
 }: {
   venueId: string;
@@ -13,7 +14,7 @@ export default function POSClientPage({
   role: string;
 }) {
   const { user } = useAuthRedirect();
-  const userRole = role;
+  const userRole = role as UserRole;
 
   // Render immediately - no blocking
 
