@@ -62,15 +62,87 @@ export const getAccessContext = cache(
       const context = data as AccessContext;
 
       // Normalize tier to lowercase
-      const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
+      let tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
 
       // Ensure valid tier
       if (!["starter", "pro", "enterprise"].includes(tier)) {
         logger.warn("[ACCESS CONTEXT] Invalid tier", { tier, venueId });
-        return {
-          ...context,
-          tier: "starter" as Tier,
-        };
+        tier = "starter" as Tier;
+      }
+
+      // Sync tier from Stripe if organization has Stripe customer (same as settings page)
+      // This ensures tier is always accurate, matching settings page behavior
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          // Get organization with Stripe customer ID
+          const { data: orgData } = await supabase
+            .from("organizations")
+            .select("id, subscription_tier, stripe_customer_id, subscription_status")
+            .eq("owner_user_id", user.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (orgData?.stripe_customer_id && orgData.id) {
+            try {
+              const { stripe } = await import("@/lib/stripe-client");
+              const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
+
+              // Get active subscription from Stripe
+              const subscriptions = await stripe.subscriptions.list({
+                customer: orgData.stripe_customer_id,
+                status: "active",
+                limit: 1,
+              });
+
+              if (subscriptions.data.length > 0) {
+                const subscription = subscriptions.data[0];
+                const stripeTier = await getTierFromStripeSubscription(subscription, stripe);
+
+                // Update database if tier differs (use Stripe as source of truth)
+                if (stripeTier !== orgData.subscription_tier) {
+                  logger.info("[ACCESS CONTEXT] Syncing tier from Stripe", {
+                    organizationId: orgData.id,
+                    databaseTier: orgData.subscription_tier,
+                    stripeTier,
+                    userId: user.id,
+                  });
+
+                  const { error: updateError } = await supabase
+                    .from("organizations")
+                    .update({
+                      subscription_tier: stripeTier,
+                      subscription_status: subscription.status,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", orgData.id);
+
+                  if (!updateError) {
+                    tier = stripeTier.toLowerCase().trim() as Tier;
+                    logger.info("[ACCESS CONTEXT] Tier synced from Stripe", {
+                      organizationId: orgData.id,
+                      newTier: tier,
+                    });
+                  }
+                } else {
+                  // Even if tiers match, use Stripe tier to ensure consistency
+                  tier = stripeTier.toLowerCase().trim() as Tier;
+                }
+              }
+            } catch (syncError) {
+              // Log but don't fail - webhooks will handle sync eventually
+              logger.warn("[ACCESS CONTEXT] Tier sync failed (non-critical)", {
+                error: syncError instanceof Error ? syncError.message : String(syncError),
+                organizationId: orgData.id,
+              });
+            }
+          }
+        }
+      } catch (syncError) {
+        // Log but don't fail - continue with database tier
+        logger.warn("[ACCESS CONTEXT] Tier sync error (non-critical)", {
+          error: syncError instanceof Error ? syncError.message : String(syncError),
+        });
       }
 
       return {
