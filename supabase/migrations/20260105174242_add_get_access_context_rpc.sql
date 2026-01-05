@@ -66,35 +66,31 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  -- Get tier directly from user's organization (same as settings page)
+  -- This is the source of truth synced with Stripe via webhooks
+  SELECT
+    subscription_tier,
+    subscription_status
+  INTO v_org_row
+  FROM organizations
+  WHERE owner_user_id = v_user_id
+  LIMIT 1;
+
+  -- DEBUG LOGGING: Log what we found in the organization
+  RAISE LOG '[GET_ACCESS_CONTEXT] User % organization lookup: tier=%, status=%',
+    v_user_id, v_org_row.subscription_tier, v_org_row.subscription_status;
+
+  v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
+  IF v_org_row.subscription_status != 'active' THEN
+    v_tier := 'starter';
+  END IF;
+
+  -- DEBUG LOGGING: Log the final tier being used
+  RAISE LOG '[GET_ACCESS_CONTEXT] User % final tier: % (venue: %)',
+    v_user_id, v_tier, p_venue_id;
+
   -- Check if user owns the venue
   IF v_venue_row.owner_user_id = v_user_id THEN
-    -- User is owner - get tier from organization
-    -- Prefer organization_id from venue (direct link), fall back to owner_user_id lookup
-    IF v_venue_row.organization_id IS NOT NULL THEN
-      SELECT 
-        subscription_tier,
-        subscription_status,
-        owner_user_id
-      INTO v_org_row
-      FROM organizations
-      WHERE id = v_venue_row.organization_id
-      LIMIT 1;
-    ELSE
-      -- Fallback: lookup by owner_user_id (legacy support)
-      SELECT 
-        subscription_tier,
-        subscription_status,
-        owner_user_id
-      INTO v_org_row
-      FROM organizations
-      WHERE owner_user_id = v_venue_row.owner_user_id
-      LIMIT 1;
-    END IF;
-
-    v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
-    IF v_org_row.subscription_status != 'active' THEN
-      v_tier := 'starter';
-    END IF;
 
     RETURN jsonb_build_object(
       'user_id', v_user_id,
@@ -120,27 +116,14 @@ BEGIN
   END IF;
 
   -- User has staff role - get tier from venue owner's organization
-  -- Prefer organization_id from venue (direct link), fall back to owner_user_id lookup
-  IF v_venue_row.organization_id IS NOT NULL THEN
-    SELECT 
-      subscription_tier,
-      subscription_status,
-      owner_user_id
-    INTO v_org_row
-    FROM organizations
-    WHERE id = v_venue_row.organization_id
-    LIMIT 1;
-  ELSE
-    -- Fallback: lookup by owner_user_id (legacy support)
-    SELECT 
-      subscription_tier,
-      subscription_status,
-      owner_user_id
-    INTO v_org_row
-    FROM organizations
-    WHERE owner_user_id = v_venue_row.owner_user_id
-    LIMIT 1;
-  END IF;
+  -- Get tier directly from venue owner's organization (same as settings page)
+  SELECT 
+    subscription_tier,
+    subscription_status
+  INTO v_org_row
+  FROM organizations
+  WHERE owner_user_id = v_venue_row.owner_user_id
+  LIMIT 1;
 
   v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
   IF v_org_row.subscription_status != 'active' THEN

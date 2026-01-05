@@ -65,10 +65,24 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       // Parse JSONB response
       const accessContext = data as AccessContext;
 
+      // DEBUG LOGGING: Log the raw response from database
+      logger.info("[USE ACCESS CONTEXT] Raw RPC response", {
+        rawData: data,
+        venueId: normalizedVenueId,
+        userId: data?.user_id,
+        rawTier: data?.tier,
+        rawRole: data?.role,
+      });
+
       // Normalize tier
       const tier = (accessContext.tier?.toLowerCase().trim() || "starter") as Tier;
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.warn("[USE ACCESS CONTEXT] Invalid tier", { tier, venueId });
+        logger.error("[USE ACCESS CONTEXT] Invalid tier received", {
+          tier,
+          rawTier: accessContext.tier,
+          venueId: normalizedVenueId,
+          validTiers: ["starter", "pro", "enterprise"]
+        });
         setContext({
           ...accessContext,
           tier: "starter" as Tier,
@@ -80,6 +94,17 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         ...accessContext,
         tier,
       };
+
+      // DEBUG LOGGING: Log the final processed context
+      logger.info("[USE ACCESS CONTEXT] Final processed context", {
+        tier,
+        rawTier: accessContext.tier,
+        role: accessContext.role,
+        venueId: normalizedVenueId,
+        userId: accessContext.user_id,
+        normalizedTier: tier,
+        isTierValid: ["starter", "pro", "enterprise"].includes(tier),
+      });
 
       // eslint-disable-next-line no-console
       console.log("[USE ACCESS CONTEXT] RPC returned:", {

@@ -86,13 +86,18 @@ const getBasePageAuth = cache(
       return null;
     }
 
-    // Log initial tier loaded from RPC
-    logger.info("[PAGE AUTH] Initial tier loaded", {
+    // DEBUG LOGGING: Log initial tier loaded from RPC
+    logger.info("[PAGE AUTH] Initial tier loaded from RPC", {
       venueId: venueId || "none",
       tier: accessContext.tier,
       role: accessContext.role,
       userId: accessContext.user_id,
       venueIdFromRPC: accessContext.venue_id,
+      tierType: typeof accessContext.tier,
+      tierLength: accessContext.tier?.length,
+      tierTrimmed: accessContext.tier?.trim(),
+      tierLower: accessContext.tier?.toLowerCase(),
+      isValidTier: ["starter", "pro", "enterprise"].includes(accessContext.tier?.toLowerCase()?.trim() || ""),
     });
     
     // eslint-disable-next-line no-console

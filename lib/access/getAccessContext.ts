@@ -70,20 +70,36 @@ export const getAccessContext = cache(
       // Parse JSONB response
       const context = data as AccessContext;
 
+      // DEBUG LOGGING: Log raw response immediately
+      logger.info("[ACCESS CONTEXT] Raw RPC data received", {
+        rawData: JSON.stringify(data),
+        originalVenueId: venueId,
+        normalizedVenueId,
+        dataType: typeof data,
+        isNull: data === null,
+        hasTier: data && 'tier' in data,
+        hasUserId: data && 'user_id' in data,
+        hasRole: data && 'role' in data,
+      });
+
       // Normalize tier to lowercase - database is source of truth
       const rawTierValue = context.tier;
       const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
 
-      logger.info("[ACCESS CONTEXT] RPC response", {
+      logger.info("[ACCESS CONTEXT] Tier processing", {
         originalVenueId: venueId,
         normalizedVenueId,
         normalizedTier: tier,
         rawTier: rawTierValue,
-        fullContext: JSON.stringify(context),
-        userId: context.user_id,
-        role: context.role,
         rawTierType: typeof rawTierValue,
         rawTierString: String(rawTierValue),
+        rawTierLength: rawTierValue?.length,
+        rawTierTrimmed: rawTierValue?.trim(),
+        rawTierLower: rawTierValue?.toLowerCase(),
+        finalTier: tier,
+        isValidTier: ["starter", "pro", "enterprise"].includes(tier),
+        userId: context.user_id,
+        role: context.role,
       });
 
       // Ensure valid tier
