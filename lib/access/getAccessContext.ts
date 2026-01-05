@@ -61,9 +61,22 @@ export const getAccessContext = cache(
       // Parse JSONB response
       const context = data as AccessContext;
 
+      // Debug logging to track tier resolution
+      logger.info("[ACCESS CONTEXT] RPC response", {
+        venueId,
+        rawTier: context.tier,
+        contextData: JSON.stringify(context),
+      });
+
       // Normalize tier to lowercase - database is source of truth
       // Webhooks keep database in sync with Stripe automatically
       const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
+
+      logger.info("[ACCESS CONTEXT] Final tier", {
+        venueId,
+        normalizedTier: tier,
+        rawTier: context.tier,
+      });
 
       // Ensure valid tier
       if (!["starter", "pro", "enterprise"].includes(tier)) {
