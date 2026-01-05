@@ -35,6 +35,7 @@ export interface AccessContext {
 /**
  * Get unified access context via RPC
  * Uses React cache() for request-level deduplication
+ * Cache key includes venueId to ensure different venues get different contexts
  */
 export const getAccessContext = cache(
   async (venueId?: string | null): Promise<AccessContext | null> => {
