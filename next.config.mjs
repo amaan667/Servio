@@ -51,21 +51,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/_next/static/css/:path*',
-        headers: [
-          // Removed explicit Content-Type - Next.js handles MIME types correctly
-          // Explicit headers can conflict with Next.js's automatic MIME type detection
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-        ],
-      },
-      {
         source: '/_next/static/chunks/:path*',
         headers: [
           // Removed explicit Content-Type - Next.js handles MIME types correctly
