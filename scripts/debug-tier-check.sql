@@ -27,7 +27,20 @@ SELECT
     organization_id,
     created_at
 FROM venues
-WHERE owner_user_id = 'YOUR_USER_ID';
+WHERE owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
+
+-- STEP 3b: Check all venues in the system (to see what exists)
+SELECT
+    venue_id,
+    venue_name,
+    owner_user_id,
+    organization_id,
+    created_at
+FROM venues
+ORDER BY created_at DESC;
+
+-- STEP 3c: Count total venues
+SELECT COUNT(*) as total_venues FROM venues;
 
 -- STEP 4: Check if you're added as staff to any venues
 SELECT
@@ -40,11 +53,25 @@ SELECT
 FROM user_venue_roles uvr
 JOIN venues v ON uvr.venue_id = v.venue_id
 LEFT JOIN organizations o ON v.owner_user_id = o.owner_user_id
-WHERE uvr.user_id = 'YOUR_USER_ID';
+WHERE uvr.user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
 
--- STEP 5: Test the get_access_context RPC function directly
--- Replace VENUE_ID with one of your venue IDs from step 3
-SELECT * FROM get_access_context('VENUE_ID');
+-- STEP 5: CRITICAL TEST - Test the get_access_context RPC function
+-- This is where the bug is! Your DB shows enterprise but RPC returns starter
+
+-- IMPORTANT: The RPC returns NULL if:
+-- 1. Venue doesn't exist, OR
+-- 2. User has no access to the venue (not owner, not staff)
+-- When RPC returns NULL, frontend defaults to STARTER tier!
+
+-- Test 1: User-only context (no venue) - SHOULD return enterprise tier
+SELECT 'USER_ONLY_TEST' as test_name, * FROM get_access_context(NULL);
+
+-- Test 2: Test with first venue from Step 3b (if any exist)
+-- This should work if you own the venue
+-- SELECT 'FIRST_VENUE_TEST' as test_name, * FROM get_access_context((SELECT venue_id FROM venues LIMIT 1));
+
+-- Test 3: Check what happens with non-existent venue (should return NULL)
+SELECT 'INVALID_VENUE_TEST' as test_name, * FROM get_access_context('venue-nonexistent');
 
 -- STEP 6: Check Stripe subscription status if you have stripe_subscription_id
 -- (Only if you have a stripe_subscription_id from step 2)
@@ -71,7 +98,7 @@ SELECT
         ELSE 'Unknown tier'
     END as expected_features
 FROM organizations o
-WHERE o.owner_user_id = 'YOUR_USER_ID';
+WHERE o.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
 
 -- ========================================================================================
 -- HOW TO RUN THIS SCRIPT:
