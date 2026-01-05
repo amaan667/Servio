@@ -487,7 +487,6 @@ const DashboardClient = React.memo(function DashboardClient({
                   : undefined
               }
               tooltip="View all orders placed today"
-              href={`/dashboard/${venueId}/live-orders?since=today`}
             />
           </Link>
 
@@ -513,7 +512,6 @@ const DashboardClient = React.memo(function DashboardClient({
                   : undefined
               }
               tooltip="View detailed revenue analytics"
-              href={`/dashboard/${venueId}/analytics`}
             />
           </Link>
 
