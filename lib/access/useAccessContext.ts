@@ -76,10 +76,22 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         return;
       }
 
-      setContext({
+      const finalContext = {
         ...accessContext,
         tier,
+      };
+
+      // eslint-disable-next-line no-console
+      console.log("[USE ACCESS CONTEXT] RPC returned:", {
+        tier,
+        rawTier: accessContext.tier,
+        role: accessContext.role,
+        venueId: normalizedVenueId,
+        userId: accessContext.user_id,
+        fullContext: finalContext,
       });
+
+      setContext(finalContext);
 
       // Cache context in sessionStorage
       if (typeof window !== "undefined") {
