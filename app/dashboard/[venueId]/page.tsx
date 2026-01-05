@@ -1,5 +1,6 @@
 import React from "react";
 import DashboardClient from "./page.client";
+import ClientOnlyWrapper from "@/components/ClientOnlyWrapper";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { todayWindowForTZ } from "@/lib/time";
@@ -7,11 +8,12 @@ import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 
-// Force dynamic rendering to prevent stale cached menu counts
+// TEMPORARILY DISABLE SSR TO DEBUG TIER ISSUES
+// Force client-side rendering only
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store"; // Never cache fetch requests
-export const revalidate = 0; // Never revalidate (always fetch fresh)
-export const runtime = "nodejs"; // Ensure Node.js runtime
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
+export const runtime = "nodejs";
 
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
@@ -193,11 +195,13 @@ export default async function VenuePage({ params }: { params: { venueId: string 
           `,
         }}
       />
-      <DashboardClient
-        venueId={venueId}
-        initialCounts={initialCounts}
-        initialStats={initialStats}
-      />
+      <ClientOnlyWrapper fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-servio-purple"></div></div>}>
+        <DashboardClient
+          venueId={venueId}
+          initialCounts={initialCounts}
+          initialStats={initialStats}
+        />
+      </ClientOnlyWrapper>
     </>
   );
 }
