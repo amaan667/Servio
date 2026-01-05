@@ -121,18 +121,7 @@ export function TablePaymentScreen({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading unpaid orders...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && orders.length === 0) {
+  if (error && orders.length === 0 && !loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-md">

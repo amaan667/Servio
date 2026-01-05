@@ -275,24 +275,6 @@ export function RealTimeOrderTimeline({
     return statusArray;
   };
 
-  if (loading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-500" />
-            Order Timeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-900">Loading order timeline...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (error) {
     return (
       <Card className={className}>
