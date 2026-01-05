@@ -1,15 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+import { getAuthUserForAPI } from "@/lib/auth/server";
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabase();
+    // Authenticate user
+    const { user, error: authError } = await getAuthUserForAPI();
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ error: "Not authenticated", details: authError }, { status: 401 });
     }
+
+    const supabase = await createServerSupabase();
 
     // Check user's organizations
     const { data: organizations, error: orgError } = await supabase
