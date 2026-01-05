@@ -42,6 +42,10 @@ ORDER BY created_at DESC;
 -- STEP 3c: Count total venues
 SELECT COUNT(*) as total_venues FROM venues;
 
+-- STEP 3d: Check if venue-1e02af4d exists specifically
+SELECT 'SPECIFIC_VENUE_CHECK' as test_name,
+  CASE WHEN EXISTS(SELECT 1 FROM venues WHERE venue_id = 'venue-1e02af4d') THEN 'EXISTS' ELSE 'DOES_NOT_EXIST' END as venue_status;
+
 -- STEP 4: Check if you're added as staff to any venues
 SELECT
     uvr.venue_id,
@@ -66,29 +70,27 @@ WHERE uvr.user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
 -- Test 1: User-only context (should work - no venue needed)
 SELECT 'USER_ONLY_TEST' as test_name, * FROM get_access_context(NULL);
 
--- Test 2: Get the exact venue ID you're trying to access
--- Check your browser URL: https://yourapp.com/dashboard/VENUE_ID_HERE
--- What VENUE_ID shows in your browser URL right now?
--- SELECT 'CURRENT_VENUE_ID' as test_name, 'PASTE_VENUE_ID_FROM_BROWSER_URL' as browser_venue_id;
+-- Test 2: Check the venue ID you're accessing: venue-1e02af4d
+SELECT 'CURRENT_VENUE_ID' as test_name, 'venue-1e02af4d' as browser_venue_id;
 
--- Test 3: Verify this venue exists in database
--- SELECT 'VENUE_EXISTS_CHECK' as test_name, venue_id, venue_name, owner_user_id
--- FROM venues WHERE venue_id = 'PASTE_VENUE_ID_FROM_BROWSER_URL';
+-- Test 3: Verify venue-1e02af4d exists in database
+SELECT 'VENUE_EXISTS_CHECK' as test_name, venue_id, venue_name, owner_user_id
+FROM venues WHERE venue_id = 'venue-1e02af4d';
 
--- Test 4: Check if you own this venue
--- SELECT 'OWNERSHIP_CHECK' as test_name,
---   v.venue_id, v.venue_name, v.owner_user_id,
---   CASE WHEN v.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'YOU_OWN_IT' ELSE 'YOU_DONT_OWN_IT' END as ownership_status
--- FROM venues v WHERE v.venue_id = 'PASTE_VENUE_ID_FROM_BROWSER_URL';
+-- Test 4: Check if you own venue-1e02af4d
+SELECT 'OWNERSHIP_CHECK' as test_name,
+  v.venue_id, v.venue_name, v.owner_user_id,
+  CASE WHEN v.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'YOU_OWN_IT' ELSE 'YOU_DONT_OWN_IT' END as ownership_status
+FROM venues v WHERE v.venue_id = 'venue-1e02af4d';
 
--- Test 5: Test RPC with the venue ID
--- SELECT 'RPC_WITH_VENUE' as test_name, * FROM get_access_context('PASTE_VENUE_ID_FROM_BROWSER_URL');
+-- Test 5: Test RPC with venue-1e02af4d (this should return enterprise tier if you own it)
+SELECT 'RPC_WITH_VENUE' as test_name, * FROM get_access_context('venue-1e02af4d');
 
 -- Test 6: Debug venue ID format issues
--- SELECT 'VENUE_ID_FORMAT' as test_name,
---   'PASTE_VENUE_ID_FROM_BROWSER_URL' as venue_id,
---   CASE WHEN 'PASTE_VENUE_ID_FROM_BROWSER_URL' LIKE 'venue-%' THEN 'HAS_VENUE_PREFIX' ELSE 'NO_VENUE_PREFIX' END as prefix_status,
---   LENGTH('PASTE_VENUE_ID_FROM_BROWSER_URL') as id_length;
+SELECT 'VENUE_ID_FORMAT' as test_name,
+  'venue-1e02af4d' as venue_id,
+  CASE WHEN 'venue-1e02af4d' LIKE 'venue-%' THEN 'HAS_VENUE_PREFIX' ELSE 'NO_VENUE_PREFIX' END as prefix_status,
+  LENGTH('venue-1e02af4d') as id_length;
 
 -- STEP 6: Check Stripe subscription status if you have stripe_subscription_id
 -- (Only if you have a stripe_subscription_id from step 2)
