@@ -23,6 +23,9 @@ interface UseAccessContextReturn {
  * Replaces all duplicate venues/user_venue_roles queries
  */
 export function useAccessContext(venueId?: string | null): UseAccessContextReturn {
+  // TEST: Add this log at the very beginning to see if hook runs
+  console.log("[HOOK TEST] 🪝 useAccessContext hook is being called", { venueId });
+
   const [context, setContext] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
