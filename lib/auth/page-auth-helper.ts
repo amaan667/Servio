@@ -81,12 +81,30 @@ const getBasePageAuth = cache(
     const accessContext = await getAccessContext(venueId || null);
 
     if (!accessContext) {
-      // NO REDIRECTS - User requested ZERO sign-in redirects
-      // Return null instead of redirecting - let client handle auth
-      // This can happen if server-side auth fails but client-side auth works
-      logger.warn("[PAGE AUTH] No access context - server auth failed, client will handle", {
+      // CRITICAL: If user is properly authenticated, this should never happen
+      // Log detailed error information to diagnose auth issues
+      logger.error("[PAGE AUTH] CRITICAL: Access context failed - this should never happen for authenticated users", {
         venueId: venueId || "none",
+        timestamp: new Date().toISOString(),
       });
+
+      // Try to get user info directly to diagnose the issue
+      try {
+        const { user, error: authError } = await getAuthenticatedUser();
+        logger.error("[PAGE AUTH] Auth diagnostics", {
+          hasUser: !!user,
+          userId: user?.id,
+          authError: authError,
+          venueId: venueId || "none",
+        });
+      } catch (diagError) {
+        logger.error("[PAGE AUTH] Auth diagnostics failed", {
+          error: diagError instanceof Error ? diagError.message : String(diagError),
+          venueId: venueId || "none",
+        });
+      }
+
+      // Still return null to prevent crashes, but this indicates a serious auth issue
       return null;
     }
 

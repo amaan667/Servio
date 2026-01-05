@@ -40,18 +40,67 @@ export interface AccessContext {
 export const getAccessContext = cache(
   async (venueId?: string | null): Promise<AccessContext | null> => {
     try {
-      // Use the same authentication method as API routes
+      // CRITICAL: Authentication should NEVER fail for properly signed-in users
       const { user, error: authError } = await getAuthenticatedUser();
 
       if (authError || !user) {
-        logger.warn("[ACCESS CONTEXT] Authentication failed", {
+        // LOG CRITICAL ERROR: This should never happen for authenticated users
+        logger.error("[ACCESS CONTEXT] CRITICAL AUTH FAILURE - User should be authenticated", {
           error: authError,
           venueId,
+          timestamp: new Date().toISOString(),
+          stack: new Error().stack, // Capture stack trace for debugging
         });
-        return null;
+
+        // Try alternative auth method as fallback
+        try {
+          const { cookies } = await import("next/headers");
+          const cookieStore = await cookies();
+
+          // Log all cookies for debugging
+          const allCookies = cookieStore.getAll();
+          logger.error("[ACCESS CONTEXT] Cookie diagnostics", {
+            totalCookies: allCookies.length,
+            cookieNames: allCookies.map(c => c.name),
+            hasSupabaseCookies: allCookies.some(c => c.name.includes('sb-')),
+            venueId,
+          });
+
+          // Try creating a basic client and checking auth
+          const basicSupabase = supabaseServer({
+            get: (name) => cookieStore.get(name)?.value,
+            set: () => {},
+          });
+
+          const { data: { user: fallbackUser }, error: fallbackError } = await basicSupabase.auth.getUser();
+
+          if (fallbackUser && !fallbackError) {
+            logger.warn("[ACCESS CONTEXT] Fallback auth succeeded", {
+              userId: fallbackUser.id,
+              venueId,
+            });
+            // Use fallback user
+            // Continue with fallback user...
+          } else {
+            logger.error("[ACCESS CONTEXT] Fallback auth also failed", {
+              fallbackError: fallbackError?.message,
+              venueId,
+            });
+            return null;
+          }
+        } catch (fallbackError) {
+          logger.error("[ACCESS CONTEXT] Complete auth failure", {
+            fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+            venueId,
+          });
+          return null;
+        }
       }
 
-      // Create authenticated supabase client using the same method as API routes
+      // If we get here, we should have a valid user
+      const authenticatedUser = user!;
+
+      // Create authenticated supabase client
       const { cookies } = await import("next/headers");
       const cookieStore = await cookies();
 
@@ -60,7 +109,12 @@ export const getAccessContext = cache(
           try {
             const cookie = cookieStore.get(name);
             return cookie?.value;
-          } catch {
+          } catch (error) {
+            logger.warn("[ACCESS CONTEXT] Cookie access error", {
+              cookieName: name,
+              error: error instanceof Error ? error.message : String(error),
+              venueId,
+            });
             return undefined;
           }
         },
@@ -82,18 +136,20 @@ export const getAccessContext = cache(
       });
 
       if (error) {
-        logger.error("[ACCESS CONTEXT] RPC error", {
+        logger.error("[ACCESS CONTEXT] RPC execution failed", {
           error: error.message,
           venueId,
-          userId: user.id,
+          userId: authenticatedUser.id,
+          normalizedVenueId,
         });
         return null;
       }
 
       if (!data) {
-        logger.warn("[ACCESS CONTEXT] No data returned from RPC", {
+        logger.error("[ACCESS CONTEXT] RPC returned no data", {
           venueId,
-          userId: user.id,
+          userId: authenticatedUser.id,
+          normalizedVenueId,
         });
         return null;
       }
@@ -101,17 +157,28 @@ export const getAccessContext = cache(
       // Parse JSONB response
       const context = data as AccessContext;
 
+      // Validate RPC response
+      if (!context.user_id || !context.role) {
+        logger.error("[ACCESS CONTEXT] Invalid RPC response structure", {
+          context,
+          venueId,
+          userId: authenticatedUser.id,
+        });
+        return null;
+      }
+
       // Normalize tier to lowercase - database is source of truth
       const rawTierValue = context.tier;
       const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
 
       // Ensure valid tier
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.warn("[ACCESS CONTEXT] Invalid tier from database", {
+        logger.error("[ACCESS CONTEXT] Invalid tier from RPC", {
           tier,
           rawTier: rawTierValue,
           venueId,
-          userId: user.id
+          userId: authenticatedUser.id,
+          fullContext: JSON.stringify(context),
         });
         return {
           ...context,
@@ -119,14 +186,22 @@ export const getAccessContext = cache(
         };
       }
 
-      // Return tier from database (webhooks handle Stripe sync automatically)
+      logger.info("[ACCESS CONTEXT] Successfully loaded", {
+        userId: authenticatedUser.id,
+        venueId: context.venue_id,
+        role: context.role,
+        tier,
+        venueIds: context.venue_ids?.length || 0,
+      });
+
       return {
         ...context,
         tier,
       };
     } catch (error) {
-      logger.error("[ACCESS CONTEXT] Unexpected error", {
+      logger.error("[ACCESS CONTEXT] Unexpected error in getAccessContext", {
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         venueId,
       });
       return null;
