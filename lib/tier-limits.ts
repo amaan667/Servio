@@ -1,6 +1,8 @@
 // Client-safe tier limits and synchronous functions
 // This file contains no server-side imports and can be used in client components
 
+import type { UserRole } from "@/lib/permissions";
+
 export type AnalyticsTier = "basic" | "advanced" | "advanced+exports";
 export type KDSTier = "basic" | "advanced" | "enterprise";
 export type BrandingTier = "logo+color" | "full+subdomain" | "white-label";
@@ -137,6 +139,56 @@ export function getKDSTierByTier(tier: string): KDSTier | false {
 /**
  * Check if tier has feature access (synchronous - for client components)
  */
+// Client-safe types and functions
+export type Tier = "starter" | "pro" | "enterprise";
+export type FeatureKey =
+  | "kds"
+  | "inventory"
+  | "analytics"
+  | "customerFeedback"
+  | "loyaltyTracking"
+  | "branding"
+  | "customBranding"
+  | "apiAccess"
+  | "aiAssistant"
+  | "multiVenue"
+  | "customIntegrations";
+
+export interface AccessContext {
+  user_id: string;
+  venue_id: string | null;
+  role: UserRole;
+  tier: Tier;
+  venue_ids: string[];
+  permissions: Record<string, unknown>;
+}
+
+export function hasFeatureAccess(
+  context: AccessContext | null,
+  feature: FeatureKey
+): boolean {
+  if (!context) return false;
+
+  const tierLimits = TIER_LIMITS[context.tier];
+  if (!tierLimits) return false;
+
+  // Handle legacy "customBranding" -> "branding" mapping
+  const featureKey = feature === "customBranding" ? "branding" : feature;
+  const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
+
+  // For KDS tier, return true if not false
+  if (feature === "kds" || featureKey === "kds") {
+    return featureValue !== false;
+  }
+
+  // For boolean features, return the value directly
+  if (typeof featureValue === "boolean") {
+    return featureValue;
+  }
+
+  return true;
+}
+
 export function hasFeatureAccessByTier(
   tier: string,
   feature: keyof TierLimits["features"]

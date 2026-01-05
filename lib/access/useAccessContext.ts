@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import type { UserRole } from "@/lib/permissions";
-import type { AccessContext, Tier, FeatureKey } from "./getAccessContext";
-import { hasFeatureAccess } from "./getAccessContext";
+import type { AccessContext, Tier, FeatureKey } from "@/lib/tier-limits";
+import { hasFeatureAccess } from "@/lib/tier-limits";
 
 interface UseAccessContextReturn {
   context: AccessContext | null;

@@ -7,32 +7,8 @@ import { cache } from "react";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
-import { TIER_LIMITS } from "@/lib/tier-limits";
+import { TIER_LIMITS, type AccessContext, type Tier, type FeatureKey, hasFeatureAccess } from "@/lib/tier-limits";
 import { env } from "@/lib/env";
-
-import type { UserRole } from "@/lib/permissions";
-export type Tier = "starter" | "pro" | "enterprise";
-export type FeatureKey =
-  | "kds"
-  | "inventory"
-  | "analytics"
-  | "customerFeedback"
-  | "loyaltyTracking"
-  | "branding"
-  | "customBranding"
-  | "apiAccess"
-  | "aiAssistant"
-  | "multiVenue"
-  | "customIntegrations";
-
-export interface AccessContext {
-  user_id: string;
-  venue_id: string | null;
-  role: UserRole;
-  tier: Tier;
-  venue_ids: string[];
-  permissions: Record<string, unknown>;
-}
 
 /**
  * Get unified access context via RPC
@@ -156,35 +132,6 @@ export const getAccessContext = cache(
   }
 );
 
-/**
- * Check if user has feature access
- */
-export function hasFeatureAccess(
-  context: AccessContext | null,
-  feature: FeatureKey
-): boolean {
-  if (!context) return false;
-
-  const tierLimits = TIER_LIMITS[context.tier];
-  if (!tierLimits) return false;
-
-  // Handle legacy "customBranding" -> "branding" mapping
-  const featureKey = feature === "customBranding" ? "branding" : feature;
-  const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
-
-  // For KDS tier, return true if not false
-  if (feature === "kds" || featureKey === "kds") {
-    return featureValue !== false;
-  }
-
-  // For boolean features, return the value directly
-  if (typeof featureValue === "boolean") {
-    return featureValue;
-  }
-
-  // For analytics and supportLevel, they're always allowed (just different levels)
-  return true;
-}
 
 /**
  * Get access context with feature access helper
