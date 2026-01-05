@@ -46,6 +46,27 @@ SELECT COUNT(*) as total_venues FROM venues;
 SELECT 'SPECIFIC_VENUE_CHECK' as test_name,
   CASE WHEN EXISTS(SELECT 1 FROM venues WHERE venue_id = 'venue-1e02af4d') THEN 'EXISTS' ELSE 'DOES_NOT_EXIST' END as venue_status;
 
+-- STEP 3e: CRITICAL - Check if ANY venues exist for this user
+SELECT 'USER_VENUES_CHECK' as test_name,
+  COUNT(*) as user_venue_count,
+  ARRAY_AGG(venue_id ORDER BY created_at DESC) as user_venue_ids
+FROM venues
+WHERE owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
+
+-- STEP 3f: Check venue ID format - signup creates venue-${userId.slice(0,8)}-${timestamp}
+SELECT 'VENUE_ID_ANALYSIS' as test_name,
+  '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' as user_id,
+  SUBSTRING('1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20', 1, 8) as user_id_prefix,
+  'venue-1e02af4d' as trying_to_access,
+  CASE WHEN 'venue-1e02af4d' LIKE 'venue-' || SUBSTRING('1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20', 1, 8) || '-%' THEN 'MATCHES_FORMAT' ELSE 'DOESNT_MATCH_FORMAT' END as format_check;
+
+-- STEP 3f: Check if there are ANY venues in the entire system
+SELECT 'SYSTEM_VENUES_CHECK' as test_name,
+  COUNT(*) as total_venues,
+  COUNT(DISTINCT owner_user_id) as unique_owners,
+  ARRAY_AGG(venue_id ORDER BY created_at DESC) as all_venue_ids
+FROM venues;
+
 -- STEP 4: Check if you're added as staff to any venues
 SELECT
     uvr.venue_id,
