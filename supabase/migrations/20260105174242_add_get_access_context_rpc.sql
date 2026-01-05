@@ -76,18 +76,10 @@ BEGIN
   WHERE owner_user_id = v_user_id
   LIMIT 1;
 
-  -- DEBUG LOGGING: Log what we found in the organization
-  RAISE LOG '[GET_ACCESS_CONTEXT] User % organization lookup: tier=%, status=%',
-    v_user_id, v_org_row.subscription_tier, v_org_row.subscription_status;
-
   v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
   IF v_org_row.subscription_status != 'active' THEN
     v_tier := 'starter';
   END IF;
-
-  -- DEBUG LOGGING: Log the final tier being used
-  RAISE LOG '[GET_ACCESS_CONTEXT] User % final tier: % (venue: %)',
-    v_user_id, v_tier, p_venue_id;
 
   -- Check if user owns the venue
   IF v_venue_row.owner_user_id = v_user_id THEN

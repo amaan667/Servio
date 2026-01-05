@@ -4,7 +4,7 @@
  */
 
 import { cache } from "react";
-import { createServerSupabase } from "@/lib/supabase";
+import { supabaseServer, getAuthenticatedUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
@@ -40,7 +40,34 @@ export interface AccessContext {
 export const getAccessContext = cache(
   async (venueId?: string | null): Promise<AccessContext | null> => {
     try {
-      const supabase = await createServerSupabase();
+      // Use the same authentication method as API routes
+      const { user, error: authError } = await getAuthenticatedUser();
+
+      if (authError || !user) {
+        logger.warn("[ACCESS CONTEXT] Authentication failed", {
+          error: authError,
+          venueId,
+        });
+        return null;
+      }
+
+      // Create authenticated supabase client using the same method as API routes
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+
+      const supabase = supabaseServer({
+        get: (name) => {
+          try {
+            const cookie = cookieStore.get(name);
+            return cookie?.value;
+          } catch {
+            return undefined;
+          }
+        },
+        set: () => {
+          // Read-only mode for access context
+        },
+      });
 
       // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = venueId
@@ -50,62 +77,42 @@ export const getAccessContext = cache(
         : null;
 
       // Call RPC function - single database call for all access context
-      // RPC now gets tier directly from user's organization (same as settings page)
       const { data, error } = await supabase.rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
       });
 
       if (error) {
-        logger.warn("[ACCESS CONTEXT] RPC error", {
+        logger.error("[ACCESS CONTEXT] RPC error", {
           error: error.message,
           venueId,
+          userId: user.id,
         });
         return null;
       }
 
       if (!data) {
+        logger.warn("[ACCESS CONTEXT] No data returned from RPC", {
+          venueId,
+          userId: user.id,
+        });
         return null;
       }
 
       // Parse JSONB response
       const context = data as AccessContext;
 
-      // BROWSER CONSOLE LOGGING - Show RPC call and response
-      // eslint-disable-next-line no-console
-      console.log('[GET ACCESS CONTEXT] 📡 RPC Call Made:', {
-        requestedVenueId: venueId,
-        normalizedVenueId,
-        timestamp: new Date().toISOString()
-      });
-
-      // eslint-disable-next-line no-console
-      console.log('[GET ACCESS CONTEXT] 📦 Raw RPC Response:', {
-        data: data,
-        dataType: typeof data,
-        isNull: data === null,
-        hasProperties: data ? Object.keys(data) : [],
-        venueId: data?.venue_id,
-        userId: data?.user_id,
-        role: data?.role,
-        tier: data?.tier
-      });
-
       // Normalize tier to lowercase - database is source of truth
       const rawTierValue = context.tier;
       const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
 
-      // eslint-disable-next-line no-console
-      console.log('[GET ACCESS CONTEXT] 🔄 Tier Processing:', {
-        rawTierValue,
-        processedTier: tier,
-        validTiers: ["starter", "pro", "enterprise"],
-        isValid: ["starter", "pro", "enterprise"].includes(tier),
-        fallbackToStarter: !rawTierValue || !["starter", "pro", "enterprise"].includes(tier)
-      });
-
       // Ensure valid tier
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.warn("[ACCESS CONTEXT] Invalid tier from database", { tier, venueId });
+        logger.warn("[ACCESS CONTEXT] Invalid tier from database", {
+          tier,
+          rawTier: rawTierValue,
+          venueId,
+          userId: user.id
+        });
         return {
           ...context,
           tier: "starter" as Tier,
@@ -118,7 +125,7 @@ export const getAccessContext = cache(
         tier,
       };
     } catch (error) {
-      logger.error("[ACCESS CONTEXT] Error", {
+      logger.error("[ACCESS CONTEXT] Unexpected error", {
         error: error instanceof Error ? error.message : String(error),
         venueId,
       });

@@ -83,28 +83,12 @@ const getBasePageAuth = cache(
     if (!accessContext) {
       // NO REDIRECTS - User requested ZERO sign-in redirects
       // Return null instead of redirecting - let client handle auth
+      // This can happen if server-side auth fails but client-side auth works
+      logger.warn("[PAGE AUTH] No access context - server auth failed, client will handle", {
+        venueId: venueId || "none",
+      });
       return null;
     }
-
-    // BROWSER CONSOLE LOGGING - Show page auth results
-    // eslint-disable-next-line no-console
-    console.log('[PAGE AUTH] 🎯 Access Context Loaded:', {
-      venueId: venueId || "none",
-      tier: accessContext.tier,
-      role: accessContext.role,
-      userId: accessContext.user_id,
-      venueIdFromRPC: accessContext.venue_id,
-      hasFeatureAccess: !!accessContext.tier,
-      timestamp: new Date().toISOString()
-    });
-    
-    // eslint-disable-next-line no-console
-    console.log("[PAGE AUTH] Initial tier loaded:", {
-      venueId: venueId || "none",
-      tier: accessContext.tier,
-      role: accessContext.role,
-      userId: accessContext.user_id,
-    });
 
     // STEP 3: Create feature access helper
     const hasFeatureAccess = (feature: FeatureKey): boolean => {

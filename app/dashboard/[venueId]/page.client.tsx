@@ -2,8 +2,6 @@
 
 import React, { useEffect, useMemo, useCallback, useState } from "react";
 
-// TEST: Add this log at the very beginning to see if client-side code runs
-console.log("[CLIENT TEST] 🚀 DashboardClient component is being executed");
 import { useRouter } from "next/navigation";
 import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
 import { useDashboardPrefetch } from "@/hooks/usePrefetch";

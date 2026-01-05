@@ -23,9 +23,6 @@ interface UseAccessContextReturn {
  * Replaces all duplicate venues/user_venue_roles queries
  */
 export function useAccessContext(venueId?: string | null): UseAccessContextReturn {
-  // TEST: Add this log at the very beginning to see if hook runs
-  console.log("[HOOK TEST] 🪝 useAccessContext hook is being called", { venueId });
-
   const [context, setContext] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +42,12 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         : null;
 
       // Call get_access_context RPC - single database call for all access context
-      // RPC now gets tier directly from user's organization (same as settings page)
       const { data, error: rpcError } = await supabase.rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
       });
 
       if (rpcError) {
-        logger.warn("[USE ACCESS CONTEXT] RPC error", {
+        logger.error("[USE ACCESS CONTEXT] RPC error", {
           error: rpcError.message,
           venueId,
         });
@@ -68,37 +64,14 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       // Parse JSONB response
       const accessContext = data as AccessContext;
 
-      // BROWSER CONSOLE LOGGING - Show exactly what RPC returned
-      // eslint-disable-next-line no-console
-      console.log('[ACCESS CONTEXT] 🎯 RPC Response:', {
-        rawData: data,
-        venueId: normalizedVenueId,
-        userId: data?.user_id,
-        rawTier: data?.tier,
-        rawRole: data?.role,
-        venueIds: data?.venue_ids,
-        timestamp: new Date().toISOString()
-      });
-
       // Normalize tier
       const tier = (accessContext.tier?.toLowerCase().trim() || "starter") as Tier;
 
-      // eslint-disable-next-line no-console
-      console.log('[ACCESS CONTEXT] 🔄 Tier Processing:', {
-        originalTier: accessContext.tier,
-        processedTier: tier,
-        validTiers: ["starter", "pro", "enterprise"],
-        isValid: ["starter", "pro", "enterprise"].includes(tier),
-        venueId: normalizedVenueId
-      });
-
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        // eslint-disable-next-line no-console
-        console.error('[ACCESS CONTEXT] ❌ Invalid tier detected:', {
-          invalidTier: tier,
+        logger.warn("[USE ACCESS CONTEXT] Invalid tier from database", {
+          tier,
           originalTier: accessContext.tier,
           venueId: normalizedVenueId,
-          validOptions: ["starter", "pro", "enterprise"]
         });
         setContext({
           ...accessContext,
@@ -111,16 +84,6 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         ...accessContext,
         tier,
       };
-
-      // eslint-disable-next-line no-console
-      console.log('[ACCESS CONTEXT] ✅ Final Context Set:', {
-        userId: finalContext.user_id,
-        venueId: finalContext.venue_id,
-        role: finalContext.role,
-        tier: finalContext.tier,
-        venueIds: finalContext.venue_ids,
-        timestamp: new Date().toISOString()
-      });
 
       setContext(finalContext);
 
