@@ -79,30 +79,6 @@ export async function checkFeatureAccess(
       };
     }
 
-    // Get tier from organization (should be synced from Stripe)
-    let currentTier: SubscriptionTier = "starter";
-    const tierFromDb = org.subscription_tier?.toLowerCase().trim();
-
-    // Validate tier is one of the valid values
-    if (tierFromDb && ["starter", "pro", "enterprise"].includes(tierFromDb)) {
-      currentTier = tierFromDb as SubscriptionTier;
-    } else {
-      logger.warn("[FEATURE GATE] Invalid tier in database, defaulting to starter", {
-        venueId,
-        tierFromDb,
-        ownerUserId: venue.owner_user_id,
-      });
-      currentTier = "starter";
-    }
-
-    // Check subscription status - if not active, restrict to starter features
-    if (org.subscription_status !== "active" && org.subscription_status !== "trialing") {
-      logger.warn("[FEATURE GATE] Subscription not active, restricting to starter tier", {
-        venueId,
-        subscriptionStatus: org.subscription_status,
-      });
-      currentTier = "starter";
-    }
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
       starter: 1,
