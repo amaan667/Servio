@@ -158,6 +158,56 @@ WHERE proname = 'get_access_context';
 -- Test 7: Try calling RPC with explicit casting
 SELECT 'RPC_CAST_TEST' as test_name, * FROM get_access_context('venue-1e02af4d'::text);
 
+-- Test 8: CRITICAL - Check if user has staff roles (if not owner, RPC returns null)
+SELECT 'STAFF_ROLE_CHECK' as test_name,
+  uvr.venue_id,
+  uvr.role,
+  uvr.user_id,
+  '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' as expected_user,
+  CASE WHEN uvr.user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'HAS_STAFF_ROLE' ELSE 'NO_STAFF_ROLE' END as staff_status
+FROM user_venue_roles uvr
+WHERE uvr.user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
+
+-- Test 9: Simulate the exact RPC logic step by step
+WITH venue_check AS (
+  SELECT
+    v.venue_id,
+    v.owner_user_id,
+    '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' as current_user,
+    CASE WHEN v.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'IS_OWNER' ELSE 'NOT_OWNER' END as ownership
+  FROM venues v
+  WHERE v.venue_id = 'venue-1e02af4d'
+),
+org_check AS (
+  SELECT
+    o.owner_user_id,
+    o.subscription_tier,
+    o.subscription_status,
+    COALESCE(o.subscription_tier, 'starter') as base_tier,
+    CASE WHEN o.subscription_status = 'active' THEN COALESCE(o.subscription_tier, 'starter') ELSE 'starter' END as final_tier
+  FROM organizations o
+  WHERE o.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20'
+),
+staff_check AS (
+  SELECT COUNT(*) as staff_roles
+  FROM user_venue_roles uvr
+  WHERE uvr.venue_id = 'venue-1e02af4d'
+    AND uvr.user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20'
+)
+SELECT 'RPC_SIMULATION' as test_name,
+  vc.venue_id,
+  vc.ownership,
+  oc.final_tier as expected_tier,
+  sc.staff_roles,
+  CASE
+    WHEN vc.ownership = 'IS_OWNER' THEN 'SHOULD_RETURN_OWNER_CONTEXT'
+    WHEN sc.staff_roles > 0 THEN 'SHOULD_RETURN_STAFF_CONTEXT'
+    ELSE 'SHOULD_RETURN_NULL'
+  END as expected_result
+FROM venue_check vc
+CROSS JOIN org_check oc
+CROSS JOIN staff_check sc;
+
 -- Test 6: Debug venue ID format issues
 SELECT 'VENUE_ID_FORMAT' as test_name,
   'venue-1e02af4d' as venue_id,
