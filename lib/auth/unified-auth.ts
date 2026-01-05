@@ -224,6 +224,7 @@ export async function requireAuthAndVenueAccess(
       role: access.role,
       venueId,
       tier,
+      venue_ids: accessContext?.venue_ids || [],
     },
   };
 }
@@ -597,6 +598,7 @@ export function withUnifiedAuth(
           venueId: "",
           role: "owner",
           tier: "starter", // Default tier for system routes
+          venue_ids: [], // No venues for system routes
         };
         return await handler(req, systemContext, routeParams);
       }

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -39,49 +38,19 @@ export const GET = withUnifiedAuth(
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
       // STEP 6: Business logic
-      const supabase = await createAdminClient();
+      // Tier information is already available in the unified context from get_access_context RPC
+      // No need for additional database queries - this eliminates duplicate calls
 
-      // Get venue with organization data
-      const { data: venue, error: venueError } = await supabase
-        .from("venues")
-        .select(
-          `
-          venue_id,
-          venue_name,
-          organization_id,
-          organizations (
-            id,
-            subscription_tier,
-            subscription_status
-          )
-        `
-        )
-        .eq("venue_id", finalVenueId)
-        .single();
-
-      if (venueError || !venue) {
-        logger.error("[VENUE TIER GET] Venue not found:", {
-          venueId: finalVenueId,
-          error: venueError,
-          userId: context.user.id,
-        });
-        return NextResponse.json(
-          {
-            tier: "starter",
-            status: "active",
-          },
-          { status: 200 }
-        );
-      }
-
-      const organization = Array.isArray(venue.organizations)
-        ? venue.organizations[0]
-        : venue.organizations;
+      logger.info("[VENUE TIER GET] Using unified access context", {
+        venueId: finalVenueId,
+        tier: context.tier,
+        userId: context.user.id,
+      });
 
       // STEP 7: Return success response
       return NextResponse.json({
-        tier: organization?.subscription_tier || "starter",
-        status: organization?.subscription_status || "active",
+        tier: context.tier,
+        status: "active", // Status is handled by the RPC logic (inactive subscriptions return 'starter' tier)
       });
     } catch (_error) {
       const errorMessage =

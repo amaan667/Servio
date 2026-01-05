@@ -164,6 +164,8 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
           user: access.user,
           role: access.role,
           venueId,
+          tier: access.tier,
+          venue_ids: access.venue_ids,
         };
       }
 

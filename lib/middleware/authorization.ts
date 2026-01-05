@@ -1,5 +1,6 @@
 /**
  * Centralized Authorization Middleware
+ * Uses unified get_access_context RPC for all auth/tier/role checks
  * Eliminates 32+ duplicate venue ownership checks across the codebase
  */
 
@@ -7,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { getAccessContext } from "@/lib/access/getAccessContext";
 
 export interface Venue {
   venue_id: string;
@@ -30,6 +32,8 @@ export interface VenueAccess {
   venue: Venue;
   user: User;
   role: string;
+  tier: string;
+  venue_ids: string[];
 }
 
 export interface AuthorizedContext {
@@ -37,63 +41,84 @@ export interface AuthorizedContext {
   user: User;
   role: string;
   venueId: string;
+  tier: string;
+  venue_ids: string[];
 }
 
 /**
  * Verify user has access to venue (owner or staff)
+ * Uses unified get_access_context RPC for single database call
  */
 export async function verifyVenueAccess(
   venueId: string,
   userId: string
 ): Promise<VenueAccess | null> {
   try {
-    const supabase = await createSupabaseClient();
+    // Use unified access context RPC - single database call for all access info
+    const accessContext = await getAccessContext(venueId);
 
-    // First check if user has a role in user_venue_roles
-    const { data: roleData, error: roleError } = await supabase
-      .from("user_venue_roles")
-      .select("role")
-      .eq("venue_id", venueId)
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (!roleError && roleData?.role) {
-      // User has a role, get venue details
-      const { data: venue, error: venueFetchError } = await supabase
-        .from("venues")
-        .select("*")
-        .eq("venue_id", venueId)
-        .single();
-
-      if (venue && !venueFetchError) {
-        return {
-          venue,
-          user: { id: userId },
-          role: roleData.role,
-        };
-      }
+    if (!accessContext) {
+      logger.warn("[VENUE ACCESS] Access denied - no context returned", { venueId, userId });
+      return null;
     }
 
-    // Fallback: Check if user owns the venue
+    // Verify the access context matches the requested user
+    if (accessContext.user_id !== userId) {
+      logger.warn("[VENUE ACCESS] User ID mismatch", {
+        requested: userId,
+        context: accessContext.user_id,
+        venueId
+      });
+      return null;
+    }
+
+    // Verify venue access
+    if (accessContext.venue_id !== venueId) {
+      logger.warn("[VENUE ACCESS] Venue ID mismatch", {
+        requested: venueId,
+        context: accessContext.venue_id,
+        userId
+      });
+      return null;
+    }
+
+    // Get venue details (we still need the full venue object for backward compatibility)
+    const supabase = await createSupabaseClient();
     const { data: venue, error: venueError } = await supabase
       .from("venues")
       .select("*")
       .eq("venue_id", venueId)
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+      .single();
 
     if (venueError || !venue) {
-      logger.warn("Venue access denied", { venueId, userId, error: venueError?.message });
+      logger.error("[VENUE ACCESS] Venue fetch failed", {
+        venueId,
+        userId,
+        error: venueError?.message
+      });
       return null;
     }
+
+    logger.debug("[VENUE ACCESS] Access granted", {
+      userId,
+      venueId,
+      role: accessContext.role,
+      tier: accessContext.tier
+    });
 
     return {
       venue,
       user: { id: userId },
-      role: "owner",
+      role: accessContext.role,
+      tier: accessContext.tier,
+      venue_ids: accessContext.venue_ids,
     };
-  } catch (_error) {
-    logger.error("Error verifying venue access", { venueId, userId, error: _error });
+  } catch (error) {
+    logger.error("[VENUE ACCESS] Error verifying venue access", {
+      venueId,
+      userId,
+      error: error instanceof Error ? error.message : String(error)
+    });
     return null;
   }
 }
@@ -235,6 +260,8 @@ export function withAuthorization(
         user: access.user,
         role: access.role,
         venueId,
+        tier: access.tier,
+        venue_ids: access.venue_ids,
       });
     } catch (_error) {
       logger.error("Authorization middleware error", { error: _error });
@@ -282,6 +309,8 @@ export function withOptionalAuth(
         user: access.user,
         role: access.role,
         venueId,
+        tier: access.tier,
+        venue_ids: access.venue_ids,
       });
     } catch (_error) {
       logger.error("Optional auth middleware error", { error: _error });

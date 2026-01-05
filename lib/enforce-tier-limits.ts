@@ -1,6 +1,7 @@
 // Middleware helpers for enforcing tier limits in API routes
 import { NextResponse } from "next/server";
-import { checkLimit, checkFeatureAccess } from "./tier-restrictions";
+import { getAccessContext } from "./access/getAccessContext";
+import { TIER_LIMITS } from "./tier-restrictions";
 import { createClient } from "./supabase";
 
 interface TierCheckResult {
@@ -12,15 +13,47 @@ interface TierCheckResult {
 /**
  * Check if user can create more of a resource type
  * Returns error response if limit exceeded
+ * Uses unified get_access_context RPC for single database call
  */
 export async function enforceResourceLimit(
-  userId: string,
-  _venueId: string,
+  _userId: string,
+  venueId: string,
   resourceType: "maxMenuItems" | "maxTables" | "maxStaff" | "maxVenues",
   currentCount: number
 ): Promise<TierCheckResult> {
-  // Check limit
-  const { allowed, limit, currentTier } = await checkLimit(userId, resourceType, currentCount);
+  // Get unified access context (single RPC call)
+  const accessContext = await getAccessContext(venueId);
+
+  if (!accessContext) {
+    return {
+      allowed: false,
+      response: NextResponse.json(
+        {
+          error: "Access denied",
+          message: "Unable to verify subscription tier",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  const tierLimits = TIER_LIMITS[accessContext.tier];
+  if (!tierLimits) {
+    return {
+      allowed: false,
+      response: NextResponse.json(
+        {
+          error: "Invalid tier",
+          currentTier: accessContext.tier,
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  const limit = tierLimits[resourceType];
+  // -1 means unlimited
+  const allowed = typeof limit === "number" ? limit === -1 || currentCount < limit : false;
 
   if (!allowed) {
     const resourceName = resourceType.replace("max", "").toLowerCase();
@@ -28,51 +61,110 @@ export async function enforceResourceLimit(
       allowed: false,
       response: NextResponse.json(
         {
-          error: `Limit reached: ${currentCount}/${limit} ${resourceName}`,
-          currentTier,
-          limit,
+          error: `Limit reached: ${currentCount}/${typeof limit === "number" ? limit : 0} ${resourceName}`,
+          currentTier: accessContext.tier,
+          limit: typeof limit === "number" ? limit : 0,
           upgradeRequired: true,
           message: `Upgrade your plan to add more ${resourceName}`,
         },
         { status: 403 }
       ),
-      tier: currentTier,
+      tier: accessContext.tier,
     };
   }
 
-  return { allowed: true, tier: currentTier };
+  return { allowed: true, tier: accessContext.tier };
 }
 
 /**
  * Check if user can access a feature
  * Returns error response if feature not available in tier
+ * Uses unified get_access_context RPC for single database call
  */
 export async function enforceFeatureAccess(
-  userId: string,
-  _venueId: string,
+  _userId: string,
+  venueId: string,
   feature: "kds" | "inventory" | "analytics" | "aiAssistant" | "multiVenue"
 ): Promise<TierCheckResult> {
-  // Check feature access
-  const { allowed, currentTier, requiredTier } = await checkFeatureAccess(userId, feature);
+  // Get unified access context (single RPC call)
+  const accessContext = await getAccessContext(venueId);
 
-  if (!allowed) {
+  if (!accessContext) {
     return {
       allowed: false,
       response: NextResponse.json(
         {
-          error: `This feature requires ${requiredTier} tier`,
-          currentTier,
-          requiredTier,
-          upgradeRequired: true,
-          message: `Upgrade to ${requiredTier} to access ${feature}`,
+          error: "Access denied",
+          message: "Unable to verify subscription tier",
         },
         { status: 403 }
       ),
-      tier: currentTier,
     };
   }
 
-  return { allowed: true, tier: currentTier };
+  const tierLimits = TIER_LIMITS[accessContext.tier];
+  if (!tierLimits) {
+    return {
+      allowed: false,
+      response: NextResponse.json(
+        {
+          error: "Invalid tier",
+          currentTier: accessContext.tier,
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  // Feature key (no legacy mapping needed for these features)
+  const featureKey = feature;
+  const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
+
+  // For KDS tier (basic/advanced/enterprise), return true if not false
+  if (feature === "kds" || featureKey === "kds") {
+    const allowed = featureValue !== false;
+    if (!allowed) {
+      return {
+        allowed: false,
+        response: NextResponse.json(
+          {
+            error: `This feature requires Pro tier or higher`,
+            currentTier: accessContext.tier,
+            requiredTier: "pro",
+            upgradeRequired: true,
+            message: `Upgrade to Pro to access ${feature}`,
+          },
+          { status: 403 }
+        ),
+        tier: accessContext.tier,
+      };
+    }
+    return { allowed: true, tier: accessContext.tier };
+  }
+
+  // For boolean features, return the value directly
+  if (typeof featureValue === "boolean") {
+    if (!featureValue) {
+      return {
+        allowed: false,
+        response: NextResponse.json(
+          {
+            error: `This feature requires Enterprise tier`,
+            currentTier: accessContext.tier,
+            requiredTier: "enterprise",
+            upgradeRequired: true,
+            message: `Upgrade to Enterprise to access ${feature}`,
+          },
+          { status: 403 }
+        ),
+        tier: accessContext.tier,
+      };
+    }
+    return { allowed: true, tier: accessContext.tier };
+  }
+
+  // For analytics and supportLevel, they're always allowed (just different levels)
+  return { allowed: true, tier: accessContext.tier };
 }
 
 /**
