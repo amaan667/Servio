@@ -41,9 +41,16 @@ export const getAccessContext = cache(
     try {
       const supabase = await createServerSupabase();
 
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId
+        ? venueId.startsWith("venue-")
+          ? venueId
+          : `venue-${venueId}`
+        : null;
+
       // Call RPC function - single database call
       const { data, error } = await supabase.rpc("get_access_context", {
-        p_venue_id: venueId || null,
+        p_venue_id: normalizedVenueId,
       });
 
       if (error) {
@@ -63,7 +70,8 @@ export const getAccessContext = cache(
 
       // Debug logging to track tier resolution
       logger.info("[ACCESS CONTEXT] RPC response", {
-        venueId,
+        originalVenueId: venueId,
+        normalizedVenueId,
         rawTier: context.tier,
         contextData: JSON.stringify(context),
       });
@@ -73,7 +81,8 @@ export const getAccessContext = cache(
       const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
 
       logger.info("[ACCESS CONTEXT] Final tier", {
-        venueId,
+        originalVenueId: venueId,
+        normalizedVenueId,
         normalizedTier: tier,
         rawTier: context.tier,
       });
