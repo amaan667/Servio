@@ -28,13 +28,32 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
     fetchRevenueAnalytics(venueId),
   ]);
 
+  const tier = auth?.tier ?? "starter";
+  
+  // Log tier info for debugging
+  logger.info("[ANALYTICS PAGE] Tier check", {
+    venueId,
+    tier,
+    role: auth?.role,
+    userId: auth?.user?.id,
+    normalizedVenueId: venueId.startsWith("venue-") ? venueId : `venue-${venueId}`,
+  });
+  
+  // Also log to console for browser visibility
+  console.log("[ANALYTICS PAGE SERVER] Tier from RPC:", {
+    tier,
+    role: auth?.role,
+    venueId,
+    userId: auth?.user?.id,
+  });
+
   return (
     <AnalyticsClientPage
       venueId={venueId}
       ordersData={ordersData}
       menuData={menuData}
       revenueData={revenueData}
-      tier={auth?.tier ?? "starter"}
+      tier={tier}
       role={auth?.role ?? "viewer"}
       hasAccess={hasAnalyticsAccess}
     />

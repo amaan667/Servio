@@ -16,11 +16,21 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
   const currentTier = auth?.tier ?? "starter";
   const hasKDSAccess = auth?.hasFeatureAccess("kds") ?? false;
   
-  // Log tier info for debugging
+  // Log tier info for debugging (server-side)
   logger.info("[KDS PAGE] Tier check", {
     venueId,
     currentTier,
     hasKDSAccess,
+    userId: auth?.user?.id,
+    rawTier: auth?.tier,
+    normalizedVenueId: venueId.startsWith("venue-") ? venueId : `venue-${venueId}`,
+  });
+  
+  // Also log to console for browser visibility
+  console.log("[KDS PAGE SERVER] Tier from RPC:", {
+    tier: currentTier,
+    hasAccess: hasKDSAccess,
+    venueId,
     userId: auth?.user?.id,
   });
   

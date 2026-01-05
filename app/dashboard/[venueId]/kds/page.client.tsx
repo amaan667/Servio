@@ -25,6 +25,18 @@ export default function KDSClientPage({
   role,
   hasAccess,
 }: KDSClientPageProps) {
+  // Log tier information for debugging
+  if (typeof window !== "undefined") {
+    console.log("[KDS PAGE] Tier Debug:", {
+      tier,
+      kdsTier,
+      hasAccess,
+      role,
+      venueId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // KDS is NOT included in Starter tier - show restriction banner
   if (!hasAccess) {
     return (
