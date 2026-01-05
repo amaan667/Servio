@@ -16,6 +16,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
 
   // Fetch all settings data on server using admin client (bypasses RLS)
   // Auth already verified above, so safe to use admin client
+  // Use same unified approach as other pages - get tier from RPC via auth context
   const [venueResult, userRoleResult, allVenuesResult, firstVenueResult] = await Promise.all([
     supabase
       .from("venues")
@@ -34,7 +35,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
       .select("*")
       .eq("owner_user_id", auth?.user?.id ?? "")
       .order("created_at", { ascending: true }),
-    // Fetch first venue with organization_id by owner (same as home page and debug endpoint)
+    // Fetch first venue with organization_id by owner
     supabase
       .from("venues")
       .select("organization_id")
@@ -44,14 +45,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
       .maybeSingle(),
   ]);
 
-  logger.info("[SETTINGS PAGE] First venue fetch result", {
-    userId: auth?.user?.id,
-    hasData: !!firstVenueResult.data,
-    organizationId: firstVenueResult.data?.organization_id,
-    error: firstVenueResult.error?.message,
-  });
-
-  // Fetch organization if we have an organization_id
+  // Fetch organization for display (billing info, etc.) - but tier comes from RPC
   let organization: {
     id: string;
     subscription_tier?: string;
@@ -61,86 +55,17 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   } | null = null;
 
   if (firstVenueResult.data?.organization_id) {
-    const { data: orgData, error: orgError } = await supabase
+    const { data: orgData } = await supabase
       .from("organizations")
       .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
       .eq("id", firstVenueResult.data.organization_id)
       .single();
 
-    logger.info("[SETTINGS PAGE] Organization fetch result", {
-      organizationId: firstVenueResult.data.organization_id,
-      hasOrgData: !!orgData,
-      orgData,
-      error: orgError?.message,
-    });
-
-    organization = orgData;
-
-    // AUTOMATIC: Sync tier from Stripe if organization has Stripe customer
-    // This ensures tier is always up-to-date, even if webhooks haven't fired yet
-    if (orgData?.stripe_customer_id) {
-      try {
-        const { stripe } = await import("@/lib/stripe-client");
-        const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
-
-        // Get active subscription from Stripe
-        const subscriptions = await stripe.subscriptions.list({
-          customer: orgData.stripe_customer_id,
-          status: "active",
-          limit: 1,
-        });
-
-        if (subscriptions.data.length > 0) {
-          const subscription = subscriptions.data[0];
-          const stripeTier = await getTierFromStripeSubscription(subscription, stripe);
-
-          // Only update if tier differs from database (use Stripe as source of truth)
-          if (stripeTier !== orgData.subscription_tier) {
-            logger.info("[SETTINGS PAGE] Auto-syncing tier from Stripe", {
-              organizationId: orgData.id,
-              databaseTier: orgData.subscription_tier,
-              stripeTier,
-            });
-
-            const { error: updateError } = await supabase
-              .from("organizations")
-              .update({
-                subscription_tier: stripeTier,
-                subscription_status: subscription.status,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", orgData.id);
-
-            if (!updateError) {
-              // Update organization object with new tier
-              organization = {
-                ...orgData,
-                subscription_tier: stripeTier,
-                subscription_status: subscription.status,
-              };
-              logger.info("[SETTINGS PAGE] Tier auto-synced successfully", {
-                organizationId: orgData.id,
-                newTier: stripeTier,
-              });
-            } else {
-              logger.error("[SETTINGS PAGE] Failed to auto-sync tier", {
-                error: updateError,
-                organizationId: orgData.id,
-              });
-            }
-          }
-        }
-      } catch (syncError) {
-        // Log but don't fail - webhooks will handle sync eventually
-        logger.warn("[SETTINGS PAGE] Auto-sync tier failed (non-critical)", {
-          error: syncError instanceof Error ? syncError.message : String(syncError),
-          organizationId: orgData.id,
-        });
-      }
-    }
-  } else {
-    logger.warn("[SETTINGS PAGE] No organization_id found for user", { userId: auth?.user.id });
+    organization = orgData || null;
   }
+
+  // Tier comes from auth context (RPC) - same as all other pages
+  // Database is source of truth, webhooks keep it in sync with Stripe
 
   const venue = venueResult.data;
   const userRole = userRoleResult.data;
@@ -148,7 +73,8 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
 
   logger.info("[SETTINGS PAGE] ⭐ Final data state", {
     hasOrganization: !!organization,
-    tier: organization?.subscription_tier,
+    tierFromRPC: auth?.tier,
+    tierFromOrg: organization?.subscription_tier,
     orgId: organization?.id,
   });
 
