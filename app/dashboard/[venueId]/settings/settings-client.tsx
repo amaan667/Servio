@@ -37,8 +37,9 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   const [mounted, setMounted] = useState(false);
 
   // Fetch data on client if not provided by server
+  // Initialize with initialData immediately to prevent flash
   const [data, setData] = useState(initialData || null);
-  const [loading, setLoading] = useState(!initialData);
+  const [loading, setLoading] = useState(false); // Never block rendering
 
   // Set mounted flag after hydration
   useEffect(() => {
@@ -166,28 +167,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   }
 
   // Render immediately - no blocking
-
-  // If no data after loading, wait for session or show minimal UI
-  if (!data || !data.user || !data.venue) {
-    // If not loading but no data, show error
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="max-w-md w-full p-6 text-center">
-          <h2 className="text-2xl font-bold mb-4">Unable to Load Settings</h2>
-          <p className="text-muted-foreground mb-6">
-            Please try signing in again or contact support if the problem persists.
-          </p>
-          <button
-            onClick={() => router.push("/sign-in")}
-            className="inline-block bg-primary text-primary-foreground py-2 px-6 rounded-md hover:bg-primary/90 transition"
-          >
-            Sign In
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Use optional chaining to handle missing data gracefully
   const canAccessSettings = data?.userRole === "owner" || data?.userRole === "manager";
 
   return (
@@ -195,12 +175,12 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <RoleBasedNavigation
           venueId={venueId}
-          userRole={data.userRole as "owner" | "manager" | "staff"}
+          userRole={(data?.userRole || "staff") as "owner" | "manager" | "staff"}
           userName={
-            (typeof data.user.user_metadata?.full_name === "string"
+            (typeof data?.user?.user_metadata?.full_name === "string"
               ? data.user.user_metadata.full_name
               : null) ||
-            data.user.email?.split("@")[0] ||
+            data?.user?.email?.split("@")[0] ||
             "User"
           }
         />
@@ -210,16 +190,20 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           <p className="text-lg text-foreground mt-2">Manage your venue settings and preferences</p>
         </div>
 
-        {canAccessSettings ? (
+        {canAccessSettings && data?.user && data?.venue ? (
           <>
             <VenueSettingsClient
               user={data.user as User}
               venue={data.venue as unknown as import("./hooks/useVenueSettings").Venue}
-              venues={data.venues as unknown as import("./hooks/useVenueSettings").Venue[]}
+              venues={(data.venues || []) as unknown as import("./hooks/useVenueSettings").Venue[]}
               organization={data.organization as Organization | undefined}
               isOwner={data.isOwner}
             />
           </>
+        ) : canAccessSettings ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <p className="text-blue-700">Loading settings...</p>
+          </div>
         ) : (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
