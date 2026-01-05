@@ -12,6 +12,7 @@ import { errorToContext } from "@/lib/utils/error-to-context";
  */
 
 import { logger } from "@/lib/logger";
+import { getAccessContext } from "@/lib/access/getAccessContext";
 
 export type SubscriptionTier = "starter" | "pro" | "enterprise";
 
