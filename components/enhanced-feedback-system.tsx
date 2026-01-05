@@ -298,7 +298,7 @@ export function EnhancedFeedbackSystem({
   // Only fetch feedback when the feedback tab is active
   useEffect(() => {
     if (activeTab === "feedback") {
-      fetchFeedback();
+    fetchFeedback();
     }
   }, [activeTab, fetchFeedback]);
 

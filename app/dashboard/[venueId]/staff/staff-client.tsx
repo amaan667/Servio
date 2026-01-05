@@ -114,17 +114,17 @@ export default function StaffClient({
         </TabsList>
 
         <TabsContent value="staff" className="mt-6">
-          <StaffMembersList
-            venueId={venueId}
-            staff={staffManagement.staff || []}
-            onStaffAdded={async () => {
-              // Use the reloadStaff function from the hook which uses the API route
-              if (staffManagement.reloadStaff) {
-                await staffManagement.reloadStaff();
-              }
-            }}
-            onStaffToggle={staffManagement.toggleStaffActive}
-          />
+            <StaffMembersList
+              venueId={venueId}
+              staff={staffManagement.staff || []}
+              onStaffAdded={async () => {
+                // Use the reloadStaff function from the hook which uses the API route
+                if (staffManagement.reloadStaff) {
+                  await staffManagement.reloadStaff();
+                }
+              }}
+              onStaffToggle={staffManagement.toggleStaffActive}
+            />
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-6">
