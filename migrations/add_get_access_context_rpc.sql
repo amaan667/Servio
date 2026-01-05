@@ -76,10 +76,21 @@ BEGIN
   WHERE owner_user_id = v_user_id
   LIMIT 1;
 
+  -- DEBUG: Log organization lookup result
+  RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Organization lookup for user %: tier=%, status=%, found=%',
+    v_user_id,
+    v_org_row.subscription_tier,
+    v_org_row.subscription_status,
+    CASE WHEN v_org_row.subscription_tier IS NOT NULL THEN 'YES' ELSE 'NO' END;
+
   v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
   IF v_org_row.subscription_status != 'active' THEN
     v_tier := 'starter';
   END IF;
+
+  -- DEBUG: Log final tier decision
+  RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Final tier for user %: % (status check: % != active = %)',
+    v_user_id, v_tier, v_org_row.subscription_status, (v_org_row.subscription_status != 'active');
 
   -- Check if user owns the venue
   IF v_venue_row.owner_user_id = v_user_id THEN

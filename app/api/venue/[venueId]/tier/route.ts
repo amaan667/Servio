@@ -45,6 +45,25 @@ export const GET = withUnifiedAuth(
         venueId: finalVenueId,
         tier: context.tier,
         userId: context.user.id,
+        role: context.role,
+        venue_ids: context.venue_ids,
+      });
+
+      // DEBUG: Also log what the database actually contains
+      const supabase = await createAdminClient();
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("subscription_tier, subscription_status, stripe_customer_id")
+        .eq("owner_user_id", context.user.id)
+        .maybeSingle();
+
+      logger.info("[VENUE TIER GET] Raw database check", {
+        userId: context.user.id,
+        dbTier: orgData?.subscription_tier,
+        dbStatus: orgData?.subscription_status,
+        dbStripeId: orgData?.stripe_customer_id,
+        contextTier: context.tier,
+        tierMatch: orgData?.subscription_tier === context.tier,
       });
 
       // STEP 7: Return success response
