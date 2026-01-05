@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CreditCard, Crown, Sparkles, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { TIER_LIMITS } from "@/lib/tier-restrictions";
+import { TIER_LIMITS } from "@/lib/tier-limits";
 import { logger } from "@/lib/logger";
 
 interface BillingSectionProps {

@@ -7,7 +7,7 @@ import { cache } from "react";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
-import { TIER_LIMITS } from "@/lib/tier-restrictions";
+import { TIER_LIMITS } from "@/lib/tier-limits";
 import { env } from "@/lib/env";
 
 import type { UserRole } from "@/lib/permissions";

@@ -5,7 +5,7 @@ import { PredictiveInsights } from "./components/PredictiveInsights";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 import Link from "next/link";
-import { hasAdvancedAnalyticsByTier, getAnalyticsTierLabel } from "@/lib/tier-restrictions";
+import { hasAdvancedAnalyticsByTier, getAnalyticsTierLabel } from "@/lib/tier-limits";
 import { Badge } from "@/components/ui/badge";
 
 interface TopSellingItem {
