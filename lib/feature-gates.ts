@@ -11,7 +11,6 @@ import { errorToContext } from "@/lib/utils/error-to-context";
  * - enterprise: Unlimited tables/venues, KDS, Inventory, Staff management
  */
 
-import { createClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export type SubscriptionTier = "starter" | "pro" | "enterprise";
@@ -41,17 +40,11 @@ export async function checkFeatureAccess(
   requiredTier: SubscriptionTier
 ): Promise<FeatureAccess> {
   try {
-    const supabase = await createClient();
+    // Use unified access context (single RPC call - most efficient)
+    const accessContext = await getAccessContext(venueId);
 
-    // Get venue to find owner_user_id
-    const { data: venue, error: venueError } = await supabase
-      .from("venues")
-      .select("owner_user_id")
-      .eq("venue_id", venueId)
-      .single();
-
-    if (venueError || !venue?.owner_user_id) {
-      logger.error("[FEATURE GATE] Error fetching venue:", errorToContext(venueError));
+    if (!accessContext) {
+      logger.error("[FEATURE GATE] No access context found", { venueId });
       // Deny access if we can't verify tier (fail secure)
       return {
         hasAccess: false,
@@ -61,24 +54,8 @@ export async function checkFeatureAccess(
       };
     }
 
-    // Get organization tier from owner_user_id (synced from Stripe)
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .select("subscription_tier, subscription_status")
-      .eq("owner_user_id", venue.owner_user_id)
-      .single();
-
-    if (orgError || !org) {
-      logger.error("[FEATURE GATE] Error fetching organization:", errorToContext(orgError));
-      // Deny access if we can't verify tier (fail secure)
-      return {
-        hasAccess: false,
-        tier: "starter",
-        requiredTier,
-        message: "Unable to verify subscription tier. Please contact support.",
-      };
-    }
-
+    // Get tier from access context (already validated and synced)
+    const currentTier = accessContext.tier as SubscriptionTier;
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
       starter: 1,
