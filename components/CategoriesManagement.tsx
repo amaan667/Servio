@@ -411,19 +411,6 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
     }
   };
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Categories</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">Loading categories...</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader>
