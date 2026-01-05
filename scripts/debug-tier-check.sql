@@ -120,6 +120,19 @@ SELECT 'MANUAL_VENUE_LOOKUP' as test_name,
 FROM venues v
 WHERE v.venue_id = 'venue-1e02af4d';
 
+-- Test 3: Manual organization lookup (what RPC does for tier)
+SELECT 'MANUAL_ORG_LOOKUP' as test_name,
+  o.id,
+  o.owner_user_id,
+  o.subscription_tier,
+  o.subscription_status,
+  '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' as user_checking_access,
+  CASE WHEN o.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'ORG_MATCH' ELSE 'ORG_MISMATCH' END as org_check,
+  CASE WHEN o.subscription_status = 'active' THEN 'ACTIVE' ELSE 'INACTIVE' END as status_check,
+  COALESCE(o.subscription_tier, 'starter') as final_tier
+FROM organizations o
+WHERE o.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
+
 -- Test 2: Check the venue ID you're accessing: venue-1e02af4d
 SELECT 'CURRENT_VENUE_ID' as test_name, 'venue-1e02af4d' as browser_venue_id;
 
@@ -135,6 +148,15 @@ FROM venues v WHERE v.venue_id = 'venue-1e02af4d';
 
 -- Test 5: Test RPC with venue-1e02af4d (this should return enterprise tier if you own it)
 SELECT 'RPC_WITH_VENUE' as test_name, * FROM get_access_context('venue-1e02af4d');
+
+-- Test 6: Check RPC function exists and is accessible
+SELECT 'RPC_FUNCTION_CHECK' as test_name,
+  proname, proargnames, proargtypes
+FROM pg_proc
+WHERE proname = 'get_access_context';
+
+-- Test 7: Try calling RPC with explicit casting
+SELECT 'RPC_CAST_TEST' as test_name, * FROM get_access_context('venue-1e02af4d'::text);
 
 -- Test 6: Debug venue ID format issues
 SELECT 'VENUE_ID_FORMAT' as test_name,
