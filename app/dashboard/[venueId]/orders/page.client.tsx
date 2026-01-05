@@ -3,11 +3,17 @@
 import OrdersClient from "./OrdersClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
-import { useAccessContext } from "@/lib/access/useAccessContext";
-
-export default function OrdersClientPage({ venueId }: { venueId: string }) {
+export default function OrdersClientPage({
+  venueId,
+  tier,
+  role,
+}: {
+  venueId: string;
+  tier: string;
+  role: string;
+}) {
   const { user } = useAuthRedirect();
-  const { role: userRole } = useAccessContext(venueId);
+  const userRole = role;
 
   // Render immediately - no blocking
 

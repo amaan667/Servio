@@ -7,5 +7,11 @@ export default async function PaymentsPage({ params }: { params: { venueId: stri
   // Server-side auth check
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  return <PaymentsClientPage venueId={venueId} />;
+  return (
+    <PaymentsClientPage
+      venueId={venueId}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
+    />
+  );
 }

@@ -7,5 +7,11 @@ export default async function OrdersPage({ params }: { params: { venueId: string
   // Server-side auth check
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  return <OrdersClientPage venueId={venueId} />;
+  return (
+    <OrdersClientPage
+      venueId={venueId}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
+    />
+  );
 }

@@ -12,5 +12,11 @@ export default async function MenuManagementPage({ params }: { params: { venueId
   // Server-side auth check
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  return <MenuManagementClientPage venueId={venueId} />;
+  return (
+    <MenuManagementClientPage
+      venueId={venueId}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
+    />
+  );
 }

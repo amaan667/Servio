@@ -9,5 +9,11 @@ export default async function StaffPage({ params }: { params: { venueId: string 
     requireRole: ["owner", "manager"],
   }).catch(() => null);
 
-  return <StaffClientPage venueId={venueId} />;
+  return (
+    <StaffClientPage
+      venueId={venueId}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
+    />
+  );
 }

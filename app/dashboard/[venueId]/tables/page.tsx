@@ -7,5 +7,11 @@ export default async function TablesPage({ params }: { params: { venueId: string
   // Server-side auth check
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  return <TablesClientPage venueId={venueId} />;
+  return (
+    <TablesClientPage
+      venueId={venueId}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
+    />
+  );
 }

@@ -7,5 +7,11 @@ export default async function PosPage({ params }: { params: { venueId: string } 
   // Server-side auth check
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  return <PosClientPage venueId={venueId} />;
+  return (
+    <PosClientPage
+      venueId={venueId}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
+    />
+  );
 }

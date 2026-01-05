@@ -3,11 +3,17 @@
 import StaffManagementClient from "./staff-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
-import { useAccessContext } from "@/lib/access/useAccessContext";
-
-export default function StaffClientPage({ venueId }: { venueId: string }) {
+export default function StaffClientPage({
+  venueId,
+  tier,
+  role,
+}: {
+  venueId: string;
+  tier: string;
+  role: string;
+}) {
   const { user } = useAuthRedirect();
-  const { role: userRole } = useAccessContext(venueId);
+  const userRole = role;
 
   // Render immediately - no blocking
 

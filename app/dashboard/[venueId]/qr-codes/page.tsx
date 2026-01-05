@@ -13,5 +13,11 @@ export default async function QRCodePage({ params }: { params: { venueId: string
   const auth = await requirePageAuth(venueId).catch(() => null);
 
   // Render fully client-side with no SSR to prevent hydration issues
-  return <QRCodeClientPage venueId={venueId} />;
+  return (
+    <QRCodeClientPage
+      venueId={venueId}
+      tier={auth?.tier ?? "starter"}
+      role={auth?.role ?? "viewer"}
+    />
+  );
 }
