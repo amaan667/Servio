@@ -169,9 +169,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             access_token: "", // Not needed for layout, only user info is required
             refresh_token: "",
             expires_in: 0,
-            expires_at: null,
+            expires_at: undefined,
             token_type: "bearer",
-          } as Session;
+          } as unknown as Session;
         }
       } catch (err) {
         // Error handled
