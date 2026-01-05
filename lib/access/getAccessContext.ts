@@ -73,18 +73,24 @@ export const getAccessContext = cache(
         originalVenueId: venueId,
         normalizedVenueId,
         rawTier: context.tier,
+        rawTierType: typeof context.tier,
         contextData: JSON.stringify(context),
       });
 
       // Normalize tier to lowercase - database is source of truth
       // Webhooks keep database in sync with Stripe automatically
-      const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
+      const rawTierValue = context.tier;
+      const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
 
       logger.info("[ACCESS CONTEXT] Final tier", {
         originalVenueId: venueId,
         normalizedVenueId,
         normalizedTier: tier,
-        rawTier: context.tier,
+        rawTier: rawTierValue,
+        rawTierStringified: String(rawTierValue),
+        isEnterprise: tier === "enterprise",
+        isPro: tier === "pro",
+        isStarter: tier === "starter",
       });
 
       // Ensure valid tier
