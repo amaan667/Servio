@@ -13,6 +13,7 @@ import { TIER_LIMITS } from "@/lib/tier-restrictions";
 import { logger } from "@/lib/logger";
 import { cache } from "react";
 import { getAccessContext } from "@/lib/access/getAccessContext";
+import { getAuthenticatedUser } from "@/lib/supabase";
 import type { UserRole } from "@/lib/permissions";
 
 export type { UserRole };
