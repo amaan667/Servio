@@ -51,7 +51,7 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
     role: auth?.role,
     venueId,
     userId: auth?.user?.id,
-    hasAccess,
+    hasAccess: hasAnalyticsAccess,
   });
 
   return (
