@@ -63,13 +63,8 @@ BEGIN
 
   -- If venue doesn't exist, return null
   IF v_venue_row IS NULL THEN
-    -- DEBUG: Log venue not found
-    RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Venue % not found', p_venue_id;
     RETURN NULL;
   END IF;
-
-  -- DEBUG: Log venue found
-  RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Venue % found, owner=%', p_venue_id, v_venue_row.owner_user_id;
 
   -- Get tier directly from user's organization (same as settings page)
   -- This is the source of truth synced with Stripe via webhooks
@@ -81,31 +76,13 @@ BEGIN
   WHERE owner_user_id = v_user_id
   LIMIT 1;
 
-  -- DEBUG: Log organization lookup result
-  RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Organization lookup for user %: tier=%, status=%, found=%',
-    v_user_id,
-    v_org_row.subscription_tier,
-    v_org_row.subscription_status,
-    CASE WHEN v_org_row.subscription_tier IS NOT NULL THEN 'YES' ELSE 'NO' END;
-
   v_tier := COALESCE(v_org_row.subscription_tier, 'starter');
   IF v_org_row.subscription_status != 'active' THEN
     v_tier := 'starter';
   END IF;
 
-  -- DEBUG: Log final tier decision
-  RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Final tier for user %: % (status check: % != active = %)',
-    v_user_id, v_tier, v_org_row.subscription_status, (v_org_row.subscription_status != 'active');
-
   -- Check if user owns the venue
-  -- DEBUG: Log ownership check
-  RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Ownership check: venue_owner=%, user_id=%, equal=%',
-    v_venue_row.owner_user_id, v_user_id, (v_venue_row.owner_user_id = v_user_id);
-
   IF v_venue_row.owner_user_id = v_user_id THEN
-    -- DEBUG: Log owner path taken
-    RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Owner path: returning tier=%', v_tier;
-
     RETURN jsonb_build_object(
       'user_id', v_user_id,
       'venue_id', p_venue_id,
@@ -124,13 +101,8 @@ BEGIN
     AND user_id = v_user_id
   LIMIT 1;
 
-  -- DEBUG: Log staff role check
-  RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] Staff role check: role found=%', (v_role_row IS NOT NULL);
-
   -- If no role, return null (no access)
   IF v_role_row IS NULL THEN
-    -- DEBUG: Log no access
-    RAISE LOG '[GET_ACCESS_CONTEXT DEBUG] No access: user has no owner or staff role for venue %', p_venue_id;
     RETURN NULL;
   END IF;
 

@@ -65,10 +65,38 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       // Parse JSONB response
       const accessContext = data as AccessContext;
 
+      // BROWSER CONSOLE LOGGING - Show exactly what RPC returned
+      // eslint-disable-next-line no-console
+      console.log('[ACCESS CONTEXT] 🎯 RPC Response:', {
+        rawData: data,
+        venueId: normalizedVenueId,
+        userId: data?.user_id,
+        rawTier: data?.tier,
+        rawRole: data?.role,
+        venueIds: data?.venue_ids,
+        timestamp: new Date().toISOString()
+      });
+
       // Normalize tier
       const tier = (accessContext.tier?.toLowerCase().trim() || "starter") as Tier;
+
+      // eslint-disable-next-line no-console
+      console.log('[ACCESS CONTEXT] 🔄 Tier Processing:', {
+        originalTier: accessContext.tier,
+        processedTier: tier,
+        validTiers: ["starter", "pro", "enterprise"],
+        isValid: ["starter", "pro", "enterprise"].includes(tier),
+        venueId: normalizedVenueId
+      });
+
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.warn("[USE ACCESS CONTEXT] Invalid tier", { tier, venueId });
+        // eslint-disable-next-line no-console
+        console.error('[ACCESS CONTEXT] ❌ Invalid tier detected:', {
+          invalidTier: tier,
+          originalTier: accessContext.tier,
+          venueId: normalizedVenueId,
+          validOptions: ["starter", "pro", "enterprise"]
+        });
         setContext({
           ...accessContext,
           tier: "starter" as Tier,
@@ -80,6 +108,16 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         ...accessContext,
         tier,
       };
+
+      // eslint-disable-next-line no-console
+      console.log('[ACCESS CONTEXT] ✅ Final Context Set:', {
+        userId: finalContext.user_id,
+        venueId: finalContext.venue_id,
+        role: finalContext.role,
+        tier: finalContext.tier,
+        venueIds: finalContext.venue_ids,
+        timestamp: new Date().toISOString()
+      });
 
       setContext(finalContext);
 

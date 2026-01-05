@@ -70,20 +70,37 @@ export const getAccessContext = cache(
       // Parse JSONB response
       const context = data as AccessContext;
 
+      // BROWSER CONSOLE LOGGING - Show RPC call and response
+      // eslint-disable-next-line no-console
+      console.log('[GET ACCESS CONTEXT] 📡 RPC Call Made:', {
+        requestedVenueId: venueId,
+        normalizedVenueId,
+        timestamp: new Date().toISOString()
+      });
+
+      // eslint-disable-next-line no-console
+      console.log('[GET ACCESS CONTEXT] 📦 Raw RPC Response:', {
+        data: data,
+        dataType: typeof data,
+        isNull: data === null,
+        hasProperties: data ? Object.keys(data) : [],
+        venueId: data?.venue_id,
+        userId: data?.user_id,
+        role: data?.role,
+        tier: data?.tier
+      });
+
       // Normalize tier to lowercase - database is source of truth
       const rawTierValue = context.tier;
       const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
 
-      logger.info("[ACCESS CONTEXT] RPC response", {
-        originalVenueId: venueId,
-        normalizedVenueId,
-        normalizedTier: tier,
-        rawTier: rawTierValue,
-        fullContext: JSON.stringify(context),
-        userId: context.user_id,
-        role: context.role,
-        rawTierType: typeof rawTierValue,
-        rawTierString: String(rawTierValue),
+      // eslint-disable-next-line no-console
+      console.log('[GET ACCESS CONTEXT] 🔄 Tier Processing:', {
+        rawTierValue,
+        processedTier: tier,
+        validTiers: ["starter", "pro", "enterprise"],
+        isValid: ["starter", "pro", "enterprise"].includes(tier),
+        fallbackToStarter: !rawTierValue || !["starter", "pro", "enterprise"].includes(tier)
       });
 
       // Ensure valid tier

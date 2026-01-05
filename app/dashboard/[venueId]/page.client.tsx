@@ -327,6 +327,9 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === "undefined") return;
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("upgrade") === "success") {
       setTimeout(() => {

@@ -71,6 +71,17 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   const userRole = userRoleResult.data;
   const allVenues = allVenuesResult.data || [];
 
+  // BROWSER CONSOLE LOGGING - Settings page tier sources
+  console.log('[SETTINGS PAGE] 📊 Tier Sources Comparison:', {
+    tierFromRPC: auth?.tier,
+    tierFromDatabaseOrg: organization?.subscription_tier,
+    orgId: organization?.id,
+    userId: auth?.user?.id,
+    venueId: venueId,
+    areTiersConsistent: auth?.tier === organization?.subscription_tier?.toLowerCase(),
+    timestamp: new Date().toISOString()
+  });
+
   logger.info("[SETTINGS PAGE] ⭐ Final data state", {
     hasOrganization: !!organization,
     tierFromRPC: auth?.tier,

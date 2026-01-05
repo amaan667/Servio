@@ -86,13 +86,16 @@ const getBasePageAuth = cache(
       return null;
     }
 
-    // Log initial tier loaded from RPC
-    logger.info("[PAGE AUTH] Initial tier loaded", {
+    // BROWSER CONSOLE LOGGING - Show page auth results
+    // eslint-disable-next-line no-console
+    console.log('[PAGE AUTH] 🎯 Access Context Loaded:', {
       venueId: venueId || "none",
       tier: accessContext.tier,
       role: accessContext.role,
       userId: accessContext.user_id,
       venueIdFromRPC: accessContext.venue_id,
+      hasFeatureAccess: !!accessContext.tier,
+      timestamp: new Date().toISOString()
     });
     
     // eslint-disable-next-line no-console
