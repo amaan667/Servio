@@ -17,7 +17,7 @@ SELECT
     created_at,
     updated_at
 FROM organizations
-WHERE owner_user_id = 'YOUR_USER_ID';
+WHERE owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
 
 -- STEP 3: Check your venues (replace YOUR_USER_ID)
 SELECT
