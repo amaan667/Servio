@@ -34,9 +34,16 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
 
       const supabase = supabaseBrowser();
 
+      // Normalize venueId - database stores with venue- prefix
+      const normalizedVenueId = venueId
+        ? venueId.startsWith("venue-")
+          ? venueId
+          : `venue-${venueId}`
+        : null;
+
       // Call get_access_context RPC - single database call
       const { data, error: rpcError } = await supabase.rpc("get_access_context", {
-        p_venue_id: venueId || null,
+        p_venue_id: normalizedVenueId,
       });
 
       if (rpcError) {
@@ -73,12 +80,19 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         tier,
       });
 
-      // Cache context in sessionStorage
+      // Cache context in sessionStorage (use normalized venueId for cache key)
       if (typeof window !== "undefined") {
-        const cacheKey = venueId
-          ? `access_context_${venueId}`
+        const cacheKey = normalizedVenueId
+          ? `access_context_${normalizedVenueId}`
           : `access_context_user`;
-        sessionStorage.setItem(cacheKey, JSON.stringify(accessContext));
+        // Store with normalized tier
+        sessionStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            ...accessContext,
+            tier,
+          })
+        );
       }
     } catch (err) {
       logger.error("[USE ACCESS CONTEXT] Error", {
@@ -93,22 +107,39 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
   }, [venueId]);
 
   useEffect(() => {
+    // Normalize venueId for cache key lookup
+    const normalizedVenueId = venueId
+      ? venueId.startsWith("venue-")
+        ? venueId
+        : `venue-${venueId}`
+      : null;
+
     // Try cache first for instant response
     if (typeof window !== "undefined") {
-      const cacheKey = venueId
-        ? `access_context_${venueId}`
+      const cacheKey = normalizedVenueId
+        ? `access_context_${normalizedVenueId}`
         : `access_context_user`;
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
         try {
           const parsed = JSON.parse(cached) as AccessContext;
-          setContext(parsed);
-          setLoading(false);
-          // Still fetch fresh data in background
-          fetchContext().catch(() => {
-            // Error handled in fetchContext
-          });
-          return;
+          // Validate cached tier is still valid
+          const cachedTier = (parsed.tier?.toLowerCase().trim() || "starter") as Tier;
+          if (["starter", "pro", "enterprise"].includes(cachedTier)) {
+            setContext({
+              ...parsed,
+              tier: cachedTier,
+            });
+            setLoading(false);
+            // Still fetch fresh data in background to ensure accuracy
+            fetchContext().catch(() => {
+              // Error handled in fetchContext
+            });
+            return;
+          } else {
+            // Invalid tier in cache, clear it
+            sessionStorage.removeItem(cacheKey);
+          }
         } catch {
           // Invalid cache, fetch fresh
         }
