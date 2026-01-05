@@ -67,6 +67,26 @@ SELECT 'SYSTEM_VENUES_CHECK' as test_name,
   ARRAY_AGG(venue_id ORDER BY created_at DESC) as all_venue_ids
 FROM venues;
 
+-- STEP 3g: CRITICAL - Check who owns venue-1e02af4d
+SELECT 'VENUE_1E02AF4D_OWNER' as test_name,
+  v.venue_id,
+  v.venue_name,
+  v.owner_user_id,
+  CASE WHEN v.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'YOU_OWN_IT' ELSE 'DIFFERENT_OWNER' END as ownership,
+  v.owner_user_id as actual_owner,
+  '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' as your_user_id
+FROM venues v
+WHERE v.venue_id = 'venue-1e02af4d';
+
+-- STEP 3h: Check all venue ownership details
+SELECT 'ALL_VENUE_OWNERSHIP' as test_name,
+  v.venue_id,
+  v.venue_name,
+  v.owner_user_id,
+  CASE WHEN v.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'YOURS' ELSE 'OTHER_USER' END as ownership_status
+FROM venues v
+ORDER BY v.created_at DESC;
+
 -- STEP 4: Check if you're added as staff to any venues
 SELECT
     uvr.venue_id,
@@ -90,6 +110,15 @@ WHERE uvr.user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
 
 -- Test 1: User-only context (should work - no venue needed)
 SELECT 'USER_ONLY_TEST' as test_name, * FROM get_access_context(NULL);
+
+-- Test 2: Manual venue lookup (what RPC does internally)
+SELECT 'MANUAL_VENUE_LOOKUP' as test_name,
+  v.venue_id,
+  v.owner_user_id,
+  '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' as user_checking_access,
+  CASE WHEN v.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'OWNER_MATCH' ELSE 'OWNER_MISMATCH' END as owner_check
+FROM venues v
+WHERE v.venue_id = 'venue-1e02af4d';
 
 -- Test 2: Check the venue ID you're accessing: venue-1e02af4d
 SELECT 'CURRENT_VENUE_ID' as test_name, 'venue-1e02af4d' as browser_venue_id;
