@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -109,7 +110,7 @@ export function EnhancedStatCard({
 
   if (href) {
     return (
-      <a href={href} className="block">
+      <Link href={href} className="block">
         {tooltip ? (
           <TooltipProvider>
             <Tooltip>
@@ -122,7 +123,7 @@ export function EnhancedStatCard({
         ) : (
           content
         )}
-      </a>
+      </Link>
     );
   }
 
