@@ -6,6 +6,15 @@ import { Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { logger } from "@/lib/logger";
 
+// Prevent SSR issues with browser APIs
+const useIsClient = () => {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  return isClient;
+};
+
 interface TrialStatus {
   isTrialing: boolean;
   subscriptionStatus: string;
@@ -20,11 +29,12 @@ interface TrialStatusBannerProps {
 
 export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) {
   const { user } = useAuth();
+  const isClient = useIsClient();
 
   // Cache trial status to prevent flicker
   // BUT: Validate cached status to ensure trial hasn't expired
   const getCachedTrialStatus = () => {
-    if (typeof window === "undefined" || !user?.id) return null;
+    if (!isClient || typeof window === "undefined" || !user?.id) return null;
     const cached = sessionStorage.getItem(`trial_status_${user.id}`);
     if (!cached) return null;
 
@@ -225,6 +235,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
+    if (!isClient) return;
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("upgrade") === "success") {
       // Refresh trial status after successful upgrade with retry logic
@@ -268,6 +280,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
       // Remove query params after a short delay
       setTimeout(() => {
+        if (!isClient) return;
+
         const url = new URL(window.location.href);
         url.searchParams.delete("upgrade");
         window.history.replaceState(
@@ -293,6 +307,11 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
   // ONLY show if trial is actively running (not expired, not paid)
   if (!trialStatus.isTrialing) {
+    return null;
+  }
+
+  // Don't render during SSR
+  if (!isClient) {
     return null;
   }
 
