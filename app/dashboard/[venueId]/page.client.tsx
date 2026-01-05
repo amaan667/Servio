@@ -350,6 +350,9 @@ const DashboardClient = React.memo(function DashboardClient({
   // Auto-refresh when user navigates back to dashboard
   // Always refresh on focus to ensure counts are up-to-date
   useEffect(() => {
+    // Only run on client side to prevent SSR errors
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
     const handleFocus = () => {
       // Always refresh when page gains focus to ensure counts are accurate
       handleRefresh();
