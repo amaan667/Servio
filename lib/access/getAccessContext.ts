@@ -46,17 +46,17 @@ export const getAccessContext = cache(
       const cookieStore = await cookies();
 
       const supabase = createServerClient(
-        env("NEXT_PUBLIC_SUPABASE_URL"),
-        env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+        env("NEXT_PUBLIC_SUPABASE_URL")!,
+        env("NEXT_PUBLIC_SUPABASE_ANON_KEY")!,
         {
           cookies: {
             get(name: string) {
               return cookieStore.get(name)?.value;
             },
-            set(name: string, value: string, options: CookieOptions) {
+            set() {
               // Read-only for access context - don't set cookies
             },
-            remove(name: string, options: CookieOptions) {
+            remove() {
               // Read-only for access context - don't remove cookies
             },
           },
