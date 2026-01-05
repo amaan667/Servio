@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/AuthProvider";
 import MenuManagementClient from "./MenuManagementClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
+import type { UserRole } from "@/lib/permissions";
+
 export default function MenuManagementClientPage({
   venueId,
-  tier,
   role,
 }: {
   venueId: string;
@@ -16,7 +17,7 @@ export default function MenuManagementClientPage({
 }) {
   const { user } = useAuth();
   const router = useRouter();
-  const userRole = role;
+  const userRole = role as UserRole;
 
   // Auth check - redirect non-signed-in users to select-plan page (non-blocking)
   useEffect(() => {

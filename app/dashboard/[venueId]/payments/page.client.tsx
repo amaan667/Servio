@@ -3,9 +3,10 @@
 import PaymentsClient from "./PaymentsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
+import type { UserRole } from "@/lib/permissions";
+
 export default function PaymentsClientPage({
   venueId,
-  tier,
   role,
 }: {
   venueId: string;
@@ -13,7 +14,7 @@ export default function PaymentsClientPage({
   role: string;
 }) {
   const { user } = useAuthRedirect();
-  const userRole = role;
+  const userRole = role as UserRole;
 
   // Don't show loading spinner - just render when ready
 
