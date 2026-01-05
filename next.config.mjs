@@ -38,10 +38,10 @@ const nextConfig = {
     serverComponentsExternalPackages: ['playwright-core', 'playwright', '@sparticuz/chromium', 'puppeteer-core'],
   },
   compiler: {
-    // Remove console logs in production (keep console.error and console.info for Railway logs)
-    removeConsole: {
-      exclude: ['error', 'info'], // Keep console.error for Sentry, console.info for Railway logs
-    },
+    // Keep all console logs for debugging (temporarily disabled for AUTH DEBUG logs)
+    // removeConsole: {
+    //   exclude: ['error', 'info'], // Keep console.error for Sentry, console.info for Railway logs
+    // },
   },
   // Production optimizations
   poweredByHeader: false,
@@ -50,6 +50,23 @@ const nextConfig = {
   // Performance headers
   async headers() {
     return [
+      {
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
       {
         source: '/_next/static/chunks/:path*',
         headers: [
