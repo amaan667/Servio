@@ -32,7 +32,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyVenueAccess, type AuthorizedContext } from "@/lib/middleware/authorization";
-import { checkFeatureAccess, checkLimit, getUserTier, TIER_LIMITS } from "@/lib/tier-restrictions";
+import { checkFeatureAccess, checkLimit, TIER_LIMITS } from "@/lib/tier-restrictions";
+import { getAccessContext } from "@/lib/access/getAccessContext";
 import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 import type { User } from "@supabase/supabase-js";
@@ -210,9 +211,10 @@ export async function requireAuthAndVenueAccess(
     };
   }
 
-  // 4. Get user tier
+  // 4. Get user tier via unified access context (single RPC call)
   // IMPORTANT: Tier is owned by the venue's billing owner/org, not the staff user.
-  const tier = await getUserTier(access.venue.owner_user_id);
+  const accessContext = await getAccessContext(venueId);
+  const tier = accessContext?.tier || "starter";
 
   return {
     success: true,
@@ -360,8 +362,9 @@ export async function getPageAuthContext(
       return null;
     }
 
-    // Get tier (billing owner / venue owner)
-    const tier = await getUserTier(access.venue.owner_user_id);
+    // Get tier via unified access context (single RPC call)
+    const accessContext = await getAccessContext(venueId);
+    const tier = accessContext?.tier || "starter";
 
     // Helper to check feature access (synchronous check using tier)
     const hasFeatureAccess = (

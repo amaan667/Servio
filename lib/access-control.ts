@@ -9,7 +9,6 @@
 import { UserRole, canAccess as checkRoleAccess } from "@/lib/permissions";
 import {
   checkFeatureAccess,
-  getUserTier,
   hasAdvancedAnalytics,
   hasAnalyticsExports,
   TIER_LIMITS,
@@ -143,7 +142,10 @@ export async function checkAnalyticsAccess(
     };
   }
 
-  const tier = await getUserTier(userId);
+  // Get tier via unified access context (requires venueId, so we need to find it)
+  // For analytics access, we need venue context - use checkFeatureAccess which handles this
+  const tierCheck = await checkFeatureAccess(userId, "analytics");
+  const tier = tierCheck.currentTier;
 
   // Check if exports are required
   if (requireExports) {
