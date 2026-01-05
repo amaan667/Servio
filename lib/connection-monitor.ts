@@ -16,7 +16,7 @@ export interface ConnectionState {
 class ConnectionMonitor {
   private listeners: Set<(state: ConnectionState) => void> = new Set();
   private state: ConnectionState = {
-    isOnline: navigator.onLine,
+    isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
     isSlowConnection: false,
     lastChecked: new Date(),
   };
