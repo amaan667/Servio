@@ -32,6 +32,9 @@ const FONT_MAP: { [key: string]: string } = {
 };
 
 export const loadFont = (fontFamily: string) => {
+  // Only run on client side to prevent SSR errors
+  if (typeof document === "undefined") return;
+
   const existingLink = document.querySelector(`link[href*="${fontFamily.replace(" ", "+")}"]`);
   if (existingLink) return;
 
