@@ -79,6 +79,11 @@ export const getAccessContext = cache(
         normalizedVenueId,
         normalizedTier: tier,
         rawTier: rawTierValue,
+        fullContext: JSON.stringify(context),
+        userId: context.user_id,
+        role: context.role,
+        rawTierType: typeof rawTierValue,
+        rawTierString: String(rawTierValue),
       });
 
       // Ensure valid tier
