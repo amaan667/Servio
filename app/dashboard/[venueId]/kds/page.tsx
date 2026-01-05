@@ -28,13 +28,13 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
   
   // Also log to console for browser visibility (server-side logs appear in Railway, not browser)
    
-  console.log("[KDS PAGE SERVER] Tier from RPC:", {
+  console.log("[KDS PAGE SERVER] Initial tier loaded:", {
     tier: currentTier,
+    tierType: typeof currentTier,
+    tierString: String(currentTier),
     hasAccess: hasKDSAccess,
     venueId,
     userId: auth?.user?.id,
-    tierType: typeof currentTier,
-    tierString: String(currentTier),
   });
   
   // Determine KDS tier from tier limits - matches TIER_LIMITS configuration

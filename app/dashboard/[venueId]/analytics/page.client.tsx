@@ -56,15 +56,16 @@ export default function AnalyticsClientPage({
   hasAccess,
 }: AnalyticsClientPageProps) {
   // Log tier information for debugging
-  if (typeof window !== "undefined") {
-    console.log("[ANALYTICS PAGE] Tier Debug:", {
-      tier,
-      role,
-      hasAccess,
-      venueId,
-      timestamp: new Date().toISOString(),
-    });
-  }
+   
+  console.log("[ANALYTICS PAGE CLIENT] Initial tier received:", {
+    tier,
+    tierType: typeof tier,
+    tierString: String(tier),
+    role,
+    hasAccess,
+    venueId,
+    timestamp: new Date().toISOString(),
+  });
 
   // Check if user has advanced analytics (Pro+ tier) using centralized helper
   const hasAdvanced = hasAdvancedAnalyticsByTier(tier);

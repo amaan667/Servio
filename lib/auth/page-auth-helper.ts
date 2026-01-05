@@ -86,6 +86,23 @@ const getBasePageAuth = cache(
       return null;
     }
 
+    // Log initial tier loaded from RPC
+    logger.info("[PAGE AUTH] Initial tier loaded", {
+      venueId: venueId || "none",
+      tier: accessContext.tier,
+      role: accessContext.role,
+      userId: accessContext.user_id,
+      venueIdFromRPC: accessContext.venue_id,
+    });
+    
+    // eslint-disable-next-line no-console
+    console.log("[PAGE AUTH] Initial tier loaded:", {
+      venueId: venueId || "none",
+      tier: accessContext.tier,
+      role: accessContext.role,
+      userId: accessContext.user_id,
+    });
+
     // STEP 3: Create feature access helper
     const hasFeatureAccess = (feature: FeatureKey): boolean => {
       const tierLimits = TIER_LIMITS[accessContext.tier];
