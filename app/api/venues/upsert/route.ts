@@ -71,6 +71,40 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       }
     }
 
+    // CRITICAL: Ensure organization exists and get organization_id
+    // This ensures all venues are linked to an organization for tier lookup
+    let organizationId: string | null = null;
+    
+    // Get user's organization
+    const { data: userOrg } = await admin
+      .from("organizations")
+      .select("id")
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    if (userOrg?.id) {
+      organizationId = userOrg.id;
+    } else {
+      // Create organization if it doesn't exist (shouldn't happen, but safety net)
+      logger.warn("[VENUES UPSERT] No organization found for user, creating one", { userId: user.id });
+      const { data: newOrg, error: orgError } = await admin
+        .from("organizations")
+        .insert({
+          owner_user_id: user.id,
+          subscription_tier: "starter",
+          subscription_status: "trialing",
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (orgError || !newOrg) {
+        logger.error("[VENUES UPSERT] Failed to create organization", { error: orgError });
+        return apiErrors.database("Failed to create organization");
+      }
+      organizationId = newOrg.id;
+    }
+
     const venueData = {
       venue_id: finalVenueId,
       venue_name: name,
@@ -79,11 +113,12 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       phone: phone || null,
       email: email || null,
       owner_user_id: user.id,
+      organization_id: organizationId, // CRITICAL: Always set organization_id
       updated_at: new Date().toISOString(),
     };
 
     if (existingVenue) {
-      // Update existing venue
+      // Update existing venue - ensure organization_id is set
       const { data, error } = await admin
         .from("venues")
         .update(venueData)
@@ -100,7 +135,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       }
       return success({ venue: data });
     } else {
-      // Create new venue
+      // Create new venue - always with organization_id
       const newVenueData = {
         ...venueData,
         created_at: new Date().toISOString(),

@@ -152,12 +152,29 @@ export default function VenueSwitcherPopup({
       const user = userSessionData?.session?.user ?? null;
       if (!user) throw new Error("User not authenticated");
 
-      // Get organization_id from current venue
+      // Get organization_id - try current venue first, then user's organization
+      let organizationId: string | null = null;
+      
       const { data: currentVenue } = await supabase
         .from("venues")
         .select("organization_id")
         .eq("venue_id", currentVenueId)
         .single();
+
+      if (currentVenue?.organization_id) {
+        organizationId = currentVenue.organization_id;
+      } else {
+        // Fallback: get user's organization
+        const { data: userOrg } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("owner_user_id", user.id)
+          .maybeSingle();
+        
+        if (userOrg?.id) {
+          organizationId = userOrg.id;
+        }
+      }
 
       // Generate a unique venue_id
       const venueId = `venue-${crypto.randomUUID().replace(/-/g, "")}`;
@@ -170,7 +187,7 @@ export default function VenueSwitcherPopup({
           address: formData.address.trim() || null,
           phone: formData.phone.trim() || null,
           description: formData.description.trim() || null,
-          organization_id: currentVenue?.organization_id,
+          organization_id: organizationId, // CRITICAL: Always set organization_id
           owner_user_id: user.id,
           is_primary: false,
         })

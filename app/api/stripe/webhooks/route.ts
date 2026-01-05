@@ -296,6 +296,23 @@ async function handleCheckoutWithOrg(
     new_status: updatedOrg.subscription_status,
   });
 
+  // CRITICAL: Ensure all venues for this organization have organization_id set
+  // This ensures RPC can read tier correctly via organization_id
+  const { error: venueLinkError } = await supabase
+    .from("venues")
+    .update({ organization_id: organizationId })
+    .eq("owner_user_id", updatedOrg.owner_user_id)
+    .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
+
+  if (venueLinkError) {
+    apiLogger.warn("[STRIPE WEBHOOK] ⚠️ Could not link venues to organization (non-critical):", {
+      error: venueLinkError,
+      organizationId,
+    });
+  } else {
+    apiLogger.debug("[STRIPE WEBHOOK] ✅ Ensured all venues are linked to organization");
+  }
+
   // Log subscription history
   try {
     await supabase.from("subscription_history").insert({
@@ -365,7 +382,7 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
     organizationId,
   });
 
-  const { error: updateError } = await supabase
+  const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
     .update({
       stripe_subscription_id: subscription.id,
@@ -373,11 +390,28 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
       subscription_status: subscription.status,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", organizationId);
+    .eq("id", organizationId)
+    .select("owner_user_id")
+    .single();
 
   if (updateError) {
     apiLogger.error("[STRIPE WEBHOOK] Error updating organization:", updateError);
     return;
+  }
+
+  // CRITICAL: Ensure all venues for this organization have organization_id set
+  if (updatedOrg?.owner_user_id) {
+    const { error: venueLinkError } = await supabase
+      .from("venues")
+      .update({ organization_id: organizationId })
+      .eq("owner_user_id", updatedOrg.owner_user_id)
+      .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
+
+    if (venueLinkError) {
+      apiLogger.warn("[STRIPE WEBHOOK] ⚠️ Could not link venues (non-critical):", venueLinkError);
+    } else {
+      apiLogger.debug("[STRIPE WEBHOOK] ✅ Ensured all venues are linked to organization");
+    }
   }
 
   await supabase.from("subscription_history").insert({
@@ -497,14 +531,29 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
 
   apiLogger.debug("[STRIPE WEBHOOK] Updating organization subscription with data:", updateData);
 
-  const { error: updateError } = await supabase
+  const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
     .update(updateData)
-    .eq("id", organizationId);
+    .eq("id", organizationId)
+    .select("owner_user_id")
+    .single();
 
   if (updateError) {
     apiLogger.error("[STRIPE WEBHOOK] Error updating organization subscription:", updateError);
     return;
+  }
+
+  // CRITICAL: Ensure all venues for this organization have organization_id set
+  if (updatedOrg?.owner_user_id) {
+    const { error: venueLinkError } = await supabase
+      .from("venues")
+      .update({ organization_id: organizationId })
+      .eq("owner_user_id", updatedOrg.owner_user_id)
+      .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
+
+    if (venueLinkError) {
+      apiLogger.warn("[STRIPE WEBHOOK] ⚠️ Could not link venues (non-critical):", venueLinkError);
+    }
   }
 
   apiLogger.debug(
