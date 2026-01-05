@@ -70,50 +70,12 @@ export const getAccessContext = cache(
 
       // Normalize tier to lowercase - database is source of truth
       const rawTierValue = context.tier;
-      let tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
-
-      // FALLBACK: If RPC returns starter but venue has organization_id, verify directly
-      // This handles cases where RPC hasn't been updated in Supabase yet
-      if (tier === "starter" && normalizedVenueId) {
-        try {
-          const { data: venueData } = await supabase
-            .from("venues")
-            .select("organization_id")
-            .eq("venue_id", normalizedVenueId)
-            .single();
-
-          if (venueData?.organization_id) {
-            const { data: orgData } = await supabase
-              .from("organizations")
-              .select("subscription_tier, subscription_status")
-              .eq("id", venueData.organization_id)
-              .single();
-
-            if (orgData?.subscription_tier && orgData.subscription_status === "active") {
-              const directTier = (orgData.subscription_tier.toLowerCase().trim() || "starter") as Tier;
-              if (["starter", "pro", "enterprise"].includes(directTier) && directTier !== "starter") {
-                logger.info("[ACCESS CONTEXT] RPC returned starter, but direct lookup shows", {
-                  directTier,
-                  venueId: normalizedVenueId,
-                  organizationId: venueData.organization_id,
-                });
-                tier = directTier;
-              }
-            }
-          }
-        } catch (fallbackError) {
-          // Log but continue with RPC tier
-          logger.warn("[ACCESS CONTEXT] Fallback lookup failed", {
-            error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-            venueId: normalizedVenueId,
-          });
-        }
-      }
+      const tier = (rawTierValue?.toLowerCase().trim() || "starter") as Tier;
 
       logger.info("[ACCESS CONTEXT] Final tier", {
         originalVenueId: venueId,
         normalizedVenueId,
-        finalTier: tier,
+        normalizedTier: tier,
         rawTier: rawTierValue,
       });
 
