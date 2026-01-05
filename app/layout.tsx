@@ -9,6 +9,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { createServerSupabaseReadOnly } from "@/lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 import AuthProvider from "@/app/auth/AuthProvider";
 import Providers from "./providers";
 import ConditionalHeader from "@/components/ConditionalHeader";
