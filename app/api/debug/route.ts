@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { getAccessContext } from "@/lib/access/getAccessContext";
+import { createServerSupabase } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   try {
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
     // Get venueId from query params
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get("venueId");
+    const checkDatabase = searchParams.get("checkDatabase") === "true";
 
     console.log("[AUTH DEBUG] Testing access context with venueId:", venueId);
 
@@ -29,6 +31,53 @@ export async function GET(request: Request) {
     const accessContext = await getAccessContext(venueId);
 
     console.log("[AUTH DEBUG] Access context result:", accessContext);
+
+    let databaseInfo = null;
+
+    if (checkDatabase) {
+      console.log("[AUTH DEBUG] Running database checks...");
+
+      const supabase = await createServerSupabase();
+
+      // Check organizations
+      const { data: orgs, error: orgError } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('owner_user_id', user.id);
+
+      // Check venues owned by user
+      const { data: userVenues, error: userVenuesError } = await supabase
+        .from('venues')
+        .select('*')
+        .eq('owner_user_id', user.id);
+
+      // Check specific venue if provided
+      let venueCheck = null;
+      if (venueId) {
+        const { data: venue, error: venueError } = await supabase
+          .from('venues')
+          .select('*')
+          .eq('venue_id', venueId)
+          .single();
+
+        venueCheck = { venue, error: venueError };
+      }
+
+      // Check staff roles
+      const { data: staffRoles, error: staffError } = await supabase
+        .from('user_venue_roles')
+        .select('*')
+        .eq('user_id', user.id);
+
+      databaseInfo = {
+        organizations: { data: orgs, error: orgError },
+        userVenues: { data: userVenues, error: userVenuesError },
+        venueCheck,
+        staffRoles: { data: staffRoles, error: staffError }
+      };
+
+      console.log("[AUTH DEBUG] Database check results:", databaseInfo);
+    }
 
     // Return comprehensive debug info
     return NextResponse.json({
@@ -42,7 +91,8 @@ export async function GET(request: Request) {
         role: accessContext?.role,
         userId: accessContext?.user_id,
         venueIds: accessContext?.venue_ids
-      }
+      },
+      ...(checkDatabase && { database: databaseInfo })
     });
   } catch (error) {
     console.log("[AUTH DEBUG] Debug endpoint error:", error);
