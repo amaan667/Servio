@@ -4,14 +4,24 @@ import { getAuthUserForAPI } from "@/lib/auth/server";
 
 export async function GET() {
   try {
-    // Authenticate user
-    const { user, error: authError } = await getAuthUserForAPI();
+    const supabase = await createServerSupabase();
 
-    if (authError || !user) {
-      return NextResponse.json({ error: "Not authenticated", details: authError }, { status: 401 });
+    // First try to get user directly from supabase
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({
+        error: "Not authenticated",
+        userError: userError?.message,
+        hasUser: !!user,
+        userId: user?.id
+      }, { status: 401 });
     }
 
-    const supabase = await createServerSupabase();
+    // Test RPC directly
+    const { data: rpcResult, error: rpcError } = await supabase.rpc("get_access_context", {
+      p_venue_id: "venue-1e02af4d"
+    });
 
     // Check user's organizations
     const { data: organizations, error: orgError } = await supabase
@@ -19,34 +29,13 @@ export async function GET() {
       .select("*")
       .eq("owner_user_id", user.id);
 
-    // Check user's venues
-    const { data: venues, error: venueError } = await supabase
-      .from("venues")
-      .select("*")
-      .eq("owner_user_id", user.id);
-
-    // Check user_venue_roles
-    const { data: roles, error: roleError } = await supabase
-      .from("user_venue_roles")
-      .select("*")
-      .eq("user_id", user.id);
-
-    // Test RPC
-    const { data: rpcResult, error: rpcError } = await supabase.rpc("get_access_context", {
-      p_venue_id: "venue-1e02af4d"
-    });
-
     return NextResponse.json({
       user: { id: user.id, email: user.email },
-      organizations,
-      venues,
-      roles,
       rpcResult,
+      organizations,
       errors: {
-        orgError: orgError?.message,
-        venueError: venueError?.message,
-        roleError: roleError?.message,
         rpcError: rpcError?.message,
+        orgError: orgError?.message,
       }
     });
   } catch (error) {
