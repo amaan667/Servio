@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, ExternalLink, Loader2 } from "lucide-react";
+import { Crown, Check, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
@@ -211,24 +211,12 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
           </div>
         </div>
 
-        {/* Change Plan Button */}
-        <Button
-          variant="default"
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-          onClick={() => {
-            window.location.href = `/select-plan?change=true`;
-          }}
-        >
-          <Crown className="mr-2 h-4 w-4" />
-          Change Plan
-        </Button>
-
-        {/* Billing Portal Link */}
+        {/* Billing Portal Link - Handles plan changes, payment methods, invoices */}
         {hasStripeCustomer && (
           <>
             <Button
-              variant="outline"
-              className="w-full"
+              variant="default"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
               onClick={handleManageBilling}
               disabled={loadingPortal}
             >
@@ -239,13 +227,13 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
                 </>
               ) : (
                 <>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Manage Billing
+                  <Crown className="mr-2 h-4 w-4" />
+                  Manage Billing & Plan
                 </>
               )}
             </Button>
             <p className="text-xs text-gray-600 text-center">
-              Update payment method, view invoices, and manage your subscription
+              Upgrade, downgrade, update payment method, and view invoices
             </p>
           </>
         )}
