@@ -55,23 +55,40 @@ JOIN venues v ON uvr.venue_id = v.venue_id
 LEFT JOIN organizations o ON v.owner_user_id = o.owner_user_id
 WHERE uvr.user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20';
 
--- STEP 5: CRITICAL TEST - Test the get_access_context RPC function
--- This is where the bug is! Your DB shows enterprise but RPC returns starter
+-- ========================================================================================
+-- STEP 5: DEBUG THE NULL RPC ISSUE - Why does get_access_context return NULL?
+-- ========================================================================================
 
--- IMPORTANT: The RPC returns NULL if:
--- 1. Venue doesn't exist, OR
--- 2. User has no access to the venue (not owner, not staff)
--- When RPC returns NULL, frontend defaults to STARTER tier!
+-- The RPC function returns NULL if:
+-- 1. Venue doesn't exist in venues table
+-- 2. User has no access (not owner, not staff)
 
--- Test 1: User-only context (no venue) - SHOULD return enterprise tier
+-- Test 1: User-only context (should work - no venue needed)
 SELECT 'USER_ONLY_TEST' as test_name, * FROM get_access_context(NULL);
 
--- Test 2: Test with first venue from Step 3b (if any exist)
--- This should work if you own the venue
--- SELECT 'FIRST_VENUE_TEST' as test_name, * FROM get_access_context((SELECT venue_id FROM venues LIMIT 1));
+-- Test 2: Get the exact venue ID you're trying to access
+-- Check your browser URL: https://yourapp.com/dashboard/VENUE_ID_HERE
+-- What VENUE_ID shows in your browser URL right now?
+-- SELECT 'CURRENT_VENUE_ID' as test_name, 'PASTE_VENUE_ID_FROM_BROWSER_URL' as browser_venue_id;
 
--- Test 3: Check what happens with non-existent venue (should return NULL)
-SELECT 'INVALID_VENUE_TEST' as test_name, * FROM get_access_context('venue-nonexistent');
+-- Test 3: Verify this venue exists in database
+-- SELECT 'VENUE_EXISTS_CHECK' as test_name, venue_id, venue_name, owner_user_id
+-- FROM venues WHERE venue_id = 'PASTE_VENUE_ID_FROM_BROWSER_URL';
+
+-- Test 4: Check if you own this venue
+-- SELECT 'OWNERSHIP_CHECK' as test_name,
+--   v.venue_id, v.venue_name, v.owner_user_id,
+--   CASE WHEN v.owner_user_id = '1e02af4d-2a5d-4ae4-a3d3-ad06a4445b20' THEN 'YOU_OWN_IT' ELSE 'YOU_DONT_OWN_IT' END as ownership_status
+-- FROM venues v WHERE v.venue_id = 'PASTE_VENUE_ID_FROM_BROWSER_URL';
+
+-- Test 5: Test RPC with the venue ID
+-- SELECT 'RPC_WITH_VENUE' as test_name, * FROM get_access_context('PASTE_VENUE_ID_FROM_BROWSER_URL');
+
+-- Test 6: Debug venue ID format issues
+-- SELECT 'VENUE_ID_FORMAT' as test_name,
+--   'PASTE_VENUE_ID_FROM_BROWSER_URL' as venue_id,
+--   CASE WHEN 'PASTE_VENUE_ID_FROM_BROWSER_URL' LIKE 'venue-%' THEN 'HAS_VENUE_PREFIX' ELSE 'NO_VENUE_PREFIX' END as prefix_status,
+--   LENGTH('PASTE_VENUE_ID_FROM_BROWSER_URL') as id_length;
 
 -- STEP 6: Check Stripe subscription status if you have stripe_subscription_id
 -- (Only if you have a stripe_subscription_id from step 2)
