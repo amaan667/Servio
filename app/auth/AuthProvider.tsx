@@ -9,6 +9,8 @@ type AuthValue = {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  primaryVenueId: string | null;
+  userRole: string | null;
 };
 
 const AuthCtx = createContext<AuthValue>({
@@ -18,6 +20,8 @@ const AuthCtx = createContext<AuthValue>({
   signOut: async () => {
     /* Empty */
   },
+  primaryVenueId: null,
+  userRole: null,
 });
 
 export function useAuth() {
@@ -57,6 +61,32 @@ export default function AuthProvider({
   // Never show loading if we have initialSession - prevents flicker
   const [loading, setLoading] = useState(false);
 
+  // Extract venue data from initial session and cache it immediately
+  const getInitialVenueData = () => {
+    const sessionWithVenue = initialSession as any;
+    if (sessionWithVenue?.primaryVenue) {
+      return {
+        primaryVenueId: sessionWithVenue.primaryVenue.venueId,
+        userRole: sessionWithVenue.primaryVenue.role
+      };
+    }
+
+    // Fallback to cache
+    if (typeof window !== "undefined" && initialSession?.user?.id) {
+      const cachedRole = localStorage.getItem(`user_role_${initialSession.user.id}`);
+      const cachedVenueId = localStorage.getItem(`venue_id_${initialSession.user.id}`);
+      if (cachedVenueId && cachedRole) {
+        return { primaryVenueId: cachedVenueId, userRole: cachedRole };
+      }
+    }
+
+    return { primaryVenueId: null, userRole: null };
+  };
+
+  const initialVenueData = getInitialVenueData();
+  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(initialVenueData.primaryVenueId);
+  const [userRole, setUserRole] = useState<string | null>(initialVenueData.userRole);
+
   useEffect(() => {
     // If we have initialSession from server, use it immediately and skip client fetch
     if (initialSession) {
@@ -67,6 +97,20 @@ export default function AuthProvider({
       if (user !== initialSession.user) {
         setUser(initialSession.user);
       }
+
+      // Set venue data from server session
+      const sessionWithVenue = initialSession as any;
+      if (sessionWithVenue.primaryVenue) {
+        setPrimaryVenueId(sessionWithVenue.primaryVenue.venueId);
+        setUserRole(sessionWithVenue.primaryVenue.role);
+
+        // Cache in localStorage for future visits
+        if (typeof window !== "undefined" && initialSession.user?.id) {
+          localStorage.setItem(`user_role_${initialSession.user.id}`, sessionWithVenue.primaryVenue.role);
+          localStorage.setItem(`venue_id_${initialSession.user.id}`, sessionWithVenue.primaryVenue.venueId);
+        }
+      }
+
       setLoading(false);
 
       // Still set up auth state change listener for future updates
@@ -230,10 +274,14 @@ export default function AuthProvider({
       setSession(null);
       setUser(null);
 
-      // Clear all cached user data from session storage
+      // Clear all cached user data from localStorage and sessionStorage
       if (typeof window !== "undefined") {
-        const keys = Object.keys(sessionStorage);
-        keys.forEach((key) => {
+        if (session?.user?.id) {
+          localStorage.removeItem(`user_role_${session.user.id}`);
+          localStorage.removeItem(`venue_id_${session.user.id}`);
+        }
+        const sessionKeys = Object.keys(sessionStorage);
+        sessionKeys.forEach((key) => {
           if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
             sessionStorage.removeItem(key);
           }
@@ -256,7 +304,14 @@ export default function AuthProvider({
     }
   };
 
-  const value = useMemo(() => ({ session, user, loading, signOut }), [session, user, loading]);
+  const value = useMemo(() => ({
+    session,
+    user,
+    loading,
+    signOut,
+    primaryVenueId,
+    userRole
+  }), [session, user, loading, primaryVenueId, userRole]);
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

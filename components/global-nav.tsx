@@ -12,7 +12,7 @@ import { useTheme } from "next-themes";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { session, signOut } = useAuth();
+  const { session, signOut, primaryVenueId, userRole } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -23,21 +23,7 @@ export default function GlobalNav() {
   // Check for user existence since server-side sessions may not have access_token
   const isAuthenticated = !!session?.user;
 
-  // SYNCHRONOUS cached data extraction - happens during render, not in state
-  const getCachedData = () => {
-    if (typeof window === "undefined" || !session?.user?.id) {
-      return { primaryVenueId: null, userRole: null };
-    }
-    const userId = session.user.id;
-    const cachedRole = sessionStorage.getItem(`user_role_${userId}`);
-    const cachedVenueId = sessionStorage.getItem(`venue_id_${userId}`);
-    return { primaryVenueId: cachedVenueId, userRole: cachedRole };
-  };
-
-  // Use synchronous values, not state - prevents re-render flicker
-  const cachedData = getCachedData();
-  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(cachedData.primaryVenueId);
-  const [userRole, setUserRole] = useState<string | null>(cachedData.userRole);
+  // Venue data now comes from AuthProvider - no local state needed
 
   // Determine if we're on an authenticated route that supports dark mode
   const isAuthenticatedRoute =
@@ -75,75 +61,7 @@ export default function GlobalNav() {
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
-  // Fetch primary venue and user role when user is signed in
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (isAuthenticated && session?.user?.id) {
-        try {
-          // Check if we already have cached data (set in useState initialization)
-          const cachedRole = sessionStorage.getItem(`user_role_${session.user.id}`);
-          const cachedVenueId = sessionStorage.getItem(`venue_id_${session.user.id}`);
-
-          if (cachedRole && cachedVenueId) {
-            // Already set in useState, no need to fetch
-            return;
-          }
-
-          // No cache - fetch role data
-          const [venueResult, staffResult] = await Promise.all([
-            supabase
-              .from("venues")
-              .select("venue_id")
-              .eq("owner_user_id", session.user.id)
-              .order("created_at", { ascending: true })
-              .limit(1),
-            supabase
-              .from("user_venue_roles")
-              .select("role, venue_id")
-              .eq("user_id", session.user.id)
-              .limit(1)
-              .single(),
-          ]);
-
-          if (
-            !venueResult.error &&
-            Array.isArray(venueResult.data) &&
-            venueResult.data.length > 0 &&
-            venueResult.data[0]?.venue_id
-          ) {
-            setPrimaryVenueId(venueResult.data[0].venue_id);
-            setUserRole("owner");
-            // Cache the data
-            sessionStorage.setItem(`user_role_${session.user.id}`, "owner");
-            sessionStorage.setItem(`venue_id_${session.user.id}`, venueResult.data[0].venue_id);
-          } else if (!staffResult.error && staffResult.data?.venue_id && staffResult.data?.role) {
-            setPrimaryVenueId(staffResult.data.venue_id);
-            setUserRole(staffResult.data.role);
-            // Cache the data
-            sessionStorage.setItem(`user_role_${session.user.id}`, staffResult.data.role);
-            sessionStorage.setItem(`venue_id_${session.user.id}`, staffResult.data.venue_id);
-          }
-        } catch {
-          // Error handled silently
-        }
-      } else if (!isAuthenticated) {
-        // Clear state and cached data when not authenticated
-        setPrimaryVenueId(null);
-        setUserRole(null);
-        // Clear all cached user data from session storage
-        if (typeof window !== "undefined") {
-          const keys = Object.keys(sessionStorage);
-          keys.forEach((key) => {
-            if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
-              sessionStorage.removeItem(key);
-            }
-          });
-        }
-      }
-    };
-
-    fetchUserData();
-  }, [session?.user?.id, supabase, isAuthenticated]);
+  // Venue data now comes from AuthProvider - no fetching needed
 
   // Always render navigation immediately - don't wait for auth loading
   // The navigation will show appropriate content based on auth state

@@ -162,7 +162,46 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ]);
 
         if (!error && authUser) {
-          // Construct session object from authenticated user
+          // Fetch primary venue data to prevent navigation flicker
+          let primaryVenueData = null;
+          try {
+            // Get primary venue for immediate navigation availability
+            const [venueResult, staffResult] = await Promise.all([
+              supabase
+                .from("venues")
+                .select("venue_id")
+                .eq("owner_user_id", authUser.id)
+                .order("created_at", { ascending: true })
+                .limit(1),
+              supabase
+                .from("user_venue_roles")
+                .select("role, venue_id")
+                .eq("user_id", authUser.id)
+                .limit(1)
+                .single(),
+            ]);
+
+            if (
+              !venueResult.error &&
+              Array.isArray(venueResult.data) &&
+              venueResult.data.length > 0 &&
+              venueResult.data[0]?.venue_id
+            ) {
+              primaryVenueData = {
+                venueId: venueResult.data[0].venue_id,
+                role: "owner"
+              };
+            } else if (!staffResult.error && staffResult.data?.venue_id && staffResult.data?.role) {
+              primaryVenueData = {
+                venueId: staffResult.data.venue_id,
+                role: staffResult.data.role
+              };
+            }
+          } catch (venueErr) {
+            // Venue fetch failed, continue without venue data
+          }
+
+          // Construct session object from authenticated user with venue data
           session = {
             user: authUser,
             access_token: "", // Not needed for layout, only user info is required
@@ -170,6 +209,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             expires_in: 0,
             expires_at: undefined,
             token_type: "bearer",
+            // Add venue data to prevent navigation flicker
+            primaryVenue: primaryVenueData,
           } as unknown as Session;
         }
       } catch (err) {
