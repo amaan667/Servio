@@ -31,6 +31,26 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   const [loadingChangePlan, setLoadingChangePlan] = useState(false);
   const { toast } = useToast();
 
+  // Show loading state if organization data is not available yet
+  if (!organization) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Billing & Subscription</CardTitle>
+            <CardDescription>Loading plan information...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm text-muted-foreground">Loading subscription details...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Debug: Log organization data
   if (typeof window !== "undefined" && organization) {
     logger.debug("[BILLING DEBUG] Organization data:", {
@@ -206,15 +226,15 @@ export default function BillingSection({ organization }: BillingSectionProps) {
 
   const tierInfo = getTierInfo();
 
-  // Show error if no tier info (unknown or missing tier)
+  // Show error only for truly invalid tiers (shouldn't happen with proper data)
   if (!tierInfo) {
     return (
       <div className="space-y-6">
         <Card className="border-2 border-red-200 bg-red-50">
           <CardHeader>
-            <CardTitle className="text-xl text-red-800">Unable to Load Plan Information</CardTitle>
+            <CardTitle className="text-xl text-red-800">Invalid Subscription Tier</CardTitle>
             <CardDescription className="text-red-600">
-              Could not determine your current subscription tier.
+              Your subscription tier could not be recognized.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -223,21 +243,9 @@ export default function BillingSection({ organization }: BillingSectionProps) {
               <AlertDescription>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <strong>Tier received:</strong> {tier || "none"}
+                    <strong>Invalid tier:</strong> {tier}
                   </div>
-                  <div>
-                    <strong>Organization ID:</strong> {organization?.id || "none"}
-                  </div>
-                  <div>
-                    <strong>Has Organization:</strong> {organization ? "yes" : "no"}
-                  </div>
-                  <div>
-                    <strong>Organization Data:</strong>{" "}
-                    <pre className="text-xs mt-1 p-2 bg-gray-100 rounded overflow-auto">
-                      {JSON.stringify(organization, null, 2)}
-                    </pre>
-                  </div>
-                  <div className="mt-2">Please contact support or refresh the page.</div>
+                  <div>Please contact support to resolve this issue.</div>
                 </div>
               </AlertDescription>
             </Alert>

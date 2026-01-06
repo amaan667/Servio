@@ -41,18 +41,6 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
     tierType: typeof tier,
     tierString: String(tier),
   });
-  
-  // Also log to console for browser visibility
-   
-  console.log("[ANALYTICS PAGE SERVER] Initial tier loaded:", {
-    tier,
-    tierType: typeof tier,
-    tierString: String(tier),
-    role: auth?.role,
-    venueId,
-    userId: auth?.user?.id,
-    hasAccess: hasAnalyticsAccess,
-  });
 
   return (
     <AnalyticsClientPage

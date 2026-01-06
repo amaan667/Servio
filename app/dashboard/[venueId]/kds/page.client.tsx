@@ -25,18 +25,6 @@ export default function KDSClientPage({
   role,
   hasAccess,
 }: KDSClientPageProps) {
-  // Log tier information for debugging
-   
-  console.log("[KDS PAGE CLIENT] Initial tier received:", {
-    tier,
-    tierType: typeof tier,
-    tierString: String(tier),
-    kdsTier,
-    hasAccess,
-    role,
-    venueId,
-    timestamp: new Date().toISOString(),
-  });
 
   // KDS is NOT included in Starter tier - show restriction banner
   if (!hasAccess) {

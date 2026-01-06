@@ -71,16 +71,6 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   const userRole = userRoleResult.data;
   const allVenues = allVenuesResult.data || [];
 
-  // BROWSER CONSOLE LOGGING - Settings page tier sources
-  console.log('[SETTINGS PAGE] 📊 Tier Sources Comparison:', {
-    tierFromRPC: auth?.tier,
-    tierFromDatabaseOrg: organization?.subscription_tier,
-    orgId: organization?.id,
-    userId: auth?.user?.id,
-    venueId: venueId,
-    areTiersConsistent: auth?.tier === organization?.subscription_tier?.toLowerCase(),
-    timestamp: new Date().toISOString()
-  });
 
   logger.info("[SETTINGS PAGE] ⭐ Final data state", {
     hasOrganization: !!organization,
@@ -105,12 +95,71 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
 
   // Venue access already verified by requirePageAuth, so finalVenue should exist
   if (!finalVenue) {
-    logger.error("[SETTINGS PAGE] Venue not found after auth verification", {
+    logger.warn("[SETTINGS PAGE] Venue not found after auth verification - checking user_venue_roles", {
       userId: auth?.user?.id,
       venueId,
     });
-    // This shouldn't happen, but handle gracefully
-    return <SettingsClientPage venueId={venueId} />;
+
+    // Check if user has a role for this venue (venue might exist in roles but not venues table)
+    const { data: userRole } = await supabase
+      .from("user_venue_roles")
+      .select("role")
+      .eq("user_id", auth?.user?.id ?? "")
+      .eq("venue_id", venueId)
+      .maybeSingle();
+
+    if (userRole && (userRole.role === "owner" || userRole.role === "manager")) {
+      logger.info("[SETTINGS PAGE] User has role but venue missing - creating fallback venue", {
+        userId: auth?.user?.id,
+        venueId,
+        role: userRole.role,
+      });
+
+      // First get/create organization
+      let userOrg = organization;
+
+      // Create a fallback venue record
+      const { data: fallbackVenue, error: createError } = await supabase
+        .from("venues")
+        .insert({
+          venue_id: venueId,
+          venue_name: `${auth?.user?.email?.split('@')[0] || 'User'}'s Venue`,
+          business_type: 'Restaurant',
+          owner_user_id: auth?.user?.id ?? "",
+          organization_id: userOrg?.id || null,
+          is_active: true,
+          timezone: 'Europe/London',
+          currency: 'GBP',
+          daily_reset_time: '06:00:00'
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        logger.error("[SETTINGS PAGE] Failed to create fallback venue", {
+          error: createError,
+          userId: auth?.user?.id,
+          venueId,
+        });
+      } else {
+        logger.info("[SETTINGS PAGE] Created fallback venue successfully", {
+          venueId,
+          venueName: fallbackVenue.venue_name,
+          organizationId: fallbackVenue.organization_id,
+        });
+        finalVenue = fallbackVenue;
+      }
+    }
+
+    // If we still don't have a venue, show error
+    if (!finalVenue) {
+      logger.error("[SETTINGS PAGE] Venue creation failed or user lacks access", {
+        userId: auth?.user?.id,
+        venueId,
+        hasRole: !!userRole,
+      });
+      return <SettingsClientPage venueId={venueId} />;
+    }
   }
 
   const initialData = {

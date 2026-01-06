@@ -38,10 +38,10 @@ const nextConfig = {
     serverComponentsExternalPackages: ['playwright-core', 'playwright', '@sparticuz/chromium', 'puppeteer-core'],
   },
   compiler: {
-    // Keep all console logs for debugging (temporarily disabled for AUTH DEBUG logs)
-    // removeConsole: {
-    //   exclude: ['error', 'info'], // Keep console.error for Sentry, console.info for Railway logs
-    // },
+    // Remove console logs in production (keep console.error and console.info for Railway logs)
+    removeConsole: {
+      exclude: ['error', 'info'], // Keep console.error for Sentry, console.info for Railway logs
+    },
   },
   // Production optimizations
   poweredByHeader: false,

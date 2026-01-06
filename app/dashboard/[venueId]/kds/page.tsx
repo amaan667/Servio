@@ -26,23 +26,6 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     normalizedVenueId: venueId.startsWith("venue-") ? venueId : `venue-${venueId}`,
   });
   
-  // BROWSER CONSOLE LOGGING - KDS page tier detection
-  console.log('[KDS PAGE] 🍳 KDS Access Check:', {
-    venueId,
-    currentTier,
-    hasKDSAccess,
-    userId: auth?.user?.id,
-    rawTier: auth?.tier,
-    role: auth?.role,
-    normalizedVenueId: venueId.startsWith("venue-") ? venueId : `venue-${venueId}`,
-    timestamp: new Date().toISOString(),
-    authObject: auth ? {
-      hasTier: !!auth.tier,
-      hasRole: !!auth.role,
-      hasUser: !!auth.user
-    } : null
-  });
-  
   // Determine KDS tier from tier limits - matches TIER_LIMITS configuration
   const kdsTier: "advanced" | "enterprise" | false =
     currentTier === "enterprise" ? "enterprise" : currentTier === "pro" ? "advanced" : false;
