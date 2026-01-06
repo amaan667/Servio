@@ -176,15 +176,6 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
     userRole: userRole?.role || (isOwner ? "owner" : "staff"),
   };
 
-  logger.info("[SETTINGS PAGE] Data fetched on server", {
-    hasVenue: !!finalVenue,
-    hasOrganization: !!organization,
-    organizationId: organization?.id,
-    subscriptionTier: organization?.subscription_tier,
-    hasStripeCustomer: !!organization?.stripe_customer_id,
-    userRole: initialData.userRole,
-    venueCount: allVenues.length,
-  });
 
   return <SettingsClientPage venueId={venueId} initialData={initialData} />;
 }

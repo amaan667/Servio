@@ -31,16 +31,6 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
 
   const tier = auth?.tier ?? "starter";
   
-  // Log tier info for debugging
-  logger.info("[ANALYTICS PAGE] Tier check", {
-    venueId,
-    tier,
-    role: auth?.role,
-    userId: auth?.user?.id,
-    normalizedVenueId: venueId.startsWith("venue-") ? venueId : `venue-${venueId}`,
-    tierType: typeof tier,
-    tierString: String(tier),
-  });
 
   return (
     <AnalyticsClientPage

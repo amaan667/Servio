@@ -51,17 +51,6 @@ export default function BillingSection({ organization }: BillingSectionProps) {
     );
   }
 
-  // Debug: Log organization data
-  if (typeof window !== "undefined" && organization) {
-    logger.debug("[BILLING DEBUG] Organization data:", {
-      id: organization.id,
-      subscription_tier: organization.subscription_tier,
-      stripe_customer_id: organization.stripe_customer_id,
-      subscription_status: organization.subscription_status,
-      hasId: !!organization.id,
-      fullOrg: organization,
-    });
-  }
 
   // Get tier from organization - should match Stripe exactly (no normalization)
   const tier = (organization?.subscription_tier?.toLowerCase() || "starter") as
