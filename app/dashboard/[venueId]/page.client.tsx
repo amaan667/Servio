@@ -81,7 +81,7 @@ const DashboardClient = React.memo(function DashboardClient({
   };
 
   // Hooks must be called unconditionally - can't be in try-catch
-  const { user: authUser, isLoading: authRedirectLoading } = useAuthRedirect();
+  const { user: authUser, isLoading: authRedirectLoading, isAuthenticated } = useAuthRedirect();
   const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole());
@@ -427,7 +427,9 @@ const DashboardClient = React.memo(function DashboardClient({
   // Auth check happens in background, page renders with cached data
   // Never block - render immediately
 
-  if (!authUser) {
+  // Don't block authenticated users - let dashboard load immediately
+  // useAuthRedirect will handle unauthenticated users with proper redirects
+  if (!isAuthenticated && !authRedirectLoading) {
     router.push("/sign-in");
     return (
       <div role="status" className="p-4 text-sm text-muted-foreground">
