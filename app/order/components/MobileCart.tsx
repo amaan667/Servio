@@ -117,7 +117,7 @@ export function MobileCart({
                       </Button>
                     </div>
                     <span className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                      £{((item.price + (item.modifierPrice || 0)) * item.quantity).toFixed(2)}
+                      £{(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
 

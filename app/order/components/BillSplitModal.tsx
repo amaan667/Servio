@@ -76,7 +76,7 @@ export function BillSplitModal({
             // Remove item from this split
             const newItems = split.items.filter((item) => item.id !== itemId);
             const newTotal = newItems.reduce(
-              (sum, item) => sum + (item.price + (item.modifierPrice || 0)) * item.quantity,
+              (sum, item) => sum + item.price * item.quantity,
               0
             );
             return { ...split, items: newItems, total: newTotal };
@@ -103,8 +103,7 @@ export function BillSplitModal({
               });
               // Then add to current split
               const newItems = [...split.items, item];
-              const newTotal =
-                split.total + (item.price + (item.modifierPrice || 0)) * item.quantity;
+              const newTotal = split.total + item.price * item.quantity;
               return { ...split, items: newItems, total: newTotal };
             }
 
@@ -271,7 +270,7 @@ export function BillSplitModal({
                           )}
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        £{((item.price + (item.modifierPrice || 0)) * item.quantity).toFixed(2)}
+                        £{(item.price * item.quantity).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
