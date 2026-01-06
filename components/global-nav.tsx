@@ -20,7 +20,8 @@ export default function GlobalNav() {
 
   // SYNCHRONOUS auth state - no useState, no useEffect delays
   // This prevents ALL flicker by using session from context immediately
-  const isAuthenticated = !!(session?.user && session?.access_token);
+  // Check for user existence since server-side sessions may not have access_token
+  const isAuthenticated = !!session?.user;
 
   // SYNCHRONOUS cached data extraction - happens during render, not in state
   const getCachedData = () => {

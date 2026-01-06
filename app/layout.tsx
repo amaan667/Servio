@@ -138,8 +138,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
 
-    // Check if auth cookies exist before attempting to get session
-    // This prevents unnecessary API calls for logged-out users
+    // Check if auth cookies exist - try to get session for ALL pages
+    // This ensures dashboard pages get auth state immediately, preventing flicker
     const hasAuthCookies = allCookies.some(
       (cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")
     );
@@ -163,7 +163,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         if (!error && authUser) {
           // Construct session object from authenticated user
-          // getUser() validates with server, getSession() just reads cookies (insecure)
           session = {
             user: authUser,
             access_token: "", // Not needed for layout, only user info is required
