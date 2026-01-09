@@ -6,7 +6,6 @@
 import { createAdminClient } from "@/lib/supabase";
 import AnalyticsClientPage from "./page.client";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
-import { logger } from "@/lib/logger";
 
 export const metadata = {
   title: "Analytics | Servio",

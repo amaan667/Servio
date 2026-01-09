@@ -3,8 +3,6 @@
  * Prevents invalid state changes and ensures business rule compliance
  */
 
-import { logger } from "@/lib/logger";
-
 export type OrderStatus =
   | "PLACED"
   | "ACCEPTED"

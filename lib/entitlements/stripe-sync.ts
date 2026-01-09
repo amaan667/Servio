@@ -3,7 +3,6 @@
  * Handles tier changes, add-on management, and downgrade safety
  */
 
-import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { Tier } from "@/types/entitlements";

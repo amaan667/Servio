@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function GET(_request: NextRequest) {
       const { data, error } = await supabase.from("venues").select("count").limit(1);
       checks.database = !error;
     } catch (error) {
-      console.error("Database check failed:", error);
+      logger.error("Database check failed:", error);
     }
 
     // Test entitlements RPC
@@ -47,7 +48,7 @@ export async function GET(_request: NextRequest) {
       // We expect an error (venue not found), but if RPC doesn't exist, we'd get a different error
       checks.entitlementsRpc = !!error && (error.message?.includes("forbidden") || error.message?.includes("not found"));
     } catch (error) {
-      console.error("Entitlements RPC check failed:", error);
+      logger.error("Entitlements RPC check failed:", error);
     }
 
     // Test downgrade validation function
@@ -59,7 +60,7 @@ export async function GET(_request: NextRequest) {
       });
       checks.downgradeValidation = !error && typeof data === "boolean";
     } catch (error) {
-      console.error("Downgrade validation check failed:", error);
+      logger.error("Downgrade validation check failed:", error);
     }
 
     // Check if order state machine is importable
@@ -67,7 +68,7 @@ export async function GET(_request: NextRequest) {
       await import("@/lib/orders/state-machine");
       checks.orderStateMachine = true;
     } catch (error) {
-      console.error("Order state machine import failed:", error);
+      logger.error("Order state machine import failed:", error);
     }
 
     // Determine overall health
@@ -100,7 +101,7 @@ export async function GET(_request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Environment verification failed:", error);
+    logger.error("Environment verification failed:", error);
     return NextResponse.json({
       status: "error",
       timestamp: new Date().toISOString(),

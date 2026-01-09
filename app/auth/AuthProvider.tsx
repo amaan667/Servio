@@ -4,6 +4,13 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabaseBrowser } from "@/lib/supabase";
 
+interface ExtendedSession extends Session {
+  primaryVenue?: {
+    venueId: string;
+    role: string;
+  };
+}
+
 type AuthValue = {
   session: Session | null;
   user: User | null;
@@ -63,7 +70,7 @@ export default function AuthProvider({
 
   // Extract venue data from initial session and cache it immediately
   const getInitialVenueData = () => {
-    const sessionWithVenue = initialSession as any;
+    const sessionWithVenue = initialSession as ExtendedSession;
     if (sessionWithVenue?.primaryVenue) {
       return {
         primaryVenueId: sessionWithVenue.primaryVenue.venueId,
@@ -99,7 +106,7 @@ export default function AuthProvider({
       }
 
       // Set venue data from server session
-      const sessionWithVenue = initialSession as any;
+      const sessionWithVenue = initialSession as ExtendedSession;
       if (sessionWithVenue.primaryVenue) {
         setPrimaryVenueId(sessionWithVenue.primaryVenue.venueId);
         setUserRole(sessionWithVenue.primaryVenue.role);

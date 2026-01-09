@@ -8,7 +8,6 @@ import { logger } from "@/lib/logger";
 import { z } from "zod";
 import type {
   VenueEntitlements,
-  EntitlementCheckResult,
   MaxCountCheckResult,
   Tier
 } from "@/types/entitlements";
@@ -341,7 +340,7 @@ function checkEntitlement(entitlements: VenueEntitlements, feature: string): { a
 
     default:
       // Check if it's a top-level entitlement
-      const entitlementValue = (entitlements as any)[feature];
+      const entitlementValue = (entitlements as unknown as Record<string, unknown>)[feature];
       if (typeof entitlementValue === "boolean") {
         return {
           allowed: entitlementValue,
