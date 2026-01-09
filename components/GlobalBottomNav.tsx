@@ -297,8 +297,8 @@ export default function GlobalBottomNav({
                 />
               </div>
               <span
-                className={`text-center px-0.5 transition-colors w-full flex-shrink-0 font-medium ${
-                  item.isActive ? "text-purple-600" : "text-purple-500"
+                className={`block text-center px-0.5 transition-colors w-full flex-shrink-0 font-medium ${
+                  item.isActive ? "!text-purple-600" : "!text-purple-500"
                 }`}
                 style={{
                   fontSize: "12px",
@@ -313,6 +313,9 @@ export default function GlobalBottomNav({
                   whiteSpace: "normal",
                   wordWrap: "break-word",
                   textOverflow: "clip",
+                  color: item.isActive ? "#9333ea" : "#a855f7",
+                  position: "relative",
+                  zIndex: 1,
                 }}
               >
                 {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
