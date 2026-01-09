@@ -276,11 +276,11 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center gap-1 pt-2 pb-2 px-1 relative transition-all duration-200 rounded-lg active:scale-95 ${
+              className={`flex flex-col items-center justify-center gap-1 pt-2 pb-2 px-1 relative transition-all duration-200 rounded-lg active:scale-95 bg-white ${
                 item.isActive
-                  ? "bg-purple-50 shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-300 border-purple-300"
-                  : "bg-white border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
-              } border`}
+                  ? "border-2 border-purple-500 shadow-[0_0_16px_rgba(124,58,237,0.5)]"
+                  : "border border-gray-200"
+              }`}
               style={{ minHeight: "82px", overflow: "visible" }}
             >
               <div
@@ -292,13 +292,13 @@ export default function GlobalBottomNav({
               >
                 <item.icon
                   className={`h-6 w-6 transition-colors ${
-                    item.isActive ? "!text-purple-700" : "!text-purple-600"
+                    item.isActive ? "text-purple-600" : "text-purple-500"
                   }`}
                 />
               </div>
               <span
-                className={`text-center px-0.5 transition-colors w-full flex-shrink-0 ${
-                  item.isActive ? "font-bold !text-purple-700" : "font-semibold !text-purple-600"
+                className={`text-center px-0.5 transition-colors w-full flex-shrink-0 font-medium ${
+                  item.isActive ? "text-purple-600" : "text-purple-500"
                 }`}
                 style={{
                   fontSize: "12px",
@@ -310,13 +310,6 @@ export default function GlobalBottomNav({
                   minHeight: "16px",
                   maxHeight: "none",
                   overflow: "visible",
-                  color: item.isActive ? "#6d28d9" : "#7c3aed",
-                  fontWeight: item.isActive ? 700 : 600,
-                  textIndent: 0,
-                  clip: "auto",
-                  clipPath: "none",
-                  position: "relative",
-                  zIndex: 1,
                   whiteSpace: "normal",
                   wordWrap: "break-word",
                   textOverflow: "clip",
