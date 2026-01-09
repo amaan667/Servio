@@ -276,50 +276,32 @@ export default function GlobalBottomNav({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href, item.id, item.label)}
-              className={`flex flex-col items-center justify-center gap-1 pt-2 pb-2 px-1 relative transition-all duration-200 rounded-lg active:scale-95 bg-white ${
+              className={`flex flex-col items-center justify-center gap-2 py-2 px-1 transition-all duration-200 rounded-lg active:scale-95 ${
                 item.isActive
                   ? "border-2 border-purple-500 shadow-[0_0_16px_rgba(124,58,237,0.5)]"
                   : "border border-gray-200"
               }`}
-              style={{ minHeight: "82px", overflow: "visible" }}
+              style={{ minHeight: "72px", backgroundColor: "#ffffff" }}
             >
-              <div
-                className="relative flex-shrink-0 flex items-center justify-center"
-                style={{
-                  height: "24px",
-                  width: "100%",
-                }}
-              >
-                <item.icon
-                  className={`h-6 w-6 transition-colors ${
-                    item.isActive ? "text-purple-600" : "text-purple-500"
-                  }`}
-                />
-              </div>
-              <span
-                className={`block text-center px-0.5 transition-colors w-full flex-shrink-0 font-medium ${
-                  item.isActive ? "!text-purple-600" : "!text-purple-500"
+              <item.icon
+                className={`w-6 h-6 flex-shrink-0 ${
+                  item.isActive ? "text-purple-600" : "text-purple-400"
                 }`}
+              />
+              <p
                 style={{
-                  fontSize: "12px",
-                  lineHeight: "1.3",
-                  display: "block",
-                  visibility: "visible",
-                  opacity: 1,
-                  height: "auto",
-                  minHeight: "16px",
-                  maxHeight: "none",
-                  overflow: "visible",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                  textOverflow: "clip",
-                  color: item.isActive ? "#9333ea" : "#a855f7",
-                  position: "relative",
-                  zIndex: 1,
+                  fontSize: "11px",
+                  lineHeight: "1.2",
+                  fontWeight: 500,
+                  color: item.isActive ? "#7c3aed" : "#a855f7",
+                  margin: 0,
+                  padding: 0,
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {item.id === "live-orders" ? `Live (${liveOrdersCount})` : item.label}
-              </span>
+                {item.id === "live-orders" ? `Orders` : item.label}
+              </p>
             </button>
           ))}
         </div>
