@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
@@ -14,7 +13,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -31,8 +30,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!finalVenueId) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "venueId is required",
+
         },
         { status: 400 }
       );
@@ -48,9 +46,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("is_active", true);
 
     if (!existingStations || existingStations.length === 0) {
-      logger.debug("[KDS BACKFILL] No stations found, creating default stations for venue", {
-        extra: { value: finalVenueId },
-      });
+      
 
       // Create default stations
       const defaultStations = [
@@ -64,12 +60,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       for (const station of defaultStations) {
         await supabase.from("kds_stations").upsert(
           {
-            venue_id: finalVenueId,
-            station_name: station.name,
-            station_type: station.type,
-            display_order: station.order,
-            color_code: station.color,
-            is_active: true,
+
           },
           {
             onConflict: "venue_id,station_name",
@@ -121,11 +112,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: orders, error: ordersError } = await query;
 
     if (ordersError) {
-      logger.error("[KDS BACKFILL] Error fetching orders:", { value: ordersError });
+      
       return NextResponse.json(
         {
-          ok: false,
-          error: ordersError.message,
+
         },
         { status: 500 }
       );
@@ -133,11 +123,9 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (!orders || orders.length === 0) {
       return NextResponse.json({
-        ok: true,
+
         message: `No orders found for ${scope} scope`,
-        orders_processed: 0,
-        tickets_created: 0,
-      });
+
     }
 
     let ordersProcessed = 0;
@@ -163,19 +151,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
         try {
           await createKDSTicketsWithAI(supabase, {
-            id: order.id,
-            venue_id: order.venue_id,
-            items: items,
-            customer_name: order.customer_name,
-            table_number: order.table_number,
-            table_id: order.table_id,
-          });
+
           ticketsCreated += items.length;
         } catch (ticketError) {
-          logger.error("[KDS BACKFILL] Failed to create tickets for order:", {
-            error: ticketError instanceof Error ? ticketError.message : "Unknown error",
-            orderId: order.id,
-          });
+          
           errors.push(
             `Failed to create tickets for order ${order.id}: ${ticketError instanceof Error ? ticketError.message : "Unknown error"}`
           );
@@ -184,38 +163,25 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
         ordersProcessed++;
       } catch (_error) {
-        logger.error(`[KDS BACKFILL] Error processing order ${order.id}:`, {
-          error: _error instanceof Error ? _error.message : "Unknown _error",
-        });
+        
         errors.push(
           `Error processing order ${order.id}: ${_error instanceof Error ? _error.message : "Unknown _error"}`
         );
       }
     }
 
-    logger.debug("[KDS BACKFILL] Backfill completed:", {
-      ordersProcessed,
-      ticketsCreated,
-      errors: errors.length,
-    });
+    
 
     return NextResponse.json({
-      ok: true,
+
       message: `KDS backfill completed for ${scope} scope`,
-      orders_processed: ordersProcessed,
-      tickets_created: ticketsCreated,
-      errors: errors.length > 0 ? errors : undefined,
-    });
+
   } catch (_error) {
-    logger.error("[KDS BACKFILL] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "Backfill failed",
+
       },
       { status: 500 }
     );
   }
-});

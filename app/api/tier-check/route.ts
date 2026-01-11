@@ -1,7 +1,6 @@
 // Tier Check API - Check if user can perform an action
 import { NextRequest } from "next/server";
 import { TIER_LIMITS, type TierLimits } from "@/lib/tier-restrictions";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -48,21 +47,13 @@ export const POST = withUnifiedAuth(
 
         if (!allowed) {
           return success({
-            allowed: false,
-            tier: tierKey,
-            limit: typeof limit === "number" ? limit : 0,
-            current: currentCount,
+
             reason: `Limit reached: ${currentCount}/${typeof limit === "number" ? limit : 0} ${resource.replace("max", "").toLowerCase()}`,
-            upgradeRequired: true,
-          });
+
         }
 
         return success({
-          allowed: true,
-          tier: tierKey,
-          limit: typeof limit === "number" ? limit : 0,
-          current: currentCount,
-        });
+
       }
 
       // Check feature access
@@ -71,42 +62,22 @@ export const POST = withUnifiedAuth(
         const allowed =
           typeof featureValue === "boolean"
             ? featureValue
-            : // Non-boolean features (analytics/supportLevel) are always "allowed"
-              true;
 
-        if (!allowed) {
-          return success({
-            allowed: false,
-            tier: tierKey,
-            requiredTier: "enterprise",
-            reason: "This feature requires a higher tier",
-            upgradeRequired: true,
-          });
         }
 
         return success({
-          allowed: true,
-          tier: tierKey,
-        });
+
       }
 
       // STEP 7: Return success response
       return success({
-        allowed: true,
-        limits: tierLimits,
-        tier: tierKey,
-      });
+
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      logger.error("[TIER CHECK] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
+      
 
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
@@ -123,8 +94,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body or query
-    extractVenueId: async (req) => {
-      try {
+
         const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
         if (!venueId) {

@@ -16,18 +16,12 @@ import { Lightbulb, Bug, Loader2, Send, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface SupportFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  type: "feature" | "bug";
+
 }
 
 export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    subject: "",
-    description: "",
-    steps: "",
-  });
 
   const isFeatureRequest = type === "feature";
 
@@ -37,15 +31,10 @@ export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
 
     try {
       const response = await fetch("/api/support/submit", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: type,
-          subject: formData.subject || (isFeatureRequest ? "Feature Request" : "Bug Report"),
-          description: formData.description,
-          steps: formData.steps,
+
         }),
-      });
 
       const data = await response.json();
 
@@ -54,21 +43,12 @@ export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
       }
 
       toast({
-        title: "Success",
-        description: isFeatureRequest
-          ? "Your feature request has been submitted. We'll review it soon!"
-          : "Your bug report has been submitted. We'll investigate it soon!",
-      });
 
-      // Reset form
       setFormData({ subject: "", description: "", steps: "" });
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit. Please try again.",
-        variant: "destructive",
-      });
+
     } finally {
       setLoading(false);
     }
@@ -131,7 +111,7 @@ export function SupportForm({ open, onOpenChange, type }: SupportFormProps) {
               placeholder={
                 isFeatureRequest
                   ? "Describe the feature you'd like to see. How would it help your business?"
-                  : "Describe the issue you encountered. What were you trying to do?"
+
               }
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}

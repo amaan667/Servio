@@ -9,10 +9,7 @@ interface ErrorContext {
   userId?: string;
   venueId?: string;
   userRole?: string;
-  url: string;
-  timestamp: number;
-  userAgent: string;
-  sessionId: string;
+
   customData?: Record<string, unknown>;
 }
 
@@ -48,11 +45,7 @@ class ErrorTracker {
       const Sentry = await import("@sentry/nextjs");
 
       Sentry.init({
-        dsn: this.sentryDsn || undefined,
-        environment: this.environment,
-        tracesSampleRate: 0.1,
-        replaysSessionSampleRate: 0.1,
-        replaysOnErrorSampleRate: 1.0,
+
         // Integrations are automatically included by @sentry/nextjs
         // BrowserTracing and Replay are enabled by default when configured
         beforeSend(event) {
@@ -62,7 +55,7 @@ class ErrorTracker {
           }
           return event;
         },
-      });
+
     } catch (_error) {
       // Ignore Sentry initialization errors
     }
@@ -72,10 +65,7 @@ class ErrorTracker {
     if (!this.isEnabled) return;
 
     const errorContext: ErrorContext = {
-      url: typeof window !== "undefined" ? window.location.href : "unknown",
-      timestamp: Date.now(),
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
-      sessionId: this.getSessionId(),
+
       ...context,
     };
 
@@ -94,17 +84,13 @@ class ErrorTracker {
   }
 
   public captureMessage(
-    message: string,
-    level: "info" | "warning" | "error" = "info",
+
     context?: Partial<ErrorContext>
   ) {
     if (!this.isEnabled) return;
 
     const errorContext: ErrorContext = {
-      url: typeof window !== "undefined" ? window.location.href : "unknown",
-      timestamp: Date.now(),
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
-      sessionId: this.getSessionId(),
+
       ...context,
     };
 
@@ -127,14 +113,10 @@ class ErrorTracker {
       import("@sentry/nextjs")
         .then((Sentry) => {
           Sentry.setUser({
-            id: userId,
-            role: userRole,
-            venueId: venueId,
-          });
-        })
+
         .catch(() => {
           // Sentry not available
-        });
+
     }
   }
 
@@ -144,31 +126,21 @@ class ErrorTracker {
         .then((Sentry) => {
           const contextValue = value as Record<string, unknown> | null;
           Sentry.setContext(key, contextValue);
-        })
+
         .catch(() => {
           // Sentry not available
-        });
+
     }
   }
 
   public addBreadcrumb(
-    message: string,
-    category: string,
-    level: "info" | "warning" | "error" = "info"
-  ) {
-    if (this.sentryDsn) {
-      import("@sentry/nextjs")
-        .then((Sentry) => {
-          Sentry.addBreadcrumb({
-            message,
+
             category,
             level,
-            timestamp: Date.now(),
-          });
-        })
+
         .catch(() => {
           // Sentry not available
-        });
+
     }
   }
 
@@ -177,19 +149,12 @@ class ErrorTracker {
       const { captureException, setContext } = await import("@sentry/nextjs");
 
       setContext("error", {
-        url: context.url,
-        timestamp: context.timestamp,
-        userAgent: context.userAgent,
-        sessionId: context.sessionId,
+
         ...context.customData,
-      });
 
       if (context.userId) {
         setContext("user", {
-          id: context.userId,
-          role: context.userRole,
-          venueId: context.venueId,
-        });
+
       }
 
       captureException(error);
@@ -203,19 +168,12 @@ class ErrorTracker {
       const { captureMessage, setContext } = await import("@sentry/nextjs");
 
       setContext("message", {
-        url: context.url,
-        timestamp: context.timestamp,
-        userAgent: context.userAgent,
-        sessionId: context.sessionId,
+
         ...context.customData,
-      });
 
       if (context.userId) {
         setContext("user", {
-          id: context.userId,
-          role: context.userRole,
-          venueId: context.venueId,
-        });
+
       }
 
       captureMessage(message, level as "info" | "warning" | "error");
@@ -227,19 +185,13 @@ class ErrorTracker {
   private async sendToCustomEndpoint(error: Error, context: ErrorContext) {
     try {
       await fetch("/api/errors", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        body: JSON.stringify({
-          error: {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
+
           },
           context,
         }),
-      });
+
     } catch (_error) {
       // Error handled silently
     }
@@ -248,18 +200,14 @@ class ErrorTracker {
   private async sendMessageToCustomEndpoint(message: string, level: string, context: ErrorContext) {
     try {
       await fetch("/api/errors", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        body: JSON.stringify({
-          message: {
-            text: message,
+
             level,
           },
           context,
         }),
-      });
+
     } catch (_error) {
       // Error handled silently
     }

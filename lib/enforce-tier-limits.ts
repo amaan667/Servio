@@ -5,9 +5,7 @@ import { TIER_LIMITS } from "./tier-restrictions";
 import { createClient } from "./supabase";
 
 interface TierCheckResult {
-  allowed: boolean;
-  response?: NextResponse;
-  tier?: string;
+
 }
 
 /**
@@ -16,21 +14,7 @@ interface TierCheckResult {
  * Uses unified get_access_context RPC for single database call
  */
 export async function enforceResourceLimit(
-  _userId: string,
-  venueId: string,
-  resourceType: "maxMenuItems" | "maxTables" | "maxStaff" | "maxVenues",
-  currentCount: number
-): Promise<TierCheckResult> {
-  // Get unified access context (single RPC call)
-  const accessContext = await getAccessContext(venueId);
 
-  if (!accessContext) {
-    return {
-      allowed: false,
-      response: NextResponse.json(
-        {
-          error: "Access denied",
-          message: "Unable to verify subscription tier",
         },
         { status: 403 }
       ),
@@ -40,11 +24,7 @@ export async function enforceResourceLimit(
   const tierLimits = TIER_LIMITS[accessContext.tier];
   if (!tierLimits) {
     return {
-      allowed: false,
-      response: NextResponse.json(
-        {
-          error: "Invalid tier",
-          currentTier: accessContext.tier,
+
         },
         { status: 403 }
       ),
@@ -58,18 +38,14 @@ export async function enforceResourceLimit(
   if (!allowed) {
     const resourceName = resourceType.replace("max", "").toLowerCase();
     return {
-      allowed: false,
-      response: NextResponse.json(
-        {
+
           error: `Limit reached: ${currentCount}/${typeof limit === "number" ? limit : 0} ${resourceName}`,
-          currentTier: accessContext.tier,
-          limit: typeof limit === "number" ? limit : 0,
-          upgradeRequired: true,
+
           message: `Upgrade your plan to add more ${resourceName}`,
         },
         { status: 403 }
       ),
-      tier: accessContext.tier,
+
     };
   }
 
@@ -82,20 +58,7 @@ export async function enforceResourceLimit(
  * Uses unified get_access_context RPC for single database call
  */
 export async function enforceFeatureAccess(
-  _userId: string,
-  venueId: string,
-  feature: "kds" | "inventory" | "analytics" | "aiAssistant" | "multiVenue"
-): Promise<TierCheckResult> {
-  // Get unified access context (single RPC call)
-  const accessContext = await getAccessContext(venueId);
 
-  if (!accessContext) {
-    return {
-      allowed: false,
-      response: NextResponse.json(
-        {
-          error: "Access denied",
-          message: "Unable to verify subscription tier",
         },
         { status: 403 }
       ),
@@ -105,11 +68,7 @@ export async function enforceFeatureAccess(
   const tierLimits = TIER_LIMITS[accessContext.tier];
   if (!tierLimits) {
     return {
-      allowed: false,
-      response: NextResponse.json(
-        {
-          error: "Invalid tier",
-          currentTier: accessContext.tier,
+
         },
         { status: 403 }
       ),
@@ -125,18 +84,12 @@ export async function enforceFeatureAccess(
     const allowed = featureValue !== false;
     if (!allowed) {
       return {
-        allowed: false,
-        response: NextResponse.json(
-          {
-            error: `This feature requires Pro tier or higher`,
-            currentTier: accessContext.tier,
-            requiredTier: "pro",
-            upgradeRequired: true,
+
             message: `Upgrade to Pro to access ${feature}`,
           },
           { status: 403 }
         ),
-        tier: accessContext.tier,
+
       };
     }
     return { allowed: true, tier: accessContext.tier };
@@ -146,18 +99,12 @@ export async function enforceFeatureAccess(
   if (typeof featureValue === "boolean") {
     if (!featureValue) {
       return {
-        allowed: false,
-        response: NextResponse.json(
-          {
-            error: `This feature requires Enterprise tier`,
-            currentTier: accessContext.tier,
-            requiredTier: "enterprise",
-            upgradeRequired: true,
+
             message: `Upgrade to Enterprise to access ${feature}`,
           },
           { status: 403 }
         ),
-        tier: accessContext.tier,
+
       };
     }
     return { allowed: true, tier: accessContext.tier };

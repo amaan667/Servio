@@ -7,22 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
 interface SimpleFeedbackFormProps {
-  venueId: string;
-  orderId?: string;
-  onSubmit?: () => void;
+
 }
 
 export default function SimpleFeedbackForm({
-  venueId: _venueId,
-  orderId: _orderId,
+
   onSubmit,
 }: SimpleFeedbackFormProps) {
   const [ratings, setRatings] = useState({
-    foodQuality: 0,
-    service: 0,
-    value: 0,
-    overall: 0,
-  });
+
   const [comments, setComments] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,9 +49,7 @@ export default function SimpleFeedbackForm({
     onChange,
     label,
   }: {
-    value: number;
-    onChange: (rating: number) => void;
-    label: string;
+
   }) => (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700">{label}</label>

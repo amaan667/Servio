@@ -4,8 +4,7 @@
  */
 
 interface CacheEntry<T> {
-  value: T;
-  expires: number;
+
 }
 
 class MemoryCache {
@@ -52,8 +51,7 @@ class MemoryCache {
 
     this.cache.set(key, {
       value,
-      expires: Date.now() + (ttl || this.defaultTTL),
-    });
+
   }
 
   /**

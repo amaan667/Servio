@@ -7,26 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 interface Insight {
-  type: "success" | "warning" | "info";
-  title: string;
-  message: string;
-  action?: {
-    label: string;
-    href: string;
+
   };
 }
 
 interface AIInsightsProps {
-  venueId: string;
-  stats: {
-    revenue: number;
-    menuItems: number;
-    todayOrdersCount: number;
+
   };
   topSellingItems?: Array<{ name: string; price: number; count: number }>;
   yesterdayComparison?: {
-    orders: number;
-    revenue: number;
+
   };
   userRole?: string | null;
 }
@@ -47,14 +37,10 @@ export function AIInsights({
 
   if (stats.todayOrdersCount === 0 && !hasRealOrders) {
     insights.push({
-      type: "warning",
-      title: "No Orders Yet Today",
-      message: "Consider testing your QR flow or promoting your menu to customers.",
-      action: {
-        label: "View QR Codes",
+
         href: `/dashboard/${venueId}/qr-codes`,
       },
-    });
+
   }
 
   // Top selling item insight
@@ -62,14 +48,12 @@ export function AIInsights({
     const topItem = topSellingItems[0];
     const timesText = topItem.count === 1 ? "time" : "times";
     insights.push({
-      type: "success",
-      title: "Top Seller",
+
       message: `"${topItem.name}" (£${topItem.price.toFixed(2)}) has been added to cart ${topItem.count} ${timesText} today. Consider promoting it!`,
-      action: {
-        label: "Edit Menu",
+
         href: `/dashboard/${venueId}/menu-management`,
       },
-    });
+
   }
 
   // Yesterday comparison insights
@@ -82,37 +66,31 @@ export function AIInsights({
 
     if (orderChange > 20) {
       insights.push({
-        type: "success",
-        title: "Strong Growth",
+
         message: `Orders are up ${Math.round(orderChange)}% compared to yesterday (same time period). Keep up the momentum!`,
-        action: {
-          label: "View Analytics",
+
           href: `/dashboard/${venueId}/analytics`,
         },
-      });
+
     } else if (orderChange < -20) {
       insights.push({
-        type: "warning",
-        title: "Orders Down",
+
         message: `Orders are down ${Math.round(Math.abs(orderChange))}% compared to yesterday (same time period). Consider promotions or check your QR codes.`,
-        action: {
-          label: "View QR Codes",
+
           href: `/dashboard/${venueId}/qr-codes`,
         },
-      });
+
     }
 
     // Only show revenue insights for owners/managers
     if ((userRole === "owner" || userRole === "manager") && revenueChange > 15) {
       insights.push({
-        type: "success",
-        title: "Revenue Boost",
+
         message: `Revenue is up ${Math.round(revenueChange)}% compared to yesterday (same time period). Excellent work!`,
-        action: {
-          label: "View Analytics",
+
           href: `/dashboard/${venueId}/analytics`,
         },
-      });
+
     }
   }
 
@@ -125,48 +103,38 @@ export function AIInsights({
     const avgOrderValue = stats.revenue / stats.todayOrdersCount;
     if (avgOrderValue < 10) {
       insights.push({
-        type: "info",
-        title: "Low Average Order Value",
+
         message: `Your average order value is £${avgOrderValue.toFixed(2)}. Consider upselling or adding combo deals to increase revenue.`,
-        action: {
-          label: "View Analytics",
+
           href: `/dashboard/${venueId}/analytics`,
         },
-      });
+
     } else if (avgOrderValue > 20) {
       insights.push({
-        type: "success",
-        title: "High Order Value",
+
         message: `Your average order value of £${avgOrderValue.toFixed(2)} is excellent! Keep up the great work.`,
-      });
+
     }
   }
 
   // Menu items insight
   if (stats.menuItems < 5) {
     insights.push({
-      type: "info",
-      title: "Expand Your Menu",
+
       message: `You have ${stats.menuItems} items on your menu. Consider adding more variety to attract more customers.`,
-      action: {
-        label: "Add Menu Items",
+
         href: `/dashboard/${venueId}/menu-management`,
       },
-    });
+
   }
 
   // Always show at least a default helpful card
   if (insights.length === 0) {
     insights.push({
-      type: "info",
-      title: "Welcome to Your Dashboard",
-      message:
-        "Your AI-powered insights will appear here as you start receiving orders and grow your business.",
-      action: {
-        label: "Get Started",
+
         href: `/dashboard/${venueId}/qr-codes`,
       },
-    });
+
   }
 
   return (
@@ -187,9 +155,7 @@ export function AIInsights({
                 className={`p-2 rounded-lg flex-shrink-0 ${
                   insight.type === "success"
                     ? "bg-green-100 dark:bg-green-900/30"
-                    : insight.type === "warning"
-                      ? "bg-orange-100 dark:bg-orange-900/30"
-                      : "bg-blue-100 dark:bg-blue-900/30"
+
                 }`}
               >
                 {insight.type === "success" ? (
@@ -197,9 +163,7 @@ export function AIInsights({
                     className={`h-4 w-4 ${
                       insight.type === "success"
                         ? "text-green-600 dark:text-green-400"
-                        : insight.type === "warning"
-                          ? "text-orange-600 dark:text-orange-400"
-                          : "text-blue-600 dark:text-blue-400"
+
                     }`}
                   />
                 ) : insight.type === "warning" ? (

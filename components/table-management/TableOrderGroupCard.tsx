@@ -9,9 +9,7 @@ import { TableOrder } from "@/hooks/useTableOrders";
 import { calculateOrderTotal, formatPrice } from "@/lib/pricing-utils";
 
 interface TableOrderGroupCardProps {
-  tableLabel: string;
-  orders: TableOrder[];
-  venueId: string;
+
 }
 
 export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderGroupCardProps) {
@@ -29,8 +27,7 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
         return "bg-purple-100 text-purple-800";
       case "MIXED":
         return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+
     }
   };
 
@@ -44,17 +41,14 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
         return "bg-blue-100 text-blue-800";
       case "MIXED":
         return "bg-amber-100 text-amber-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+
     }
   };
 
   const getTotalAmountForAllOrders = () => {
     const total = orders.reduce((sum, order) => {
       const orderTotal = calculateOrderTotal({
-        total_amount: order.total_amount,
-        items: order.items,
-      });
+
       return sum + orderTotal;
     }, 0);
     return formatPrice(total);

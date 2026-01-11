@@ -1,7 +1,6 @@
 // API endpoint to ensure a user has a real organization
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
@@ -18,7 +17,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: "Too many requests",
+
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -42,7 +41,7 @@ export const POST = withUnifiedAuth(
         const { createAdminClient } = await import("@/lib/supabase");
         adminClient = createAdminClient();
       } catch (adminError) {
-        logger.error("[ORG ENSURE] Failed to create admin client:", { error: adminError });
+        
         return NextResponse.json(
           { error: "Admin client creation failed", details: String(adminError) },
           { status: 500 }
@@ -51,7 +50,7 @@ export const POST = withUnifiedAuth(
 
       // Verify SERVICE_ROLE_KEY is set
       if (!env("SUPABASE_SERVICE_ROLE_KEY")) {
-        logger.error("[ORG ENSURE] SUPABASE_SERVICE_ROLE_KEY is not set!");
+        
         return NextResponse.json(
           { error: "Server configuration error: Missing SERVICE_ROLE_KEY" },
           { status: 500 }
@@ -83,16 +82,12 @@ export const POST = withUnifiedAuth(
       }
 
       if (orgCheckError) {
-        logger.error("[ORG ENSURE] Error checking existing org:", orgCheckError);
+        
       }
 
       // If organization exists, return it with no-cache headers
       if (existingOrg && !orgCheckError) {
         const response = NextResponse.json({
-          success: true,
-          organization: existingOrg,
-          created: false,
-        });
 
         // Add cache control headers to ensure fresh data
         response.headers.set(
@@ -117,28 +112,17 @@ export const POST = withUnifiedAuth(
           slug: `org-${user.id.slice(0, 8)}-${Date.now()}`,
           created_by: user.id, // Required column
           owner_user_id: user.id, // Also set for compatibility
-          subscription_tier: "starter",
-          subscription_status: "trialing",
-          trial_ends_at: trialEndsAt.toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+
         .select(
           "id, subscription_tier, subscription_status, trial_ends_at, created_by, owner_user_id"
         )
         .single();
 
       if (createError) {
-        logger.error("[ORG ENSURE] Error creating organization:", {
-          error: createError,
-          userId: user.id,
-        });
+        
         return NextResponse.json(
           {
-            error: "Failed to create organization",
-            details: createError.message,
-            code: createError.code,
-            hint: createError.hint,
+
           },
           { status: 500 }
         );
@@ -152,7 +136,7 @@ export const POST = withUnifiedAuth(
         .or(`organization_id.is.null,organization_id.neq.${newOrg.id}`);
 
       if (venueLinkError) {
-        logger.warn("[ORG ENSURE] Could not link venues to organization:", venueLinkError);
+        
       }
 
       // Create user_venue_roles entries (using admin client)
@@ -163,25 +147,17 @@ export const POST = withUnifiedAuth(
 
       if (userVenues && userVenues.length > 0) {
         const venueRoles = userVenues.map((venue: { venue_id: string }) => ({
-          user_id: user.id,
-          venue_id: venue.venue_id,
-          role: "owner",
+
         }));
 
         await adminClient.from("user_venue_roles").upsert(venueRoles, {
           onConflict: "user_id,venue_id",
-        });
+
       }
 
-      logger.debug("[ORG ENSURE] Created new organization", {
-        data: { orgId: newOrg.id, userId: user.id },
-      });
+      
 
       const response = NextResponse.json({
-        success: true,
-        organization: newOrg,
-        created: true,
-      });
 
       // Add cache control headers to ensure fresh data
       response.headers.set(
@@ -197,17 +173,12 @@ export const POST = withUnifiedAuth(
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      logger.error("[ORG ENSURE] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
-        userId: context.user.id,
-      });
+      
 
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
+
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -215,8 +186,7 @@ export const POST = withUnifiedAuth(
 
       return NextResponse.json(
         {
-          error: "Internal Server Error",
-          message: isDevelopment() ? errorMessage : "Request processing failed",
+
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
@@ -225,6 +195,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-    extractVenueId: async () => null,
+
   }
 );

@@ -4,7 +4,7 @@ import React from "react";
 import { Check } from "lucide-react";
 
 interface OnboardingProgressProps {
-  currentStep: 1 | 2 | 3 | 4;
+
 }
 
 export default function OnboardingProgress({ currentStep }: OnboardingProgressProps) {
@@ -28,9 +28,7 @@ export default function OnboardingProgress({ currentStep }: OnboardingProgressPr
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg transition-all ${
                     step.number < currentStep
                       ? "bg-green-500 text-white"
-                      : step.number === currentStep
-                        ? "bg-purple-600 text-white ring-4 ring-purple-200"
-                        : "bg-gray-200 text-gray-500"
+
                   }`}
                 >
                   {step.number < currentStep ? <Check className="w-6 h-6" /> : step.number}
@@ -69,10 +67,7 @@ export default function OnboardingProgress({ currentStep }: OnboardingProgressPr
           Step {currentStep} of 4 • Estimated time:{" "}
           {currentStep === 1
             ? "2 min"
-            : currentStep === 2
-              ? "1-2 min"
-              : currentStep === 3
-                ? "1 min"
+
                 : "1 min"}
         </p>
       </div>

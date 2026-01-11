@@ -37,15 +37,9 @@ export const ORDER_STATE_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
  * Validate order transition with comprehensive business rules
  */
 export function validateOrderTransition(
-  currentOrder: {
-    order_status: OrderStatus;
-    payment_status: PaymentStatus;
-    kitchen_status?: KitchenStatus;
-    service_status?: ServiceStatus;
-    completion_status?: CompletionStatus;
+
   },
-  targetStatus: OrderStatus,
-  forceComplete: boolean = false
+
 ): { allowed: boolean; message: string; reason?: string } {
   const { order_status: currentStatus, payment_status: paymentStatus } = currentOrder;
 
@@ -53,9 +47,9 @@ export function validateOrderTransition(
   const validTransitions = ORDER_STATE_TRANSITIONS[currentStatus] || [];
   if (!validTransitions.includes(targetStatus)) {
     return {
-      allowed: false,
+
       message: `Invalid transition from ${currentStatus} to ${targetStatus}`,
-      reason: "invalid_transition",
+
     };
   }
 
@@ -67,9 +61,9 @@ export function validateOrderTransition(
 
     if (!paymentValid && !forceComplete) {
       return {
-        allowed: false,
+
         message: `Cannot complete order with payment status: ${paymentStatus}. Order must be paid or marked as paid.`,
-        reason: "payment_required",
+
       };
     }
 
@@ -77,27 +71,23 @@ export function validateOrderTransition(
     const completableStatuses: OrderStatus[] = ["SERVING", "SERVED"];
     if (!completableStatuses.includes(currentStatus) && !forceComplete) {
       return {
-        allowed: false,
+
         message: `Order must be SERVING or SERVED before completion. Current status: ${currentStatus}`,
-        reason: "invalid_completion_state",
+
       };
     }
 
     // Check kitchen completion for non-force completions
     if (!forceComplete && currentOrder.kitchen_status !== "completed") {
       return {
-        allowed: false,
-        message: "All kitchen tickets must be completed before order can be marked complete",
-        reason: "kitchen_not_complete",
+
       };
     }
 
     // Check service completion for non-force completions
     if (!forceComplete && currentOrder.service_status !== "served") {
       return {
-        allowed: false,
-        message: "Order must be fully served before completion",
-        reason: "service_not_complete",
+
       };
     }
   }
@@ -106,9 +96,7 @@ export function validateOrderTransition(
   if (targetStatus === "SERVING") {
     if (currentStatus !== "READY") {
       return {
-        allowed: false,
-        message: "Order must be READY before serving can begin",
-        reason: "not_ready_for_service",
+
       };
     }
   }
@@ -118,18 +106,16 @@ export function validateOrderTransition(
     const validFromStatuses: OrderStatus[] = ["READY", "SERVING"];
     if (!validFromStatuses.includes(currentStatus)) {
       return {
-        allowed: false,
+
         message: `Order must be READY or SERVING before it can be served. Current status: ${currentStatus}`,
-        reason: "invalid_serve_state",
+
       };
     }
 
     // All kitchen tickets must be completed
     if (currentOrder.kitchen_status !== "completed") {
       return {
-        allowed: false,
-        message: "All kitchen tickets must be completed before order can be served",
-        reason: "kitchen_not_complete",
+
       };
     }
   }
@@ -138,9 +124,7 @@ export function validateOrderTransition(
   if (targetStatus === "IN_PREP") {
     if (currentStatus !== "ACCEPTED") {
       return {
-        allowed: false,
-        message: "Order must be ACCEPTED before preparation can begin",
-        reason: "not_accepted",
+
       };
     }
   }
@@ -149,16 +133,14 @@ export function validateOrderTransition(
   if (targetStatus === "READY") {
     if (currentStatus !== "IN_PREP") {
       return {
-        allowed: false,
-        message: "Order must be IN_PREP before it can be marked ready",
-        reason: "not_in_prep",
+
       };
     }
   }
 
   // All validations passed
   return {
-    allowed: true,
+
     message: `Transition from ${currentStatus} to ${targetStatus} is valid`,
   };
 }

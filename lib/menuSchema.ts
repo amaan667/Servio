@@ -14,20 +14,13 @@ export function parsePriceAny(p: unknown) {
 }
 
 export const MenuItem = z.object({
-  name: z.string().transform((s) => clampName(s)),
-  description: z.string().nullable().optional().default(null),
-  price: z
+
     .union([z.number(), z.string()])
     .transform(parsePriceAny)
     .refine((v) => !isNaN(v), "price required"),
-  category: z.string(),
-  available: z.boolean().default(true),
+
   // Note: order_index column doesn't exist in database, removed from schema
-});
 
 export const MenuPayload = z.object({
-  items: z.array(MenuItem),
-  categories: z.array(z.string()),
-});
 
 export type MenuPayloadT = z.infer<typeof MenuPayload>;

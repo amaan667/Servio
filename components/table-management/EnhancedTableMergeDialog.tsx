@@ -37,48 +37,18 @@ import {
 } from "@/lib/table-states";
 
 interface Table extends Record<string, unknown> {
-  id: string;
-  label: string;
-  seat_count: number;
-  status: string;
-  session_id?: string | null;
-  order_id?: string | null;
-  total_amount?: number | null;
-  order_status?: string | null;
-  opened_at?: string | null;
-  customer_name?: string | null;
-  reserved_now_id?: string | null;
-  reserved_now_start?: string | null;
-  reserved_now_name?: string | null;
-  reserved_later_id?: string | null;
-  reserved_later_start?: string | null;
-  reserved_later_name?: string | null;
-  state: TableState;
-  stateInfo?: TableStateInfo;
-  mergeScenario?: MergeScenario;
-  selectable: boolean;
-  requiresConfirmation: boolean;
+
 }
 
 interface EnhancedTableMergeDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  sourceTable: Table;
-  venueId: string;
-  availableTables: Table[];
-  onActionComplete?: () => void;
-  onMergeConfirm: (
-    sourceTableId: string,
-    targetTableId: string,
-    requiresConfirmation: boolean
-  ) => Promise<void>;
+
 }
 
 export function EnhancedTableMergeDialog({
   isOpen,
   onClose,
   sourceTable,
-  venueId: _venueId,
+
   availableTables,
   onActionComplete,
   onMergeConfirm,
@@ -125,9 +95,7 @@ export function EnhancedTableMergeDialog({
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+
   };
 
   const getStateIconComponent = (state: TableState) => {
@@ -142,8 +110,7 @@ export function EnhancedTableMergeDialog({
         return <XCircle className="h-3 w-3" />;
       case "CLEANING":
         return <Sparkles className="h-3 w-3" />;
-      default:
-        return <Circle className="h-3 w-3" />;
+
     }
   };
 
@@ -264,9 +231,7 @@ export function EnhancedTableMergeDialog({
                     className={`p-3 border rounded-lg transition-colors ${
                       !table.selectable
                         ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
-                        : selectedTableId === table.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 cursor-pointer"
+
                     }`}
                     onClick={() => table.selectable && setSelectedTableId(table.id)}
                   >

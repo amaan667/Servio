@@ -1,18 +1,9 @@
 import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { logger } from "@/lib/logger";
 
 interface GestureState {
-  isDragging: boolean;
-  startX: number;
-  startY: number;
-  currentX: number;
-  currentY: number;
-  deltaX: number;
-  deltaY: number;
-  direction: "left" | "right" | "up" | "down" | null;
-  velocity: number;
+
 }
 
 interface GestureOptions {
@@ -28,8 +19,7 @@ interface GestureOptions {
 }
 
 export function useGestures(
-  options: GestureOptions = {
-    /* Empty */
+
   }
 ) {
   const {
@@ -45,16 +35,6 @@ export function useGestures(
   } = options;
 
   const [gestureState, setGestureState] = useState<GestureState>({
-    isDragging: false,
-    startX: 0,
-    startY: 0,
-    currentX: 0,
-    currentY: 0,
-    deltaX: 0,
-    deltaY: 0,
-    direction: null,
-    velocity: 0,
-  });
 
   const [isPullToRefreshActive, setIsPullToRefreshActive] = useState(false);
   const [pullToRefreshProgress, setPullToRefreshProgress] = useState(0);
@@ -96,16 +76,6 @@ export function useGestures(
     lastMoveYRef.current = touch.clientY;
 
     setGestureState({
-      isDragging: true,
-      startX: touch.clientX,
-      startY: touch.clientY,
-      currentX: touch.clientX,
-      currentY: touch.clientY,
-      deltaX: 0,
-      deltaY: 0,
-      direction: null,
-      velocity: 0,
-    });
 
     setIsPullToRefreshActive(false);
     setPullToRefreshProgress(0);
@@ -143,13 +113,11 @@ export function useGestures(
 
       setGestureState({
         ...gestureState,
-        currentX: touch.clientX,
-        currentY: touch.clientY,
+
         deltaX,
         deltaY,
         direction,
         velocity,
-      });
 
       lastMoveTimeRef.current = now;
       lastMoveXRef.current = touch.clientX;
@@ -174,16 +142,6 @@ export function useGestures(
 
       // Reset gesture state
       setGestureState({
-        isDragging: false,
-        startX: 0,
-        startY: 0,
-        currentX: 0,
-        currentY: 0,
-        deltaX: 0,
-        deltaY: 0,
-        direction: null,
-        velocity: 0,
-      });
 
       // Handle pull-to-refresh
       if (isPullToRefreshActive && onPullToRefresh) {
@@ -249,7 +207,7 @@ export function useGestures(
     gestureState,
     isPullToRefreshActive,
     pullToRefreshProgress,
-    isDragging: gestureState.isDragging,
+
   };
 }
 
@@ -283,11 +241,6 @@ export function useSwipeNavigation() {
   }, []);
 
   const { gestureState } = useGestures({
-    onSwipeLeft: goToNext,
-    onSwipeRight: goToPrevious,
-    swipeThreshold: 50,
-    velocityThreshold: 0.2,
-  });
 
   return {
     currentIndex,
@@ -311,16 +264,13 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     try {
       await onRefresh();
     } catch (_error) {
-      logger.error("Pull-to-refresh failed:", errorToContext(_error));
+      );
     } finally {
       setIsRefreshing(false);
     }
   }, [onRefresh, isRefreshing]);
 
   const { pullToRefreshProgress, isPullToRefreshActive } = useGestures({
-    onPullToRefresh: handleRefresh,
-    pullToRefreshThreshold: 120,
-  });
 
   useEffect(() => {
     setProgress(pullToRefreshProgress);
@@ -330,6 +280,6 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     isRefreshing,
     progress,
     isPullToRefreshActive,
-    canRefresh: isPullToRefreshActive,
+
   };
 }

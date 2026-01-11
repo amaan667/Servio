@@ -10,10 +10,7 @@ import { ZodError } from "zod";
  * Standard API response wrapper
  */
 export interface ApiResponse<T = unknown> {
-  ok: boolean;
-  data?: T;
-  error?: string;
-  details?: unknown;
+
 }
 
 /**
@@ -27,18 +24,17 @@ export function ok<T>(data: T, status = 200): NextResponse<ApiResponse<T>> {
  * Create an error response
  */
 export function fail(
-  error: string,
+
   status = 400,
   details?: Record<string, unknown> | string | unknown[]
 ): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
-      ok: false,
+
       error,
       ...(details
         ? { details }
-        : {
-            /* Empty */
+
           }),
     },
     { status }
@@ -49,7 +45,7 @@ export function fail(
  * Create a validation error response
  */
 export function validationError(
-  error: string,
+
   details?: Record<string, unknown> | string | unknown[]
 ): NextResponse<ApiResponse> {
   return fail(error, 400, details);
@@ -98,8 +94,7 @@ export function rateLimited(error = "Rate limit exceeded"): NextResponse<ApiResp
  */
 export function handleZodError(error: ZodError): NextResponse<ApiResponse> {
   const details = error.errors.map((err) => ({
-    path: err.path.join("."),
-    message: err.message,
+
   }));
 
   return validationError("Validation failed", details);
@@ -109,7 +104,7 @@ export function handleZodError(error: ZodError): NextResponse<ApiResponse> {
  * Type guard for API responses
  */
 export function isSuccessResponse<T>(
-  response: ApiResponse<T>
+
 ): response is ApiResponse<T> & { ok: true; data: T } {
   return response.ok === true && response.data !== undefined;
 }
@@ -118,7 +113,7 @@ export function isSuccessResponse<T>(
  * Type guard for error responses
  */
 export function isErrorResponse(
-  response: ApiResponse
+
 ): response is ApiResponse & { ok: false; error: string } {
   return response.ok === false && response.error !== undefined;
 }

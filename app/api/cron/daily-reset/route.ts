@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -31,10 +30,7 @@ export async function POST(req: NextRequest) {
     const expectedAuth = env("CRON_SECRET") || "default-cron-secret";
 
     if (authHeader !== `Bearer ${expectedAuth}`) {
-      logger.warn("[CRON DAILY RESET] Unauthorized cron request", {
-        hasHeader: !!authHeader,
-        expectedPrefix: "Bearer",
-      });
+      
       return apiErrors.unauthorized("Unauthorized");
     }
 
@@ -59,13 +55,10 @@ export async function POST(req: NextRequest) {
       .not("daily_reset_time", "is", null);
 
     if (venuesError) {
-      logger.error("[CRON DAILY RESET] Error fetching venues:", {
-        error: venuesError.message || "Unknown error",
-      });
+      
       return NextResponse.json(
         {
-          error: "Failed to fetch venues",
-          message: isDevelopment() ? venuesError.message : "Database query failed",
+
         },
         { status: 500 }
       );
@@ -73,10 +66,7 @@ export async function POST(req: NextRequest) {
 
     if (!venues || venues.length === 0) {
       return NextResponse.json({
-        success: true,
-        message: "No venues found for daily reset",
-        resetVenues: [],
-      });
+
     }
 
     // Filter venues that should reset at the current time (within 5 minutes)
@@ -88,15 +78,12 @@ export async function POST(req: NextRequest) {
 
       // Reset if within 5 minutes of the scheduled time
       return timeDiff <= 5;
-    });
 
     if (venuesToReset.length === 0) {
       return NextResponse.json({
-        success: true,
-        message: "No venues scheduled for reset at this time",
+
         currentTime,
-        resetVenues: [],
-      });
+
     }
 
     const resetResults = [];
@@ -130,11 +117,9 @@ export async function POST(req: NextRequest) {
 
         if (!needsReset) {
           resetResults.push({
-            venueId: venue.venue_id,
-            venueName: venue.venue_name,
-            reset: false,
+
             reason: "No active orders, reservations, or occupied tables",
-          });
+
           continue;
         }
 
@@ -145,9 +130,7 @@ export async function POST(req: NextRequest) {
           await supabase
             .from("orders")
             .update({
-              order_status: "COMPLETED",
-              updated_at: new Date().toISOString(),
-            })
+
             .eq("venue_id", venue.venue_id)
             .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
         }
@@ -157,9 +140,7 @@ export async function POST(req: NextRequest) {
           await supabase
             .from("reservations")
             .update({
-              status: "CANCELLED",
-              updated_at: new Date().toISOString(),
-            })
+
             .eq("venue_id", venue.venue_id)
             .eq("status", "BOOKED");
         }
@@ -178,10 +159,7 @@ export async function POST(req: NextRequest) {
             .eq("venue_id", venue.venue_id);
 
           if (sessionDeleteError) {
-            logger.warn("[CRON DAILY RESET] Error deleting sessions:", {
-              error: sessionDeleteError.message,
-              venueId: venue.venue_id,
-            });
+            
           }
 
           // Delete all tables
@@ -191,10 +169,7 @@ export async function POST(req: NextRequest) {
             .eq("venue_id", venue.venue_id);
 
           if (tableDeleteError) {
-            logger.warn("[CRON DAILY RESET] Error deleting tables:", {
-              error: tableDeleteError.message,
-              venueId: venue.venue_id,
-            });
+            
           }
         }
 
@@ -205,31 +180,15 @@ export async function POST(req: NextRequest) {
           .eq("venue_id", venue.venue_id);
 
         if (runtimeDeleteError) {
-          logger.warn("[CRON DAILY RESET] Error clearing runtime state:", {
-            error: runtimeDeleteError.message,
-            venueId: venue.venue_id,
-          });
+          
         }
 
         resetResults.push({
-          venueId: venue.venue_id,
-          venueName: venue.venue_name,
-          reset: true,
-          completedOrders: activeOrders?.length || 0,
-          canceledReservations: activeReservations?.length || 0,
-          deletedTables: venueTables?.length || 0,
-        });
+
       } catch (_error) {
-        logger.error(`[CRON DAILY RESET] Error resetting venue ${venue.venue_name}:`, {
-          error: _error instanceof Error ? _error.message : "Unknown _error",
-          venueId: venue.venue_id,
-        });
+        
         resetResults.push({
-          venueId: venue.venue_id,
-          venueName: venue.venue_name,
-          reset: false,
-          error: _error instanceof Error ? _error.message : "Unknown _error",
-        });
+
       }
     }
 
@@ -238,24 +197,20 @@ export async function POST(req: NextRequest) {
 
     // STEP 7: Return success response
     return NextResponse.json({
-      success: true,
+
       message: `Daily reset completed for ${successfulResets}/${totalVenues} venues`,
-      timestamp: new Date().toISOString(),
+
       resetResults,
-    });
+
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-    logger.error("[CRON DAILY RESET] Unexpected error:", {
-      error: errorMessage,
-      stack: errorStack,
-    });
+    
 
     return NextResponse.json(
       {
-        error: "Internal Server Error",
-        message: isDevelopment() ? errorMessage : "Request processing failed",
+
         ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }
@@ -266,8 +221,5 @@ export async function POST(req: NextRequest) {
 // GET endpoint to check cron status
 export async function GET() {
   return NextResponse.json({
-    message: "Daily reset cron endpoint is active",
-    timestamp: new Date().toISOString(),
-    nextReset: "Scheduled for midnight daily",
-  });
+
 }

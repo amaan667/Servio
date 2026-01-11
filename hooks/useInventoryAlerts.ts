@@ -2,7 +2,6 @@ import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useState, useEffect } from "react";
 import type { LowStockAlert } from "@/types/inventory";
-import { logger } from "@/lib/logger";
 
 export function useInventoryAlerts(venueId: string | null) {
   const [alerts, setAlerts] = useState<LowStockAlert[]>([]);
@@ -17,13 +16,13 @@ export function useInventoryAlerts(venueId: string | null) {
         const { apiClient } = await import("@/lib/api-client");
         const response = await apiClient.get("/api/inventory/low-stock", {
           params: { venue_id: venueId },
-        });
+
         const result = await response.json();
         if (result.data) {
           setAlerts(result.data);
         }
       } catch (_error) {
-        logger.error("Error fetching inventory alerts:", errorToContext(_error));
+        );
       } finally {
         setLoading(false);
       }

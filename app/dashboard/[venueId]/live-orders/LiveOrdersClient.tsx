@@ -42,7 +42,7 @@ import { LiveOrdersClientProps, Order } from "./types";
 
 export default function LiveOrdersClient({
   venueId,
-  venueName: venueNameProp,
+
 }: LiveOrdersClientProps) {
   const searchParams = useSearchParams();
   const tableFilter = searchParams?.get("table");
@@ -53,8 +53,6 @@ export default function LiveOrdersClient({
   const parsedTableFilter = tableFilter
     ? tableFilter.startsWith("Table ")
       ? tableFilter.replace("Table ", "")
-      : tableFilter
-    : null;
 
   const [activeTab, setActiveTab] = useState(tabParam || "live");
   const [venueName, setVenueName] = useState<string>(venueNameProp || "");
@@ -143,12 +141,10 @@ export default function LiveOrdersClient({
           const isRecent = orderCreatedAt > cutoff;
           const isLiveStatus = LIVE_WINDOW_STATUSES.includes(order.order_status);
           return isRecent && isLiveStatus;
-        });
 
         const movedToAllToday = prevOrders.filter((order) => {
           const orderCreatedAt = new Date(order.created_at);
           return orderCreatedAt <= cutoff || !LIVE_WINDOW_STATUSES.includes(order.order_status);
-        });
 
         if (movedToAllToday.length > 0) {
           setAllTodayOrders((prev) => [...movedToAllToday, ...prev]);
@@ -156,7 +152,7 @@ export default function LiveOrdersClient({
         }
 
         return stillLive;
-      });
+
     }, 60000);
 
     return () => clearInterval(interval);
@@ -185,17 +181,14 @@ export default function LiveOrdersClient({
     );
     bulkCompleteAllOrders(activeOrders, () => {
       window.location.reload();
-    });
+
   };
 
   const getDisplayCount = (key: "live" | "all" | "history") => {
     const rpc =
       key === "live"
         ? tabCounts?.live_count
-        : key === "all"
-          ? tabCounts?.earlier_today_count
-          : tabCounts?.history_count;
-    return typeof rpc === "number" ? rpc : 0;
+
   };
 
   // Filter orders by search query (order ID, customer name, customer phone, table number)
@@ -218,7 +211,7 @@ export default function LiveOrdersClient({
       if (order.table_number?.toString().includes(query)) return true;
 
       return false;
-    });
+
   };
 
   // Memoized filtered orders for each tab
@@ -262,16 +255,7 @@ export default function LiveOrdersClient({
       [key: string]: unknown;
     };
     const legacyOrder: LegacyOrder = {
-      id: orderData.id || "",
-      venue_id: orderData.venue_id || "",
-      table_number: typeof orderData.table_number === "number" ? orderData.table_number : null,
-      customer_name: orderData.customer_name || null,
-      customer_phone: orderData.customer_phone || undefined,
-      customer_email: orderData.customer_email || undefined,
-      order_status: orderData.order_status || "PLACED",
-      total_amount: orderData.total_amount || 0,
-      items: (orderData.items as LegacyOrder["items"]) || [],
-      created_at: orderData.created_at || new Date().toISOString(),
+
     };
     const orderForCard = mapOrderToCardData(legacyOrder, "GBP");
 
@@ -317,9 +301,7 @@ export default function LiveOrdersClient({
 
   // Removed loading check - render immediately with empty state
   const counts = {
-    live: getDisplayCount("live"),
-    earlier: getDisplayCount("all"),
-    history: getDisplayCount("history"),
+
   };
 
   return (
@@ -377,16 +359,12 @@ export default function LiveOrdersClient({
               // Combine live and all today orders if table filter is active
               const allFilteredOrders = parsedTableFilter
                 ? [...filteredLiveOrders, ...filteredAllTodayOrders]
-                : filteredLiveOrders;
 
-              if (allFilteredOrders.length === 0) {
-                return (
-                  <EmptyState
                     title={searchQuery ? "No orders found" : "No Live Orders"}
                     description={
                       searchQuery
                         ? "Try adjusting your search query"
-                        : "Recent orders will appear here"
+
                     }
                   />
                 );
@@ -440,16 +418,12 @@ export default function LiveOrdersClient({
               // Combine live and all today orders if table filter is active
               const allFilteredOrders = parsedTableFilter
                 ? [...filteredLiveOrders, ...filteredAllTodayOrders]
-                : filteredAllTodayOrders;
 
-              if (allFilteredOrders.length === 0) {
-                return (
-                  <EmptyState
                     title={searchQuery ? "No orders found" : "No Earlier Orders Today"}
                     description={
                       searchQuery
                         ? "Try adjusting your search query"
-                        : "Orders from earlier today will appear here"
+
                     }
                   />
                 );
@@ -501,7 +475,7 @@ export default function LiveOrdersClient({
                 description={
                   searchQuery
                     ? "Try adjusting your search query"
-                    : "Previous orders will appear here"
+
                 }
               />
             ) : (
@@ -510,10 +484,7 @@ export default function LiveOrdersClient({
                 const groupedFiltered = filteredHistoryOrders.reduce(
                   (acc, order) => {
                     const date = new Date(order.created_at).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    });
+
                     if (!acc[date]) acc[date] = [];
                     acc[date].push(order);
                     return acc;
@@ -563,9 +534,7 @@ export default function LiveOrdersClient({
         venueId={venueId}
         venueName={venueName}
         counts={{
-          live_orders: counts.live,
-          total_orders: counts.earlier,
-          notifications: 0,
+
         }}
       />
     </div>

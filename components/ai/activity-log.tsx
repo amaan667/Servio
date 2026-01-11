@@ -12,8 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import { AIActionAudit } from "@/types/ai-assistant";
 
 interface ActivityLogProps {
-  venueId: string;
-  limit?: number;
+
 }
 
 export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
@@ -129,7 +128,7 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
                       <span>•</span>
                       <span>
                         {formatDistanceToNow(new Date(activity.createdAt), {
-                          addSuffix: true,
+
                         })}
                       </span>
                       {activity.executionTimeMs && (

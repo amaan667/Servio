@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(req: NextRequest) {
@@ -15,8 +14,7 @@ export async function POST(req: NextRequest) {
 
     // Convert to uppercase for database consistency
     const updateData: Record<string, unknown> = {
-      payment_status: paymentStatus.toUpperCase(),
-      updated_at: new Date().toISOString(),
+
     };
 
     if (paymentMethod) {
@@ -31,18 +29,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      logger.error("[UPDATE PAYMENT STATUS] Failed to update payment status", {
-        error: error.message,
-      });
+      
       return apiErrors.internal(error.message || "Internal server error");
     }
 
     return success({ data });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-    logger.error("[UPDATE PAYMENT STATUS] Error", {
-      error: errorMessage,
-    });
+    
     return apiErrors.internal(errorMessage);
   }
 }

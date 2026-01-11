@@ -3,13 +3,11 @@
 import React from "react";
 
 interface AuthErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: React.ErrorInfo | null;
+
 }
 
 interface AuthErrorBoundaryProps {
-  children: React.ReactNode;
+
   fallback?: React.ComponentType<{ error: Error; resetError: () => void }>;
 }
 
@@ -30,7 +28,6 @@ export class AuthErrorBoundary extends React.Component<
     this.setState({
       error,
       errorInfo,
-    });
 
     // Log to external service if needed
     // logErrorToService(error, errorInfo);

@@ -11,9 +11,7 @@ export default function QRCodeClientPage({
   venueId,
   role,
 }: {
-  venueId: string;
-  tier: string;
-  role: string;
+
 }) {
   const { user } = useAuthRedirect();
   const userRole = role as UserRole;
@@ -32,7 +30,7 @@ export default function QRCodeClientPage({
         if (data?.venue_name) {
           setVenueName(data.venue_name);
         }
-      });
+
   }, [user?.id, venueId]);
 
   // Show loading while checking auth

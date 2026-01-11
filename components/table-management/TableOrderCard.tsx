@@ -25,8 +25,7 @@ const getNextOrderStatus = (currentStatus: string) => {
     case "SERVING":
     case "SERVED":
       return "COMPLETED";
-    default:
-      return "COMPLETED";
+
   }
 };
 
@@ -45,15 +44,12 @@ const getNextStatusLabel = (currentStatus: string) => {
     case "SERVING":
     case "SERVED":
       return "Complete Order";
-    default:
-      return "Complete Order";
+
   }
 };
 
 interface TableOrderCardProps {
-  order: TableOrder;
-  venueId: string;
-  onActionComplete?: () => void;
+
 }
 
 export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderCardProps) {
@@ -66,16 +62,11 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       setIsRemoving(true);
 
       const response = await fetch("/api/orders/delete", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
         credentials: "include", // Include cookies for authentication
-        body: JSON.stringify({
-          orderId: order.id,
-          venue_id: venueId,
+
         }),
-      });
 
       if (!response.ok) {
         throw new Error("Failed to delete order");
@@ -99,8 +90,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         return "bg-green-100 text-green-800";
       case "SERVING":
         return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+
     }
   };
 
@@ -112,16 +102,13 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         return "bg-red-100 text-red-800";
       case "TILL":
         return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+
     }
   };
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+
   };
 
   const getTotalAmount = () => {
@@ -135,18 +122,10 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       setIsProcessingPayment(true);
 
       const response = await fetch("/api/orders/payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        credentials: "include",
-        body: JSON.stringify({
-          orderId: order.id,
-          venue_id: venueId,
-          payment_method: paymentMethod,
-          payment_status: "PAID",
+
         }),
-      });
 
       if (!response.ok) {
         throw new Error("Failed to process payment");
@@ -170,27 +149,23 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       let response: Response;
       if (normalized === "SERVED") {
         response = await fetch("/api/orders/serve", {
-          method: "POST",
+
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: order.id }),
-        });
+
       } else if (normalized === "COMPLETED") {
         response = await fetch("/api/orders/complete", {
-          method: "POST",
+
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: order.id }),
-        });
+
       } else {
         response = await fetch("/api/orders/set-status", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+
           },
-          body: JSON.stringify({
-            orderId: order.id,
-            status: normalized,
+
           }),
-        });
+
       }
 
       if (!response.ok) {

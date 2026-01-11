@@ -11,8 +11,7 @@ import DOMPurify from "isomorphic-dompurify";
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [], // No HTML tags allowed by default
-    ALLOWED_ATTR: [],
-  });
+
 }
 
 /**
@@ -23,8 +22,7 @@ export function sanitizeText(text: string): string {
     return String(text);
   }
   return DOMPurify.sanitize(text, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
+
   }).trim();
 }
 
@@ -69,12 +67,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
  * Validate and sanitize input based on type
  */
 export function sanitizeInput(
-  input: unknown,
-  type: "text" | "email" | "url" | "number"
-): string | number {
-  if (type === "number") {
-    const num = Number(input);
-    return isNaN(num) ? 0 : num;
+
   }
 
   const str = String(input || "");
@@ -84,7 +77,6 @@ export function sanitizeInput(
     case "url":
       return sanitizeUrl(str);
     case "text":
-    default:
-      return sanitizeText(str);
+
   }
 }

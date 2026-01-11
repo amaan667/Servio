@@ -4,7 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import { PendingOrderData } from "../hooks/useOrderSummary";
 
 interface CartItemsCardProps {
-  orderData: PendingOrderData;
+
 }
 
 export function CartItemsCard({ orderData }: CartItemsCardProps) {

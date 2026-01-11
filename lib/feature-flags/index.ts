@@ -3,22 +3,12 @@
  * @module lib/feature-flags
  */
 
-import { logger } from "@/lib/logger";
 import { redisCache } from "@/lib/cache/redis-cache";
 
 export interface FeatureFlag {
-  key: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  rolloutPercentage: number; // 0-100
-  enabledFor: {
-    userIds?: string[];
-    venueIds?: string[];
-    emails?: string[];
+
   };
-  createdAt: string;
-  updatedAt: string;
+
 }
 
 /**
@@ -53,100 +43,44 @@ export class FeatureFlagsManager {
   private static setDefaultFlags() {
     const defaults: FeatureFlag[] = [
       {
-        key: "ai_assistant",
-        name: "AI Assistant",
-        description: "Enable AI-powered restaurant management assistant",
-        enabled: true,
-        rolloutPercentage: 100,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       {
-        key: "advanced_analytics",
-        name: "Advanced Analytics",
-        description: "Enable advanced analytics dashboard with predictive insights",
-        enabled: false,
-        rolloutPercentage: 0,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       {
-        key: "inventory_forecasting",
-        name: "Inventory Forecasting",
-        description: "AI-powered inventory forecasting and auto-ordering",
-        enabled: false,
-        rolloutPercentage: 10,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       {
-        key: "multi_location",
-        name: "Multi-Location Support",
-        description: "Manage multiple restaurant locations from one account",
-        enabled: true,
-        rolloutPercentage: 100,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       {
-        key: "customer_loyalty",
-        name: "Customer Loyalty Program",
-        description: "Built-in customer loyalty and rewards system",
-        enabled: false,
-        rolloutPercentage: 0,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       {
-        key: "online_ordering",
-        name: "Online Ordering",
-        description: "Direct online ordering without QR codes",
-        enabled: true,
-        rolloutPercentage: 100,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       {
-        key: "table_reservations",
-        name: "Table Reservations",
-        description: "Online table reservation system",
-        enabled: true,
-        rolloutPercentage: 100,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       {
-        key: "kitchen_display",
-        name: "Kitchen Display System",
-        description: "Real-time kitchen display for order management",
-        enabled: true,
-        rolloutPercentage: 100,
-        enabledFor: {
-          /* Empty */
+
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
     ];
 
@@ -157,7 +91,7 @@ export class FeatureFlagsManager {
    * Check if feature is enabled for a specific context
    */
   static isEnabled(
-    flagKey: string,
+
     context?: {
       userId?: string;
       venueId?: string;
@@ -241,7 +175,7 @@ export class FeatureFlagsManager {
     const updated = {
       ...flag,
       ...updates,
-      updatedAt: new Date().toISOString(),
+
     };
 
     this.flags.set(flagKey, updated);
@@ -272,8 +206,7 @@ export class FeatureFlagsManager {
     const now = new Date().toISOString();
     const newFlag: FeatureFlag = {
       ...flag,
-      createdAt: now,
-      updatedAt: now,
+
     };
 
     this.flags.set(flag.key, newFlag);
@@ -291,8 +224,7 @@ export class FeatureFlagsManager {
     if (deleted) {
       // Update cache
       await redisCache.set(this.CACHE_KEY, Array.from(this.flags.values()), {
-        ttl: this.CACHE_TTL,
-      });
+
     }
 
     return deleted;
@@ -302,12 +234,11 @@ export class FeatureFlagsManager {
 // Initialize on import
 if (typeof window === "undefined") {
   FeatureFlagsManager.initialize().catch((error) => {
-    logger.error("[FEATURE_FLAGS] Failed to initialize", { error });
-  });
+
 }
 
 // Export convenience function
 export const isFeatureEnabled = (
-  flagKey: string,
+
   context?: { userId?: string; venueId?: string; email?: string }
 ) => FeatureFlagsManager.isEnabled(flagKey, context);

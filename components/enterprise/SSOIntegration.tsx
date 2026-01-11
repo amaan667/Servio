@@ -14,49 +14,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Key, Users, Settings } from "lucide-react";
 
 interface SSOProvider {
-  id: string;
-  name: string;
-  type: "saml" | "oauth" | "oidc";
-  enabled: boolean;
-  config: unknown;
+
 }
 
 export const SSOIntegration: React.FC = () => {
   const [providers, setProviders] = useState<SSOProvider[]>([
     {
-      id: "google",
-      name: "Google Workspace",
-      type: "oauth",
-      enabled: false,
-      config: {
-        /* Empty */
+
       },
     },
     {
-      id: "microsoft",
-      name: "Microsoft Azure AD",
-      type: "oidc",
-      enabled: false,
-      config: {
-        /* Empty */
+
       },
     },
     {
-      id: "okta",
-      name: "Okta",
-      type: "saml",
-      enabled: false,
-      config: {
-        /* Empty */
+
       },
     },
     {
-      id: "auth0",
-      name: "Auth0",
-      type: "oidc",
-      enabled: false,
-      config: {
-        /* Empty */
+
       },
     },
   ]);
@@ -76,7 +52,7 @@ export const SSOIntegration: React.FC = () => {
           return { ...p, config: { ...currentConfig, ...newConfig } };
         }
         return p;
-      })
+
     );
   };
 
@@ -88,16 +64,13 @@ export const SSOIntegration: React.FC = () => {
         return <Key className="h-4 w-4" />;
       case "oidc":
         return <Users className="h-4 w-4" />;
-      default:
-        return <Settings className="h-4 w-4" />;
+
     }
   };
 
   const getProviderBadge = (type: string) => {
     const colors = {
-      saml: "bg-blue-100 text-blue-800",
-      oauth: "bg-green-100 text-green-800",
-      oidc: "bg-purple-100 text-purple-800",
+
     };
     return colors[type as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };

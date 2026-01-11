@@ -23,23 +23,12 @@ import {
 import { Order } from "@/types/order";
 
 interface ReceiptModalProps {
-  order: Order;
-  venueEmail?: string;
-  venueAddress?: string;
-  logoUrl?: string;
-  primaryColor?: string;
-  isOpen: boolean;
-  onClose: () => void;
-  showVAT?: boolean;
-  isCustomerView?: boolean;
+
 }
 
 export function ReceiptModal({
   order,
-  venueEmail: _venueEmail,
-  venueAddress: _venueAddress,
-  logoUrl: _logoUrl,
-  primaryColor: _primaryColor = "#8b5cf6",
+
   isOpen,
   onClose,
   showVAT = true,
@@ -74,14 +63,12 @@ export function ReceiptModal({
       setError(null);
 
       const response = await fetch("/api/receipts/send-email", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: order.id,
+
           email,
-          venueId: order.venue_id,
+
         }),
-      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -108,14 +95,12 @@ export function ReceiptModal({
       setError(null);
 
       const response = await fetch("/api/receipts/send-sms", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: order.id,
+
           phone,
-          venueId: order.venue_id,
+
         }),
-      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -135,8 +120,6 @@ export function ReceiptModal({
     try {
       setError(null);
       const response = await fetch(`/api/receipts/pdf/${order.id}`, {
-        method: "GET",
-      });
 
       if (!response.ok) {
         throw new Error("Failed to generate PDF");

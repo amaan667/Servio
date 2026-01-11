@@ -21,7 +21,7 @@ export function PageLoader() {
       <div
         className="h-1 bg-purple-600 animate-pulse"
         style={{
-          animation: "loading 1s ease-in-out infinite",
+
         }}
       />
       <style>{`

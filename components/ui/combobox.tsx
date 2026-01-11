@@ -16,17 +16,11 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export interface ComboboxOption {
-  value: string;
-  label: string;
+
 }
 
 interface ComboboxProps {
-  options: ComboboxOption[];
-  value?: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  searchPlaceholder?: string;
-  emptyPlaceholder?: string;
+
 }
 
 export function Combobox({
@@ -35,7 +29,7 @@ export function Combobox({
   onChange,
   placeholder = "Select category...",
   searchPlaceholder = "Search or create...",
-  emptyPlaceholder: _emptyPlaceholder = "No category found.",
+
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -81,7 +75,7 @@ export function Combobox({
                       "mr-2 h-4 w-4",
                       value?.toLowerCase() === option.value.toLowerCase()
                         ? "opacity-100"
-                        : "opacity-0"
+
                     )}
                   />
                   {option.label}

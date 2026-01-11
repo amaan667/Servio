@@ -56,7 +56,7 @@ export function useDashboardPrefetch(venueId: string) {
     const timeoutId = setTimeout(() => {
       routesToPrefetch.forEach((route) => {
         prefetchRoute(route);
-      });
+
     }, 2000);
 
     return () => clearTimeout(timeoutId);

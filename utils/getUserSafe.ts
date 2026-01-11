@@ -5,7 +5,6 @@
 
 import { createClient } from "@/lib/supabase";
 import { hasServerAuthCookie } from "@/lib/server-utils";
-import { logger } from "@/lib/logger";
 
 /**
  * Safely retrieves the currently authenticated user
@@ -28,16 +27,12 @@ export async function getUserSafe() {
     const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
 
-    logger.debug("[getUserSafe] Checking cookies:", {
-      totalCookies: allCookies.length,
-      cookieNames: allCookies.map((c) => c.name).join(", "),
-      hasAuthToken: allCookies.some((c) => c.name.includes("-auth-token")),
-    });
+     => c.name).join(", "),
 
     const hasAuthCookie = await hasServerAuthCookie();
 
     if (!hasAuthCookie) {
-      logger.warn("[getUserSafe] No auth cookie found - user may not be logged in");
+      
       return null;
     }
 
@@ -48,27 +43,20 @@ export async function getUserSafe() {
     const { data, error } = await supabase.auth.getUser();
 
     if (error) {
-      logger.warn("[getUserSafe] Auth error:", {
-        error: error.message,
-      });
+      
       return null;
     }
 
     if (!data.user) {
-      logger.warn("[getUserSafe] No user authenticated");
+      
       return null;
     }
 
-    logger.debug("[getUserSafe] User authenticated successfully:", {
-      userId: data.user.id,
-      email: data.user.email,
-    });
+    
 
     return data.user;
   } catch (err) {
-    logger.error("[getUserSafe] Unexpected error:", {
-      error: err instanceof Error ? err.message : String(err),
-    });
+
     return null;
   }
 }

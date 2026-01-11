@@ -27,7 +27,7 @@ import { TableGridSection } from "./components/TableGridSection";
  */
 
 interface TableManagementClientNewProps {
-  venueId: string;
+
 }
 
 export function TableManagementClientNew({ venueId }: TableManagementClientNewProps) {
@@ -48,9 +48,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
     if (!hasAnythingToReset) {
       toast({
-        title: "Nothing to Reset",
-        description: "All tables are free and no active orders exist.",
-      });
+
       return;
     }
 
@@ -86,7 +84,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         groups[tableKey] = [];
       }
       groups[tableKey].push(order);
-    });
 
     return groups;
   }, [state.tableOrders]);
@@ -178,9 +175,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         venueId={venueId}
         venueName=""
         counts={{
-          live_orders: 0,
-          total_orders: 0,
-          notifications: 0,
+
         }}
       />
     </div>

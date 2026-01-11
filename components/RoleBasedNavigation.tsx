@@ -17,9 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePathname } from "next/navigation";
 
 interface RoleBasedNavigationProps {
-  venueId: string;
-  userRole: UserRole;
-  userName: string;
+
 }
 
 export default function RoleBasedNavigation({
@@ -56,73 +54,63 @@ export default function RoleBasedNavigation({
 
   const navigationItems = [
     {
-      label: "Dashboard",
+
       href: `/dashboard/${venueId}`,
-      icon: LayoutDashboard,
-      feature: "dashboard",
+
       show: canAccess(userRole, "dashboard"),
     },
     {
-      label: "Analytics",
+
       href: `/dashboard/${venueId}/analytics`,
-      icon: BarChart,
-      feature: "analytics",
+
       show: canAccess(userRole, "analytics"),
     },
     {
-      label: "Menu",
+
       href: `/dashboard/${venueId}/menu-management`,
-      icon: Menu,
-      feature: "menu",
+
       show: canAccess(userRole, "menu"),
     },
     {
-      label: "Inventory",
+
       href: `/dashboard/${venueId}/inventory`,
-      icon: Package,
-      feature: "inventory",
+
       show: canAccess(userRole, "inventory"),
     },
     {
-      label: "Staff",
+
       href: `/dashboard/${venueId}/staff`,
-      icon: Users,
-      feature: "staff",
+
       show: canAccess(userRole, "staff"),
     },
     {
-      label: "KDS",
+
       href: `/dashboard/${venueId}/kds`,
-      icon: ChefHat,
-      feature: "kds",
+
       show: canAccess(userRole, "kds"),
     },
     {
-      label: "Tables",
+
       href: `/dashboard/${venueId}/tables`,
-      icon: Table,
-      feature: "tables",
+
       show: canAccess(userRole, "tables"),
     },
     {
-      label: "POS",
+
       href: `/dashboard/${venueId}/pos`,
-      icon: CreditCard,
-      feature: "payments",
+
       show: canAccess(userRole, "payments"),
     },
     {
-      label: "Payments",
+
       href: `/dashboard/${venueId}/payments`,
-      icon: Receipt,
-      feature: "payments",
+
       show: canAccess(userRole, "payments"),
     },
     {
-      label: "Settings",
+
       href: `/dashboard/${venueId}/settings`,
-      icon: Settings,
-      feature: "settings",
+
       show: canAccess(userRole, "settings"),
     },
   ];

@@ -6,17 +6,10 @@ import { CreditCard, Plus, Minus, X } from "lucide-react";
 import { CartItem } from "../types";
 
 interface MobileCartProps {
-  cart: CartItem[];
-  totalPrice: number;
-  totalItems: number;
-  showMobileCart: boolean;
-  onClose: () => void;
-  onRemoveFromCart: (itemId: string) => void;
+
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onUpdateSpecialInstructions: (itemId: string, instructions: string) => void;
-  onShowCheckout: () => void;
-  isDemo?: boolean;
-  onDirectSubmit?: () => void;
+
 }
 
 export function MobileCart({

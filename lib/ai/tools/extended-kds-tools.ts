@@ -2,55 +2,28 @@
 // Station filtering, bulk updates, and advanced KDS queries
 
 import { createAdminClient } from "@/lib/supabase";
-import { aiLogger } from "@/lib/logger";
 
 interface StationTicketsResult {
-  station: string;
-  tickets: Array<{
-    id: string;
-    orderNumber: string;
-    items: string[];
-    status: string;
-    priority: string;
-    createdAt: string;
-    timeInQueue: number;
+
   }>;
-  count: number;
-  summary: string;
+
 }
 
 interface BulkTicketUpdateResult {
-  success: boolean;
-  updatedCount: number;
-  status: string;
-  message: string;
+
 }
 
 interface OverdueTicketsResult {
-  tickets: Array<{
-    id: string;
-    station: string;
-    orderNumber: string;
-    items: string[];
-    minutesOverdue: number;
-    status: string;
+
   }>;
-  count: number;
-  summary: string;
+
 }
 
 /**
  * Get tickets for a specific station
  */
 export async function getStationTickets(
-  venueId: string,
-  stationName: string
-): Promise<StationTicketsResult> {
-  const supabase = createAdminClient();
 
-  aiLogger.info(`[AI KDS] Fetching tickets for station: ${stationName}`);
-
-  // Find station
   const { data: station, error: stationError } = await supabase
     .from("kds_stations")
     .select("id, station_name, station_type")
@@ -85,7 +58,7 @@ export async function getStationTickets(
     .order("created_at", { ascending: true });
 
   if (ticketsError) {
-    aiLogger.error("[AI KDS] Error fetching tickets:", ticketsError);
+    
     throw new Error(`Failed to fetch tickets: ${ticketsError.message}`);
   }
 
@@ -94,22 +67,16 @@ export async function getStationTickets(
       const timeInQueue = Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 60000);
 
       return {
-        id: ticket.id,
+
         orderNumber: ticket.order_id.slice(0, 8),
         items: [`${ticket.quantity}x ${ticket.item_name}`],
-        status: ticket.status,
-        priority: ticket.priority || "normal",
-        createdAt: ticket.created_at,
+
         timeInQueue,
       };
     }) || [];
 
   return {
-    station: station!.station_name,
-    tickets: ticketList,
-    count: ticketList.length,
-    summary:
-      ticketList.length > 0
+
         ? `${station!.station_name} has ${ticketList.length} active tickets. Oldest: ${ticketList[0]?.timeInQueue} minutes in queue.`
         : `${station!.station_name} has no active tickets. All clear!`,
   };
@@ -119,14 +86,12 @@ export async function getStationTickets(
  * Bulk update ticket statuses (e.g., mark all ready tickets as bumped)
  */
 export async function bulkUpdateTickets(
-  venueId: string,
-  fromStatus: string,
-  toStatus: string,
+
   stationName?: string
 ): Promise<BulkTicketUpdateResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI KDS] Bulk updating tickets from ${fromStatus} to ${toStatus}`);
+  
 
   const validStatuses = ["new", "in_progress", "ready", "bumped"];
   if (!validStatuses.includes(fromStatus) || !validStatuses.includes(toStatus)) {
@@ -137,11 +102,10 @@ export async function bulkUpdateTickets(
   let query = supabase
     .from("kds_tickets")
     .update({
-      status: toStatus,
-      updated_at: new Date().toISOString(),
+
       ...(toStatus === "bumped" && { bumped_at: new Date().toISOString() }),
       ...(toStatus === "ready" && { ready_at: new Date().toISOString() }),
-    })
+
     .eq("venue_id", venueId)
     .eq("status", fromStatus);
 
@@ -162,14 +126,12 @@ export async function bulkUpdateTickets(
   const { data, error } = await query.select("id");
 
   if (error) {
-    aiLogger.error("[AI KDS] Error bulk updating tickets:", error);
+    
     throw new Error(`Failed to update tickets: ${error.message}`);
   }
 
   return {
-    success: true,
-    updatedCount: data?.length || 0,
-    status: toStatus,
+
     message: `Updated ${data?.length || 0} tickets from ${fromStatus} to ${toStatus}${stationName ? ` at ${stationName} station` : ""}.`,
   };
 }
@@ -178,14 +140,6 @@ export async function bulkUpdateTickets(
  * Get overdue KDS tickets
  */
 export async function getOverdueKDSTickets(
-  venueId: string,
-  thresholdMinutes: number = 15
-): Promise<OverdueTicketsResult> {
-  const supabase = createAdminClient();
-
-  aiLogger.info(`[AI KDS] Fetching overdue tickets (>${thresholdMinutes} min)`);
-
-  const thresholdTime = new Date(Date.now() - thresholdMinutes * 60000).toISOString();
 
   const { data: tickets, error } = await supabase
     .from("kds_tickets")
@@ -196,7 +150,7 @@ export async function getOverdueKDSTickets(
     .order("created_at", { ascending: true });
 
   if (error) {
-    aiLogger.error("[AI KDS] Error fetching overdue tickets:", error);
+    
     throw new Error(`Failed to fetch overdue tickets: ${error.message}`);
   }
 
@@ -216,22 +170,18 @@ export async function getOverdueKDSTickets(
       );
 
       return {
-        id: ticket.id,
-        station: stationMap.get(ticket.station_id) || "Unknown",
+
         orderNumber: ticket.order_id.slice(0, 8),
         items: [`${ticket.quantity}x ${ticket.item_name}`],
         minutesOverdue,
-        status: ticket.status,
+
       };
     }) || [];
 
   return {
-    tickets: overdueTickets,
-    count: overdueTickets.length,
-    summary:
-      overdueTickets.length > 0
+
         ? `⚠️ ${overdueTickets.length} overdue tickets! Oldest: ${overdueTickets[0]?.minutesOverdue} minutes at ${overdueTickets[0]?.station}. Immediate attention needed!`
-        : `✅ No overdue tickets. All orders being prepared on time.`,
+
   };
 }
 
@@ -239,13 +189,9 @@ export async function getOverdueKDSTickets(
  * Get average prep time per station
  */
 export async function getStationPrepTimes(venueId: string): Promise<{
-  stations: Array<{
-    station: string;
-    avgPrepTime: number;
-    ticketsCompleted: number;
-    efficiency: string;
+
   }>;
-  summary: string;
+
 }> {
   const supabase = createAdminClient();
 
@@ -279,7 +225,6 @@ export async function getStationPrepTimes(venueId: string): Promise<{
       prepTimes.set(stationName, []);
     }
     prepTimes.get(stationName)!.push(prepTime);
-  });
 
   const stationStats = Array.from(prepTimes.entries()).map(([station, times]) => {
     const avgPrepTime = times.reduce((a, b) => a + b, 0) / times.length;
@@ -289,17 +234,13 @@ export async function getStationPrepTimes(venueId: string): Promise<{
 
     return {
       station,
-      avgPrepTime: Math.round(avgPrepTime * 10) / 10,
-      ticketsCompleted: times.length,
+
       efficiency,
     };
-  });
 
   return {
-    stations: stationStats,
-    summary:
-      stationStats.length > 0
+
         ? `Average prep times: ${stationStats.map((s) => `${s.station} (${s.avgPrepTime} min)`).join(", ")}`
-        : "No completed tickets data available.",
+
   };
 }

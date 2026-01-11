@@ -42,10 +42,8 @@ async function main() {
   const header = `-- Migration: ${filename}\n-- Created: ${new Date().toISOString()}\n\n`;
   await writeFile(fullPath, header, { encoding: "utf8", flag: "wx" });
 
-  console.info(`Created migration: ${fullPath}`);
-}
+  }
 
 main().catch((err) => {
-  console.error(err instanceof Error ? err.message : String(err));
+  );
   process.exit(1);
-});

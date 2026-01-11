@@ -4,12 +4,10 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Refund Policy",
+
   description:
     "Servio's refund policy for food business POS subscriptions including 14-day money-back guarantee, service failure refunds, and fair cancellation terms.",
-  openGraph: {
-    title: "Refund Policy | Servio",
-    description: "14-day money-back guarantee and fair refund terms for Servio POS subscriptions.",
+
   },
 };
 
@@ -29,9 +27,7 @@ export default function RefundPolicyPage() {
           <p className="text-muted-foreground mb-8">
             Last updated:{" "}
             {new Date().toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
+
             })}
           </p>
 
@@ -63,11 +59,7 @@ export default function RefundPolicyPage() {
             <p className="text-foreground mb-4">
               If you're not satisfied with Servio within the first 14 days of your first paid
               subscription (after the trial period ends), we'll provide a full refund. To be
-              eligible:
-            </p>
-            <ul className="list-disc pl-6 mb-4 text-foreground">
-              <li>Request must be made within 14 days of your first payment</li>
-              <li>
+
                 Contact us at{" "}
                 <a
                   href="mailto:support@servio.app"
@@ -103,22 +95,7 @@ export default function RefundPolicyPage() {
               >
                 support@servio.app
               </a>{" "}
-              with:
-            </p>
-            <ul className="list-disc pl-6 mb-4 text-foreground">
-              <li>Date and time of the outage</li>
-              <li>Duration of service unavailability</li>
-              <li>Impact on your business (optional)</li>
-            </ul>
-          </section>
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">5. Billing Error Refunds</h2>
-            <p className="text-foreground mb-4">
-              If you're charged incorrectly due to a billing error:
-            </p>
-            <ul className="list-disc pl-6 mb-4 text-foreground">
-              <li>
                 Contact us immediately at{" "}
                 <a href="mailto:billing@servio.app" className="text-purple-600 hover:underline">
                   billing@servio.app

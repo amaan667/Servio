@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
@@ -9,8 +8,7 @@ export async function POST(_request: NextRequest) {
     if (!venueId || !categoryName) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "venueId and categoryName are required",
+
         },
         { status: 400 }
       );
@@ -26,10 +24,10 @@ export async function POST(_request: NextRequest) {
       .eq("category", categoryName);
 
     if (menuItemsError) {
-      logger.error("[CATEGORIES DELETE] Error fetching menu items:", { value: menuItemsError });
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: `Failed to fetch menu items: ${menuItemsError.message}`,
         },
         { status: 500 }
@@ -47,10 +45,10 @@ export async function POST(_request: NextRequest) {
         .eq("category", categoryName);
 
       if (deleteError) {
-        logger.error("[CATEGORIES DELETE] Error deleting menu items:", { value: deleteError });
+        
         return NextResponse.json(
           {
-            ok: false,
+
             error: `Failed to delete menu items: ${deleteError.message}`,
           },
           { status: 500 }
@@ -70,7 +68,7 @@ export async function POST(_request: NextRequest) {
             const { error } = await supabase.from(table).delete().in("menu_item_id", itemIds);
 
             if (error) {
-              logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, error);
+              
             }
           }
         } else if (table === "options") {
@@ -82,28 +80,23 @@ export async function POST(_request: NextRequest) {
             .eq("category", categoryName);
 
           if (error) {
-            logger.warn(`[CATEGORIES DELETE] Warning deleting from ${table}:`, { table, error });
+            
           }
         }
       } catch (_error) {
-        logger.warn(`[CATEGORIES DELETE] Warning processing ${table}:`, { table, _error });
+        
       }
     }
 
     return NextResponse.json({
-      ok: true,
+
       message: `Category "${categoryName}" and its items deleted successfully`,
-      deletedItemsCount: itemsToDelete.length,
-      deletedItems: itemsToDelete.map((item) => item.name),
-    });
+
   } catch (_error) {
-    logger.error("[CATEGORIES DELETE] Error in delete category API:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
-        error: "Internal server error",
+
       },
       { status: 500 }
     );

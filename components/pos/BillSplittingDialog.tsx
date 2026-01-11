@@ -17,34 +17,16 @@ import {
 import { Split, Plus, Minus } from "lucide-react";
 
 interface Order {
-  id: string;
-  customer_name: string;
-  total_amount: number;
-  items: Array<{
-    menu_item_id: string;
-    quantity: number;
-    price: number;
-    item_name: string;
-    specialInstructions?: string;
+
   }>;
 }
 
 interface BillSplit {
-  id: string;
-  orders: string[];
-  total_amount: number;
-  payment_status: "UNPAID" | "PAID";
-  payment_method?: string;
+
 }
 
 interface BillSplittingDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  orders: Order[];
-  tableSessionId?: string;
-  counterSessionId?: string;
-  venueId: string;
-  onSplitComplete: () => void;
+
 }
 
 export function BillSplittingDialog({
@@ -74,10 +56,7 @@ export function BillSplittingDialog({
     for (let i = 0; i < splitCount; i++) {
       newSplits.push({
         id: `split-${i + 1}`,
-        orders: [],
-        total_amount: 0,
-        payment_status: "UNPAID",
-      });
+
     }
 
     setSplits(newSplits);
@@ -96,12 +75,11 @@ export function BillSplittingDialog({
 
           return {
             ...split,
-            orders: newOrders,
-            total_amount: newTotal,
+
           };
         }
         return split;
-      })
+
     );
   };
 
@@ -117,12 +95,11 @@ export function BillSplittingDialog({
 
           return {
             ...split,
-            orders: newOrders,
-            total_amount: newTotal,
+
           };
         }
         return split;
-      })
+
     );
   };
 
@@ -140,19 +117,11 @@ export function BillSplittingDialog({
       setLoading(true);
 
       const response = await fetch("/api/pos/bill-splits", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venue_id: venueId,
-          table_session_id: tableSessionId,
-          counter_session_id: counterSessionId,
-          action: "create_splits",
-          splits: splits.map((split) => ({
-            total_amount: split.total_amount,
-            order_ids: split.orders,
+
           })),
         }),
-      });
 
       if (response.ok) {
         onSplitComplete();

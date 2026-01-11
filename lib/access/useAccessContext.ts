@@ -2,19 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import type { UserRole } from "@/lib/permissions";
 import type { AccessContext, Tier, FeatureKey } from "@/lib/tier-limits";
 import { hasFeatureAccess } from "@/lib/tier-limits";
 
 interface UseAccessContextReturn {
-  context: AccessContext | null;
-  loading: boolean;
-  error: string | null;
-  role: UserRole | null;
-  tier: Tier | null;
-  hasFeatureAccess: (feature: FeatureKey) => boolean;
-  refetch: () => Promise<void>;
+
 }
 
 /**
@@ -39,18 +32,11 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         ? venueId.startsWith("venue-")
           ? venueId
           : `venue-${venueId}`
-        : null;
 
-      // Call get_access_context RPC - single database call for all access context
       const { data, error: rpcError } = await supabase.rpc("get_access_context", {
-        p_venue_id: normalizedVenueId,
-      });
 
       if (rpcError) {
-        logger.error("[USE ACCESS CONTEXT] RPC error", {
-          error: rpcError.message,
-          venueId,
-        });
+        
         setError(rpcError.message);
         setContext(null);
         return;
@@ -68,15 +54,10 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       const tier = (accessContext.tier?.toLowerCase().trim() || "starter") as Tier;
 
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        logger.warn("[USE ACCESS CONTEXT] Invalid tier from database", {
-          tier,
-          originalTier: accessContext.tier,
-          venueId: normalizedVenueId,
-        });
+        
         setContext({
           ...accessContext,
-          tier: "starter" as Tier,
-        });
+
         return;
       }
 
@@ -98,14 +79,13 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
           JSON.stringify({
             ...accessContext,
             tier,
-          })
+
         );
       }
     } catch (err) {
-      logger.error("[USE ACCESS CONTEXT] Error", {
-        error: err instanceof Error ? err.message : String(err),
+
         venueId,
-      });
+
       setError(err instanceof Error ? err.message : "Failed to fetch access context");
       setContext(null);
     } finally {
@@ -119,32 +99,18 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       ? venueId.startsWith("venue-")
         ? venueId
         : `venue-${venueId}`
-      : null;
 
-    // Try cache first for instant response
-    if (typeof window !== "undefined") {
-      const cacheKey = normalizedVenueId
         ? `access_context_${normalizedVenueId}`
-        : `access_context_user`;
-      const cached = sessionStorage.getItem(cacheKey);
-
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached) as AccessContext;
-
-          // Validate cached tier is still valid
-          const cachedTier = (parsed.tier?.toLowerCase().trim() || "starter") as Tier;
 
           if (["starter", "pro", "enterprise"].includes(cachedTier)) {
             setContext({
               ...parsed,
-              tier: cachedTier,
-            });
+
             setLoading(false);
             // Still fetch fresh data in background to ensure accuracy
             fetchContext().catch(() => {
               // Error handled in fetchContext
-            });
+
             return;
           } else {
             // Invalid tier in cache, clear it
@@ -170,10 +136,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
     context,
     loading,
     error,
-    role: context?.role || null,
-    tier: context?.tier || null,
-    hasFeatureAccess: checkFeatureAccess,
-    refetch: fetchContext,
+
   };
 }
 

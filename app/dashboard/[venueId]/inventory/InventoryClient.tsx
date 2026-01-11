@@ -7,14 +7,12 @@ import { InventoryMovements } from "@/components/inventory/InventoryMovements";
 import { Package, History } from "lucide-react";
 
 interface InventoryClientProps {
-  venueId: string;
-  venueName: string;
-  canEdit?: boolean;
+
 }
 
 export default function InventoryClient({
   venueId,
-  venueName: _venueName,
+
   canEdit = true,
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState("overview");

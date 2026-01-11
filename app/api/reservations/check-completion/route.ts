@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -12,7 +11,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -26,8 +25,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!finalVenueId || !tableId) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "finalVenueId and tableId are required",
+
         },
         { status: 400 }
       );
@@ -46,11 +44,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("status", "CHECKED_IN");
 
     if (fetchError) {
-      logger.error("[CHECK COMPLETION] Error fetching reservations:", fetchError);
+      
       return NextResponse.json(
         {
-          ok: false,
-          error: "Failed to fetch reservations",
+
         },
         { status: 500 }
       );
@@ -58,10 +55,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (!checkedInReservations || checkedInReservations.length === 0) {
       return NextResponse.json({
-        ok: true,
-        message: "No checked-in reservations found for this table",
-        completedCount: 0,
-      });
+
     }
 
     const now = new Date().toISOString();
@@ -94,19 +88,14 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (reservationsToComplete.length === 0) {
       return NextResponse.json({
-        ok: true,
-        message: "No reservations need to be completed",
-        completedCount: 0,
-      });
+
     }
 
     // Update reservations to COMPLETED status
     const { data: updatedReservations, error: updateError } = await supabase
       .from("reservations")
       .update({
-        status: "COMPLETED",
-        updated_at: now,
-      })
+
       .in(
         "id",
         reservationsToComplete.map((r) => r.id)
@@ -114,11 +103,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .select();
 
     if (updateError) {
-      logger.error("[CHECK COMPLETION] Error updating reservations:", updateError);
+      
       return NextResponse.json(
         {
-          ok: false,
-          error: "Failed to complete reservations",
+
         },
         { status: 500 }
       );
@@ -136,33 +124,24 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!activeOrders || activeOrders.length === 0) {
       await supabase.from("table_sessions").upsert(
         {
-          table_id: tableId,
-          status: "FREE",
-          closed_at: now,
-          updated_at: now,
+
         },
         {
-          onConflict: "table_id",
+
         }
       );
     }
 
     return NextResponse.json({
-      ok: true,
+
       message: `Completed ${updatedReservations?.length || 0} reservations`,
-      completedCount: updatedReservations?.length || 0,
-      reservations: updatedReservations,
-    });
+
   } catch (_error) {
-    logger.error("[CHECK COMPLETION] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "Internal server _error",
+
       },
       { status: 500 }
     );
   }
-});

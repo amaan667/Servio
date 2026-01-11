@@ -6,7 +6,7 @@ export async function getPrimaryVenue() {
   // Use getUser() instead of getSession() for secure authentication
   const {
     data: { user },
-    error: authError,
+
   } = await supabase.auth.getUser();
   if (authError || !user) return null;
 

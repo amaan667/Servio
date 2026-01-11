@@ -18,18 +18,11 @@ import { Plus, Minus, Users, CreditCard } from "lucide-react";
 import { CartItem } from "../types";
 
 interface BillSplitModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  cart: CartItem[];
-  totalPrice: number;
-  onSplitComplete: (splits: BillSplit[]) => void;
+
 }
 
 export interface BillSplit {
-  id: string;
-  name: string;
-  items: CartItem[];
-  total: number;
+
 }
 
 export function BillSplitModal({
@@ -54,11 +47,9 @@ export function BillSplitModal({
     for (let i = 0; i < splitCount; i++) {
       const splitId = `split-${i + 1}`;
       newSplits.push({
-        id: splitId,
+
         name: `Person ${i + 1}`,
-        items: [],
-        total: 0,
-      });
+
       setSplitNames((prev) => ({
         ...prev,
         [splitId]: `Person ${i + 1}`,
@@ -95,12 +86,11 @@ export function BillSplitModal({
                 if (s.id !== splitId && s.items.some((i) => i.id === itemId)) {
                   return {
                     ...s,
-                    items: s.items.filter((i) => i.id !== itemId),
-                    total: s.total - (item.price + (item.modifierPrice || 0)) * item.quantity,
+
                   };
                 }
                 return s;
-              });
+
               // Then add to current split
               const newItems = [...split.items, item];
               const newTotal = split.total + item.price * item.quantity;
@@ -114,7 +104,7 @@ export function BillSplitModal({
           }
         }
         return split;
-      })
+
     );
   };
 

@@ -8,10 +8,7 @@ import { QRCodeCanvas } from "./QRCodeCanvas";
 import { GeneratedQR } from "../hooks/useQRCodeManagement";
 
 interface QRCodeCardProps {
-  qr: GeneratedQR;
-  size: number;
-  onCopy: (url: string) => void;
-  onDownload: (qr: GeneratedQR) => void;
+
   onRemove: (name: string, type: "table" | "counter") => void;
 }
 

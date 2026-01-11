@@ -7,17 +7,7 @@ import { ShoppingCart, Table, Receipt } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface OrderHeaderProps {
-  venueName: string;
-  isDemo: boolean;
-  isCounterOrder: boolean;
-  tableNumber: string;
-  counterNumber: string;
-  groupSessionId: string | null;
-  groupSize: number | null;
-  totalItems: number;
-  onShowMobileCart: () => void;
-  onShowGroupSizePopup: () => void;
-  venueSlug: string;
+
 }
 
 export function OrderHeader({

@@ -7,13 +7,7 @@ import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 import { Badge } from "@/components/ui/badge";
 
 interface KDSClientPageProps {
-  venueId: string;
-  initialTickets?: unknown[] | null;
-  initialStations?: unknown[] | null;
-  tier: string;
-  kdsTier: "advanced" | "enterprise" | false;
-  role: string;
-  hasAccess: boolean;
+
 }
 
 export default function KDSClientPage({

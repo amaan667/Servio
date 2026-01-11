@@ -4,11 +4,7 @@ import { Button } from "@/components/ui/button";
 import { QrCode, ArrowRight } from "lucide-react";
 
 interface CTASectionProps {
-  isSignedIn: boolean;
-  authLoading: boolean;
-  onGetStarted: () => void;
-  onSignIn: () => void;
-  onDemo: () => void;
+
 }
 
 export function CTASection({

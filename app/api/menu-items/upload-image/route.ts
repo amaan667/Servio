@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { apiErrors } from "@/lib/api/standard-response";
 
@@ -64,7 +63,7 @@ export async function POST(req: NextRequest) {
         await supabase.storage.createBucket("menu-images", { public: true });
       }
     } catch (bucketError) {
-      logger.error("Bucket error:", bucketError);
+      
     }
 
     // Get file extension
@@ -80,12 +79,9 @@ export async function POST(req: NextRequest) {
     const { error: uploadError } = await supabase.storage
       .from("menu-images")
       .upload(path, arrayBuffer, {
-        contentType: file.type,
-        upsert: true,
-      });
 
     if (uploadError) {
-      logger.error("Upload error:", uploadError);
+      
       return apiErrors.internal("Failed to upload image");
     }
 
@@ -101,13 +97,13 @@ export async function POST(req: NextRequest) {
       .eq("id", itemId);
 
     if (updateError) {
-      logger.error("Update error:", updateError);
+      
       return apiErrors.internal("Failed to update menu item");
     }
 
     return NextResponse.json({ imageUrl: publicUrl });
   } catch (error) {
-    logger.error("Image upload error:", error);
+    
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }

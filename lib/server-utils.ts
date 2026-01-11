@@ -4,8 +4,7 @@
  */
 
 interface Cookie {
-  name: string;
-  value: string;
+
 }
 
 interface CookieStore {

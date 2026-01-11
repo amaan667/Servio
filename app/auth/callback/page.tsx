@@ -66,7 +66,6 @@ function CallbackContent() {
         allKeys.forEach((key) => {
           const value = localStorage.getItem(key);
           allStorageItems[key] = value ? `${value.substring(0, 30)}...` : "null";
-        });
 
         // Verifier check complete
 
@@ -100,17 +99,11 @@ function CallbackContent() {
 
         // Now call server endpoint to SET COOKIES from the session using setSession
         const response = await fetch("/api/auth/set-session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+
             Authorization: `Bearer ${data.session.access_token}`,
           },
-          body: JSON.stringify({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
+
           }),
-          credentials: "include",
-        });
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -122,8 +115,7 @@ function CallbackContent() {
 
         // Verify cookies were set by making a test request
         const checkResponse = await fetch("/api/auth/check-cookies", {
-          credentials: "include",
-        });
+
         const cookieCheck = await checkResponse.json();
 
         // Check if user has a venue (get FIRST venue - oldest)

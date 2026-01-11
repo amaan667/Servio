@@ -4,15 +4,11 @@
  */
 
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { Tier } from "@/types/entitlements";
 
 export const STRIPE_PRICE_IDS = {
   STARTER: "price_starter", // Replace with actual Stripe price IDs
-  PRO: "price_pro",
-  ENTERPRISE: "price_enterprise",
-  ADDON_KDS_STARTER: "price_kds_starter",
-  ADDON_API_PRO_LIGHT: "price_api_pro_light",
+
 };
 
 /**
@@ -20,40 +16,19 @@ export const STRIPE_PRICE_IDS = {
  */
 export async function syncEntitlementsFromSubscription(
   subscription: { id: string; status: string; items: { data: Array<{ price: { id: string }; id: string }> } },
-  organizationId: string
-): Promise<void> {
-  const supabase = createAdminClient();
 
-  // Get tier from subscription
-  const newTier = await getTierFromStripeSubscription(subscription);
-
-  // DOWNGRADE SAFETY: Validate the tier change is allowed
   const { data: downgradeValid } = await supabase.rpc("validate_tier_downgrade", {
-    p_organization_id: organizationId,
-    p_new_tier: newTier,
-  });
 
   if (!downgradeValid) {
-    logger.error("[STRIPE SYNC] DOWNGRADE BLOCKED - tier change would violate business rules", {
-      organizationId,
-      attemptedTier: newTier,
-      subscriptionId: subscription.id,
-    });
+    
 
     // BLOCK the downgrade by not updating entitlements
     // Log this as a critical business event
     await supabase.from("subscription_history").insert({
-      organization_id: organizationId,
-      event_type: "downgrade_blocked",
+
       old_tier: null, // Will be determined by current state
-      new_tier: newTier,
-      stripe_event_id: subscription.id,
-      metadata: {
-        subscription_id: subscription.id,
-        reason: "downgrade_would_violate_business_rules",
-        blocked_tier: newTier,
+
       },
-    });
 
     // DO NOT update entitlements - leave current state intact
     return;
@@ -66,10 +41,7 @@ export async function syncEntitlementsFromSubscription(
     .eq("organization_id", organizationId);
 
   if (venueError) {
-    logger.error("[STRIPE SYNC] Failed to fetch venues for organization", {
-      organizationId,
-      error: venueError.message,
-    });
+    
     throw venueError;
   }
 
@@ -82,19 +54,14 @@ export async function syncEntitlementsFromSubscription(
     await syncVenueAddons(venue.venue_id, subscription.items.data);
   }
 
-  logger.info("[STRIPE SYNC] Complete entitlement sync finished", {
-    organizationId,
-    tier: newTier,
-    venueCount: venues?.length || 0,
-  });
+  
 }
 
 /**
  * Extract tier from Stripe subscription
  */
 async function getTierFromStripeSubscription(subscription: {
-  id: string;
-  status: string;
+
   items: { data: Array<{ price: { id: string }; id: string }> };
 }): Promise<Tier> {
   // Find the base tier price
@@ -107,10 +74,6 @@ async function getTierFromStripeSubscription(subscription: {
   }
 
   // Default to starter if no matching tier found
-  logger.warn("[STRIPE SYNC] No matching tier price found, defaulting to starter", {
-    subscriptionId: subscription.id,
-    priceIds: subscription.items.data.map(item => item.price.id),
-  });
 
   return "starter";
 }
@@ -119,37 +82,19 @@ async function getTierFromStripeSubscription(subscription: {
  * Sync organization tier
  */
 async function syncOrganizationTier(
-  organizationId: string,
-  tier: Tier,
-  subscriptionStatus: string,
-  subscriptionId: string
-): Promise<void> {
-  const supabase = createAdminClient();
 
   const { error } = await supabase
     .from("organizations")
     .update({
-      subscription_tier: tier,
-      subscription_status: subscriptionStatus,
-      stripe_subscription_id: subscriptionId,
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("id", organizationId);
 
   if (error) {
-    logger.error("[STRIPE SYNC] Failed to update organization tier", {
-      organizationId,
-      tier,
-      error: error.message,
-    });
+    
     throw error;
   }
 
-  logger.info("[STRIPE SYNC] Organization tier updated", {
-    organizationId,
-    tier,
-    subscriptionStatus,
-  });
+  
 }
 
 /**
@@ -172,10 +117,7 @@ async function syncVenueTier(venueId: string): Promise<void> {
     .single();
 
   if (fetchError) {
-    logger.error("[STRIPE SYNC] Failed to fetch venue organization data", {
-      venueId,
-      error: fetchError.message,
-    });
+    
     throw fetchError;
   }
 
@@ -186,26 +128,15 @@ async function syncVenueTier(venueId: string): Promise<void> {
     const { error: updateError } = await supabase
       .from("venues")
       .update({
-        tier: orgTier,
-        updated_at: new Date().toISOString(),
-      })
+
       .eq("venue_id", venueId);
 
     if (updateError) {
-      logger.error("[STRIPE SYNC] Failed to update venue tier", {
-        venueId,
-        from: currentTier,
-        to: orgTier,
-        error: updateError.message,
-      });
+      
       throw updateError;
     }
 
-    logger.info("[STRIPE SYNC] Venue tier updated", {
-      venueId,
-      from: currentTier,
-      to: orgTier,
-    });
+    
   }
 }
 
@@ -213,7 +144,7 @@ async function syncVenueTier(venueId: string): Promise<void> {
  * Sync venue add-ons from Stripe subscription items
  */
 async function syncVenueAddons(
-  venueId: string,
+
   subscriptionItems: Array<{ price: { id: string }; id: string }>
 ): Promise<void> {
   const supabase = createAdminClient();
@@ -225,10 +156,7 @@ async function syncVenueAddons(
     .eq("venue_id", venueId);
 
   if (fetchError) {
-    logger.error("[STRIPE SYNC] Failed to fetch current venue add-ons", {
-      venueId,
-      error: fetchError.message,
-    });
+    
     throw fetchError;
   }
 
@@ -267,17 +195,12 @@ async function syncVenueAddons(
   // Activate new add-ons
   for (const [addonKey, itemId] of activeAddons) {
     if (!currentAddonMap.has(itemId)) {
-      logger.info("[STRIPE SYNC] Activating add-on", { venueId, addonKey, itemId });
+      
       await supabase
         .from("venue_addons")
         .upsert(
           {
-            venue_id: venueId,
-            addon_key: addonKey,
-            status: "active",
-            stripe_subscription_item_id: itemId,
-            stripe_price_id: subscriptionItems.find(item => item.id === itemId)?.price.id,
-            updated_at: new Date().toISOString(),
+
           },
           { onConflict: "venue_id,addon_key,status" }
         );
@@ -287,21 +210,17 @@ async function syncVenueAddons(
   // Deactivate removed add-ons
   for (const [itemId, addonKey] of currentAddonMap) {
     if (!activeAddons.has(addonKey)) {
-      logger.info("[STRIPE SYNC] Deactivating add-on", { venueId, addonKey, itemId });
+      
       await supabase
         .from("venue_addons")
         .update({
-          status: "cancelled",
-          updated_at: new Date().toISOString(),
-        })
+
         .eq("venue_id", venueId)
         .eq("addon_key", addonKey)
         .eq("stripe_subscription_item_id", itemId);
     }
   }
 
-  logger.info("[STRIPE SYNC] Venue add-ons synchronized", {
-    venueId,
-    activeAddons: Array.from(activeAddons.keys()),
-  });
+  ),
+
 }

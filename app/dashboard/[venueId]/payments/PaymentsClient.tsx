@@ -12,18 +12,16 @@ import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order, type OrderStatus } from "@/types/order";
 import { detectColorsFromImage } from "@/app/dashboard/[venueId]/menu-management/utils/colorDetection";
 import { BillSplittingDialog } from "@/components/pos/BillSplittingDialog";
-import { logger } from "@/lib/logger";
 
 type PaymentsClientProps = {
-  venueId: string;
+
 };
 
 interface PaymentOrder extends Omit<Order, "table_number"> {
   table_label?: string;
   counter_label?: string;
   table_number?: number | string | null;
-  created_at: string;
-  payment_mode?: string;
+
 }
 
 interface GroupedReceipts {
@@ -78,8 +76,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       // Get today's time window
       const todayWindowData = todayWindowForTZ(venueTz);
       const todayWindow = {
-        startUtcISO: todayWindowData.startUtcISO || new Date().toISOString(),
-        endUtcISO: todayWindowData.endUtcISO || new Date().toISOString(),
+
       };
 
       // Get logo from menu design settings
@@ -120,13 +117,6 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       }
 
       setVenueInfo({
-        venue_name: venue?.venue_name || undefined,
-        email: venue?.email || undefined,
-        address: venue?.address || undefined,
-        logo_url: logoUrl || undefined,
-        primary_color: primaryColor,
-        show_vat_breakdown: venue?.show_vat_breakdown ?? true,
-      });
 
       // Fetch unpaid operational orders for TODAY ONLY (cloud-based POS best practice)
       // NOTE: payment_mode differences (offline/deferred) are just presentation; we only care about:
@@ -147,11 +137,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
       // Debug: Log the date range being used (non-production only)
       if (process.env.NODE_ENV !== "production") {
-        logger.debug("[PAYMENTS] Filtering unpaid orders for today", {
-          todayStart: todayStart.toISOString(),
-          todayEnd: todayEnd.toISOString(),
+
           venueTz,
-        });
+
       }
 
       const { data: unpaidData, error: unpaidError } = await supabase
@@ -173,7 +161,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (unpaidError) {
-        logger.error("[PAYMENTS] Error fetching unpaid orders", unpaidError);
+        
       }
 
       setUnpaidOrders((unpaidData || []) as PaymentOrder[]);
@@ -187,7 +175,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (fetchError) {
-        logger.error("[PAYMENTS] Error fetching paid orders", fetchError);
+        
         return;
       }
 
@@ -201,27 +189,13 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         const isToday = receiptDate >= todayStart && receiptDate < todayEnd;
 
         if (isToday && process.env.NODE_ENV !== "production") {
-          logger.debug("[PAYMENTS] Today's receipt included in TODAY filter", {
-            orderId: receipt.id,
-            created_at: receipt.created_at,
-            receiptDate: receiptDate.toISOString(),
-            todayStart: todayStart.toISOString(),
-            todayEnd: todayEnd.toISOString(),
-          });
+
         }
 
         return isToday;
-      });
 
       if (process.env.NODE_ENV !== "production") {
-        logger.debug("[PAYMENTS] Receipts categorized for TODAY", {
-          totalReceipts: allReceipts.length,
-          todayReceipts: todayReceiptsList.length,
-          todayWindow: {
-            start: todayWindow.startUtcISO,
-            end: todayWindow.endUtcISO,
-          },
-        });
+        
       }
 
       const historyReceiptsList = allReceipts.filter(
@@ -234,10 +208,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       // Group history receipts by date
       const grouped = historyReceiptsList.reduce((acc: GroupedReceipts, receipt) => {
         const date = new Date(receipt.created_at).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
+
         if (!acc[date]) {
           acc[date] = [];
         }
@@ -267,9 +238,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "orders",
+
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
@@ -313,38 +282,23 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     try {
       setIsProcessingPayment(orderId);
       const response = await fetch("/api/orders/payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        body: JSON.stringify({
-          orderId,
-          venue_id: venueId,
-          payment_method: "till",
-          payment_status: "PAID",
+
         }),
-      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage =
           errorData?.error?.message || errorData?.error || "Failed to mark order as paid";
-        logger.error("[PAYMENTS] Failed to mark order as paid", {
-          orderId,
-          venueId,
-          error: errorMessage,
-        });
+        
         alert(`Failed to mark order as paid: ${errorMessage}`);
         return;
       }
 
       if (process.env.NODE_ENV !== "production") {
         const result = await response.json().catch(() => ({}));
-        logger.debug("[PAYMENTS] Order marked as paid successfully", {
-          orderId,
-          venueId,
-          result,
-        });
+        
       }
 
       // Reload payments to reflect the change
@@ -356,11 +310,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         window.dispatchEvent(new CustomEvent("order-payment-updated", { detail: { orderId } }));
       }
     } catch (error) {
-      logger.error("[PAYMENTS] Error marking order as paid", {
-        orderId,
-        venueId,
-        error,
-      });
+      
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       alert(`Error: ${errorMessage}`);
     } finally {
@@ -371,8 +321,6 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
   const handleDownloadPDF = async (orderId: string) => {
     try {
       const response = await fetch(`/api/receipts/pdf/${orderId}`, {
-        method: "GET",
-      });
 
       if (!response.ok) {
         throw new Error("Failed to generate PDF");
@@ -396,14 +344,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     const orderNumber = order.id.slice(-6).toUpperCase();
     const date = new Date(order.created_at);
     const formattedDate = date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+
     const formattedTime = date.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
     const method = String(order.payment_method || "").toUpperCase();
     const isPayLater = method === "PAY_LATER";
@@ -522,14 +464,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     const orderNumber = receipt.id.slice(-6).toUpperCase();
     const date = new Date(receipt.created_at);
     const formattedDate = date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+
     const formattedTime = date.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
     return (
       <Card key={receipt.id} className="hover:shadow-md transition-shadow">
@@ -616,7 +552,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     ${
                       activeTab === "pay-at-till"
                         ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
-                        : "bg-white/40 text-white border-white/30"
+
                     }
                   `}
                 >
@@ -631,7 +567,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     ${
                       activeTab === "today"
                         ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
-                        : "bg-white/40 text-white border-white/30"
+
                     }
                   `}
                 >
@@ -646,7 +582,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     ${
                       activeTab === "history"
                         ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
-                        : "bg-white/40 text-white border-white/30"
+
                     }
                   `}
                 >
@@ -750,23 +686,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
             }
           }}
           orders={[selectedOrderForSplit].map((order) => ({
-            id: order.id,
-            customer_name: order.customer_name || "Customer",
-            total_amount: order.total_amount,
-            items: (order.items || []).map((item: unknown) => {
-              const it = item as {
-                menu_item_id?: string;
-                quantity: number;
-                price: number;
-                item_name: string;
-                specialInstructions?: string;
+
               };
               return {
-                menu_item_id: it.menu_item_id || "",
-                quantity: it.quantity,
-                price: it.price,
-                item_name: it.item_name,
-                specialInstructions: it.specialInstructions,
+
               };
             }),
           }))}

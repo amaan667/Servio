@@ -4,7 +4,6 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
-import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -40,28 +39,18 @@ export const POST = withUnifiedAuth(
 
       const { error } = await admin.rpc("exec_sql", { sql });
       if (error) {
-        logger.error("[STAFF INIT] SQL execution error:", {
-          error: error.message,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to initialize staff table",
           isDevelopment() ? error.message : undefined
         );
       }
 
-      logger.info("[STAFF INIT] Staff table initialized successfully", {
-        userId: context.user.id,
-      });
+      
 
       // STEP 3: Return success response
       return success({ ok: true });
     } catch (error) {
-      logger.error("[STAFF INIT] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -75,6 +64,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-    extractVenueId: async () => null,
+
   }
 );

@@ -4,8 +4,7 @@ import { Eye, Image, Layout, List } from "lucide-react";
 import { PreviewMode } from "../types";
 
 interface PreviewControlsProps {
-  previewMode: PreviewMode;
-  setPreviewMode: (mode: PreviewMode) => void;
+
 }
 
 export function PreviewControls({ previewMode, setPreviewMode }: PreviewControlsProps) {
@@ -21,7 +20,7 @@ export function PreviewControls({ previewMode, setPreviewMode }: PreviewControls
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
             previewMode === "pdf"
               ? "bg-servio-purple text-white"
-              : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple hover:border-2 hover:border-servio-purple"
+
           }`}
         >
           <Image className="h-4 w-4" />
@@ -32,7 +31,7 @@ export function PreviewControls({ previewMode, setPreviewMode }: PreviewControls
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
             previewMode === "styled"
               ? "bg-servio-purple text-white"
-              : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple hover:border-2 hover:border-servio-purple"
+
           }`}
         >
           <Layout className="h-4 w-4" />
@@ -43,7 +42,7 @@ export function PreviewControls({ previewMode, setPreviewMode }: PreviewControls
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
             previewMode === "simple"
               ? "bg-servio-purple text-white"
-              : "bg-servio-purple text-white hover:bg-white hover:text-servio-purple hover:border-2 hover:border-servio-purple"
+
           }`}
         >
           <List className="h-4 w-4" />

@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -12,12 +11,6 @@ export const runtime = "nodejs";
 
 const tableTransferSchema = z.object({
   action: z.enum(["transfer_orders", "merge_tables", "split_table"]),
-  source_table_id: z.string().uuid("Invalid source table ID"),
-  target_table_id: z.string().uuid("Invalid target table ID"),
-  order_ids: z.array(z.string().uuid()).optional(),
-  merge_sessions: z.boolean().default(false),
-  venue_id: z.string().uuid().optional(),
-});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -57,11 +50,7 @@ export const POST = withUnifiedAuth(
             .eq("table_id", body.source_table_id);
 
           if (transferError) {
-            logger.error("[POS TABLE TRANSFER] Error transferring orders:", {
-              error: transferError.message,
-              venueId: venue_id,
-              userId: context.user.id,
-            });
+            
             return apiErrors.database(
               "Failed to transfer orders",
               isDevelopment() ? transferError.message : undefined
@@ -69,10 +58,7 @@ export const POST = withUnifiedAuth(
           }
 
           result = {
-            action: "transferred",
-            transferred_orders: body.order_ids.length,
-            from_table: body.source_table_id,
-            to_table: body.target_table_id,
+
           };
           break;
 
@@ -86,11 +72,7 @@ export const POST = withUnifiedAuth(
             .eq("is_active", true);
 
           if (sourceError) {
-            logger.error("[POS TABLE TRANSFER] Error fetching source orders:", {
-              error: sourceError.message,
-              venueId: venue_id,
-              userId: context.user.id,
-            });
+            
             return apiErrors.database(
               "Failed to fetch source orders",
               isDevelopment() ? sourceError.message : undefined
@@ -107,11 +89,7 @@ export const POST = withUnifiedAuth(
               .eq("venue_id", venue_id);
 
             if (mergeError) {
-              logger.error("[POS TABLE TRANSFER] Error merging orders:", {
-                error: mergeError.message,
-                venueId: venue_id,
-                userId: context.user.id,
-              });
+              
               return apiErrors.database(
                 "Failed to merge orders",
                 isDevelopment() ? mergeError.message : undefined
@@ -124,27 +102,18 @@ export const POST = withUnifiedAuth(
             const { error: sessionError } = await supabase
               .from("table_sessions")
               .update({
-                closed_at: new Date().toISOString(),
-                status: "CLOSED",
-              })
+
               .eq("venue_id", venue_id)
               .eq("table_id", body.source_table_id)
               .eq("closed_at", null);
 
             if (sessionError) {
-              logger.error("[POS TABLE TRANSFER] Error closing source session:", {
-                error: sessionError.message,
-                venueId: venue_id,
-                userId: context.user.id,
-              });
+              
             }
           }
 
           result = {
-            action: "merged",
-            merged_orders: sourceOrders?.length || 0,
-            from_table: body.source_table_id,
-            to_table: body.target_table_id,
+
           };
           break;
 
@@ -163,11 +132,7 @@ export const POST = withUnifiedAuth(
             .eq("table_id", body.source_table_id);
 
           if (splitError) {
-            logger.error("[POS TABLE TRANSFER] Error splitting orders:", {
-              error: splitError.message,
-              venueId: venue_id,
-              userId: context.user.id,
-            });
+            
             return apiErrors.database(
               "Failed to split orders",
               isDevelopment() ? splitError.message : undefined
@@ -175,34 +140,17 @@ export const POST = withUnifiedAuth(
           }
 
           result = {
-            action: "split",
-            split_orders: body.order_ids.length,
-            remaining_at_source: body.source_table_id,
-            moved_to_target: body.target_table_id,
+
           };
           break;
 
-        default:
-          return apiErrors.badRequest("Invalid action");
       }
 
-      logger.info("[POS TABLE TRANSFER] Table transfer completed successfully", {
-        action: body.action,
-        venueId: venue_id,
-        sourceTable: body.source_table_id,
-        targetTable: body.target_table_id,
-        userId: context.user.id,
-      });
+      
 
       // STEP 4: Return success response
       return success(result);
     } catch (error) {
-      logger.error("[POS TABLE TRANSFER] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -213,8 +161,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
+
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

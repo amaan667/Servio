@@ -26,17 +26,11 @@ import {
 import { useStaffInvitation } from "@/hooks/useStaffInvitation";
 
 type StaffMember = {
-  id: string;
-  name: string;
-  role: string;
-  active: boolean;
-  created_at: string;
+
 };
 
 interface StaffMembersListProps {
-  staff: StaffMember[];
-  venueId: string;
-  onStaffAdded?: () => void;
+
   onStaffToggle?: (staffId: string, currentActive: boolean) => Promise<void>;
 }
 
@@ -55,18 +49,15 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
   const [selectedStaffForShift, setSelectedStaffForShift] = useState<{
-    id: string;
-    name: string;
+
   } | null>(null);
   const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<{ id: string; name: string } | null>(null);
   const invitation = useStaffInvitation({
     venueId,
-    onSuccess: () => {
-      // Optionally reload staff list after invitation
+
     },
-  });
 
   const handleAddStaff = async () => {
     if (!name.trim()) {
@@ -89,11 +80,9 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
 
       const requestStart = Date.now();
       const res = await fetch(url.toString(), {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(requestBody),
-      });
+
       const requestTime = Date.now() - requestStart;
 
       const data = await res.json();
@@ -133,11 +122,10 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       url.searchParams.set("venueId", normalizedVenueId);
 
       const res = await fetch(url.toString(), {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
+
         body: JSON.stringify({ id: staffToDelete.id }),
-      });
 
       const data = await res.json();
 

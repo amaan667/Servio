@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -12,8 +11,7 @@ export async function GET(_req: Request, context: SessionParams = {}) {
     if (!sessionId) {
       return NextResponse.json(
         {
-          success: false,
-          error: "Session ID is required",
+
         },
         { status: 400 }
       );
@@ -24,17 +22,12 @@ export async function GET(_req: Request, context: SessionParams = {}) {
     // This will be handled client-side using localStorage
 
     return NextResponse.json({
-      success: true,
-      data: null,
-    });
+
   } catch (_error) {
-    logger.error("[ORDERS SESSION] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        success: false,
-        error: "Internal server error",
+
       },
       { status: 500 }
     );

@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
-import { apiLogger } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 import { trackError } from "@/lib/monitoring/error-tracking";
@@ -36,7 +35,7 @@ export async function POST(_request: NextRequest) {
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     eventId = event.id;
 
-    apiLogger.debug("[STRIPE WEBHOOK] Event:", { type: event.type, id: event.id });
+    
 
     const supabase = createAdminClient();
     const nowIso = new Date().toISOString();
@@ -47,10 +46,7 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (existingEvent?.status === "succeeded") {
-      apiLogger.debug("[STRIPE WEBHOOK] Event already processed:", {
-        eventId: event.id,
-        eventType: event.type,
-      });
+      
       return NextResponse.json({ received: true, alreadyProcessed: true });
     }
 
@@ -59,12 +55,10 @@ export async function POST(_request: NextRequest) {
       .from("stripe_webhook_events")
       .upsert(
         {
-          event_id: event.id,
-          type: event.type,
-          status: "processing",
+
           attempts,
           payload: event as unknown as Record<string, unknown>,
-          updated_at: nowIso,
+
         },
         { onConflict: "event_id" }
       )
@@ -72,10 +66,7 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (reserveError) {
-      apiLogger.error("[STRIPE WEBHOOK] Failed to reserve event", {
-        eventId: event.id,
-        error: reserveError.message,
-      });
+      
       return NextResponse.json(
         { received: false, error: "Failed to reserve event" },
         { status: 500 }
@@ -108,22 +99,18 @@ export async function POST(_request: NextRequest) {
         await handlePaymentFailed(event.data.object as Stripe.Invoice);
         break;
 
-      default:
-        apiLogger.debug(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
     }
 
     await finalizeStripeEvent(supabase, event.id, "succeeded");
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
-    apiLogger.error("[STRIPE WEBHOOK] Error:", { error: errorMessage });
+    
     trackError(_error, { action: "stripe_subscription_webhook", eventId }, "high");
     try {
       const supabase = createAdminClient();
       await finalizeStripeEvent(supabase, eventId, "failed", {
-        message: errorMessage,
-        stack: _error instanceof Error ? _error.stack : undefined,
-      });
+
     } catch {
       /* swallow finalize errors */
     }
@@ -132,14 +119,8 @@ export async function POST(_request: NextRequest) {
 }
 
 export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  apiLogger.debug("[SUBSCRIPTION WEBHOOK] ===== CHECKOUT COMPLETED =====");
-  apiLogger.debug("[SUBSCRIPTION WEBHOOK] handleCheckoutCompleted called with session:", {
-    id: session.id,
-    customer: session.customer,
-    subscription: session.subscription,
-    metadata: session.metadata,
-    mode: session.mode,
-  });
+  
+  
 
   // This webhook ONLY handles SUBSCRIPTION payments
   const supabase = createAdminClient();
@@ -147,13 +128,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
   const tier = session.metadata?.tier;
   const userId = session.metadata?.user_id;
 
-  apiLogger.debug("[SUBSCRIPTION WEBHOOK] Extracted data:", { organizationId, tier, userId });
+  
 
   if (!organizationId || !tier) {
-    apiLogger.error(
-      "[SUBSCRIPTION WEBHOOK] ❌ Missing required metadata in checkout session:",
-      session.metadata
-    );
+    
     return;
   }
 
@@ -165,10 +143,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
     .maybeSingle();
 
   if (orgCheckError) {
-    apiLogger.error("[STRIPE WEBHOOK] ❌ Error checking organization:", orgCheckError);
+    
     // If we have a user_id, try to find org by owner_user_id as fallback
     if (userId) {
-      apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, subscription_status, owner_user_id")
@@ -176,11 +154,11 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
         .maybeSingle();
 
       if (ownerError || !orgByOwner) {
-        apiLogger.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        
         return;
       }
 
-      apiLogger.debug("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
+      
       // Update the organizationId to use the correct one
       const actualOrgId = orgByOwner.id;
       await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
@@ -190,10 +168,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
   }
 
   if (!existingOrg) {
-    apiLogger.error("[STRIPE WEBHOOK] ❌ Organization not found:", organizationId);
+    
     // If we have a user_id, try to find org by owner_user_id as fallback
     if (userId) {
-      apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, subscription_status, owner_user_id")
@@ -201,11 +179,11 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
         .maybeSingle();
 
       if (ownerError || !orgByOwner) {
-        apiLogger.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        
         return;
       }
 
-      apiLogger.debug("[STRIPE WEBHOOK] ✅ Found organization via fallback:", orgByOwner.id);
+      
       // Update the organizationId to use the correct one
       const actualOrgId = orgByOwner.id;
       await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
@@ -218,25 +196,8 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
 }
 
 async function handleCheckoutWithOrg(
-  session: Stripe.Checkout.Session,
-  organizationId: string,
-  tier: string,
-  existingOrg: Record<string, unknown>,
-  supabase: ReturnType<typeof createAdminClient>
-) {
-  apiLogger.debug("[STRIPE WEBHOOK] ✅ Processing update for organization:", {
-    id: existingOrg.id,
-    current_tier: existingOrg.subscription_tier,
-    current_status: existingOrg.subscription_status,
-  });
 
-  // Determine trial status - only set to trialing if trial hasn't ended yet
-  const existingTrialEndsAt = existingOrg.trial_ends_at
-    ? new Date(existingOrg.trial_ends_at as string)
-    : null;
-  const now = new Date();
-  const trialHasEnded = existingTrialEndsAt && existingTrialEndsAt < now;
-  const currentStatus = existingOrg.subscription_status as string;
+  existingOrg: Record<string, unknown>,
 
   // If trial has already ended or subscription is already active, don't restart trial
   const shouldBeTrialing = !trialHasEnded && currentStatus !== "active";
@@ -260,23 +221,10 @@ async function handleCheckoutWithOrg(
   const subscriptionStatus =
     trialHasEnded || currentStatus === "active"
       ? "active"
-      : shouldBeTrialing
-        ? "trialing"
-        : currentStatus || "active";
 
-  // Use tier directly from Stripe metadata (no normalization)
-  // Tier should already be correct from Stripe product/price metadata
-
-  const updateData = {
-    stripe_subscription_id: session.subscription as string,
-    stripe_customer_id: session.customer as string,
-    subscription_tier: tier,
-    subscription_status: subscriptionStatus,
-    trial_ends_at: trialEndsAt,
-    updated_at: new Date().toISOString(),
   };
 
-  apiLogger.debug("[STRIPE WEBHOOK] 📝 Updating organization with data:", updateData);
+  
 
   const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
@@ -286,15 +234,11 @@ async function handleCheckoutWithOrg(
     .single();
 
   if (updateError) {
-    apiLogger.error("[STRIPE WEBHOOK] ❌ Error updating organization:", updateError);
+    
     return;
   }
 
-  apiLogger.debug("[STRIPE WEBHOOK] ✅ Successfully updated organization:", {
-    id: organizationId,
-    new_tier: updatedOrg.subscription_tier,
-    new_status: updatedOrg.subscription_status,
-  });
+  
 
   // CRITICAL: Ensure all venues for this organization have organization_id set
   // This ensures RPC can read tier correctly via organization_id
@@ -305,35 +249,27 @@ async function handleCheckoutWithOrg(
     .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
 
   if (venueLinkError) {
-    apiLogger.warn("[STRIPE WEBHOOK] ⚠️ Could not link venues to organization (non-critical):", {
-      error: venueLinkError,
+    :", {
+
       organizationId,
-    });
+
   } else {
-    apiLogger.debug("[STRIPE WEBHOOK] ✅ Ensured all venues are linked to organization");
+    
   }
 
   // Log subscription history
   try {
     await supabase.from("subscription_history").insert({
-      organization_id: organizationId,
-      event_type: "checkout_completed",
-      old_tier: existingOrg.subscription_tier,
-      new_tier: tier,
-      stripe_event_id: session.id,
+
       metadata: { session_id: session.id },
-    });
-    apiLogger.debug("[STRIPE WEBHOOK] ✅ Logged subscription history");
+
   } catch (historyError) {
-    apiLogger.warn(
-      "[STRIPE WEBHOOK] ⚠️ Failed to log subscription history (non-critical):",
+
       historyError instanceof Error ? historyError : { error: String(historyError) }
     );
   }
 
-  apiLogger.debug(
-    `[STRIPE WEBHOOK] ===== CHECKOUT COMPLETED SUCCESSFULLY for org: ${organizationId} =====`
-  );
+  
 }
 
 export async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
@@ -342,17 +278,10 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
 
   const organizationId = subscription.metadata?.organization_id;
 
-  apiLogger.debug("[STRIPE WEBHOOK] handleSubscriptionCreated called with:", {
-    subscriptionId: subscription.id,
-    organizationId,
-    status: subscription.status,
-  });
+  
 
   if (!organizationId) {
-    apiLogger.error(
-      "[STRIPE WEBHOOK] No organization_id in subscription metadata:",
-      subscription.metadata
-    );
+    
     return;
   }
 
@@ -364,10 +293,7 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
     .single();
 
   if (orgCheckError || !existingOrg) {
-    apiLogger.error("[STRIPE WEBHOOK] Organization not found:", {
-      organizationId,
-      error: orgCheckError,
-    });
+    
     return;
   }
 
@@ -376,26 +302,18 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
   const tier = await getTierFromStripeSubscription(subscription, stripe);
 
-  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
-    tier,
-    subscriptionId: subscription.id,
-    organizationId,
-  });
+  
 
   const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
     .update({
-      stripe_subscription_id: subscription.id,
-      subscription_tier: tier,
-      subscription_status: subscription.status,
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("id", organizationId)
     .select("owner_user_id")
     .single();
 
   if (updateError) {
-    apiLogger.error("[STRIPE WEBHOOK] Error updating organization:", updateError);
+    
     return;
   }
 
@@ -408,29 +326,20 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
       .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
 
     if (venueLinkError) {
-      apiLogger.warn("[STRIPE WEBHOOK] ⚠️ Could not link venues (non-critical):", venueLinkError);
+      :", venueLinkError);
     } else {
-      apiLogger.debug("[STRIPE WEBHOOK] ✅ Ensured all venues are linked to organization");
+      
     }
   }
 
   await supabase.from("subscription_history").insert({
-    organization_id: organizationId,
-    event_type: "subscription_created",
-    new_tier: tier,
-    stripe_event_id: subscription.id,
-    metadata: { subscription_id: subscription.id },
-  });
 
-  apiLogger.debug(`[STRIPE WEBHOOK] Subscription created for org: ${organizationId}`);
+    metadata: { subscription_id: subscription.id },
+
 }
 
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  apiLogger.debug("[STRIPE WEBHOOK] handleSubscriptionUpdated called with subscription:", {
-    id: subscription.id,
-    status: subscription.status,
-    metadata: subscription.metadata,
-  });
+  
 
   const supabase = createAdminClient();
   const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
@@ -438,16 +347,10 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   const organizationId = subscription.metadata?.organization_id;
   const userId = subscription.metadata?.user_id;
 
-  apiLogger.debug("[STRIPE WEBHOOK] Extracted subscription data:", {
-    organizationId,
-    userId,
-  });
+  
 
   if (!organizationId) {
-    apiLogger.error(
-      "[STRIPE WEBHOOK] No organization_id in subscription metadata:",
-      subscription.metadata
-    );
+    
     return;
   }
 
@@ -459,13 +362,10 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     .maybeSingle();
 
   if (orgCheckError || !org) {
-    apiLogger.error("[STRIPE WEBHOOK] Organization not found by ID:", {
-      organizationId,
-      error: orgCheckError,
-    });
+    
     // Try fallback by user_id
     if (userId) {
-      apiLogger.debug("[STRIPE WEBHOOK] 🔄 Attempting fallback lookup by user_id:", userId);
+      
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, owner_user_id, stripe_customer_id")
@@ -473,12 +373,12 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
         .maybeSingle();
 
       if (ownerError || !orgByOwner) {
-        apiLogger.error("[STRIPE WEBHOOK] ❌ Fallback lookup also failed:", ownerError);
+        
         return;
       }
 
       org = orgByOwner;
-      apiLogger.debug("[STRIPE WEBHOOK] ✅ Found organization via fallback:", org.id);
+      
     } else {
       return;
     }
@@ -489,11 +389,7 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
   const tier = await getTierFromStripeSubscription(subscription, stripe);
 
-  apiLogger.info("[STRIPE WEBHOOK] Tier extracted from Stripe:", {
-    tier,
-    subscriptionId: subscription.id,
-    organizationId: org.id,
-  });
+  
 
   // Get existing organization data to preserve trial_ends_at if trial has already ended
   const { data: existingOrg } = await supabase
@@ -505,14 +401,9 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   // Preserve trial_ends_at if it exists and trial has ended
   // Don't restart trial for existing customers who already used it
   const updateData: {
-    subscription_tier: string;
-    subscription_status: string;
-    updated_at: string;
-    trial_ends_at?: string | null;
+
   } = {
-    subscription_tier: tier,
-    subscription_status: subscription.status,
-    updated_at: new Date().toISOString(),
+
   };
 
   // If subscription is active and trial_ends_at exists, preserve it
@@ -529,7 +420,7 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     updateData.trial_ends_at = new Date(subscription.trial_end * 1000).toISOString();
   }
 
-  apiLogger.debug("[STRIPE WEBHOOK] Updating organization subscription with data:", updateData);
+  
 
   const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
@@ -539,7 +430,7 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     .single();
 
   if (updateError) {
-    apiLogger.error("[STRIPE WEBHOOK] Error updating organization subscription:", updateError);
+    
     return;
   }
 
@@ -552,25 +443,16 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
       .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
 
     if (venueLinkError) {
-      apiLogger.warn("[STRIPE WEBHOOK] ⚠️ Could not link venues (non-critical):", venueLinkError);
+      :", venueLinkError);
     }
   }
 
-  apiLogger.debug(
-    "[STRIPE WEBHOOK] Successfully updated organization subscription:",
-    organizationId
-  );
+  
 
   await supabase.from("subscription_history").insert({
-    organization_id: organizationId,
-    event_type: "subscription_updated",
-    old_tier: org.subscription_tier,
-    new_tier: tier,
-    stripe_event_id: subscription.id,
-    metadata: { subscription_id: subscription.id, status: subscription.status },
-  });
 
-  apiLogger.debug(`[STRIPE WEBHOOK] Subscription updated for org: ${organizationId}`);
+    metadata: { subscription_id: subscription.id, status: subscription.status },
+
 }
 
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -579,7 +461,7 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
   const organizationId = subscription.metadata?.organization_id;
 
   if (!organizationId) {
-    apiLogger.error("[STRIPE] No organization_id in subscription");
+    
     return;
   }
 
@@ -593,23 +475,13 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
   await supabase
     .from("organizations")
     .update({
-      subscription_tier: "starter",
-      subscription_status: "canceled",
-      stripe_subscription_id: null,
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("id", organizationId);
 
   await supabase.from("subscription_history").insert({
-    organization_id: organizationId,
-    event_type: "subscription_canceled",
-    old_tier: org?.subscription_tier,
-    new_tier: "starter",
-    stripe_event_id: subscription.id,
-    metadata: { subscription_id: subscription.id },
-  });
 
-  apiLogger.debug(`[STRIPE] Subscription deleted for org: ${organizationId}`);
+    metadata: { subscription_id: subscription.id },
+
 }
 
 export async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -620,10 +492,7 @@ export async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const subscriptionId =
     typeof invoiceWithSub.subscription === "string"
       ? invoiceWithSub.subscription
-      : invoiceWithSub.subscription?.id;
 
-  if (!subscriptionId) {
-    return;
   }
 
   // Get subscription details
@@ -637,12 +506,10 @@ export async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   await supabase
     .from("organizations")
     .update({
-      subscription_status: "active",
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("id", organizationId);
 
-  apiLogger.debug(`[STRIPE] Payment succeeded for org: ${organizationId}`);
+  
 }
 
 export async function handlePaymentFailed(invoice: Stripe.Invoice) {
@@ -653,10 +520,7 @@ export async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const subscriptionId =
     typeof invoiceWithSub.subscription === "string"
       ? invoiceWithSub.subscription
-      : invoiceWithSub.subscription?.id;
 
-  if (!subscriptionId) {
-    return;
   }
 
   // Get subscription details
@@ -670,18 +534,14 @@ export async function handlePaymentFailed(invoice: Stripe.Invoice) {
   await supabase
     .from("organizations")
     .update({
-      subscription_status: "past_due",
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("id", organizationId);
 
-  apiLogger.debug(`[STRIPE] Payment failed for org: ${organizationId}`);
+  
 }
 
 export async function finalizeStripeEvent(
-  supabase: ReturnType<typeof createAdminClient>,
-  eventId: string,
-  status: "succeeded" | "failed",
+
   error?: { message: string; stack?: string }
 ) {
   if (!eventId) return;
@@ -690,10 +550,7 @@ export async function finalizeStripeEvent(
     .from("stripe_webhook_events")
     .update({
       status,
-      processed_at: status === "succeeded" ? nowIso : null,
-      last_error: error ?? null,
-      updated_at: nowIso,
-    })
+
     .eq("event_id", eventId);
 }
 
@@ -717,7 +574,6 @@ export async function processSubscriptionEvent(event: Stripe.Event) {
     case "invoice.payment_failed":
       await handlePaymentFailed(event.data.object as Stripe.Invoice);
       break;
-    default:
-      apiLogger.debug(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
+
   }
 }

@@ -20,13 +20,7 @@ export abstract class BaseService {
    * Disables caching in test mode (when NODE_ENV=test)
    */
   protected async withCache<T>(
-    key: string,
-    callback: () => Promise<T>,
-    ttl: number = 300
-  ): Promise<T> {
-    // Skip caching in test mode
-    if (process.env.NODE_ENV === "test") {
-      return callback();
+
     }
 
     // Try to get from cache first

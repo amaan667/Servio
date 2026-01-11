@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 
 interface StockMovement {
-  created_at: string;
-  delta: number;
-  reason: string;
-  ref_type?: string;
-  note?: string;
-  ingredient?: {
-    name: string;
-    unit: string;
+
   };
   user?: {
-    email: string;
+
   };
 }
 
@@ -31,7 +23,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: "Too many requests",
+
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -59,9 +51,7 @@ export const GET = withUnifiedAuth(
       if (context.tier !== "enterprise") {
         return NextResponse.json(
           {
-            error: "CSV exports require Enterprise tier",
-            currentTier: context.tier,
-            requiredTier: "enterprise",
+
           },
           { status: 403 }
         );
@@ -76,9 +66,7 @@ export const GET = withUnifiedAuth(
           `
         *,
         ingredient:ingredients(name, unit),
-        user:created_by(email)
-      `
-        )
+
         .eq("venue_id", venueId)
         .order("created_at", { ascending: false });
 
@@ -97,15 +85,10 @@ export const GET = withUnifiedAuth(
       const { data, error } = await query;
 
       if (error) {
-        logger.error("[INVENTORY EXPORT MOVEMENTS] Error fetching movements:", {
-          error: error instanceof Error ? error.message : "Unknown error",
-          venueId,
-          userId: context.user.id,
-        });
+        
         return NextResponse.json(
           {
-            error: "Failed to fetch movements",
-            message: isDevelopment() ? error.message : "Database query failed",
+
           },
           { status: 500 }
         );
@@ -131,28 +114,21 @@ export const GET = withUnifiedAuth(
 
       // STEP 7: Return success response
       return new NextResponse(csv, {
-        headers: {
-          "Content-Type": "text/csv",
+
           "Content-Disposition": `attachment; filename="movements-${venueId}-${new Date().toISOString().split("T")[0]}.csv"`,
         },
-      });
+
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      logger.error("[INVENTORY EXPORT MOVEMENTS] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
+      
 
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
+
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -160,8 +136,7 @@ export const GET = withUnifiedAuth(
 
       return NextResponse.json(
         {
-          error: "Internal Server Error",
-          message: isDevelopment() ? errorMessage : "Request processing failed",
+
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
@@ -170,8 +145,7 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query params
-    extractVenueId: async (req) => {
-      try {
+
         const { searchParams } = new URL(req.url);
         return searchParams.get("venue_id") || searchParams.get("venueId");
       } catch {
@@ -179,6 +153,6 @@ export const GET = withUnifiedAuth(
       }
     },
     // CSV exports require Enterprise tier
-    requireFeature: "analytics",
+
   }
 );

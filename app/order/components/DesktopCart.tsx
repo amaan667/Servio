@@ -7,15 +7,10 @@ import { ShoppingCart, CreditCard, Plus, Minus, X } from "lucide-react";
 import { CartItem } from "../types";
 
 interface DesktopCartProps {
-  cart: CartItem[];
-  totalPrice: number;
-  totalItems: number;
-  onRemoveFromCart: (itemId: string) => void;
+
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onUpdateSpecialInstructions: (itemId: string, instructions: string) => void;
-  onShowCheckout: () => void;
-  isDemo?: boolean;
-  onDirectSubmit?: () => void;
+
 }
 
 export function DesktopCart({

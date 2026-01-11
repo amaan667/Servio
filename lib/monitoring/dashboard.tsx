@@ -8,23 +8,14 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { logger } from "@/lib/logger";
 
 interface PerformanceData {
-  apiRequests: {
-    total: number;
-    successful: number;
-    failed: number;
-    avgResponseTime: number;
+
   };
-  errors: {
-    count: number;
+
     recent: Array<{ message: string; timestamp: string }>;
   };
-  system: {
-    uptime: number;
-    memoryUsage: number;
-    activeConnections: number;
+
   };
 }
 
@@ -39,9 +30,7 @@ export function PerformanceDashboard() {
         const metrics = await response.json();
         setData(metrics.data);
       } catch (error) {
-        logger.error("[MONITORING] Failed to fetch metrics:", {
-          error: error instanceof Error ? error.message : String(error),
-        });
+
       } finally {
         setLoading(false);
       }

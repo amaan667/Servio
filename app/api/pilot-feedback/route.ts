@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -36,28 +35,14 @@ export const POST = withUnifiedAuth(
         title: title || `${type} submission`,
         description,
         email,
-        user_agent: userAgent,
-        created_at: timestamp || new Date().toISOString(),
-        status: "pending",
-      });
 
       if (error) {
-        logger.error("[PILOT FEEDBACK] Error storing feedback:", {
-          error: error.message,
-          userId: context.user.id,
-        });
+        
         // Don't fail if database insert fails - log it
       }
 
       // Log to console for immediate visibility during pilot
-      logger.info("[PILOT FEEDBACK]", {
-        type,
-        title,
-        description,
-        email,
-        timestamp,
-        userId: context.user.id,
-      });
+      
 
       // STEP 7: Return success response
       return success({});
@@ -66,11 +51,7 @@ export const POST = withUnifiedAuth(
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      logger.error("[PILOT FEEDBACK] Unexpected error", {
-        error: errorMessage,
-        stack: errorStack,
-        userId: context.user.id,
-      });
+      
 
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
@@ -87,6 +68,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-    extractVenueId: async () => null,
+
   }
 );

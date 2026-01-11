@@ -21,7 +21,6 @@ import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 // Hooks
 import { usePaymentState } from "./hooks/usePaymentState";
 import { usePaymentProcessing } from "./hooks/usePaymentProcessing";
-import { logger } from "@/lib/logger";
 
 /**
  * Payment Page
@@ -40,11 +39,9 @@ export default function PaymentPage() {
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "unknown";
     const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
-    logger.info("📱 [MOBILE PAYMENT UI] Payment page loaded", {
-      timestamp: new Date().toISOString(),
+    .toISOString(),
       isMobile,
-      hasCheckoutData: !!paymentState.checkoutData,
-    });
+
   }, []); // Only run on mount
 
   // Payment state effects handled by component logic
@@ -56,31 +53,10 @@ export default function PaymentPage() {
 
     // Comprehensive logging for mobile payment method selection
 
-    logger.info("📱 [MOBILE PAYMENT UI] Payment method button clicked", {
-      action,
-      timestamp,
-      isMobile,
-      viewport: {
-        width: typeof window !== "undefined" ? window.innerWidth : "unknown",
-        height: typeof window !== "undefined" ? window.innerHeight : "unknown",
-      },
-      state: {
-        isProcessing: paymentState.isProcessing,
-        paymentComplete: paymentState.paymentComplete,
-        hasError: !!paymentState.error,
-      },
-      checkoutData: paymentState.checkoutData
-        ? {
-            venueId: paymentState.checkoutData.venueId,
-            tableNumber: paymentState.checkoutData.tableNumber,
-            total: paymentState.checkoutData.total,
-            itemCount: paymentState.checkoutData.cart?.length || 0,
-          }
-        : null,
-    });
+    
 
     if (!paymentState.checkoutData) {
-      logger.error("[MOBILE PAYMENT UI] No checkout data available", { timestamp });
+      
       return;
     }
 
@@ -113,20 +89,14 @@ export default function PaymentPage() {
         }
       );
     } catch (unhandledError) {
-      logger.error("[MOBILE PAYMENT UI] Unhandled error", {
-        error: unhandledError instanceof Error ? unhandledError.message : String(unhandledError),
-        stack: unhandledError instanceof Error ? unhandledError.stack : undefined,
+
         timestamp,
         action,
-      });
 
       const errorMessage =
         unhandledError instanceof Error
           ? unhandledError.message
-          : "An unexpected error occurred. Please try again.";
 
-      paymentState.setError(errorMessage);
-      paymentState.setIsProcessing(false);
     }
   };
 

@@ -25,13 +25,7 @@ const hasSupabaseConfig = !!(
 );
 
 interface LocalAccount {
-  venueId: string;
-  venueName: string;
-  contactName: string;
-  contactEmail: string;
-  venueType: string;
-  passwordHash: string;
-  createdAt: string;
+
 }
 
 export function AccountMigrator() {
@@ -40,7 +34,7 @@ export function AccountMigrator() {
     Record<string, "pending" | "success" | "error">
   >({
     /* Empty */
-  });
+
   const [migrationProgress, setMigrationProgress] = useState(0);
   const [isMigrating, setIsMigrating] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
@@ -132,7 +126,7 @@ export function AccountMigrator() {
       setLocalAccounts([]);
       setMigrationStatus({
         /* Empty */
-      });
+
       addLog("🗑️ Local accounts cleared");
     }
   };
@@ -179,8 +173,7 @@ export function AccountMigrator() {
         return <AlertTriangle className="h-4 w-4 text-red-600" />;
       case "pending":
         return <RefreshCw className="h-4 w-4 text-blue-600 animate-spin" />;
-      default:
-        return null;
+
     }
   };
 

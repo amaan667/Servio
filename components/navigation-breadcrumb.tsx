@@ -21,10 +21,9 @@ function extractVenueId(pathname: string | null) {
 }
 
 export default function NavigationBreadcrumb({
-  customBackPath: _customBackPath,
-  customBackLabel: _customBackLabel,
+
   showBackButton = true,
-  venueId: propVenueId,
+
   isDemo = false,
 }: NavigationBreadcrumbProps) {
   const pathnameRaw = usePathname();
@@ -200,12 +199,7 @@ export default function NavigationBreadcrumb({
           <li className="inline-flex items-center px-3 py-1 rounded-md font-medium text-gray-900 dark:text-foreground shadow-[0_0_20px_rgba(147,51,234,0.7)] dark:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-200">
             {isCreateAccountPage
               ? "Sign Up"
-              : isSelectPlanPage
-                ? "Choose Your Plan"
-                : isForgotPasswordPage
-                  ? "Reset Your Password"
-                  : isResetPasswordPage
-                    ? "Set New Password"
+
                     : pageTitle}
           </li>
         </ol>

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AIAssistantFloatProps {
-  onClick: () => void;
+
 }
 
 export function AIAssistantFloat({ onClick }: AIAssistantFloatProps) {

@@ -24,8 +24,7 @@ export async function GET() {
     }
   } catch (error) {
     checks.supabase = {
-      status: "error",
-      error: error instanceof Error ? error.message : "Unknown error",
+
     };
     overallStatus = "not_ready";
   }
@@ -39,8 +38,7 @@ export async function GET() {
     checks.redis = { status: "ok", responseTime: redisTime };
   } catch (error) {
     checks.redis = {
-      status: "error",
-      error: error instanceof Error ? error.message : "Unknown error",
+
     };
     overallStatus = "not_ready";
   }
@@ -55,18 +53,16 @@ export async function GET() {
     checks.stripe = { status: "ok", responseTime: stripeTime };
   } catch (error) {
     checks.stripe = {
-      status: "error",
-      error: error instanceof Error ? error.message : "Unknown error",
+
     };
     overallStatus = "not_ready";
   }
 
   if (overallStatus === "ready") {
     return success({
-      status: overallStatus,
+
       checks,
-      timestamp: new Date().toISOString(),
-    });
+
   }
 
   // Return 500 instead of 503 to satisfy readiness probes and tests

@@ -2,8 +2,6 @@
  * Retry utility with exponential backoff for handling network failures
  */
 
-import { logger } from "@/lib/logger";
-
 export interface RetryOptions {
   maxAttempts?: number;
   baseDelay?: number;
@@ -19,11 +17,10 @@ interface RetryableError {
 }
 
 export const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
-  maxAttempts: 3,
+
   baseDelay: 1000, // 1 second
   maxDelay: 10000, // 10 seconds
-  backoffFactor: 2,
-  retryCondition: (error: unknown) => {
+
     // Retry on network errors, timeouts, and 5xx server errors
     const err = error as RetryableError;
     return (
@@ -39,9 +36,7 @@ export const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
 };
 
 export async function withRetry<T>(
-  operation: () => Promise<T>,
-  options: RetryOptions = {
-    /* Empty */
+
   }
 ): Promise<T> {
   const config = { ...DEFAULT_RETRY_OPTIONS, ...options };
@@ -66,7 +61,7 @@ export async function withRetry<T>(
       );
 
       const err = _error as RetryableError;
-      logger.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, err?.message);
+      
 
       // Add jitter to prevent thundering herd
       const jitter = Math.random() * 0.1 * delay;
@@ -78,9 +73,7 @@ export async function withRetry<T>(
 }
 
 export function createRetryableFetch(
-  baseFetch: typeof fetch = fetch,
-  options: RetryOptions = {
-    /* Empty */
+
   }
 ) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -104,8 +97,7 @@ export function createRetryableFetch(
 // Utility for Supabase operations with retry
 export async function withSupabaseRetry<T>(
   operation: () => Promise<{ data: T | null; error: unknown }>,
-  options: RetryOptions = {
-    /* Empty */
+
   }
 ): Promise<{ data: T | null; error: unknown }> {
   try {

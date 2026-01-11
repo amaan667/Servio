@@ -1,7 +1,6 @@
 import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useEffect } from "react";
-import { logger } from "@/lib/logger";
 
 /**
  * Hook for monitoring performance metrics
@@ -19,7 +18,7 @@ export function usePerformanceMonitor(componentName: string) {
 
       if (renderTime > 16) {
         // More than one frame (16ms at 60fps)
-        logger.warn(`[PERFORMANCE] ${componentName} took ${renderTime.toFixed(2)}ms to render`);
+        }ms to render`);
       }
     };
   }, [componentName]);
@@ -43,15 +42,14 @@ export function useApiPerformanceMonitor(apiName: string) {
 
         if (duration > 1000) {
           // More than 1 second
-          logger.warn(`[API PERFORMANCE] ${apiName} took ${duration.toFixed(2)}ms`);
+          }ms`);
         }
 
         return result;
       } catch (_error) {
         const endTime = performance.now();
         const duration = endTime - startTime;
-        logger.error(
-          `[API ERROR] ${apiName} failed after ${duration.toFixed(2)}ms:`,
+        }ms:`,
           errorToContext(_error)
         );
         throw _error;

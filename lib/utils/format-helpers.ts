@@ -6,15 +6,11 @@
  * Format currency with locale-aware formatting
  */
 export function formatCurrency(
-  amount: number,
-  currency: string = "GBP",
-  locale: string = "en-GB"
-): string {
+
   return new Intl.NumberFormat(locale, {
-    style: "currency",
+
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+
   }).format(amount);
 }
 
@@ -134,53 +130,28 @@ export function formatTableName(name: string | number): string {
  * Format order status for display
  */
 export function formatOrderStatus(status: string): {
-  label: string;
-  color: string;
-  bgColor: string;
+
 } {
   const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-    PENDING: {
-      label: "Pending",
-      color: "text-yellow-700",
-      bgColor: "bg-yellow-100",
+
     },
-    CONFIRMED: {
-      label: "Confirmed",
-      color: "text-blue-700",
-      bgColor: "bg-blue-100",
+
     },
-    PREPARING: {
-      label: "Preparing",
-      color: "text-orange-700",
-      bgColor: "bg-orange-100",
+
     },
-    READY: {
-      label: "Ready",
-      color: "text-purple-700",
-      bgColor: "bg-purple-100",
+
     },
-    SERVED: {
-      label: "Served",
-      color: "text-indigo-700",
-      bgColor: "bg-indigo-100",
+
     },
-    COMPLETED: {
-      label: "Completed",
-      color: "text-green-700",
-      bgColor: "bg-green-100",
+
     },
-    CANCELLED: {
-      label: "Cancelled",
-      color: "text-red-700",
-      bgColor: "bg-red-100",
+
     },
   };
 
   return (
     statusMap[status] || {
-      label: titleCase(status),
-      color: "text-gray-700",
-      bgColor: "bg-gray-100",
+
     }
   );
 }

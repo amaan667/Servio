@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { isDevelopment } from "@/lib/env";
 
@@ -30,11 +29,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
-      logger.error("[ORDERS PAYMENT] Order not found", {
-        error: checkError?.message,
-        orderId,
-        venue_id,
-      });
+      
       return apiErrors.notFound("Order not found");
     }
 
@@ -47,24 +42,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (currentOrderError) {
-      logger.error("[ORDERS PAYMENT] Failed to fetch current order", {
-        error: currentOrderError.message,
-        orderId,
-        venue_id,
-      });
+      
     }
 
-    logger.debug("[ORDERS PAYMENT] Current order state", {
-      orderId,
-      currentPaymentMethod: currentOrder?.payment_method,
-      currentPaymentMode: currentOrder?.payment_mode,
-      providedPaymentMethod: payment_method,
-    });
+    
 
     // Update payment status - allow for any order status (staff may need to mark completed orders as paid)
     const updateData: Record<string, unknown> = {
-      payment_status: payment_status || "PAID",
-      updated_at: new Date().toISOString(),
+
     };
 
     // Determine payment_method and payment_mode
@@ -74,12 +59,7 @@ export async function POST(req: NextRequest) {
     // Normalize provided payment_method
     const normalizedProvidedMethod = payment_method
       ? payment_method.toUpperCase().replace(/[^A-Z_]/g, "")
-      : null;
 
-    // Handle "till" or "PAY_AT_TILL" variations
-    if (normalizedProvidedMethod === "TILL" || normalizedProvidedMethod === "PAY_AT_TILL") {
-      finalPaymentMethod = "PAY_AT_TILL";
-      finalPaymentMode = "offline";
     } else if (normalizedProvidedMethod) {
       // Use provided method
       finalPaymentMethod = normalizedProvidedMethod;
@@ -98,10 +78,7 @@ export async function POST(req: NextRequest) {
         finalPaymentMode = "offline";
       } else {
         // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
-        logger.warn("[ORDERS PAYMENT] Unknown payment_method, defaulting to PAY_AT_TILL", {
-          orderId,
-          finalPaymentMethod,
-        });
+        
         finalPaymentMethod = "PAY_AT_TILL";
         finalPaymentMode = "offline";
       }
@@ -123,10 +100,7 @@ export async function POST(req: NextRequest) {
         finalPaymentMode = "offline";
       } else {
         // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
-        logger.warn("[ORDERS PAYMENT] Unknown existing payment_method, defaulting to PAY_AT_TILL", {
-          orderId,
-          finalPaymentMethod,
-        });
+        
         finalPaymentMethod = "PAY_AT_TILL";
         finalPaymentMode = "offline";
       }
@@ -140,10 +114,7 @@ export async function POST(req: NextRequest) {
     updateData.payment_method = finalPaymentMethod;
     updateData.payment_mode = finalPaymentMode;
 
-    logger.debug("[ORDERS PAYMENT] Update data", {
-      orderId,
-      updateData,
-    });
+    
 
     // Update payment status - no restrictions on order_status or completion_status
     // This allows staff to mark any order as paid, even if it's from a previous day or already completed
@@ -156,16 +127,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError) {
-      logger.error("[ORDERS PAYMENT] Failed to update payment", {
-        error: updateError?.message,
-        errorCode: updateError?.code,
-        errorDetails: updateError?.details,
-        orderId,
-        venue_id,
-        updateData,
-        currentOrderStatus: orderCheck.order_status,
-        currentPaymentStatus: orderCheck.payment_status,
-      });
+      
 
       // Provide more specific error message
       if (updateError.code === "PGRST116") {
@@ -184,26 +146,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (!updatedOrder) {
-      logger.error("[ORDERS PAYMENT] Update succeeded but no order returned", {
-        orderId,
-        venue_id,
-      });
+      
       return apiErrors.internal("Payment update succeeded but order data not returned");
     }
 
-    logger.info("[ORDERS PAYMENT] Payment updated successfully", {
-      orderId,
-      payment_status: updateData.payment_status,
-      payment_method: updateData.payment_method,
-      venue_id,
-    });
+    
 
     return success({ order: updatedOrder });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("[ORDERS PAYMENT] Unexpected error", {
-      error: errorMessage,
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

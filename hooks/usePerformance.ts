@@ -1,12 +1,9 @@
 "use client";
 
 import React, { useEffect, useCallback } from "react";
-import { logger } from "@/lib/logger";
 
 interface PerformanceMetrics {
-  name: string;
-  value: number;
-  rating: "good" | "needs-improvement" | "poor";
+
 }
 
 export function usePerformance() {
@@ -18,16 +15,12 @@ export function usePerformance() {
     const measureName = `${componentName}-render`;
 
     return {
-      start: () => performance.mark(startMark),
-      end: () => {
-        performance.mark(endMark);
-        try {
+
           performance.measure(measureName, startMark, endMark);
           const measure = performance.getEntriesByName(measureName)[0];
 
           if (process.env.NODE_ENV === "development") {
-            logger.debug(
-              `[Performance] ${componentName} rendered in ${measure.duration.toFixed(2)}ms`
+            }ms`
             );
           }
 
@@ -76,10 +69,7 @@ export function usePerformance() {
       }
     ).connection;
     return {
-      effectiveType: connection?.effectiveType,
-      downlink: connection?.downlink,
-      rtt: connection?.rtt,
-      saveData: connection?.saveData,
+
     } as unknown;
   }, []);
 
@@ -94,33 +84,26 @@ export function usePerformance() {
       }
     ).memory;
     return {
-      usedJSHeapSize: memory?.usedJSHeapSize,
-      totalJSHeapSize: memory?.totalJSHeapSize,
-      jsHeapSizeLimit: memory?.jsHeapSizeLimit,
-      usagePercentage:
-        memory && memory.usedJSHeapSize && memory.jsHeapSizeLimit
-          ? ((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100).toFixed(2)
-          : 0,
+
     } as unknown;
   }, []);
 
   const reportLongTask = useCallback((taskName: string, duration: number) => {
     if (duration > 50) {
       // Long task threshold is 50ms
-      logger.warn(
-        `[Performance Warning] Long task detected: ${taskName} took ${duration.toFixed(2)}ms`
+      }ms`
       );
 
       // Send to analytics if in production
       if (process.env.NODE_ENV === "production") {
         fetch("/api/analytics/long-task", {
-          method: "POST",
+
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ taskName, duration }),
-          keepalive: true,
+
         }).catch(() => {
           /* Empty */
-        });
+
       }
     }
   }, []);
@@ -136,10 +119,7 @@ export function usePerformance() {
 
 // HOC for measuring component render performance
 export function withPerformanceTracking<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  componentName: string
-) {
-  const PerformanceTrackedComponent = (props: P) => {
+
     const { measureComponentRender } = usePerformance();
 
     useEffect(() => {
@@ -150,8 +130,7 @@ export function withPerformanceTracking<P extends object>(
       return () => {
         const duration = measure.end();
         if (duration && duration > 100) {
-          logger.warn(
-            `[Performance] ${componentName} took ${duration.toFixed(2)}ms to render (>100ms threshold)`
+          }ms to render (>100ms threshold)`
           );
         }
       };

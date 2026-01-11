@@ -4,58 +4,31 @@
 import { createClient } from "@/lib/supabase";
 
 interface FeedbackAnalysisResult {
-  overallSentiment: "positive" | "neutral" | "negative";
-  averageRating: number;
-  totalFeedback: number;
-  commonThemes: Array<{
-    theme: string;
-    count: number;
-    sentiment: string;
+
   }>;
-  recentComments: Array<{
-    rating: number;
-    comment: string;
-    date: string;
+
   }>;
-  recommendations: string[];
+
 }
 
 interface PopularCombosResult {
-  combos: Array<{
-    items: string[];
-    frequency: number;
-    totalRevenue: number;
-    avgOrderValue: number;
-    recommendation: string;
+
   }>;
-  summary: string;
+
 }
 
 interface RepeatCustomerResult {
-  repeatRate: number;
-  topCustomers: Array<{
-    phone: string;
-    orderCount: number;
-    totalSpent: number;
-    avgOrderValue: number;
-    lastVisit: string;
+
   }>;
-  insights: string[];
+
 }
 
 interface DemandForecastResult {
-  hourly: Array<{
-    hour: number;
-    timeRange: string;
-    avgOrders: number;
-    recommendation: string;
+
   }>;
-  daily: Array<{
-    dayOfWeek: string;
-    avgOrders: number;
-    peakHour: string;
+
   }>;
-  summary: string;
+
 }
 
 /**
@@ -77,13 +50,7 @@ export async function analyzeFeedback(venueId: string): Promise<FeedbackAnalysis
 
   if (!feedback || feedback.length === 0) {
     return {
-      overallSentiment: "neutral",
-      averageRating: 0,
-      totalFeedback: 0,
-      commonThemes: [],
-      recentComments: [],
-      recommendations: [
-        "No customer feedback available yet. Encourage customers to leave reviews!",
+
       ],
     };
   }
@@ -152,18 +119,11 @@ export async function analyzeFeedback(venueId: string): Promise<FeedbackAnalysis
       theme.sentiment += f.rating || 3;
       themes.set("Speed", theme);
     }
-  });
 
   const commonThemes = Array.from(themes.entries())
     .map(([theme, data]) => ({
       theme,
-      count: data.count,
-      sentiment:
-        data.sentiment / data.count >= 4
-          ? "positive"
-          : data.sentiment / data.count < 3
-            ? "negative"
-            : "mixed",
+
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
@@ -173,9 +133,7 @@ export async function analyzeFeedback(venueId: string): Promise<FeedbackAnalysis
     .filter((f) => f.comments && f.comments.length > 10)
     .slice(0, 5)
     .map((f) => ({
-      rating: f.rating || 0,
-      comment: f.comments || "",
-      date: new Date(f.created_at).toLocaleDateString(),
+
     }));
 
   // Generate recommendations
@@ -201,12 +159,10 @@ export async function analyzeFeedback(venueId: string): Promise<FeedbackAnalysis
         `${theme.theme} is a strength (${theme.count} positive mentions). Continue to maintain high standards.`
       );
     }
-  });
 
   return {
     overallSentiment,
-    averageRating: Math.round(averageRating * 10) / 10,
-    totalFeedback: feedback.length,
+
     commonThemes,
     recentComments,
     recommendations,
@@ -232,8 +188,7 @@ export async function identifyPopularCombos(venueId: string): Promise<PopularCom
 
   if (!orders || orders.length < 10) {
     return {
-      combos: [],
-      summary: "Not enough order data to identify popular combinations (need at least 10 orders).",
+
     };
   }
 
@@ -254,7 +209,6 @@ export async function identifyPopularCombos(venueId: string): Promise<PopularCom
         comboMap.set(combo, existing);
       }
     }
-  });
 
   // Convert to array and filter (at least 3 occurrences)
   const combos = Array.from(comboMap.entries())
@@ -274,22 +228,17 @@ export async function identifyPopularCombos(venueId: string): Promise<PopularCom
 
       return {
         items,
-        frequency: data.count,
-        totalRevenue: Math.round(data.revenue * 100) / 100,
-        avgOrderValue: Math.round(avgOrderValue * 100) / 100,
+
         recommendation,
       };
-    })
+
     .sort((a, b) => b.frequency - a.frequency)
     .slice(0, 10);
 
   const summary =
     combos.length > 0
       ? `Found ${combos.length} popular item combinations. Most frequent: "${combos[0].items.join(" + ")}" (${combos[0].frequency} orders).`
-      : "No significant item combinations found. Single-item orders are most common.";
 
-  return {
-    combos,
     summary,
   };
 }
@@ -314,9 +263,7 @@ export async function analyzeRepeatCustomers(venueId: string): Promise<RepeatCus
 
   if (!orders || orders.length === 0) {
     return {
-      repeatRate: 0,
-      topCustomers: [],
-      insights: ["No customer data available. Ensure phone numbers are collected during orders."],
+
     };
   }
 
@@ -324,20 +271,14 @@ export async function analyzeRepeatCustomers(venueId: string): Promise<RepeatCus
   const customerMap = new Map<
     string,
     {
-      name: string;
-      orderCount: number;
-      totalSpent: number;
-      lastVisit: Date;
+
     }
   >();
 
   orders.forEach((order) => {
     const phone = order.customer_phone;
     const existing = customerMap.get(phone) || {
-      name: order.customer_name || "Unknown",
-      orderCount: 0,
-      totalSpent: 0,
-      lastVisit: new Date(order.created_at),
+
     };
 
     existing.orderCount++;
@@ -347,7 +288,6 @@ export async function analyzeRepeatCustomers(venueId: string): Promise<RepeatCus
     }
 
     customerMap.set(phone, existing);
-  });
 
   // Calculate repeat rate
   const uniqueCustomers = customerMap.size;
@@ -358,10 +298,7 @@ export async function analyzeRepeatCustomers(venueId: string): Promise<RepeatCus
   const topCustomers = Array.from(customerMap.entries())
     .map(([phone, data]) => ({
       phone: phone.slice(0, 4) + "***" + phone.slice(-3), // Anonymize
-      orderCount: data.orderCount,
-      totalSpent: Math.round(data.totalSpent * 100) / 100,
-      avgOrderValue: Math.round((data.totalSpent / data.orderCount) * 100) / 100,
-      lastVisit: data.lastVisit.toISOString().split("T")[0],
+
     }))
     .sort((a, b) => b.totalSpent - a.totalSpent)
     .slice(0, 10);
@@ -393,7 +330,7 @@ export async function analyzeRepeatCustomers(venueId: string): Promise<RepeatCus
   }
 
   return {
-    repeatRate: Math.round(repeatRate * 10) / 10,
+
     topCustomers,
     insights,
   };
@@ -418,9 +355,7 @@ export async function forecastDemand(venueId: string): Promise<DemandForecastRes
 
   if (!orders || orders.length < 20) {
     return {
-      hourly: [],
-      daily: [],
-      summary: "Not enough order data for demand forecasting (need at least 20 orders).",
+
     };
   }
 
@@ -440,7 +375,6 @@ export async function forecastDemand(venueId: string): Promise<DemandForecastRes
     // Daily
     if (!dailyDemand.has(day)) dailyDemand.set(day, []);
     dailyDemand.get(day)!.push(1);
-  });
 
   // Process hourly data
   const hourly = Array.from(hourlyDemand.entries())
@@ -459,10 +393,10 @@ export async function forecastDemand(venueId: string): Promise<DemandForecastRes
       return {
         hour,
         timeRange: `${hour}:00-${hour + 1}:00`,
-        avgOrders: Math.round(avgOrders * 10) / 10,
+
         recommendation,
       };
-    })
+
     .sort((a, b) => a.hour - b.hour);
 
   // Process daily data
@@ -479,11 +413,10 @@ export async function forecastDemand(venueId: string): Promise<DemandForecastRes
       const peakHour = Array.from(hourCounts.entries()).sort((a, b) => b[1] - a[1])[0];
 
       return {
-        dayOfWeek: dayNames[day],
-        avgOrders: Math.round(avgOrders * 10) / 10,
+
         peakHour: peakHour ? `${peakHour[0]}:00-${peakHour[0] + 1}:00` : "Unknown",
       };
-    })
+
     .sort((a, b) => b.avgOrders - a.avgOrders);
 
   const busiestHour = hourly.reduce((max, h) => (h.avgOrders > max.avgOrders ? h : max), hourly[0]);

@@ -1,7 +1,6 @@
 // Stripe Billing Portal - Let customers manage their subscription
 import { NextRequest } from "next/server";
 import { stripe } from "@/lib/stripe-client";
-import { apiLogger as logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase";
@@ -11,14 +10,10 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 
 interface Organization {
-  id: string;
-  stripe_customer_id?: string | null;
-  owner_user_id: string;
+
 }
 
 const createPortalSessionSchema = z.object({
-  organizationId: z.string().uuid("Invalid organization ID"),
-});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -47,10 +42,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (orgError || !org) {
-        logger.warn("[STRIPE PORTAL] Organization not found or access denied", {
-          organizationId: body.organizationId,
-          userId: user.id,
-        });
+        
         return apiErrors.notFound("Organization not found or access denied");
       }
 
@@ -60,26 +52,13 @@ export const POST = withUnifiedAuth(
 
       // STEP 5: Business logic - Create portal session
       const portalSession = await stripe.billingPortal.sessions.create({
-        customer: org.stripe_customer_id,
-        return_url: `${env("NEXT_PUBLIC_APP_URL") || env("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000"}/settings/billing`,
-      });
 
-      logger.info("[STRIPE PORTAL] Portal session created", {
-        sessionId: portalSession.id,
-        organizationId: body.organizationId,
-        userId: user.id,
-      });
+        return_url: `${env("NEXT_PUBLIC_APP_URL") || env("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000"}/settings/billing`,
 
       // STEP 6: Return success response
       return success({
-        url: portalSession.url,
-      });
+
     } catch (error) {
-      logger.error("[STRIPE PORTAL] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -93,6 +72,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-    extractVenueId: async () => null,
+
   }
 );

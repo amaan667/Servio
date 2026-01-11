@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors } from "@/lib/api/standard-response";
@@ -28,11 +27,10 @@ export const GET = withUnifiedAuth(
         .eq("table_schema", "public");
 
       if (tablesError) {
-        logger.error("[KDS STATUS] Error checking tables:", { error: tablesError.message });
+        
         return NextResponse.json(
           {
-            error: "Failed to check KDS tables",
-            details: tablesError.message,
+
           },
           { status: 500 }
         );
@@ -71,52 +69,38 @@ export const GET = withUnifiedAuth(
         .limit(5);
 
       if (ordersError) {
-        logger.error("[KDS STATUS] Error checking recent orders:", {
-          error: ordersError.message,
-          venueId: context.venueId,
-        });
+        
       }
 
       const status = {
-        kds_tables_exist: tableNames.length === 3,
-        tables_found: tableNames,
-        stations_count: stationsCount,
-        tickets_count: ticketsCount,
-        recent_orders: recentOrders || [],
-        system_ready: tableNames.length === 3 && stationsCount > 0,
-        venue_id: context.venueId,
+
       };
 
       return NextResponse.json({
-        ok: true,
+
         status,
-      });
+
     } catch (_error) {
-      logger.error("[KDS STATUS] Error:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-        venueId: context.venueId,
-      });
+      
       return NextResponse.json(
         {
-          error: "Internal server error",
-          details: _error instanceof Error ? _error.message : "Unknown _error",
+
         },
         { status: 500 }
       );
     }
   },
   {
-    extractVenueId: async (req) => {
+
       const { searchParams } = new URL(req.url);
       const { venueId } = validateQuery(
         paginationSchema.pick({ limit: true, offset: true }).extend({
-          venueId: z.string().min(1).max(64),
+
         }),
         {
-          venueId: searchParams.get("venueId"),
+
           // keep shape for validation; limit/offset ignored here
-          limit: searchParams.get("limit") ?? undefined,
-          offset: searchParams.get("offset") ?? undefined,
+
         }
       );
       return venueId;

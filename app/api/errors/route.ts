@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -8,30 +7,12 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 
 const errorDataSchema = z.object({
-  error: z
-    .object({
-      name: z.string(),
-      message: z.string(),
-      stack: z.string().optional(),
-    })
+
     .optional(),
-  message: z
-    .object({
-      text: z.string(),
-      level: z.string(),
-    })
+
     .optional(),
-  context: z.object({
-    userId: z.string().uuid().optional(),
-    venueId: z.string().uuid().optional(),
-    userRole: z.string().optional(),
-    url: z.string().url(),
-    timestamp: z.number(),
-    userAgent: z.string(),
-    sessionId: z.string(),
-    customData: z.record(z.unknown()).optional(),
+
   }),
-});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -47,26 +28,11 @@ export const POST = withUnifiedAuth(
 
       // STEP 3: Business logic - Log error/message
       if (data.error) {
-        logger.error("[ERROR TRACKING] Error captured:", {
-          name: data.error.name,
-          message: data.error.message,
-          stack: data.error.stack,
-          url: data.context.url,
-          userId: data.context.userId || context.user.id,
-          venueId: data.context.venueId || context.venueId,
-          userRole: data.context.userRole,
-          sessionId: data.context.sessionId,
-          timestamp: new Date(data.context.timestamp).toISOString(),
-        });
+        .toISOString(),
+
       } else if (data.message) {
-        logger.info(`[ERROR TRACKING] ${data.message.level.toUpperCase()}: ${data.message.text}`, {
-          url: data.context.url,
-          userId: data.context.userId || context.user.id,
-          venueId: data.context.venueId || context.venueId,
-          userRole: data.context.userRole,
-          sessionId: data.context.sessionId,
-          timestamp: new Date(data.context.timestamp).toISOString(),
-        });
+        }: ${data.message.text}`, {
+
       }
 
       // Store in database or send to external service
@@ -77,11 +43,6 @@ export const POST = withUnifiedAuth(
       // STEP 4: Return success response
       return success({ success: true });
     } catch (error) {
-      logger.error("[ERROR TRACKING] Failed to process error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -92,7 +53,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required (errors can come from anywhere)
-    extractVenueId: async () => null,
+
   }
 );
 
@@ -107,15 +68,8 @@ export const GET = withUnifiedAuth(
 
       // STEP 2: Return success response
       return success({
-        message: "Error tracking endpoint",
-        status: "active",
-      });
+
     } catch (error) {
-      logger.error("[ERROR TRACKING GET] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -126,6 +80,6 @@ export const GET = withUnifiedAuth(
   },
   {
     // System route - no venue required
-    extractVenueId: async () => null,
+
   }
 );

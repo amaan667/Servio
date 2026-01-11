@@ -232,9 +232,7 @@ export default function OrderDetailsPage() {
                           type="button"
                           onClick={() =>
                             feedback.updateFeedbackResponse(question.id, {
-                              answer_stars: star,
-                              type: "stars",
-                            })
+
                           }
                           className="text-2xl"
                         >
@@ -243,7 +241,7 @@ export default function OrderDetailsPage() {
                               (feedback.feedbackResponses.find((r) => r.question_id === question.id)
                                 ?.answer_stars ?? 0) >= star
                                 ? "text-yellow-400 fill-yellow-400"
-                                : "text-gray-300"
+
                             }`}
                           />
                         </button>
@@ -258,15 +256,13 @@ export default function OrderDetailsPage() {
                           type="button"
                           onClick={() =>
                             feedback.updateFeedbackResponse(question.id, {
-                              answer_choice: choice,
-                              type: "multiple_choice",
-                            })
+
                           }
                           className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
                             feedback.feedbackResponses.find((r) => r.question_id === question.id)
                               ?.answer_choice === choice
                               ? "border-purple-600 bg-purple-50"
-                              : "border-gray-200 hover:border-gray-300"
+
                           }`}
                         >
                           {choice}
@@ -285,9 +281,7 @@ export default function OrderDetailsPage() {
                       }
                       onChange={(e) =>
                         feedback.updateFeedbackResponse(question.id, {
-                          answer_text: e.target.value,
-                          type: "paragraph",
-                        })
+
                       }
                     />
                   )}

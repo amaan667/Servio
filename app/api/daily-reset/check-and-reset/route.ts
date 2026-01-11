@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -35,9 +34,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (venueError) {
-        logger.error("🔄 [DAILY RESET CHECK] Error fetching venue:", {
-          error: venueError.message || "Unknown error",
-        });
+        
         return apiErrors.database(
           "Failed to fetch venue",
           isDevelopment() ? venueError.message : undefined
@@ -55,9 +52,7 @@ export const POST = withUnifiedAuth(
       // Try to create the daily_reset_log table if it doesn't exist
       try {
         await supabase.rpc("exec_sql", {
-          sql: `
-          CREATE TABLE IF NOT EXISTS daily_reset_log (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+
             venue_id TEXT NOT NULL,
             reset_date DATE NOT NULL,
             reset_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -69,7 +64,7 @@ export const POST = withUnifiedAuth(
             UNIQUE(venue_id, reset_date)
           );
         `,
-        });
+
       } catch {
         // Ignore error if table already exists
       }
@@ -89,17 +84,11 @@ export const POST = withUnifiedAuth(
       // If we already reset today, return success (unless force=true)
       if (resetRecord && !force) {
         return success({
-          success: true,
-          message: "Already reset today",
-          resetDate: todayString,
-          alreadyReset: true,
-        });
+
       }
 
       if (force) {
-        logger.info(
-          `🔄 [DAILY RESET CHECK] Force reset requested - proceeding even if already reset today`
-        );
+        
       }
 
       // Check if there are unknown recent orders (within last 2 hours) - if so, don't reset
@@ -112,26 +101,16 @@ export const POST = withUnifiedAuth(
         .limit(1);
 
       if (recentOrdersError) {
-        logger.error("🔄 [DAILY RESET CHECK] Error checking recent orders:", {
-          error: recentOrdersError.message || "Unknown error",
-        });
+        
         // Continue with reset if we can't check
       } else if (recentOrders && recentOrders.length > 0) {
         return success({
-          success: true,
-          message: "Skipping reset due to recent orders",
-          resetDate: todayString,
-          alreadyReset: false,
-          skipped: true,
-          reason: "Recent orders found",
-        });
+
       }
 
       // Perform the reset
       const resetSummary = {
-        completedOrders: 0,
-        canceledReservations: 0,
-        resetTables: 0,
+
       };
 
       // Step 1: Complete all active orders
@@ -142,9 +121,7 @@ export const POST = withUnifiedAuth(
         .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
       if (activeOrdersError) {
-        logger.error("🔄 [DAILY RESET CHECK] Error fetching active orders:", {
-          error: activeOrdersError.message || "Unknown error",
-        });
+        
         return apiErrors.internal("Failed to fetch active orders");
       }
 
@@ -152,16 +129,12 @@ export const POST = withUnifiedAuth(
         const { error: completeOrdersError } = await supabase
           .from("orders")
           .update({
-            order_status: "COMPLETED",
-            updated_at: new Date().toISOString(),
-          })
+
           .eq("venue_id", finalVenueId)
           .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
         if (completeOrdersError) {
-          logger.error("🔄 [DAILY RESET CHECK] Error completing orders:", {
-            error: completeOrdersError.message || "Unknown error",
-          });
+          
           return apiErrors.internal("Failed to complete active orders");
         }
 
@@ -176,9 +149,7 @@ export const POST = withUnifiedAuth(
         .eq("status", "BOOKED");
 
       if (activeReservationsError) {
-        logger.error("🔄 [DAILY RESET CHECK] Error fetching active reservations:", {
-          error: activeReservationsError.message || "Unknown error",
-        });
+        
         return apiErrors.internal("Failed to fetch active reservations");
       }
 
@@ -186,16 +157,12 @@ export const POST = withUnifiedAuth(
         const { error: cancelReservationsError } = await supabase
           .from("reservations")
           .update({
-            status: "CANCELLED",
-            updated_at: new Date().toISOString(),
-          })
+
           .eq("venue_id", finalVenueId)
           .eq("status", "BOOKED");
 
         if (cancelReservationsError) {
-          logger.error("🔄 [DAILY RESET CHECK] Error canceling reservations:", {
-            error: cancelReservationsError.message || "Unknown error",
-          });
+          
           return apiErrors.internal("Failed to cancel active reservations");
         }
 
@@ -209,9 +176,7 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", finalVenueId);
 
       if (tablesError) {
-        logger.error("🔄 [DAILY RESET CHECK] Error fetching tables:", {
-          error: tablesError.message || "Unknown error",
-        });
+        
         return apiErrors.internal("Failed to fetch tables");
       }
 
@@ -223,9 +188,7 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", finalVenueId);
 
         if (clearTableRefsError) {
-          logger.error("🔄 [DAILY RESET CHECK] Error clearing table references:", {
-            error: clearTableRefsError.message || "Unknown error",
-          });
+          
           return apiErrors.internal("Failed to clear table references from orders");
         }
 
@@ -236,9 +199,7 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", finalVenueId);
 
         if (deleteSessionsError) {
-          logger.warn("🔄 [DAILY RESET CHECK] Warning clearing table sessions:", {
-            error: deleteSessionsError.message || "Unknown error",
-          });
+          
           // Don't fail for this, continue
         }
 
@@ -249,9 +210,7 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", finalVenueId);
 
         if (deleteTablesError) {
-          logger.error("🔄 [DAILY RESET CHECK] Error deleting tables:", {
-            error: deleteTablesError.message || "Unknown error",
-          });
+          
           return apiErrors.internal("Failed to delete tables");
         }
 
@@ -265,51 +224,25 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", finalVenueId);
 
       if (clearRuntimeError) {
-        logger.error("🔄 [DAILY RESET CHECK] Error clearing runtime state:", {
-          error: clearRuntimeError.message || "Unknown error",
-        });
+        
         // Don't fail the entire operation for this
-        logger.warn("🔄 [DAILY RESET CHECK] Continuing despite runtime state clear error");
+        
       }
 
       // Step 5: Record the reset in the log
       const { error: logError } = await supabase.from("daily_reset_log").insert({
-        venue_id: finalVenueId,
-        reset_date: todayString,
-        reset_timestamp: new Date().toISOString(),
-        completed_orders: resetSummary.completedOrders,
-        canceled_reservations: resetSummary.canceledReservations,
-        reset_tables: resetSummary.resetTables,
-      });
 
       if (logError) {
-        logger.error("🔄 [DAILY RESET CHECK] Error logging reset:", {
-          error: logError.message || "Unknown error",
-        });
+        
         // Don't fail the operation for this
-        logger.warn("🔄 [DAILY RESET CHECK] Continuing despite log error");
+        
       }
 
       return success({
-        success: true,
-        message: "Daily reset completed successfully",
-        resetDate: todayString,
-        summary: {
-          venueId: finalVenueId,
-          venueName: venue.venue_name,
-          completedOrders: resetSummary.completedOrders,
-          canceledReservations: resetSummary.canceledReservations,
-          deletedTables: resetSummary.resetTables,
-          timestamp: new Date().toISOString(),
+
         },
-      });
+
     } catch (error) {
-      logger.error("🔄 [DAILY RESET CHECK] Error in daily reset check:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user?.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -320,10 +253,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
-        // Clone the request so we don't consume the original body
-        const clonedReq = req.clone();
+
         const body = await clonedReq.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

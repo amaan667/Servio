@@ -39,33 +39,21 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      environment: getNodeEnv(),
-      auth: {
-        sessionStatus,
-        hasUser: !!userId,
+
         userId: userId?.substring(0, 8) + "...",
         sessionError,
-        authCookiesCount: authCookies.length,
+
         authCookies: authCookies.map((c) => ({ name: c.name, hasValue: !!c.value })),
       },
-      supabase: {
-        url: env("NEXT_PUBLIC_SUPABASE_URL") ? "configured" : "missing",
-        key: env("NEXT_PUBLIC_SUPABASE_ANON_KEY") ? "configured" : "missing",
-        serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") ? "configured" : "missing",
+
       },
-      urls: {
-        siteUrl: env("NEXT_PUBLIC_SITE_URL"),
-        appUrl: env("NEXT_PUBLIC_APP_URL"),
+
       },
-    });
+
   } catch (_error) {
     return NextResponse.json(
       {
-        status: "_error",
-        timestamp: new Date().toISOString(),
-        error: _error instanceof Error ? _error.message : "Unknown _error",
+
       },
       { status: 500 }
     );

@@ -30,10 +30,7 @@ import { FeatureSections } from "./components/FeatureSections";
 type DashboardLogLevel = "info" | "warn" | "error";
 
 interface DashboardLogPayload {
-  level: DashboardLogLevel;
-  event: string;
-  venueId: string;
-  timestamp: string;
+
   details: Record<string, unknown>;
 }
 
@@ -55,9 +52,7 @@ const DashboardClient = React.memo(function DashboardClient({
   initialCounts,
   initialStats,
 }: {
-  venueId: string;
-  initialCounts?: DashboardCounts;
-  initialStats?: DashboardStats;
+
 }) {
   const router = useRouter();
 
@@ -114,36 +109,21 @@ const DashboardClient = React.memo(function DashboardClient({
   useEffect(() => {
     const timestamp = new Date().toISOString();
     const details = {
-      timestamp: new Date().toISOString(),
+
       venueId,
-      initialCounts: initialCounts
-        ? {
-            live_count: initialCounts.live_count,
-            earlier_today_count: initialCounts.earlier_today_count,
-            history_count: initialCounts.history_count,
-            today_orders_count: initialCounts.today_orders_count,
-            active_tables_count: initialCounts.active_tables_count,
-            tables_set_up: initialCounts.tables_set_up,
-            tables_in_use: initialCounts.tables_in_use,
-            tables_reserved_now: initialCounts.tables_reserved_now,
+
           }
-        : null,
-      initialStats: initialStats
-        ? {
-            revenue: initialStats.revenue,
-            menuItems: initialStats.menuItems,
-            unpaid: initialStats.unpaid,
+
           }
-        : null,
+
     };
 
     sendDashboardLog({
-      level: "info",
-      event: "initial_server_data",
+
       venueId,
       timestamp,
       details,
-    });
+
   }, [venueId, initialCounts, initialStats]);
 
   // Hooks must be called unconditionally - can't be in try-catch
@@ -159,58 +139,33 @@ const DashboardClient = React.memo(function DashboardClient({
     const timestamp = new Date().toISOString();
 
     const displayedCounts = {
-      live_count: dashboardData.counts.live_count,
-      earlier_today_count: dashboardData.counts.earlier_today_count,
-      history_count: dashboardData.counts.history_count,
-      today_orders_count: dashboardData.counts.today_orders_count,
-      active_tables_count: dashboardData.counts.active_tables_count,
-      tables_set_up: dashboardData.counts.tables_set_up,
-      tables_in_use: dashboardData.counts.tables_in_use,
-      tables_reserved_now: dashboardData.counts.tables_reserved_now,
+
     };
     const displayedStats = {
-      revenue: dashboardData.stats.revenue,
-      menuItems: dashboardData.stats.menuItems,
-      unpaid: dashboardData.stats.unpaid,
+
     };
 
     const details = {
       timestamp,
       venueId,
-      counts: displayedCounts,
-      stats: displayedStats,
-      loading: dashboardData.loading,
+
     };
 
     sendDashboardLog({
-      level: "info",
-      event: "client_display_state",
+
       venueId,
       timestamp,
       details,
-    });
 
     // COMPARISON: Check if displayed values match initial server values
     if (initialCounts && initialStats) {
       const countsMatch =
         JSON.stringify(displayedCounts) ===
         JSON.stringify({
-          live_count: initialCounts.live_count,
-          earlier_today_count: initialCounts.earlier_today_count,
-          history_count: initialCounts.history_count,
-          today_orders_count: initialCounts.today_orders_count,
-          active_tables_count: initialCounts.active_tables_count,
-          tables_set_up: initialCounts.tables_set_up,
-          tables_in_use: initialCounts.tables_in_use,
-          tables_reserved_now: initialCounts.tables_reserved_now,
-        });
+
       const statsMatch =
         JSON.stringify(displayedStats) ===
         JSON.stringify({
-          revenue: initialStats.revenue,
-          menuItems: initialStats.menuItems,
-          unpaid: initialStats.unpaid,
-        });
 
       if (!countsMatch || !statsMatch) {
         const mismatchDetails = {
@@ -218,30 +173,26 @@ const DashboardClient = React.memo(function DashboardClient({
           venueId,
           countsMatch,
           statsMatch,
-          serverCounts: initialCounts,
+
           displayedCounts,
-          serverStats: initialStats,
+
           displayedStats,
         };
 
         sendDashboardLog({
-          level: "warn",
-          event: "client_server_mismatch",
+
           venueId,
           timestamp,
-          details: mismatchDetails,
-        });
+
       } else {
         sendDashboardLog({
-          level: "info",
-          event: "client_server_match",
+
           venueId,
           timestamp,
-          details: {
-            timestamp,
+
             venueId,
           },
-        });
+
       }
     }
   }, [
@@ -270,7 +221,7 @@ const DashboardClient = React.memo(function DashboardClient({
         // Update menu items count immediately
         dashboardData.setStats((prev) => ({
           ...prev,
-          menuItems: customEvent.detail.count,
+
         }));
       }
     };
@@ -288,8 +239,7 @@ const DashboardClient = React.memo(function DashboardClient({
         // Update tables count immediately
         dashboardData.setCounts((prev) => ({
           ...prev,
-          tables_set_up: customEvent.detail.count,
-          active_tables_count: customEvent.detail.count,
+
         }));
       }
     };
@@ -392,7 +342,7 @@ const DashboardClient = React.memo(function DashboardClient({
     // Fallback: return empty data for all hours
     return Array.from({ length: 24 }, (_, i) => ({
       hour: `${i}:00`,
-      orders: 0,
+
     }));
   }, [analyticsData.data?.ordersByHour]);
 
@@ -484,14 +434,9 @@ const DashboardClient = React.memo(function DashboardClient({
             trend={
               analyticsData.data?.yesterdayComparison
                 ? {
-                    value:
-                      ((dashboardData.counts.today_orders_count -
-                        analyticsData.data.yesterdayComparison.orders) /
-                        (analyticsData.data.yesterdayComparison.orders || 1)) *
-                      100,
-                    label: "vs yesterday",
+
                   }
-                : undefined
+
             }
             tooltip="View all orders placed today"
             href={`/dashboard/${venueId}/live-orders?since=today`}
@@ -508,14 +453,9 @@ const DashboardClient = React.memo(function DashboardClient({
             trend={
               analyticsData.data?.yesterdayComparison
                 ? {
-                    value:
-                      ((dashboardData.stats.revenue -
-                        analyticsData.data.yesterdayComparison.revenue) /
-                        (analyticsData.data.yesterdayComparison.revenue || 1)) *
-                      100,
-                    label: "vs yesterday",
+
                   }
-                : undefined
+
             }
             tooltip="View detailed revenue analytics"
             href={`/dashboard/${venueId}/analytics`}
@@ -552,10 +492,9 @@ const DashboardClient = React.memo(function DashboardClient({
           <AIInsights
             venueId={venueId}
             stats={{
-              revenue: dashboardData.stats.revenue || 0,
+
               // Always use server value if available, fallback to client state
-              menuItems: initialStats?.menuItems ?? 0,
-              todayOrdersCount: dashboardData.counts.today_orders_count || 0,
+
             }}
             topSellingItems={analyticsData.data?.topSellingItems}
             yesterdayComparison={analyticsData.data?.yesterdayComparison}
@@ -578,6 +517,5 @@ const DashboardClient = React.memo(function DashboardClient({
       {/* Removed Footer Modals - moved to QuickActionsToolbar */}
     </div>
   );
-});
 
 export default DashboardClient;

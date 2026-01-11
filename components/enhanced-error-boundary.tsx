@@ -7,15 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { clearAuthStorage } from "@/lib/supabase";
 
 interface EnhancedErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: React.ErrorInfo | null;
-  retryCount: number;
-  isRetrying: boolean;
+
 }
 
 interface EnhancedErrorBoundaryProps {
-  children: React.ReactNode;
+
   fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
   maxRetries?: number;
@@ -30,17 +26,13 @@ export class EnhancedErrorBoundary extends React.Component<
   constructor(props: EnhancedErrorBoundaryProps) {
     super(props);
     this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-      retryCount: 0,
-      isRetrying: false,
+
     };
   }
 
   static getDerivedStateFromError(error: Error): Partial<EnhancedErrorBoundaryState> {
     return {
-      hasError: true,
+
       error,
     };
   }
@@ -49,7 +41,6 @@ export class EnhancedErrorBoundary extends React.Component<
     this.setState({
       error,
       errorInfo,
-    });
 
     // Call custom error handler if provided
     if (this.props.onError) {
@@ -77,12 +68,7 @@ export class EnhancedErrorBoundary extends React.Component<
     // Clear the error state after a short delay
     this.retryTimeoutId = setTimeout(() => {
       this.setState({
-        hasError: false,
-        error: null,
-        errorInfo: null,
-        retryCount: this.state.retryCount + 1,
-        isRetrying: false,
-      });
+
     }, 1000);
   };
 
@@ -170,8 +156,7 @@ export class EnhancedErrorBoundary extends React.Component<
               <CardTitle className="text-xl font-semibold text-gray-900">
                 {isAuthError
                   ? "Authentication Error"
-                  : isNetworkError
-                    ? "Connection Problem"
+
                     : "Something went wrong"}
               </CardTitle>
             </CardHeader>
@@ -180,8 +165,7 @@ export class EnhancedErrorBoundary extends React.Component<
                 <p className="text-gray-900 mb-4">
                   {isAuthError
                     ? "Your session has expired or there was an authentication error."
-                    : isNetworkError
-                      ? "Please check your internet connection and try again."
+
                       : "An unexpected error occurred. We're working to fix it."}
                 </p>
 

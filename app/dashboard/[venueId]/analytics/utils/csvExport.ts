@@ -9,13 +9,7 @@ export function prepareCSVData(orders: unknown[]): Record<string, unknown>[] {
     const tableNumber =
       typeof order.table_number === "number"
         ? order.table_number
-        : typeof order.table_number === "string"
-          ? order.table_number
-          : "N/A";
-    const paymentMethod = typeof order.payment_method === "string" ? order.payment_method : "";
-    const totalAmount = typeof order.total_amount === "number" ? order.total_amount : 0;
 
-    if (order.items && Array.isArray(order.items)) {
       order.items.forEach((item: Record<string, unknown>) => {
         const itemName =
           (typeof item.item_name === "string" ? item.item_name : null) ||
@@ -25,27 +19,11 @@ export function prepareCSVData(orders: unknown[]): Record<string, unknown>[] {
         const price = typeof item.price === "number" ? item.price : 0;
 
         csvRows.push({
-          date: formatDateForCSV(createdAt),
-          table: tableNumber,
-          item: itemName,
-          quantity: quantity,
-          price: formatCurrencyForCSV(price),
-          total: formatCurrencyForCSV(quantity * price),
-          paymentMethod: getPaymentMethodLabel(paymentMethod),
-        });
-      });
+
     } else {
       csvRows.push({
-        date: formatDateForCSV(createdAt),
-        table: tableNumber,
-        item: "Order Total",
-        quantity: 1,
-        price: formatCurrencyForCSV(totalAmount),
-        total: formatCurrencyForCSV(totalAmount),
-        paymentMethod: getPaymentMethodLabel(paymentMethod),
-      });
+
     }
-  });
 
   return csvRows;
 }
@@ -81,7 +59,6 @@ function getPaymentMethodLabel(paymentMethod: string | null | undefined): string
       return "Cash";
     case "demo":
       return "Demo";
-    default:
-      return "Unknown";
+
   }
 }

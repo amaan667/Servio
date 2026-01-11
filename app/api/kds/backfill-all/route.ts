@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
@@ -8,9 +7,7 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 export const runtime = "nodejs";
 
 interface KDSStation {
-  id: string;
-  station_type: string;
-  [key: string]: unknown;
+
 }
 
 export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -20,7 +17,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -36,8 +33,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!finalVenueId) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "venueId is required",
+
         },
         { status: 400 }
       );
@@ -61,9 +57,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         .eq("is_active", true);
 
       if (!existingStations || existingStations.length === 0) {
-        logger.debug("[KDS BACKFILL ALL] No stations found, creating default stations for venue", {
-          extra: { value: finalVenueId },
-        });
+        
 
         // Create default stations
         const defaultStations = [
@@ -77,12 +71,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         for (const station of defaultStations) {
           await supabase.from("kds_stations").upsert(
             {
-              venue_id: finalVenueId,
-              station_name: station.name,
-              station_type: station.type,
-              display_order: station.order,
-              color_code: station.color,
-              is_active: true,
+
             },
             {
               onConflict: "venue_id,station_name",
@@ -134,9 +123,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       const { data: orders, error: ordersError } = await query;
 
       if (ordersError) {
-        logger.error(`[KDS BACKFILL ALL] Error fetching orders for ${scope}:`, {
-          error: ordersError.message,
-        });
+        
         results.push({ scope, error: ordersError.message });
         continue;
       }
@@ -169,19 +156,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
           try {
             await createKDSTicketsWithAI(supabase, {
-              id: order.id,
-              venue_id: order.venue_id,
-              items: items,
-              customer_name: order.customer_name,
-              table_number: order.table_number,
-              table_id: order.table_id,
-            });
+
             scopeTicketsCreated += items.length;
           } catch (ticketError) {
-            logger.error("[KDS BACKFILL ALL] Failed to create tickets for order:", {
-              error: ticketError instanceof Error ? ticketError.message : "Unknown error",
-              orderId: order.id,
-            });
+            
             scopeErrors.push(
               `Failed to create tickets for order ${order.id}: ${ticketError instanceof Error ? ticketError.message : "Unknown error"}`
             );
@@ -189,13 +167,9 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
           }
 
           scopeOrdersProcessed++;
-          logger.debug(
-            `[KDS BACKFILL ALL] Processed order ${order.id} with ${items.length} items for ${scope}`
-          );
+          
         } catch (_error) {
-          logger.error(`[KDS BACKFILL ALL] Error processing order ${order.id} for ${scope}:`, {
-            error: _error instanceof Error ? _error.message : "Unknown _error",
-          });
+          
           scopeErrors.push(
             `Error processing order ${order.id}: ${_error instanceof Error ? _error.message : "Unknown _error"}`
           );
@@ -207,39 +181,21 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
       results.push({
         scope,
-        orders_processed: scopeOrdersProcessed,
-        tickets_created: scopeTicketsCreated,
-        errors: scopeErrors.length > 0 ? scopeErrors : undefined,
-      });
 
-      logger.debug(
-        `[KDS BACKFILL ALL] Completed ${scope} scope: ${scopeOrdersProcessed} orders, ${scopeTicketsCreated} tickets`
-      );
     }
 
-    logger.debug("[KDS BACKFILL ALL] Comprehensive backfill completed:", {
-      totalOrdersProcessed,
-      totalTicketsCreated,
-      results,
-    });
+    
 
     return NextResponse.json({
-      ok: true,
-      message: "Comprehensive KDS backfill completed",
-      total_orders_processed: totalOrdersProcessed,
-      total_tickets_created: totalTicketsCreated,
+
       results,
-    });
+
   } catch (_error) {
-    logger.error("[KDS BACKFILL ALL] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "Comprehensive backfill failed",
+
       },
       { status: 500 }
     );
   }
-});

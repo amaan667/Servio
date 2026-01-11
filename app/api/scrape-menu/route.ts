@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrors } from "@/lib/api/standard-response";
-import { logger } from "@/lib/logger";
 import OpenAI from "openai";
 import { env } from "@/lib/env";
 
@@ -27,20 +26,17 @@ async function getBrowser() {
       try {
         const { execSync } = await import("child_process");
         execSync("npx playwright install chromium --with-deps", {
-          stdio: "ignore",
+
           timeout: 120000, // 2 minutes max for install
-        });
+
       } catch (installError) {
         // Installation failed or already installed - continue
-        logger.warn("[SCRAPE MENU] Playwright install check failed (may already be installed)", {
-          error: installError instanceof Error ? installError.message : "Unknown",
-        });
+        ", {
+
       }
 
       browserInstance = await playwright.chromium.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
+
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
           "--disable-gpu",
@@ -49,7 +45,7 @@ async function getBrowser() {
           "--no-zygote",
         ],
         timeout: 30000, // 30s timeout for launch
-      });
+
     } catch (launchError) {
       // Don't crash - throw error to be caught by API handler
       throw new Error(
@@ -68,17 +64,12 @@ async function getBrowser() {
  * Detect site type and determine scraping strategy
  */
 async function detectSiteType(url: string): Promise<{
-  type: "static" | "spa" | "ssr" | "lazy" | "unknown";
-  needsJS: boolean;
-  needsScroll: boolean;
+
 }> {
   try {
     const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+
       },
-      signal: AbortSignal.timeout(5000),
-    });
 
     const html = await response.text();
     const lowerHtml = html.toLowerCase();
@@ -135,9 +126,7 @@ async function detectSiteType(url: string): Promise<{
 
     // Default: assume needs JS but no scroll if content seems present
     return {
-      type: "unknown",
-      needsJS: !hasMenuContent,
-      needsScroll: !hasMenuContent || hasLazy,
+
     };
   } catch {
     // If fetch fails, assume it needs full JS rendering
@@ -150,7 +139,7 @@ async function detectSiteType(url: string): Promise<{
  * Uses the right strategy based on site type
  */
 async function scrapeWithPlaywright(
-  url: string,
+
   siteType: { type: string; needsJS: boolean; needsScroll: boolean }
 ) {
   let browser;
@@ -162,8 +151,6 @@ async function scrapeWithPlaywright(
 
     context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    });
 
     page = await context.newPage();
 
@@ -171,16 +158,13 @@ async function scrapeWithPlaywright(
     await page.goto(url, {
       waitUntil: "domcontentloaded", // Don't wait for networkidle - causes timeouts
       timeout: 15000, // Shorter timeout
-    });
 
     // Quick cookie dismissal (non-blocking)
     await page
       .click('button:has-text("Accept"), button:has-text("Agree"), button:has-text("OK")', {
-        timeout: 2000,
-      })
+
       .catch(() => {
         /* Ignore - cookies already dismissed or not present */
-      });
 
     // Strategy-based content loading
     if (siteType.needsJS) {
@@ -211,7 +195,6 @@ async function scrapeWithPlaywright(
 
         // Scroll back to top
         window.scrollTo(0, 0);
-      });
 
       // Wait for lazy-loaded content to render
       await page.waitForTimeout(2000);
@@ -224,13 +207,12 @@ async function scrapeWithPlaywright(
       const hasFoodWords = /menu|item|dish|food|breakfast|lunch|dinner|price|£/i.test(bodyText);
       const hasEnoughContent = bodyText.length > 200;
       return hasPrices && hasFoodWords && hasEnoughContent;
-    });
 
     // If still no content and not static, try one more scroll
     if (!hasMenuContent && siteType.type !== "static") {
       await page.evaluate(() => {
         window.scrollTo(0, document.body.scrollHeight);
-      });
+
       await page.waitForTimeout(1500);
     }
 
@@ -247,7 +229,6 @@ async function scrapeWithPlaywright(
       const mainContent =
         clone.querySelector("main, article, [role='main'], .content, .main-content") || clone;
       return (mainContent as HTMLElement).innerText || (clone as HTMLElement).innerText;
-    });
 
     // Extract images
     const images = await page.evaluate((baseUrl: string) => {
@@ -263,7 +244,7 @@ async function scrapeWithPlaywright(
             }
           }
           return src && src.startsWith("http") ? src : null;
-        })
+
         .filter((src): src is string => src !== null);
     }, url);
 
@@ -274,11 +255,11 @@ async function scrapeWithPlaywright(
     if (page)
       await page.close().catch(() => {
         /* Empty */
-      });
+
     if (context)
       await context.close().catch(() => {
         /* Empty */
-      });
+
   }
 }
 
@@ -301,21 +282,17 @@ export async function POST(req: NextRequest) {
 
     // Detect site type for optimal strategy
     const siteType = await detectSiteType(url);
-    logger.info(`[MENU SCRAPE] Detected site type: ${siteType.type}`, {
-      needsJS: siteType.needsJS,
-      needsScroll: siteType.needsScroll,
-    });
+    
 
     // Scrape with strategy optimized for site type
     const { text: finalText, images: imageUrls } = await scrapeWithPlaywright(url, siteType);
 
     if (!finalText || finalText.length < 50) {
       const errorResponse = {
-        ok: false,
+
         error:
           "Unable to extract meaningful content from the URL. The page may be empty, protected, require authentication, or use a format we don't support yet.",
-        suggestions: [
-          "Try checking if the menu is behind a login",
+
           "Verify the URL is publicly accessible",
           "Check if the menu is in a PDF or image format",
           "Ensure the page loads menu content on initial render",
@@ -363,21 +340,14 @@ Return ONLY valid JSON:
     const openai = new OpenAI({ apiKey: env("OPENAI_API_KEY") });
 
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a menu extraction expert. Extract ALL menu items. Return ONLY valid JSON.",
+
         },
         {
-          role: "user",
-          content: extractionPrompt,
+
         },
       ],
-      temperature: 0.1,
+
       response_format: { type: "json_object" },
-    });
 
     const aiContent = aiResponse.choices[0]?.message?.content;
     if (!aiContent) {
@@ -409,27 +379,20 @@ Return ONLY valid JSON:
     }
 
     const totalDuration = Date.now() - startTime;
-    logger.info("[MENU SCRAPE] Extraction complete", {
-      itemCount: menuItems.length,
-      duration: totalDuration,
-    });
+    
 
     const successResponse = {
-      ok: true,
-      items: menuItems,
+
       message: `Found ${menuItems.length} items from menu`,
     };
 
     return NextResponse.json(successResponse);
   } catch (_error) {
-    logger.error(
-      "[MENU SCRAPE] Error:",
-      _error instanceof Error ? _error : { error: String(_error) }
+     }
     );
 
     const errorResponse = {
-      ok: false,
-      error: _error instanceof Error ? _error.message : "Failed to scrape menu",
+
     };
 
     return NextResponse.json(errorResponse, { status: 500 });

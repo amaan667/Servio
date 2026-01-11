@@ -18,10 +18,7 @@ import { PRICING_TIERS } from "@/lib/pricing-tiers";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface UpgradeModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currentTier?: string;
-  organizationId: string;
+
 }
 
 export function UpgradeModal({
@@ -38,10 +35,9 @@ export function UpgradeModal({
     try {
       // Create checkout session
       const response = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tier, organizationId }),
-      });
 
       const { sessionId, url } = await response.json();
 

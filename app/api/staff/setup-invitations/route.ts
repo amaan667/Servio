@@ -2,7 +2,6 @@
 // Creates the required database tables for staff invitations
 
 import { NextRequest, NextResponse } from "next/server";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -15,7 +14,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -36,12 +35,9 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (invitationsExist) {
       return NextResponse.json({
-        success: true,
-        message: "Staff invitation system already exists",
-        tables: {
-          staff_invitations: true,
+
         },
-      });
+
     }
 
     // Create the staff_invitations table
@@ -80,57 +76,33 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       // First, let's try to create the table by attempting to insert a dummy record
       // This will fail if the table doesn't exist, but that's expected
       const { error: testError } = await supabase.from("staff_invitations").insert({
-        venue_id: "test",
-        invited_by: user?.id || "",
-        email: "test@example.com",
-        role: "staff",
-        token: "test-token",
-      });
 
       if (testError && testError.code === "PGRST116") {
         // Table doesn't exist, we need to create it
-        logger.debug(
-          "[STAFF INVITATION SETUP] Table doesn't exist, returning instructions for manual creation"
-        );
+        
         return NextResponse.json({
-          success: false,
-          message: "Database table needs to be created manually",
-          instructions:
-            "Please run the SQL from scripts/staff-invitation-system.sql in your Supabase dashboard SQL editor",
-          sql: createTableSQL,
-        });
+
       }
     } catch (_error) {
-      logger.debug("[STAFF INVITATION SETUP] Error testing table existence:", {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-      });
+      
     }
 
     // Indexes and RLS will be set up via migration scripts
 
     return NextResponse.json({
-      success: true,
-      message: "Staff invitation system setup completed",
-      tables: {
-        staff_invitations: true,
+
       },
-      nextSteps: [
-        "The staff_invitations table has been created",
+
         "You can now invite staff members through the Staff Management page",
         "Invited staff will receive email invitations to join your venue",
       ],
-    });
+
   } catch (_error) {
-    logger.error("[STAFF INVITATION SETUP] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        success: false,
-        error: "Failed to set up staff invitation system",
-        details: _error instanceof Error ? _error.message : "Unknown _error",
+
       },
       { status: 500 }
     );
   }
-});

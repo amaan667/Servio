@@ -1,5 +1,3 @@
-import { logger } from "@/lib/logger";
-
 /**
  * Google Maps API Loader
  * Loads Google Maps JavaScript API with Places library
@@ -51,7 +49,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
-      logger.warn("Google Maps API key not found. Address autocomplete will not be available.");
+      
       reject(new Error("Google Maps API key not configured"));
       return;
     }
@@ -77,7 +75,7 @@ export function loadGoogleMapsAPI(): Promise<void> {
     };
 
     document.head.appendChild(script);
-  });
+
 }
 
 /**
@@ -87,6 +85,5 @@ export function useGoogleMaps() {
   if (typeof window === "undefined") return;
 
   loadGoogleMapsAPI().catch((error) => {
-    logger.warn("Google Maps failed to load:", error.message);
-  });
+
 }

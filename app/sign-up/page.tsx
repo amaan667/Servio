@@ -22,17 +22,10 @@ export default function SignUpPage() {
       const redirectTo = getAuthRedirectUrl("/auth/callback");
 
       const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-            include_granted_scopes: "true",
+
           },
           // PKCE is enabled by default in Supabase v2
         },
-      });
 
       if (error) {
         alert(`Sign up failed: ${error.message}`);

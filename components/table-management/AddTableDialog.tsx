@@ -19,8 +19,7 @@ import { useTableManagement } from "@/hooks/useTableManagement";
 import { toast } from "@/hooks/use-toast";
 
 interface AddTableDialogProps {
-  venueId: string;
-  onTableAdded?: () => void;
+
 }
 
 export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
@@ -38,9 +37,7 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
     setError(null);
 
     const tableData = {
-      venue_id: venueId,
-      label: label.trim(),
-      seat_count: seatCount,
+
     };
 
     try {
@@ -48,9 +45,8 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
 
       // Show success toast
       toast({
-        title: "Table Created Successfully",
+
         description: `Table "${label.trim()}" has been created with ${seatCount} seats.`,
-      });
 
       setLabel("");
       setSeatCount(2);

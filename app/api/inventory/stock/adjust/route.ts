@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,11 +10,9 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const stockAdjustmentSchema = z.object({
-  ingredient_id: z.string().uuid("Invalid ingredient ID"),
+
   delta: z.number().refine((val) => val !== 0, "Delta must not be zero"),
   reason: z.enum(["sale", "receive", "adjust", "waste", "stocktake", "return"]),
-  note: z.string().max(500).optional(),
-});
 
 /**
  * Adjust inventory stock for an ingredient
@@ -47,11 +44,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (ingredientError || !ingredient) {
-        logger.error("[INVENTORY STOCK ADJUST] Ingredient not found:", {
-          error: ingredientError?.message,
-          ingredientId: body.ingredient_id,
-          userId: context.user.id,
-        });
+        
         return apiErrors.notFound("Ingredient not found");
       }
 
@@ -59,12 +52,7 @@ export const POST = withUnifiedAuth(
 
       // Verify venue matches context (double-check for security)
       if (venueId !== context.venueId) {
-        logger.error("[INVENTORY STOCK ADJUST] Venue mismatch:", {
-          ingredientVenueId: venueId,
-          contextVenueId: context.venueId,
-          ingredientId: body.ingredient_id,
-          userId: context.user.id,
-        });
+        
         return apiErrors.forbidden("Ingredient does not belong to your venue");
       }
 
@@ -73,51 +61,28 @@ export const POST = withUnifiedAuth(
       const { data: ledgerEntry, error: ledgerError } = await supabase
         .from("stock_ledgers")
         .insert({
-          ingredient_id: body.ingredient_id,
-          venue_id: venueId,
-          delta: body.delta,
-          reason: body.reason,
-          ref_type: "manual",
+
           note: body.note || `Manual adjustment: ${body.delta > 0 ? "+" : ""}${body.delta}`,
-          created_by: context.user.id,
-        })
+
         .select()
         .single();
 
       if (ledgerError || !ledgerEntry) {
-        logger.error("[INVENTORY STOCK ADJUST] Error creating ledger entry:", {
-          error: ledgerError?.message,
-          ingredientId: body.ingredient_id,
-          venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to create stock ledger entry",
           isDevelopment() ? ledgerError?.message : undefined
         );
       }
 
-      logger.info("[INVENTORY STOCK ADJUST] Stock adjusted successfully", {
-        ingredientId: body.ingredient_id,
-        ingredientName: ingredient.name,
-        delta: body.delta,
-        reason: body.reason,
-        venueId,
-        userId: context.user.id,
-      });
+      
 
       // STEP 5: Return success response
       return success({
-        data: ledgerEntry,
+
         message: `Stock adjusted by ${body.delta > 0 ? "+" : ""}${body.delta}`,
-      });
+
     } catch (error) {
-      logger.error("[INVENTORY STOCK ADJUST] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -127,11 +92,7 @@ export const POST = withUnifiedAuth(
     }
   },
   {
-    extractVenueId: async (req) => {
-      // Get venueId from ingredient in body
-      // Note: This extractor uses admin client temporarily to read ingredient venue_id
-      // The main handler will verify venue access using authenticated client
-      try {
+
         const body = await req.json().catch(() => ({}));
         const ingredientId = (body as { ingredient_id?: string })?.ingredient_id;
         if (ingredientId) {

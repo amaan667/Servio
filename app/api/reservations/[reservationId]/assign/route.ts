@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,12 +10,8 @@ import { validateBody, validateParams } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const assignReservationSchema = z.object({
-  tableId: z.string().uuid("Invalid table ID"),
-});
 
 const reservationIdParamSchema = z.object({
-  reservationId: z.string().uuid("Invalid reservation ID"),
-});
 
 // POST /api/reservations/[reservationId]/assign - Assign reservation to table
 type ReservationParams = { params?: { reservationId?: string } };
@@ -48,46 +43,24 @@ export async function POST(req: NextRequest, context: ReservationParams = {}) {
           .single();
 
         if (reservationError || !reservation) {
-          logger.warn("[RESERVATIONS ASSIGN] Reservation not found", {
-            reservationId: validatedParams.reservationId,
-            venueId: authContext.venueId,
-            userId: authContext.user.id,
-          });
+          
           return apiErrors.notFound("Reservation not found");
         }
 
         // Call the database function to assign reservation
         const { error } = await supabase.rpc("api_assign_reservation", {
-          p_reservation_id: validatedParams.reservationId,
-          p_table_id: body.tableId,
-        });
 
         if (error) {
-          logger.error("[RESERVATIONS ASSIGN] Error assigning reservation:", {
-            error: error.message,
-            reservationId: validatedParams.reservationId,
-            tableId: body.tableId,
-            userId: authContext.user.id,
-          });
+          
           return apiErrors.badRequest(error.message || "Failed to assign reservation");
         }
 
-        logger.info("[RESERVATIONS ASSIGN] Reservation assigned successfully", {
-          reservationId: validatedParams.reservationId,
-          tableId: body.tableId,
-          userId: authContext.user.id,
-        });
+        
 
         // STEP 4: Return success response
         return success({
-          message: "Reservation assigned successfully",
-        });
+
       } catch (error) {
-        logger.error("[RESERVATIONS ASSIGN] Unexpected error:", {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          userId: authContext.user.id,
-        });
 
         if (isZodError(error)) {
           return handleZodError(error);
@@ -123,5 +96,5 @@ export async function POST(req: NextRequest, context: ReservationParams = {}) {
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-  });
+
 }

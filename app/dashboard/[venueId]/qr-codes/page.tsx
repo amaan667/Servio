@@ -2,9 +2,8 @@ import dynamic from "next/dynamic";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
 const QRCodeClientPage = dynamic(() => import("./page.client"), {
-  ssr: false,
+
   loading: () => null, // No loading spinner - render immediately
-});
 
 export default async function QRCodePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;

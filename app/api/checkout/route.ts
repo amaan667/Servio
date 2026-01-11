@@ -1,5 +1,4 @@
 import Stripe from "stripe";
-import { logger } from "@/lib/logger";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { getStripeClient } from "@/lib/stripe-client";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -15,9 +14,7 @@ export async function POST(req: NextRequest) {
     // Initialize Stripe client inside function to avoid build-time errors
     const stripe = getStripeClient();
 
-    logger.info("[CHECKOUT API] Public Stripe checkout request", {
-      timestamp: new Date().toISOString(),
-    });
+    .toISOString(),
 
     // CRITICAL: Rate limiting
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -39,32 +36,20 @@ export async function POST(req: NextRequest) {
       venueId,
     } = body;
 
-    logger.debug("[CHECKOUT API] Request payload", {
-      venueId,
-      amount,
-      tableNumber,
-      itemCount: items?.length || 0,
-      hasEmail: !!customerEmail,
-    });
+    
 
     // Use venueId from body (QR orders provide it directly)
     const finalVenueId = venueId;
 
     if (!finalVenueId) {
-      logger.error("[CHECKOUT API] Missing venueId");
+      
       return apiErrors.badRequest("venueId is required");
     }
 
     if (!amount || amount < 0.5) {
-      logger.error("[CHECKOUT API] Invalid amount", { amount });
+      
       return apiErrors.badRequest("Amount must be at least £0.50");
     }
-
-    logger.debug("[CHECKOUT API] Creating Stripe session", {
-      venueId: finalVenueId,
-      amount,
-      amountInPence: Math.round(amount * 100),
-    });
 
     // Convert to pence (Stripe uses smallest currency unit)
     const amountInPence = Math.round(amount * 100);
@@ -76,28 +61,16 @@ export async function POST(req: NextRequest) {
 
     // Create Stripe checkout session with automatic tax disabled
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "gbp",
-            product_data: {
+
               name: `Order at ${venueName || "Restaurant"}`,
               description: `Table: ${tableNumber || "N/A"}`,
             },
-            unit_amount: amountInPence,
+
           },
-          quantity: 1,
+
         },
       ],
-      mode: "payment",
-      metadata: {
-        orderId: orderId || "unknown",
-        venueId: finalVenueId,
-        tableNumber: tableNumber?.toString() || "1",
-        customerName: customerName || "Customer",
-        customerPhone: customerPhone || "+1234567890",
-        source: source || "qr",
+
         items: JSON.stringify(items || []).substring(0, 200),
       },
       success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
@@ -110,29 +83,14 @@ export async function POST(req: NextRequest) {
     }
 
     const session = await withStripeRetry(() => stripe.checkout.sessions.create(sessionParams), {
-      maxRetries: 3,
-    });
 
-    logger.info("[CHECKOUT API] Stripe session created successfully", {
-      sessionId: session.id,
-      url: session.url ? session.url.substring(0, 50) + "..." : null,
-      venueId: finalVenueId,
-    });
-    logger.info("[CHECKOUT] Created Stripe session:", {
-      sessionId: session.id,
-      orderId,
-      amount: amountInPence,
-      venue: finalVenueId,
-    });
+     + "..." : null,
 
     return success({ id: session.id, url: session.url });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
-    logger.error("[CHECKOUT] Error creating checkout session", {
-      error: errorMessage,
-      stack: errorStack,
-    });
+    
 
     return apiErrors.internal(isDevelopment() ? errorMessage : "Failed to create checkout session");
   }

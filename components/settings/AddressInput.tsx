@@ -8,7 +8,7 @@ import { MapPin, Loader2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 interface AddressInputProps {
-  value: string;
+
   onChange: (value: string, coordinates?: { lat: number; lng: number }) => void;
   onCoordinatesChange?: (lat: number, lng: number) => void;
 }
@@ -55,7 +55,7 @@ export function AddressInput({ value, onChange, onCoordinatesChange }: AddressIn
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
         {
-          headers: {
+
             "User-Agent": "ServioApp/1.0", // Required by Nominatim
           },
         }

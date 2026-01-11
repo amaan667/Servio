@@ -17,35 +17,18 @@ import {
 } from "@/components/ui/dialog";
 import { supabaseBrowser } from "@/lib/supabase";
 import { toast } from "sonner";
-import { logger } from "@/lib/logger";
 
 interface MenuItem {
-  id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  category: string;
-  image_url?: string | null;
-  is_available: boolean;
+
 }
 
 interface EditItemModalProps {
-  item: MenuItem | null;
-  venueId: string;
-  open: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+
 }
 
 export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditItemModalProps) {
   const [formData, setFormData] = useState<Partial<MenuItem>>({
-    name: "",
-    description: "",
-    price: 0,
-    category: "",
-    image_url: "",
-    is_available: true,
-  });
+
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -55,13 +38,9 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
   useEffect(() => {
     if (item && open) {
       setFormData({
-        name: item.name,
-        description: item.description || "",
-        price: item.price,
-        category: item.category,
-        image_url: item.image_url || "",
+
         is_available: item.is_available ?? true, // Default to true if not set
-      });
+
       setImagePreview(item.image_url || null);
       setImageFile(null);
     }
@@ -106,16 +85,14 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
 
         if (!bucketExists) {
           await supabase.storage.createBucket("menu-images", {
-            public: true,
+
             allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"],
             fileSizeLimit: 5242880, // 5MB
-          });
+
         }
       } catch (bucketError) {
         // Bucket might already exist or creation failed - continue anyway
-        logger.error("[EDIT ITEM] Bucket check/create error:", {
-          error: bucketError instanceof Error ? bucketError.message : String(bucketError),
-        });
+
       }
 
       const fileExt = imageFile.name.split(".").pop();
@@ -125,9 +102,6 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
       const { data, error } = await supabase.storage
         .from("menu-images")
         .upload(fileName, imageFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
 
       if (error) {
         throw error;
@@ -140,9 +114,7 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
 
       return publicUrl;
     } catch (error) {
-      logger.error("[EDIT ITEM] Image upload error:", {
-        error: error instanceof Error ? error.message : String(error),
-      });
+
       toast.error("Failed to upload image");
       return null;
     } finally {
@@ -173,13 +145,9 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
       const { error } = await supabase
         .from("menu_items")
         .update({
-          name: formData.name,
-          description: formData.description,
-          price: formData.price,
-          category: formData.category,
-          image_url: imageUrl,
+
           is_available: formData.is_available ?? true, // Include availability toggle
-        })
+
         .eq("id", item.id)
         .eq("venue_id", venueId);
 
@@ -191,9 +159,7 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
       onSuccess();
       onClose();
     } catch (error) {
-      logger.error("[EDIT ITEM] Save error:", {
-        error: error instanceof Error ? error.message : String(error),
-      });
+
       toast.error("Failed to update item");
     } finally {
       setSaving(false);

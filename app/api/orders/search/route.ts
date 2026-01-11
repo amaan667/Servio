@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -36,20 +35,14 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await query;
 
     if (error) {
-      logger.error("[ORDERS SEARCH] Database error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({
-      ok: true,
-      orders: orders || [],
-    });
+
   } catch (_error) {
-    logger.error("[ORDERS SEARCH] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown error",
-    });
+    
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }
 }

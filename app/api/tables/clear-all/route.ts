@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { apiLogger as logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -38,11 +37,7 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", context.venueId);
 
       if (clearSessionsError) {
-        logger.error("[TABLES CLEAR ALL] Error clearing sessions:", {
-          error: clearSessionsError.message,
-          venueId: context.venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to clear table sessions",
           isDevelopment() ? clearSessionsError.message : undefined
@@ -56,33 +51,19 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", context.venueId);
 
       if (clearGroupSessionsError) {
-        logger.error("[TABLES CLEAR ALL] Error clearing group sessions:", {
-          error: clearGroupSessionsError.message,
-          venueId: context.venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to clear group sessions",
           isDevelopment() ? clearGroupSessionsError.message : undefined
         );
       }
 
-      logger.info("[TABLES CLEAR ALL] Successfully cleared all sessions", {
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
+      
 
       // STEP 4: Return success response
       return success({
-        message: "All table sessions and group sessions cleared successfully",
-      });
+
     } catch (error) {
-      logger.error("[TABLES CLEAR ALL] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -93,8 +74,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
+
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||

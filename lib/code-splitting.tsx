@@ -6,7 +6,6 @@ import { errorToContext } from "@/lib/utils/error-to-context";
  */
 
 import { lazy, ComponentType } from "react";
-import { logger } from "@/lib/logger";
 
 /**
  * Create a lazy-loaded component with loading state
@@ -56,8 +55,7 @@ export function lazyWithRetry<P extends object>(
         return await importFn();
       } catch (_error) {
         lastError = _error as Error;
-        logger.error(
-          `Failed to load component (attempt ${i + 1}/${retries}):`,
+
           errorToContext(_error)
         );
 

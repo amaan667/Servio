@@ -1,6 +1,5 @@
 import * as pdfjsLib from "pdfjs-dist";
 import { createCanvas } from "canvas";
-import { logger } from "./logger";
 
 // Set worker path for pdfjs
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -19,9 +18,7 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
       const context = canvas.getContext("2d");
 
       await page.render({
-        canvasContext: context as unknown as CanvasRenderingContext2D,
-        viewport: viewport,
-        canvas: canvas as unknown as HTMLCanvasElement,
+
       }).promise;
 
       const imageDataUrl = canvas.toDataURL("image/png");
@@ -30,7 +27,7 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
 
     return imageUrls;
   } catch (_error) {
-    logger.error("[PDF-TO-IMAGES] Error:", _error);
+    
     throw new Error("Failed to convert PDF to images");
   }
 }

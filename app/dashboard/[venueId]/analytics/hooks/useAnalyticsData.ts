@@ -2,20 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 export interface AnalyticsData {
-  totalOrders: number;
-  totalRevenue: number;
-  averageOrderValue: number;
-  menuItemsCount: number;
-  revenueOverTime: Array<{
-    date: string;
-    revenue: number;
-    orders: number;
-    isCurrentPeriod?: boolean;
-    isPeak?: boolean;
-    isLowest?: boolean;
+
   }>;
   topSellingItems: Array<{ name: string; quantity: number; revenue: number }>;
-  trendline: number;
+
   peakDay: { date: string; revenue: number };
   lowestDay: { date: string; revenue: number };
 }
@@ -23,23 +13,16 @@ export interface AnalyticsData {
 export type TimePeriod = "7d" | "30d" | "3m" | "1y";
 
 export function useAnalyticsData(
-  venueId: string,
-  timePeriod: TimePeriod,
+
   customDateRange: { start: string; end: string } | null
 ) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
-    totalOrders: 0,
-    totalRevenue: 0,
-    averageOrderValue: 0,
-    menuItemsCount: 0,
-    revenueOverTime: [],
-    topSellingItems: [],
-    trendline: 0,
+
     peakDay: { date: "", revenue: 0 },
     lowestDay: { date: "", revenue: 0 },
-  });
+
   const [filteredOrders, setFilteredOrders] = useState<unknown[]>([]);
 
   const getDateRange = useCallback((period: TimePeriod) => {
@@ -71,12 +54,9 @@ export function useAnalyticsData(
 
       const { startDate, endDate } = customDateRange
         ? {
-            startDate: new Date(customDateRange.start),
-            endDate: new Date(customDateRange.end),
-          }
-        : getDateRange(timePeriod);
 
-      const supabase = createClient();
+          }
+
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select(
@@ -113,7 +93,6 @@ export function useAnalyticsData(
           order.venue_id !== "demo-cafe" &&
           order.payment_method !== "demo"
         );
-      });
 
       const totalOrders = validOrders.length;
       const totalRevenue = validOrders.reduce((sum: number, order: Record<string, unknown>) => {
@@ -134,9 +113,7 @@ export function useAnalyticsData(
         revenueOverTime.length > 0
           ? revenueOverTime.reduce((sum, period) => sum + period.revenue, 0) /
             revenueOverTime.length
-          : 0;
 
-      // Find peak and lowest days
       const { peakDay, lowestDay } = findPeakAndLowestDays(revenueOverTime);
 
       // Mark current period
@@ -152,7 +129,6 @@ export function useAnalyticsData(
         trendline,
         peakDay,
         lowestDay,
-      });
 
       setFilteredOrders(validOrders);
     } catch (_err) {
@@ -172,30 +148,16 @@ export function useAnalyticsData(
     error,
     analyticsData,
     filteredOrders,
-    refetch: fetchAnalyticsData,
+
   };
 }
 
 function generateRevenueOverTime(
   orders: Record<string, unknown>[],
-  startDate: Date,
-  endDate: Date,
-  timePeriod: TimePeriod
-): Array<{
-  date: string;
-  revenue: number;
-  orders: number;
-  isCurrentPeriod?: boolean;
-  isPeak?: boolean;
-  isLowest?: boolean;
+
 }> {
   const revenueOverTime: Array<{
-    date: string;
-    revenue: number;
-    orders: number;
-    isCurrentPeriod?: boolean;
-    isPeak?: boolean;
-    isLowest?: boolean;
+
   }> = [];
   const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -223,9 +185,7 @@ function generateRevenueOverTime(
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
       allDays.push({
-        date: currentDate.toISOString().split("T")[0],
-        dateObj: new Date(currentDate),
-      });
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
     periods.length = 0;
@@ -241,7 +201,7 @@ function generateRevenueOverTime(
         const createdAt = typeof order.created_at === "string" ? order.created_at : "";
         const orderDate = createdAt.split("T")[0];
         return orderDate === dateStr;
-      });
+
     } else if (dateFormat === "week") {
       const endOfWeek = new Date(period.dateObj);
       endOfWeek.setDate(period.dateObj.getDate() + 6);
@@ -251,7 +211,7 @@ function generateRevenueOverTime(
         const createdAt = typeof order.created_at === "string" ? order.created_at : "";
         const orderDate = createdAt.split("T")[0];
         return orderDate >= dateStr && orderDate <= weekEndStr;
-      });
+
     } else if (dateFormat === "month") {
       const endOfMonth = new Date(period.dateObj);
       endOfMonth.setMonth(period.dateObj.getMonth() + 1, 0);
@@ -261,7 +221,7 @@ function generateRevenueOverTime(
         const createdAt = typeof order.created_at === "string" ? order.created_at : "";
         const orderDate = createdAt.split("T")[0];
         return orderDate >= dateStr && orderDate <= monthEndStr;
-      });
+
     }
 
     const periodRevenue = periodOrdersList.reduce((sum: number, order: Record<string, unknown>) => {
@@ -271,13 +231,7 @@ function generateRevenueOverTime(
     const periodOrders = periodOrdersList.length;
 
     revenueOverTime.push({
-      date: dateStr,
-      revenue: periodRevenue,
-      orders: periodOrders,
-      isCurrentPeriod: false,
-      isPeak: false,
-      isLowest: false,
-    });
+
   }
 
   return revenueOverTime;
@@ -304,9 +258,8 @@ function generateTopSellingItems(orders: Record<string, unknown>[]) {
         } else {
           itemSales.set(itemName, { name: itemName, quantity, revenue });
         }
-      });
+
     }
-  });
 
   return Array.from(itemSales.values())
     .sort((a, b) => b.quantity - a.quantity)
@@ -323,44 +276,25 @@ function findPeakAndLowestDays(
     const sortedByRevenue = [...revenueOverTime].sort((a, b) => b.revenue - a.revenue);
     peakDay = { date: sortedByRevenue[0].date, revenue: sortedByRevenue[0].revenue };
     lowestDay = {
-      date: sortedByRevenue[sortedByRevenue.length - 1].date,
-      revenue: sortedByRevenue[sortedByRevenue.length - 1].revenue,
+
     };
 
     revenueOverTime.forEach((period) => {
       const periodRecord = period as {
-        date: string;
-        revenue: number;
-        isPeak?: boolean;
-        isLowest?: boolean;
+
       };
       if (periodRecord.date === peakDay.date) periodRecord.isPeak = true;
       if (periodRecord.date === lowestDay.date) periodRecord.isLowest = true;
-    });
+
   }
 
   return { peakDay, lowestDay };
 }
 
 function markCurrentPeriod(
-  revenueOverTime: Array<{
-    date: string;
-    revenue: number;
-    orders: number;
-    isCurrentPeriod?: boolean;
+
   }>,
-  timePeriod: TimePeriod
-) {
-  const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
 
-  let dateFormat: "day" | "week" | "month" = "day";
-  if (timePeriod === "3m") dateFormat = "week";
-  else if (timePeriod === "1y") dateFormat = "month";
-
-  revenueOverTime.forEach((period) => {
-    if (dateFormat === "day" && period.date === todayStr) {
-      period.isCurrentPeriod = true;
     } else if (dateFormat === "week") {
       const periodDate = new Date(period.date);
       const weekStart = new Date(periodDate);
@@ -380,5 +314,5 @@ function markCurrentPeriod(
         period.isCurrentPeriod = true;
       }
     }
-  });
+
 }

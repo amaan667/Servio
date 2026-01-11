@@ -29,9 +29,8 @@ export function normalizeForInsert(payload: MenuPayloadT) {
       description,
       price,
       category,
-      available: Boolean(it.available ?? true),
+
     };
-  });
 
   const categories = (payload.categories ?? []).map((c) => cleanStr(c)).filter(Boolean);
 

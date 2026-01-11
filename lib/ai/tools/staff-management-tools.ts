@@ -2,48 +2,27 @@
 // List staff, invite members, query roles, and schedules
 
 import { createAdminClient } from "@/lib/supabase";
-import { aiLogger } from "@/lib/logger";
 
 interface StaffListResult {
-  staff: Array<{
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    status: string;
-    joinedAt: string;
+
   }>;
-  count: number;
-  summary: string;
+
 }
 
 interface StaffInviteResult {
-  success: boolean;
-  inviteId: string;
-  email: string;
-  role: string;
-  message: string;
+
 }
 
 interface StaffRolesResult {
-  roles: Array<{
-    role: string;
-    permissions: string[];
-    count: number;
+
   }>;
-  summary: string;
+
 }
 
 interface StaffScheduleResult {
-  staff: Array<{
-    name: string;
-    role: string;
-    shiftStart?: string;
-    shiftEnd?: string;
-    status: string;
+
   }>;
-  count: number;
-  summary: string;
+
 }
 
 /**
@@ -52,7 +31,7 @@ interface StaffScheduleResult {
 export async function getAllStaff(venueId: string): Promise<StaffListResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI STAFF] Fetching all staff for venue: ${venueId}`);
+  
 
   // Get owner
   const { data: venue } = await supabase
@@ -80,7 +59,7 @@ export async function getAllStaff(venueId: string): Promise<StaffListResult> {
     .order("created_at", { ascending: true });
 
   if (rolesError) {
-    aiLogger.error("[AI STAFF] Error fetching staff roles:", rolesError);
+    
     throw new Error(`Failed to fetch staff: ${rolesError.message}`);
   }
 
@@ -98,13 +77,7 @@ export async function getAllStaff(venueId: string): Promise<StaffListResult> {
   // Add owner first
   if (ownerProfile) {
     staff.push({
-      id: venue.owner_user_id,
-      name: ownerProfile.full_name || "Owner",
-      email: ownerProfile.email || "",
-      role: "owner",
-      status: "active",
-      joinedAt: "N/A",
-    });
+
   }
 
   // Add staff members
@@ -112,19 +85,12 @@ export async function getAllStaff(venueId: string): Promise<StaffListResult> {
     const profile = profileMap.get(staffRole.user_id);
     if (profile) {
       staff.push({
-        id: staffRole.user_id,
-        name: profile.full_name || "Unknown",
-        email: profile.email || "",
-        role: staffRole.role,
-        status: staffRole.status || "active",
-        joinedAt: new Date(staffRole.created_at).toLocaleDateString(),
-      });
+
     }
-  });
 
   return {
     staff,
-    count: staff.length,
+
     summary: `${staff.length} staff members: 1 owner, ${staff.filter((s) => s.role === "manager").length} managers, ${staff.filter((s) => s.role === "server").length} servers.`,
   };
 }
@@ -133,14 +99,12 @@ export async function getAllStaff(venueId: string): Promise<StaffListResult> {
  * Invite a new staff member
  */
 export async function inviteStaffMember(
-  venueId: string,
-  email: string,
-  role: "manager" | "server",
+
   name?: string
 ): Promise<StaffInviteResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI STAFF] Inviting ${email} as ${role}`);
+  
 
   // Validate role
   if (!["manager", "server"].includes(role)) {
@@ -186,28 +150,27 @@ export async function inviteStaffMember(
   const { data: invitation, error: inviteError } = await supabase
     .from("staff_invitations")
     .insert({
-      venue_id: venueId,
+
       email,
       role,
-      invited_by: venue.owner_user_id,
+
       token,
-      status: "pending",
+
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-    })
+
     .select("id, token")
     .single();
 
   if (inviteError) {
-    aiLogger.error("[AI STAFF] Error creating invitation:", inviteError);
+    
     throw new Error(`Failed to send invitation: ${inviteError.message}`);
   }
 
   // In production, this would send an email invitation
-  aiLogger.info(`[AI STAFF] Invitation created: ${invitation.id}`);
+  
 
   return {
-    success: true,
-    inviteId: invitation.id,
+
     email,
     role,
     message: `Invitation sent to ${email} as ${role}. ${name ? `Name: ${name}. ` : ""}They have 7 days to accept.`,
@@ -220,7 +183,7 @@ export async function inviteStaffMember(
 export async function getStaffRoles(venueId: string): Promise<StaffRolesResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI STAFF] Fetching staff roles for venue: ${venueId}`);
+  
 
   const { data: staffRoles } = await supabase
     .from("user_venue_roles")
@@ -230,30 +193,26 @@ export async function getStaffRoles(venueId: string): Promise<StaffRolesResult> 
   const roleCounts = new Map<string, number>();
   staffRoles?.forEach((s) => {
     roleCounts.set(s.role, (roleCounts.get(s.role) || 0) + 1);
-  });
 
   // Add owner (always 1)
   roleCounts.set("owner", 1);
 
   const rolePermissions = {
-    owner: [
-      "Full access",
+
       "Manage staff",
       "Edit menu",
       "View analytics",
       "Manage billing",
       "Delete venue",
     ],
-    manager: [
-      "View analytics",
+
       "Edit menu",
       "Manage orders",
       "Manage tables",
       "View inventory",
       "Cannot manage billing",
     ],
-    server: [
-      "Take orders",
+
       "Update order status",
       "View tables",
       "Cannot edit menu",
@@ -263,7 +222,7 @@ export async function getStaffRoles(venueId: string): Promise<StaffRolesResult> 
 
   const roles = Array.from(roleCounts.entries()).map(([role, count]) => ({
     role,
-    permissions: rolePermissions[role as keyof typeof rolePermissions] || [],
+
     count,
   }));
 
@@ -280,7 +239,7 @@ export async function getStaffRoles(venueId: string): Promise<StaffRolesResult> 
 export async function getTodayStaffSchedule(venueId: string): Promise<StaffScheduleResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI STAFF] Fetching today's schedule for venue: ${venueId}`);
+  
 
   // Get all active staff
   const staffList = await getAllStaff(venueId);
@@ -290,16 +249,11 @@ export async function getTodayStaffSchedule(venueId: string): Promise<StaffSched
   const schedule = staffList.staff
     .filter((s) => s.status === "active")
     .map((s) => ({
-      name: s.name,
-      role: s.role,
-      shiftStart: undefined,
-      shiftEnd: undefined,
-      status: "on-duty",
+
     }));
 
   return {
-    staff: schedule,
-    count: schedule.length,
+
     summary: `${schedule.length} staff members on duty today: ${schedule.filter((s) => s.role === "server").length} servers, ${schedule.filter((s) => s.role === "manager").length} managers.`,
   };
 }
@@ -308,17 +262,9 @@ export async function getTodayStaffSchedule(venueId: string): Promise<StaffSched
  * Get staff performance metrics
  */
 export async function getStaffPerformance(
-  venueId: string,
-  timeRange: "week" | "month" = "week"
-): Promise<{
-  staff: Array<{
-    name: string;
-    role: string;
-    ordersHandled: number;
-    totalRevenue: number;
-    avgOrderValue: number;
+
   }>;
-  summary: string;
+
 }> {
   const supabase = createAdminClient();
 
@@ -346,7 +292,6 @@ export async function getStaffPerformance(
     existing.orders++;
     existing.revenue += order.total_amount || 0;
     staffMap.set(staffId, existing);
-  });
 
   // Get staff details
   const staffIds = Array.from(staffMap.keys()).filter((id) => id !== "unassigned");
@@ -367,19 +312,14 @@ export async function getStaffPerformance(
   const staff = Array.from(staffMap.entries())
     .filter(([staffId]) => staffId !== "unassigned")
     .map(([staffId, stats]) => ({
-      name: profileMap.get(staffId) || "Unknown",
-      role: roleMap.get(staffId) || "server",
-      ordersHandled: stats.orders,
-      totalRevenue: stats.revenue,
-      avgOrderValue: stats.orders > 0 ? stats.revenue / stats.orders : 0,
+
     }))
     .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
   return {
     staff,
-    summary:
-      staff.length > 0
+
         ? `Top performer: ${staff[0]?.name} with ${staff[0]?.ordersHandled} orders and £${staff[0]?.totalRevenue.toFixed(2)} revenue this ${timeRange}.`
-        : "No staff performance data available yet.",
+
   };
 }

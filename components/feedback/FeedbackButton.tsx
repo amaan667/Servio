@@ -19,8 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 type FeedbackType = "bug" | "feature" | "general";
 
 interface FeedbackButtonProps {
-  type: FeedbackType;
-  className?: string;
+
 }
 
 export function FeedbackButton({ type, className }: FeedbackButtonProps) {
@@ -32,32 +31,11 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
   const { toast } = useToast();
 
   const config = {
-    bug: {
-      icon: Bug,
-      title: "Report a Bug",
-      description: "Help us improve by reporting issues you encounter",
-      placeholder: "Describe the bug you encountered...",
-      buttonText: "Report Bug",
-      color: "destructive" as const,
-      bgColor: "bg-red-50 hover:bg-red-100 text-red-700 border-red-200",
+
     },
-    feature: {
-      icon: Lightbulb,
-      title: "Request a Feature",
-      description: "Share your ideas to make Servio better",
-      placeholder: "Describe the feature you'd like to see...",
-      buttonText: "Request Feature",
-      color: "default" as const,
-      bgColor: "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200",
+
     },
-    general: {
-      icon: MessageSquare,
-      title: "Send Feedback",
-      description: "Share your thoughts about Servio",
-      placeholder: "Your feedback...",
-      buttonText: "Send Feedback",
-      color: "default" as const,
-      bgColor: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200",
+
     },
   };
 
@@ -66,10 +44,7 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
   const handleSubmit = async () => {
     if (!description.trim()) {
       toast({
-        title: "Missing information",
-        description: "Please provide a description",
-        variant: "destructive",
-      });
+
       return;
     }
 
@@ -77,26 +52,18 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
 
     try {
       const response = await fetch("/api/pilot-feedback", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          title:
-            title ||
+
             `${type === "bug" ? "Bug Report" : type === "feature" ? "Feature Request" : "Feedback"}`,
           description,
           email,
-          userAgent: navigator.userAgent,
-          timestamp: new Date().toISOString(),
+
         }),
-      });
 
       if (!response.ok) throw new Error("Failed to submit feedback");
 
       toast({
-        title: "Thank you!",
-        description: "Your feedback has been submitted successfully",
-      });
 
       setTitle("");
       setDescription("");
@@ -104,10 +71,7 @@ export function FeedbackButton({ type, className }: FeedbackButtonProps) {
       setOpen(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to submit feedback. Please try again.",
-        variant: "destructive",
-      });
+
     } finally {
       setLoading(false);
     }

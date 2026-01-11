@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,13 +10,8 @@ import { validateBody, validateParams } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const seatTableSchema = z.object({
-  customerName: z.string().min(1).max(100).optional(),
-  partySize: z.number().int().positive().max(50).optional(),
-});
 
 const tableIdParamSchema = z.object({
-  tableId: z.string().uuid("Invalid table ID"),
-});
 
 // POST /api/tables/[tableId]/seat - Seat a party at a table
 type TableParams = { params?: { tableId?: string } };
@@ -61,50 +55,31 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
           .from("table_sessions")
           .upsert(
             {
-              table_id: validatedParams.tableId,
-              venue_id: table.venue_id,
-              customer_name: body.customerName || null,
-              party_size: body.partySize || null,
-              status: "OPEN",
-              opened_at: new Date().toISOString(),
+
             },
             {
-              onConflict: "table_id",
+
             }
           )
           .select()
           .single();
 
         if (sessionError) {
-          logger.error("[TABLES SEAT] Error creating session:", {
-            error: sessionError.message,
-            tableId: validatedParams.tableId,
-            venueId: authContext.venueId,
-            userId: authContext.user.id,
-          });
+          
           return apiErrors.database(
             "Failed to seat party",
             isDevelopment() ? sessionError.message : undefined
           );
         }
 
-        logger.info("[TABLES SEAT] Party seated successfully", {
-          tableId: validatedParams.tableId,
-          venueId: authContext.venueId,
-          userId: authContext.user.id,
-        });
+        
 
         // STEP 4: Return success response
         return success({
           session,
           table,
-        });
+
       } catch (error) {
-        logger.error("[TABLES SEAT] Unexpected error:", {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          userId: authContext.user.id,
-        });
 
         if (isZodError(error)) {
           return handleZodError(error);
@@ -140,5 +115,5 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-  });
+
 }

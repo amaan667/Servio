@@ -21,7 +21,6 @@ export function useOrderCart() {
     } catch {
       return [];
     }
-  });
 
   // Persist cart to localStorage whenever it changes
   useEffect(() => {
@@ -58,7 +57,6 @@ export function useOrderCart() {
           const cartModifiers = JSON.stringify(cartItem.selectedModifiers || {});
           const itemModifiers = JSON.stringify(item.selectedModifiers || {});
           return cartModifiers === itemModifiers;
-        });
 
         if (existing) {
           return prev.map((cartItem) =>
@@ -67,21 +65,18 @@ export function useOrderCart() {
               JSON.stringify(item.selectedModifiers || {})
               ? {
                   ...cartItem,
-                  quantity: cartItem.quantity + 1,
+
                 }
-              : cartItem
-          );
+
         }
         return [
           ...prev,
           {
             ...item,
-            quantity: 1,
-            selectedModifiers: item.selectedModifiers,
-            modifierPrice: item.modifierPrice || 0,
+
           },
         ];
-      });
+
     },
     []
   );

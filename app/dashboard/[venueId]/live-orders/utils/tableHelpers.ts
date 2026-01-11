@@ -27,10 +27,9 @@ export const getTableSummary = (orders: Order[]) => {
 
   return {
     total,
-    orderCount: orders.length,
+
     overallStatus,
     overallPaymentStatus,
-    statuses: uniqueStatuses,
-    paymentStatuses: uniquePaymentStatuses,
+
   };
 };

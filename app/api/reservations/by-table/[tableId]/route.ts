@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -8,7 +7,7 @@ import { isDevelopment } from "@/lib/env";
 export const runtime = "nodejs";
 
 export async function GET(
-  _req: NextRequest,
+
   routeContext: { params: Promise<{ tableId: string }> }
 ) {
   // Wrap with withUnifiedAuth - need to extract venueId from table
@@ -20,7 +19,7 @@ export async function GET(
         if (!rateLimitResult.success) {
           return NextResponse.json(
             {
-              error: "Too many requests",
+
               message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
             },
             { status: 429 }
@@ -32,8 +31,7 @@ export async function GET(
         if (!tableId) {
           return NextResponse.json(
             {
-              ok: false,
-              error: "tableId is required",
+
             },
             { status: 400 }
           );
@@ -51,15 +49,10 @@ export async function GET(
           .single();
 
         if (tableError || !table) {
-          logger.error("[GET RESERVATION BY TABLE] Table not found or venue mismatch:", {
-            tableId,
-            venueId: authContext.venueId,
-            error: tableError,
-          });
+          
           return NextResponse.json(
             {
-              ok: false,
-              error: "Table not found or access denied",
+
             },
             { status: 404 }
           );
@@ -77,42 +70,29 @@ export async function GET(
           .maybeSingle();
 
         if (reservationError) {
-          logger.error("[GET RESERVATION BY TABLE] Error fetching reservation:", {
-            tableId,
-            venueId: authContext.venueId,
-            error: reservationError,
-          });
+          
           return NextResponse.json(
             {
-              ok: false,
-              error: "Failed to fetch reservation",
-              message: isDevelopment() ? reservationError.message : "Database query failed",
+
             },
             { status: 500 }
           );
         }
 
         return NextResponse.json({
-          ok: true,
-          reservation: reservation || null,
-        });
+
       } catch (_error) {
         const errorMessage =
           _error instanceof Error ? _error.message : "An unexpected error occurred";
         const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-        logger.error("[GET RESERVATION BY TABLE] Unexpected error:", {
-          error: errorMessage,
-          stack: errorStack,
-        });
+        
 
         // Check if it's an authentication/authorization error
         if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
           return NextResponse.json(
             {
-              ok: false,
-              error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-              message: errorMessage,
+
             },
             { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
           );
@@ -120,9 +100,7 @@ export async function GET(
 
         return NextResponse.json(
           {
-            ok: false,
-            error: "Internal Server Error",
-            message: isDevelopment() ? errorMessage : "Failed to fetch reservation",
+
             ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
           },
           { status: 500 }
@@ -131,14 +109,7 @@ export async function GET(
     },
     {
       // Extract venueId from table lookup
-      extractVenueId: async (req) => {
-        try {
-          // Get tableId from URL path
-          const url = new URL(req.url);
-          const pathParts = url.pathname.split("/");
-          const tableIdIndex = pathParts.indexOf("by-table");
-          if (tableIdIndex !== -1 && pathParts[tableIdIndex + 1]) {
-            const tableId = pathParts[tableIdIndex + 1];
+
             const { createAdminClient } = await import("@/lib/supabase");
             const admin = createAdminClient();
             const { data: table } = await admin

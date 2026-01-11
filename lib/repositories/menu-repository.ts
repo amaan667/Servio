@@ -5,33 +5,13 @@
 
 import { BaseRepository } from "./base-repository";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
 
 export interface MenuItem {
-  id: string;
-  venue_id: string;
-  name: string;
-  description?: string;
-  price: number;
-  category: string;
-  category_id?: string;
-  image_url?: string;
-  is_available: boolean;
-  preparation_time?: number;
-  allergens?: string[];
-  dietary_tags?: string[];
-  created_at: string;
-  updated_at: string;
+
 }
 
 export interface MenuCategory {
-  id: string;
-  venue_id: string;
-  name: string;
-  description?: string;
-  display_order: number;
-  is_active: boolean;
-  created_at: string;
+
 }
 
 export class MenuRepository extends BaseRepository<MenuItem> {
@@ -60,16 +40,13 @@ export class MenuRepository extends BaseRepository<MenuItem> {
       const { data, error } = await query;
 
       if (error) {
-        logger.error("[MENU_REPO] Error finding menu by venue", { error, venueId });
+        
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-      logger.error("[MENU_REPO] Unexpected error finding menu by venue", {
-        error: _error,
-        venueId,
-      });
+      
       throw _error;
     }
   }
@@ -79,9 +56,7 @@ export class MenuRepository extends BaseRepository<MenuItem> {
    */
   async findByCategory(venueId: string, categoryId: string): Promise<MenuItem[]> {
     return this.findAll({
-      venue_id: venueId,
-      category_id: categoryId,
-      is_available: true,
+
     } as Partial<MenuItem>);
   }
 
@@ -100,17 +75,13 @@ export class MenuRepository extends BaseRepository<MenuItem> {
         .limit(50);
 
       if (error) {
-        logger.error("[MENU_REPO] Error searching menu items", { error, venueId, query });
+        
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-      logger.error("[MENU_REPO] Unexpected error searching menu items", {
-        error: _error,
-        venueId,
-        query,
-      });
+      
       throw _error;
     }
   }
@@ -128,13 +99,13 @@ export class MenuRepository extends BaseRepository<MenuItem> {
         .order("display_order");
 
       if (error) {
-        logger.error("[MENU_REPO] Error getting categories", { error, venueId });
+        
         throw error;
       }
 
       return (data as MenuCategory[]) || [];
     } catch (_error) {
-      logger.error("[MENU_REPO] Unexpected error getting categories", { error: _error, venueId });
+      
       throw _error;
     }
   }
@@ -151,16 +122,13 @@ export class MenuRepository extends BaseRepository<MenuItem> {
         .select();
 
       if (error) {
-        logger.error("[MENU_REPO] Error bulk updating availability", { error, itemIds });
+        
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-      logger.error("[MENU_REPO] Unexpected error bulk updating availability", {
-        error: _error,
-        itemIds,
-      });
+      
       throw _error;
     }
   }

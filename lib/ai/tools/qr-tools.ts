@@ -2,56 +2,32 @@
 // Generate, manage, and export QR codes for tables and counters
 
 import { createAdminClient } from "@/lib/supabase";
-import { aiLogger } from "@/lib/logger";
 
 interface QRCodeGenerationResult {
-  success: boolean;
-  qrCodes: Array<{
-    id: string;
-    label: string;
-    type: "table" | "counter";
-    url: string;
+
   }>;
-  message: string;
+
 }
 
 interface QRCodeListResult {
-  tables: Array<{
-    id: string;
-    label: string;
-    qrUrl: string;
-    status: string;
+
   }>;
-  counters: Array<{
-    id: string;
-    label: string;
-    qrUrl: string;
-    status: string;
+
   }>;
-  summary: string;
+
 }
 
 /**
  * Generate QR code for a specific table
  */
 export async function generateTableQRCode(
-  venueId: string,
-  tableLabel: string
-): Promise<QRCodeGenerationResult> {
-  aiLogger.info(`[AI QR] Generating QR code for table: ${tableLabel}`);
 
-  // Generate QR URL (no database table required - QR works regardless)
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
   const qrUrl = `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(tableLabel)}`;
 
   return {
-    success: true,
-    qrCodes: [
-      {
+
         id: `qr-${tableLabel}`, // Just a unique ID for the QR code
-        label: tableLabel,
-        type: "table",
-        url: qrUrl,
+
       },
     ],
     message: `QR code generated for ${tableLabel}. View it on the QR Codes page to download.`,
@@ -62,17 +38,9 @@ export async function generateTableQRCode(
  * Generate QR codes for multiple tables in bulk
  */
 export async function generateBulkTableQRCodes(
-  venueId: string,
-  startNumber: number,
-  endNumber: number,
-  prefix?: string,
-  type: "table" | "counter" = "table"
-): Promise<QRCodeGenerationResult> {
-  const actualPrefix = prefix || (type === "table" ? "Table" : "Counter");
-  aiLogger.info(`[AI QR] Generating bulk QR codes for ${actualPrefix} ${startNumber}-${endNumber}`);
 
-  if (startNumber < 1 || endNumber < startNumber || endNumber - startNumber > 100) {
-    throw new Error("Invalid range. Please specify 1-100 items.");
+  prefix?: string,
+
   }
 
   const qrCodes: QRCodeGenerationResult["qrCodes"] = [];
@@ -87,11 +55,11 @@ export async function generateBulkTableQRCodes(
       label,
       type,
       url: `${baseUrl}/order?venue=${venueId}&${paramName}=${encodeURIComponent(label)}`,
-    });
+
   }
 
   return {
-    success: true,
+
     qrCodes,
     message: `Generated ${qrCodes.length} QR codes for ${actualPrefix} ${startNumber}-${endNumber}. View them on the QR Codes page to download.`,
   };
@@ -102,23 +70,13 @@ export async function generateBulkTableQRCodes(
  * NOTE: This only generates the QR code URL, it does NOT create the counter in the database
  */
 export async function generateCounterQRCode(
-  venueId: string,
-  counterLabel: string
-): Promise<QRCodeGenerationResult> {
-  aiLogger.info(`[AI QR] Generating QR code for counter: ${counterLabel}`);
 
-  // Generate QR URL (no database counter required - QR works regardless)
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
   const qrUrl = `${baseUrl}/order?venue=${venueId}&counter=${encodeURIComponent(counterLabel)}`;
 
   return {
-    success: true,
-    qrCodes: [
-      {
+
         id: `qr-${counterLabel}`,
-        label: counterLabel,
-        type: "counter",
-        url: qrUrl,
+
       },
     ],
     message: `QR code generated for counter "${counterLabel}". View it on the QR Codes page to download.`,
@@ -131,7 +89,7 @@ export async function generateCounterQRCode(
 export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI QR] Listing all QR codes for venue: ${venueId}`);
+  
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
 
@@ -153,23 +111,20 @@ export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult>
 
   const tableQRs =
     tables?.map((table) => ({
-      id: table.id,
-      label: table.label,
+
       qrUrl: `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(table.label)}`,
-      status: "active",
+
     })) || [];
 
   const counterQRs =
     counters?.map((counter) => ({
-      id: counter.id,
-      label: counter.name,
+
       qrUrl: `${baseUrl}/order?venue=${venueId}&counter=${encodeURIComponent(counter.name)}`,
-      status: "active",
+
     })) || [];
 
   return {
-    tables: tableQRs,
-    counters: counterQRs,
+
     summary: `Found ${tableQRs.length} table QR codes and ${counterQRs.length} counter QR codes.`,
   };
 }
@@ -179,13 +134,11 @@ export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult>
  * Returns data that can be used to generate PDF
  */
 export async function prepareQRCodePDFData(venueId: string): Promise<{
-  success: boolean;
-  data: {
-    venueName: string;
+
     tables: Array<{ label: string; url: string }>;
     counters: Array<{ label: string; url: string }>;
   };
-  message: string;
+
 }> {
   const qrData = await listAllQRCodes(venueId);
   const supabase = createAdminClient();
@@ -197,9 +150,7 @@ export async function prepareQRCodePDFData(venueId: string): Promise<{
     .single();
 
   return {
-    success: true,
-    data: {
-      venueName: venue?.venue_name || "Venue",
+
       tables: qrData.tables.map((t) => ({ label: t.label, url: t.qrUrl })),
       counters: qrData.counters.map((c) => ({ label: c.label, url: c.qrUrl })),
     },

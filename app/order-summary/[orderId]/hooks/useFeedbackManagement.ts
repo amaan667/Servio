@@ -3,20 +3,11 @@ import { createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 
 export interface FeedbackQuestion {
-  id: string;
-  prompt: string;
-  type: "stars" | "paragraph" | "multiple_choice";
-  choices?: string[];
-  is_active: boolean;
-  sort_index: number;
+
 }
 
 export interface FeedbackResponse {
-  question_id: string;
-  type: string;
-  answer_stars?: number;
-  answer_text?: string;
-  answer_choice?: string;
+
 }
 
 export function useFeedbackManagement(venueId: string) {
@@ -54,10 +45,7 @@ export function useFeedbackManagement(venueId: string) {
   const submitFeedback = async (orderId: string) => {
     if (feedbackResponses.length === 0) {
       toast({
-        title: "No Feedback",
-        description: "Please provide some feedback before submitting",
-        variant: "destructive",
-      });
+
       return;
     }
 
@@ -68,8 +56,7 @@ export function useFeedbackManagement(venueId: string) {
 
       const { error } = await supabase.from("feedback_responses").insert(
         feedbackResponses.map((response) => ({
-          order_id: orderId,
-          venue_id: venueId,
+
           ...response,
         }))
       );
@@ -77,17 +64,11 @@ export function useFeedbackManagement(venueId: string) {
       if (error) throw error;
 
       toast({
-        title: "Thank You!",
-        description: "Your feedback has been submitted successfully",
-      });
 
       setFeedbackResponses([]);
     } catch (_err) {
       toast({
-        title: "Error",
-        description: "Failed to submit feedback",
-        variant: "destructive",
-      });
+
     } finally {
       setSubmittingFeedback(false);
     }
@@ -100,7 +81,7 @@ export function useFeedbackManagement(venueId: string) {
         return prev.map((r) => (r.question_id === questionId ? { ...r, ...response } : r));
       }
       return [...prev, { question_id: questionId, type: "", ...response }];
-    });
+
   };
 
   return {

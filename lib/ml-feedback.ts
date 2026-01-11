@@ -4,26 +4,14 @@
  */
 
 import { createAdminClient } from "./supabase";
-import { logger } from "./logger";
 
 interface MatchCorrection {
-  venueId: string;
-  pdfItemName: string;
-  urlItemName: string;
-  similarityScore: number;
-  wasMatched: boolean;
-  shouldMatch: boolean;
-  correctedBy: string;
+
   metadata?: Record<string, unknown>;
 }
 
 interface CategoryCorrection {
-  venueId: string;
-  itemName: string;
-  aiSuggestedCategory: string;
-  userAssignedCategory: string;
-  confidenceScore: number;
-  correctedBy: string;
+
   metadata?: Record<string, unknown>;
 }
 
@@ -37,40 +25,21 @@ export async function recordMatchCorrection(correction: MatchCorrection) {
     const correctionType =
       correction.wasMatched === correction.shouldMatch
         ? "correct"
-        : correction.shouldMatch
-          ? "false_negative" // Should have matched but didn't
-          : "false_positive"; // Matched but shouldn't have
 
     const { error } = await supabase.from("match_corrections").insert({
-      venue_id: correction.venueId,
-      pdf_item_name: correction.pdfItemName,
-      url_item_name: correction.urlItemName,
-      similarity_score: correction.similarityScore,
-      was_matched: correction.wasMatched,
-      should_match: correction.shouldMatch,
-      correction_type: correctionType,
-      corrected_by: correction.correctedBy,
+
       metadata: correction.metadata || {},
-    });
 
     if (error) {
-      logger.error("[ML FEEDBACK] Failed to record match correction", {
-        error: error.message,
-      });
+      
       return false;
     }
 
-    logger.info("[ML FEEDBACK] Match correction recorded", {
-      correctionType,
-      pdfItem: correction.pdfItemName,
-      urlItem: correction.urlItemName,
-    });
+    
 
     return true;
   } catch (error) {
-    logger.error("[ML FEEDBACK] Error recording match correction", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     return false;
   }
 }
@@ -85,35 +54,19 @@ export async function recordCategoryCorrection(correction: CategoryCorrection) {
     const wasCorrect = correction.aiSuggestedCategory === correction.userAssignedCategory;
 
     const { error } = await supabase.from("category_corrections").insert({
-      venue_id: correction.venueId,
-      item_name: correction.itemName,
-      ai_suggested_category: correction.aiSuggestedCategory,
-      user_assigned_category: correction.userAssignedCategory,
-      confidence_score: correction.confidenceScore,
-      was_correct: wasCorrect,
-      corrected_by: correction.correctedBy,
+
       metadata: correction.metadata || {},
-    });
 
     if (error) {
-      logger.error("[ML FEEDBACK] Failed to record category correction", {
-        error: error.message,
-      });
+      
       return false;
     }
 
-    logger.info("[ML FEEDBACK] Category correction recorded", {
-      wasCorrect,
-      item: correction.itemName,
-      aiSuggested: correction.aiSuggestedCategory,
-      userAssigned: correction.userAssignedCategory,
-    });
+    
 
     return true;
   } catch (error) {
-    logger.error("[ML FEEDBACK] Error recording category correction", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     return false;
   }
 }
@@ -122,13 +75,7 @@ export async function recordCategoryCorrection(correction: CategoryCorrection) {
  * Get adaptive matching threshold based on historical corrections
  */
 export async function getAdaptiveMatchingThreshold(
-  venueId: string,
-  defaultThreshold: number = 0.5
-): Promise<number> {
-  try {
-    const supabase = createAdminClient();
 
-    // Get false negatives (items that should have matched but didn't)
     const { data: falseNegatives } = await supabase
       .from("match_corrections")
       .select("similarity_score")
@@ -151,19 +98,11 @@ export async function getAdaptiveMatchingThreshold(
     // This ensures we don't miss similar items in the future
     const adaptiveThreshold = Math.max(0.3, Math.min(0.7, avgFalseNegativeScore * 0.9));
 
-    logger.info("[ML FEEDBACK] Adaptive threshold calculated", {
-      venueId,
-      defaultThreshold,
-      adaptiveThreshold,
-      falseNegativesAnalyzed: falseNegatives.length,
-      avgFalseNegativeScore,
-    });
+    
 
     return adaptiveThreshold;
   } catch (error) {
-    logger.error("[ML FEEDBACK] Error calculating adaptive threshold", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     return defaultThreshold;
   }
 }
@@ -176,23 +115,15 @@ export async function getAIAccuracyMetrics(venueId?: string, days: number = 30) 
     const supabase = createAdminClient();
 
     const { data, error } = await supabase.rpc("get_ai_accuracy_rate", {
-      p_venue_id: venueId || null,
-      p_metric_type: "matching",
-      p_days: days,
-    });
 
     if (error) {
-      logger.error("[ML FEEDBACK] Error fetching accuracy metrics", {
-        error: error.message,
-      });
+      
       return null;
     }
 
     return data?.[0] || null;
   } catch (error) {
-    logger.error("[ML FEEDBACK] Error getting accuracy metrics", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     return null;
   }
 }
@@ -201,10 +132,7 @@ export async function getAIAccuracyMetrics(venueId?: string, days: number = 30) 
  * Record AI performance metric
  */
 export async function recordAIPerformanceMetric(
-  metricType: "matching" | "categorization" | "extraction",
-  success: boolean,
-  confidence: number,
-  processingTimeMs: number,
+
   metadata?: Record<string, unknown>
 ) {
   try {
@@ -234,33 +162,21 @@ export async function recordAIPerformanceMetric(
       await supabase
         .from("ai_performance_metrics")
         .update({
-          total_attempts: totalAttempts,
-          successful_attempts: successfulAttempts,
-          failed_attempts: failedAttempts,
-          avg_confidence: avgConfidence,
-          avg_processing_time_ms: avgProcessingTime,
+
           metadata: { ...(existing.metadata || {}), ...(metadata || {}) },
-        })
+
         .eq("id", existing.id);
     } else {
       // Create new
       await supabase.from("ai_performance_metrics").insert({
-        metric_type: metricType,
-        metric_date: today,
-        total_attempts: 1,
-        successful_attempts: success ? 1 : 0,
-        failed_attempts: success ? 0 : 1,
-        avg_confidence: confidence,
-        avg_processing_time_ms: processingTimeMs,
+
         metadata: metadata || {},
-      });
+
     }
 
     return true;
   } catch (error) {
-    logger.error("[ML FEEDBACK] Error recording performance metric", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     return false;
   }
 }

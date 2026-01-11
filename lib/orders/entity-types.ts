@@ -3,7 +3,7 @@
 export type EntityKind = "table" | "counter" | "unassigned";
 
 export interface OrderForEntityKind {
-  table_id: string | null;
+
   table?: { is_configured: boolean } | null;
   source?: "qr_table" | "qr_counter" | "qr" | "counter" | "pos" | "manual" | "unknown";
 }
@@ -17,10 +17,7 @@ export interface OrderForEntityKind {
  * - Never infer from UI route; only from data
  */
 export function deriveEntityKind(
-  order: OrderForEntityKind & {
-    table_number?: number | null;
-    table_label?: string | null;
-    counter_label?: string | null;
+
   }
 ): EntityKind {
   // If we have an explicit counter_label and no table_label, it's a counter order
@@ -68,9 +65,7 @@ export function deriveEntityKind(
  * Only show for till/later unpaid orders
  */
 export function shouldShowUnpaidChip(order: {
-  payment: {
-    mode: "online" | "pay_at_till" | "pay_later";
-    status: "paid" | "unpaid" | "failed" | "refunded";
+
   };
 }): boolean {
   return (

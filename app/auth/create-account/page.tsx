@@ -10,11 +10,7 @@ import { Loader2 } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface StripeSessionData {
-  id: string;
-  customer_email?: string;
-  metadata: {
-    full_name: string;
-    tier: string;
+
   };
 }
 
@@ -26,13 +22,6 @@ export default function CreateAccountPage() {
   const [sessionData, setSessionData] = useState<StripeSessionData | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    fullName: "",
-    venueName: "",
-    businessType: "Restaurant",
-    serviceType: "table_service",
-  });
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -71,13 +60,7 @@ export default function CreateAccountPage() {
         // Session data received
 
         setFormData({
-          email: stripeEmail,
-          password: "",
-          fullName: stripeFullName,
-          venueName: "",
-          businessType: "Restaurant",
-          serviceType: "table_service",
-        });
+
         setStatus("form");
       } catch (_err) {
         setError(_err instanceof Error ? _err.message : "Failed to fetch session details.");
@@ -122,19 +105,10 @@ export default function CreateAccountPage() {
 
     try {
       const response = await fetch("/api/signup/with-subscription", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email.trim(),
-          password: formData.password,
-          fullName: formData.fullName.trim(),
-          venueName: formData.venueName.trim(),
-          venueType: formData.businessType,
-          serviceType: formData.serviceType,
-          tier: sessionData.metadata.tier,
-          stripeSessionId: sessionData.id,
+
         }),
-      });
 
       const data = await response.json();
 
@@ -142,10 +116,7 @@ export default function CreateAccountPage() {
         // Show detailed error message
         const errorMessage = data.details
           ? `${data.error}: ${data.details}`
-          : data.error || "Failed to create account. Please try again.";
-        setError(errorMessage);
-        setLoading(false);
-        return;
+
       }
 
       // Send verification email

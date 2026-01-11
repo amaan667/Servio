@@ -5,16 +5,7 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 
 interface FeedbackClientPageProps {
-  venueId: string;
-  tier: string;
-  role: string;
-  hasAccess: boolean;
-  initialQuestions?: Array<{
-    id: string;
-    prompt: string;
-    type: string;
-    choices: string[];
-    is_active: boolean;
+
   }>;
 }
 

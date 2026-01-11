@@ -5,24 +5,7 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 const supabase = createClient();
 
 export interface TableOrder {
-  id: string;
-  table_number: number;
-  customer_name: string | null;
-  customer_phone: string | null;
-  order_status: string;
-  payment_status: string;
-  payment_mode?: string;
-  payment_method?: string;
-  stripe_session_id?: string | null;
-  total_amount: number;
-  created_at: string;
-  updated_at: string;
-  source: "qr" | "counter";
-  table_label: string | null;
-  items: Array<{
-    item_name: string;
-    quantity: number;
-    price: number;
+
   }>;
 }
 
@@ -32,9 +15,7 @@ const ACTIVE_TABLE_ORDER_STATUSES = ["PLACED", "IN_PREP", "READY", "SERVING", "S
 export function useTableOrders(venueId: string) {
   return useQuery({
     queryKey: ["table-orders", venueId],
-    queryFn: async () => {
-      // Only show today's active orders for table management (respects daily reset)
-      const todayStart = new Date();
+
       todayStart.setHours(0, 0, 0, 0);
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
@@ -91,7 +72,6 @@ export function useTableOrders(venueId: string) {
           typeof sessionId === "string" &&
           sessionId.length > 0
         );
-      });
 
       // Limit reconciliation to avoid spamming Stripe in extreme edge cases
       await Promise.allSettled(
@@ -100,7 +80,7 @@ export function useTableOrders(venueId: string) {
           await fetch(`/api/orders/verify?sessionId=${encodeURIComponent(sessionId)}`).catch(
             () => null
           );
-        })
+
       );
 
       // Get table labels for each order using table_number
@@ -158,29 +138,24 @@ export function useTableOrders(venueId: string) {
 
           return {
             ...order,
-            table_label: finalTableLabel,
+
           } as TableOrder;
-        })
+
       );
 
       return ordersWithTableLabels;
     },
-    refetchInterval: 15000,
+
     staleTime: 0, // Always consider data stale to ensure fresh data on navigation
     refetchOnMount: true, // Always refetch when component mounts
-    gcTime: 30000,
-    retry: 3,
-    retryDelay: 1000,
-  });
+
 }
 
 // Get table order counts
 export function useTableOrderCounts(venueId: string) {
   return useQuery({
     queryKey: ["table-order-counts", venueId],
-    queryFn: async () => {
-      // Count today's active orders (must match useTableOrders filter to keep UI consistent)
-      const todayStart = new Date();
+
       todayStart.setHours(0, 0, 0, 0);
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
@@ -224,19 +199,13 @@ export function useTableOrderCounts(venueId: string) {
 
       return {
         total,
-        placed: byStatus.PLACED || 0,
-        in_prep: byStatus.IN_PREP || 0,
-        ready: byStatus.READY || 0,
-        serving: (byStatus.SERVING || 0) + (byStatus.SERVED || 0),
+
       };
     },
-    refetchInterval: 15000,
+
     staleTime: 0, // Always consider data stale to ensure fresh data on navigation
     refetchOnMount: true, // Always refetch when component mounts
-    gcTime: 30000,
-    retry: 3,
-    retryDelay: 1000,
-  });
+
 }
 
 // Real-time subscription hook for table orders
@@ -253,13 +222,11 @@ export function useTableOrdersRealtime(venueId: string) {
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "orders",
+
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: {
-          eventType: string;
+
           new?: Record<string, unknown>;
           old?: Record<string, unknown>;
         }) => {
@@ -274,7 +241,6 @@ export function useTableOrdersRealtime(venueId: string) {
       )
       .subscribe((_status: string) => {
         // Subscription maintained for real-time updates
-      });
 
     return () => {
       supabase.removeChannel(channel);

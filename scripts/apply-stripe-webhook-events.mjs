@@ -6,14 +6,12 @@ import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
-import { logger } from "../lib/logger/production-logger";
 
 const REQUIRED_MIGRATION = "20251210000100_add_stripe_webhook_events.sql";
 
 function requireEnv(name) {
   const value = process.env[name];
   if (!value) {
-    logger.error(`Missing required env: ${name}`);
     process.exit(1);
   }
   return value;
@@ -30,18 +28,15 @@ function getSupabase() {
 
 async function ensureMigrationsTable(supabase) {
   const { error } = await supabase.rpc("exec_sql", {
-    sql: `
-      CREATE TABLE IF NOT EXISTS _migrations (
-        id SERIAL PRIMARY KEY,
+
         name TEXT NOT NULL UNIQUE,
         executed_at TIMESTAMP DEFAULT NOW(),
         checksum TEXT
       );
       CREATE INDEX IF NOT EXISTS idx_migrations_name ON _migrations(name);
     `,
-  });
+
   if (error) {
-    logger.error("Failed to ensure _migrations table", error);
     process.exit(2);
   }
 }
@@ -53,7 +48,6 @@ async function migrationApplied(supabase) {
     .eq("name", REQUIRED_MIGRATION)
     .limit(1);
   if (error) {
-    logger.error("Failed to query _migrations", error);
     process.exit(3);
   }
   return (data ?? []).length > 0;
@@ -66,16 +60,13 @@ async function applyMigration(supabase) {
 
   const { error } = await supabase.rpc("exec_sql", { sql });
   if (error) {
-    logger.error(`Migration failed: ${REQUIRED_MIGRATION}`, error);
     process.exit(4);
   }
 
   const { error: recordError } = await supabase.from("_migrations").insert({
-    name: REQUIRED_MIGRATION,
-    checksum: null,
-  });
+
   if (recordError) {
-    logger.error("Failed to record migration", recordError);
+    
     process.exit(5);
   }
 }
@@ -83,7 +74,6 @@ async function applyMigration(supabase) {
 async function verifyTable(supabase) {
   const { error } = await supabase.from("stripe_webhook_events").select("id").limit(1);
   if (error) {
-    logger.error("stripe_webhook_events table verification failed", error);
     process.exit(6);
   }
 }
@@ -94,19 +84,13 @@ async function main() {
 
   const already = await migrationApplied(supabase);
   if (already) {
-    logger.info(`Migration already applied: ${REQUIRED_MIGRATION}`);
     await verifyTable(supabase);
-    logger.info("stripe_webhook_events table verified.");
     return;
   }
 
-  logger.info(`Applying migration: ${REQUIRED_MIGRATION}`);
   await applyMigration(supabase);
   await verifyTable(supabase);
-  logger.info("Migration applied and table verified.");
 }
 
 main().catch((err) => {
-  logger.error("Migration script failed", err);
   process.exit(1);
-});

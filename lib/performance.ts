@@ -3,12 +3,8 @@
  * Monitors operation duration and logs slow operations
  */
 
-import { logger } from "./logger";
-
 interface PerformanceMetric {
-  operation: string;
-  duration: number;
-  timestamp: number;
+
   metadata?: Record<string, unknown>;
 }
 
@@ -28,8 +24,7 @@ const SLOW_THRESHOLDS = {
  * Track async operation performance
  */
 export async function trackPerformance<T>(
-  operation: string,
-  fn: () => Promise<T>,
+
   metadata?: Record<string, unknown>
 ): Promise<T> {
   const start = performance.now();
@@ -51,8 +46,7 @@ export async function trackPerformance<T>(
  * Track sync operation performance
  */
 export function trackPerformanceSync<T>(
-  operation: string,
-  fn: () => T,
+
   metadata?: Record<string, unknown>
 ): T {
   const start = performance.now();
@@ -77,7 +71,7 @@ function recordMetric(operation: string, duration: number, metadata?: Record<str
   const metric: PerformanceMetric = {
     operation,
     duration,
-    timestamp: Date.now(),
+
     metadata,
   };
 
@@ -96,20 +90,17 @@ function recordMetric(operation: string, duration: number, metadata?: Record<str
 
   // Alert if slow
   if (duration > threshold) {
-    logger.warn(`[PERF] Slow operation detected`, {
-      operation,
-      duration: `${duration.toFixed(2)}ms`,
+    }ms`,
       threshold: `${threshold}ms`,
       metadata,
-    });
+
   }
 
   // Log all operations in development for debugging
   if (process.env.NODE_ENV === "development") {
-    logger.debug(`[PERF] ${operation}`, {
-      duration: `${duration.toFixed(2)}ms`,
+    }ms`,
       metadata,
-    });
+
   }
 }
 
@@ -136,8 +127,7 @@ export function getPerformanceSummary(operationPrefix: string) {
   const p99 = sorted[Math.floor(sorted.length * 0.99)];
 
   return {
-    operation: operationPrefix,
-    count: relevantMetrics.length,
+
     avg,
     min,
     max,
@@ -167,11 +157,7 @@ export function clearMetrics() {
  */
 export async function exportMetrics(serviceName: string = "sentry") {
   const summary = {
-    timestamp: Date.now(),
-    metrics: metrics.map((m) => ({
-      operation: m.operation,
-      duration: m.duration,
-      timestamp: m.timestamp,
+
     })),
   };
 
@@ -179,16 +165,9 @@ export async function exportMetrics(serviceName: string = "sentry") {
     // Send to Sentry as breadcrumb
     const Sentry = await import("@sentry/nextjs");
     Sentry.addBreadcrumb({
-      category: "performance",
-      message: "Performance metrics export",
-      data: summary,
-      level: "info",
-    });
+
   }
 
   // Could also send to DataDog, New Relic, etc.
-  logger.info("[PERF] Metrics exported", {
-    metricsCount: metrics.length,
-    service: serviceName,
-  });
+  
 }

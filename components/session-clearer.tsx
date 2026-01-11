@@ -8,11 +8,9 @@ export default function SessionClearer() {
       try {
         // Use server-side signout API instead of client-side auth.signOut()
         await fetch("/api/auth/signout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+
           },
-        });
+
       } catch (_error) {
         // Error silently handled
       }

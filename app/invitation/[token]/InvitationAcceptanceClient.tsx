@@ -21,21 +21,11 @@ import {
 } from "lucide-react";
 
 interface Invitation {
-  id: string;
-  venue_id: string;
-  email: string;
-  role: string;
-  permissions: unknown;
-  expires_at: string;
-  created_at: string;
-  venue_name: string;
-  organization_name?: string;
-  invited_by_name: string;
+
 }
 
 interface InvitationAcceptanceClientProps {
-  invitation: Invitation;
-  token: string;
+
 }
 
 export default function InvitationAcceptanceClient({
@@ -80,15 +70,11 @@ export default function InvitationAcceptanceClient({
 
     try {
       const response = await fetch(`/api/staff/invitations/${token}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        body: JSON.stringify({
-          full_name: fullName.trim(),
+
           password,
         }),
-      });
 
       const data = await response.json();
 
@@ -111,9 +97,8 @@ export default function InvitationAcceptanceClient({
       // Sign the user in after account creation
       const supabase = await createClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: invitation.email,
+
         password,
-      });
 
       if (signInError) {
         throw new Error("Account created but failed to sign in. Please try signing in manually.");
@@ -142,8 +127,7 @@ export default function InvitationAcceptanceClient({
         return "bg-green-100 text-green-800 border-green-200";
       case "kitchen":
         return "bg-orange-100 text-orange-800 border-orange-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+
     }
   };
 
@@ -157,8 +141,7 @@ export default function InvitationAcceptanceClient({
         return "👤";
       case "kitchen":
         return "👨‍🍳";
-      default:
-        return "👤";
+
     }
   };
 

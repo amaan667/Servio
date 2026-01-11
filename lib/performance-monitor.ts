@@ -6,30 +6,15 @@
 import React from "react";
 
 interface PerformanceMetric {
-  name: string;
-  value: number;
-  delta: number;
-  id: string;
-  navigationType: string;
+
 }
 
 interface WebVitalsMetric {
-  name: "CLS" | "FID" | "FCP" | "LCP" | "TTFB";
-  value: number;
-  delta: number;
-  id: string;
-  navigationType: string;
+
 }
 
 interface PerformanceData {
-  url: string;
-  timestamp: number;
-  userAgent: string;
-  connection: string;
-  deviceMemory?: number;
-  hardwareConcurrency?: number;
-  webVitals: WebVitalsMetric[];
-  customMetrics: PerformanceMetric[];
+
 }
 
 class PerformanceMonitor {
@@ -64,28 +49,24 @@ class PerformanceMonitor {
     // First Contentful Paint (FCP)
     this.observeMetric("FCP", (entry) => {
       this.recordWebVital("FCP", entry.startTime);
-    });
 
     // Largest Contentful Paint (LCP)
     this.observeMetric("LCP", (entry) => {
       this.recordWebVital("LCP", entry.startTime);
-    });
 
     // First Input Delay (FID)
     this.observeMetric("FID", (entry) => {
       interface FIDEntry extends PerformanceEntry {
-        processingStart: number;
+
       }
       this.recordWebVital("FID", (entry as FIDEntry).processingStart - entry.startTime);
-    });
 
     // Cumulative Layout Shift (CLS)
     this.observeMetric("CLS", (entry) => {
       interface CLSEntry extends PerformanceEntry {
-        value: number;
+
       }
       this.recordWebVital("CLS", (entry as CLSEntry).value);
-    });
 
     // Time to First Byte (TTFB)
     this.observeNavigationTiming();
@@ -98,7 +79,7 @@ class PerformanceMonitor {
           for (const entry of list.getEntries()) {
             callback(entry);
           }
-        });
+
         observer.observe({ entryTypes: [name.toLowerCase()] });
       } catch (_error) {
         // Error handled silently
@@ -117,7 +98,7 @@ class PerformanceMonitor {
               this.recordWebVital("TTFB", ttfb);
             }
           }
-        });
+
         observer.observe({ entryTypes: ["navigation"] });
       } catch (_error) {
         // Error handled silently
@@ -147,7 +128,6 @@ class PerformanceMonitor {
 
         this.recordCustomMetric("component-render", end - start, {
           component: (args[0] as { name?: string })?.name || "Unknown",
-        });
 
         return result;
       }) as typeof originalCreateElement;
@@ -166,17 +146,15 @@ class PerformanceMonitor {
 
         this.recordCustomMetric("api-response-time", end - start, {
           url,
-          status: response.status,
+
           method: (args[1] as { method?: string })?.method || "GET",
-        });
 
         return response;
       } catch (_error) {
         const end = performance.now();
         this.recordCustomMetric("api-error", end - start, {
           url,
-          error: _error instanceof Error ? _error.message : "Unknown _error",
-        });
+
         throw _error;
       }
     };
@@ -191,13 +169,8 @@ class PerformanceMonitor {
       setTimeout(() => {
         const end = performance.now();
         this.recordCustomMetric("user-interaction", end - start, {
-          type: "click",
-          element: target.tagName,
-          id: target.id,
-          className: target.className,
-        });
+
       }, 0);
-    });
 
     // Monitor scroll performance
     let scrollTimeout: NodeJS.Timeout;
@@ -205,11 +178,9 @@ class PerformanceMonitor {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
         this.recordCustomMetric("scroll-performance", 0, {
-          type: "scroll-end",
-          scrollY: window.scrollY,
-        });
+
       }, 100);
-    });
+
   }
 
   private observePageLoad() {
@@ -229,7 +200,7 @@ class PerformanceMonitor {
           navigation.domInteractive - navigation.fetchStart
         );
       }
-    });
+
   }
 
   private observeResources() {
@@ -240,13 +211,10 @@ class PerformanceMonitor {
             if (entry.entryType === "resource") {
               const resourceEntry = entry as PerformanceResourceTiming;
               this.recordCustomMetric("resource-load-time", resourceEntry.duration, {
-                name: resourceEntry.name,
-                type: resourceEntry.initiatorType,
-                size: resourceEntry.transferSize,
-              });
+
             }
           }
-        });
+
         observer.observe({ entryTypes: ["resource"] });
       } catch (_error) {
         // Error handled silently
@@ -260,11 +228,9 @@ class PerformanceMonitor {
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             this.recordCustomMetric("long-task", entry.duration, {
-              name: entry.name,
-              startTime: entry.startTime,
-            });
+
           }
-        });
+
         observer.observe({ entryTypes: ["longtask"] });
       } catch (_error) {
         // Error handled silently
@@ -276,9 +242,7 @@ class PerformanceMonitor {
     const metric: WebVitalsMetric = {
       name,
       value,
-      delta: value,
-      id: this.generateId(),
-      navigationType: "navigate",
+
     };
 
     this.webVitals.push(metric);
@@ -289,9 +253,7 @@ class PerformanceMonitor {
     const metric: PerformanceMetric = {
       name,
       value,
-      delta: value,
-      id: this.generateId(),
-      navigationType: "navigate",
+
       ...metadata,
     };
 
@@ -304,24 +266,18 @@ class PerformanceMonitor {
 
     // Send to analytics endpoint
     fetch(this.endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+
       },
-      body: JSON.stringify({
-        ...metric,
-        url: window.location.href,
-        timestamp: Date.now(),
-        userAgent: navigator.userAgent,
+
         connection:
           (navigator as { connection?: { effectiveType?: string } }).connection?.effectiveType ||
           "unknown",
         deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory,
-        hardwareConcurrency: navigator.hardwareConcurrency,
+
       }),
     }).catch((_error) => {
       /* Empty */
-    });
+
   }
 
   private generateId(): string {
@@ -330,16 +286,12 @@ class PerformanceMonitor {
 
   public getMetrics(): PerformanceData {
     return {
-      url: window.location.href,
-      timestamp: Date.now(),
-      userAgent: navigator.userAgent,
+
       connection:
         (navigator as { connection?: { effectiveType?: string } }).connection?.effectiveType ||
         "unknown",
       deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory,
-      hardwareConcurrency: navigator.hardwareConcurrency,
-      webVitals: this.webVitals,
-      customMetrics: this.metrics,
+
     };
   }
 

@@ -25,17 +25,15 @@ import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download } from "lucide-
 import type { StockLedger } from "@/types/inventory";
 
 interface InventoryMovementsProps {
-  venueId: string;
-  canEdit?: boolean;
+
 }
 
 interface LedgerWithIngredient extends StockLedger {
   ingredient?: {
-    name: string;
-    unit: string;
+
   };
   user?: {
-    email: string;
+
   };
 }
 
@@ -53,10 +51,6 @@ export function InventoryMovements({ venueId, canEdit: _canEdit = true }: Invent
     try {
       setLoading(true);
       const params = new URLSearchParams({
-        venue_id: venueId,
-        limit: limit.toString(),
-        offset: (page * limit).toString(),
-      });
 
       if (reasonFilter !== "all") {
         params.append("reason", reasonFilter);
@@ -91,8 +85,6 @@ export function InventoryMovements({ venueId, canEdit: _canEdit = true }: Invent
   const handleExportCSV = async () => {
     try {
       const params = new URLSearchParams({
-        venue_id: venueId,
-      });
 
       if (reasonFilter !== "all") {
         params.append("reason", reasonFilter);
@@ -147,11 +139,7 @@ export function InventoryMovements({ venueId, canEdit: _canEdit = true }: Invent
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "numeric",
+
     }).format(date);
   };
 

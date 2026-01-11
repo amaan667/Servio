@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase";
@@ -16,7 +15,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: "Too many requests",
+
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -86,11 +85,7 @@ export const GET = withUnifiedAuth(
           }
 
           if (!orderFound) {
-            logger.error("[CHECKOUT_VERIFY] Order still not found after retry for session", {
-              sessionId,
-              venueId,
-              userId: context.user.id,
-            });
+            
             return NextResponse.json(
               { paid: false, error: "Order not found or access denied - webhook may be delayed" },
               { status: 404 }
@@ -99,11 +94,7 @@ export const GET = withUnifiedAuth(
         }
 
         if (!order) {
-          logger.error("[CHECKOUT_VERIFY] Order is null after all attempts to find it", {
-            sessionId,
-            venueId,
-            userId: context.user.id,
-          });
+          
           return NextResponse.json(
             { paid: false, error: "Order not found or access denied" },
             { status: 404 }
@@ -121,18 +112,12 @@ export const GET = withUnifiedAuth(
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      logger.error("[CHECKOUT_VERIFY] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
+      
 
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
+
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -140,8 +125,7 @@ export const GET = withUnifiedAuth(
 
       return NextResponse.json(
         {
-          error: "Internal Server Error",
-          message: isDevelopment() ? errorMessage : "Request processing failed",
+
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
@@ -150,8 +134,7 @@ export const GET = withUnifiedAuth(
   },
   {
     // STEP 9: Extract venueId from request (query, body, or resource lookup)
-    extractVenueId: async (req) => {
-      try {
+
         const { searchParams } = new URL(req.url);
         const sessionId = searchParams.get("sessionId");
 

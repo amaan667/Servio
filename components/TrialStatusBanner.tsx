@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
-import { logger } from "@/lib/logger";
 
 // Prevent SSR issues with browser APIs
 const useIsClient = () => {
@@ -16,11 +15,7 @@ const useIsClient = () => {
 };
 
 interface TrialStatus {
-  isTrialing: boolean;
-  subscriptionStatus: string;
-  tier: string;
-  trialEndsAt: string | null;
-  daysRemaining: number | null;
+
 }
 
 interface TrialStatusBannerProps {
@@ -107,7 +102,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         isTrialing,
         subscriptionStatus,
         tier,
-        trialEndsAt: trialEndsAt || null,
+
         daysRemaining,
       };
       setTrialStatus(_status);
@@ -140,39 +135,27 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
 
       if (orgError) {
         // If query fails, don't show trial banner (better to hide than show incorrect info)
-        logger.warn("[TRIAL BANNER] Failed to fetch organization, hiding banner", {
-          error: orgError.message,
-        });
+        
         setTrialStatus(null);
         setLoading(false);
         return;
       }
 
       if (organization) {
-        logger.debug("[TRIAL BANNER] Organization data loaded:", {
-          id: organization.id,
-          subscription_status: organization.subscription_status,
-          subscription_tier: organization.subscription_tier,
-          trial_ends_at: organization.trial_ends_at,
-        });
+        
 
         // Organization exists - use its actual trial_ends_at from database
         processTrialStatus({
-          subscription_status: organization.subscription_status,
-          subscription_tier: organization.subscription_tier,
-          trial_ends_at: organization.trial_ends_at,
-        });
+
       } else {
         // No organization found - don't show trial banner
         // User might not have an organization yet, or subscription is managed elsewhere
-        logger.debug("[TRIAL BANNER] No organization found, hiding banner");
+        
         setTrialStatus(null);
       }
     } catch (_error) {
       // On error, don't show trial banner (better to hide than show incorrect info)
-      logger.warn("[TRIAL BANNER] Error fetching trial status, hiding banner", {
-        error: _error instanceof Error ? _error.message : "Unknown error",
-      });
+      
       setTrialStatus(null);
     } finally {
       setLoading(false);
@@ -244,9 +227,8 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         try {
           // Directly fetch organization data
           const ensureOrgResponse = await fetch("/api/organization/ensure", {
-            method: "POST",
+
             headers: { "Content-Type": "application/json" },
-          });
 
           if (!ensureOrgResponse.ok) {
             if (attempt < 3) {
@@ -260,10 +242,7 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
           // Process and update trial status
           if (organization) {
             processTrialStatus({
-              subscription_status: organization.subscription_status,
-              subscription_tier: organization.subscription_tier,
-              trial_ends_at: organization.trial_ends_at,
-            });
+
           } else if (attempt < 3) {
             // If no organization data, retry
             setTimeout(() => refreshWithRetry(attempt + 1), (attempt + 1) * 2000);
@@ -323,17 +302,13 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
         return "Pro";
       case "enterprise":
         return "Enterprise";
-      default:
-        return tier.charAt(0).toUpperCase() + tier.slice(1);
+
     }
   };
 
   const getTrialEndDate = (trialEndsAt: string) => {
     return new Date(trialEndsAt).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+
   };
 
   const getDaysRemainingColor = (days: number) => {
@@ -363,11 +338,9 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
               >
                 {trialStatus.daysRemaining === 0
                   ? "⚠️ Trial Expired"
-                  : trialStatus.daysRemaining === 1
-                    ? "🔥 1 Day Left"
-                    : trialStatus.daysRemaining <= 3
+
                       ? `⚠️ ${trialStatus.daysRemaining} Days Left`
-                      : trialStatus.daysRemaining <= 7
+
                         ? `⏰ ${trialStatus.daysRemaining} Days Left`
                         : `✅ ${trialStatus.daysRemaining} Days Left`}
               </Badge>

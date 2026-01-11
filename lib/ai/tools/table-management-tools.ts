@@ -2,54 +2,30 @@
 // Table availability, creation, merging, and queries
 
 import { createAdminClient } from "@/lib/supabase";
-import { aiLogger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface TableAvailabilityResult {
-  available: Array<{
-    id: string;
-    label: string;
-    seats: number;
-    status: string;
+
   }>;
-  occupied: Array<{
-    id: string;
-    label: string;
-    seats: number;
-    customerName?: string;
-    orderCount: number;
+
   }>;
-  summary: string;
+
 }
 
 interface TableCreationResult {
-  success: boolean;
-  table: {
-    id: string;
-    label: string;
-    tableNumber: number;
-    seats: number;
+
   };
-  message: string;
+
 }
 
 interface TableMergeResult {
-  success: boolean;
-  mergedTableId: string;
-  originalTables: string[];
-  message: string;
+
 }
 
 interface TablesWithOrdersResult {
-  tables: Array<{
-    tableLabel: string;
-    tableNumber: number;
-    activeOrders: number;
-    totalAmount: number;
-    oldestOrder: string;
+
   }>;
-  count: number;
-  summary: string;
+
 }
 
 /**
@@ -58,7 +34,7 @@ interface TablesWithOrdersResult {
 export async function getTableAvailability(venueId: string): Promise<TableAvailabilityResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI TABLE] Fetching table availability for venue: ${venueId}`);
+  
 
   // Get all tables
   const { data: tables, error: tablesError } = await supabase
@@ -69,7 +45,7 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
     .order("label", { ascending: true });
 
   if (tablesError) {
-    aiLogger.error("[AI TABLE] Error fetching tables:", tablesError);
+    
     throw new Error(`Failed to fetch tables: ${tablesError.message}`);
   }
 
@@ -94,7 +70,6 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
     if (order.table_label) {
       orderCounts.set(order.table_label, (orderCounts.get(order.table_label) || 0) + 1);
     }
-  });
 
   const available: TableAvailabilityResult["available"] = [];
   const occupied: TableAvailabilityResult["occupied"] = [];
@@ -105,21 +80,13 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
 
     if (session || orderCount > 0 || table.status === "occupied") {
       occupied.push({
-        id: table.id,
-        label: table.label,
-        seats: table.seat_count || 0,
-        customerName: session?.customer_name,
+
         orderCount,
-      });
+
     } else {
       available.push({
-        id: table.id,
-        label: table.label,
-        seats: table.seat_count || 0,
-        status: table.status || "available",
-      });
+
     }
-  });
 
   return {
     available,
@@ -132,15 +99,7 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
  * Create a new table
  */
 export async function createTable(
-  venueId: string,
-  tableLabel: string,
-  seats: number = 4
-): Promise<TableCreationResult> {
-  const supabase = createAdminClient();
 
-  aiLogger.info(`[AI TABLE] Creating table: ${tableLabel} with ${seats} seats`);
-
-  // Check if table already exists
   const { data: existingTable } = await supabase
     .from("tables")
     .select("id, label")
@@ -157,26 +116,17 @@ export async function createTable(
   const { data: newTable, error: createError } = await supabase
     .from("tables")
     .insert({
-      venue_id: venueId,
-      label: tableLabel,
-      seat_count: seats,
-      is_active: true,
-    })
+
     .select("id, label, seat_count")
     .single();
 
   if (createError) {
-    aiLogger.error("[AI TABLE] Error creating table:", createError);
+    
     throw new Error(`Failed to create table: ${createError.message}`);
   }
 
   return {
-    success: true,
-    table: {
-      id: newTable.id,
-      label: newTable.label,
-      tableNumber: parseInt(tableLabel.match(/\d+/)?.[0] || "0"),
-      seats: newTable.seat_count || 0,
+
     },
     message: `Created ${tableLabel} with ${seats} seats. Table is now ready for QR code generation.`,
   };
@@ -186,13 +136,12 @@ export async function createTable(
  * Merge two or more tables
  */
 export async function mergeTables(
-  venueId: string,
-  tableIds: string[],
+
   mergedLabel?: string
 ): Promise<TableMergeResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI TABLE] Merging tables: ${tableIds.join(", ")}`);
+  }`);
 
   if (tableIds.length < 2) {
     throw new Error("At least 2 tables are required for merging.");
@@ -213,7 +162,7 @@ export async function mergeTables(
   const allAvailable = tables.every((t) => t.status === "available");
   if (!allAvailable) {
     // For occupied tables, we need to merge the sessions
-    aiLogger.info("[AI TABLE] Merging occupied tables - will merge sessions");
+    
   }
 
   const tableLabels = tables.map((t) => t.label);
@@ -227,9 +176,7 @@ export async function mergeTables(
   const mergeResult = await performTableMerge(supabase, venueId, tableIds, finalLabel, totalSeats);
 
   return {
-    success: true,
-    mergedTableId: mergeResult.mergedTableId,
-    originalTables: tableLabels,
+
     message: `Successfully merged ${tableLabels.join(", ")} into "${finalLabel}". Total ${totalSeats} seats.`,
   };
 }
@@ -238,23 +185,13 @@ export async function mergeTables(
  * Helper function to perform table merge
  */
 async function performTableMerge(
-  supabase: SupabaseClient,
-  venueId: string,
-  tableIds: string[],
-  mergedLabel: string,
-  totalSeats: number
+
 ): Promise<{ mergedTableId: string }> {
   // Create a new merged table
   const { data: mergedTable, error: createError } = await supabase
     .from("tables")
     .insert({
-      venue_id: venueId,
-      label: mergedLabel,
-      seat_count: totalSeats,
-      is_merged: true,
-      merged_from: tableIds,
-      is_active: true,
-    })
+
     .select("id")
     .single();
 
@@ -277,7 +214,7 @@ async function performTableMerge(
 export async function getTablesWithActiveOrders(venueId: string): Promise<TablesWithOrdersResult> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[AI TABLE] Fetching tables with active orders for venue: ${venueId}`);
+  
 
   const { data: orders, error } = await supabase
     .from("orders")
@@ -288,7 +225,7 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
     .order("created_at", { ascending: true });
 
   if (error) {
-    aiLogger.error("[AI TABLE] Error fetching orders:", error);
+    
     throw new Error(`Failed to fetch orders: ${error.message}`);
   }
 
@@ -296,9 +233,7 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
   const tableMap = new Map<
     string,
     {
-      orders: number;
-      totalAmount: number;
-      oldestOrder: Date;
+
     }
   >();
 
@@ -306,9 +241,7 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
     if (!order.table_label) return;
 
     const existing = tableMap.get(order.table_label) || {
-      orders: 0,
-      totalAmount: 0,
-      oldestOrder: new Date(order.created_at),
+
     };
 
     existing.orders++;
@@ -318,23 +251,16 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
     }
 
     tableMap.set(order.table_label, existing);
-  });
 
   const tablesWithOrders = Array.from(tableMap.entries()).map(([tableLabel, data]) => ({
     tableLabel,
-    tableNumber: parseInt(tableLabel.match(/\d+/)?.[0] || "0"),
-    activeOrders: data.orders,
-    totalAmount: data.totalAmount,
-    oldestOrder: data.oldestOrder.toISOString(),
+
   }));
 
   return {
-    tables: tablesWithOrders,
-    count: tablesWithOrders.length,
-    summary:
-      tablesWithOrders.length > 0
+
         ? `${tablesWithOrders.length} tables have active orders. Busiest: ${tablesWithOrders[0]?.tableLabel} with ${tablesWithOrders[0]?.activeOrders} orders.`
-        : "No tables have active orders currently.",
+
   };
 }
 
@@ -342,13 +268,9 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
  * Get revenue by table for today
  */
 export async function getRevenueByTable(venueId: string): Promise<{
-  tables: Array<{
-    tableLabel: string;
-    tableNumber: number;
-    orderCount: number;
-    totalRevenue: number;
+
   }>;
-  summary: string;
+
 }> {
   const supabase = createAdminClient();
 
@@ -373,21 +295,17 @@ export async function getRevenueByTable(venueId: string): Promise<{
     if (!order.table_label) return;
 
     const existing = tableMap.get(order.table_label) || {
-      count: 0,
-      revenue: 0,
+
     };
 
     existing.count++;
     existing.revenue += order.total_amount || 0;
     tableMap.set(order.table_label, existing);
-  });
 
   const tables = Array.from(tableMap.entries())
     .map(([tableLabel, data]) => ({
       tableLabel,
-      tableNumber: parseInt(tableLabel.match(/\d+/)?.[0] || "0"),
-      orderCount: data.count,
-      totalRevenue: data.revenue,
+
     }))
     .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
@@ -395,9 +313,8 @@ export async function getRevenueByTable(venueId: string): Promise<{
 
   return {
     tables,
-    summary:
-      tables.length > 0
+
         ? `${tables.length} tables served today. Top performer: ${tables[0]?.tableLabel} with £${tables[0]?.totalRevenue.toFixed(2)} revenue.`
-        : "No table revenue recorded today.",
+
   };
 }

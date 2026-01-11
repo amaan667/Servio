@@ -5,15 +5,9 @@
 
 import { onCLS, onFCP, onINP, onLCP, onTTFB, Metric } from "web-vitals";
 import { EnhancedErrorTracker } from "./sentry-enhanced";
-import { logger } from "@/lib/logger";
 
 export interface PerformanceMetric {
-  name: string;
-  value: number;
-  rating: "good" | "needs-improvement" | "poor";
-  delta: number;
-  id: string;
-  navigationType?: string;
+
 }
 
 /**
@@ -21,29 +15,18 @@ export interface PerformanceMetric {
  */
 function sendToAnalytics(metric: Metric) {
   const body = JSON.stringify({
-    name: metric.name,
-    value: metric.value,
-    rating: metric.rating,
-    delta: metric.delta,
-    id: metric.id,
-    navigationType: metric.navigationType,
-    timestamp: Date.now(),
-    url: window.location.href,
-    userAgent: navigator.userAgent,
-  });
 
   // Send to analytics endpoint
   if (navigator.sendBeacon) {
     navigator.sendBeacon("/api/analytics/vitals", body);
   } else {
     fetch("/api/analytics/vitals", {
-      method: "POST",
+
       body,
       headers: { "Content-Type": "application/json" },
-      keepalive: true,
+
     }).catch((error) => {
-      logger.error("[WEB_VITALS] Failed to send metric", { error, metric: metric.name });
-    });
+
   }
 
   // Send to Sentry for monitoring
@@ -52,21 +35,13 @@ function sendToAnalytics(metric: Metric) {
     "performance",
     metric.rating === "good" ? "info" : metric.rating === "needs-improvement" ? "warning" : "error",
     {
-      value: metric.value,
-      rating: metric.rating,
-      delta: metric.delta,
+
     }
   );
 
   // Log poor ratings
   if (metric.rating === "poor") {
-    logger.error(`[WEB_VITALS] Poor ${metric.name} performance`, {
-      data: {
-        value: metric.value,
-        rating: metric.rating,
-        url: window.location.href,
-      },
-    });
+    
   }
 }
 
@@ -87,7 +62,7 @@ export function initWebVitals() {
     onINP(sendToAnalytics); // Interaction to Next Paint
     onTTFB(sendToAnalytics); // Time to First Byte
   } catch (_error) {
-    logger.error("[WEB_VITALS] Failed to initialize", { error: _error });
+    
   }
 }
 
@@ -107,7 +82,7 @@ export class PerformanceTracker {
       this.marks.set(name, performance.now());
       performance.mark(name);
     } catch (_error) {
-      logger.error("[PERFORMANCE] Failed to mark", { error: _error, name });
+      
     }
   }
 
@@ -123,32 +98,24 @@ export class PerformanceTracker {
 
       const measure = performance.measure(name, startMark, end);
 
-      logger.debug(`[PERFORMANCE] ${name}`, {
-        data: {
-          duration: measure.duration,
-          start: measure.startTime,
-        },
-      });
+      
 
       // Send to analytics if significant
       if (measure.duration > 1000) {
         fetch("/api/analytics/vitals", {
-          method: "POST",
-          body: JSON.stringify({
+
             name: `custom-${name}`,
-            value: measure.duration,
-            timestamp: Date.now(),
-            url: window.location.href,
+
           }),
           headers: { "Content-Type": "application/json" },
         }).catch(() => {
           // Silent fail
-        });
+
       }
 
       return measure.duration;
     } catch (_error) {
-      logger.error("[PERFORMANCE] Failed to measure", { error: _error, name });
+      
       return null;
     }
   }
@@ -179,31 +146,22 @@ export class PerformanceTracker {
 
         if (perfData) {
           const metrics = {
-            dns: perfData.domainLookupEnd - perfData.domainLookupStart,
-            tcp: perfData.connectEnd - perfData.connectStart,
-            ttfb: perfData.responseStart - perfData.requestStart,
-            download: perfData.responseEnd - perfData.responseStart,
-            domInteractive: perfData.domInteractive - perfData.fetchStart,
-            domComplete: perfData.domComplete - perfData.fetchStart,
-            loadComplete: perfData.loadEventEnd - perfData.fetchStart,
+
           };
 
           // Send to analytics
           fetch("/api/analytics/vitals", {
-            method: "POST",
-            body: JSON.stringify({
-              name: "page-load",
+
               metrics,
-              timestamp: Date.now(),
-              url: window.location.href,
+
             }),
             headers: { "Content-Type": "application/json" },
           }).catch(() => {
             // Silent fail
-          });
+
         }
       }, 0);
-    });
+
   }
 
   /**
@@ -215,16 +173,11 @@ export class PerformanceTracker {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.duration > 2000) {
-          logger.debug("[PERFORMANCE] Slow resource", {
-            data: {
-              name: entry.name,
-              duration: entry.duration,
-              type: (entry as PerformanceResourceTiming).initiatorType,
+          .initiatorType,
             },
-          });
+
         }
       }
-    });
 
     observer.observe({ entryTypes: ["resource"] });
   }
@@ -238,19 +191,11 @@ export class PerformanceTracker {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          logger.debug("[PERFORMANCE] Long task detected", {
-            data: {
-              duration: entry.duration,
-              startTime: entry.startTime,
-            },
-          });
+          
 
           EnhancedErrorTracker.addBreadcrumb("Long Task", "performance", "warning", {
-            duration: entry.duration,
-            startTime: entry.startTime,
-          });
+
         }
-      });
 
       observer.observe({ entryTypes: ["longtask"] });
     } catch (_error) {

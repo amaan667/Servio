@@ -13,11 +13,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
 
   // Fetch questions server-side for instant load
   let initialQuestions: Array<{
-    id: string;
-    prompt: string;
-    type: string;
-    choices: string[];
-    is_active: boolean;
+
   }> = [];
 
   if (hasFeedbackAccess) {
@@ -39,13 +35,11 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
             if (!prompt) return null;
 
             return {
-              id: q.id,
+
               prompt,
-              type: q.question_type || "stars",
-              choices: q.options || [],
-              is_active: q.is_active ?? true,
+
             };
-          })
+
           .filter((q): q is NonNullable<typeof q> => q !== null);
       }
     } catch (error) {

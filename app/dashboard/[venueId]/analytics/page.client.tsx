@@ -9,41 +9,23 @@ import { hasAdvancedAnalyticsByTier, getAnalyticsTierLabel } from "@/lib/tier-li
 import { Badge } from "@/components/ui/badge";
 
 interface TopSellingItem {
-  name: string;
-  quantity: number;
-  revenue: number;
-  category?: string;
-  ordersCount?: number;
-  price?: number;
+
 }
 
 interface AnalyticsClientPageProps {
-  venueId: string;
-  ordersData: {
-    totalOrders: number;
-    pendingOrders: number;
-    completedOrders: number;
-    avgOrderValue: number;
+
     ordersByStatus: Record<string, number>;
     ordersByDay: Record<string, number>;
-    recentOrders: unknown[];
+
   };
-  menuData: {
-    totalItems: number;
-    activeItems: number;
-    topSellingItems: TopSellingItem[];
-    itemsWithImages: number;
+
     itemsByCategory: Record<string, number>;
   };
-  revenueData: {
-    totalRevenue: number;
-    averageOrderValue: number;
+
     revenueByHour: Array<{ hour: string; revenue: number }>;
     revenueByDay: Record<string, number>;
   };
-  tier: string;
-  role: string;
-  hasAccess: boolean;
+
 }
 
 export default function AnalyticsClientPage({

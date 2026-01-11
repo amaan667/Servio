@@ -46,8 +46,6 @@ export function usePasswordManagement(user: User) {
 
     try {
       const { error } = await createClient().auth.updateUser({
-        password: newPassword,
-      });
 
       if (error) {
         throw new Error(error.message);
@@ -56,7 +54,6 @@ export function usePasswordManagement(user: User) {
       if (shouldShowSetPassword) {
         const { error: metadataError } = await createClient().auth.updateUser({
           data: { hasPasswordSet: true },
-        });
 
         if (metadataError) {
           // Empty block
@@ -65,14 +62,6 @@ export function usePasswordManagement(user: User) {
 
       const successMessage = shouldShowSetPassword
         ? "Password set successfully! You can now sign in with email and password."
-        : "Password updated successfully!";
-
-      setSuccess(successMessage);
-
-      toast({
-        title: "Success",
-        description: successMessage,
-      });
 
       setCurrentPassword("");
       setNewPassword("");
@@ -91,10 +80,7 @@ export function usePasswordManagement(user: User) {
     } catch (_err) {
       setError(_err instanceof Error ? _err.message : "Failed to update password");
       toast({
-        title: "Error",
-        description: _err instanceof Error ? _err.message : "Failed to update password",
-        variant: "destructive",
-      });
+
     } finally {
       setLoading(false);
     }

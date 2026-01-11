@@ -4,16 +4,11 @@ import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 
 interface QuickAction {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  description?: string;
-  variant?: "default" | "outline" | "ghost";
+
 }
 
 interface QuickActionCardProps {
-  title: string;
-  actions: QuickAction[];
+
 }
 
 export function QuickActionCard({ title, actions }: QuickActionCardProps) {

@@ -6,18 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, Clock, AlertCircle, TrendingUp } from "lucide-react";
 
 interface PerformanceMetrics {
-  apiResponseTime: {
-    p50: number;
-    p95: number;
-    p99: number;
+
   };
-  errorRate: number;
-  requestCount: number;
-  endpointStats: Array<{
-    endpoint: string;
-    avgTime: number;
-    count: number;
-    errorRate: number;
+
   }>;
 }
 
@@ -69,8 +60,7 @@ export function PerformanceDashboardClient({ venueId: _venueId }: { venueId: str
             <p className="text-xs text-muted-foreground">
               {metrics.apiResponseTime.p95 < 100
                 ? "✅ Excellent"
-                : metrics.apiResponseTime.p95 < 200
-                  ? "⚠️ Good"
+
                   : "❌ Needs improvement"}
             </p>
           </CardContent>

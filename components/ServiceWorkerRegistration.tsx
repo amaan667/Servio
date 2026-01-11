@@ -4,10 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { WifiOff, Wifi, RefreshCw } from "lucide-react";
 import { getOfflineQueue } from "@/lib/offline-queue";
-import { logger } from "@/lib/logger";
 
 interface ServiceWorkerRegistrationProps {
-  children: React.ReactNode;
+
 }
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
@@ -61,12 +60,10 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         setIsOnline(connectionState.isOnline);
         unsubscribeConnectionRef.current = connectionMonitor.subscribe((state) => {
           setIsOnline(state.isOnline);
-        });
-      })
+
       .catch(() => {
         // Fallback to navigator.onLine if ConnectionMonitor fails
         setIsOnline(navigator.onLine);
-      });
 
     updateQueueStatus();
 
@@ -82,14 +79,13 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
             .unregister()
             .then((success) => {
               if (success) {
-                logger.info("[SW] Service worker unregistered");
+                
               }
-            })
+
             .catch((error) => {
-              logger.error("[SW] Service worker unregistration failed:", error);
-            });
+
         }
-      });
+
     }
 
     return () => {

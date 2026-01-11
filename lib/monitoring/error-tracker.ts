@@ -4,7 +4,6 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
-import { logger } from "@/lib/logger";
 
 // Sentry severity levels
 type SentrySeverity = "fatal" | "error" | "warning" | "log" | "info" | "debug";
@@ -40,43 +39,21 @@ export enum ErrorSeverity {
  * Track error with full context
  */
 export function trackError(
-  error: Error | AppError,
+
   context?: ErrorContext,
-  severity: ErrorSeverity = ErrorSeverity.MEDIUM
-): void {
-  // Log to structured logger
-  logger.error("[ERROR TRACKED]", {
-    error: {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      code: (error as AppError).code,
-      statusCode: (error as AppError).statusCode,
+
     },
     context,
     severity,
-  });
 
   // Send to Sentry with context
   const sentryLevel: SentrySeverity =
     severity === ErrorSeverity.CRITICAL
       ? "fatal"
-      : severity === ErrorSeverity.HIGH
-        ? "error"
-        : severity === ErrorSeverity.MEDIUM
-          ? "warning"
-          : "info";
 
   Sentry.captureException(error, {
-    level: sentryLevel,
-    tags: {
-      error_code: (error as AppError).code,
-      venue_id: context?.venueId,
-      user_id: context?.userId,
-      endpoint: context?.endpoint,
+
     },
-    extra: context,
-  });
 
   // Alert for critical errors
   if (severity === ErrorSeverity.CRITICAL) {
@@ -88,24 +65,19 @@ export function trackError(
  * Track handled errors (expected errors)
  */
 export function trackHandledError(message: string, context?: ErrorContext): void {
-  logger.warn("[HANDLED ERROR]", { message, context });
+  
 
   Sentry.captureMessage(message, {
-    level: "warning",
-    tags: {
-      type: "handled",
-      venue_id: context?.venueId,
+
     },
-    extra: context,
-  });
+
 }
 
 /**
  * Create application error with context
  */
 export function createAppError(
-  message: string,
-  code: string,
+
   statusCode = 500,
   context?: ErrorContext
 ): AppError {
@@ -127,20 +99,13 @@ async function alertCriticalError(error: Error, context?: ErrorContext): Promise
   // - Send SMS to on-call engineer
   // - Trigger incident response
 
-  logger.error("[CRITICAL ERROR ALERT]", {
-    error: {
-      message: error.message,
-      stack: error.stack,
-    },
-    context,
-    timestamp: new Date().toISOString(),
-  });
+  .toISOString(),
 
   // Send to Sentry with critical flag
   Sentry.captureException(error, {
-    level: "fatal",
+
     tags: { critical: "true" },
-  });
+
 }
 
 /**
@@ -148,40 +113,21 @@ async function alertCriticalError(error: Error, context?: ErrorContext): Promise
  */
 export function trackPerformance(threshold = 1000) {
   return function (
-    target: unknown,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
-  ): PropertyDescriptor {
-    const originalMethod = descriptor.value;
-    const targetName =
-      (target &&
-        typeof target === "object" &&
-        "constructor" in target &&
-        target.constructor?.name) ||
-      "Unknown";
 
-    descriptor.value = async function (...args: unknown[]) {
-      const startTime = Date.now();
-
-      try {
         const result = await originalMethod.apply(this, args);
         const duration = Date.now() - startTime;
 
         if (duration > threshold) {
-          logger.warn("[PERFORMANCE] Slow method execution", {
-            method: propertyKey,
-            duration,
-            threshold,
-          });
+          
         }
 
         return result;
       } catch (_error) {
         const duration = Date.now() - startTime;
         trackError(_error as Error, {
-          method: propertyKey,
+
           duration,
-        });
+
         throw _error;
       }
     };
@@ -194,16 +140,10 @@ export function trackPerformance(threshold = 1000) {
  * Track user action
  */
 export function trackUserAction(
-  action: string,
-  userId: string,
+
   metadata?: Record<string, unknown>
 ): void {
-  logger.info("[USER ACTION]", {
-    action,
-    userId,
-    metadata,
-    timestamp: new Date().toISOString(),
-  });
+  .toISOString(),
 
   // Send to analytics
   if (typeof window !== "undefined" && window.gtag) {
@@ -232,23 +172,16 @@ export class APIPerformanceTracker {
   success(statusCode: number): void {
     const duration = Date.now() - this.startTime;
 
-    logger.info("[API REQUEST]", {
-      endpoint: this.endpoint,
-      statusCode,
-      duration,
-      ...this.context,
-    });
+    
 
     // Track in Sentry as breadcrumb
     Sentry.addBreadcrumb({
-      category: "api",
+
       message: `${this.endpoint} - ${statusCode}`,
-      level: "info",
-      data: {
-        duration,
+
         ...this.context,
       },
-    });
+
   }
 
   error(error: Error, statusCode: number): void {
@@ -256,10 +189,10 @@ export class APIPerformanceTracker {
 
     trackError(error, {
       ...this.context,
-      endpoint: this.endpoint,
+
       statusCode,
       duration,
-    });
+
   }
 }
 
@@ -267,15 +200,11 @@ export class APIPerformanceTracker {
  * Error boundary helper for React components
  */
 export function reportComponentError(
-  error: Error,
+
   errorInfo: { componentStack: string },
-  componentName: string
-): void {
-  trackError(
-    error,
+
     {
-      component: componentName,
-      componentStack: errorInfo.componentStack,
+
     },
     ErrorSeverity.HIGH
   );
@@ -290,21 +219,17 @@ if (typeof window !== "undefined") {
       { type: "unhandled_rejection" },
       ErrorSeverity.HIGH
     );
-  });
 
   // Catch global errors
   window.addEventListener("error", (event) => {
     trackError(
       event.error || new Error(event.message),
       {
-        type: "global_error",
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
+
       },
       ErrorSeverity.HIGH
     );
-  });
+
 }
 
 declare global {

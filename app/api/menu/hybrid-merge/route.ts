@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
@@ -37,12 +36,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const normalizedVenueId = context.venueId;
     logContext = { requestId, venueId: normalizedVenueId, menuUrl, userId: context.user.id };
 
-    logger.info("[HYBRID MERGE] Start", {
-      requestId,
-      venueId: normalizedVenueId,
-      menuUrl,
-      timestamp: new Date().toISOString(),
-    });
+    .toISOString(),
 
     if (!menuUrl) {
       return NextResponse.json({ ok: false, error: "menuUrl required" }, { status: 400 });
@@ -62,20 +56,13 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .limit(1)
       .single();
 
-    logger.info("[HYBRID MERGE] PDF upload lookup", {
-      ...logContext,
-      hasData: !!uploadData,
-      error: uploadError?.message || null,
-    });
+    
 
     if (uploadError || !uploadData?.pdf_images) {
-      logger.error("[HYBRID ENHANCE] No PDF images found", {
-        error: uploadError?.message,
-        code: uploadError?.code,
-      });
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: "No PDF found. Please upload a PDF first, or clear menu and upload both together.",
         },
         { status: 400 }
@@ -83,10 +70,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     const pdfImages = uploadData.pdf_images as string[];
-    logger.info("[HYBRID ENHANCE] Step 2: PDF images retrieved from database", {
-      pageCount: pdfImages.length,
-      originalFile: uploadData.filename,
-    });
+    
 
     // Step 3: Clear existing menu for clean re-extraction
 
@@ -95,45 +79,22 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .delete()
       .eq("venue_id", normalizedVenueId);
 
-    logger.info("[HYBRID MERGE] Delete existing items", {
-      ...logContext,
-      error: deleteItemsError?.message || null,
-    });
+    
 
     if (deleteItemsError) {
-      logger.error("[HYBRID ENHANCE] Failed to delete existing items", { deleteItemsError });
+      
       throw new Error(`Failed to clear menu: ${deleteItemsError.message}`);
     }
 
     // Step 5: Run THE ONE TRUE HYBRID EXTRACTION SYSTEM
-    logger.info(
-      "[HYBRID ENHANCE] ⭐ Using the SAME system as initial upload - no duplicate logic!"
-    );
+    
 
     const { extractMenuHybrid } = await import("@/lib/hybridMenuExtractor");
 
-    logger.info("[HYBRID MERGE] Starting hybrid extraction", {
-      ...logContext,
-      pdfImageCount: pdfImages.length,
-    });
+    
 
     const extractionResult = await extractMenuHybrid({
       pdfImages,
-      websiteUrl: menuUrl,
-      venueId: normalizedVenueId,
-    });
-
-    logger.info("[HYBRID MERGE] Extraction complete", {
-      ...logContext,
-      mode: extractionResult.mode,
-      itemCount: extractionResult.itemCount,
-      extractedItems: extractionResult.items?.length || 0,
-    });
-
-    logger.info("[HYBRID ENHANCE] Step 6: Extraction complete!", {
-      mode: extractionResult.mode,
-      itemCount: extractionResult.itemCount,
-    });
 
     // Step 7: Insert items into database
 
@@ -150,61 +111,31 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       else if (item.spiceLevel === "hot") spiceLevelInt = 3;
 
       menuItems.push({
-        id: itemId,
-        venue_id: normalizedVenueId,
-        name: item.name,
-        description: item.description || "",
-        price: item.price || 0,
-        category: item.category || "Menu Items",
-        image_url: item.image_url || null,
-        allergens: item.allergens || [],
-        dietary: item.dietary || [],
-        spice_level: spiceLevelInt,
-        is_available: true,
-        position: i,
-        created_at: new Date().toISOString(),
+
         // NOTE: page_index removed - not in database schema
-      });
+
     }
 
     // Insert menu items
     if (menuItems.length > 0) {
-      logger.info("[HYBRID MERGE] Ready to insert items", {
-        ...logContext,
-        itemCount: menuItems.length,
-        sampleItem: menuItems[0] || null,
-      });
+      
 
       const { data: insertedData, error: insertError } = await supabase
         .from("menu_items")
         .insert(menuItems)
         .select();
 
-      logger.info("[HYBRID MERGE] Insert result", {
-        ...logContext,
-        insertedCount: insertedData?.length || 0,
-        error: insertError?.message || null,
-        errorCode: insertError?.code || null,
-        errorDetails: insertError?.details || null,
-      });
+      
 
       if (insertError) {
-        logger.error("[HYBRID ENHANCE] Failed to insert menu items", {
-          error: insertError.message,
-          code: insertError.code,
-          details: insertError.details,
-        });
+        
         throw new Error(`Failed to insert menu items: ${insertError.message}`);
       }
     }
 
     const duration = Date.now() - startTime;
 
-    logger.info("[HYBRID ENHANCE] ===== ENHANCEMENT COMPLETED SUCCESSFULLY =====", {
-      duration: `${(duration / 1000).toFixed(2)}s`,
-      mode: extractionResult.mode,
-      items: menuItems.length,
-    });
+    .toFixed(2)}s`,
 
     // Revalidate all pages that display menu data
     try {
@@ -212,36 +143,25 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       revalidatePath(`/dashboard/${normalizedVenueId}`, "page");
       revalidatePath(`/dashboard/${normalizedVenueId}/menu-management`, "page");
       revalidatePath(`/menu/${normalizedVenueId}`, "page");
-      logger.debug("[HYBRID MERGE] Cache revalidated", logContext);
+      
     } catch (revalidateError) {
-      logger.warn("[HYBRID ENHANCE] Cache revalidation failed (non-critical)", {
-        error: revalidateError instanceof Error ? revalidateError.message : String(revalidateError),
-        stack: revalidateError instanceof Error ? revalidateError.stack : undefined,
-      });
+      ", {
+
     }
 
     return NextResponse.json({
-      ok: true,
-      message: "Menu enhanced with URL data successfully",
-      mode: extractionResult.mode,
-      items: menuItems.length,
+
       duration: `${duration}ms`,
-    });
+
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error("[HYBRID ENHANCE] ===== ENHANCEMENT FAILED =====", {
-      ...logContext,
-      error,
-      errorMessage: error instanceof Error ? error.message : String(error),
+
       duration: `${duration}ms`,
-    });
 
     return NextResponse.json(
       {
-        ok: false,
-        error: error instanceof Error ? error.message : "Menu enhancement failed",
+
       },
       { status: 500 }
     );
   }
-});

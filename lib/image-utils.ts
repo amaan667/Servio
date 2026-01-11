@@ -41,7 +41,7 @@ export async function convertToWebP(imageUrl: string, quality: number = 80): Pro
     };
 
     img.src = imageUrl;
-  });
+
 }
 
 /**
@@ -51,9 +51,7 @@ export async function convertToWebP(imageUrl: string, quality: number = 80): Pro
  * @returns Promise<string[]> - Array of data URLs of the converted images
  */
 export async function convertMultipleToWebP(
-  imageUrls: string[],
-  quality: number = 80
-): Promise<string[]> {
+
   const conversions = imageUrls.map((url) => convertToWebP(url, quality));
   return Promise.all(conversions);
 }
@@ -67,11 +65,7 @@ export async function convertMultipleToWebP(
  * @returns Promise<string> - Data URL of the compressed image
  */
 export async function compressImage(
-  imageUrl: string,
-  maxWidth: number = 1920,
-  maxHeight: number = 1080,
-  quality: number = 80
-): Promise<string> {
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -119,7 +113,7 @@ export async function compressImage(
     };
 
     img.src = imageUrl;
-  });
+
 }
 
 /**
@@ -142,11 +136,7 @@ export function dataURLtoBlob(dataUrl: string): Blob {
 }
 
 interface SupabaseStorage {
-  storage: {
-    from: (bucket: string) => {
-      upload: (
-        path: string,
-        blob: Blob,
+
         options: { contentType: string; upsert: boolean }
       ) => Promise<{ data: unknown; error: { message: string } | null }>;
       getPublicUrl: (path: string) => { data: { publicUrl: string } };
@@ -163,15 +153,8 @@ interface SupabaseStorage {
  * @returns Promise<string> - Public URL of the uploaded image
  */
 export async function uploadImageToStorage(
-  supabase: SupabaseStorage,
-  bucket: string,
-  path: string,
-  imageBlob: Blob
-): Promise<string> {
+
   const { data, error } = await supabase.storage.from(bucket).upload(path, imageBlob, {
-    contentType: imageBlob.type,
-    upsert: true,
-  });
 
   if (error) {
     throw new Error(`Failed to upload image: ${error.message}`);
@@ -189,12 +172,7 @@ export async function uploadImageToStorage(
  * @returns Promise<string> - Optimized image data URL
  */
 export async function optimizeImageForWeb(
-  imageUrl: string,
-  options: {
-    format?: "webp" | "jpeg" | "png";
-    quality?: number;
-    maxWidth?: number;
-    maxHeight?: number;
+
   } = {
     /* Empty */
   }
@@ -218,16 +196,14 @@ export async function optimizeImageForWeb(
  * @returns Promise<{width: number, height: number}>
  */
 export async function getImageDimensions(
-  imageUrl: string
+
 ): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
 
     img.onload = () => {
       resolve({
-        width: img.width,
-        height: img.height,
-      });
+
     };
 
     img.onerror = (error) => {
@@ -235,7 +211,7 @@ export async function getImageDimensions(
     };
 
     img.src = imageUrl;
-  });
+
 }
 
 /**
@@ -266,11 +242,11 @@ export async function lazyLoadImage(imageUrl: string, element: HTMLElement): Pro
             observer.unobserve(element);
             resolve(imageUrl);
           }
-        });
+
       },
       { rootMargin: "50px" }
     );
 
     observer.observe(element);
-  });
+
 }

@@ -5,22 +5,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { graphql, buildSchema } from "graphql";
-import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 
 interface CreateOrderInput {
-  venueId: string;
-  customerName: string;
-  customerPhone: string;
-  items: OrderItemInput[];
+
 }
 
 interface OrderItemInput {
-  menuItemId: string;
-  quantity: number;
-  price: number;
-  itemName: string;
+
 }
 
 // GraphQL Schema
@@ -38,65 +31,37 @@ const schema = buildSchema(`
   }
 
   type Order {
-    id: ID!
-    venueId: ID!
-    totalAmount: Float!
-    orderStatus: String!
-    paymentStatus: String!
-    items: [OrderItem!]!
-    createdAt: String!
+
   }
 
   type OrderItem {
-    id: ID!
-    menuItemId: ID
-    quantity: Int!
-    price: Float!
-    itemName: String!
+
   }
 
   type MenuItem {
-    id: ID!
-    venueId: ID!
-    name: String!
-    description: String
-    price: Float!
-    category: String!
-    isAvailable: Boolean!
+
   }
 
   type Venue {
-    id: ID!
-    name: String!
-    businessType: String!
-    address: String
+
   }
 
   input CreateOrderInput {
-    venueId: ID!
-    items: [OrderItemInput!]!
-    customerName: String
-    customerPhone: String
+
   }
 
   input OrderItemInput {
-    menuItemId: ID
-    quantity: Int!
-    price: Float!
-    itemName: String!
+
   }
 `);
 
 // Resolvers
 const rootValue = {
-  orders: async ({
-    venueId,
+
     limit = 50,
     offset = 0,
   }: {
-    venueId: string;
-    limit?: number;
-    offset?: number;
+
   }) => {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -112,19 +77,13 @@ const rootValue = {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      logger.error("[GraphQL] Error fetching orders", { error, venueId });
+      
       throw new Error(`Failed to fetch orders: ${error.message}`);
     }
 
     return (
       data?.map((order) => ({
-        id: order.id,
-        venueId: order.venue_id,
-        totalAmount: order.total_amount,
-        orderStatus: order.order_status,
-        paymentStatus: order.payment_status,
-        items: order.order_items || [],
-        createdAt: order.created_at,
+
       })) || []
     );
   },
@@ -147,13 +106,7 @@ const rootValue = {
     }
 
     return {
-      id: data.id,
-      venueId: data.venue_id,
-      totalAmount: data.total_amount,
-      orderStatus: data.order_status,
-      paymentStatus: data.payment_status,
-      items: data.order_items || [],
-      createdAt: data.created_at,
+
     };
   },
 
@@ -167,19 +120,13 @@ const rootValue = {
       .order("category", { ascending: true });
 
     if (error) {
-      logger.error("[GraphQL] Error fetching menu", { error, venueId });
+      
       throw new Error(`Failed to fetch menu: ${error.message}`);
     }
 
     return (
       data?.map((item) => ({
-        id: item.id,
-        venueId: item.venue_id,
-        name: item.name,
-        description: item.description,
-        price: item.price,
-        category: item.category,
-        isAvailable: item.is_available,
+
       })) || []
     );
   },
@@ -193,10 +140,7 @@ const rootValue = {
     }
 
     return {
-      id: data.id,
-      name: data.venue_name,
-      businessType: data.business_type,
-      address: data.address,
+
     };
   },
 
@@ -207,48 +151,33 @@ const rootValue = {
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
-        venue_id: input.venueId,
-        customer_name: input.customerName,
-        customer_phone: input.customerPhone,
-        total_amount: input.items.reduce(
+
           (sum: number, item: OrderItemInput) => sum + item.price * item.quantity,
           0
         ),
-        order_status: "PLACED",
-        payment_status: "UNPAID",
-      })
+
       .select()
       .single();
 
     if (orderError || !order) {
-      logger.error("[GraphQL] Error creating order", { error: orderError });
+      
       throw new Error(`Failed to create order: ${orderError?.message}`);
     }
 
     // Create order items
     const orderItems = input.items.map((item: OrderItemInput) => ({
-      order_id: order.id,
-      menu_item_id: item.menuItemId,
-      quantity: item.quantity,
-      price: item.price,
-      item_name: item.itemName,
+
     }));
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
 
     if (itemsError) {
-      logger.error("[GraphQL] Error creating order items", { error: itemsError });
+      
       throw new Error(`Failed to create order items: ${itemsError.message}`);
     }
 
     return {
-      id: order.id,
-      venueId: order.venue_id,
-      totalAmount: order.total_amount,
-      orderStatus: order.order_status,
-      paymentStatus: order.payment_status,
-      items: orderItems,
-      createdAt: order.created_at,
+
     };
   },
 
@@ -266,13 +195,7 @@ const rootValue = {
     }
 
     return {
-      id: data.id,
-      venueId: data.venue_id,
-      totalAmount: data.total_amount,
-      orderStatus: data.order_status,
-      paymentStatus: data.payment_status,
-      items: [],
-      createdAt: data.created_at,
+
     };
   },
 };
@@ -288,23 +211,18 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
 
     const result = await graphql({
       schema,
-      source: query,
+
       rootValue,
-      variableValues: variables,
+
       operationName,
-    });
 
     if (result.errors) {
-      logger.error("[GraphQL] Query errors", { errors: result.errors, query });
+      
       return NextResponse.json(
         {
-          data: result.data,
-          errors: result.errors.map(
+
             (e: { message: string; locations?: unknown; path?: unknown }) => ({
-              message: e.message,
-              locations: e.locations,
-              path: e.path,
-            })
+
           ),
         },
         { status: 200 } // GraphQL returns 200 even with errors
@@ -313,29 +231,21 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
 
     return NextResponse.json({ data: result.data });
   } catch (error) {
-    logger.error("[GraphQL] Server error", { error });
+    
     return NextResponse.json(
       {
-        errors: [
-          {
-            message: error instanceof Error ? error.message : "Internal server error",
+
           },
         ],
       },
       { status: 500 }
     );
   }
-});
 
 // GraphQL Playground endpoint (GET)
 export const GET = async () => {
   return NextResponse.json({
-    message: "GraphQL API",
-    endpoint: "/api/graphql",
-    playground: "Use POST to /api/graphql with GraphQL query",
-    example: {
-      query: `
-        query {
+
           orders(venueId: "venue-id", limit: 10) {
             id
             totalAmount
@@ -349,5 +259,5 @@ export const GET = async () => {
         }
       `,
     },
-  });
+
 };

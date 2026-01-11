@@ -9,7 +9,7 @@ import { memo, useMemo, useCallback, ComponentType } from "react";
  * Create a memoized component with comparison function
  */
 export function createMemoizedComponent<P extends object>(
-  Component: ComponentType<P>,
+
   areEqual?: (prevProps: P, nextProps: P) => boolean
 ): ComponentType<P> {
   return memo(Component, areEqual) as unknown as ComponentType<P>;
@@ -26,9 +26,7 @@ export function useExpensiveCalculation<T>(factory: () => T, deps: React.Depende
  * Memoize callback functions
  */
 export function useStableCallback<T extends (...args: unknown[]) => unknown>(
-  callback: T,
-  deps: React.DependencyList
-): T {
+
   return useCallback(callback, deps) as T;
 }
 
@@ -93,8 +91,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
  * Memoize component with custom comparison
  */
 export function createDeepMemoizedComponent<P extends object>(
-  Component: ComponentType<P>
-): ComponentType<P> {
+
   return memo(Component, deepEqual) as unknown as ComponentType<P>;
 }
 
@@ -102,7 +99,6 @@ export function createDeepMemoizedComponent<P extends object>(
  * Memoize component with shallow comparison
  */
 export function createShallowMemoizedComponent<P extends object>(
-  Component: ComponentType<P>
-): ComponentType<P> {
+
   return memo(Component, shallowEqual) as unknown as ComponentType<P>;
 }

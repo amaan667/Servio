@@ -6,12 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getCachedQueryData } from "@/lib/persistent-cache";
 
 interface PrefetchLinkProps {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-  prefetchQueries?: {
-    queryKey: string[];
-    queryFn: () => Promise<unknown>;
+
   }[];
 }
 
@@ -47,9 +42,9 @@ export function PrefetchLink({
         queryClient.prefetchQuery({
           queryKey,
           queryFn,
-        });
+
       }
-    });
+
   };
 
   return (
@@ -67,8 +62,7 @@ export function usePrefetch() {
   const queryClient = useQueryClient();
 
   return {
-    prefetchRoute: (href: string) => {
-      router.prefetch(href);
+
     },
     prefetchQuery: (queryKey: string[], queryFn: () => Promise<unknown>) => {
       const cachedData = getCachedQueryData(queryKey);

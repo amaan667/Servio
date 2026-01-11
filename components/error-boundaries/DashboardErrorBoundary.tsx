@@ -7,13 +7,11 @@ import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
 
 interface Props {
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+
 }
 
 interface State {
-  hasError: boolean;
-  error?: Error;
+
 }
 
 export class DashboardErrorBoundary extends React.Component<Props, State> {
@@ -28,9 +26,7 @@ export class DashboardErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     trackError(error, {
-      componentStack: errorInfo.componentStack,
-      boundary: "DashboardErrorBoundary",
-    });
+
   }
 
   render() {

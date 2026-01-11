@@ -9,33 +9,18 @@ export type BrandingTier = "logo+color" | "full+subdomain" | "white-label";
 export type SupportLevel = "email" | "priority" | "24/7";
 
 export interface TierLimits {
-  maxTables: number;
-  maxMenuItems: number;
-  maxStaff: number;
-  maxVenues: number;
-  features: {
-    kds: KDSTier | false; // "basic" | "advanced" | "enterprise" | false
-    inventory: boolean;
-    analytics: AnalyticsTier; // "basic" | "advanced" | "advanced+exports"
-    customerFeedback: boolean;
-    loyaltyTracking: boolean;
-    branding: BrandingTier; // "logo+color" | "full+subdomain" | "white-label"
-    apiAccess: boolean;
-    aiAssistant: boolean;
-    multiVenue: boolean;
-    customIntegrations: boolean;
-    supportLevel: SupportLevel; // "email" | "priority" | "24/7"
+
   };
 }
 
 // Tier limits based on pricing page: Starter (£99), Pro (£249), Enterprise (£499+)
 export const TIER_LIMITS: Record<string, TierLimits> = {
-  starter: {
+
     maxTables: 25, // Up to 25 tables
-    maxMenuItems: 50,
+
     maxStaff: 5, // Up to 5 staff accounts
     maxVenues: 1, // 1 location
-    features: {
+
       kds: false, // KDS not included - available as add-on
       inventory: false, // Not included
       analytics: "basic", // Basic dashboard & daily reports
@@ -43,18 +28,16 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       loyaltyTracking: false, // Not included
       branding: "logo+color", // Logo + colour theme
       apiAccess: false, // Not included
-      aiAssistant: false,
-      multiVenue: false,
-      customIntegrations: false,
+
       supportLevel: "email", // Email support
     },
   },
-  pro: {
+
     maxTables: 100, // Up to 100 tables
-    maxMenuItems: 200,
+
     maxStaff: 15, // Up to 15 staff accounts
     maxVenues: 3, // Up to 3 locations
-    features: {
+
       kds: "advanced", // Advanced KDS (multi-station)
       inventory: true, // Inventory & stock management
       analytics: "advanced+exports", // Advanced analytics + CSV exports
@@ -64,16 +47,16 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       apiAccess: false, // Available as add-on (light API)
       aiAssistant: false, // AI Assistant is Enterprise only (Pro has AI insights in analytics, not full AI Assistant)
       multiVenue: true, // Up to 3 locations
-      customIntegrations: false,
+
       supportLevel: "priority", // Priority email & live chat
     },
   },
-  enterprise: {
+
     maxTables: -1, // Unlimited tables
     maxMenuItems: -1, // Unlimited
     maxStaff: -1, // Unlimited staff accounts
     maxVenues: -1, // Unlimited locations
-    features: {
+
       kds: "enterprise", // Enterprise KDS (multi-venue)
       inventory: true, // Advanced inventory + supplier ordering
       analytics: "advanced+exports", // Enterprise analytics suite & financial exports
@@ -81,9 +64,9 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       loyaltyTracking: true, // Included
       branding: "white-label", // Full white-label + custom domains
       apiAccess: true, // API access, webhooks & POS/accounting integrations
-      aiAssistant: true,
+
       multiVenue: true, // Unlimited locations
-      customIntegrations: true,
+
       supportLevel: "24/7", // 24/7 phone support, SLA & account manager
     },
   },
@@ -155,26 +138,11 @@ export type FeatureKey =
   | "customIntegrations";
 
 export interface AccessContext {
-  user_id: string;
-  venue_id: string | null;
-  role: UserRole;
-  tier: Tier;
-  venue_ids: string[];
+
   permissions: Record<string, unknown>;
 }
 
 export function hasFeatureAccess(
-  context: AccessContext | null,
-  feature: FeatureKey
-): boolean {
-  if (!context) return false;
-
-  const tierLimits = TIER_LIMITS[context.tier];
-  if (!tierLimits) return false;
-
-  // Handle legacy "customBranding" -> "branding" mapping
-  const featureKey = feature === "customBranding" ? "branding" : feature;
-  const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
 
   // For KDS tier, return true if not false
   if (feature === "kds" || featureKey === "kds") {
@@ -190,14 +158,7 @@ export function hasFeatureAccess(
 }
 
 export function hasFeatureAccessByTier(
-  tier: string,
-  feature: keyof TierLimits["features"]
-): boolean {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
 
-  // Special handling for analytics tier
-  if (feature === "analytics") {
     return true; // All tiers have analytics, just different levels
   }
 

@@ -1,6 +1,5 @@
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -16,11 +15,7 @@ export async function GET(req: Request) {
     const venueId = searchParams.get("venueId");
     const tableNumber = searchParams.get("tableNumber");
 
-    logger.info("🔍 [CHECK ACTIVE ORDERS] API called", {
-      venueId,
-      tableNumber,
-      timestamp: new Date().toISOString(),
-    });
+    .toISOString(),
 
     if (!venueId || !tableNumber) {
       return apiErrors.badRequest("venueId and tableNumber are required");
@@ -31,17 +26,12 @@ export async function GET(req: Request) {
       env("NEXT_PUBLIC_SUPABASE_URL")!,
       env("SUPABASE_SERVICE_ROLE_KEY")!,
       {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
+
         },
       }
     );
 
-    logger.info("📊 [CHECK ACTIVE ORDERS] Querying database", {
-      venueId,
-      tableNumber,
-    });
+    
 
     const { data: activeOrders, error } = await supabase
       .from("orders")
@@ -52,28 +42,16 @@ export async function GET(req: Request) {
       .in("payment_status", ["UNPAID", "IN_PROGRESS"]);
 
     if (error) {
-      logger.error("[CHECK ACTIVE ORDERS] Database error", {
-        venueId,
-        tableNumber,
-        error: error.message,
-        code: error.code,
-      });
+      
       return apiErrors.database(error.message);
     }
 
-    logger.info("[CHECK ACTIVE ORDERS] Query successful", {
-      venueId,
-      tableNumber,
-      count: activeOrders?.length || 0,
-    });
+    
 
     return success({
-      orders: activeOrders || [],
-    });
+
   } catch (_error) {
-    logger.error("❌ [CHECK ACTIVE ORDERS] Unexpected error", {
-      error: _error instanceof Error ? _error.message : String(_error),
-    });
+
     return apiErrors.internal("Internal server error");
   }
 }

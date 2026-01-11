@@ -14,8 +14,7 @@ export async function GET() {
     // Calculate metrics
     const endpoints = Object.entries(summary).map(([endpoint, stats]) => ({
       endpoint,
-      avgTime: Math.round(stats.avg),
-      count: stats.count,
+
       errorRate: 0, // Error tracking not yet implemented in summary
     }));
 
@@ -32,10 +31,7 @@ export async function GET() {
     return NextResponse.json({
       apiResponseTime: { p50, p95, p99 },
       errorRate,
-      requestCount: totalRequests,
-      endpointStats: endpoints,
-      timestamp: new Date().toISOString(),
-    });
+
   } catch (_error) {
     return apiErrors.internal("Failed to fetch performance metrics");
   }

@@ -5,7 +5,6 @@
  */
 
 import { redisCache } from "./redis";
-import { logger } from "@/lib/logger";
 
 interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -51,10 +50,7 @@ class Cache {
    * Set value in cache
    */
   async set<T>(
-    key: string,
-    value: T,
-    options: CacheOptions = {
-      /* Empty */
+
     }
   ): Promise<boolean> {
     const { ttl = 300 } = options; // Default 5 minutes
@@ -71,7 +67,7 @@ class Cache {
       this.memoryCache.set(key, { value, expires });
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error setting cache:", { error: _error, key });
+      
       return false;
     }
   }
@@ -90,7 +86,7 @@ class Cache {
       this.memoryCache.delete(key);
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error deleting cache:", { error: _error, key });
+      
       return false;
     }
   }
@@ -118,7 +114,7 @@ class Cache {
       }
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error invalidating cache:", { error: _error, pattern });
+      
       return false;
     }
   }
@@ -144,8 +140,7 @@ class Cache {
    */
   async mset<T>(
     keyValues: Record<string, T>,
-    options: CacheOptions = {
-      /* Empty */
+
     }
   ): Promise<boolean> {
     try {
@@ -154,7 +149,7 @@ class Cache {
       );
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error setting multiple cache values:", { error: _error });
+      
       return false;
     }
   }
@@ -170,7 +165,7 @@ class Cache {
       this.memoryCache.clear();
       return true;
     } catch (_error) {
-      logger.error("[CACHE] Error clearing cache:", { error: _error });
+      
       return false;
     }
   }
@@ -215,18 +210,18 @@ export interface CacheInterface {
  * AI Response caching helpers
  */
 export const AICache = {
-  categorization: {
+
     get: (itemName: string, categories: string[]) =>
       cache.get(`ai:cat:${itemName}:${categories.join(",")}`),
     set: (itemName: string, categories: string[], result: unknown) =>
       cache.set(`ai:cat:${itemName}:${categories.join(",")}`, result, { ttl: cacheTTL.long }), // 30 min
   },
-  matching: {
+
     get: (pdfItem: string, urlItem: string) => cache.get(`ai:match:${pdfItem}:${urlItem}`),
     set: (pdfItem: string, urlItem: string, result: unknown) =>
       cache.set(`ai:match:${pdfItem}:${urlItem}`, result, { ttl: cacheTTL.long }), // 30 min
   },
-  kdsStation: {
+
     get: (itemName: string, venueId: string, stationTypes: string[]) => {
       const key = `ai:kds:${venueId}:${itemName.toLowerCase()}:${stationTypes.sort().join(",")}`;
       return cache.get(key);

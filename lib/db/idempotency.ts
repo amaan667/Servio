@@ -6,24 +6,16 @@
  */
 
 import { createServerSupabase } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 export interface IdempotencyRecord {
-  id: string;
-  idempotency_key: string;
-  request_hash: string;
-  response_data: unknown;
-  status_code: number;
-  created_at: string;
-  expires_at: string;
+
 }
 
 /**
  * Generate idempotency key from request
  */
 export function generateIdempotencyKey(
-  endpoint: string,
-  userId: string,
+
   requestData: Record<string, unknown>
 ): string {
   const dataString = JSON.stringify(requestData);
@@ -35,7 +27,7 @@ export function generateIdempotencyKey(
  * Check if idempotency key exists and return cached response
  */
 export async function checkIdempotency(
-  idempotencyKey: string
+
 ): Promise<{ exists: true; response: IdempotencyRecord } | { exists: false }> {
   try {
     const supabase = await createServerSupabase();
@@ -52,26 +44,20 @@ export async function checkIdempotency(
         // Not found - this is expected
         return { exists: false };
       }
-      logger.error("[IDEMPOTENCY] Error checking idempotency key", {
-        error: error.message,
-        key: idempotencyKey.substring(0, 20) + "...",
-      });
+       + "...",
+
       return { exists: false };
     }
 
     if (data) {
-      logger.info("[IDEMPOTENCY] Found existing idempotency key", {
-        key: idempotencyKey.substring(0, 20) + "...",
-        createdAt: data.created_at,
-      });
+       + "...",
+
       return { exists: true, response: data as IdempotencyRecord };
     }
 
     return { exists: false };
   } catch (error) {
-    logger.error("[IDEMPOTENCY] Exception checking idempotency", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     return { exists: false };
   }
 }
@@ -80,50 +66,29 @@ export async function checkIdempotency(
  * Store idempotency key with response
  */
 export async function storeIdempotency(
-  idempotencyKey: string,
-  requestHash: string,
-  responseData: unknown,
-  statusCode: number,
-  ttlSeconds: number = 3600 // 1 hour default
-): Promise<void> {
-  try {
-    const supabase = await createServerSupabase();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
     const { error } = await supabase.from("idempotency_keys").insert({
-      idempotency_key: idempotencyKey,
-      request_hash: requestHash,
-      response_data: responseData,
-      status_code: statusCode,
-      expires_at: expiresAt.toISOString(),
-    });
 
     if (error) {
       // If it's a unique constraint violation, that's okay - key already exists
       if (error.code === "23505") {
-        logger.debug("[IDEMPOTENCY] Key already exists (race condition)", {
+        ", {
           key: idempotencyKey.substring(0, 20) + "...",
-        });
+
         return;
       }
 
-      logger.error("[IDEMPOTENCY] Error storing idempotency key", {
-        error: error.message,
-        key: idempotencyKey.substring(0, 20) + "...",
-      });
+       + "...",
+
       throw error;
     }
 
-    logger.debug("[IDEMPOTENCY] Stored idempotency key", {
-      key: idempotencyKey.substring(0, 20) + "...",
-      expiresAt: expiresAt.toISOString(),
-    });
+     + "...",
+
   } catch (error) {
     // Don't fail the request if idempotency storage fails
-    logger.error("[IDEMPOTENCY] Failed to store idempotency key (non-critical)", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    ", {
+
   }
 }
 
@@ -131,8 +96,7 @@ export async function storeIdempotency(
  * Wrapper for idempotent operations
  */
 export async function withIdempotency<T>(
-  idempotencyKey: string,
-  requestHash: string,
+
   operation: () => Promise<{ data: T; statusCode: number }>,
   ttlSeconds?: number
 ): Promise<{ data: T; statusCode: number; cached: boolean }> {
@@ -141,9 +105,7 @@ export async function withIdempotency<T>(
 
   if (existing.exists) {
     return {
-      data: existing.response.response_data as T,
-      statusCode: existing.response.status_code,
-      cached: true,
+
     };
   }
 
@@ -155,8 +117,7 @@ export async function withIdempotency<T>(
 
   return {
     ...result,
-    cached: false,
+
   };
 }
-
 

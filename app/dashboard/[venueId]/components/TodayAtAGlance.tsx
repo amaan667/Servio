@@ -14,18 +14,17 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { logger } from "@/lib/logger";
 
 interface TodayAtAGlanceProps {
   ordersByHour: Array<{ hour: string; orders: number }>;
-  tableUtilization: number;
+
   revenueByCategory: Array<{ name: string; value: number; color: string }>;
   loading?: boolean;
 }
 
 export function TodayAtAGlance({
   ordersByHour,
-  tableUtilization: _tableUtilization,
+
   revenueByCategory,
   loading = false,
 }: TodayAtAGlanceProps) {
@@ -33,11 +32,7 @@ export function TodayAtAGlance({
 
   // Lightweight debug hook for development / diagnostics
   if (process.env.NODE_ENV !== "production") {
-    logger.debug("[TODAY AT A GLANCE] Props received", {
-      ordersByHourLength: ordersByHour.length,
-      revenueByCategoryLength: revenueByCategory.length,
-      loading,
-    });
+    
   }
 
   // Never show loading state - render immediately with data

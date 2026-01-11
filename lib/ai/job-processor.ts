@@ -2,51 +2,34 @@
 // Handles long-running tasks to prevent timeouts
 
 import { createAdminClient } from "@/lib/supabase";
-import { aiLogger } from "@/lib/logger";
 
 interface JobStatus {
-  jobId: string;
-  status: "pending" | "running" | "completed" | "failed" | "cancelled";
-  progress: number;
-  total: number;
-  result?: unknown;
-  error?: string;
+
 }
 
 /**
  * Create a new background job
  */
 export async function createJob(
-  venueId: string,
-  userId: string,
-  jobType: string,
+
   params: Record<string, unknown>
 ): Promise<string> {
   const supabase = createAdminClient();
   const jobId = `${jobType}_${venueId}_${Date.now()}`;
 
-  aiLogger.info(`[JOB PROCESSOR] Creating job: ${jobId}`);
+  
 
   const { error } = await supabase.from("ai_jobs").insert({
-    job_id: jobId,
-    venue_id: venueId,
-    user_id: userId,
-    job_type: jobType,
-    status: "pending",
+
     params,
-    progress: 0,
-    total: 100,
-  });
 
   if (error) {
-    aiLogger.error("[JOB PROCESSOR] Error creating job:", error);
+    
     throw new Error(`Failed to create job: ${error.message}`);
   }
 
   // Start processing asynchronously
   processJobAsync(jobId, venueId, userId, jobType, params).catch((err) => {
-    aiLogger.error(`[JOB PROCESSOR] Job ${jobId} failed:`, err);
-  });
 
   return jobId;
 }
@@ -64,17 +47,12 @@ export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
     .maybeSingle();
 
   if (error || !data) {
-    aiLogger.error("[JOB PROCESSOR] Error fetching job status:", error);
+    
     return null;
   }
 
   return {
-    jobId: data.job_id,
-    status: data.status as JobStatus["status"],
-    progress: data.progress,
-    total: data.total,
-    result: data.result,
-    error: data.error,
+
   };
 }
 
@@ -82,9 +60,7 @@ export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
  * Update job progress
  */
 export async function updateJobProgress(
-  jobId: string,
-  progress: number,
-  total: number,
+
   status?: "pending" | "running" | "completed" | "failed"
 ): Promise<void> {
   const supabase = createAdminClient();
@@ -92,7 +68,7 @@ export async function updateJobProgress(
   const updateData: Record<string, unknown> = {
     progress,
     total,
-    updated_at: new Date().toISOString(),
+
   };
 
   if (status) {
@@ -117,15 +93,12 @@ export async function completeJob(jobId: string, result: unknown): Promise<void>
   await supabase
     .from("ai_jobs")
     .update({
-      status: "completed",
+
       result,
-      progress: 100,
-      completed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("job_id", jobId);
 
-  aiLogger.info(`[JOB PROCESSOR] Job ${jobId} completed successfully`);
+  
 }
 
 /**
@@ -137,27 +110,22 @@ export async function failJob(jobId: string, error: string): Promise<void> {
   await supabase
     .from("ai_jobs")
     .update({
-      status: "failed",
+
       error,
-      completed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("job_id", jobId);
 
-  aiLogger.error(`[JOB PROCESSOR] Job ${jobId} failed:`, error);
+  
 }
 
 /**
  * Process a job asynchronously
  */
 async function processJobAsync(
-  jobId: string,
-  venueId: string,
-  _userId: string,
-  jobType: string,
+
   params: Record<string, unknown>
 ): Promise<void> {
-  aiLogger.info(`[JOB PROCESSOR] Starting async processing for job: ${jobId}`);
+  
 
   try {
     await updateJobProgress(jobId, 0, 100, "running");
@@ -188,15 +156,14 @@ async function processJobAsync(
  * Process menu translation job
  */
 async function processMenuTranslation(
-  jobId: string,
-  venueId: string,
+
   params: Record<string, unknown>
 ): Promise<void> {
   const supabase = createAdminClient();
   const targetLanguage = params.targetLanguage as string;
   const categories = (params.categories as string[]) || null;
 
-  aiLogger.info(`[JOB PROCESSOR] Translating menu to ${targetLanguage}`);
+  
 
   // Get items to translate
   let query = supabase
@@ -231,24 +198,15 @@ async function processMenuTranslation(
         const translatedName = `[${targetLanguage.toUpperCase()}] ${item.name}`;
         const translatedDescription = item.description
           ? `[${targetLanguage.toUpperCase()}] ${item.description}`
-          : null;
 
-        // Store translation
-        await supabase
-          .from("menu_items")
-          .update({
-            translations: {
-              [targetLanguage]: {
-                name: translatedName,
-                description: translatedDescription,
               },
             },
-          })
+
           .eq("id", item.id);
 
         translatedCount++;
       } catch (error) {
-        aiLogger.error(`[JOB PROCESSOR] Translation error for ${item.name}:`, error);
+        
       }
     }
 
@@ -260,24 +218,22 @@ async function processMenuTranslation(
   }
 
   await completeJob(jobId, {
-    itemsTranslated: translatedCount,
-    totalItems: items.length,
+
     targetLanguage,
     message: `Successfully translated ${translatedCount} of ${items.length} items to ${targetLanguage}`,
-  });
+
 }
 
 /**
  * Process bulk menu update job
  */
 async function processBulkMenuUpdate(
-  jobId: string,
-  venueId: string,
+
   params: Record<string, unknown>
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[JOB PROCESSOR] Processing bulk menu update`);
+  
 
   const operation = params.operation as string;
   const itemIds = (params.itemIds as string[]) || [];
@@ -302,7 +258,7 @@ async function processBulkMenuUpdate(
 
       updatedCount++;
     } catch (error) {
-      aiLogger.error(`[JOB PROCESSOR] Error updating item ${itemIds[i]}:`, error);
+      
     }
 
     await updateJobProgress(jobId, i + 1, itemIds.length, "running");
@@ -310,22 +266,21 @@ async function processBulkMenuUpdate(
 
   await completeJob(jobId, {
     updatedCount,
-    totalItems: itemIds.length,
+
     message: `Successfully updated ${updatedCount} of ${itemIds.length} items`,
-  });
+
 }
 
 /**
  * Process inventory reorder job
  */
 async function processInventoryReorder(
-  jobId: string,
-  venueId: string,
+
   _params: Record<string, unknown>
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  aiLogger.info(`[JOB PROCESSOR] Processing inventory reorder`);
+  
 
   // Get low stock items
   const { data: items } = await supabase
@@ -344,18 +299,14 @@ async function processInventoryReorder(
 
   // In production, this would integrate with supplier API or send email
   const purchaseOrder = lowStockItems.map((item) => ({
-    itemId: item.id,
-    itemName: item.name,
-    currentStock: item.quantity || 0,
-    parLevel: item.par_level || 0,
-    orderQuantity: Math.ceil(((item.par_level || 0) - (item.quantity || 0)) * 1.2),
+
   }));
 
   await completeJob(jobId, {
-    orderedCount: lowStockItems.length,
+
     purchaseOrder,
     message: `Purchase order created for ${lowStockItems.length} items`,
-  });
+
 }
 
 /**
@@ -367,10 +318,8 @@ export async function cancelJob(jobId: string): Promise<void> {
   await supabase
     .from("ai_jobs")
     .update({
-      status: "cancelled",
-      updated_at: new Date().toISOString(),
-    })
+
     .eq("job_id", jobId);
 
-  aiLogger.info(`[JOB PROCESSOR] Job ${jobId} cancelled`);
+  
 }

@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -12,10 +11,6 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const sendEmailSchema = z.object({
-  orderId: z.string().uuid(),
-  email: z.string().email("Invalid email address"),
-  venueId: z.string().uuid().optional(),
-});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -150,11 +145,10 @@ export const POST = withUnifiedAuth(
 
       // Send email
       const emailSent = await sendEmail({
-        to: body.email,
+
         subject: `Receipt for Order #${body.orderId.slice(-6).toUpperCase()} - ${venueName}`,
-        html: receiptHtml,
+
         text: `Receipt for Order #${body.orderId.slice(-6).toUpperCase()}\n\n${venueName}\n\nOrder Number: #${body.orderId.slice(-6).toUpperCase()}\nTotal: £${subtotal.toFixed(2)}\n\nThank you for your order!`,
-      });
 
       if (!emailSent) {
         return apiErrors.internal("Failed to send email");
@@ -164,28 +158,14 @@ export const POST = withUnifiedAuth(
       await supabase
         .from("orders")
         .update({
-          receipt_sent_at: new Date().toISOString(),
-          receipt_channel: "email",
-          receipt_email: body.email,
-        })
+
         .eq("id", body.orderId);
 
-      logger.info("[RECEIPTS EMAIL] Email receipt sent successfully", {
-        orderId: body.orderId,
-        email: body.email,
-        venueId: finalVenueId,
-        userId: context.user.id,
-      });
+      
 
       // STEP 4: Return success response
       return success({ message: "Receipt sent successfully" });
     } catch (error) {
-      logger.error("[RECEIPTS EMAIL] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -199,8 +179,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
+
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||

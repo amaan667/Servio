@@ -3,16 +3,12 @@
  * Integrates with Sentry and provides custom metrics tracking
  */
 
-import { logger } from "./logger";
-
 export type AlertLevel = "info" | "warning" | "error" | "critical";
 
 export interface MonitoringEvent {
-  name: string;
-  level: AlertLevel;
-  message: string;
+
   metadata?: Record<string, unknown>;
-  timestamp: number;
+
 }
 
 class MonitoringService {
@@ -23,9 +19,7 @@ class MonitoringService {
    * Track an event
    */
   async trackEvent(
-    name: string,
-    level: AlertLevel = "info",
-    message: string,
+
     metadata?: Record<string, unknown>
   ) {
     const event: MonitoringEvent = {
@@ -33,7 +27,7 @@ class MonitoringService {
       level,
       message,
       metadata,
-      timestamp: Date.now(),
+
     };
 
     // Add to local events
@@ -50,17 +44,16 @@ class MonitoringService {
     switch (level) {
       case "critical":
       case "error":
-        logger.error(`[MONITOR] ${message}`, logData);
+        
         await this.sendToSentry(event, "error");
         await this.sendAlert(event);
         break;
       case "warning":
-        logger.warn(`[MONITOR] ${message}`, logData);
+        
         await this.sendToSentry(event, "warning");
         break;
       case "info":
-      default:
-        break;
+
     }
   }
 
@@ -75,21 +68,15 @@ class MonitoringService {
 
       if (level === "error") {
         Sentry.captureException(new Error(event.message), {
-          tags: {
-            event_name: event.name,
-            alert_level: event.level,
+
           },
-          extra: event.metadata,
-        });
+
       } else {
         Sentry.captureMessage(event.message, {
           level,
-          tags: {
-            event_name: event.name,
-            alert_level: event.level,
+
           },
-          extra: event.metadata,
-        });
+
       }
     } catch (error) {
       // Sentry not available
@@ -106,43 +93,31 @@ class MonitoringService {
       // Send to alerting service (implement based on your needs)
       // Options: Email, Slack webhook, PagerDuty, etc.
 
-      logger.info("[MONITOR] Critical alert would be sent", {
-        event: event.name,
-        message: event.message,
-      });
+      
 
       // Example: Send to Slack webhook
       if (process.env.SLACK_WEBHOOK_URL) {
         await fetch(process.env.SLACK_WEBHOOK_URL, {
-          method: "POST",
+
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+
             text: `🚨 CRITICAL: ${event.message}`,
-            blocks: [
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
+
                   text: `*${event.name}*\n${event.message}`,
                 },
               },
               {
-                type: "context",
-                elements: [
-                  {
-                    type: "mrkdwn",
+
                     text: `Metadata: \`\`\`${JSON.stringify(event.metadata, null, 2)}\`\`\``,
                   },
                 ],
               },
             ],
           }),
-        });
+
       }
     } catch (error) {
-      logger.error("[MONITOR] Failed to send alert", {
-        error: error instanceof Error ? error.message : String(error),
-      });
+
     }
   }
 
@@ -174,13 +149,7 @@ class MonitoringService {
     const last24h = this.events.filter((e) => e.timestamp > Date.now() - 24 * 60 * 60 * 1000);
 
     return {
-      totalEvents: this.events.length,
-      last24h: last24h.length,
-      byLevel: {
-        info: last24h.filter((e) => e.level === "info").length,
-        warning: last24h.filter((e) => e.level === "warning").length,
-        error: last24h.filter((e) => e.level === "error").length,
-        critical: last24h.filter((e) => e.level === "critical").length,
+
       },
     };
   }
@@ -211,7 +180,7 @@ export const alerts = {
  */
 export const monitors = {
   // Menu extraction monitoring
-  menuExtraction: {
+
     started: (venueId: string, mode: string) =>
       alerts.info("menu-extraction-started", "Menu extraction started", { venueId, mode }),
 
@@ -234,7 +203,7 @@ export const monitors = {
   },
 
   // Order monitoring
-  orders: {
+
     placed: (orderId: string, venueId: string, amount: number) =>
       alerts.info("order-placed", "New order placed", { orderId, venueId, amount }),
 
@@ -246,8 +215,7 @@ export const monitors = {
   },
 
   // System health monitoring
-  system: {
-    highMemory: (usage: number) =>
+
       alerts.warning("high-memory-usage", "High memory usage detected", { usage }),
 
     databaseSlow: (query: string, duration: number) =>
@@ -261,7 +229,7 @@ export const monitors = {
   },
 
   // AI monitoring
-  ai: {
+
     highCost: (operation: string, cost: number) =>
       alerts.warning("ai-high-cost", "AI operation cost is high", { operation, cost }),
 
@@ -280,9 +248,9 @@ export const monitors = {
  * Health check function
  */
 export async function performHealthCheck(): Promise<{
-  status: "healthy" | "degraded" | "unhealthy";
+
   checks: Record<string, boolean>;
-  details: string[];
+
 }> {
   const checks: Record<string, boolean> = {};
   const details: string[] = [];

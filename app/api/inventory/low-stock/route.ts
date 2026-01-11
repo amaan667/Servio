@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 interface MenuItemLink {
   menu_item?:
     | {
-        name: string;
+
       }
     | {
-        name: string;
+
       }[];
 }
 
@@ -22,7 +21,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -40,9 +39,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("on_hand", { ascending: true });
 
     if (error) {
-      logger.error("[INVENTORY API] Error fetching low stock:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -55,30 +52,17 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
           .eq("ingredient_id", item.ingredient_id);
 
         return {
-          ingredient_id: item.ingredient_id,
-          ingredient_name: item.name,
-          current_stock: item.on_hand,
-          reorder_level: item.reorder_level,
-          unit: item.unit,
-          affected_menu_items:
-            menuItems
-              ?.map((mi: MenuItemLink) => {
-                const menuItem = mi.menu_item;
-                if (Array.isArray(menuItem)) {
-                  return menuItem[0]?.name;
+
                 }
                 return menuItem?.name;
-              })
+
               .filter(Boolean) || [],
         };
-      })
+
     );
 
     return NextResponse.json({ data: alerts });
   } catch (_error) {
-    logger.error("[INVENTORY API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown error",
-    });
+    
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-});

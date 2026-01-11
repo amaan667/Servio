@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -17,9 +16,7 @@ export async function GET(req: Request) {
     }
 
     // First try to fetch order by Stripe session ID
-    logger.debug("[ORDER BY SESSION] Searching for order with stripe_session_id:", {
-      value: sessionId,
-    });
+    
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .select(
@@ -69,25 +66,20 @@ export async function GET(req: Request) {
         // Transform the order to include items array
         const transformedOrder = {
           ...recentOrder,
-          items: recentOrder.order_items || [],
+
         };
         delete transformedOrder.order_items;
 
         return NextResponse.json({
-          order: transformedOrder,
-          fallback: true,
-          message: "Found recent paid order (session ID not yet set)",
-        });
+
       }
     }
 
     if (orderError) {
-      logger.error("[ORDER BY SESSION] Error fetching order by stripe_session_id:", {
-        value: orderError,
-      });
+      
       return NextResponse.json(
         {
-          error: "Order not found for this session ID",
+
         },
         { status: 404 }
       );
@@ -96,7 +88,7 @@ export async function GET(req: Request) {
     if (!order) {
       return NextResponse.json(
         {
-          error: "Order not found",
+
         },
         { status: 404 }
       );
@@ -105,22 +97,19 @@ export async function GET(req: Request) {
     // Transform the order to include items array
     const transformedOrder = {
       ...order,
-      items: order.order_items || [],
+
     };
 
     // Remove the order_items property since we have items now
     delete transformedOrder.order_items;
 
     return NextResponse.json({
-      order: transformedOrder,
-    });
+
   } catch (_error) {
-    logger.error("[ORDER BY SESSION] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        error: "Internal server error",
+
       },
       { status: 500 }
     );

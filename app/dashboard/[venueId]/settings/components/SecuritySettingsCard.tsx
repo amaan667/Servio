@@ -22,18 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Lock, Shield } from "lucide-react";
 
 interface SecuritySettingsCardProps {
-  shouldShowSetPassword: boolean;
-  showPasswordDialog: boolean;
-  setShowPasswordDialog: (show: boolean) => void;
-  newPassword: string;
-  setNewPassword: (password: string) => void;
-  confirmPassword: string;
-  setConfirmPassword: (password: string) => void;
-  loading: boolean;
-  onChangePassword: () => void;
-  onCancel: () => void;
-  twoFactorEnabled: boolean;
-  setTwoFactorEnabled: (enabled: boolean) => void;
+
 }
 
 export function SecuritySettingsCard({
@@ -138,9 +127,7 @@ export function SecuritySettingsCard({
                           {loading
                             ? shouldShowSetPassword
                               ? "Setting..."
-                              : "Updating..."
-                            : shouldShowSetPassword
-                              ? "Set Password"
+
                               : "Update Password"}
                         </Button>
                         <Button

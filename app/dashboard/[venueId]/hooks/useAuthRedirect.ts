@@ -177,7 +177,7 @@ export function useAuthRedirect() {
 
   return {
     user,
-    isAuthenticated: !!user || !!session,
+
     isLoading,
   };
 }

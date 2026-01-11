@@ -13,38 +13,21 @@ export async function GET(_request: NextRequest) {
     // Test Supabase connection - use getUser() for secure authentication
     const {
       data: { user },
-      error: authError,
+
     } = await supabase.auth.getUser();
 
     const testResults = {
-      timestamp: new Date().toISOString(),
-      environment: {
-        NODE_ENV: getNodeEnv(),
+
         NEXT_PUBLIC_SUPABASE_URL: env("NEXT_PUBLIC_SUPABASE_URL")?.substring(0, 20) + "...",
-        hasAnonKey: !!env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-        hasServiceRoleKey: !!env("SUPABASE_SERVICE_ROLE_KEY"),
+
       },
-      oauth: {
-        redirectUrl,
-        expectedRedirectUrl: "https://servio-production.up.railway.app/auth/callback",
-        redirectUrlMatches:
-          redirectUrl === "https://servio-production.up.railway.app/auth/callback",
+
       },
-      auth: {
-        hasUser: !!user,
-        userId: user?.id,
-        userEmail: user?.email,
-        authError: authError?.message,
+
       },
-      providers: {
-        hasProviders: false,
-        providerCount: 0,
-        providersError: "OAuth provider testing disabled",
+
       },
-      request: {
-        url: _request.url,
-        userAgent: _request.headers.get("user-agent"),
-        referer: _request.headers.get("referer"),
+
       },
     };
 
@@ -52,8 +35,7 @@ export async function GET(_request: NextRequest) {
   } catch (_error) {
     return NextResponse.json(
       {
-        error: _error instanceof Error ? _error.message : "Unknown _error",
-        timestamp: new Date().toISOString(),
+
       },
       { status: 500 }
     );

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import type { RecipeIngredient } from "@/types/inventory";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 interface RecipeItem {
   ingredient?: {
-    cost_per_unit: number;
+
   };
-  qty_per_item: number;
+
 }
 
 // GET /api/inventory/recipes/[menu_item_id]
@@ -34,9 +33,7 @@ export async function GET(_request: NextRequest, context: RecipeMenuParams = {})
       .eq("menu_item_id", menu_item_id);
 
     if (error) {
-      logger.error("[INVENTORY API] Error fetching recipe:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      
       return apiErrors.internal(error.message || "Internal server error");
     }
 
@@ -49,12 +46,9 @@ export async function GET(_request: NextRequest, context: RecipeMenuParams = {})
 
     return NextResponse.json({
       data,
-      total_cost: totalCost,
-    });
+
   } catch (_error) {
-    logger.error("[INVENTORY API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }
@@ -82,9 +76,7 @@ export async function POST(_request: NextRequest, context: RecipeMenuParams = {}
       .eq("menu_item_id", menu_item_id);
 
     if (deleteError) {
-      logger.error("[INVENTORY API] Error deleting existing recipe:", {
-        error: deleteError.message,
-      });
+      
       return apiErrors.internal("Internal server error");
     }
 
@@ -92,9 +84,7 @@ export async function POST(_request: NextRequest, context: RecipeMenuParams = {}
     if (body.ingredients.length > 0) {
       const recipeData = body.ingredients.map((ing) => ({
         menu_item_id,
-        ingredient_id: ing.ingredient_id,
-        qty_per_item: ing.qty_per_item,
-        unit: ing.unit,
+
       }));
 
       const { data, error: insertError } = await supabase
@@ -103,7 +93,7 @@ export async function POST(_request: NextRequest, context: RecipeMenuParams = {}
         .select();
 
       if (insertError) {
-        logger.error("[INVENTORY API] Error inserting recipe:", { error: insertError.message });
+        
         return apiErrors.internal("Internal server error");
       }
 
@@ -112,9 +102,7 @@ export async function POST(_request: NextRequest, context: RecipeMenuParams = {}
 
     return NextResponse.json({ data: [] }, { status: 200 });
   } catch (_error) {
-    logger.error("[INVENTORY API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }
@@ -136,17 +124,13 @@ export async function DELETE(_request: NextRequest, context: RecipeMenuParams = 
       .eq("menu_item_id", menu_item_id);
 
     if (error) {
-      logger.error("[INVENTORY API] Error deleting recipe:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      
       return apiErrors.internal(error.message || "Internal server error");
     }
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    logger.error("[INVENTORY API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

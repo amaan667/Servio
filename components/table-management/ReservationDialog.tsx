@@ -16,23 +16,7 @@ import { Calendar, Clock, User } from "lucide-react";
 import { useReserveTable, useModifyReservation } from "@/hooks/useTableReservations";
 
 interface ReservationDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  tableId: string;
-  tableLabel: string;
-  tableSeatCount: number;
-  venueId: string;
-  tableStatus?: string; // Current table status to check if already reserved
-  onReservationComplete?: () => void;
-  // Modification mode props
-  isModifyMode?: boolean;
-  existingReservation?: {
-    id: string;
-    customer_name: string;
-    start_at: string;
-    end_at: string;
-    party_size: number;
-    customer_phone?: string;
+
   };
 }
 
@@ -136,13 +120,10 @@ export function ReservationDialog({
       if (isModifyMode && existingReservation) {
         // Modify existing reservation
         await modifyReservation.mutateAsync({
-          reservationId: existingReservation.id,
-          customerName: customerName.trim(),
+
           startAt,
           endAt,
-          partySize: tableSeatCount,
-          customerPhone: customerPhone.trim() || undefined,
-        });
+
       } else {
         // Create new reservation
         await reserveTable.mutateAsync({
@@ -150,10 +131,7 @@ export function ReservationDialog({
           tableId,
           startAt,
           endAt,
-          partySize: tableSeatCount,
-          name: customerName.trim(),
-          phone: customerPhone.trim() || "",
-        });
+
       }
 
       onReservationComplete?.();

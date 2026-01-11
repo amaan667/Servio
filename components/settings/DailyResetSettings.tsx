@@ -8,9 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Clock, Save, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface DailyResetSettingsProps {
-  venueId: string;
-  venueName?: string;
-  currentResetTime?: string;
+
 }
 
 export function DailyResetSettings({
@@ -45,18 +43,12 @@ export function DailyResetSettings({
       const timeWithSeconds =
         resetTime.includes(":") && resetTime.split(":").length === 2
           ? `${resetTime}:00`
-          : resetTime;
 
       const response = await fetch("/api/venues/update-reset-time", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        body: JSON.stringify({
-          venueId,
-          resetTime: timeWithSeconds,
+
         }),
-      });
 
       if (!response.ok) {
         const errorData = await response.json();

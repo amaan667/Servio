@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 /**
@@ -28,26 +27,20 @@ export async function POST(req: NextRequest) {
       return apiErrors.notFound("Order not found");
     }
 
-    logger.info("[CLOSE TABLE SESSION] Closing table session for order", {
-      orderId,
-      tableId: order.table_id,
-      tableNumber: order.table_number,
-    });
+    
 
     // Close any active table sessions for this table
     if (order.table_id) {
       const { error: sessionCloseError } = await supabase
         .from("table_sessions")
         .update({
-          status: "CLOSED",
-          closed_at: new Date().toISOString(),
-        })
+
         .eq("venue_id", order.venue_id)
         .eq("table_id", order.table_id)
         .is("closed_at", null);
 
       if (sessionCloseError) {
-        logger.error("[CLOSE TABLE SESSION] Error closing table session:", sessionCloseError);
+        
       } else {
         // Session closed successfully
       }
@@ -58,27 +51,21 @@ export async function POST(req: NextRequest) {
       const { error: runtimeError } = await supabase
         .from("table_runtime_state")
         .update({
-          primary_status: "FREE",
-          updated_at: new Date().toISOString(),
-        })
+
         .eq("venue_id", order.venue_id)
         .eq("table_number", order.table_number);
 
       if (runtimeError) {
-        logger.error("[CLOSE TABLE SESSION] Error updating table runtime state:", runtimeError);
+        
       } else {
         // Runtime state updated successfully
       }
     }
 
     return NextResponse.json({
-      success: true,
-      message: "Table session closed successfully",
-    });
+
   } catch (_error) {
-    logger.error(
-      "[CLOSE TABLE SESSION] Unexpected error:",
-      _error instanceof Error ? _error : { error: String(_error) }
+     }
     );
     return apiErrors.internal("Internal server error");
   }

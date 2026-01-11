@@ -7,7 +7,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { logger } from "@/lib/logger";
 import {
   apiErrors,
   isZodError,
@@ -21,9 +20,7 @@ import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
  * Enhanced API handler wrapper with comprehensive error handling
  */
 export function withApiHandler<T extends unknown[]>(
-  handler: (
-    req: NextRequest,
-    correlationId: string,
+
     ...args: T
   ) => Promise<NextResponse> | NextResponse
 ) {
@@ -32,22 +29,12 @@ export function withApiHandler<T extends unknown[]>(
     const startTime = Date.now();
 
     try {
-      logger.debug("[API_HANDLER] Request started", {
-        method: req.method,
-        url: req.url,
-        correlationId,
-      });
+      
 
       const result = await handler(req, correlationId, ...args);
 
       const duration = Date.now() - startTime;
-      logger.debug("[API_HANDLER] Request completed", {
-        method: req.method,
-        url: req.url,
-        status: result.status,
-        duration,
-        correlationId,
-      });
+      
 
       return result;
     } catch (error) {
@@ -56,15 +43,7 @@ export function withApiHandler<T extends unknown[]>(
       const errorDetails = getErrorDetails(error);
 
       // Log the error with full context
-      logger.error("[API_HANDLER] Unhandled error", {
-        method: req.method,
-        url: req.url,
-        error: errorMessage,
-        details: errorDetails,
-        duration,
-        correlationId,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      
 
       // Handle specific error types
       if (isZodError(error)) {
@@ -96,7 +75,7 @@ export function withApiHandler<T extends unknown[]>(
         return apiErrors.database(
           "Database operation failed",
           {
-            error: errorMessage,
+
             correlationId,
           },
           correlationId
@@ -107,7 +86,7 @@ export function withApiHandler<T extends unknown[]>(
       return apiErrors.internal(
         "An unexpected error occurred",
         {
-          message: errorMessage,
+
           correlationId,
           ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
         },
@@ -129,8 +108,7 @@ export async function handleValidationError(error: ZodError, correlationId?: str
     const body = await clonedResponse.json();
     body.meta = {
       ...body.meta,
-      requestId: correlationId,
-      timestamp: new Date().toISOString(),
+
     };
     return NextResponse.json(body, { status: response.status });
   }
@@ -144,11 +122,7 @@ export async function handleValidationError(error: ZodError, correlationId?: str
 export function handleDatabaseError(error: unknown, operation: string, correlationId?: string) {
   const errorMessage = getErrorMessage(error);
 
-  logger.error("[DATABASE_ERROR]", {
-    operation,
-    error: errorMessage,
-    correlationId,
-  });
+  
 
   // Check if it's a connection error (could be retried)
   if (errorMessage.includes("connection") || errorMessage.includes("timeout")) {
@@ -177,10 +151,7 @@ export function handleDatabaseError(error: unknown, operation: string, correlati
 export function handleAuthError(error: unknown, correlationId?: string) {
   const errorMessage = getErrorMessage(error);
 
-  logger.warn("[AUTH_ERROR]", {
-    error: errorMessage,
-    correlationId,
-  });
+  
 
   if (errorMessage.includes("expired") || errorMessage.includes("invalid")) {
     return apiErrors.unauthorized("Authentication token expired or invalid", correlationId);
@@ -193,10 +164,7 @@ export function handleAuthError(error: unknown, correlationId?: string) {
  * Rate limiting error handler with retry information
  */
 export function handleRateLimitError(retryAfter: number, correlationId?: string) {
-  logger.warn("[RATE_LIMIT]", {
-    retryAfter,
-    correlationId,
-  });
+  
 
   return apiErrors.rateLimit(retryAfter, correlationId);
 }

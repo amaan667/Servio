@@ -13,29 +13,17 @@ import {
 import { supabaseBrowser } from "@/lib/supabase";
 
 interface MenuItem {
-  id: string;
-  venue_id?: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  category: string;
-  image_url?: string | null;
-  is_available: boolean;
-  created_at?: string;
-  venue_name?: string;
+
   options?: Array<{ label: string; values: string[] }>;
   modifiers?: MenuItemModifier[];
 }
 
 interface ItemDetailsModalProps {
-  item: MenuItem | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onAddToCart: (
+
     item: MenuItem & { selectedModifiers?: SelectedModifiers; modifierPrice?: number }
   ) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
-  quantity: number;
+
   isPreview?: boolean; // If true, hide cart functionality
 }
 
@@ -105,7 +93,6 @@ export function ItemDetailsModal({
       if (!modifier.required) return true;
       const selected = selectedModifiers[modifier.name] || [];
       return selected.length > 0;
-    });
 
     if (!hasRequiredModifiers) {
       // Show error - required modifiers not selected
@@ -116,9 +103,6 @@ export function ItemDetailsModal({
     // Add item with modifiers to cart
     onAddToCart({
       ...item,
-      selectedModifiers: Object.keys(selectedModifiers).length > 0 ? selectedModifiers : undefined,
-      modifierPrice: modifierPrice !== 0 ? modifierPrice : undefined,
-    });
 
     // Reset and close
     setSelectedModifiers({});

@@ -14,24 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Users, Receipt, Calendar } from "lucide-react";
 
 interface Table {
-  id: string;
-  label: string;
-  seat_count: number;
-  order_id?: string | null;
-  total_amount?: number | null;
-  customer_name?: string | null;
-  reserved_now_name?: string | null;
-  reserved_later_name?: string | null;
+
 }
 
 interface MergeConfirmationDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  sourceTable: Table;
-  targetTable: Table;
-  mergeType: "OCCUPIED_OCCUPIED" | "RESERVED_RESERVED";
-  isLoading?: boolean;
+
 }
 
 export function MergeConfirmationDialog({

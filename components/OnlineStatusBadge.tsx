@@ -39,10 +39,7 @@ export function OnlineStatusBadge() {
     const checkConnectivity = async () => {
       try {
         const response = await fetch("/api/auth/health", {
-          method: "GET",
-          cache: "no-cache",
-          signal: AbortSignal.timeout(3000),
-        });
+
         setIsOnline(response.ok);
       } catch {
         setIsOnline(navigator.onLine);
@@ -74,7 +71,7 @@ export function OnlineStatusBadge() {
           "transition-colors duration-200",
           isOnline
             ? "bg-green-50 border-green-200 text-green-900"
-            : "bg-red-50 border-red-200 text-red-900",
+
         ].join(" ")}
       >
         <div className="flex items-center gap-3 min-w-0">

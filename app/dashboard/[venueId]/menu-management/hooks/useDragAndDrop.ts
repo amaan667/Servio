@@ -4,12 +4,7 @@ import { DropResult } from "@hello-pangea/dnd";
 import { MenuItem } from "../types";
 
 export function useDragAndDrop(
-  menuItems: MenuItem[],
-  setMenuItems: (items: MenuItem[]) => void,
-  categoryOrder: string[] | null,
-  setCategoryOrder: (categories: string[]) => void,
-  venueId: string
-) {
+
   const { toast } = useToast();
 
   // Handle item drag and drop within a category
@@ -33,7 +28,6 @@ export function useDragAndDrop(
         return { ...item, position: newIndex };
       }
       return item;
-    });
 
     setMenuItems(updatedItems);
 
@@ -46,15 +40,10 @@ export function useDragAndDrop(
       await Promise.all(updates);
 
       toast({
-        title: "Items reordered",
-        description: "Menu items have been reordered successfully",
-      });
+
     } catch (_error) {
       toast({
-        title: "Error",
-        description: "Failed to save item order",
-        variant: "destructive",
-      });
+
     }
   };
 
@@ -69,9 +58,7 @@ export function useDragAndDrop(
     const currentOrder =
       categoryOrder && categoryOrder.length > 0
         ? categoryOrder.filter((cat) => uniqueCategories.includes(cat))
-        : uniqueCategories;
 
-    const newOrder = Array.from(currentOrder);
     const [reorderedCategory] = newOrder.splice(source.index, 1);
     newOrder.splice(destination.index, 0, reorderedCategory);
 
@@ -83,27 +70,20 @@ export function useDragAndDrop(
     try {
       // Save to database via API
       const response = await fetch("/api/menu/categories", {
-        method: "PUT",
+
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ venueId, categories: newOrder }),
-      });
 
       if (response.ok) {
         toast({
-          title: "Categories reordered",
-          description: "Category order has been updated successfully",
-        });
+
       } else {
         toast({
-          title: "Success",
-          description: "Category order updated (saved locally)",
-        });
+
       }
     } catch (_error) {
       toast({
-        title: "Success",
-        description: "Category order updated (saved locally)",
-      });
+
     }
   };
 

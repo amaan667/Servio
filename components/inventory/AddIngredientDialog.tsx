@@ -22,10 +22,7 @@ import {
 import type { IngredientUnit } from "@/types/inventory";
 
 interface AddIngredientDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  venueId: string;
-  onSuccess: () => void;
+
 }
 
 const UNITS: IngredientUnit[] = ["g", "kg", "ml", "l", "oz", "lb", "pcs", "cup", "tbsp", "tsp"];
@@ -38,15 +35,6 @@ export function AddIngredientDialog({
 }: AddIngredientDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    sku: "",
-    unit: "g" as IngredientUnit,
-    cost_per_unit: "",
-    par_level: "",
-    reorder_level: "",
-    supplier: "",
-    initial_stock: "",
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,34 +42,16 @@ export function AddIngredientDialog({
 
     try {
       const response = await fetch("/api/inventory/ingredients", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venue_id: venueId,
-          name: formData.name,
-          sku: formData.sku || undefined,
-          unit: formData.unit,
-          cost_per_unit: parseFloat(formData.cost_per_unit) || 0,
-          par_level: parseFloat(formData.par_level) || 0,
-          reorder_level: parseFloat(formData.reorder_level) || 0,
-          supplier: formData.supplier || undefined,
-          initial_stock: parseFloat(formData.initial_stock) || undefined,
+
         }),
-      });
 
       if (response.ok) {
         onSuccess();
         onOpenChange(false);
         setFormData({
-          name: "",
-          sku: "",
-          unit: "g",
-          cost_per_unit: "",
-          par_level: "",
-          reorder_level: "",
-          supplier: "",
-          initial_stock: "",
-        });
+
       }
     } catch (_error) {
       // Error silently handled

@@ -20,18 +20,11 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 interface Venue {
-  venue_id: string;
-  venue_name: string;
-  address?: string;
-  phone?: string;
-  description?: string;
-  is_primary?: boolean;
-  created_at: string;
+
 }
 
 interface VenueSwitcherPopupProps {
-  currentVenueId: string;
-  onVenueChange: (venueId: string) => void;
+
 }
 
 export default function VenueSwitcherPopup({
@@ -57,11 +50,6 @@ export default function VenueSwitcherPopup({
 
   // Form state
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    phone: "",
-    description: "",
-  });
 
   // Load current venue name on mount and when currentVenueId changes
   useEffect(() => {
@@ -126,20 +114,14 @@ export default function VenueSwitcherPopup({
       setVenues(venuesData || []);
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to load venues",
-        variant: "destructive",
-      });
+
     }
   };
 
   const handleAddVenue = async () => {
     if (!formData.name.trim()) {
       toast({
-        title: "Error",
-        description: "Venue name is required",
-        variant: "destructive",
-      });
+
       return;
     }
 
@@ -182,24 +164,17 @@ export default function VenueSwitcherPopup({
       const { data: insertData, error } = await supabase
         .from("venues")
         .insert({
-          venue_id: venueId,
-          venue_name: formData.name.trim(),
-          address: formData.address.trim() || null,
-          phone: formData.phone.trim() || null,
-          description: formData.description.trim() || null,
+
           organization_id: organizationId, // CRITICAL: Always set organization_id
-          owner_user_id: user.id,
-          is_primary: false,
-        })
+
         .select()
         .single();
 
       if (error) throw error;
 
       toast({
-        title: "Success",
+
         description: `Venue "${formData.name}" has been added`,
-      });
 
       // Reset form and close modals
       setFormData({ name: "", address: "", phone: "", description: "" });
@@ -217,10 +192,7 @@ export default function VenueSwitcherPopup({
       setOpen(false);
     } catch (_error) {
       toast({
-        title: "Error",
-        description: _error instanceof Error ? _error.message : "Failed to add venue",
-        variant: "destructive",
-      });
+
     } finally {
       setLoading(false);
     }
@@ -229,10 +201,7 @@ export default function VenueSwitcherPopup({
   const handleEditVenue = async () => {
     if (!editingVenue || !formData.name.trim()) {
       toast({
-        title: "Error",
-        description: "Venue name is required",
-        variant: "destructive",
-      });
+
       return;
     }
 
@@ -243,19 +212,14 @@ export default function VenueSwitcherPopup({
       const { error } = await supabase
         .from("venues")
         .update({
-          venue_name: formData.name.trim(),
-          address: formData.address.trim() || null,
-          phone: formData.phone.trim() || null,
-          description: formData.description.trim() || null,
-        })
+
         .eq("venue_id", editingVenue.venue_id);
 
       if (error) throw error;
 
       toast({
-        title: "Success",
+
         description: `Venue "${formData.name}" has been updated`,
-      });
 
       setFormData({ name: "", address: "", phone: "", description: "" });
       setEditingVenue(null);
@@ -263,10 +227,7 @@ export default function VenueSwitcherPopup({
       setOpen(false);
     } catch (_error) {
       toast({
-        title: "Error",
-        description: _error instanceof Error ? _error.message : "Failed to update venue",
-        variant: "destructive",
-      });
+
     } finally {
       setLoading(false);
     }
@@ -286,17 +247,13 @@ export default function VenueSwitcherPopup({
       if (error) throw error;
 
       toast({
-        title: "Success",
+
         description: `Venue "${venueName}" has been deleted`,
-      });
 
       loadVenues();
     } catch (_error) {
       toast({
-        title: "Error",
-        description: _error instanceof Error ? _error.message : "Failed to delete venue",
-        variant: "destructive",
-      });
+
     } finally {
       setLoading(false);
     }
@@ -305,11 +262,7 @@ export default function VenueSwitcherPopup({
   const startEdit = (venue: Venue) => {
     setEditingVenue(venue);
     setFormData({
-      name: venue.venue_name,
-      address: venue.address || "",
-      phone: venue.phone || "",
-      description: venue.description || "",
-    });
+
     setShowAddForm(false);
   };
 
@@ -384,7 +337,7 @@ export default function VenueSwitcherPopup({
                 className={`p-4 border rounded-lg transition-all hover:shadow-md ${
                   venue.venue_id === currentVenueId
                     ? "border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/30"
-                    : "border-border hover:border-primary/50 cursor-pointer hover:bg-gray-50 dark:hover:bg-accent"
+
                 }`}
                 onClick={() => {
                   if (venue.venue_id !== currentVenueId) {

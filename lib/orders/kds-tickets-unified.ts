@@ -11,20 +11,12 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
 import { getOpenAI } from "@/lib/openai";
 import { AICache } from "@/lib/cache";
 import { env } from "@/lib/env";
 
 export interface OrderForKDSTickets {
-  id: string;
-  venue_id: string;
-  items?: Array<{
-    menu_item_id?: string | null;
-    item_name?: string;
-    quantity?: string | number;
-    specialInstructions?: string;
-    modifiers?: unknown;
+
   }>;
   customer_name?: string;
   table_number?: number | null;
@@ -32,9 +24,7 @@ export interface OrderForKDSTickets {
 }
 
 interface KDSStation {
-  id: string;
-  station_type: string;
-  station_name?: string;
+
 }
 
 /**
@@ -46,60 +36,43 @@ interface KDSStation {
  * 3. Defaults to Expo station if no match found
  */
 export async function createKDSTicketsWithAI(
-  supabase: SupabaseClient,
-  order: OrderForKDSTickets
-): Promise<void> {
-  const baseContext = {
-    orderId: order.id,
-    venueId: order.venue_id,
-    tableNumber: order.table_number,
-    tableId: order.table_id,
-    customerName: order.customer_name,
+
   };
 
   try {
-    logger.info("[KDS TICKETS] Starting KDS ticket creation", {
-      ...baseContext,
-      itemCount: Array.isArray(order.items) ? order.items.length : 0,
-    });
+     ? order.items.length : 0,
 
     // Step 1: Ensure KDS stations exist for this venue
-    logger.debug("[KDS TICKETS] Step 1: ensuring KDS stations exist", baseContext);
+    
     let existingStations = await ensureKDSStations(supabase, order.venue_id);
 
     if (!existingStations || existingStations.length === 0) {
-      logger.error("[KDS TICKETS] No KDS stations available for venue", baseContext);
+      
       throw new Error("No KDS stations available");
     }
 
-    logger.debug("[KDS TICKETS] Step 2: stations found", {
-      ...baseContext,
-      stationCount: existingStations.length,
-    });
+    
 
     // Step 2: Get expo station as default
     const expoStation =
       existingStations.find((s) => s.station_type === "expo") || existingStations[0];
 
     if (!expoStation) {
-      logger.error("[KDS TICKETS] No expo station available", baseContext);
+      
       throw new Error("No KDS station available");
     }
 
     // Step 3: Get table label
-    logger.debug("[KDS TICKETS] Step 3: resolving table label", baseContext);
+    
     const tableLabel = await getTableLabel(supabase, order);
-    logger.info("[KDS TICKETS] Table label resolved", { ...baseContext, tableLabel });
+    
 
     // Step 4: Create tickets for each order item with AI assignment
     const items = Array.isArray(order.items) ? order.items : [];
-    logger.info("[KDS TICKETS] Creating tickets for items", {
-      ...baseContext,
-      itemCount: items.length,
-    });
+    
 
     if (items.length === 0) {
-      logger.warn("[KDS TICKETS] No items in order, skipping ticket creation", baseContext);
+      
       return;
     }
 
@@ -108,13 +81,7 @@ export async function createKDSTicketsWithAI(
       const itemName = item.item_name || "Unknown Item";
       const menuItemId = item.menu_item_id;
 
-      logger.debug("[KDS TICKETS] Processing item", {
-        ...baseContext,
-        itemName,
-        menuItemId,
-        itemIndex: i + 1,
-        totalItems: items.length,
-      });
+      
 
       // Step 1: Try category-based assignment (menu item category → station mapping)
       let assignedStation: KDSStation | null = null;
@@ -148,26 +115,12 @@ export async function createKDSTicketsWithAI(
                 assignedStation = stationFromCategory;
                 // Category-based assignment has high confidence
                 assignment = { station: stationFromCategory, confidence: 0.95 };
-                logger.debug("[KDS TICKETS] Station assigned from category", {
-                  ...baseContext,
-                  itemName,
-                  menuItemId,
-                  category: menuItem.category,
-                  stationId: categoryStation.station_id,
-                  stationType: stationFromCategory.station_type,
-                  confidence: 0.95,
-                });
+                
               }
             }
           }
         } catch (error) {
-          logger.debug(
-            "[KDS TICKETS] Category-based assignment failed, will try keyword-based assignment",
-            {
-              ...baseContext,
-              itemName,
-              menuItemId,
-              error: error instanceof Error ? error.message : String(error),
+
             }
           );
         }
@@ -184,12 +137,7 @@ export async function createKDSTicketsWithAI(
       // Only call AI if confidence is below threshold (0.7) to avoid unnecessary API calls
       const CONFIDENCE_THRESHOLD = 0.7;
       if (assignment.confidence < CONFIDENCE_THRESHOLD) {
-        logger.debug("[KDS TICKETS] Low confidence assignment, trying AI fallback", {
-          ...baseContext,
-          itemName,
-          keywordConfidence: assignment.confidence,
-          keywordStation: assignment.station.station_type,
-        });
+        
 
         try {
           // Get menu item description if available for better AI context
@@ -220,49 +168,30 @@ export async function createKDSTicketsWithAI(
           if (aiAssignment.confidence > assignment.confidence) {
             assignment = aiAssignment;
             assignedStation = assignment.station;
-            logger.info("[KDS TICKETS] AI assignment used (higher confidence)", {
+            ", {
               ...baseContext,
               itemName,
-              aiConfidence: aiAssignment.confidence,
-              keywordConfidence: assignment.confidence,
-              finalStation: assignedStation.station_type,
-            });
+
           } else {
-            logger.debug("[KDS TICKETS] Keyword assignment kept (higher confidence)", {
+            ", {
               ...baseContext,
               itemName,
-              keywordConfidence: assignment.confidence,
-              aiConfidence: aiAssignment.confidence,
-            });
+
           }
         } catch (aiError) {
           // AI failed, continue with keyword assignment
-          logger.warn("[KDS TICKETS] AI assignment failed, using keyword assignment", {
-            ...baseContext,
-            itemName,
-            error: aiError instanceof Error ? aiError.message : String(aiError),
-            keywordConfidence: assignment.confidence,
-          });
+
         }
       }
 
       // Ensure assignedStation is never null (should be set by assignment at this point)
       if (!assignedStation) {
-        logger.error("[KDS TICKETS] No station assigned, using default", {
-          ...baseContext,
-          itemName,
-        });
+        
         assignedStation = expoStation;
         assignment = { station: expoStation, confidence: 0.5 };
       }
 
-      logger.debug("[KDS TICKETS] Final station assignment", {
-        ...baseContext,
-        itemName,
-        station: assignedStation.station_type,
-        stationName: assignedStation.station_name,
-        confidence: assignment.confidence,
-      });
+      
 
       // Combine special instructions and modifiers for kitchen display
       let combinedInstructions = item.specialInstructions || "";
@@ -292,50 +221,27 @@ export async function createKDSTicketsWithAI(
             modifiersText = item.modifiers;
           }
         } catch (error) {
-          logger.warn("[KDS TICKETS] Failed to parse modifiers:", { error });
+          
         }
 
         // Combine instructions and modifiers
         if (modifiersText) {
           combinedInstructions = combinedInstructions
             ? `${combinedInstructions} | ${modifiersText}`
-            : modifiersText;
+
         }
       }
 
       const ticketData = {
-        venue_id: order.venue_id,
-        order_id: order.id,
-        station_id: assignedStation.id,
-        item_name: itemName,
-        quantity: typeof item.quantity === "string" ? parseInt(item.quantity) : item.quantity || 1,
-        special_instructions: combinedInstructions || null,
-        table_number: order.table_number,
-        table_label: tableLabel,
-        status: "new",
+
       };
 
-      logger.info("[KDS TICKETS] Inserting ticket for item", {
-        ...baseContext,
-        itemName,
-        ticketData,
-      });
+      
 
       const { error: ticketError } = await supabase.from("kds_tickets").insert(ticketData);
 
       if (ticketError) {
-        logger.error("[KDS TICKETS] Failed to create ticket for item:", {
-          error: { item, context: ticketError },
-          orderId: order.id,
-          venueId: order.venue_id,
-          ticketData,
-          errorDetails: {
-            code: ticketError.code,
-            message: ticketError.message,
-            details: ticketError.details,
-            hint: ticketError.hint,
-          },
-        });
+        
         // Convert to proper Error with details
         const errorMsg = `KDS ticket insert failed: ${ticketError.message || ticketError.code || "Unknown error"}`;
         const error = new Error(errorMsg);
@@ -343,25 +249,12 @@ export async function createKDSTicketsWithAI(
         throw error;
       }
 
-      logger.info("[KDS TICKETS] Ticket created successfully", {
-        ...baseContext,
-        itemName,
-        stationId: assignedStation.id,
-      });
+      
     }
 
-    logger.info("[KDS TICKETS] All tickets created successfully", {
-      ...baseContext,
-      itemCount: items.length,
-    });
+    
   } catch (error) {
-    logger.error("[KDS TICKETS] Error creating KDS tickets:", {
-      error: error instanceof Error ? error.message : JSON.stringify(error),
-      orderId: order.id,
-      venueId: order.venue_id,
-      fullError: error,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+
     throw error;
   }
 }
@@ -377,9 +270,7 @@ async function ensureKDSStations(supabase: SupabaseClient, venueId: string): Pro
     .eq("is_active", true);
 
   if (!existingStations || existingStations.length === 0) {
-    logger.debug("[KDS TICKETS] No stations found, creating default stations for venue", {
-      extra: { venueId },
-    });
+    
 
     // Create default stations
     const defaultStations = [
@@ -393,12 +284,7 @@ async function ensureKDSStations(supabase: SupabaseClient, venueId: string): Pro
     for (const station of defaultStations) {
       await supabase.from("kds_stations").upsert(
         {
-          venue_id: venueId,
-          station_name: station.name,
-          station_type: station.type,
-          display_order: station.order,
-          color_code: station.color,
-          is_active: true,
+
         },
         {
           onConflict: "venue_id,station_name",
@@ -448,8 +334,7 @@ async function getTableLabel(supabase: SupabaseClient, order: OrderForKDSTickets
 }
 
 interface StationAssignment {
-  station: KDSStation;
-  confidence: number; // 0.0 to 1.0
+
 }
 
 /**
@@ -458,18 +343,7 @@ interface StationAssignment {
  * Returns station assignment with confidence score (0.0 to 1.0)
  */
 function assignStationByKeywords(
-  itemName: string,
-  stations: KDSStation[],
-  defaultStation: KDSStation
-): StationAssignment {
-  const itemNameLower = itemName.toLowerCase();
 
-  // ============================================
-  // TIER 1: Barista Station - Drinks & Beverages (Highest Priority)
-  // ============================================
-  // Check FIRST to catch all beverages before other keywords
-  const baristaKeywords = [
-    "coffee",
     "latte",
     "cappuccino",
     "espresso",
@@ -514,11 +388,7 @@ function assignStationByKeywords(
   if (baristaKeywords.some((keyword) => itemNameLower.includes(keyword))) {
     const baristaStation = stations.find((s) => s.station_type === "barista");
     if (baristaStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: "barista",
-        confidence: 0.9,
-      });
+      
       return { station: baristaStation, confidence: 0.9 }; // High confidence for exact keyword matches
     }
   }
@@ -555,11 +425,7 @@ function assignStationByKeywords(
   if (fryerKeywords.some((keyword) => itemNameLower.includes(keyword))) {
     const fryerStation = stations.find((s) => s.station_type === "fryer");
     if (fryerStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: "fryer",
-        confidence: 0.9,
-      });
+      
       return { station: fryerStation, confidence: 0.9 };
     }
   }
@@ -594,11 +460,7 @@ function assignStationByKeywords(
       (s) => s.station_type === "pizza" || s.station_type === "pasta"
     );
     if (pizzaStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: pizzaStation.station_type,
-        confidence: 0.9,
-      });
+      
       return { station: pizzaStation, confidence: 0.9 };
     }
     // If no dedicated pizza/pasta station, fall through to Grill (many venues handle pizza at grill)
@@ -679,11 +541,7 @@ function assignStationByKeywords(
   ) {
     const grillStation = stations.find((s) => s.station_type === "grill");
     if (grillStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: "grill",
-        confidence: 0.85, // Slightly lower confidence (grill is broad category)
-      });
+
       return { station: grillStation, confidence: 0.85 };
     }
   }
@@ -694,21 +552,17 @@ function assignStationByKeywords(
   if (isSoupItem) {
     const soupStation = stations.find((s) => s.station_type === "soup");
     if (soupStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: "soup",
-        confidence: 0.9,
-      });
+      
       return { station: soupStation, confidence: 0.9 };
     }
     // If no soup station, soups often prepared at Grill
     const grillStation = stations.find((s) => s.station_type === "grill");
     if (grillStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match (soup → grill fallback)", {
+      ", {
         itemName,
-        station: "grill",
+
         confidence: 0.7, // Lower confidence for fallback
-      });
+
       return { station: grillStation, confidence: 0.7 };
     }
   }
@@ -754,11 +608,7 @@ function assignStationByKeywords(
   ) {
     const coldStation = stations.find((s) => s.station_type === "cold");
     if (coldStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: "cold",
-        confidence: 0.9,
-      });
+      
       return { station: coldStation, confidence: 0.9 };
     }
   }
@@ -794,21 +644,17 @@ function assignStationByKeywords(
   if (dessertKeywords.some((keyword) => itemNameLower.includes(keyword))) {
     const dessertStation = stations.find((s) => s.station_type === "dessert");
     if (dessertStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match", {
-        itemName,
-        station: "dessert",
-        confidence: 0.9,
-      });
+      
       return { station: dessertStation, confidence: 0.9 };
     }
     // If no dessert station, desserts often prepared at Cold Prep or Barista
     const coldStation = stations.find((s) => s.station_type === "cold");
     if (coldStation) {
-      logger.debug("[KDS CATEGORIZATION] Station match (dessert → cold fallback)", {
+      ", {
         itemName,
-        station: "cold",
+
         confidence: 0.7, // Lower confidence for fallback
-      });
+
       return { station: coldStation, confidence: 0.7 };
     }
   }
@@ -816,11 +662,7 @@ function assignStationByKeywords(
   // ============================================
   // FALLBACK: Default to Expo if no match
   // ============================================
-  logger.debug("[KDS CATEGORIZATION] Station fallback", {
-    itemName,
-    station: "expo",
-    confidence: 0.5, // Low confidence - no keyword match
-  });
+  
   return { station: defaultStation, confidence: 0.5 };
 }
 
@@ -829,23 +671,12 @@ function assignStationByKeywords(
  * Only used as fallback when keyword-based assignment has low confidence
  */
 async function assignStationWithAI(
-  itemName: string,
-  itemDescription: string | undefined,
-  stations: KDSStation[],
-  venueId: string,
-  defaultStation: KDSStation
-): Promise<StationAssignment> {
-  // Check cache first
-  const stationTypes = stations.map((s) => s.station_type);
+
   const cached = await AICache.kdsStation.get(itemName, venueId, stationTypes);
   if (cached) {
     const cachedResult = cached as { stationId: string; confidence: number };
     const cachedStation = stations.find((s) => s.id === cachedResult.stationId) || defaultStation;
-    logger.debug("[KDS AI] Using cached station assignment", {
-      itemName,
-      stationId: cachedResult.stationId,
-      confidence: cachedResult.confidence,
-    });
+    
     return { station: cachedStation, confidence: cachedResult.confidence };
   }
 
@@ -855,12 +686,12 @@ async function assignStationWithAI(
     openaiApiKey = env("OPENAI_API_KEY");
   } catch {
     // OpenAI not configured, fallback to default
-    logger.debug("[KDS AI] OpenAI not configured, using default station", { itemName });
+    
     return { station: defaultStation, confidence: 0.5 };
   }
 
   if (!openaiApiKey) {
-    logger.debug("[KDS AI] OpenAI API key not available, using default station", { itemName });
+    
     return { station: defaultStation, confidence: 0.5 };
   }
 
@@ -897,13 +728,11 @@ Do not include any explanation or additional text.`;
       model: "gpt-4o-mini", // Fast and cheap
       messages: [{ role: "user", content: prompt }],
       temperature: 0.1, // Low temperature for consistency
-      max_tokens: 20,
-    });
 
     const aiStationType = response.choices[0]?.message?.content?.trim().toLowerCase();
 
     if (!aiStationType) {
-      logger.warn("[KDS AI] AI returned empty response, using default", { itemName });
+      
       return { station: defaultStation, confidence: 0.5 };
     }
 
@@ -915,26 +744,16 @@ Do not include any explanation or additional text.`;
 
     const confidence = matchedStation !== defaultStation ? 0.85 : 0.5;
 
-    logger.info("[KDS AI] Station assigned", {
-      itemName,
-      aiStationType,
-      matchedStationType: matchedStation.station_type,
-      matchedStationName: matchedStation.station_name,
-      confidence,
-    });
+    
 
     // Cache the result
     await AICache.kdsStation.set(itemName, venueId, stationTypes, {
-      stationId: matchedStation.id,
+
       confidence,
-    });
 
     return { station: matchedStation, confidence };
   } catch (error) {
-    logger.error("[KDS AI] Error assigning station with AI, using default", {
-      itemName,
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     // Gracefully degrade to default station
     return { station: defaultStation, confidence: 0.5 };
   }

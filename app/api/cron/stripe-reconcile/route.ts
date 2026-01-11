@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors, success } from "@/lib/api/standard-response";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 import { runStripeReconcile } from "@/app/api/stripe/reconcile/route";
 
@@ -23,9 +22,7 @@ export async function POST(req: NextRequest) {
   const expectedSecret = env("CRON_SECRET") || "default-cron-secret";
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${expectedSecret}`) {
-    logger.warn("[CRON STRIPE RECONCILE] Unauthorized cron request", {
-      hasHeader: !!authHeader,
-    });
+    
     return apiErrors.unauthorized("Unauthorized");
   }
 
@@ -37,10 +34,8 @@ export async function POST(req: NextRequest) {
 
   const result = await runStripeReconcile({
     supabase,
-    limit: limitParam ? Number(limitParam) : undefined,
-    windowHours: windowParam ? Number(windowParam) : undefined,
+
     requestId,
-  });
 
   return success(result);
 }

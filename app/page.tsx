@@ -1,6 +1,5 @@
 import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import { HomePageClient } from "./HomePageClient";
-import { logger } from "@/lib/logger";
 
 export default async function HomePage() {
   // Get auth state and user plan on server where cookies work
@@ -12,7 +11,7 @@ export default async function HomePage() {
     const supabase = await createServerSupabaseReadOnly();
     const {
       data: { user: authUser },
-      error: userError,
+
     } = await supabase.auth.getUser();
 
     if (!userError && authUser) {
@@ -37,11 +36,7 @@ export default async function HomePage() {
             .eq("id", firstVenue.organization_id)
             .maybeSingle();
 
-          logger.info("[HOME PAGE] Fetched organization", {
-            organizationId: firstVenue.organization_id,
-            subscriptionTier: org?.subscription_tier,
-            error: orgError,
-          });
+          
 
           if (org?.subscription_tier) {
             // Normalize old tier names to new ones
@@ -49,26 +44,15 @@ export default async function HomePage() {
             const normalizedTier =
               tier === "premium"
                 ? "enterprise"
-                : tier === "standard" || tier === "professional"
-                  ? "pro"
-                  : tier === "basic"
-                    ? "starter"
-                    : tier;
-            userPlan = normalizedTier as "starter" | "pro" | "enterprise";
-            logger.info("[HOME PAGE] Set user plan", {
-              originalTier: tier,
-              normalizedTier: userPlan,
-            });
+
           } else {
-            logger.warn("[HOME PAGE] No subscription tier found for organization", {
-              organizationId: firstVenue.organization_id,
-            });
+            
           }
         }
       }
     }
   } catch (error) {
-    logger.error("[HOME PAGE] Error fetching user data", { error });
+    
     // If error, default to not signed in
     isSignedIn = false;
   }

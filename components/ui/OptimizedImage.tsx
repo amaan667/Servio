@@ -7,9 +7,7 @@ import Image, { ImageProps } from "next/image";
 import { useState } from "react";
 
 interface OptimizedImageProps extends Omit<ImageProps, "src" | "alt"> {
-  src: string | null | undefined;
-  alt: string;
-  fallbackSrc?: string;
+
 }
 
 const DEFAULT_FALLBACK = "/images/placeholder.svg";
@@ -68,9 +66,7 @@ export function MenuItemImage({
   alt,
   className = "",
 }: {
-  src: string | null | undefined;
-  alt: string;
-  className?: string;
+
 }) {
   return (
     <OptimizedImage
@@ -92,9 +88,7 @@ export function LogoImage({
   alt,
   className = "",
 }: {
-  src: string | null | undefined;
-  alt: string;
-  className?: string;
+
 }) {
   return (
     <OptimizedImage

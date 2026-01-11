@@ -10,21 +10,15 @@ import type { User } from "@supabase/supabase-js";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
 
 interface Organization {
-  id: string;
-  subscription_tier?: string;
-  [key: string]: unknown;
+
 }
 
 interface SettingsPageClientProps {
-  venueId: string;
-  initialData?: {
+
     user: { id: string; email?: string; user_metadata?: Record<string, unknown> };
     venue: Record<string, unknown>;
     venues: Record<string, unknown>[];
-    organization: Organization | null;
-    isOwner: boolean;
-    isManager: boolean;
-    userRole: string;
+
   };
 }
 
@@ -132,13 +126,11 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         }
 
         const fetchedData = {
-          user: currentUser,
-          venue: finalVenue,
-          venues: allVenues,
+
           organization,
           isOwner,
           isManager,
-          userRole: userRole?.role || (isOwner ? "owner" : "staff"),
+
         };
 
         setData(fetchedData);
@@ -179,9 +171,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           userName={
             (typeof data?.user?.user_metadata?.full_name === "string"
               ? data.user.user_metadata.full_name
-              : null) ||
-            data?.user?.email?.split("@")[0] ||
-            "User"
+
           }
         />
 

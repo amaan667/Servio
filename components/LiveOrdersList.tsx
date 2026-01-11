@@ -59,6 +59,5 @@ const LiveOrdersList = React.memo(function LiveOrdersList({ venueId }: { venueId
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{renderedOrders}</div>
     </div>
   );
-});
 
 export default LiveOrdersList;

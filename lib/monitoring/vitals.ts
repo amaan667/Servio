@@ -4,7 +4,6 @@
  */
 
 import type { Metric } from "web-vitals";
-import { logger } from "@/lib/logger";
 
 const vitalsUrl = "/api/vitals";
 
@@ -12,15 +11,6 @@ function sendToAnalytics(metric: Metric) {
   if (typeof window === "undefined") return;
 
   const body = JSON.stringify({
-    name: metric.name,
-    value: metric.value,
-    rating: metric.rating,
-    delta: metric.delta,
-    id: metric.id,
-    navigationType: metric.navigationType,
-    url: window.location.href,
-    timestamp: Date.now(),
-  });
 
   // Use `navigator.sendBeacon()` if available, falling back to `fetch()`
   if (navigator.sendBeacon) {
@@ -28,14 +18,11 @@ function sendToAnalytics(metric: Metric) {
   } else {
     fetch(vitalsUrl, {
       body,
-      method: "POST",
+
       headers: { "Content-Type": "application/json" },
-      keepalive: true,
+
     }).catch((error) => {
-      logger.error("[VITALS] Failed to send metrics:", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
+
   }
 }
 

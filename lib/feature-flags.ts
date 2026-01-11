@@ -3,66 +3,33 @@
  * Enables gradual rollouts and A/B testing
  */
 
-import { logger } from "./logger";
-
 export interface FeatureFlag {
-  enabled: boolean;
-  rolloutPercentage: number; // 0-100
-  enabledVenues?: string[]; // Specific venues to enable for
-  disabledVenues?: string[]; // Specific venues to disable for
-  description?: string;
+
 }
 
 export const FEATURES: Record<string, FeatureFlag> = {
   // Performance features
-  parallelAI: {
-    enabled: true,
-    rolloutPercentage: 100,
-    description: "Parallel AI processing for faster menu extraction",
+
   },
-  aiCaching: {
-    enabled: true,
-    rolloutPercentage: 100,
-    description: "Cache AI responses to reduce duplicate API calls",
+
   },
-  menuCaching: {
-    enabled: true,
-    rolloutPercentage: 100,
-    description: "Cache menu data for faster loading",
+
   },
 
   // New features (gradual rollout)
-  aggressiveImageMatching: {
-    enabled: true,
-    rolloutPercentage: 100,
-    description: "Match URL images at 30-49% similarity threshold",
+
   },
-  dietaryExtraction: {
-    enabled: true,
-    rolloutPercentage: 100,
-    description: "Extract dietary and allergen information from menus",
+
   },
-  categoryDragDrop: {
-    enabled: true,
-    rolloutPercentage: 100,
-    description: "Drag-and-drop category reordering",
+
   },
 
   // Experimental features
-  mlFeedbackLoop: {
-    enabled: false,
-    rolloutPercentage: 0,
-    description: "Machine learning feedback loop for improving matching",
+
   },
-  offlineMode: {
-    enabled: false,
-    rolloutPercentage: 0,
-    description: "Offline-first menu viewing with service workers",
+
   },
-  advancedAnalytics: {
-    enabled: false,
-    rolloutPercentage: 10,
-    description: "Advanced analytics dashboard with predictive insights",
+
   },
 };
 
@@ -75,7 +42,7 @@ export function isFeatureEnabled(feature: FeatureName, venueId?: string): boolea
   const flag = FEATURES[feature];
 
   if (!flag) {
-    logger.warn("[FEATURE FLAGS] Unknown feature", { feature });
+    
     return false;
   }
 
@@ -156,10 +123,5 @@ function hashString(str: string): number {
 export function logFeatureUsage(feature: FeatureName, venueId?: string, enabled?: boolean) {
   const isEnabled = enabled !== undefined ? enabled : isFeatureEnabled(feature, venueId);
 
-  logger.info("[FEATURE FLAGS] Feature usage", {
-    feature,
-    enabled: isEnabled,
-    venueId,
-    rolloutPercentage: FEATURES[feature]?.rolloutPercentage,
-  });
+  
 }

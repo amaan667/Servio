@@ -38,7 +38,6 @@ export function createTimeoutController(timeoutMs: number = 10000): AbortControl
   // Clear timeout if request completes before timeout
   controller.signal.addEventListener("abort", () => {
     clearTimeout(timeoutId);
-  });
 
   return controller;
 }
@@ -47,9 +46,7 @@ export function createTimeoutController(timeoutMs: number = 10000): AbortControl
  * Wraps a fetch request with timeout and cancellation support
  */
 export async function fetchWithTimeout(
-  url: string | URL | Request,
-  options: RequestInit & RequestConfig = {
-    /* Empty */
+
   }
 ): Promise<Response> {
   const { timeout = 10000, signal, retries = 0, retryDelay = 1000, ...fetchOptions } = options;
@@ -65,12 +62,9 @@ export async function fetchWithTimeout(
       // Combine signals if both provided
       const combinedSignal = signal
         ? AbortSignal.any([signal, timeoutController.signal])
-        : timeoutController.signal;
 
       const response = await fetch(url, {
         ...fetchOptions,
-        signal: combinedSignal,
-      });
 
       return response;
     } catch (_error) {
@@ -103,11 +97,7 @@ export async function fetchWithTimeout(
  * Creates a cancellable promise that can be aborted
  */
 export function createCancellablePromise<T>(
-  executor: (
-    resolve: (value: T) => void,
-    reject: (reason?: unknown) => void,
-    signal: AbortSignal
-  ) => void,
+
   timeoutMs?: number
 ): { promise: Promise<T>; abort: () => void } {
   const controller = new AbortController();
@@ -118,16 +108,12 @@ export function createCancellablePromise<T>(
           controller.abort();
           reject(new RequestTimeoutError(`Operation timed out after ${timeoutMs}ms`));
         }, timeoutMs)
-      : null;
 
-    const cleanup = () => {
-      if (timeoutId) clearTimeout(timeoutId);
     };
 
     controller.signal.addEventListener("abort", () => {
       cleanup();
       reject(new RequestCancelledError());
-    });
 
     try {
       executor(
@@ -145,11 +131,10 @@ export function createCancellablePromise<T>(
       cleanup();
       reject(_error);
     }
-  });
 
   return {
     promise,
-    abort: () => controller.abort(),
+
   };
 }
 
@@ -157,8 +142,7 @@ export function createCancellablePromise<T>(
  * Debounced function that cancels previous calls
  */
 export function createCancellableDebounce<T extends (...args: unknown[]) => unknown>(
-  func: T,
-  delay: number
+
 ): T & { cancel: () => void } {
   let timeoutId: NodeJS.Timeout | null = null;
   let abortController: AbortController | null = null;
@@ -186,7 +170,7 @@ export function createCancellableDebounce<T extends (...args: unknown[]) => unkn
           }
         }
       }, delay);
-    });
+
   }) as T & { cancel: () => void };
 
   debounced.cancel = () => {

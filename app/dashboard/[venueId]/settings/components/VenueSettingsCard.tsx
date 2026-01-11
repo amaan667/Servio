@@ -12,24 +12,7 @@ import { Building, Mail, Phone, MapPin, Globe, Utensils } from "lucide-react";
 import { TIMEZONES, VENUE_TYPES, SERVICE_TYPES } from "../constants";
 
 interface VenueSettingsCardProps {
-  venueName: string;
-  setVenueName: (name: string) => void;
-  venueEmail: string;
-  setVenueEmail: (email: string) => void;
-  venuePhone: string;
-  setVenuePhone: (phone: string) => void;
-  venueAddress: string;
-  setVenueAddress: (address: string) => void;
-  timezone: string;
-  setTimezone: (timezone: string) => void;
-  venueType: string;
-  setVenueType: (type: string) => void;
-  serviceType: string;
-  setServiceType: (type: string) => void;
-  latitude?: number;
-  setLatitude: (lat: number | undefined) => void;
-  longitude?: number;
-  setLongitude: (lng: number | undefined) => void;
+
 }
 
 export function VenueSettingsCard({

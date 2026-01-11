@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrors } from "@/lib/api/standard-response";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -14,7 +13,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -37,10 +36,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (clearAllRefsError) {
-      logger.error("[FORCE CLEAR ALL] Error clearing table references:", clearAllRefsError);
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: `Failed to clear table references: ${clearAllRefsError.message}`,
         },
         { status: 500 }
@@ -54,7 +53,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (sessionsError) {
-      logger.error("[FORCE CLEAR ALL] Error deleting table sessions:", sessionsError);
+      
       // Continue anyway
     } else {
       // Intentionally empty
@@ -64,10 +63,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { error: tablesError } = await supabase.from("tables").delete().eq("venue_id", venue_id);
 
     if (tablesError) {
-      logger.error("[FORCE CLEAR ALL] Error deleting tables:", tablesError);
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: `Failed to delete tables: ${tablesError.message}`,
         },
         { status: 500 }
@@ -81,7 +80,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (runtimeError) {
-      logger.error("[FORCE CLEAR ALL] Error clearing runtime state:", runtimeError);
+      
       // Continue anyway
     } else {
       // Intentionally empty
@@ -94,26 +93,20 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (groupSessionsError) {
-      logger.error("[FORCE CLEAR ALL] Error clearing group sessions:", groupSessionsError);
+      
       // Continue anyway
     } else {
       // Intentionally empty
     }
 
     return NextResponse.json({
-      ok: true,
-      message: "All tables and sessions force cleared successfully",
-    });
+
   } catch (_error) {
-    logger.error("[FORCE CLEAR ALL] Error in force clear all tables API:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
-        error: "Internal server error",
+
       },
       { status: 500 }
     );
   }
-});

@@ -42,11 +42,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface TableCardNewProps {
-  table: TableGridItem;
-  venueId: string;
-  onActionComplete?: () => void;
-  availableTables?: TableGridItem[];
-  groupSessions?: GroupSession[];
+
 }
 
 export function TableCardNew({
@@ -68,11 +64,9 @@ export function TableCardNew({
   const [mergedTableId, setMergedTableId] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [orderDetails, setOrderDetails] = useState<{
-    id: string;
-    number: string;
-    customer: string;
+
     items: Array<{ item_name: string; quantity: number; price: number }>;
-    total: number;
+
   } | null>(null);
   const closeTable = useCloseTable();
   const { occupyTable, unmergeTable } = useTableActions();
@@ -215,15 +209,9 @@ export function TableCardNew({
     deleteTable.mutate(
       { tableId: table.id, force: shouldForceRemove },
       {
-        onSuccess: () => {
-          // Call parent callback if provided
-          onActionComplete?.();
+
         },
-        onError: (error: Error) => {
-          // Extract proper error message
-          let errorMessage = "Failed to remove table";
-          if (error instanceof Error) {
-            errorMessage = error.message;
+
           } else if (typeof error === "string") {
             errorMessage = error;
           } else if (error && typeof error === "object") {
@@ -251,12 +239,7 @@ export function TableCardNew({
 
       if (order && order.payment_status !== "PAID") {
         setOrderDetails({
-          id: order.id,
-          number: order.order_number || "N/A",
-          customer: order.customer_name || "Guest",
-          items: order.items || [],
-          total: order.total_amount || 0,
-        });
+
         setShowPaymentDialog(true);
       }
     } catch {
@@ -375,9 +358,7 @@ export function TableCardNew({
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+
   };
 
   const getTimeElapsed = (dateString: string) => {
@@ -521,8 +502,7 @@ export function TableCardNew({
                     >
                       {table.payment_status === "PAY_AT_TILL" || table.payment_status === "TILL"
                         ? "💳 Pay at Till"
-                        : table.payment_status === "PAY_LATER"
-                          ? "⏰ Pay Later"
+
                           : "Unpaid"}
                     </Badge>
                   )}
@@ -562,7 +542,7 @@ export function TableCardNew({
                 className={`text-xs ${
                   table.reservation_status === "RESERVED_NOW"
                     ? "bg-red-50 text-red-700 border-red-200"
-                    : "bg-blue-50 text-blue-700 border-blue-200"
+
                 }`}
               >
                 <Calendar className="h-3 w-3 mr-1" />
@@ -577,26 +557,12 @@ export function TableCardNew({
         isOpen={showMoveDialog}
         onClose={() => setShowMoveDialog(false)}
         sourceTable={{
-          id: table.id,
-          label: table.label,
-          seat_count: table.seat_count,
-          status: table.session_status,
-          order_id: table.order_id || undefined,
-          total_amount: table.total_amount || undefined,
-          order_status: table.order_status || undefined,
-          opened_at: table.opened_at || undefined,
+
         }}
         action="move"
         venueId={venueId}
         availableTables={availableTables.map((t) => ({
-          id: t.id,
-          label: t.label,
-          seat_count: t.seat_count,
-          status: t.session_status,
-          order_id: t.order_id || undefined,
-          total_amount: t.total_amount || undefined,
-          order_status: t.order_status || undefined,
-          opened_at: t.opened_at || undefined,
+
         }))}
         onActionComplete={onActionComplete}
       />
@@ -605,26 +571,12 @@ export function TableCardNew({
         isOpen={showMergeDialog}
         onClose={() => setShowMergeDialog(false)}
         sourceTable={{
-          id: table.id,
-          label: table.label,
-          seat_count: table.seat_count,
-          status: table.session_status,
-          order_id: table.order_id || undefined,
-          total_amount: table.total_amount || undefined,
-          order_status: table.order_status || undefined,
-          opened_at: table.opened_at || undefined,
+
         }}
         action="merge"
         venueId={venueId}
         availableTables={availableTables.map((t) => ({
-          id: t.id,
-          label: t.label,
-          seat_count: t.seat_count,
-          status: t.session_status,
-          order_id: t.order_id || undefined,
-          total_amount: t.total_amount || undefined,
-          order_status: t.order_status || undefined,
-          opened_at: t.opened_at || undefined,
+
         }))}
         onActionComplete={onActionComplete}
       />

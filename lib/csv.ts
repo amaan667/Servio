@@ -6,8 +6,7 @@
  */
 
 export interface CsvColumn<T extends Record<string, unknown>> {
-  key: keyof T;
-  header: string;
+
 }
 
 /**
@@ -33,8 +32,7 @@ export interface CsvColumn<T extends Record<string, unknown>> {
  * ```
  */
 export function toCSV<T extends Record<string, unknown>>(
-  rows: T[],
-  columns: CsvColumn<T>[],
+
   includeBOM = true
 ): string {
   if (!rows || rows.length === 0) {

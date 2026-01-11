@@ -20,14 +20,7 @@ export interface LogContext {
 }
 
 export interface LogEntry {
-  timestamp: string;
-  level: LogLevel;
-  message: string;
-  context?: LogContext;
-  error?: {
-    message: string;
-    stack?: string;
-    code?: string;
+
   };
   metadata?: Record<string, unknown>;
 }
@@ -42,14 +35,13 @@ class StructuredLogger {
   }
 
   private createLogEntry(
-    level: LogLevel,
-    message: string,
+
     context?: LogContext,
     error?: Error,
     metadata?: Record<string, unknown>
   ): LogEntry {
     const entry: LogEntry = {
-      timestamp: new Date().toISOString(),
+
       level,
       message,
     };
@@ -60,8 +52,7 @@ class StructuredLogger {
 
     if (error) {
       entry.error = {
-        message: error.message,
-        stack: this.env === "development" ? error.stack : undefined,
+
         code: (error as { code?: string }).code,
       };
     }
@@ -113,7 +104,7 @@ class StructuredLogger {
   }
 
   error(
-    message: string,
+
     error?: Error,
     context?: LogContext,
     metadata?: Record<string, unknown>
@@ -133,10 +124,7 @@ class StructuredLogger {
   }
 
   apiResponse(
-    method: string,
-    path: string,
-    status: number,
-    duration: number,
+
     context?: LogContext
   ): void {
     this.info(`API Response: ${method} ${path} ${status}`, context, {
@@ -144,7 +132,7 @@ class StructuredLogger {
       path,
       status,
       duration,
-    });
+
   }
 
   dbQuery(query: string, duration: number, context?: LogContext): void {

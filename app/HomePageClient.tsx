@@ -49,8 +49,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 }
 
 interface HomePageClientProps {
-  initialAuthState: boolean;
-  initialUserPlan?: "starter" | "pro" | "enterprise" | null;
+
 }
 
 export function HomePageClient({ initialAuthState, initialUserPlan = null }: HomePageClientProps) {
@@ -113,13 +112,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
               const normalizedTier =
                 tier === "premium"
                   ? "enterprise"
-                  : tier === "standard" || tier === "professional"
-                    ? "pro"
-                    : tier === "basic"
-                      ? "starter"
-                      : tier;
-              const plan = normalizedTier as "starter" | "pro" | "enterprise";
-              setUserPlan(plan);
+
             }
           } else if (organizationId) {
             // Got organization_id from venue, fetch tier
@@ -135,13 +128,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
               const normalizedTier =
                 tier === "premium"
                   ? "enterprise"
-                  : tier === "standard" || tier === "professional"
-                    ? "pro"
-                    : tier === "basic"
-                      ? "starter"
-                      : tier;
-              const plan = normalizedTier as "starter" | "pro" | "enterprise";
-              setUserPlan(plan);
+
             }
           }
         } catch {
@@ -275,9 +262,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         if (ctaText.includes("Downgrade")) {
           // Open Stripe portal where users can manage/downgrade their plan
           const response = await apiClient.post("/api/stripe/create-portal-session", {
-            organizationId: organizationId,
-            venueId: venues?.venue_id || null,
-          });
 
           if (!response.ok) {
             const data = await response.json();
@@ -307,9 +291,6 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           const targetTier = ctaText.includes("Enterprise") ? "enterprise" : "pro";
 
           const response = await apiClient.post("/api/stripe/create-checkout-session", {
-            tier: targetTier,
-            organizationId: organizationId,
-          });
 
           const data = await response.json();
 
@@ -395,45 +376,37 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
   // Use shared PRICING_TIERS configuration
   const pricingPlans = Object.entries(PRICING_TIERS).map(([, tierData]) => ({
-    name: tierData.name,
-    price: tierData.price,
-    period: "per month",
-    description: tierData.description,
-    features: tierData.features,
+
     notIncluded: [] as string[], // Can be customized per tier if needed
-    popular: tierData.popular || false,
+
   }));
 
   const faqs = [
     {
-      question: "How do I set up QR codes for my tables?",
+
       answer:
         "Once you create your account, you can generate unique QR codes for each table directly from the dashboard. Simply print them out and place them on your tables.",
     },
     {
-      question: "Do I need special hardware or equipment?",
+
       answer:
         "No! Servio works on any device with a web browser. You can manage orders from a tablet, smartphone, or computer. Your customers just need a smartphone to scan the QR code.",
     },
     {
-      question: "How do customers pay for their orders?",
-      answer:
-        "Customers can pay directly through the ordering interface using credit cards or digital wallets. Payment is processed securely through Stripe.",
+
     },
     {
-      question: "Can I customize the menu appearance?",
+
       answer:
         "Yes! With the Pro plan, you can customize colors, fonts, and branding to match your venue's style.",
     },
     {
-      question: "What if I need help setting up?",
+
       answer:
         "We offer email support for all plans, and priority support for Pro plan users. We also have detailed documentation to guide you through setup.",
     },
     {
-      question: "Can I try Servio before committing?",
-      answer:
-        "Absolutely! We offer a 14-day free trial for all paid plans. No credit card required to start.",
+
     },
   ];
 

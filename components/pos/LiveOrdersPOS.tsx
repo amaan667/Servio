@@ -29,38 +29,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface OrderItem {
-  menu_item_id: string;
-  quantity: number;
-  price: number;
-  item_name: string;
-  specialInstructions?: string;
-  prep_status?: "pending" | "preparing" | "ready" | "served";
-  station?: "kitchen" | "bar" | "dessert";
+
 }
 
 interface Order {
-  id: string;
-  venue_id: string;
-  table_number: number;
-  table_id?: string;
-  table_label?: string;
-  source: "qr" | "counter";
-  customer_name: string;
-  customer_phone?: string;
-  order_status: "PLACED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED";
-  payment_status: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
-  payment_mode: "online" | "pay_later" | "pay_at_till";
-  total_amount: number;
-  notes?: string;
-  items: OrderItem[];
-  created_at: string;
-  updated_at: string;
-  prep_lead_minutes?: number;
-  estimated_ready_time?: string;
+
 }
 
 interface LiveOrdersPOSProps {
-  venueId: string;
+
 }
 
 const ORDER_STATUSES = {
@@ -98,9 +75,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "orders",
+
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
@@ -132,13 +107,10 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       const response = await fetch("/api/pos/orders/status", {
-        method: "PATCH",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: orderId,
-          order_status: newStatus,
+
         }),
-      });
 
       if (response.ok) {
         fetchOrders();
@@ -151,14 +123,10 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
   const updateItemStatus = async (orderId: string, itemId: string, newStatus: string) => {
     try {
       const response = await fetch("/api/pos/orders/items/status", {
-        method: "PATCH",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: orderId,
-          item_id: itemId,
-          prep_status: newStatus,
+
         }),
-      });
 
       if (response.ok) {
         fetchOrders();
@@ -182,7 +150,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
       const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
 
       return matchesSearch && matchesStation && matchesPayment;
-    });
+
   };
 
   const getOrdersByStatus = (status: string) => {
@@ -192,9 +160,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+
   };
 
   const getTimeSince = (dateString: string) => {
@@ -221,8 +187,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         return "bg-green-100 text-green-800";
       case "served":
         return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+
     }
   };
 
@@ -246,8 +211,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
               <div className="text-sm text-gray-900">
                 {order.source === "counter"
                   ? `Counter ${order.table_number}`
-                  : order.table_label
-                    ? order.table_label
+
                     : `Table ${order.table_number}`}
               </div>
               <div className="text-lg font-bold text-green-600">

@@ -10,8 +10,7 @@ export function getTimePeriodLabel(period: TimePeriod): string {
       return "Last 3 months";
     case "1y":
       return "Last year";
-    default:
-      return "Last 30 days";
+
   }
 }
 
@@ -25,8 +24,7 @@ export function getPeriodDisplayName(period: TimePeriod): string {
       return "week";
     case "1y":
       return "month";
-    default:
-      return "day";
+
   }
 }
 
@@ -35,16 +33,10 @@ export function formatTooltipDate(dateStr: string, period: TimePeriod): string {
   switch (period) {
     case "7d":
       return date.toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      });
+
     case "30d":
       return date.toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      });
+
     case "3m":
       {
         const weekStart = new Date(date);
@@ -58,26 +50,15 @@ export function formatTooltipDate(dateStr: string, period: TimePeriod): string {
       return `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} - ${weekEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
     case "1y":
       return date.toLocaleDateString("en-GB", {
-        month: "long",
-        year: "numeric",
-      });
+
     default:
       return date.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-      });
+
   }
 }
 
 export function formatXAxisLabel(
-  dateStr: string,
-  period: TimePeriod,
-  index: number,
-  total: number
-): string {
-  const date = new Date(dateStr);
-  switch (period) {
-    case "7d":
+
       return date.toLocaleDateString("en-GB", { weekday: "short" });
     case "30d":
       if (index % 5 === 0 || index === total - 1) {

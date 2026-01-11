@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrors } from "@/lib/api/standard-response";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 export async function POST(_request: NextRequest) {
   try {
@@ -36,12 +35,10 @@ export async function POST(_request: NextRequest) {
         .select("*");
 
       if (error) {
-        logger.error(`[AUTH DEBUG] Error clearing ${operation.description}:`, {
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
+        
         return NextResponse.json(
           {
-            ok: false,
+
             error: `Failed to clear ${operation.description}: ${error.message}`,
           },
           { status: 500 }
@@ -54,18 +51,12 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json({
-      ok: true,
-      message: "All catalog data cleared successfully",
-      deletedCount: totalDeleted,
-      details: results,
-    });
+
   } catch (_error) {
-    logger.error("[AUTH DEBUG] Clear menu error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
+
         error: `Clear menu failed: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
       },
       { status: 500 }

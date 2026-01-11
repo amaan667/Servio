@@ -1,12 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
 
 export interface GeneratedQR {
-  name: string;
-  url: string;
-  type: "table" | "counter";
+
 }
 
 interface TableItem {
@@ -53,10 +50,9 @@ export function useQRCodeManagement(venueId: string) {
 
       if (tablesError) {
         toast({
-          title: "Error",
+
           description: `Failed to load tables: ${tablesError.message || "Unknown error"}`,
-          variant: "destructive",
-        });
+
       }
 
       // Try to load counters - they might not exist or have different schema
@@ -77,10 +73,9 @@ export function useQRCodeManagement(venueId: string) {
       setCounters(countersData);
     } catch (_error) {
       toast({
-        title: "Error",
+
         description: `Failed to load data: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
-        variant: "destructive",
-      });
+
     } finally {
       setLoading(false);
     }
@@ -88,11 +83,11 @@ export function useQRCodeManagement(venueId: string) {
 
   const generateQRForName = useCallback(
     (name: string, type: "table" | "counter" = "table") => {
-      logger.debug("[useQRCodeManagement] generateQRForName called:", { name, type, venueId });
+      
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
       const url = `${baseUrl}/order?venue=${venueId}&${type}=${encodeURIComponent(name)}`;
 
-      logger.debug("[useQRCodeManagement] Generated URL:", url);
+      
 
       const newQR: GeneratedQR = {
         name,
@@ -103,18 +98,17 @@ export function useQRCodeManagement(venueId: string) {
       setGeneratedQRs((prev) => {
         const exists = prev.find((qr) => qr.name === name && qr.type === type);
         if (exists) {
-          logger.debug("[useQRCodeManagement] QR already exists, skipping");
+          
           // Silently ignore duplicates
           return prev;
         }
-        logger.debug("[useQRCodeManagement] Adding new QR:", newQR);
+        
         return [...prev, newQR];
-      });
 
       toast({
-        title: "QR Code Generated",
+
         description: `Created QR code for ${name}`,
-      });
+
     },
     [venueId, toast]
   );
@@ -137,12 +131,11 @@ export function useQRCodeManagement(venueId: string) {
       if (name && name !== "undefined" && name !== "null" && name.trim() !== "") {
         generateQRForName(name, qrCodeType === "tables" ? "table" : "counter");
       }
-    });
 
     toast({
-      title: "QR Codes Generated",
+
       description: `Generated QR codes for all ${qrCodeType}`,
-    });
+
   };
 
   const removeQR = (name: string, type: "table" | "counter") => {
@@ -152,27 +145,21 @@ export function useQRCodeManagement(venueId: string) {
   const clearAllQRs = () => {
     setGeneratedQRs([]);
     toast({
-      title: "QR Codes Cleared",
-      description: "All generated QR codes have been removed.",
-    });
+
   };
 
   const copyQRUrl = (url: string) => {
     navigator.clipboard.writeText(url);
     toast({
-      title: "Copied!",
-      description: "QR code URL copied to clipboard",
-    });
+
   };
 
   const downloadQR = async (qr: GeneratedQR) => {
     try {
       const QRCode = await import("qrcode");
       const dataUrl = await QRCode.toDataURL(qr.url, {
-        width: 512,
-        margin: 2,
+
         color: { dark: "#000000", light: "#ffffff" },
-      });
 
       const link = document.createElement("a");
       link.download = `qr-${qr.name}-${qr.type}.png`;
@@ -180,10 +167,7 @@ export function useQRCodeManagement(venueId: string) {
       link.click();
     } catch {
       toast({
-        title: "Download Failed",
-        description: "Failed to download QR code",
-        variant: "destructive",
-      });
+
     }
   };
 
@@ -197,7 +181,7 @@ export function useQRCodeManagement(venueId: string) {
     inputName,
     setInputName,
     loadTablesAndCounters,
-    refetch: loadTablesAndCounters,
+
     generateQRForName,
     generateQRForAll,
     removeQR,

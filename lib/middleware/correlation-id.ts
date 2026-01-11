@@ -12,7 +12,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
-import { logger } from "@/lib/logger";
 
 const CORRELATION_ID_HEADER = "x-correlation-id";
 const CORRELATION_ID_CONTEXT_KEY = "correlationId";
@@ -40,12 +39,7 @@ export function setCorrelationId(response: NextResponse, correlationId: string):
  * Should be added to middleware.ts
  */
 export function withCorrelationId(
-  handler: (req: NextRequest) => Promise<NextResponse>
-): (req: NextRequest) => Promise<NextResponse> {
-  return async (req: NextRequest) => {
-    const correlationId = getCorrelationId(req);
 
-    // Store in request context for access in route handlers
     (req as NextRequest & { [CORRELATION_ID_CONTEXT_KEY]: string })[CORRELATION_ID_CONTEXT_KEY] =
       correlationId;
 
@@ -75,16 +69,16 @@ export function getCorrelationIdFromRequest(req: NextRequest): string {
 export function createCorrelatedLogger(correlationId: string) {
   return {
     info: (message: string, context?: Record<string, unknown>) => {
-      logger.info(message, { ...context, correlationId });
+      
     },
     error: (message: string, context?: Record<string, unknown>) => {
-      logger.error(message, { ...context, correlationId });
+      
     },
     warn: (message: string, context?: Record<string, unknown>) => {
-      logger.warn(message, { ...context, correlationId });
+      
     },
     debug: (message: string, context?: Record<string, unknown>) => {
-      logger.debug(message, { ...context, correlationId });
+      
     },
   };
 }

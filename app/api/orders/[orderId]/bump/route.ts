@@ -6,13 +6,10 @@ import { apiErrors, success, isZodError, handleZodError } from "@/lib/api/standa
 import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 import { isDevelopment } from "@/lib/env";
-import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
 const bumpSchema = z.object({
-  orderId: z.string().uuid("Invalid order ID"),
-});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -30,17 +27,9 @@ export const POST = withUnifiedAuth(
 
       const admin = createAdminClient();
       const { data, error } = await admin.rpc("orders_set_kitchen_bumped", {
-        p_order_id: orderId,
-        p_venue_id: venueId,
-      });
 
       if (error) {
-        logger.error("[ORDERS BUMP] RPC error", {
-          error: error.message,
-          orderId,
-          venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.badRequest(isDevelopment() ? error.message : "Failed to bump order");
       }
 
@@ -49,11 +38,7 @@ export const POST = withUnifiedAuth(
       if (isZodError(err)) {
         return handleZodError(err);
       }
-      logger.error("[ORDERS BUMP] Unexpected error", {
-        error: err instanceof Error ? err.message : String(err),
-        venueId: context.venueId,
-        userId: context.user?.id,
-      });
+
       return apiErrors.internal("Request processing failed", isDevelopment() ? err : undefined);
     }
   },
@@ -73,5 +58,4 @@ export const POST = withUnifiedAuth(
     },
   }
 );
-
 

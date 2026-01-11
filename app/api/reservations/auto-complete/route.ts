@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -13,7 +12,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -26,8 +25,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!finalVenueId) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "venueId is required",
+
         },
         { status: 400 }
       );
@@ -48,11 +46,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("status", ["BOOKED", "CHECKED_IN"]);
 
     if (fetchError) {
-      logger.error("[AUTO COMPLETE] Error fetching active reservations:", fetchError);
+      
       return NextResponse.json(
         {
-          ok: false,
-          error: "Failed to fetch active reservations",
+
         },
         { status: 500 }
       );
@@ -60,10 +57,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (!allActiveReservations || allActiveReservations.length === 0) {
       return NextResponse.json({
-        ok: true,
-        message: "No active reservations found",
-        completedCount: 0,
-      });
+
     }
 
     const reservationsToComplete = [];
@@ -108,25 +102,20 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         reservationsToComplete.push({
           ...reservation,
           completionReason,
-        });
+
       }
     }
 
     if (reservationsToComplete.length === 0) {
       return NextResponse.json({
-        ok: true,
-        message: "No reservations need to be completed",
-        completedCount: 0,
-      });
+
     }
 
     // Update reservations to COMPLETED status
     const { data: updatedReservations, error: updateError } = await supabase
       .from("reservations")
       .update({
-        status: "COMPLETED",
-        updated_at: now,
-      })
+
       .in(
         "id",
         reservationsToComplete.map((r) => r.id)
@@ -134,11 +123,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .select();
 
     if (updateError) {
-      logger.error("[AUTO COMPLETE] Error updating reservations:", updateError);
+      
       return NextResponse.json(
         {
-          ok: false,
-          error: "Failed to complete reservations",
+
         },
         { status: 500 }
       );
@@ -159,13 +147,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         if (!activeOrders || activeOrders.length === 0) {
           await supabase.from("table_sessions").upsert(
             {
-              table_id: reservation.table_id,
-              status: "FREE",
-              closed_at: now,
-              updated_at: now,
+
             },
             {
-              onConflict: "table_id",
+
             }
           );
         }
@@ -173,25 +158,17 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     return NextResponse.json({
-      ok: true,
+
       message: `Completed ${updatedReservations?.length || 0} reservations`,
-      completedCount: updatedReservations?.length || 0,
-      reservations: updatedReservations,
-      completionReasons: reservationsToComplete.map((r) => ({
-        id: r.id,
-        reason: r.completionReason,
+
       })),
-    });
+
   } catch (_error) {
-    logger.error("[AUTO COMPLETE] Error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "Internal server _error",
+
       },
       { status: 500 }
     );
   }
-});

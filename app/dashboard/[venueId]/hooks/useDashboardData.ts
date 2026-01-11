@@ -1,30 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { todayWindowForTZ } from "@/lib/time";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
 
 export interface DashboardCounts {
-  live_count: number;
-  earlier_today_count: number;
-  history_count: number;
-  today_orders_count: number;
-  active_tables_count: number;
-  tables_set_up: number;
-  tables_in_use: number;
-  tables_reserved_now: number;
+
 }
 
 export interface DashboardStats {
-  revenue: number;
-  menuItems: number;
-  unpaid: number;
+
 }
 
 export function useDashboardData(
-  venueId: string,
-  venueTz: string,
-  initialVenue: unknown,
+
   initialCounts?: DashboardCounts,
   initialStats?: DashboardStats
 ) {
@@ -44,16 +32,8 @@ export function useDashboardData(
     }
     // Default to zeros if no initial data
     return {
-      live_count: 0,
-      earlier_today_count: 0,
-      history_count: 0,
-      today_orders_count: 0,
-      active_tables_count: 0,
-      tables_set_up: 0,
-      tables_in_use: 0,
-      tables_reserved_now: 0,
+
     };
-  });
 
   const [stats, setStats] = useState<DashboardStats>(() => {
     if (initialStats) {
@@ -62,7 +42,6 @@ export function useDashboardData(
     }
     // Default to zeros if no initial data
     return { revenue: 0, menuItems: 0, unpaid: 0 };
-  });
 
   // CRITICAL: Update state immediately when server props change
   // This ensures we always use the latest server data
@@ -99,14 +78,11 @@ export function useDashboardData(
         // Fetch dashboard counts using RPC
         const { data: countsData, error: countsError } = await supabase
           .rpc("dashboard_counts", {
-            p_venue_id: normalizedVenueId,
-            p_tz: venueTz,
-            p_live_window_mins: 30,
-          })
+
           .single();
 
         if (countsError) {
-          logger.error("[Dashboard] Error fetching counts:", countsError);
+          
           setError("Failed to fetch dashboard counts");
           return;
         }
@@ -137,19 +113,12 @@ export function useDashboardData(
           const activeTables = allTables?.filter((t) => t.is_active) || [];
           const counts = countsData as Record<string, unknown>;
           const finalCounts: DashboardCounts = {
-            live_count: (counts.live_count as number) || 0,
-            earlier_today_count: (counts.earlier_today_count as number) || 0,
-            history_count: (counts.history_count as number) || 0,
-            today_orders_count: (counts.today_orders_count as number) || 0,
-            active_tables_count: activeTables.length,
-            tables_set_up: activeTables.length,
-            tables_in_use: activeSessions?.length || 0,
-            tables_reserved_now: currentReservations?.length || 0,
+
           };
           setCounts(finalCounts);
         }
       } catch (err) {
-        logger.error("[Dashboard] Error fetching counts:", err);
+        
         setError("Failed to fetch dashboard counts");
       }
     },
@@ -192,7 +161,7 @@ export function useDashboardData(
         const freshStats = { revenue, menuItems, unpaid };
         setStats(freshStats);
       } catch (err) {
-        logger.error("[Dashboard] Error fetching stats:", err);
+        
         setError("Failed to fetch dashboard stats");
       }
     },
@@ -205,9 +174,6 @@ export function useDashboardData(
 
     const window = todayWindowForTZ(venueTz);
     setTodayWindow({
-      startUtcISO: window.startUtcISO || "",
-      endUtcISO: window.endUtcISO || "",
-    });
 
     // Always use initial data immediately to prevent showing 0 values
     // But then always fetch fresh data to ensure we have the latest state
@@ -262,9 +228,7 @@ export function useDashboardData(
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "orders",
+
           filter: `venue_id=eq.${normalizedVenueId}`,
         },
         () => {
@@ -281,9 +245,7 @@ export function useDashboardData(
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "menu_items",
+
           filter: `venue_id=eq.${normalizedVenueId}`,
         },
         () => {
@@ -299,9 +261,7 @@ export function useDashboardData(
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "tables",
+
           filter: `venue_id=eq.${normalizedVenueId}`,
         },
         () => {
@@ -317,9 +277,7 @@ export function useDashboardData(
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "table_sessions",
+
           filter: `venue_id=eq.${normalizedVenueId}`,
         },
         () => {
@@ -335,9 +293,7 @@ export function useDashboardData(
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "reservations",
+
           filter: `venue_id=eq.${normalizedVenueId}`,
         },
         () => {
@@ -376,7 +332,7 @@ export function useDashboardData(
       if (order.order_status !== "CANCELLED" && totalAmount > 0) {
         setStats((prev) => ({
           ...prev,
-          revenue: prev.revenue + totalAmount,
+
         }));
       }
     },

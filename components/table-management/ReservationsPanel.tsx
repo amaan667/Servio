@@ -19,8 +19,7 @@ import {
 } from "@/hooks/useTableReservations";
 
 interface ReservationsPanelProps {
-  reservations: Reservation[];
-  onActionComplete?: () => void;
+
 }
 
 export function ReservationsPanel({ reservations, onActionComplete }: ReservationsPanelProps) {
@@ -54,16 +53,12 @@ export function ReservationsPanel({ reservations, onActionComplete }: Reservatio
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-    });
+
   };
 
   const getDuration = (startAt: string, endAt: string) => {
@@ -97,8 +92,7 @@ export function ReservationsPanel({ reservations, onActionComplete }: Reservatio
         return "bg-gray-100 text-gray-800 border-gray-200";
       case "NO_SHOW":
         return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+
     }
   };
 
@@ -111,7 +105,6 @@ export function ReservationsPanel({ reservations, onActionComplete }: Reservatio
     const endTime = new Date(r.end_at);
 
     return endTime > now;
-  });
 
   if (activeReservations.length === 0) {
     return (

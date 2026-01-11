@@ -15,24 +15,11 @@ import { Users, Clock, CheckCircle2 } from "lucide-react";
 import { useTableActions } from "@/hooks/useTableActions";
 
 interface Table {
-  id: string;
-  label: string;
-  seat_count: number;
-  status: string;
-  order_id?: string;
-  total_amount?: number;
-  order_status?: string | null;
-  opened_at?: string;
+
 }
 
 interface TableSelectionDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  sourceTable: Table;
-  action: "move" | "merge";
-  venueId: string;
-  availableTables: Table[];
-  onActionComplete?: () => void;
+
 }
 
 export function TableSelectionDialog({
@@ -94,7 +81,7 @@ export function TableSelectionDialog({
         if (sourceStatus === "FREE" && targetStatus === "RESERVED") return true;
 
         return false;
-      });
+
       return filtered;
     }
   };
@@ -126,9 +113,7 @@ export function TableSelectionDialog({
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+
   };
 
   const getStatusColor = (status: string) => {
@@ -147,8 +132,7 @@ export function TableSelectionDialog({
         return "bg-slate-100 text-slate-800";
       case "RESERVED":
         return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+
     }
   };
 
@@ -168,8 +152,7 @@ export function TableSelectionDialog({
         return <Clock className="h-3 w-3" />;
       case "RESERVED":
         return <Clock className="h-3 w-3" />;
-      default:
-        return <Clock className="h-3 w-3" />;
+
     }
   };
 
@@ -240,7 +223,7 @@ export function TableSelectionDialog({
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedTableId === table.id
                         ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+
                     }`}
                     onClick={() => setSelectedTableId(table.id)}
                   >

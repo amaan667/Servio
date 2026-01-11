@@ -9,7 +9,6 @@ import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 import crypto from "crypto";
 import { Client } from "pg";
-import { logger } from "@/lib/logger";
 
 const MIGRATIONS_DIR = join(process.cwd(), "supabase", "migrations");
 const MIGRATIONS_LOCK_KEY = "servio_migrations_lock_v1";
@@ -70,7 +69,7 @@ async function runSingleMigration(client: Client, filename: string): Promise<voi
       checksum,
     ]);
     await client.query("COMMIT;");
-    logger.info("[migrations] applied", { filename });
+    
   } catch (error) {
     await client.query("ROLLBACK;");
     throw error;
@@ -92,15 +91,15 @@ async function main(): Promise<void> {
       const pending = all.filter((f) => !applied.has(f));
 
       if (pending.length === 0) {
-        logger.info("[migrations] no pending migrations");
+        
         return;
       }
 
-      logger.info("[migrations] pending migrations", { count: pending.length, pending });
+      
       for (const filename of pending) {
         await runSingleMigration(client, filename);
       }
-      logger.info("[migrations] complete", { applied: pending.length });
+      
     } finally {
       await releaseMigrationLock(client);
     }
@@ -110,8 +109,5 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  logger.error("[migrations] failed", {
-    error: error instanceof Error ? error.message : String(error),
-  });
+
   process.exit(1);
-});

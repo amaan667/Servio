@@ -2,7 +2,6 @@ export const runtime = "nodejs";
 
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { NextRequest } from "next/server";
 
@@ -62,11 +61,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     const { data, error } = await q;
     if (error) {
-      logger.error("[DASHBOARD ORDERS ONE] Database error", {
-        error: error.message,
-        venueId,
-        scope,
-      });
+      
       return apiErrors.database(error.message);
     }
 
@@ -105,16 +100,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     // }
 
     return success({
-      orders: transformedOrders || [],
+
       meta: { scope, zone: "Europe/London", count: transformedOrders?.length ?? 0 },
-    });
+
   } catch (_e) {
     const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
-    logger.error("[DASHBOARD ORDERS ONE] Unexpected error", {
-      error: errorMessage,
-      venueId,
-      userId: context.user.id,
-    });
+    
     return apiErrors.internal(errorMessage);
   }
-});

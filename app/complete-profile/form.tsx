@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface CompleteProfileFormProps {
-  user: unknown;
+
 }
 
 export default function CompleteProfileForm({ user }: CompleteProfileFormProps) {
@@ -24,13 +24,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
     identities?: Array<Record<string, unknown>>;
   } | null;
   const [formData, setFormData] = useState({
-    venueName: (userMeta?.user_metadata?.venue_name as string) || "",
-    businessType: (userMeta?.user_metadata?.business_type as string) || "Restaurant",
-    address: (userMeta?.user_metadata?.address as string) || "",
-    phone: (userMeta?.user_metadata?.phone as string) || "",
-    password: "",
-    confirmPassword: "",
-  });
 
   // Check if user signed up with OAuth (Google) and needs to set a password
   const isOAuthUser = userMeta?.identities?.some(
@@ -93,8 +86,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       if (isOAuthUser) {
         const supabase = await createClient();
         const { error: passwordError } = await supabase.auth.updateUser({
-          password: formData.password,
-        });
+
         if (passwordError) {
           setError(`Failed to set password: ${passwordError.message}`);
           setLoading(false);
@@ -117,16 +109,10 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       const venueId = `venue-${(userMeta?.id || "").slice(0, 8)}`;
 
       const res = await fetch("/api/venues/upsert", {
-        method: "POST",
+
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          venueId: venueId,
-          name: venueName,
-          business_type: formData.businessType,
-          address: formData.address || null,
-          phone: formData.phone || null,
+
         }),
-      });
 
       const j = await res.json().catch(() => ({
         /* Empty */
@@ -141,14 +127,8 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       // Update user metadata to mark profile as complete and save additional info
       const supabase2 = await createClient();
       await supabase2.auth.updateUser({
-        data: {
-          profileComplete: true,
-          venue_name: venueName,
-          business_type: formData.businessType,
-          address: formData.address || null,
-          phone: formData.phone || null,
+
         },
-      });
 
       router.replace(`/dashboard/${returnedVenueId}`);
     } catch (_error) {

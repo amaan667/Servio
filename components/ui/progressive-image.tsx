@@ -4,13 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 interface ProgressiveImageProps {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-  className?: string;
-  priority?: boolean;
-  blurDataURL?: string;
+
 }
 
 export function ProgressiveImage({

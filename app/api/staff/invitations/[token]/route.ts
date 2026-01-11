@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { z } from "zod";
@@ -11,12 +10,8 @@ import { validateParams, validateBody } from "@/lib/api/validation-schemas";
 // Validation schemas
 const acceptInvitationSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  full_name: z.string().min(1).max(100),
-});
 
 const tokenParamSchema = z.object({
-  token: z.string().min(1),
-});
 
 // GET /api/staff/invitations/[token] - Get invitation details by token
 export const GET = withUnifiedAuth(
@@ -47,11 +42,7 @@ export const GET = withUnifiedAuth(
       const { data, error } = await supabase.rpc("get_invitation_by_token", { p_token: token });
 
       if (error) {
-        logger.error("[INVITATIONS GET] Error fetching invitation:", {
-          error: error.message,
-          token,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to fetch invitation",
           isDevelopment() ? error.message : undefined
@@ -77,11 +68,6 @@ export const GET = withUnifiedAuth(
       // STEP 4: Return success response
       return success({ invitation });
     } catch (error) {
-      logger.error("[INVITATIONS GET] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -92,9 +78,7 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract token from URL params
-    extractVenueId: async () => {
-      // Invitations don't require venue access - token is in URL
-      return null;
+
     },
   }
 );
@@ -133,10 +117,7 @@ export const POST = withUnifiedAuth(
       );
 
       if (fetchError) {
-        logger.error("[INVITATIONS POST] Error fetching invitation:", {
-          error: fetchError.message,
-          token,
-        });
+        
         return apiErrors.database(
           "Failed to fetch invitation",
           isDevelopment() ? fetchError.message : undefined
@@ -162,14 +143,9 @@ export const POST = withUnifiedAuth(
       // Try to create new user account
       const adminClient = createAdminClient();
       const { data: newUser, error: signUpError } = await adminClient.auth.admin.createUser({
-        email: invitation.email,
-        password: body.password,
-        user_metadata: {
-          full_name: body.full_name,
-          invited_by: invitation.invited_by_name,
+
         },
         email_confirm: true, // Auto-confirm since they're invited
-      });
 
       if (signUpError) {
         // Check if the error is because user already exists
@@ -189,10 +165,7 @@ export const POST = withUnifiedAuth(
           );
         }
 
-        logger.error("[INVITATIONS POST] Error creating user:", {
-          error: signUpError.message,
-          token,
-        });
+        
         return apiErrors.internal(
           "Failed to create account",
           isDevelopment() ? signUpError : undefined
@@ -207,16 +180,9 @@ export const POST = withUnifiedAuth(
 
       // Accept the invitation using the database function
       const { data: acceptResult, error: acceptError } = await supabase.rpc("accept_invitation", {
-        p_token: token,
-        p_user_id: userId,
-      });
 
       if (acceptError) {
-        logger.error("[INVITATIONS POST] Error accepting invitation:", {
-          error: acceptError.message,
-          token,
-          userId,
-        });
+        
         return apiErrors.database(
           "Failed to accept invitation",
           isDevelopment() ? acceptError.message : undefined
@@ -241,30 +207,16 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (updateError) {
-        logger.warn("[INVITATIONS POST] Error fetching updated invitation:", {
-          error: updateError.message,
-          token,
-        });
+        
         // Continue anyway - invitation was accepted
       }
 
-      logger.info("[INVITATIONS POST] Invitation accepted successfully", {
-        token,
-        userId,
-        venueId: invitation.venue_id,
-      });
+      
 
       // STEP 4: Return success response
       return success({
-        message: "Invitation accepted successfully",
-        invitation: updatedInvitation,
-      });
+
     } catch (error) {
-      logger.error("[INVITATIONS POST] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -275,6 +227,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract token from URL params - no venue required
-    extractVenueId: async () => null,
+
   }
 );

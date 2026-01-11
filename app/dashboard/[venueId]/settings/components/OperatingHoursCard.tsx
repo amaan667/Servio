@@ -6,12 +6,7 @@ import { Clock } from "lucide-react";
 import { DAYS_OF_WEEK, OperatingHours } from "../hooks/useVenueSettings";
 
 interface OperatingHoursCardProps {
-  operatingHours: OperatingHours;
-  updateDayHours: (
-    day: string,
-    field: "open" | "close" | "closed",
-    value: string | boolean
-  ) => void;
+
 }
 
 export function OperatingHoursCard({ operatingHours, updateDayHours }: OperatingHoursCardProps) {
@@ -31,9 +26,7 @@ export function OperatingHoursCard({ operatingHours, updateDayHours }: Operating
       <CardContent className="space-y-4 pt-6">
         {DAYS_OF_WEEK.map((day) => {
           const dayHours = operatingHours[day as keyof OperatingHours] || {
-            open: "09:00",
-            close: "17:00",
-            closed: false,
+
           };
 
           return (

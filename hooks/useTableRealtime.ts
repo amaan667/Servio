@@ -17,9 +17,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "table_sessions",
+
           filter: `venue_id=eq.${venueId}`,
         },
         (_payload: unknown) => {
@@ -31,9 +29,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "tables",
+
           filter: `venue_id=eq.${venueId}`,
         },
         (_payload: unknown) => {
@@ -45,9 +41,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "reservations",
+
           filter: `venue_id=eq.${venueId}`,
         },
         (_payload: unknown) => {
@@ -58,7 +52,6 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
       )
       .subscribe((_status: unknown) => {
         /* Empty */
-      });
 
     return () => {
       supabase.removeChannel(channel);

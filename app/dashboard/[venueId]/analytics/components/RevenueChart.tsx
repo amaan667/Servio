@@ -5,25 +5,19 @@ import { formatTooltipDate, formatXAxisLabel, getTimePeriodLabel } from "../util
 import { TimePeriod } from "../hooks/useAnalyticsData";
 
 interface RevenueChartProps {
-  revenueOverTime: Array<{
-    date: string;
-    revenue: number;
-    orders: number;
-    isCurrentPeriod?: boolean;
-    isPeak?: boolean;
-    isLowest?: boolean;
+
   }>;
-  trendline: number;
+
   peakDay: { date: string; revenue: number };
   lowestDay: { date: string; revenue: number };
-  timePeriod: TimePeriod;
+
 }
 
 export function RevenueChart({
   revenueOverTime,
   trendline,
   peakDay,
-  lowestDay: _lowestDay,
+
   timePeriod,
 }: RevenueChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
@@ -88,12 +82,7 @@ export function RevenueChart({
                 const isHovered = hoveredPoint === index;
                 const barColor = period.isPeak
                   ? "bg-green-500"
-                  : period.isCurrentPeriod
-                    ? "bg-purple-600"
-                    : "bg-purple-500";
 
-                return (
-                  <div
                     key={index}
                     className="flex flex-col items-center flex-1 group cursor-pointer"
                     onMouseEnter={() => setHoveredPoint(index)}
@@ -104,7 +93,7 @@ export function RevenueChart({
                       className="w-full bg-blue-200 rounded-t transition-all duration-300"
                       style={{
                         height: `${Math.max(ordersHeight * 0.6, 2)}%`,
-                        minHeight: period.orders > 0 ? "8px" : "2px",
+
                       }}
                     />
 
@@ -113,7 +102,7 @@ export function RevenueChart({
                       className={`w-full ${barColor} rounded-t transition-all duration-300 ${isHovered ? "ring-2 ring-purple-300" : ""}`}
                       style={{
                         height: `${Math.max(revenueHeight, 2)}%`,
-                        minHeight: period.revenue > 0 ? "12px" : "4px",
+
                       }}
                     />
 

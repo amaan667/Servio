@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function PATCH(req: NextRequest) {
@@ -43,15 +42,13 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateError) {
-      logger.error("[POS ORDERS STATUS] Error:", updateError);
+      
       return apiErrors.internal("Internal server error");
     }
 
     return NextResponse.json({ order: updatedOrder });
   } catch (_error) {
-    logger.error("[POS ORDERS STATUS] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

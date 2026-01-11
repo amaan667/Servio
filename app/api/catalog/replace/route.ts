@@ -3,7 +3,6 @@ import { apiErrors } from "@/lib/api/standard-response";
 import { createServerSupabase } from "@/lib/supabase";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { v4 as uuidv4 } from "uuid";
-import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -32,7 +31,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: "Too many requests",
+
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -46,42 +45,27 @@ export const POST = withUnifiedAuth(
       // Normalize venueId format immediately
       normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
-      logger.info("[CATALOG REPLACE] Starting menu import:", {
-        requestId,
-        originalVenueId: venueId,
-        normalizedVenueId,
-        userId: user.id,
-        timestamp: new Date().toISOString(),
-      });
-
-      logger.info(`[MENU IMPORT ${requestId}] User authenticated:`, { userId: user.id });
+      .toISOString(),
 
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       const menuUrl = formData.get("menu_url") as string | null;
       const replaceMode = formData.get("replace_mode") !== "false"; // Default to true
 
-      logger.info("[CATALOG REPLACE] Request details:", {
-        hasFile: !!file,
-        fileName: file?.name || null,
-        hasUrl: !!menuUrl,
-        menuUrl: menuUrl || null,
-        replaceMode,
-      });
+      
 
       // VALIDATION: Must have at least one source (PDF or URL)
       if (!file && !menuUrl) {
         return NextResponse.json(
           {
-            ok: false,
-            error: "Please provide either a PDF file or a website URL (or both)",
+
           },
           { status: 400 }
         );
       }
 
       if (!venueId || !normalizedVenueId) {
-        logger.error("[CATALOG REPLACE] Missing venueId:", { venueId, normalizedVenueId });
+        
         return apiErrors.badRequest("venue_id required");
       }
 
@@ -91,14 +75,7 @@ export const POST = withUnifiedAuth(
       // Create authenticated Supabase client
       const supabase = await createServerSupabase();
 
-      logger.info(`[MENU IMPORT ${requestId}] Starting menu import`, {
-        venueId: normalizedVenueId,
-        originalVenueId: venueId,
-        userId: user.id,
-        hasFile: !!file,
-        hasUrl: !!menuUrl,
-        replaceMode,
-      });
+      
 
       // Step 1: Convert PDF to images (if PDF provided)
       let pdfImages: string[] | undefined;
@@ -109,29 +86,21 @@ export const POST = withUnifiedAuth(
         try {
           const { convertPDFToImages } = await import("@/lib/pdf-to-images-serverless");
           pdfImages = await convertPDFToImages(pdfBuffer);
-          logger.info(`[MENU IMPORT ${requestId}] PDF conversion complete`, {
-            pageCount: pdfImages.length,
-          });
+          
         } catch (conversionError) {
-          logger.error(`[MENU IMPORT ${requestId}] PDF conversion failed:`, conversionError);
+          
           throw new Error("PDF conversion failed. Please check file format.");
         }
 
         // Store PDF images in database
         try {
           const { error: uploadError } = await supabase.from("menu_uploads").insert({
-            venue_id: normalizedVenueId,
-            filename: file.name,
-            pdf_images: pdfImages,
-            status: "processed",
-            created_at: new Date().toISOString(),
-          });
 
           if (uploadError) {
-            logger.warn(`[MENU IMPORT ${requestId}] Failed to save PDF upload:`, uploadError);
+            
           }
         } catch {
-          logger.warn(`[MENU IMPORT ${requestId}] Non-critical: PDF upload storage failed`);
+          
         }
       }
 
@@ -139,35 +108,13 @@ export const POST = withUnifiedAuth(
 
       let extractionResult;
       try {
-        logger.info("[CATALOG REPLACE] Starting hybrid extraction:", {
-          hasPdfImages: !!pdfImages,
-          pdfImageCount: pdfImages?.length || 0,
-          hasUrl: !!menuUrl,
-          normalizedVenueId,
-        });
+        
 
         extractionResult = await extractMenuHybrid({
           pdfImages,
-          websiteUrl: menuUrl || undefined,
-          venueId: normalizedVenueId,
-        });
 
-        logger.info("[CATALOG REPLACE] Extraction complete:", {
-          mode: extractionResult.mode,
-          itemCount: extractionResult.itemCount,
-          extractedItems: extractionResult.items?.length || 0,
-        });
-
-        logger.info(`[MENU IMPORT ${requestId}] Extraction complete`, {
-          mode: extractionResult.mode,
-          itemCount: extractionResult.itemCount,
-        });
       } catch (extractionError) {
-        logger.error(`[MENU IMPORT ${requestId}] Extraction failed`, {
-          error:
-            extractionError instanceof Error ? extractionError.message : String(extractionError),
-          stack: extractionError instanceof Error ? extractionError.stack : undefined,
-        });
+
         throw extractionError;
       }
 
@@ -180,16 +127,12 @@ export const POST = withUnifiedAuth(
         )
       );
 
-      logger.info(`[MENU IMPORT ${requestId}] Post-processing categories`, {
-        existingCategories,
-        menuItemsCount: extractionResult.items.filter((item) => item.category === "Menu Items")
+       => item.category === "Menu Items")
           .length,
-      });
 
       // Enhanced category keyword mapping for intelligent recategorization
       const categoryKeywordMap: { [key: string]: string[] } = {
-        breakfast: [
-          "breakfast",
+
           "eggs",
           "pancake",
           "waffle",
@@ -206,8 +149,7 @@ export const POST = withUnifiedAuth(
           "ful medames",
           "avocado toast",
         ],
-        coffee: [
-          "coffee",
+
           "espresso",
           "latte",
           "cappuccino",
@@ -217,8 +159,7 @@ export const POST = withUnifiedAuth(
           "cortado",
         ],
         tea: ["tea", "chai", "matcha", "oolong", "green tea", "earl grey", "chamomile"],
-        drinks: [
-          "juice",
+
           "smoothie",
           "water",
           "soda",
@@ -227,8 +168,7 @@ export const POST = withUnifiedAuth(
           "lemonade",
           "milkshake",
         ],
-        desserts: [
-          "dessert",
+
           "cake",
           "cheesecake",
           "tiramisu",
@@ -267,11 +207,7 @@ export const POST = withUnifiedAuth(
           }
 
           if (newCategory) {
-            logger.info(`[MENU IMPORT ${requestId}] Recategorizing item`, {
-              item: item.name,
-              from: "Menu Items",
-              to: newCategory,
-            });
+            
             item.category = newCategory;
             recategorizedCount++;
           }
@@ -279,11 +215,7 @@ export const POST = withUnifiedAuth(
       }
 
       if (recategorizedCount > 0) {
-        logger.info(
-          `[MENU IMPORT ${requestId}] Recategorized ${recategorizedCount} items from "Menu Items"`,
-          {
-            finalCategories: Array.from(
-              new Set(extractionResult.items.map((item) => item.category))
+         => item.category))
             ),
           }
         );
@@ -291,10 +223,7 @@ export const POST = withUnifiedAuth(
 
       // Step 3: Replace or Append mode
       if (replaceMode) {
-        logger.info("[CATALOG REPLACE] Replace mode - deleting existing items:", {
-          normalizedVenueId,
-          timestamp: new Date().toISOString(),
-        });
+        .toISOString(),
 
         // Delete all existing items
         const { error: deleteItemsError } = await supabase
@@ -302,13 +231,10 @@ export const POST = withUnifiedAuth(
           .delete()
           .eq("venue_id", normalizedVenueId);
 
-        logger.info("[CATALOG REPLACE] Delete result:", {
-          error: deleteItemsError?.message || null,
-          errorCode: deleteItemsError?.code || null,
-        });
+        
 
         if (deleteItemsError) {
-          logger.error(`[MENU IMPORT ${requestId}] Failed to delete items:`, deleteItemsError);
+          
           throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
         }
       } else {
@@ -318,10 +244,7 @@ export const POST = withUnifiedAuth(
       // Step 4: Prepare items for database
       const menuItems = [];
 
-      logger.info("[CATALOG REPLACE] Preparing items for database:", {
-        extractionResultItemCount: extractionResult.items.length,
-        normalizedVenueId,
-      });
+      
 
       for (let i = 0; i < extractionResult.items.length; i++) {
         const item = extractionResult.items[i];
@@ -335,77 +258,36 @@ export const POST = withUnifiedAuth(
         else if (item.spiceLevel === "hot") spiceLevelInt = 3;
 
         menuItems.push({
-          id: itemId,
-          venue_id: normalizedVenueId,
-          name: item.name,
-          description: item.description || "",
-          price: item.price || 0,
-          category: item.category || "Menu Items",
-          image_url: item.image_url || null,
-          allergens: item.allergens || [],
-          dietary: item.dietary || [],
-          spice_level: spiceLevelInt,
-          is_available: true,
-          position: i,
-          created_at: new Date().toISOString(),
-        });
+
       }
 
       // Step 5: Insert into database
-      logger.info("[CATALOG REPLACE] Ready to insert items:", {
-        itemCount: menuItems.length,
-        normalizedVenueId,
-        sampleItem: menuItems[0] || null,
-      });
+      
 
       if (menuItems.length > 0) {
-        logger.info(
-          `[MENU IMPORT ${requestId}] Inserting ${menuItems.length} items into database...`
-        );
-        logger.info(`[MENU IMPORT ${requestId}] Sample item for debugging:`, {
-          sample: menuItems[0],
-        });
+        
+        
 
         const { data, error: insertItemsError } = await supabase
           .from("menu_items")
           .insert(menuItems)
           .select();
 
-        logger.info("[CATALOG REPLACE] Insert result:", {
-          insertedCount: data?.length || 0,
-          error: insertItemsError?.message || null,
-          errorCode: insertItemsError?.code || null,
-          errorDetails: insertItemsError?.details || null,
-          errorHint: insertItemsError?.hint || null,
-        });
+        
 
         if (insertItemsError) {
-          logger.error(`[MENU IMPORT ${requestId}] Database insert failed`, {
-            error: insertItemsError.message,
-            code: insertItemsError.code,
-            details: insertItemsError.details,
-            hint: insertItemsError.hint,
-          });
+          
           throw new Error(`Failed to insert items: ${insertItemsError.message}`);
         }
 
-        logger.info(
-          `[MENU IMPORT ${requestId}] ✅ ${data.length} items inserted successfully into database`
-        );
+        
       } else {
-        logger.warn(
-          `[MENU IMPORT ${requestId}] ⚠️ No items to insert - extraction returned 0 items`
-        );
+        
       }
 
       const duration = Date.now() - startTime;
 
-      logger.info(`[MENU IMPORT ${requestId}] Import complete!`, {
-        duration: `${duration}ms`,
-        mode: extractionResult.mode,
-        itemCount: menuItems.length,
-        replaceMode,
-      });
+      
 
       // Revalidate all pages that display menu data - AGGRESSIVE CACHE BUSTING
       try {
@@ -419,32 +301,20 @@ export const POST = withUnifiedAuth(
         revalidatePath(`/menu/${normalizedVenueId}`, "page");
         revalidatePath(`/order/${normalizedVenueId}`, "page");
 
-        logger.info(
-          `[MENU IMPORT ${requestId}] ✅ Cache revalidated aggressively for venue ${normalizedVenueId}`
-        );
+        
       } catch (revalidateError) {
-        logger.warn(
-          `[MENU IMPORT ${requestId}] ⚠️ Cache revalidation failed (non-critical)`,
+        `,
           revalidateError
         );
       }
 
-      logger.info("[CATALOG REPLACE] Import complete:", {
-        requestId,
-        itemCount: menuItems.length,
-        mode: extractionResult.mode,
-        duration: `${duration}ms`,
-        normalizedVenueId,
-      });
+      
 
       // STEP 7: Return success response
       return NextResponse.json({
-        ok: true,
-        message: "Menu imported successfully",
-        items: menuItems.length,
-        mode: extractionResult.mode,
+
         duration: `${duration}ms`,
-      });
+
     } catch (_error) {
       const duration = Date.now() - startTime;
       const errorMessage =
@@ -453,34 +323,14 @@ export const POST = withUnifiedAuth(
       const errorName = _error instanceof Error ? _error.name : "UnknownError";
 
       // Enhanced error logging
-      logger.error(`[CATALOG REPLACE] Error caught:`, {
-        requestId,
-        errorName,
-        errorMessage,
-        errorStack,
-        duration: `${duration}ms`,
-        venueId: context?.venueId || "unknown",
-        normalizedVenueId: normalizedVenueId || "unknown",
-        userId: context?.user?.id || "unknown",
-        errorObject: _error,
-      });
+      
 
-      logger.error(`[MENU IMPORT ${requestId}] Failed:`, {
-        error: errorMessage,
-        errorName,
-        stack: errorStack,
-        duration: `${duration}ms`,
-        venueId: context?.venueId || "unknown",
-        normalizedVenueId: normalizedVenueId || "unknown",
-        userId: context?.user?.id || "unknown",
-      });
+      
 
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-            ok: false,
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
+
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -488,9 +338,7 @@ export const POST = withUnifiedAuth(
 
       return NextResponse.json(
         {
-          ok: false,
-          error: "Menu import failed",
-          message: isDevelopment() ? errorMessage : "Failed to import menu",
+
           requestId,
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
@@ -501,16 +349,14 @@ export const POST = withUnifiedAuth(
   {
     // Extract venueId from query params (preferred) or form data
     // NOTE: We prefer query params to avoid consuming the request body
-    extractVenueId: async (req) => {
-      try {
+
         const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
 
         if (!venueId) {
           // Fallback: Try to read from formData (this will consume the body, so it's a last resort)
           // In practice, venueId should be in query params to avoid this issue
-          logger.warn(
-            "[CATALOG REPLACE] venueId not in query params, attempting to read from formData (may cause body consumption issues)"
+          "
           );
           try {
             // Clone request to avoid consuming original body
@@ -519,9 +365,7 @@ export const POST = withUnifiedAuth(
             venueId =
               (formData.get("venue_id") as string) || (formData.get("venueId") as string) || null;
           } catch (formDataError) {
-            logger.error("[CATALOG REPLACE] Failed to read formData in extractVenueId:", {
-              error: formDataError instanceof Error ? formDataError.message : String(formDataError),
-            });
+
             // venueId remains null - will need to be extracted in main handler
           }
         }
@@ -531,17 +375,10 @@ export const POST = withUnifiedAuth(
           ? venueId.startsWith("venue-")
             ? venueId
             : `venue-${venueId}`
-          : null;
-        logger.info("[CATALOG REPLACE] extractVenueId result:", {
-          originalVenueId: venueId,
-          normalizedVenueId: normalized,
-          source: searchParams.get("venueId") ? "query" : "formData",
-        });
+
         return normalized;
       } catch (error) {
-        logger.error("[CATALOG REPLACE] Error in extractVenueId:", {
-          error: error instanceof Error ? error.message : String(error),
-        });
+
         return null;
       }
     },

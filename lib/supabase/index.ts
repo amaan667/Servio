@@ -12,7 +12,6 @@ import { createServerClient as createSSRServerClient, type CookieOptions } from 
 import { createClient as createBrowserClient } from "@supabase/supabase-js";
 
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
 
 /**
  * Gets the Supabase URL from environment variables
@@ -43,24 +42,20 @@ export function getSupabaseAnonKey(): string {
   if (typeof window !== "undefined") {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!key) {
-      logger.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in browser environment", {
-        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-        hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        nodeEnv: process.env.NODE_ENV,
-      });
+      
       throw new Error(
         "NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables."
       );
     }
     // Validate key format (should start with eyJ)
     if (!key.startsWith("eyJ")) {
-      logger.warn("[SUPABASE] Anon key format looks unusual (should start with 'eyJ')");
+      ");
     }
     return key;
   }
   const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   if (!key) {
-    logger.error("[SUPABASE] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in server environment");
+    
     throw new Error(
       "NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables."
     );
@@ -86,9 +81,7 @@ export function supabaseBrowser() {
     anonKey = getSupabaseAnonKey();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("[SUPABASE] Failed to get Supabase credentials", {
-      error: errorMessage,
-    });
+    
     throw new Error(
       `Supabase configuration error: ${errorMessage}. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.`
     );
@@ -98,7 +91,7 @@ export function supabaseBrowser() {
     // Server-side: return a new instance (can't use singleton on server)
     return createBrowserClient(url, anonKey, {
       auth: { persistSession: false },
-    });
+
   }
 
   // Client-side: use singleton
@@ -129,10 +122,7 @@ export function supabaseBrowser() {
       const storageAvailable = isStorageAvailable();
 
       return {
-        getItem: (key: string) => {
-          try {
-            if (storageAvailable) {
-              return localStorage.getItem(key);
+
             }
             // Fallback to cookies if localStorage unavailable
             const cookies = document.cookie.split(";");
@@ -155,10 +145,7 @@ export function supabaseBrowser() {
             // Silent error handling
           }
         },
-        removeItem: (key: string) => {
-          try {
-            if (storageAvailable) {
-              localStorage.removeItem(key);
+
             }
             // Also remove from cookies
             document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
@@ -178,12 +165,10 @@ export function supabaseBrowser() {
 
     // Log client creation for debugging (only in development)
     if (process.env.NODE_ENV === "development") {
-      logger.debug("[SUPABASE] Creating browser client", {
-        url: url.substring(0, 30) + "...",
-        hasAnonKey: !!anonKey,
-        anonKeyLength: anonKey?.length || 0,
+       + "...",
+
         anonKeyPrefix: anonKey?.substring(0, 10) || "none",
-      });
+
     }
 
     // Double-check that anonKey is valid before creating client
@@ -194,26 +179,20 @@ export function supabaseBrowser() {
     }
 
     browserClient = createBrowserClient(url, anonKey, {
-      auth: {
-        persistSession: true,
-        detectSessionInUrl: true,
-        autoRefreshToken: true,
+
         flowType: "pkce", // PKCE is required for Supabase OAuth
         // Mobile Safari: Use custom storage that handles private browsing/restrictions
         // Desktop: Let Supabase use default storage
-        storage: isMobileSafari ? createMobileSafariStorage() : undefined,
+
         storageKey: isMobileSafari ? `sb-${projectRef}-auth-token` : undefined,
       },
-      global: {
-        headers: {
-          Accept: "application/json",
+
           "Content-Type": "application/json",
-          Prefer: "return=representation",
+
           // Explicitly set apikey header to ensure it's always sent
-          apikey: anonKey,
+
         },
       },
-    });
 
     // Handle session management for multiple devices
     // Each device should maintain its own session independently
@@ -259,29 +238,21 @@ export function supabaseBrowser() {
 
 // Server in Route Handlers / Server Components with cookies
 export function supabaseServer(cookies: {
-  get: (name: string) => string | undefined;
+
   set: (name: string, value: string, opts: CookieOptions) => void;
 }) {
   return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      get: (name) => cookies.get(name),
+
       set: (name, value, options) => cookies.set(name, value, options),
       remove: (name, options) => cookies.set(name, "", { ...options, maxAge: 0 }),
     },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-      storage: undefined,
-      storageKey: undefined,
+
     },
-    global: {
-      headers: {
-        Accept: "application/json",
+
         "Content-Type": "application/json",
       },
     },
-  });
+
 }
 
 // Admin (service role) — server-only
@@ -290,14 +261,12 @@ export function supabaseAdmin() {
   if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
   return createBrowserClient(getSupabaseUrl(), key, {
     auth: { persistSession: false },
-    global: {
-      headers: {
-        Accept: "application/json",
+
         "Content-Type": "application/json",
-        Prefer: "return=representation",
+
       },
     },
-  });
+
 }
 
 // Backward compatibility export
@@ -322,64 +291,39 @@ export async function createClient() {
 export async function createServerSupabase() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  const { logger } = await import("@/lib/logger");
-
+  
   const client = createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      getAll() {
-        const allCookies = cookieStore.getAll();
-        logger.info("[createServerSupabase] getAll() called", {
-          count: allCookies.length,
+
+         called", {
+
           names: allCookies.map((c) => c.name).join(", "),
-        });
+
         return allCookies;
       },
       setAll(cookiesToSet) {
-        logger.info("[createServerSupabase] setAll() called - Attempting to set cookies:", {
-          count: cookiesToSet.length,
+         called - Attempting to set cookies:", {
+
           names: cookiesToSet.map((c) => c.name).join(", "),
-        });
 
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            logger.info("[createServerSupabase] Setting cookie:", {
-              name,
-              valueLength: value?.length || 0,
-              hasValue: !!value,
-              options: {
-                httpOnly: options?.httpOnly,
-                sameSite: options?.sameSite,
-                secure: options?.secure,
-                path: options?.path,
-              },
-            });
+            
 
             cookieStore.set(name, value, {
               ...options,
               httpOnly: false, // Must be false for Supabase to read from client
-              sameSite: "lax",
-              secure: true, // Always use secure in production - critical for mobile Safari
-              path: "/",
-            });
-          });
 
-          logger.info("[createServerSupabase] ✅ All cookies set successfully", {
-            count: cookiesToSet.length,
-          });
+              secure: true, // Always use secure in production - critical for mobile Safari
+
         } catch (error) {
-          logger.error("[createServerSupabase] ❌ Failed to set cookies:", {
-            error: error instanceof Error ? error.message : String(error),
-          });
+
         }
       },
     },
-    global: {
-      headers: {
-        Accept: "application/json",
+
         "Content-Type": "application/json",
       },
     },
-  });
 
   return client;
 }
@@ -390,23 +334,19 @@ export async function createServerSupabaseReadOnly() {
   const cookieStore = await cookies();
 
   return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+
       },
       setAll() {
         // NO-OP: Don't try to set cookies in read-only mode
         // This prevents "Cookies can only be modified in a Server Action or Route Handler" errors
       },
     },
-    global: {
-      headers: {
-        Accept: "application/json",
+
         "Content-Type": "application/json",
-        Prefer: "return=representation",
+
       },
     },
-  });
+
 }
 
 // Alias for backward compatibility
@@ -458,10 +398,7 @@ export async function getAuthenticatedUser() {
     const cookieStore = await cookies();
 
     const supabase = supabaseServer({
-      get: (name) => {
-        // Guard against undefined cookie names
-        if (!name || typeof name !== "string") {
-          return undefined;
+
         }
         try {
           const cookie = cookieStore.get(name);
@@ -470,10 +407,8 @@ export async function getAuthenticatedUser() {
           return undefined;
         }
       },
-      set: () => {
-        /* Empty - read-only mode */
+
       },
-    });
 
     // Use getUser() for secure authentication
     const {
@@ -527,21 +462,19 @@ export async function getSession() {
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
     const supabase = supabaseServer({
-      get: (name) => cookieStore.get(name)?.value,
+
       set: (name, value, options) => {
         try {
           cookieStore.set(name, value, {
             ...options,
-            sameSite: "lax",
+
             secure: true, // Always use secure - critical for mobile Safari
-            httpOnly: false,
-            path: "/",
-          });
+
         } catch {
           // Silent error handling for cookie context
         }
       },
-    });
+
     const {
       data: { session },
       error,
@@ -594,9 +527,7 @@ export async function getSessionSafe(supabase: Awaited<ReturnType<typeof createS
     }
 
     return {
-      session: data.session,
-      user: data.session?.user || null,
-      error: null,
+
     };
   } catch (_err) {
     // Catch any thrown errors
@@ -639,14 +570,13 @@ export function clearAuthStorage() {
     ) {
       sessionStorage.removeItem(key);
     }
-  });
 
   // Clear cookies
   document.cookie.split(";").forEach((c) => {
     document.cookie = c
       .replace(/^ +/, "")
       .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-  });
+
 }
 
 // Alias for backward compatibility

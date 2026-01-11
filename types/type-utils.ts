@@ -54,7 +54,7 @@ export function safeJsonParse<T = unknown>(json: string): T | null {
  * Assert that a value is not null/undefined
  */
 export function assertDefined<T>(
-  value: T | null | undefined,
+
   message?: string
 ): asserts value is T {
   if (value === null || value === undefined) {

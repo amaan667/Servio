@@ -3,8 +3,7 @@
 import { Clock } from "lucide-react";
 
 interface EmptyStateProps {
-  title: string;
-  description: string;
+
 }
 
 export function EmptyState({ title, description }: EmptyStateProps) {

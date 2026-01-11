@@ -16,13 +16,10 @@ import { TimePeriod } from "../hooks/useAnalyticsData";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TimePeriodSelectorProps {
-  timePeriod: TimePeriod;
-  onTimePeriodChange: (period: TimePeriod) => void;
+
   customDateRange: { start: string; end: string } | null;
   onCustomDateRangeChange: (range: { start: string; end: string } | null) => void;
-  onExportCSV: () => void;
-  isDownloading: boolean;
-  hasData: boolean;
+
   canExport?: boolean; // Pro+ tier required for exports (Pro = CSV, Enterprise = CSV + financial)
 }
 
@@ -82,9 +79,7 @@ export function TimePeriodSelector({
                     value={customDateRange?.start || ""}
                     onChange={(e) =>
                       onCustomDateRangeChange({
-                        start: e.target.value,
-                        end: customDateRange?.end || new Date().toISOString().split("T")[0],
-                      })
+
                     }
                   />
                 </div>
@@ -96,9 +91,7 @@ export function TimePeriodSelector({
                     value={customDateRange?.end || ""}
                     onChange={(e) =>
                       onCustomDateRangeChange({
-                        start: customDateRange?.start || new Date().toISOString().split("T")[0],
-                        end: e.target.value,
-                      })
+
                     }
                   />
                 </div>
@@ -129,7 +122,7 @@ export function TimePeriodSelector({
                   title={
                     canExport
                       ? "Exports the rows you're viewing"
-                      : "CSV exports require Pro tier or higher"
+
                   }
                 >
                   <Download className="h-4 w-4" />

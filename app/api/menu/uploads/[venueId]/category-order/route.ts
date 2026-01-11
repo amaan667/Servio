@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ venueId: string }> }) {
@@ -23,9 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
       .maybeSingle();
 
     if (error) {
-      logger.error("[CATEGORY ORDER API] Error fetching upload data:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      
       return apiErrors.internal("Failed to fetch category order");
     }
 
@@ -39,12 +36,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
     }
 
     return NextResponse.json({
-      categories: categories || null,
-    });
+
   } catch (_error) {
-    logger.error("[CATEGORY ORDER API] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

@@ -8,19 +8,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CreditCard, Crown, Sparkles, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TIER_LIMITS } from "@/lib/tier-limits";
-import { logger } from "@/lib/logger";
 
 interface BillingSectionProps {
   user?: {
-    id: string;
-    email: string;
+
   };
   organization?: {
-    id: string;
-    subscription_tier?: string;
-    stripe_customer_id?: string;
-    subscription_status?: string;
-    trial_ends_at?: string;
+
   };
   venues?: unknown[];
   isOwner?: boolean;
@@ -51,7 +45,6 @@ export default function BillingSection({ organization }: BillingSectionProps) {
     );
   }
 
-
   // Get tier from organization - should match Stripe exactly (no normalization)
   const tier = (organization?.subscription_tier?.toLowerCase() || "starter") as
     | "starter"
@@ -67,13 +60,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
 
     // Map feature names to TIER_LIMITS keys
     const featureMap: Record<string, keyof typeof tierLimits.features> = {
-      kds: "kds",
-      inventory: "inventory",
-      aiAssistant: "aiAssistant",
-      multiVenue: "multiVenue",
-      analytics: "analytics",
-      customerFeedback: "customerFeedback",
-      customBranding: "branding",
+
     };
 
     const featureKey = featureMap[feature];
@@ -97,10 +84,7 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   const handleChangePlan = async () => {
     if (!organization?.id) {
       toast({
-        title: "Error",
-        description: "Organization not found. Please refresh the page.",
-        variant: "destructive",
-      });
+
       return;
     }
 
@@ -110,37 +94,30 @@ export default function BillingSection({ organization }: BillingSectionProps) {
       try {
         const { apiClient } = await import("@/lib/api-client");
         await apiClient.post("/api/subscription/refresh-status", {
-          organizationId: organization.id,
-        });
+
       } catch (syncError) {
         // Non-critical - continue even if sync fails
-        logger.warn("[BILLING] Failed to sync tier before opening portal:", syncError);
+        
       }
 
       // Open Stripe billing portal where users can upgrade/downgrade
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
-        organizationId: organization.id,
-      });
 
       const data = await response.json();
 
       if (!response.ok) {
         toast({
-          title: "Error",
+
           description:
             data.message || data.error || `Failed to open billing portal (${response.status})`,
-          variant: "destructive",
-        });
+
         return;
       }
 
       if (data.error) {
         toast({
-          title: "Error",
-          description: data.message || data.error || "Failed to open billing portal",
-          variant: "destructive",
-        });
+
         return;
       }
 
@@ -148,20 +125,11 @@ export default function BillingSection({ organization }: BillingSectionProps) {
         window.location.href = data.url;
       } else {
         toast({
-          title: "Error",
-          description: "Failed to open billing portal - no URL received",
-          variant: "destructive",
-        });
+
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to open billing portal. Please try again.",
-        variant: "destructive",
-      });
+
     } finally {
       setLoadingChangePlan(false);
     }
@@ -170,46 +138,24 @@ export default function BillingSection({ organization }: BillingSectionProps) {
   const getTierInfo = () => {
     if (isGrandfathered) {
       return {
-        name: "Grandfathered",
-        icon: Crown,
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-50",
-        borderColor: "border-yellow-200",
-        description: "Legacy account with unlimited access",
+
       };
     }
 
     switch (tier) {
       case "starter":
         return {
-          name: "Starter",
-          icon: CreditCard,
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-          borderColor: "border-gray-200",
-          description: "Essential features for small businesses",
+
         };
       case "pro":
         return {
-          name: "Pro",
-          icon: Sparkles,
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-          borderColor: "border-blue-200",
-          description: "Most popular plan with advanced features",
+
         };
       case "enterprise":
         return {
-          name: "Enterprise",
-          icon: Crown,
-          color: "text-purple-600",
-          bgColor: "bg-purple-50",
-          borderColor: "border-purple-200",
-          description: "Enterprise plan with all features",
+
         };
-      default:
-        // NO HARDCODED DEFAULT - return null for unknown/missing tiers
-        return null;
+
     }
   };
 

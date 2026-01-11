@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 
 export function useGroupSession(
-  venueSlug: string,
-  tableNumber: string,
-  isCounterOrder: boolean,
-  skipModal: boolean = false
-) {
+
   const [showGroupSizeModal, setShowGroupSizeModal] = useState(false);
   const [showGroupSizePopup, setShowGroupSizePopup] = useState(false);
   const [groupSize, setGroupSize] = useState<number | null>(null);
@@ -92,14 +88,10 @@ export function useGroupSession(
 
     try {
       const response = await fetch("/api/table/group-session", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId: venueSlug,
-          tableNumber: tableNumber,
-          groupSize: selectedGroupSize,
+
         }),
-      });
 
       if (response.ok) {
         const data = await response.json();
@@ -116,14 +108,10 @@ export function useGroupSession(
 
     try {
       const response = await fetch("/api/table/group-session", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId: venueSlug,
-          tableNumber: tableNumber,
-          groupSize: newGroupSize,
+
         }),
-      });
 
       if (response.ok) {
         const data = await response.json();

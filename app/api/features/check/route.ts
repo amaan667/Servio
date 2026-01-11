@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkFeatureAccess, PREMIUM_FEATURES } from "@/lib/feature-gates";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -14,7 +13,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: "Too many requests",
+
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -50,18 +49,12 @@ export const GET = withUnifiedAuth(
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      logger.error("[FEATURE CHECK] Unexpected error:", {
-        error: errorMessage,
-        stack: errorStack,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
+      
 
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message: errorMessage,
+
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -69,8 +62,7 @@ export const GET = withUnifiedAuth(
 
       return NextResponse.json(
         {
-          error: "Internal Server Error",
-          message: isDevelopment() ? errorMessage : "Request processing failed",
+
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
@@ -79,8 +71,7 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query params
-    extractVenueId: async (req) => {
-      try {
+
         const { searchParams } = new URL(req.url);
         return searchParams.get("venueId") || searchParams.get("venue_id");
       } catch {

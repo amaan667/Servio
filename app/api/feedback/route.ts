@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -19,26 +18,22 @@ export async function POST(req: Request) {
 
     // Prepare data for insertion
     const feedbackData = {
-      order_id: order_id || null,
+
       rating,
-      comment: trimmedComment,
+
     };
 
     const { error } = await admin.from("order_feedback").insert(feedbackData);
 
     if (error) {
-      logger.error("[FEEDBACK] Feedback submission error", {
-        error: error.message,
-      });
+      
       return apiErrors.database(error.message);
     }
 
     return success({});
   } catch (_e) {
     const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
-    logger.error("[FEEDBACK] Feedback submission exception", {
-      error: errorMessage,
-    });
+    
     return apiErrors.internal(errorMessage);
   }
 }

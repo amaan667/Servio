@@ -4,7 +4,6 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
-import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -30,18 +29,11 @@ export const GET = withUnifiedAuth(
         return success({ exists: false, message: "Staff table does not exist" });
       }
 
-      logger.info("[STAFF CHECK] Staff table exists", {
-        userId: context.user.id,
-      });
+      
 
       // STEP 3: Return success response
       return success({ exists: true, message: "Staff table exists" });
     } catch (error) {
-      logger.error("[STAFF CHECK] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -52,6 +44,6 @@ export const GET = withUnifiedAuth(
   },
   {
     // System route - no venue required
-    extractVenueId: async () => null,
+
   }
 );

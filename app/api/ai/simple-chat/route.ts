@@ -5,7 +5,6 @@ import { getAssistantContext, getAllSummaries } from "@/lib/ai/context-builders"
 import { executeTool } from "@/lib/ai/tool-executors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { logger } from "@/lib/logger";
 import { isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 
@@ -18,10 +17,7 @@ export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
     // Log route entry (only in development)
     if (isDevelopment()) {
-      logger.debug("[AI SIMPLE CHAT] Route hit", {
-        venueId: context?.venueId,
-        userId: context?.user?.id,
-      });
+      
     }
 
     try {
@@ -30,7 +26,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-            error: "Too many requests",
+
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -42,14 +38,9 @@ export const POST = withUnifiedAuth(
       try {
         body = await req.json();
       } catch (jsonError) {
-        logger.error("[AI SIMPLE CHAT] Failed to parse JSON body:", {
-          error: jsonError instanceof Error ? jsonError.message : String(jsonError),
-          contentType: req.headers.get("content-type"),
-        });
         return NextResponse.json(
           {
-            error: "Invalid request body",
-            message: "Request body must be valid JSON",
+
             response: "I'm sorry, but I couldn't understand your request. Please try again.",
           },
           { status: 400 }
@@ -59,13 +50,6 @@ export const POST = withUnifiedAuth(
       const { message, currentPage, conversationHistory } = body;
 
       // Structured audit log for AI assistant command entry
-      logger.info("[AI SIMPLE CHAT] Command received", {
-        venueId: context.venueId,
-        userId: context.user?.id,
-        currentPage,
-        messagePreview: typeof message === "string" ? message.slice(0, 200) : null,
-        hasHistory: Array.isArray(conversationHistory) && conversationHistory.length > 0,
-      });
 
       if (!message) {
         return apiErrors.badRequest("Missing required fields");
@@ -75,30 +59,17 @@ export const POST = withUnifiedAuth(
       let assistantContext;
       let summaries;
       try {
-        logger.debug("[AI SIMPLE CHAT] Step 1: Getting assistant context...");
+        
         assistantContext = await getAssistantContext(context.venueId, context.user.id);
         // Context retrieved successfully
-        logger.debug({
-          venueId: context.venueId,
-          features: assistantContext.features,
-        });
+        
 
-        logger.debug("[AI SIMPLE CHAT] Step 3: Getting data summaries...");
+        
         summaries = await getAllSummaries(context.venueId, assistantContext.features);
         // Summaries retrieved
-        logger.debug({
-          hasMenuSummary: !!summaries.menu,
-          hasOrdersSummary: !!summaries.orders,
-          hasInventorySummary: !!summaries.inventory,
-        });
+        
       } catch (contextError) {
-        logger.error("[AI SIMPLE CHAT] Failed to get context", {
-          venueId: context.venueId,
-          userId: context.user?.id,
-          error: contextError instanceof Error ? contextError.message : String(contextError),
-          stack: contextError instanceof Error ? contextError.stack : undefined,
-          errorType: contextError?.constructor?.name || typeof contextError,
-        });
+
         return NextResponse.json(
           { error: "Failed to load assistant context", message: "Please try again" },
           { status: 500 }
@@ -107,7 +78,7 @@ export const POST = withUnifiedAuth(
 
       // Build conversation context from history
 
-      logger.debug("[AI SIMPLE CHAT] Step 5: Building conversation context...");
+      
       let conversationContext = "";
       if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
         const recentMessages = conversationHistory.slice(-5); // Last 5 messages
@@ -120,44 +91,36 @@ export const POST = withUnifiedAuth(
                 return `${msg.role.toUpperCase()}: ${msg.content}`;
               }
               return "";
-            })
+
             .filter((s) => s.length > 0)
             .join("\n");
         // Conversation context built
-        logger.debug({
-          historyLength: conversationHistory.length,
-          recentMessagesCount: recentMessages.length,
-        });
+        
       } else {
-        logger.debug("[AI SIMPLE CHAT] Step 5a: No conversation history");
+        
       }
 
       // Plan the action with conversation context
       const enhancedMessage = conversationContext ? `${message}${conversationContext}` : message;
 
-      logger.debug("[AI SIMPLE CHAT] Step 6: Planning assistant action...");
+      
       const plan = await planAssistantAction(enhancedMessage, assistantContext, summaries);
       // Plan received from AI
-      logger.debug({
-        hasDirectAnswer: !!plan.directAnswer,
-        toolsCount: plan.tools?.length || 0,
-        toolNames: plan.tools?.map((t) => t.name) || [],
-        hasWarnings: plan.warnings && plan.warnings.length > 0,
-      });
+       => t.name) || [],
 
       let response = "";
       let navigationInfo = null;
 
       // Handle direct answer (no tools needed)
       if (plan.directAnswer) {
-        logger.debug("[AI SIMPLE CHAT] Step 8: Using direct answer (no tools needed)");
+        ");
         response = plan.directAnswer;
       }
       // Check if we have warnings asking for clarification (should not execute tools)
       else if (plan.warnings && plan.warnings.length > 0 && plan.tools && plan.tools.length === 0) {
         // User needs to provide more information - don't execute anything
 
-        logger.debug("[AI SIMPLE CHAT] Step 8: Request needs clarification, no tools to execute");
+        
         response = plan.reasoning || plan.warnings.join(". ");
         if (plan.warnings.length > 0) {
           response += `\n\n${plan.warnings.join("\n")}`;
@@ -166,20 +129,14 @@ export const POST = withUnifiedAuth(
       // Execute tools if present
       else if (plan.tools && plan.tools.length > 0) {
         // Executing AI tools
-        logger.debug({
-          toolsCount: plan.tools.length,
-        });
+        
         const toolResults = [];
         const messages: string[] = [];
 
         for (let i = 0; i < plan.tools.length; i++) {
           const tool = plan.tools[i];
           // Executing tool
-          logger.debug({
-            toolName: tool.name,
-            params: tool.params,
-            preview: tool.preview,
-          });
+          
 
           try {
             const result = await executeTool(
@@ -190,15 +147,11 @@ export const POST = withUnifiedAuth(
               tool.preview // use the preview flag from the plan
             );
             // Tool execution completed
-            logger.debug({
-              success: "success" in result ? result.success : "unknown",
-              hasResult: "result" in result,
-            });
+            
 
             toolResults.push({
-              tool: tool.name,
+
               result,
-            });
 
             // Build response from tool results
             if ("success" in result && result.success && "result" in result) {
@@ -207,8 +160,7 @@ export const POST = withUnifiedAuth(
               // Handle navigation (set navigationInfo but don't overwrite messages)
               if (tool.name === "navigation.go_to_page") {
                 navigationInfo = {
-                  route: resultData.route as string,
-                  page: resultData.page as string,
+
                 };
                 // Add navigation message if there are no other messages
                 if (messages.length === 0) {
@@ -240,8 +192,7 @@ export const POST = withUnifiedAuth(
                       !messageStr.toLowerCase().includes("error")))
                 ) {
                   navigationInfo = {
-                    route: resultData.navigateTo,
-                    page: "qr-codes",
+
                   };
                 }
               }
@@ -254,8 +205,7 @@ export const POST = withUnifiedAuth(
                 // Check if there's a navigateTo field for automatic navigation
                 if (resultData.navigateTo && typeof resultData.navigateTo === "string") {
                   navigationInfo = {
-                    route: resultData.navigateTo,
-                    page: "menu",
+
                   };
                 }
               }
@@ -273,19 +223,14 @@ export const POST = withUnifiedAuth(
                 typeof resultData.navigateTo === "string"
               ) {
                 navigationInfo = {
-                  route: resultData.navigateTo,
-                  page: "unknown",
+
                 };
               }
             }
           } catch (toolError) {
             // Graceful error handling - log but continue with other tools
             const errorMessage = toolError instanceof Error ? toolError.message : String(toolError);
-            logger.error(`[AI SIMPLE CHAT] Tool "${tool.name}" failed:`, {
-              toolName: tool.name,
-              error: errorMessage,
-              venueId: context.venueId,
-            });
+            
 
             // Add error message to response but don't fail entire request
             messages.push(`Failed to execute ${tool.name}: ${errorMessage}`);
@@ -303,21 +248,15 @@ export const POST = withUnifiedAuth(
             }
 
             toolResults.push({
-              tool: tool.name,
-              result: {
-                success: false,
-                error: errorMessage,
+
               },
-            });
+
           }
         }
 
         // Combine all messages
         // Building response from tool results
-        logger.debug({
-          messagesCount: messages.length,
-          hasNavigation: !!navigationInfo,
-        });
+        
         if (messages.length > 0) {
           response = messages.join(". ");
         } else {
@@ -330,41 +269,33 @@ export const POST = withUnifiedAuth(
       }
       // Fallback
       else {
-        logger.debug("[AI SIMPLE CHAT] Step 8: Using fallback reasoning");
+        
         response = plan.reasoning || "I'm not sure how to help with that. Could you clarify?";
       }
 
       // Returning response
-      logger.debug({
-        responseLength: response.length,
-        hasNavigation: !!navigationInfo,
-      });
+      
       return NextResponse.json({
         response,
-        navigation: navigationInfo,
-      });
+
     } catch (_error) {
       // CRITICAL: Log the full error immediately
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      logger.error("[AI SIMPLE CHAT] Uncaught error:", {
-        timestamp: new Date().toISOString(),
-        errorType: _error?.constructor?.name || typeof _error,
+      .toISOString(),
+
         errorMessage,
         errorStack,
         fullError: JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2),
-      });
 
       // Graceful error handling - provide user-friendly messages
       // Check if it's a feature access error (should be handled by withUnifiedAuth, but just in case)
       if (errorMessage.includes("Feature not available") || errorMessage.includes("tier")) {
         return NextResponse.json(
           {
-            error: "Feature not available",
-            message:
-              "This feature requires a higher subscription tier. Please upgrade to access this functionality.",
+
             response:
               "I'm sorry, but this feature isn't available with your current plan. Please upgrade to access it.",
           },
@@ -376,9 +307,7 @@ export const POST = withUnifiedAuth(
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message:
-              "You don't have permission to perform this action. Please contact your manager if you believe this is an error.",
+
             response:
               "I'm sorry, but I don't have permission to perform that action. Please check with your manager.",
           },
@@ -394,8 +323,7 @@ export const POST = withUnifiedAuth(
       ) {
         return NextResponse.json(
           {
-            error: "Request exceeds safety limits",
-            message: errorMessage,
+
             response: `I can't perform that action because it exceeds safety limits: ${errorMessage}. Please try a smaller change.`,
           },
           { status: 400 }
@@ -406,10 +334,7 @@ export const POST = withUnifiedAuth(
       if (errorMessage.includes("context") || errorMessage.includes("Failed to load")) {
         return NextResponse.json(
           {
-            error: "Context loading failed",
-            message: "Unable to load necessary data. Please try again in a moment.",
-            response:
-              "I'm having trouble loading the necessary information. Please try again in a moment.",
+
           },
           { status: 503 }
         );
@@ -417,26 +342,21 @@ export const POST = withUnifiedAuth(
 
       // Log server errors for debugging
       const errorPayload = {
-        venueId: context.venueId,
-        userId: context.user?.id,
-        message: errorMessage,
-        stack: errorStack,
-        errorType: _error?.constructor?.name || typeof _error,
+
         fullError: JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2),
       };
-      logger.error("[AI SIMPLE CHAT] Error", errorPayload);
-      logger.error("[AI SIMPLE CHAT] Error:", errorPayload);
+      
+      
 
       // Return detailed error for debugging (will be removed later)
       // Include error details in response to help identify the issue
       return NextResponse.json(
         {
-          error: "Internal Server Error",
+
           message: errorMessage, // Include actual error message for debugging
           response: `I encountered an error: ${errorMessage}. Please try again or contact support if the issue persists.`,
           // Include debug info in response (temporary for debugging)
-          debug: {
-            errorType: _error?.constructor?.name || typeof _error,
+
             errorMessage,
             ...(errorStack ? { stack: errorStack.substring(0, 500) } : {}), // Limit stack trace length
           },

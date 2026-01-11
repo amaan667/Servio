@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -26,11 +25,7 @@ export async function POST(req: Request) {
       .single();
 
     if (findError || !order) {
-      logger.error("[UPDATE SESSION] Order not found", {
-        error: findError?.message,
-        venueId,
-        orderId,
-      });
+      
       return apiErrors.notFound("Order not found");
     }
 
@@ -38,25 +33,18 @@ export async function POST(req: Request) {
     const { error: updateError } = await supabase
       .from("orders")
       .update({
-        stripe_session_id: sessionId,
-        updated_at: new Date().toISOString(),
-      })
+
       .eq("id", order.id);
 
     if (updateError) {
-      logger.error("[UPDATE SESSION] Error updating order", {
-        error: updateError.message,
-        orderId: order.id,
-      });
+      
       return apiErrors.database("Failed to update order");
     }
 
     return success({ orderId: order.id });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-    logger.error("[UPDATE SESSION] Unexpected error", {
-      error: errorMessage,
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

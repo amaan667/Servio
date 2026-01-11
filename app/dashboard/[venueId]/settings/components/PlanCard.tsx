@@ -4,15 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Crown, Check, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { logger } from "@/lib/logger";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
 import { useToast } from "@/hooks/use-toast";
 
 interface PlanCardProps {
   organization?: {
-    id: string;
-    subscription_tier?: string;
-    stripe_customer_id?: string;
+
   };
   venueId?: string;
 }
@@ -50,10 +47,9 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
     setSyncing(true);
     try {
       const response = await fetch("/api/subscription/sync-from-stripe", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organizationId: organization.id }),
-      });
 
       const data = await response.json();
 
@@ -63,8 +59,8 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
         setCurrentTier(data.tier);
       }
     } catch (error) {
-      logger.error("[PLAN CARD] ❌ Sync failed:", error);
-      logger.error("[PLAN CARD] Sync failed", { error });
+      
+      
     } finally {
       setSyncing(false);
     }
@@ -75,18 +71,14 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/stripe/create-portal-session", {
-        organizationId: organization?.id,
-        venueId: venueId,
-      });
 
       const data = await response.json();
 
       if (data.error) {
         toast({
-          title: "Error",
+
           description: `Failed to open billing portal: ${data.error}`,
-          variant: "destructive",
-        });
+
         return;
       }
 
@@ -94,20 +86,11 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
         window.location.href = data.url;
       } else {
         toast({
-          title: "Error",
-          description: "Failed to open billing portal - no URL received",
-          variant: "destructive",
-        });
+
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to open billing portal. Please try again.",
-        variant: "destructive",
-      });
+
     } finally {
       setLoadingPortal(false);
     }

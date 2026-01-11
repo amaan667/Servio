@@ -12,21 +12,9 @@ import {
  */
 export async function executeMenuQueryNoImages(
   _params: Record<string, never>,
-  venueId: string,
-  _userId: string,
-  _preview: boolean
-): Promise<AIExecutionResult> {
-  const result = await getMenuItemsWithoutImages(venueId);
 
-  return {
-    success: true,
-    toolName: "menu.query_no_images",
-    result: {
-      items: result.items,
-      count: result.count,
-      summary: result.summary,
     },
-    auditId: "",
+
   };
 }
 
@@ -35,17 +23,10 @@ export async function executeMenuQueryNoImages(
  */
 export async function executeMenuUploadImage(
   params: { itemName: string; imageUrl: string },
-  venueId: string,
-  _userId: string,
-  preview: boolean
-): Promise<AIPreviewDiff | AIExecutionResult> {
-  if (preview) {
-    return {
-      toolName: "menu.upload_image",
+
       before: [{ itemName: params.itemName, imageUrl: null }],
       after: [{ itemName: params.itemName, imageUrl: params.imageUrl }],
-      impact: {
-        itemsAffected: 1,
+
         description: `Will add image to "${params.itemName}"`,
       },
     };
@@ -54,15 +35,9 @@ export async function executeMenuUploadImage(
   const result = await updateMenuItemImage(venueId, params.itemName, params.imageUrl);
 
   return {
-    success: true,
-    toolName: "menu.upload_image",
-    result: {
-      itemId: result.itemId,
-      itemName: result.itemName,
-      imageUrl: result.imageUrl,
-      message: result.message,
+
     },
-    auditId: "",
+
   };
 }
 
@@ -71,17 +46,7 @@ export async function executeMenuUploadImage(
  */
 export async function executeMenuTranslateExtended(
   params: { targetLanguage: string; categories?: string[] },
-  venueId: string,
-  _userId: string,
-  preview: boolean
-): Promise<AIPreviewDiff | AIExecutionResult> {
-  if (preview) {
-    return {
-      toolName: "menu.translate_extended",
-      before: [],
-      after: [],
-      impact: {
-        itemsAffected: 0,
+
         description: `Will translate menu to ${params.targetLanguage}${params.categories ? ` (categories: ${params.categories.join(", ")})` : ""}`,
       },
     };
@@ -90,14 +55,8 @@ export async function executeMenuTranslateExtended(
   const result = await translateMenuItems(venueId, params.targetLanguage, params.categories);
 
   return {
-    success: result.success,
-    toolName: "menu.translate_extended",
-    result: {
-      itemsTranslated: result.itemsTranslated,
-      targetLanguage: result.targetLanguage,
-      jobId: result.jobId,
-      message: result.message,
+
     },
-    auditId: "",
+
   };
 }

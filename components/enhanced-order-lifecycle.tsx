@@ -21,122 +21,54 @@ import {
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface OrderItem {
-  menu_item_id: string;
-  quantity: number;
-  price: number;
-  item_name: string;
-  specialInstructions?: string;
+
 }
 
 interface Order {
-  id: string;
-  venue_id: string;
-  table_number: number;
-  customer_name: string;
-  customer_phone?: string;
-  customer_email?: string;
-  order_status: string;
-  payment_status: string;
-  total_amount: number;
-  notes?: string;
-  payment_method?: string;
-  scheduled_for?: string;
-  prep_lead_minutes?: number;
-  estimated_prep_time?: number;
+
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter/pickup orders
-  items: OrderItem[];
-  created_at: string;
-  updated_at: string;
+
 }
 
 interface OrderLifecycleProps {
-  venueId: string;
-  order: Order;
-  onUpdate: () => void;
+
 }
 
 // Enhanced order status definitions with timing and automation rules
 const ORDER_STATUSES = {
-  PLACED: {
-    label: "Order Placed",
-    icon: Clock,
-    color: "bg-yellow-100 text-yellow-800",
+
     nextStatuses: ["ACCEPTED", "CANCELLED"],
-    autoTransition: false,
-    estimatedTime: 0,
+
     description: "Order received, waiting for confirmation",
   },
-  ACCEPTED: {
-    label: "Order Accepted",
-    icon: CheckCircle,
-    color: "bg-blue-100 text-blue-800",
+
     nextStatuses: ["IN_PREP", "CANCELLED"],
-    autoTransition: false,
-    estimatedTime: 0,
+
     description: "Order confirmed, ready to start preparation",
   },
-  IN_PREP: {
-    label: "In Preparation",
-    icon: Play,
-    color: "bg-orange-100 text-orange-800",
+
     nextStatuses: ["READY", "CANCELLED"],
-    autoTransition: true,
+
     estimatedTime: 15, // minutes
-    description: "Kitchen is preparing the order",
+
   },
-  READY: {
-    label: "Ready for Pickup",
-    icon: CheckCircle,
-    color: "bg-green-100 text-green-800",
+
     nextStatuses: ["COMPLETED", "CANCELLED"], // Updated to go directly to COMPLETED
-    autoTransition: false,
-    estimatedTime: 0,
-    description: "Order is ready to be served",
+
   },
-  SERVING: {
-    label: "Being Served",
-    icon: User,
-    color: "bg-purple-100 text-purple-800",
+
     nextStatuses: ["COMPLETED", "CANCELLED"],
-    autoTransition: true,
+
     estimatedTime: 5, // minutes
-    description: "Order is being delivered to customer",
+
   },
-  COMPLETED: {
-    label: "Completed",
-    icon: CheckCircle,
-    color: "bg-green-100 text-green-800",
-    nextStatuses: [],
-    autoTransition: false,
-    estimatedTime: 0,
-    description: "Order has been successfully completed",
+
   },
-  CANCELLED: {
-    label: "Cancelled",
-    icon: XCircle,
-    color: "bg-red-100 text-red-800",
-    nextStatuses: [],
-    autoTransition: false,
-    estimatedTime: 0,
-    description: "Order has been cancelled",
+
   },
-  REFUNDED: {
-    label: "Refunded",
-    icon: RotateCcw,
-    color: "bg-gray-100 text-gray-800",
-    nextStatuses: [],
-    autoTransition: false,
-    estimatedTime: 0,
-    description: "Order has been refunded",
+
   },
-  EXPIRED: {
-    label: "Expired",
-    icon: AlertTriangle,
-    color: "bg-gray-100 text-gray-800",
-    nextStatuses: [],
-    autoTransition: false,
-    estimatedTime: 0,
-    description: "Order has expired",
+
   },
 };
 
@@ -147,13 +79,12 @@ const getButtonLabel = (status: string, orderSource?: string) => {
       return orderSource === "counter" ? "Mark as Ready for Pickup" : "Mark as Served";
     case "COMPLETED":
       return "Complete Order";
-    default:
-      return ORDER_STATUSES[status as keyof typeof ORDER_STATUSES]?.label || status;
+
   }
 };
 
 export function EnhancedOrderLifecycle({
-  venueId: _venueId,
+
   order,
   onUpdate,
 }: OrderLifecycleProps) {
@@ -224,8 +155,7 @@ export function EnhancedOrderLifecycle({
         return "READY";
       case "SERVING":
         return "COMPLETED";
-      default:
-        return null;
+
     }
   };
 
@@ -241,9 +171,7 @@ export function EnhancedOrderLifecycle({
       const { error } = await supabase
         .from("orders")
         .update({
-          order_status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
+
         .eq("id", order.id);
 
       if (error) {
@@ -300,17 +228,11 @@ export function EnhancedOrderLifecycle({
   };
 
   const urgencyColors = {
-    normal: "text-green-600",
-    warning: "text-orange-600",
-    critical: "text-red-600",
-    none: "text-gray-900",
+
   };
 
   const urgencyIcons = {
-    normal: Clock,
-    warning: AlertTriangle,
-    critical: Zap,
-    none: Clock,
+
   };
 
   const UrgencyIcon = urgencyIcons[getUrgencyLevel() as keyof typeof urgencyIcons];

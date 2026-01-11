@@ -7,7 +7,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
-import { logger } from "@/lib/logger";
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -17,8 +16,6 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 
 const syncSubscriptionSchema = z.object({
-  organizationId: z.string().uuid("Invalid organization ID"),
-});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -47,11 +44,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (orgError || !org) {
-        logger.error("[SUBSCRIPTION SYNC] Organization not found", {
-          organizationId,
-          error: orgError?.message,
-          userId: user.id,
-        });
+        
         return apiErrors.notFound("Organization not found");
       }
 
@@ -67,28 +60,17 @@ export const POST = withUnifiedAuth(
 
       // Get active subscription from Stripe
       const subscriptions = await stripe.subscriptions.list({
-        customer: org.stripe_customer_id,
-        status: "active",
-        limit: 1,
-      });
 
       if (subscriptions.data.length === 0) {
         // No active subscription - set to starter/trialing
         const { error: updateError } = await supabase
           .from("organizations")
           .update({
-            subscription_tier: "starter",
-            subscription_status: "trialing",
-            updated_at: new Date().toISOString(),
-          })
+
           .eq("id", organizationId);
 
         if (updateError) {
-          logger.error("[SUBSCRIPTION SYNC] Error updating to starter", {
-            error: updateError.message,
-            organizationId,
-            userId: user.id,
-          });
+          
           return apiErrors.database(
             "Failed to update organization",
             isDevelopment() ? updateError.message : undefined
@@ -96,10 +78,7 @@ export const POST = withUnifiedAuth(
         }
 
         return success({
-          message: "No active subscription found - set to starter/trialing",
-          tier: "starter",
-          status: "trialing",
-        });
+
       }
 
       const subscription = subscriptions.data[0];
@@ -110,43 +89,25 @@ export const POST = withUnifiedAuth(
       const { error: updateError } = await supabase
         .from("organizations")
         .update({
-          subscription_tier: tier,
-          subscription_status: subscription.status,
-          updated_at: new Date().toISOString(),
-        })
+
         .eq("id", organizationId);
 
       if (updateError) {
-        logger.error("[SUBSCRIPTION SYNC] Error updating organization", {
-          error: updateError.message,
-          organizationId,
-          userId: user.id,
-        });
+        
         return apiErrors.database(
           "Failed to update organization",
           isDevelopment() ? updateError.message : undefined
         );
       }
 
-      logger.info("[SUBSCRIPTION SYNC] Subscription synced successfully", {
-        organizationId,
-        tier,
-        status: subscription.status,
-        userId: user.id,
-      });
+      
 
       // STEP 6: Return success response
       return success({
-        message: "Subscription synced successfully",
+
         tier,
-        status: subscription.status,
-      });
+
     } catch (error) {
-      logger.error("[SUBSCRIPTION SYNC] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -157,6 +118,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-    extractVenueId: async () => null,
+
   }
 );

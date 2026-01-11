@@ -3,14 +3,12 @@
  */
 
 export interface OrderItem {
-  quantity: number;
-  price: number;
-  item_name?: string;
+
 }
 
 export interface Order {
   total_amount?: number;
-  items: OrderItem[];
+
 }
 
 /**

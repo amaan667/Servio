@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -12,10 +11,6 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const completeOrderSchema = z.object({
-  orderId: z.string().uuid("Invalid order ID"),
-  forced: z.boolean().optional(),
-  forcedReason: z.string().min(1).max(500).optional(),
-});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -52,12 +47,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (orderError || !orderData) {
-        logger.error("[ORDERS COMPLETE] Order not found:", {
-          error: orderError?.message,
-          orderId,
-          venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.notFound("Order not found");
       }
 
@@ -71,12 +61,6 @@ export const POST = withUnifiedAuth(
 
       // Canonical completion transition (atomic eligibility check in RPC)
       const { data: completedRows, error: completeError } = await supabase.rpc("orders_complete", {
-        p_order_id: orderId,
-        p_venue_id: venueId,
-        p_forced: forced,
-        p_forced_by: forced ? context.user.id : null,
-        p_forced_reason: forced ? forcedReason : null,
-      });
 
       if (completeError) {
         return apiErrors.badRequest(
@@ -84,62 +68,29 @@ export const POST = withUnifiedAuth(
         );
       }
 
-      logger.info("[ORDERS COMPLETE] Order updated to COMPLETED", {
-        orderId,
-        venueId,
-        userId: context.user.id,
-        forced,
-      });
+      
 
       // STEP 5: Clear table session if order has table
       if (orderData.table_id || orderData.table_number) {
-        logger.debug("[ORDERS COMPLETE] Clearing table session and runtime state for order", {
-          orderId,
-          tableId: orderData.table_id,
-          tableNumber: orderData.table_number,
-          paymentStatus: orderData.payment_status,
-          source: orderData.source,
-          venueId,
-        });
+        
 
         // Use centralized cleanup function
         const cleanupResult = await cleanupTableOnOrderCompletion({
           venueId,
-          tableId: orderData.table_id || undefined,
-          tableNumber: orderData.table_number?.toString() || undefined,
+
           orderId,
-        });
 
         if (!cleanupResult.success) {
-          logger.warn("[ORDERS COMPLETE] Table cleanup failed", {
-            orderId,
-            venueId,
-            error: cleanupResult.error,
-          });
+          
         } else {
-          logger.debug("[ORDERS COMPLETE] Table cleanup successful", {
-            orderId,
-            venueId,
-            details: cleanupResult.details,
-          });
+          
         }
       }
 
       // STEP 6: Return success response
       return success({
-        success: true,
-        message: forced
-          ? "Order force-completed and table freed"
-          : "Order marked as completed and table freed",
-        order: Array.isArray(completedRows) ? completedRows[0] : completedRows,
-      });
+
     } catch (error) {
-      logger.error("[ORDERS COMPLETE] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -150,13 +101,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from order lookup
-    extractVenueId: async (req) => {
-      try {
-        // Clone the request so we don't consume the original body
-        const clonedReq = req.clone();
-        const body = await clonedReq.json();
-        const orderId = body?.orderId;
-        if (orderId) {
+
           const { createAdminClient } = await import("@/lib/supabase");
           const admin = createAdminClient();
           const { data: order } = await admin

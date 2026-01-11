@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -34,32 +33,18 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("start_at", { ascending: true });
 
     if (fetchError) {
-      logger.error("[RESERVATIONS UNASSIGNED] Error fetching unassigned reservations:", {
-        error: fetchError.message,
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to fetch unassigned reservations",
         isDevelopment() ? fetchError.message : undefined
       );
     }
 
-    logger.info("[RESERVATIONS UNASSIGNED] Unassigned reservations fetched successfully", {
-      venueId,
-      reservationCount: reservations?.length || 0,
-      userId: context.user.id,
-    });
+    
 
     // STEP 4: Return success response
     return success({ reservations: reservations || [] });
   } catch (error) {
-    logger.error("[RESERVATIONS UNASSIGNED] Unexpected error:", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      venueId: context.venueId,
-      userId: context.user.id,
-    });
 
     if (isZodError(error)) {
       return handleZodError(error);
@@ -67,4 +52,3 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
-});

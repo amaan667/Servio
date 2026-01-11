@@ -1,28 +1,9 @@
 import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useState } from "react";
-import { logger } from "@/lib/logger";
 
 export interface TableActionParams {
-  action:
-    | "start_preparing"
-    | "mark_ready"
-    | "mark_served"
-    | "mark_awaiting_bill"
-    | "close_table"
-    | "reserve_table"
-    | "occupy_table"
-    | "move_table"
-    | "merge_table"
-    | "unmerge_table"
-    | "cancel_reservation";
-  table_id: string;
-  venue_id: string;
-  order_id?: string;
-  destination_table_id?: string;
-  customer_name?: string;
-  reservation_time?: string;
-  reservation_id?: string;
+
 }
 
 export function useTableActions() {
@@ -45,7 +26,7 @@ export function useTableActions() {
 
       return data;
     } catch (_err) {
-      logger.error("[TABLE ACTIONS HOOK] Error executing action:", errorToContext(_err));
+      );
       const errorMessage = _err instanceof Error ? _err.message : "Failed to execute action";
       setError(errorMessage);
       throw _err;
@@ -70,11 +51,7 @@ export function useTableActions() {
     executeAction({ action: "close_table", table_id, venue_id });
 
   const reserveTable = (
-    table_id: string,
-    venue_id: string,
-    customer_name: string,
-    reservation_time: string
-  ) =>
+
     executeAction({ action: "reserve_table", table_id, venue_id, customer_name, reservation_time });
 
   const occupyTable = (table_id: string, venue_id: string) =>

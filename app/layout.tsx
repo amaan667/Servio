@@ -21,27 +21,19 @@ import { WebVitals } from "./web-vitals";
 
 // Optimized font loading with display swap and preload
 const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
+
   fallback: ["system-ui", "arial"],
-  adjustFontFallback: true,
-  variable: "--font-inter",
+
   // Reduce font variants to improve loading
   weight: ["400", "500", "600", "700"],
-});
 
 export function generateMetadata(): Metadata {
   return {
-    metadataBase: new URL("https://servio.app"),
-    title: {
-      default: "Servio - QR Code Ordering Made Simple",
-      template: "%s | Servio",
+
     },
     description:
       "Complete POS and QR ordering platform for restaurants, cafes, food trucks, and market stalls. Manage orders, payments, inventory, and kitchen operations in one system. 14-day free trial.",
-    keywords: [
-      "QR code ordering",
+
       "food business POS",
       "cafe POS system",
       "food truck ordering",
@@ -54,78 +46,42 @@ export function generateMetadata(): Metadata {
       "inventory management",
     ],
     authors: [{ name: "Servio" }],
-    creator: "Servio",
-    publisher: "Servio",
-    manifest: "/manifest.json",
-    appleWebApp: {
-      capable: true,
-      statusBarStyle: "default",
-      title: "Servio",
-      startupImage: [
-        {
-          url: "/placeholder-logo.png",
-          media: "(prefers-color-scheme: light)",
+
         },
       ],
     },
-    applicationName: "Servio",
-    other: {
-      "mobile-web-app-capable": "yes",
+
       ...Sentry.getTraceData(),
     },
-    formatDetection: {
-      telephone: false,
+
     },
-    openGraph: {
-      type: "website",
-      locale: "en_GB",
-      url: "https://servio.app",
-      siteName: "Servio",
-      title: "Servio - Complete POS & QR Ordering for Food Businesses",
+
       description:
         "All-in-one platform for restaurants, cafes, food trucks, and stalls. QR ordering, POS, payments, and kitchen management.",
-      images: [
-        {
-          url: "/placeholder-logo.png",
-          width: 512,
-          height: 512,
-          alt: "Servio - QR Code Ordering Platform",
+
         },
       ],
     },
-    twitter: {
-      card: "summary_large_image",
-      title: "Servio - Complete POS & QR Ordering for Food Businesses",
+
       description: "All-in-one platform for restaurants, cafes, food trucks, and stalls",
-      images: ["/placeholder-logo.png"],
-      creator: "@servio_app",
+
     },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
+
         "max-video-preview": -1,
         "max-image-preview": "large",
         "max-snippet": -1,
       },
     },
-    icons: {
+
       icon: [{ url: "/assets/servio-s-logo.png", sizes: "any", type: "image/png" }],
-      shortcut: "/assets/servio-s-logo.png",
-      apple: "/assets/servio-s-logo.png",
+
     },
   };
 }
 
 // Viewport configuration (moved out of metadata for Next.js 15+)
 export const viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-  themeColor: "#7c3aed",
+
 };
 
 // Force dynamic rendering to prevent static generation errors with cookies
@@ -188,13 +144,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               venueResult.data[0]?.venue_id
             ) {
               primaryVenueData = {
-                venueId: venueResult.data[0].venue_id,
-                role: "owner"
+
               };
             } else if (!staffResult.error && staffResult.data?.venue_id && staffResult.data?.role) {
               primaryVenueData = {
-                venueId: staffResult.data.venue_id,
-                role: staffResult.data.role
+
               };
             }
           } catch (venueErr) {
@@ -203,14 +157,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           // Construct session object from authenticated user with venue data
           session = {
-            user: authUser,
+
             access_token: "", // Not needed for layout, only user info is required
-            refresh_token: "",
-            expires_in: 0,
-            expires_at: undefined,
-            token_type: "bearer",
+
             // Add venue data to prevent navigation flicker
-            primaryVenue: primaryVenueData,
+
           } as unknown as Session;
         }
       } catch (err) {

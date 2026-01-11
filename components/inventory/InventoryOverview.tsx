@@ -28,8 +28,7 @@ import { ImportCSVDialog } from "./ImportCSVDialog";
 import { ReceiveStockDialog } from "./ReceiveStockDialog";
 
 interface InventoryOverviewProps {
-  venueId: string;
-  canEdit?: boolean;
+
 }
 
 export function InventoryOverview({ venueId, canEdit: _canEdit = true }: InventoryOverviewProps) {
@@ -98,8 +97,6 @@ export function InventoryOverview({ venueId, canEdit: _canEdit = true }: Invento
 
     try {
       const response = await fetch(`/api/inventory/ingredients/${ingredientId}`, {
-        method: "DELETE",
-      });
 
       if (response.ok) {
         fetchIngredients();
@@ -205,9 +202,7 @@ export function InventoryOverview({ venueId, canEdit: _canEdit = true }: Invento
                         className={
                           isOutOfStock
                             ? "bg-red-50 dark:bg-red-950"
-                            : isLowStock
-                              ? "bg-amber-50 dark:bg-amber-950"
-                              : ""
+
                         }
                       >
                         <TableCell className="font-medium">
@@ -231,9 +226,7 @@ export function InventoryOverview({ venueId, canEdit: _canEdit = true }: Invento
                           className={
                             isOutOfStock
                               ? "font-bold text-red-600"
-                              : isLowStock
-                                ? "font-bold text-amber-600"
-                                : ""
+
                           }
                         >
                           {ingredient.on_hand}

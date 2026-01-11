@@ -18,7 +18,6 @@ import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Order, OrderStatus } from "@/types/order";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
-import { logger } from "@/lib/logger";
 
 interface OrderSummaryProps {
   orderId?: string;
@@ -27,12 +26,10 @@ interface OrderSummaryProps {
 }
 
 interface OrderTimelineItem {
-  status: OrderStatus;
-  label: string;
+
   icon: React.ComponentType<{ className?: string }>;
   timestamp?: string;
-  completed: boolean;
-  current: boolean;
+
 }
 
 const ORDER_STATUSES: Record<
@@ -42,10 +39,7 @@ const ORDER_STATUSES: Record<
   PLACED: { label: "Order Placed", icon: Receipt, color: "bg-blue-100 text-blue-800" },
   ACCEPTED: { label: "Order Accepted", icon: CheckCircle, color: "bg-green-100 text-green-800" },
   IN_PREP: { label: "Preparing", icon: ChefHat, color: "bg-orange-100 text-orange-800" },
-  READY: {
-    label: "Ready for Pickup",
-    icon: UtensilsCrossed,
-    color: "bg-purple-100 text-purple-800",
+
   },
   SERVING: { label: "Serving", icon: Truck, color: "bg-indigo-100 text-indigo-800" },
   SERVED: { label: "Served", icon: CheckCircle, color: "bg-indigo-100 text-indigo-800" },
@@ -82,8 +76,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     // PAY LATER (unpaid) → explicit "Payment Pending" copy
     if (isPayLaterMethod && paymentStatus !== "PAID") {
       return {
-        title: "⏰ Payment Pending (Pay Later)",
-        description: "Your order has been sent to the kitchen. Please pay before you leave.",
+
       };
     }
 
@@ -91,26 +84,22 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
     if (paymentStatus === "PAID") {
       if (method === "demo" || method === "stripe" || method === "pay_now") {
         return {
-          title: "✅ Payment Successful",
-          description: "Your order has been confirmed and sent to the kitchen.",
+
         };
       } else if (method === "till") {
         return {
-          title: "✅ Order Created Successfully",
-          description: "Your order has been placed and will be prepared.",
+
         };
       } else if (isPayLaterMethod) {
         return {
-          title: "✅ Payment Received",
-          description: "Your Pay Later order is now fully paid.",
+
         };
       }
     }
 
     // Fallback
     return {
-      title: "✅ Order Confirmed",
-      description: "Your order has been received and is being processed.",
+
     };
   };
 
@@ -224,16 +213,12 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
           designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
 
         setVenueInfo({
-          name: venue?.venue_name || undefined,
-          email: venue?.email || undefined,
-          address: venue?.address || undefined,
+
           logoUrl,
           primaryColor,
-        });
+
       } catch (error) {
-        logger.error("[ORDER SUMMARY] Error fetching venue info:", {
-          error: error instanceof Error ? error.message : String(error),
-        });
+
       }
     };
 
@@ -252,9 +237,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "orders",
+
           filter: `id=eq.${order.id}`,
         },
         (payload: { eventType: string; new?: Partial<Order>; old?: Partial<Order> }) => {
@@ -262,7 +245,6 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
             setOrder((prevOrder) => {
               if (!prevOrder) return null;
               return { ...prevOrder, ...payload.new } as Order;
-            });
 
             setLastUpdate(new Date());
           }
@@ -297,13 +279,11 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
       const current = index === currentIndex;
 
       return {
-        status: status as OrderStatus,
-        label: statusInfo.label,
-        icon: statusInfo.icon,
+
         completed,
         current,
       };
-    });
+
   };
 
   if (loading) {
@@ -537,9 +517,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         item.completed
                           ? "bg-green-100 text-green-600"
-                          : item.current
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-100 text-gray-700"
+
                       }`}
                     >
                       {Icon && <Icon className="h-5 w-5" />}
@@ -549,9 +527,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                         className={`font-medium ${
                           item.completed
                             ? "text-green-800"
-                            : item.current
-                              ? "text-blue-800"
-                              : "text-gray-900"
+
                         }`}
                       >
                         {item.label}

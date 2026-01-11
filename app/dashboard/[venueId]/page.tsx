@@ -2,7 +2,6 @@ import React from "react";
 import DashboardClient from "./page.client";
 import ClientOnlyWrapper from "@/components/ClientOnlyWrapper";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { todayWindowForTZ } from "@/lib/time";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
@@ -19,11 +18,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   const { venueId } = params;
 
   // Log dashboard page load attempt
-  logger.info("[DASHBOARD PAGE] 🏠 PAGE LOAD STARTED", {
-    venueId,
-    timestamp: new Date().toISOString(),
-    params: JSON.stringify(params),
-  });
+  .toISOString(),
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
@@ -31,18 +26,13 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   // Dashboard ALWAYS loads - client handles authentication
   try {
     await requirePageAuth(venueId).catch((error) => {
-      logger.warn("[DASHBOARD PAGE] ⚠️ Auth check failed (non-critical)", {
+      ", {
         venueId,
-        error: error instanceof Error ? error.message : String(error),
-      });
+
       return null;
-    });
-    logger.info("[DASHBOARD PAGE] ✅ Auth check completed", { venueId });
+
   } catch (error) {
-    logger.error("[DASHBOARD PAGE] ❌ Auth check error", {
-      venueId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+
   }
 
   // STEP 2: Fetch initial dashboard data on server (even without auth)
@@ -55,7 +45,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Check if service role key is available before creating admin client
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const errorMsg = "SUPABASE_SERVICE_ROLE_KEY environment variable is missing";
-      logger.error(errorMsg);
+      
       // Continue without initial data - client will handle gracefully
     } else {
       const supabase = createAdminClient();
@@ -77,10 +67,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       ] = await Promise.all([
         supabase
           .rpc("dashboard_counts", {
-            p_venue_id: normalizedVenueId,
-            p_tz: venueTz,
-            p_live_window_mins: 30,
-          })
+
           .single(),
         supabase
           .from("tables")
@@ -112,10 +99,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
       // Process results
       if (countsResult.error) {
-        logger.error("[DASHBOARD] Error fetching dashboard_counts", {
-          error: countsResult.error.message,
-          venueId: normalizedVenueId,
-        });
+        
       } else {
         initialCounts = countsResult.data as DashboardCounts;
       }
@@ -128,10 +112,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
         initialCounts = {
           ...initialCounts,
-          tables_set_up: activeTables.length,
-          tables_in_use: tablesInUse,
-          tables_reserved_now: tablesReserved,
-          active_tables_count: activeTables.length,
+
         };
       }
 
@@ -145,26 +126,19 @@ export default async function VenuePage({ params }: { params: { venueId: string 
           (o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER"
         ).length;
       } else if (ordersResult.error) {
-        logger.error("[DASHBOARD] Error fetching orders", {
-          error: ordersResult.error.message,
-          venueId: normalizedVenueId,
-        });
+        
       }
 
       // CRITICAL: Create initialStats object
       initialStats = {
         revenue,
-        menuItems: menuItemsResult,
+
         unpaid,
       };
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    logger.error("[DASHBOARD] Error fetching dashboard data", {
-      error: errorMsg,
-      venueId,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    
     // Continue without initial data - client will load it
   }
 
@@ -175,19 +149,12 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       {/* Log immediately when page HTML loads */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `
-            
 
-            // Catch any JavaScript errors that might prevent component mounting
             window.addEventListener('error', function(e) {
 
-            });
-            
             // Catch unhandled promise rejections
             window.addEventListener('unhandledrejection', function(e) {
 
-            });
-            
             // Log when React starts hydrating
             if (typeof window !== 'undefined' && window.__NEXT_DATA__) {
 
@@ -207,6 +174,4 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 }
 
 // Log when this module is loaded
-logger.info("[DASHBOARD PAGE] 📦 MODULE LOADED", {
-  timestamp: new Date().toISOString(),
-});
+.toISOString(),

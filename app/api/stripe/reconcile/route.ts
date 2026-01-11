@@ -4,7 +4,6 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors, success } from "@/lib/api/standard-response";
 import { createAdminClient } from "@/lib/supabase";
-import { logger, apiLogger } from "@/lib/logger";
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 import { trackError } from "@/lib/monitoring/error-tracking";
 import { processSubscriptionEvent, finalizeStripeEvent } from "@/app/api/stripe/webhooks/route";
@@ -30,11 +29,7 @@ export async function runStripeReconcile({
   staleMinutes,
   requestId,
 }: {
-  supabase: SupabaseAdmin;
-  limit?: number;
-  windowHours?: number;
-  staleMinutes?: number;
-  requestId?: string;
+
 }) {
   const batchLimit = Math.min(Math.max(limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
   const windowDurationHours = Math.min(Math.max(windowHours ?? DEFAULT_WINDOW_HOURS, 1), 72);
@@ -52,10 +47,7 @@ export async function runStripeReconcile({
     .limit(batchLimit);
 
   if (fetchError) {
-    logger.error("[STRIPE RECONCILE] Failed to fetch events", {
-      error: fetchError.message,
-      requestId,
-    });
+    
     trackError(fetchError, { action: "stripe_reconcile_fetch", requestId }, "high");
     throw new Error("Failed to fetch events");
   }
@@ -90,10 +82,9 @@ export async function runStripeReconcile({
     const { error: lockError } = await supabase
       .from("stripe_webhook_events")
       .update({
-        status: "processing",
+
         attempts,
-        updated_at: new Date().toISOString(),
-      })
+
       .eq("event_id", ev.event_id)
       .neq("status", "succeeded");
 
@@ -119,42 +110,26 @@ export async function runStripeReconcile({
       }
 
       replayed.push(ev.event_id);
-      apiLogger.info("[STRIPE RECONCILE] Replay succeeded", {
-        eventId: ev.event_id,
-        type: ev.type,
-        venueId: eventMetadata?.venue_id ?? eventMetadata?.venueId,
-        orderId: eventMetadata?.order_id ?? eventMetadata?.orderId,
-        requestId,
-      });
+      
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       const stack = err instanceof Error ? err.stack : undefined;
       await finalizeStripeEvent(supabase, ev.event_id, "failed", { message, stack });
       failed.push({ eventId: ev.event_id, message });
-      apiLogger.error("[STRIPE RECONCILE] Replay failed", {
-        eventId: ev.event_id,
-        type: ev.type,
-        error: message,
-        requestId,
-      });
+      
       trackError(err, {
-        action: "stripe_reconcile_event",
+
         requestId,
-        eventId: ev.event_id,
-        eventType: ev.type,
-        venueId: (eventMetadata?.venue_id as string) ?? (eventMetadata?.venueId as string),
-        orderId: (eventMetadata?.order_id as string) ?? (eventMetadata?.orderId as string),
-      });
+
     }
   }
 
   return {
     replayed,
     failed,
-    scanned: candidates?.length ?? 0,
+
     windowStart,
-    limit: batchLimit,
-    windowHours: windowDurationHours,
+
   };
 }
 
@@ -174,19 +149,17 @@ export const POST = withUnifiedAuth(
 
       const result = await runStripeReconcile({
         supabase,
-        limit: limitParam ? Number(limitParam) : undefined,
-        windowHours: windowParam ? Number(windowParam) : undefined,
+
         requestId,
-      });
 
       return success(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      logger.error("[STRIPE RECONCILE] Unexpected error", { error: message });
+      
       return apiErrors.internal(message);
     }
   },
   {
-    requireOwner: true,
+
   }
 );

@@ -14,13 +14,7 @@ import {
  */
 export async function executeQRGenerateTable(
   params: { tableLabel: string },
-  venueId: string,
-  _userId: string,
-  preview: boolean
-): Promise<AIPreviewDiff | AIExecutionResult> {
-  // Validate required parameters
-  if (!params.tableLabel || params.tableLabel.trim() === "") {
-    throw new AIAssistantError(
+
       "Table label is required. Please specify a name for the table (e.g., 'Table 5' or 'VIP 3').",
       "INVALID_PARAMS"
     );
@@ -42,11 +36,9 @@ export async function executeQRGenerateTable(
 
   if (preview) {
     return {
-      toolName: "qr.generate_table",
-      before: [],
+
       after: [{ label: normalizedLabel, type: "table" }],
-      impact: {
-        itemsAffected: 1,
+
         description: `Will generate QR code for ${normalizedLabel}`,
       },
     };
@@ -55,16 +47,12 @@ export async function executeQRGenerateTable(
   const result = await generateTableQRCode(venueId, normalizedLabel);
 
   return {
-    success: true,
-    toolName: "qr.generate_table",
-    result: {
-      qrCode: result.qrCodes[0],
-      message: result.message,
+
       tableLabel: normalizedLabel, // Pass normalized table label for navigation
       navigateTo: `/dashboard/${venueId}/qr-codes?table=${encodeURIComponent(normalizedLabel)}`,
       table: normalizedLabel, // Pass table name for navigation tool
     },
-    auditId: "",
+
   };
 }
 
@@ -73,23 +61,11 @@ export async function executeQRGenerateTable(
  */
 export async function executeQRGenerateBulk(
   params: { startNumber: number; endNumber: number; prefix: string | null; type: "table" | "counter" | null },
-  venueId: string,
-  _userId: string,
-  preview: boolean
-): Promise<AIPreviewDiff | AIExecutionResult> {
-  const prefix = params.prefix || (params.type === "counter" ? "Counter" : "Table");
-  const type = params.type || "table";
-  
-  if (preview) {
-    const count = params.endNumber - params.startNumber + 1;
-    return {
-      toolName: "qr.generate_bulk",
-      before: [],
+
       after: Array.from({ length: Math.min(count, 5) }, (_, i) => ({
         label: `${prefix} ${params.startNumber + i}`,
       })),
-      impact: {
-        itemsAffected: count,
+
         description: `Will generate ${count} QR codes for ${prefix} ${params.startNumber}-${params.endNumber}`,
       },
     };
@@ -98,17 +74,12 @@ export async function executeQRGenerateBulk(
   const result = await generateBulkTableQRCodes(venueId, params.startNumber, params.endNumber, prefix, type);
 
   return {
-    success: true,
-    toolName: "qr.generate_bulk",
-    result: {
-      count: result.qrCodes.length,
-      qrCodes: result.qrCodes,
-      message: result.message,
+
       prefix,
       type,
       navigateTo: `/dashboard/${venueId}/qr-codes?bulkPrefix=${encodeURIComponent(prefix)}&bulkCount=${result.qrCodes.length}&bulkType=${type}`,
     },
-    auditId: "",
+
   };
 }
 
@@ -117,13 +88,7 @@ export async function executeQRGenerateBulk(
  */
 export async function executeQRGenerateCounter(
   params: { counterLabel: string },
-  venueId: string,
-  _userId: string,
-  preview: boolean
-): Promise<AIPreviewDiff | AIExecutionResult> {
-  // Validate required parameters
-  if (!params.counterLabel || params.counterLabel.trim() === "") {
-    throw new AIAssistantError(
+
       "Counter label is required. Please specify a name for the counter (e.g., 'Counter 1' or 'Takeaway Counter').",
       "INVALID_PARAMS"
     );
@@ -131,11 +96,9 @@ export async function executeQRGenerateCounter(
 
   if (preview) {
     return {
-      toolName: "qr.generate_counter",
-      before: [],
+
       after: [{ label: params.counterLabel, type: "counter" }],
-      impact: {
-        itemsAffected: 1,
+
         description: `Will generate QR code for counter "${params.counterLabel}"`,
       },
     };
@@ -144,16 +107,12 @@ export async function executeQRGenerateCounter(
   const result = await generateCounterQRCode(venueId, params.counterLabel);
 
   return {
-    success: true,
-    toolName: "qr.generate_counter",
-    result: {
-      qrCode: result.qrCodes[0],
-      message: result.message,
+
       counterLabel: params.counterLabel, // Pass counter label for navigation
       navigateTo: `/dashboard/${venueId}/qr-codes?counter=${encodeURIComponent(params.counterLabel)}`,
       counter: params.counterLabel, // Pass counter name for navigation tool
     },
-    auditId: "",
+
   };
 }
 
@@ -162,21 +121,9 @@ export async function executeQRGenerateCounter(
  */
 export async function executeQRList(
   _params: Record<string, never>,
-  venueId: string,
-  _userId: string,
-  _preview: boolean
-): Promise<AIExecutionResult> {
-  const result = await listAllQRCodes(venueId);
 
-  return {
-    success: true,
-    toolName: "qr.list_all",
-    result: {
-      tables: result.tables,
-      counters: result.counters,
-      summary: result.summary,
     },
-    auditId: "",
+
   };
 }
 
@@ -185,18 +132,7 @@ export async function executeQRList(
  */
 export async function executeQRExportPDF(
   _params: Record<string, never>,
-  venueId: string,
-  _userId: string,
-  preview: boolean
-): Promise<AIPreviewDiff | AIExecutionResult> {
-  if (preview) {
-    const data = await listAllQRCodes(venueId);
-    return {
-      toolName: "qr.export_pdf",
-      before: [],
-      after: [],
-      impact: {
-        itemsAffected: data.tables.length + data.counters.length,
+
         description: `Will prepare PDF with ${data.tables.length} table QR codes and ${data.counters.length} counter QR codes`,
       },
     };
@@ -205,12 +141,8 @@ export async function executeQRExportPDF(
   const result = await prepareQRCodePDFData(venueId);
 
   return {
-    success: true,
-    toolName: "qr.export_pdf",
-    result: {
-      data: result.data,
-      message: result.message,
+
     },
-    auditId: "",
+
   };
 }

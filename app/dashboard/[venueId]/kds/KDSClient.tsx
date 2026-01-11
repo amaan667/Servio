@@ -10,48 +10,16 @@ import { Clock, CheckCircle2, ChefHat, Timer, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KDSStation {
-  id: string;
-  venue_id: string;
-  station_name: string;
-  station_type: string;
-  display_order: number;
-  color_code: string;
-  is_active: boolean;
+
 }
 
 interface KDSTicket {
-  id: string;
-  venue_id: string;
-  order_id: string;
-  station_id: string;
-  item_name: string;
-  quantity: number;
-  special_instructions?: string;
-  status: "new" | "in_progress" | "ready" | "bumped";
-  ticket_status?: "bumped" | string;
-  created_at: string;
-  started_at?: string;
-  ready_at?: string;
-  bumped_at?: string;
-  table_number?: number;
-  table_label?: string;
-  priority: number;
-  kds_stations?: KDSStation;
-  orders?: {
-    id: string;
-    customer_name: string;
-    order_status: string;
-    payment_status?: string;
+
   };
 }
 
 interface KDSClientProps {
-  venueId: string;
-  venueName?: string;
-  initialTickets?: unknown;
-  initialStations?: unknown;
-  kdsTier?: "basic" | "advanced" | "enterprise" | false;
-  tier?: string;
+
 }
 
 export default function KDSClient({
@@ -130,15 +98,13 @@ export default function KDSClient({
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/tickets", {
-        params: {
-          venueId,
+
           ...(selectedStation
             ? { station_id: selectedStation }
-            : {
-                /* Empty */
+
               }),
         },
-      });
+
       const data = await response.json();
 
       if (data.success) {
@@ -200,9 +166,8 @@ export default function KDSClient({
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.patch("/api/kds/tickets/bulk-update", {
         orderId,
-        status: "bumped",
+
         venueId,
-      });
 
       const data = await response.json();
 
@@ -248,7 +213,7 @@ export default function KDSClient({
     tickets.forEach((ticket) => {
       const existing = grouped.get(ticket.order_id) || [];
       grouped.set(ticket.order_id, [...existing, ticket]);
-    });
+
     return grouped;
   }, [tickets]);
 
@@ -264,8 +229,7 @@ export default function KDSClient({
           const { apiClient } = await import("@/lib/api-client");
           const response = await apiClient.post("/api/kds/backfill", {
             venueId,
-            scope: "today",
-          });
+
           const data = await response.json();
 
           if (data.ok && data.tickets_created > 0) {
@@ -353,13 +317,11 @@ export default function KDSClient({
         .on(
           "postgres_changes",
           {
-            event: "*",
-            schema: "public",
-            table: "kds_tickets",
+
             filter: `venue_id=eq.${venueId}`,
           },
           (payload: {
-            eventType: string;
+
             new?: Record<string, unknown>;
             old?: Record<string, unknown>;
           }) => {
@@ -377,7 +339,7 @@ export default function KDSClient({
                       return prev;
                     }
                     return [...prev, newTicket];
-                  });
+
                 } else if (newTicket.station_id === selectedStation) {
                   // If we have a station filter, only add if it matches
                   setTickets((prev) => {
@@ -386,7 +348,7 @@ export default function KDSClient({
                       return prev;
                     }
                     return [...prev, newTicket];
-                  });
+
                 }
                 // If ticket doesn't match filter, don't add it (will appear when filter changes)
               }
@@ -409,7 +371,7 @@ export default function KDSClient({
                       // Only add if it's for an OPEN order (not completed)
                       return [...prev, updatedTicket];
                     }
-                  });
+
                 } else {
                   // If we have a station filter, only update if the ticket belongs to that station
                   if (updatedTicket.station_id === selectedStation) {
@@ -424,7 +386,7 @@ export default function KDSClient({
                         // Ticket doesn't exist yet, add it (might have been moved to this station)
                         return [...prev, updatedTicket];
                       }
-                    });
+
                   } else {
                     // Ticket was moved to a different station, remove it from current view
                     setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
@@ -449,7 +411,6 @@ export default function KDSClient({
           } else if (status === "SUBSCRIBING") {
             setConnectionStatus("connecting");
           }
-        });
 
       return channel;
     };
@@ -463,7 +424,7 @@ export default function KDSClient({
           channel.subscribe();
         }
       }
-    });
+
     authSubscription = subscription;
 
     channel = setupChannel();
@@ -513,7 +474,6 @@ export default function KDSClient({
 
     // For non-bumped tickets, sort by created_at (oldest first for priority)
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-  });
 
   const activeTickets = sortedTickets.filter((t) => t.status !== "bumped");
   const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress"); // Treat all as "preparing"
@@ -635,8 +595,7 @@ export default function KDSClient({
               onClick={() => setSelectedStation(station.id)}
               className="whitespace-nowrap"
               style={{
-                backgroundColor: selectedStation === station.id ? station.color_code : undefined,
-                borderColor: station.color_code,
+
               }}
             >
               <ChefHat className="h-4 w-4 mr-2" />

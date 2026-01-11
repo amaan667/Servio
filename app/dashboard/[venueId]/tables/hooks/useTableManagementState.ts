@@ -20,15 +20,12 @@ export function useTableManagementState(venueId: string) {
 
   // Tables and counters
   const {
-    data: tables = [],
-    isLoading: tablesLoading,
-    error: tablesError,
-    refetch: refetchTables,
+
   } = useTableGrid(venueId, 30);
 
   const {
     data: counters = { total_tables: 0, available: 0, occupied: 0, reserved_overlapping_now: 0 },
-    isLoading: countersLoading,
+
   } = useTableCounters(venueId);
 
   const { data: reservations = [], isLoading: reservationsLoading } = useReservations(venueId);

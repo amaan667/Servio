@@ -6,7 +6,7 @@ export default async function AichatPage({ params }: { params: { venueId: string
 
   // Server-side auth check - AI Assistant requires Enterprise tier
   const auth = await requirePageAuth(venueId, {
-    requireFeature: "aiAssistant",
+
   }).catch(() => null);
 
   const hasAIAccess = auth?.hasFeatureAccess("aiAssistant") ?? false;

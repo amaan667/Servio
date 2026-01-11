@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthForAPI, requireVenueAccessForAPI } from "@/lib/auth/api";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
 
 export interface RouteConfig {
   requireAuth?: boolean;
@@ -19,8 +18,7 @@ export interface RouteConfig {
  * Wrap an API route handler with production-ready features
  */
 export function withProductionFeatures<T = unknown>(
-  handler: (
-    req: NextRequest,
+
     context?: { userId: string; venueId?: string }
   ) => Promise<NextResponse<T>>,
   config: RouteConfig = {}
@@ -38,13 +36,11 @@ export function withProductionFeatures<T = unknown>(
         if (!rateLimitResult.success) {
           return NextResponse.json(
             {
-              error: "Too many requests",
+
               message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
             },
             {
-              status: 429,
-              headers: {
-                "X-RateLimit-Limit": rateLimitResult.limit.toString(),
+
                 "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
                 "X-RateLimit-Reset": rateLimitResult.reset.toString(),
                 "Retry-After": Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
@@ -103,10 +99,7 @@ export function withProductionFeatures<T = unknown>(
       // Call the handler with context
       return await handler(req, userId ? { userId, venueId } : undefined);
     } catch (error) {
-      logger.error("[API WRAPPER] Unexpected error", {
-        error: error instanceof Error ? error.message : String(error),
-        url: req.url,
-      });
+
       return NextResponse.json(
         { error: "Internal server error", message: "An unexpected error occurred" },
         { status: 500 }

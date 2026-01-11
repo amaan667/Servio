@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { apiLogger as logger } from "@/lib/logger";
 import { env, isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 
@@ -20,10 +19,7 @@ export async function GET(req: NextRequest) {
     const expectedSecret = env("CRON_SECRET") || "demo-reset-secret";
 
     if (authHeader !== `Bearer ${expectedSecret}`) {
-      logger.warn("[DEMO RESET CRON] Unauthorized cron request", {
-        hasHeader: !!authHeader,
-        expectedPrefix: "Bearer",
-      });
+      
       return apiErrors.unauthorized("Unauthorized");
     }
 
@@ -58,38 +54,25 @@ export async function GET(req: NextRequest) {
 
     const sessionsDeleted = deletedSessions?.length || 0;
 
-    logger.debug("[DEMO RESET CRON] Completed:", {
-      ordersDeleted,
-      sessionsDeleted,
-      timestamp: new Date().toISOString(),
-    });
+    .toISOString(),
 
     // STEP 7: Return success response
     return NextResponse.json({
-      success: true,
+
       ordersDeleted,
       sessionsDeleted,
-      timestamp: new Date().toISOString(),
-      errors: {
-        orders: ordersError?.message || null,
-        sessions: sessionsError?.message || null,
+
       },
-    });
+
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-    logger.error("[DEMO RESET CRON] Unexpected error:", {
-      error: errorMessage,
-      stack: errorStack,
-    });
+    
 
     return NextResponse.json(
       {
-        success: false,
-        error: "Failed to run demo reset cron",
-        details: errorMessage,
-        message: isDevelopment() ? errorMessage : "Request processing failed",
+
         ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }

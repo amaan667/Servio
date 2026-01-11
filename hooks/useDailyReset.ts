@@ -1,20 +1,9 @@
 import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useState } from "react";
-import { logger } from "@/lib/logger";
 
 interface DailyResetResult {
-  success: boolean;
-  message: string;
-  resetDate?: string;
-  alreadyReset?: boolean;
-  summary?: {
-    venueId: string;
-    venueName: string;
-    completedOrders: number;
-    canceledReservations: number;
-    deletedTables: number;
-    timestamp: string;
+
   };
 }
 
@@ -51,10 +40,10 @@ export function useDailyReset(venueId: string) {
           }
         }
       } else {
-        logger.error("🔄 [DAILY RESET HOOK] Reset check failed:", result);
+        
       }
     } catch (_error) {
-      logger.error("🔄 [DAILY RESET HOOK] Error checking daily reset:", errorToContext(_error));
+      );
     } finally {
       setIsChecking(false);
     }

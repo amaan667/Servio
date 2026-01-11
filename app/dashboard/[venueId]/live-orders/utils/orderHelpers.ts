@@ -17,7 +17,6 @@ export const groupOrdersByTable = (orders: Order[]) => {
       tableGroups[tableNum] = [];
     }
     tableGroups[tableNum].push(order);
-  });
 
   const filteredGroups: { [tableNumber: number]: Order[] } = {
     /* Empty */
@@ -35,7 +34,6 @@ export const groupOrdersByTable = (orders: Order[]) => {
       const dateA = new Date(a.created_at);
       const dateB = new Date(b.created_at);
       return dateA.getTime() - dateB.getTime();
-    });
 
     const shouldGroup = orders.every((order, index) => {
       if (index === 0) return true;
@@ -49,29 +47,22 @@ export const groupOrdersByTable = (orders: Order[]) => {
       const withinTimeWindow = timeDiffMinutes <= 30;
 
       return sameCustomer && withinTimeWindow;
-    });
 
     if (shouldGroup) {
       filteredGroups[Number(tableNum)] = orders;
     }
-  });
 
   return filteredGroups;
 };
 
 export const formatTime = (dateString: string) => {
   return new Date(dateString).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
 };
 
 export const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+
 };
 
 export const getShortOrderNumber = (orderId: string) => {
@@ -94,8 +85,7 @@ export const getStatusColor = (status: string) => {
       return "bg-emerald-100 text-emerald-800";
     case "MIXED_PREP":
       return "bg-indigo-100 text-indigo-800";
-    default:
-      return "bg-gray-100 text-gray-800";
+
   }
 };
 
@@ -113,7 +103,6 @@ export const getPaymentStatusColor = (paymentStatus: string) => {
       return "bg-red-100 text-red-800";
     case "MIXED":
       return "bg-amber-100 text-amber-800";
-    default:
-      return "bg-gray-100 text-gray-800";
+
   }
 };

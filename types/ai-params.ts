@@ -1,12 +1,7 @@
 // AI Assistant parameter types for all executors
 
 export interface AnalyticsInsightsParams {
-  timeRange: "today" | "week" | "month" | "quarter" | "year" | "custom";
-  itemId?: string;
-  itemName?: string;
-  customRange?: {
-    start: string;
-    end: string;
+
   };
   insights?: unknown;
   orders?: unknown;
@@ -15,20 +10,11 @@ export interface AnalyticsInsightsParams {
 }
 
 export interface AnalyticsExportParams {
-  type: "revenue" | "items" | "orders" | "feedback";
-  format: "csv" | "pdf";
-  timeRange?: string;
-  startDate?: string;
-  endDate?: string;
-  fileName?: string;
-  data?: unknown;
+
 }
 
 export interface TranslationParams {
-  targetLanguage: string;
-  itemIds?: string[];
-  categoryId?: string;
-  categoryName?: string;
+
 }
 
 export interface MenuItemParams {

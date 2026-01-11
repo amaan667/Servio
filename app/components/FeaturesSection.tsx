@@ -4,46 +4,31 @@ import { QrCode, Smartphone, Clock, CreditCard, BarChart3, Users } from "lucide-
 export function FeaturesSection() {
   const features = [
     {
-      icon: QrCode,
-      title: "QR Code Generation",
-      description:
-        "Generate unique QR codes for each table. Customers scan to instantly access your menu and start ordering.",
-      color: "purple",
+
     },
     {
-      icon: Smartphone,
-      title: "Mobile-First Design",
+
       description:
         "Beautiful, responsive interface optimized for mobile devices. Your customers will love the smooth ordering experience.",
-      color: "blue",
+
     },
     {
-      icon: Clock,
-      title: "Real-Time Orders",
-      description:
-        "Receive orders instantly in your dashboard. Track order status and manage your kitchen workflow efficiently.",
-      color: "green",
+
     },
     {
-      icon: CreditCard,
-      title: "Payment Integration",
-      description:
-        "Secure payment processing built-in. Accept all major credit cards and digital wallets seamlessly.",
-      color: "yellow",
+
     },
     {
-      icon: BarChart3,
-      title: "Analytics & Insights",
+
       description:
         "Detailed analytics on sales, popular items, and customer behavior to help you make data-driven decisions.",
-      color: "red",
+
     },
     {
-      icon: Users,
-      title: "Staff Management",
+
       description:
         "Manage your team with role-based access. Kitchen staff, front-of-house, and managers each get the tools they need.",
-      color: "indigo",
+
     },
   ];
 
@@ -64,12 +49,7 @@ export function FeaturesSection() {
           {features.map((feature, index) => {
             const Icon = feature.icon;
             const colorClasses = {
-              purple: "bg-purple-100 text-purple-600",
-              blue: "bg-blue-100 text-blue-600",
-              green: "bg-green-100 text-green-600",
-              yellow: "bg-yellow-100 text-yellow-600",
-              red: "bg-red-100 text-red-600",
-              indigo: "bg-indigo-100 text-indigo-600",
+
             };
 
             return (

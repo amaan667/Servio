@@ -12,16 +12,10 @@
 
 import { supabaseBrowser as createClient, createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
-import { logger } from "@/lib/logger";
 import { withRetry, DEFAULT_RETRY_OPTIONS } from "@/lib/retry";
 
 export interface UnifiedCounts {
-  menuItems: number;
-  liveOrders: number;
-  todayOrders: number;
-  revenue: number;
-  unpaid: number;
-  tablesSetUp: number;
+
 }
 
 interface DashboardCountsRPC {
@@ -62,7 +56,7 @@ function safeExtractNumber(data: unknown, key: keyof DashboardCountsRPC, default
  */
 export async function fetchMenuItemCount(venueId: string): Promise<number> {
   if (!venueId || typeof venueId !== "string") {
-    logger.error("[UNIFIED COUNTS] Invalid venueId provided:", { venueId });
+    
     return 0;
   }
 
@@ -82,11 +76,7 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
           .order("created_at", { ascending: false });
 
         if (error) {
-          logger.error("[UNIFIED COUNTS] Error fetching menu items:", {
-            venueId: normalizedVenueId,
-            error: error.message,
-            code: error.code,
-          });
+          
           throw new Error(`Failed to fetch menu items: ${error.message}`);
         }
 
@@ -95,15 +85,12 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
         // CRITICAL LOG: Use stdout.write which Railway ALWAYS captures
         // Logging disabled
 
-        logger.debug("[UNIFIED COUNTS] Menu items count fetched:", {
-          venueId: normalizedVenueId,
-          count,
-        });
+        
         return count;
       },
       {
         ...DEFAULT_RETRY_OPTIONS,
-        retryCondition: (error) => {
+
           const err = error as { message?: string; code?: string };
           return (
             err?.message?.includes("network") ||
@@ -115,10 +102,7 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
       }
     );
   } catch (error) {
-    logger.error("[UNIFIED COUNTS] Failed to fetch menu items after retries:", {
-      venueId: normalizedVenueId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     return 0;
   }
 }
@@ -128,18 +112,7 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
  * Comprehensive error handling with fallback values
  */
 export async function fetchUnifiedCounts(
-  venueId: string,
-  venueTz: string = "Europe/London"
-): Promise<UnifiedCounts> {
-  if (!venueId || typeof venueId !== "string") {
-    logger.error("[UNIFIED COUNTS] Invalid venueId provided:", { venueId });
-    return {
-      menuItems: 0,
-      liveOrders: 0,
-      todayOrders: 0,
-      revenue: 0,
-      unpaid: 0,
-      tablesSetUp: 0,
+
     };
   }
 
@@ -155,11 +128,7 @@ export async function fetchUnifiedCounts(
       throw new Error("Invalid time window");
     }
   } catch (error) {
-    logger.error("[UNIFIED COUNTS] Failed to generate time window:", {
-      venueId: normalizedVenueId,
-      venueTz,
-      error: error instanceof Error ? error.message : String(error),
-    });
+
     // Fallback to default window
     window = todayWindowForTZ("Europe/London");
   }
@@ -174,27 +143,17 @@ export async function fetchUnifiedCounts(
   try {
     const { data: countsData, error: rpcError } = await supabase
       .rpc("dashboard_counts", {
-        p_venue_id: normalizedVenueId,
-        p_tz: venueTz,
-        p_live_window_mins: 30,
-      })
+
       .single();
 
     if (rpcError) {
-      logger.error("[UNIFIED COUNTS] RPC error fetching dashboard counts:", {
-        venueId: normalizedVenueId,
-        error: rpcError.message,
-        code: rpcError.code,
-      });
+      
     } else if (countsData) {
       liveOrders = safeExtractNumber(countsData, "live_count", 0);
       todayOrders = safeExtractNumber(countsData, "today_orders_count", 0);
     }
   } catch (error) {
-    logger.error("[UNIFIED COUNTS] Exception fetching dashboard counts:", {
-      venueId: normalizedVenueId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+
   }
 
   // Fetch revenue and unpaid (with error handling)
@@ -212,11 +171,7 @@ export async function fetchUnifiedCounts(
       .neq("order_status", "REFUNDED");
 
     if (ordersError) {
-      logger.error("[UNIFIED COUNTS] Error fetching orders:", {
-        venueId: normalizedVenueId,
-        error: ordersError.message,
-        code: ordersError.code,
-      });
+      
     } else if (orders) {
       revenue = orders.reduce((sum, order) => {
         const amount = order.total_amount;
@@ -228,10 +183,7 @@ export async function fetchUnifiedCounts(
       ).length;
     }
   } catch (error) {
-    logger.error("[UNIFIED COUNTS] Exception fetching orders:", {
-      venueId: normalizedVenueId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+
   }
 
   // Fetch tables set up count (with error handling)
@@ -244,20 +196,13 @@ export async function fetchUnifiedCounts(
       .eq("venue_id", normalizedVenueId);
 
     if (tablesError) {
-      logger.error("[UNIFIED COUNTS] Error fetching tables:", {
-        venueId: normalizedVenueId,
-        error: tablesError.message,
-        code: tablesError.code,
-      });
+      
     } else if (allTables) {
       const activeTables = allTables.filter((t) => t.is_active === true);
       tablesSetUp = activeTables.length;
     }
   } catch (error) {
-    logger.error("[UNIFIED COUNTS] Exception fetching tables:", {
-      venueId: normalizedVenueId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+
   }
 
   return {
@@ -275,13 +220,7 @@ export async function fetchUnifiedCounts(
  * Includes error handling and proper cleanup
  */
 export function subscribeToMenuItemsChanges(
-  venueId: string,
-  onUpdate: (count: number) => void
-): () => void {
-  if (!venueId || typeof venueId !== "string") {
-    logger.error("[UNIFIED COUNTS] Invalid venueId for subscription:", { venueId });
-    return () => {
-      /* Empty */
+
     };
   }
 
@@ -312,14 +251,11 @@ export function subscribeToMenuItemsChanges(
           window.dispatchEvent(
             new CustomEvent("menuItemsChanged", {
               detail: { venueId, count },
-            })
+
           );
         }
       } catch (error) {
-        logger.error("[UNIFIED COUNTS] Error in menu items subscription callback:", {
-          venueId: normalizedVenueId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+
       }
     }, 500);
   };
@@ -329,9 +265,7 @@ export function subscribeToMenuItemsChanges(
     .on(
       "postgres_changes",
       {
-        event: "*",
-        schema: "public",
-        table: "menu_items",
+
         filter: `venue_id=eq.${normalizedVenueId}`,
       },
       handleChange
@@ -346,11 +280,7 @@ export function subscribeToMenuItemsChanges(
       debounceTimeout = null;
     }
     supabase.removeChannel(channel).catch((error) => {
-      logger.error("[UNIFIED COUNTS] Error removing menu items channel:", {
-        venueId: normalizedVenueId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
+
   };
 }
 
@@ -359,19 +289,9 @@ export function subscribeToMenuItemsChanges(
  * Includes error handling, debounce cleanup, and memory leak prevention
  */
 export function subscribeToOrdersChanges(
-  venueId: string,
-  onUpdate: (counts: {
-    liveOrders: number;
-    todayOrders: number;
-    revenue: number;
-    unpaid: number;
+
   }) => void,
-  venueTz: string = "Europe/London"
-): () => void {
-  if (!venueId || typeof venueId !== "string") {
-    logger.error("[UNIFIED COUNTS] Invalid venueId for subscription:", { venueId });
-    return () => {
-      /* Empty */
+
     };
   }
 
@@ -397,25 +317,17 @@ export function subscribeToOrdersChanges(
       try {
         const counts = await fetchUnifiedCounts(venueId, venueTz);
         onUpdate({
-          liveOrders: counts.liveOrders,
-          todayOrders: counts.todayOrders,
-          revenue: counts.revenue,
-          unpaid: counts.unpaid,
-        });
 
         // Dispatch custom event for other components
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("ordersChanged", {
               detail: { venueId, revenue: counts.revenue, unpaid: counts.unpaid },
-            })
+
           );
         }
       } catch (error) {
-        logger.error("[UNIFIED COUNTS] Error in orders subscription callback:", {
-          venueId: normalizedVenueId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+
       } finally {
         debounceTimeout = null;
       }
@@ -427,9 +339,7 @@ export function subscribeToOrdersChanges(
     .on(
       "postgres_changes",
       {
-        event: "*",
-        schema: "public",
-        table: "orders",
+
         filter: `venue_id=eq.${normalizedVenueId}`,
       },
       refreshCounts
@@ -444,10 +354,6 @@ export function subscribeToOrdersChanges(
       debounceTimeout = null;
     }
     supabase.removeChannel(channel).catch((error) => {
-      logger.error("[UNIFIED COUNTS] Error removing orders channel:", {
-        venueId: normalizedVenueId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
+
   };
 }

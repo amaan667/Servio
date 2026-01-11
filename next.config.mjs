@@ -4,27 +4,19 @@ import bundleAnalyzer from '@next/bundle-analyzer';
 // Force deployment: 2025-11-26 14:10:00 UTC
 
 const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
-});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Railway-specific configuration
   // Note: standalone mode temporarily disabled due to Next.js 15 build issue with 500.html
   // output: 'standalone',
-  trailingSlash: false,
-  reactStrictMode: true,
-  eslint: {
+
     ignoreDuringBuilds: false, // ESLint runs during build
   },
-  typescript: {
-    // TypeScript errors resolved - strict mode enabled
-    ignoreBuildErrors: false,
+
   },
   // Performance optimizations
-  experimental: {
-    optimizePackageImports: [
-      'lucide-react', 
+
       'recharts', 
       '@radix-ui/react-icons',
       '@radix-ui/react-dialog',
@@ -37,117 +29,79 @@ const nextConfig = {
     // Exclude server-only packages from bundling
     serverComponentsExternalPackages: ['playwright-core', 'playwright', '@sparticuz/chromium', 'puppeteer-core'],
   },
-  compiler: {
-    // Remove console logs in production (keep console.error and console.info for Railway logs)
-    removeConsole: {
+
       exclude: ['error', 'info'], // Keep console.error for Sentry, console.info for Railway logs
     },
   },
   // Production optimizations
-  poweredByHeader: false,
+
   compress: true, // Enable gzip compression
   generateEtags: true, // Enable ETags for caching
   // Performance headers
   async headers() {
     return [
       {
-        source: '/_next/static/css/:path*',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'text/css',
+
           },
           {
-            key: 'Cache-Control',
+
             value: 'public, max-age=31536000, immutable',
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+
           },
         ],
       },
       {
-        source: '/_next/static/chunks/:path*',
-        headers: [
-          // Removed explicit Content-Type - Next.js handles MIME types correctly
-          {
-            key: 'Cache-Control',
+
             value: 'public, max-age=31536000, immutable',
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+
           },
         ],
       },
       {
-        source: '/_next/static/media/:path*',
-        headers: [
-          // Removed explicit Content-Type - Next.js handles MIME types correctly
-          {
-            key: 'Cache-Control',
+
             value: 'public, max-age=31536000, immutable',
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+
           },
         ],
       },
       {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
+
           },
           {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
+
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
+
           },
           {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
+
           },
         ],
       },
       {
-        source: '/images/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
+
             value: 'public, max-age=31536000, immutable',
           },
         ],
       },
     ];
   },
-  images: {
+
     unoptimized: false, // Enable Next.js image optimization with sharp
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
+
       },
       {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-        port: '',
-        pathname: '/**',
+
       },
     ],
   },
@@ -167,38 +121,25 @@ const nextConfig = {
     if (!isServer) {
       config.plugins.push(
         new webpack.IgnorePlugin({
-          resourceRegExp: /^playwright-core$/,
-        })
+
       );
       
       // Add fallback for modules not found in browser
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        electron: false,
+
         'playwright-core': false,
       };
     }
     
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
+
           // Vendor chunk for node_modules
-          vendor: {
-            name: 'vendor',
-            chunks: 'all',
-            test: /node_modules/,
-            priority: 20,
+
           },
           // Common chunk for shared components
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
-            priority: 10,
-            reuseExistingChunk: true,
+
           },
         },
       };
@@ -211,18 +152,12 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "servio-hx",
-
-  project: "javascript-nextjs",
-
   // Only print logs for uploading source maps in CI
-  silent: !process.env.CI,
 
   // For all available options, see:
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
   // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
 
   // Uncomment to route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
   // This can increase your server load as well as your hosting bill.
@@ -231,12 +166,10 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // tunnelRoute: "/monitoring",
 
   // Automatically tree-shake Sentry logger statements to reduce bundle size
-  disableLogger: true,
 
   // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
   // See the following for more information:
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
-  automaticVercelMonitors: true,
-});
+
 /* Deployment timestamp: 2025-12-05T23:14:48Z - Build ID: 1764976488 */

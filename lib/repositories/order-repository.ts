@@ -5,42 +5,18 @@
 
 import { BaseRepository } from "./base-repository";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
 
 export interface Order {
-  id: string;
-  venue_id: string;
-  table_number?: string;
-  table_id?: string;
-  customer_name?: string;
-  customer_phone?: string;
-  customer_email?: string;
-  items: OrderItem[];
-  status: "pending" | "confirmed" | "preparing" | "ready" | "served" | "completed" | "cancelled";
-  payment_method: string;
-  payment_status: "pending" | "paid" | "failed" | "refunded";
-  total_amount: number;
-  tax_amount?: number;
-  tip_amount?: number;
-  special_instructions?: string;
-  session_id?: string;
-  created_at: string;
-  updated_at: string;
+
 }
 
 export interface OrderItem {
-  menu_item_id: string;
-  item_name: string;
-  quantity: number;
-  price: number;
-  special_instructions?: string;
+
   modifiers?: Array<{ name: string; price: number }>;
 }
 
 export interface OrderStats {
-  total: number;
-  revenue: number;
-  avgOrderValue: number;
+
   byStatus: Record<string, number>;
 }
 
@@ -70,16 +46,13 @@ export class OrderRepository extends BaseRepository<Order> {
       const { data, error } = await query;
 
       if (error) {
-        logger.error("[ORDER_REPO] Error finding orders by venue", { error, venueId });
+        
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (err) {
-      logger.error("[ORDER_REPO] Unexpected error finding orders by venue", {
-        error: err,
-        venueId,
-      });
+      
       throw err;
     }
   }
@@ -90,8 +63,7 @@ export class OrderRepository extends BaseRepository<Order> {
   async findByTable(venueId: string, tableId: string): Promise<Order[]> {
     return this.findAll(
       {
-        venue_id: venueId,
-        table_id: tableId,
+
       } as Partial<Order>,
       {
         orderBy: { column: "created_at", ascending: false },
@@ -105,7 +77,7 @@ export class OrderRepository extends BaseRepository<Order> {
   async findBySession(sessionId: string): Promise<Order[]> {
     return this.findAll(
       {
-        session_id: sessionId,
+
       } as Partial<Order>,
       {
         orderBy: { column: "created_at", ascending: false },
@@ -129,16 +101,13 @@ export class OrderRepository extends BaseRepository<Order> {
         .limit(limit);
 
       if (error) {
-        logger.error("[ORDER_REPO] Error finding recent orders", { error, venueId });
+        
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error finding recent orders", {
-        error: _error,
-        venueId,
-      });
+      
       throw _error;
     }
   }
@@ -147,13 +116,12 @@ export class OrderRepository extends BaseRepository<Order> {
    * Update order status
    */
   async updateStatus(
-    orderId: string,
-    status: Order["status"],
+
     _notes?: string
   ): Promise<Order | null> {
     const updateData: Partial<Order> = {
       status,
-      updated_at: new Date().toISOString(),
+
     } as Partial<Order>;
 
     return this.update(orderId, updateData);
@@ -164,9 +132,7 @@ export class OrderRepository extends BaseRepository<Order> {
    */
   async markAsPaid(orderId: string, paymentMethod: string): Promise<Order | null> {
     return this.update(orderId, {
-      payment_status: "paid",
-      payment_method: paymentMethod,
-      updated_at: new Date().toISOString(),
+
     } as Partial<Order>);
   }
 
@@ -190,7 +156,7 @@ export class OrderRepository extends BaseRepository<Order> {
       const { data, error } = await query;
 
       if (error) {
-        logger.error("[ORDER_REPO] Error getting order stats", { error, venueId });
+        
         throw error;
       }
 
@@ -204,7 +170,6 @@ export class OrderRepository extends BaseRepository<Order> {
 
       orders.forEach((order) => {
         byStatus[order.status] = (byStatus[order.status] || 0) + 1;
-      });
 
       return {
         total,
@@ -213,7 +178,7 @@ export class OrderRepository extends BaseRepository<Order> {
         byStatus,
       };
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error getting order stats", { error: _error, venueId });
+      
       throw _error;
     }
   }
@@ -227,22 +192,18 @@ export class OrderRepository extends BaseRepository<Order> {
         .from(this.tableName)
         .update({
           status,
-          updated_at: new Date().toISOString(),
-        })
+
         .in("id", orderIds)
         .select();
 
       if (error) {
-        logger.error("[ORDER_REPO] Error bulk updating order status", { error, orderIds, status });
+        
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error bulk updating order status", {
-        error: _error,
-        orderIds,
-      });
+      
       throw _error;
     }
   }
@@ -261,17 +222,13 @@ export class OrderRepository extends BaseRepository<Order> {
         .limit(50);
 
       if (error) {
-        logger.error("[ORDER_REPO] Error searching orders", { error, venueId, query });
+        
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-      logger.error("[ORDER_REPO] Unexpected error searching orders", {
-        error: _error,
-        venueId,
-        query,
-      });
+      
       throw _error;
     }
   }

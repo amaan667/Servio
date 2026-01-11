@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -13,8 +12,6 @@ export const runtime = "nodejs";
 const bulkUpdateTicketsSchema = z.object({
   ticket_ids: z.array(z.string().uuid()).min(1, "At least one ticket ID is required"),
   status: z.enum(["ready", "preparing", "bumped", "served", "cancelled"]),
-  order_id: z.string().uuid().optional(),
-});
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
 export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -44,20 +41,13 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
       .from("kds_tickets")
       .update({
         status,
-        updated_at: now,
-      })
+
       .in("id", ticket_ids)
       .eq("venue_id", venueId)
       .select();
 
     if (updateError) {
-      logger.error("[KDS BULK UPDATE] Error updating tickets:", {
-        error: updateError.message,
-        ticket_ids,
-        status,
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to update tickets",
         isDevelopment() ? updateError.message : undefined
@@ -75,12 +65,8 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
       const allBumped = allOrderTickets?.every((t) => t.status === "bumped") || false;
 
-      logger.debug("[KDS BULK UPDATE] Checking if all tickets bumped", {
-        orderId,
-        totalTickets: allOrderTickets?.length,
-        bumpedTickets: allOrderTickets?.filter((t) => t.status === "bumped").length,
+       => t.status === "bumped").length,
         allBumped,
-      });
 
       // Only update order status if ALL tickets are bumped
       if (allBumped) {
@@ -91,65 +77,27 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
           .eq("venue_id", venueId)
           .single();
 
-        logger.debug("[KDS BULK UPDATE] All tickets bumped - updating order kitchen_status", {
-          orderId,
-          currentStatus: currentOrder?.order_status,
-          currentKitchenStatus: (currentOrder as { kitchen_status?: unknown })?.kitchen_status,
-          updatingTo: "BUMPED",
-        });
+        ?.kitchen_status,
 
         const { error: orderUpdateError } = await supabase.rpc("orders_set_kitchen_bumped", {
-          p_order_id: orderId,
-          p_venue_id: venueId,
-        });
 
         if (orderUpdateError) {
-          logger.error("[KDS BULK UPDATE] Error updating order kitchen_status after bump:", {
-            error: orderUpdateError.message,
-            orderId,
-            currentStatus: currentOrder?.order_status,
-            venueId,
-            userId: context.user.id,
-          });
+          
         } else {
-          logger.info(
-            "[KDS BULK UPDATE] Order kitchen_status updated to BUMPED - all items bumped",
-            {
-              orderId,
-              previousStatus: currentOrder?.order_status,
-              venueId,
-              userId: context.user.id,
-            }
-          );
+          
         }
       } else {
-        logger.debug("[KDS BULK UPDATE] Not all tickets bumped yet - order status unchanged", {
-          orderId,
-          bumpedCount: allOrderTickets?.filter((t) => t.status === "bumped").length,
-          totalCount: allOrderTickets?.length,
-        });
+         => t.status === "bumped").length,
+
       }
     }
 
-    logger.info("[KDS BULK UPDATE] Tickets updated successfully", {
-      ticket_count: tickets?.length || 0,
-      status,
-      venueId,
-      userId: context.user.id,
-    });
+    
 
     // STEP 6: Return success response
     return success({
-      updated: tickets?.length || 0,
-      tickets: tickets || [],
-    });
+
   } catch (error) {
-    logger.error("[KDS BULK UPDATE] Unexpected error:", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      venueId: context.venueId,
-      userId: context.user.id,
-    });
 
     if (isZodError(error)) {
       return handleZodError(error);
@@ -157,4 +105,3 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
-});

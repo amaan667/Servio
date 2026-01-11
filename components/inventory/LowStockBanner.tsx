@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useInventoryAlerts } from "@/hooks/useInventoryAlerts";
 
 interface LowStockBannerProps {
-  venueId: string;
+
 }
 
 export function LowStockBanner({ venueId }: LowStockBannerProps) {

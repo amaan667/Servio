@@ -5,7 +5,7 @@ import { Clock, Users, Receipt } from "lucide-react";
 import { PendingOrderData } from "../hooks/useOrderSummary";
 
 interface OrderDetailsCardProps {
-  orderData: PendingOrderData;
+
 }
 
 export function OrderDetailsCard({ orderData }: OrderDetailsCardProps) {

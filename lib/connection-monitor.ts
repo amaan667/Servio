@@ -5,20 +5,15 @@ import { errorToContext } from "@/lib/utils/error-to-context";
  */
 
 import React from "react";
-import { logger } from "@/lib/logger";
 
 export interface ConnectionState {
-  isOnline: boolean;
-  isSlowConnection: boolean;
-  lastChecked: Date;
+
 }
 
 class ConnectionMonitor {
   private listeners: Set<(state: ConnectionState) => void> = new Set();
   private state: ConnectionState = {
-    isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
-    isSlowConnection: false,
-    lastChecked: new Date(),
+
   };
   private checkInterval: NodeJS.Timeout | null = null;
 
@@ -39,7 +34,7 @@ class ConnectionMonitor {
   }
 
   private handleOffline() {
-    logger.warn("[CONNECTION] Network is offline");
+    
     this.updateState({ isOnline: false, isSlowConnection: false });
   }
 
@@ -48,10 +43,7 @@ class ConnectionMonitor {
       // First check if we're online using navigator.onLine
       if (!navigator.onLine) {
         this.updateState({
-          isOnline: false,
-          isSlowConnection: false,
-          lastChecked: new Date(),
-        });
+
         return;
       }
 
@@ -59,10 +51,8 @@ class ConnectionMonitor {
 
       // Try to fetch a small resource to test connection quality
       const response = await fetch("/api/auth/health", {
-        method: "GET",
-        cache: "no-cache",
+
         signal: AbortSignal.timeout(2000), // 2 second timeout
-      });
 
       const responseTime = Date.now() - startTime;
       const isSlowConnection = responseTime > 1500; // Consider slow if > 1.5 seconds
@@ -70,26 +60,19 @@ class ConnectionMonitor {
       // Only update if we get a successful response
       if (response.ok) {
         this.updateState({
-          isOnline: true,
+
           isSlowConnection,
-          lastChecked: new Date(),
-        });
+
       } else {
         // If API fails, check navigator.onLine as fallback
         this.updateState({
-          isOnline: navigator.onLine,
-          isSlowConnection: false,
-          lastChecked: new Date(),
-        });
+
       }
     } catch (_error) {
-      logger.warn("[CONNECTION] Connection check failed:", errorToContext(_error));
+      );
       // Fallback to navigator.onLine
       this.updateState({
-        isOnline: navigator.onLine,
-        isSlowConnection: false,
-        lastChecked: new Date(),
-      });
+
     }
   }
 
@@ -151,7 +134,6 @@ export function useConnectionMonitor() {
       return { isOnline: true, isSlowConnection: false, lastChecked: new Date() };
     }
     return getConnectionMonitor().getState();
-  });
 
   React.useEffect(() => {
     const monitor = getConnectionMonitor();

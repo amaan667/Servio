@@ -32,18 +32,11 @@ import { Button } from "@/components/ui/button";
 import { SupportForm } from "./SupportForm";
 
 interface QuickAction {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  description: string;
-  variant?: "default" | "outline" | "ghost";
-  color?: string;
+
 }
 
 interface QuickActionsToolbarProps {
-  venueId: string;
-  userRole?: string;
-  onVenueChange?: (venueId: string) => void;
+
 }
 
 export function QuickActionsToolbar({
@@ -65,25 +58,19 @@ export function QuickActionsToolbar({
 
   const actions: QuickAction[] = [
     {
-      label: "Live Orders",
+
       href: `/dashboard/${venueId}/live-orders`,
-      icon: Clock,
-      description: "View orders",
-      color: "bg-purple-600 hover:bg-purple-700",
+
     },
     {
-      label: "Menu",
+
       href: `/dashboard/${venueId}/menu-management`,
-      icon: ShoppingBag,
-      description: "Edit menu",
-      color: "bg-orange-600 hover:bg-orange-700",
+
     },
     {
-      label: "QR Codes",
+
       href: `/dashboard/${venueId}/qr-codes`,
-      icon: QrCode,
-      description: "Generate QR",
-      color: "bg-green-600 hover:bg-green-700",
+
     },
   ];
 
@@ -91,38 +78,26 @@ export function QuickActionsToolbar({
 
   if (isPrivileged) {
     actions.push({
-      label: "Analytics",
+
       href: `/dashboard/${venueId}/analytics`,
-      icon: BarChart,
-      description: "View insights",
-      color: "bg-indigo-600 hover:bg-indigo-700",
-    });
+
     actions.push({
-      label: "Feedback",
+
       href: `/dashboard/${venueId}/feedback`,
-      icon: MessageSquare,
-      description: "Customer feedback",
-      color: "bg-pink-600 hover:bg-pink-700",
-    });
+
     actions.push({
-      label: "Settings",
+
       href: `/dashboard/${venueId}/settings`,
-      icon: Settings,
-      description: "Venue settings",
-      color: "bg-gray-600 hover:bg-gray-700",
-    });
+
   } else {
     // Block handled
   }
 
   if (isPrivileged || userRole === "kitchen") {
     actions.push({
-      label: "Kitchen",
+
       href: `/dashboard/${venueId}/kds`,
-      icon: ChefHat,
-      description: "Kitchen display",
-      color: "bg-red-600 hover:bg-red-700",
-    });
+
   } else {
     // Block handled
   }

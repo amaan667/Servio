@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -9,11 +8,6 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 
 const updateTableSchema = z.object({
-  label: z.string().min(1).optional(),
-  seat_count: z.number().int().positive().optional(),
-  is_active: z.boolean().optional(),
-  qr_version: z.number().int().nonnegative().optional(),
-});
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   const handler = withUnifiedAuth(
@@ -57,12 +51,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
           .single();
 
         if (checkError || !existingTable) {
-          logger.error("[TABLES PUT] Table not found:", {
-            error: checkError?.message,
-            tableId,
-            venueId,
-            userId: authContext.user.id,
-          });
+          
           return apiErrors.notFound("Table not found");
         }
 
@@ -72,9 +61,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
           seat_count?: number;
           is_active?: boolean;
           qr_version?: number;
-          updated_at: string;
+
         } = {
-          updated_at: new Date().toISOString(),
+
         };
 
         if (body.label !== undefined) {
@@ -101,33 +90,18 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
           .single();
 
         if (updateError || !table) {
-          logger.error("[TABLES PUT] Error updating table:", {
-            error: updateError?.message,
-            tableId,
-            venueId,
-            userId: authContext.user.id,
-          });
+          
           return apiErrors.database(
             "Failed to update table",
             isDevelopment() ? updateError?.message : undefined
           );
         }
 
-        logger.info("[TABLES PUT] Table updated successfully", {
-          tableId,
-          venueId,
-          userId: authContext.user.id,
-        });
+        
 
         // STEP 6: Return success response
         return success({ table });
       } catch (error) {
-        logger.error("[TABLES PUT] Unexpected error:", {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          venueId: authContext.venueId,
-          userId: authContext.user.id,
-        });
 
         if (isZodError(error)) {
           return handleZodError(error);
@@ -163,7 +137,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-  });
+
 }
 
 type TableParams = { params?: { tableId?: string } };
@@ -196,7 +170,7 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .single();
 
         if (checkError || !existingTable) {
-          logger.error("[TABLES API] Error checking table existence:", { value: checkError });
+          
           return apiErrors.notFound("Table not found");
         }
 
@@ -219,17 +193,13 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           activeOrders = ordersResult.data || [];
           ordersError = ordersResult.error;
         } catch (_error) {
-          logger.error("[TABLES API] Exception during active orders check:", {
-            error: _error instanceof Error ? _error.message : "Unknown error",
-          });
+          
           ordersError = _error;
         }
 
         if (ordersError) {
-          logger.error("[TABLES API] Error checking active orders:", { value: ordersError });
-          logger.warn(
-            "[TABLES API] Proceeding with table removal despite orders check failure - this may be due to database connectivity issues"
-          );
+          
+          
 
           // Try a simpler fallback query
           // SECURITY NOTE: Using admin client for fallback query only
@@ -244,12 +214,10 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
               .limit(1);
 
             if (fallbackResult.data && fallbackResult.data.length > 0) {
-              logger.warn(
-                "[TABLES API] Fallback query found orders for this table - proceeding with caution"
-              );
+              
             }
           } catch (fallbackError) {
-            logger.error("[TABLES API] Fallback query also failed:", { value: fallbackError });
+            
           }
         }
 
@@ -269,70 +237,52 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           activeReservations = reservationsResult.data || [];
           reservationsError = reservationsResult.error;
         } catch (_error) {
-          logger.error("[TABLES API] Exception during active reservations check:", {
-            error: _error instanceof Error ? _error.message : "Unknown error",
-          });
+          
           reservationsError = _error;
         }
 
         if (reservationsError) {
-          logger.error("[TABLES API] Error checking active reservations:", {
-            value: reservationsError,
-          });
-          logger.warn(
-            "[TABLES API] Proceeding with table removal despite reservations check failure - this may be due to database connectivity issues"
-          );
+          
+          
         }
 
         // If there are active orders or reservations, handle based on forceRemove flag
         if (forceRemove) {
           // FORCE REMOVE: Complete all active orders and cancel reservations
-          logger.info(
-            "[TABLES API] Force remove enabled - completing active orders and canceling reservations"
-          );
+          
 
           if (!ordersError && activeOrders && activeOrders.length > 0) {
             // RLS ensures user can only update orders for venues they have access to
             const { error: completeOrdersError } = await supabase
               .from("orders")
               .update({
-                order_status: "COMPLETED",
-                updated_at: new Date().toISOString(),
-              })
+
               .eq("table_id", tableId)
               .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
               .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
             if (completeOrdersError) {
-              logger.error("[TABLES API] Error force completing orders:", {
-                value: completeOrdersError,
-              });
+              
             } else {
-              logger.info("[TABLES API] Successfully force completed active orders");
+              
             }
           }
 
           if (!reservationsError && activeReservations && activeReservations.length > 0) {
-            logger.info(
-              `[TABLES API] Force canceling ${activeReservations.length} active reservations`
-            );
+            
             // RLS ensures user can only update reservations for venues they have access to
             const { error: cancelReservationsError } = await supabase
               .from("reservations")
               .update({
-                status: "CANCELLED",
-                updated_at: new Date().toISOString(),
-              })
+
               .eq("table_id", tableId)
               .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
               .eq("status", "BOOKED");
 
             if (cancelReservationsError) {
-              logger.error("[TABLES API] Error force canceling reservations:", {
-                value: cancelReservationsError,
-              });
+              
             } else {
-              logger.info("[TABLES API] Successfully force canceled active reservations");
+              
             }
           }
         } else {
@@ -354,9 +304,7 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
 
         // If both checks failed, we'll proceed with a warning
         if (ordersError && reservationsError) {
-          logger.warn(
-            "[TABLES API] Both orders and reservations checks failed - proceeding with table removal but logging the issue"
-          );
+          
         }
 
         // Clear table_id references in orders to avoid foreign key constraint issues
@@ -368,12 +316,8 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (clearTableRefsError) {
-          logger.error("[TABLES API] Error clearing table references in orders:", {
-            value: clearTableRefsError,
-          });
-          logger.warn(
-            "[TABLES API] Proceeding with table deletion despite table reference clear failure"
-          );
+          
+          
         }
 
         // Delete table sessions first (if they exist)
@@ -385,12 +329,8 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (deleteSessionsError) {
-          logger.error("[TABLES API] Error deleting table sessions:", {
-            value: deleteSessionsError,
-          });
-          logger.warn(
-            "[TABLES API] Proceeding with table deletion despite session deletion failure"
-          );
+          
+          
         }
 
         // Delete group sessions for this table
@@ -402,12 +342,8 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (deleteGroupSessionError) {
-          logger.error("[TABLES API] Error deleting group sessions:", {
-            value: deleteGroupSessionError,
-          });
-          logger.warn(
-            "[TABLES API] Proceeding with table deletion despite group session deletion failure"
-          );
+          
+          
         }
 
         // Finally, delete the table itself
@@ -419,23 +355,14 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (error) {
-          logger.error("[TABLES API] Error deleting table:", {
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
-          logger.error("[TABLES API] Error details:", {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code,
-          });
+          
+          
           return apiErrors.internal("Failed to delete table");
         }
 
         return success({ success: true, deletedTable: table });
       } catch (error) {
-        logger.error("[TABLES API] Unexpected error:", {
-          error: error instanceof Error ? error.message : String(error),
-        });
+
         return apiErrors.internal("Internal server error");
       }
     },
@@ -466,5 +393,5 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-  });
+
 }

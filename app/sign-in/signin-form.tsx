@@ -11,16 +11,13 @@ import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { CheckCircle2 } from "lucide-react";
 
 interface SignInFormProps {
-  onGoogleSignIn: () => Promise<void>;
-  isLoading?: boolean;
-  error?: string | null;
-  onClearError?: () => void;
+
 }
 
 export default function SignInForm({
   onGoogleSignIn,
   isLoading = false,
-  error: propError,
+
   onClearError,
 }: SignInFormProps) {
   const [email, setEmail] = useState("");
@@ -64,16 +61,15 @@ export default function SignInForm({
           ) {
             sessionStorage.removeItem(key);
           }
-        });
+
       }
 
       // Use server-side API route to properly set cookies
       const response = await fetch("/api/auth/sign-in-password", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
         credentials: "include", // Ensure cookies are sent/received
-      });
 
       const data = await response.json();
 
@@ -104,9 +100,6 @@ export default function SignInForm({
           const supabase = await createClient();
 
           const { error: setSessionError } = await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
 
           if (setSessionError) {
             setError("Failed to establish session. Please try again.");

@@ -16,13 +16,10 @@ export function useBulkOperations(venueId: string) {
       if (!confirmed) return;
 
       const response = await fetch("/api/orders/bulk-complete", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venueId: venueId,
-          orderIds: activeOrders.map((order) => order.id),
+
         }),
-      });
 
       const result = await response.json();
 

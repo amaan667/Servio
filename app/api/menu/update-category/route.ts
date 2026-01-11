@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 // Deployment trigger
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(_request: NextRequest) {
@@ -17,9 +16,7 @@ export async function POST(_request: NextRequest) {
 
     if (oldCategory === newCategory) {
       return NextResponse.json({
-        success: true,
-        message: "No changes needed",
-      });
+
     }
 
     const supabase = await createClient();
@@ -33,7 +30,7 @@ export async function POST(_request: NextRequest) {
       .select("id, name, category");
 
     if (updateError) {
-      logger.error("[UPDATE CATEGORY] Error updating menu items:", updateError);
+      
       return apiErrors.internal("Failed to update menu items");
     }
 
@@ -54,26 +51,21 @@ export async function POST(_request: NextRequest) {
       const { error: orderUpdateError } = await supabase
         .from("menu_uploads")
         .update({
-          category_order: updatedCategoryOrder,
-          updated_at: new Date().toISOString(),
-        })
+
         .eq("id", uploadData.id);
 
       if (orderUpdateError) {
-        logger.error("[UPDATE CATEGORY] Error updating category order:", orderUpdateError);
+        
         // Don't fail the whole operation for this
       }
     }
 
     return NextResponse.json({
-      success: true,
+
       message: `Category updated from "${oldCategory}" to "${newCategory}"`,
-      updatedItems: updatedItems?.length || 0,
-    });
+
   } catch (_error) {
-    logger.error("[UPDATE CATEGORY] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

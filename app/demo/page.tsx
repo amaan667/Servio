@@ -74,7 +74,7 @@ export default function DemoPage() {
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeView === "customer"
                   ? "bg-purple-600 text-white"
-                  : "bg-white text-gray-600 hover:text-gray-900 border border-gray-300"
+
               }`}
             >
               <Smartphone className="w-4 h-4 inline mr-2" />
@@ -85,7 +85,7 @@ export default function DemoPage() {
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeView === "owner"
                   ? "bg-purple-600 text-white"
-                  : "bg-white text-gray-600 hover:text-gray-900 border border-gray-300"
+
               }`}
             >
               <LayoutDashboard className="w-4 h-4 inline mr-2" />
@@ -339,39 +339,29 @@ export default function DemoPage() {
                     <div className="space-y-3">
                       {[
                         {
-                          table: "Table 5",
+
                           items: "2x Cappuccino, 1x Croissant",
-                          time: "2 min ago",
-                          status: "Preparing",
-                          color: "bg-blue-500",
+
                         },
                         {
-                          table: "Table 3",
+
                           items: "1x Caesar Salad, 1x Latte",
-                          time: "5 min ago",
-                          status: "New",
-                          color: "bg-orange-500",
+
                         },
                         {
-                          table: "Table 8",
+
                           items: "1x Club Sandwich, 1x Smoothie Bowl",
-                          time: "8 min ago",
-                          status: "Ready",
-                          color: "bg-green-500",
+
                         },
                         {
-                          table: "Table 12",
+
                           items: "2x Avocado Toast, 2x Orange Juice",
-                          time: "just now",
-                          status: "New",
-                          color: "bg-orange-500",
+
                         },
                         {
-                          table: "Table 2",
+
                           items: "1x Tiramisu, 1x Cappuccino",
-                          time: "12 min ago",
-                          status: "Serving",
-                          color: "bg-purple-500",
+
                         },
                       ].map((order, idx) => (
                         <div

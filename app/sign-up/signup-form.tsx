@@ -15,8 +15,7 @@ import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
 
 interface SignUpFormProps {
-  onGoogleSignIn: () => Promise<void>;
-  isSigningUp?: boolean;
+
 }
 
 export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: SignUpFormProps) {
@@ -29,13 +28,8 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
   const [invitationVenueId, setInvitationVenueId] = useState<string | null>(null);
   const [invitationRole, setInvitationRole] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    venueName: "",
-    businessType: "Restaurant",
+
     serviceType: "table_service", // 'table_service' or 'counter_pickup'
-  });
 
   // Pre-fill email and check for invitation params
   useEffect(() => {
@@ -93,13 +87,10 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       // Accept invitation (creates account and assigns role)
       try {
         const response = await fetch(`/api/staff/invitations/${invitationToken}`, {
-          method: "POST",
+
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            full_name: formData.fullName.trim(),
-            password: formData.password,
+
           }),
-        });
 
         const data = await response.json();
 
@@ -110,9 +101,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         // Sign in with the new credentials
         const supabase = supabaseBrowser();
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
 
         if (signInError) {
           throw new Error("Account created but failed to sign in. Please try signing in manually.");
@@ -167,26 +155,15 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       localStorage.setItem(
         "signup_data",
         JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          fullName: formData.fullName,
-          venueType: formData.businessType,
-          serviceType: formData.serviceType,
-          tier: selectedTier,
-        })
+
       );
 
       // Create Stripe checkout session FIRST
       const response = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tier: selectedTier,
-          email: formData.email,
-          fullName: formData.fullName,
-          isSignup: true,
+
         }),
-      });
 
       const data = await response.json();
 
@@ -221,12 +198,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
   // Tier selection data - using shared PRICING_TIERS configuration
   const tiers = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
-    name: tierData.name,
-    id: tierKey,
-    price: tierData.price,
-    description: tierData.description,
-    popular: tierData.popular || false,
-    features: tierData.features,
+
     contact: tierKey === "enterprise", // Enterprise requires contact sales
   }));
 
@@ -315,13 +287,10 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                   try {
                     // Redirect directly to Stripe checkout
                     const response = await fetch("/api/stripe/create-checkout-session", {
-                      method: "POST",
+
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        tier: selectedTier,
-                        isSignup: true,
+
                       }),
-                    });
 
                     const data = await response.json();
 
@@ -339,9 +308,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                     setError(
                       _err instanceof Error
                         ? _err.message
-                        : "Failed to create checkout session. Please try again."
-                    );
-                    setLoading(false);
+
                   }
                 }}
                 disabled={!selectedTier || loading}

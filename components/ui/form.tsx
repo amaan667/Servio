@@ -21,7 +21,7 @@ type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > = {
-  name: TName;
+
 };
 
 const FormFieldContext = React.createContext<FormFieldContextValue>({
@@ -56,7 +56,7 @@ const useFormField = () => {
 
   return {
     id,
-    name: fieldContext.name,
+
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
@@ -65,7 +65,7 @@ const useFormField = () => {
 };
 
 type FormItemContextValue = {
-  id: string;
+
 };
 
 const FormItemContext = React.createContext<FormItemContextValue>({
@@ -99,7 +99,7 @@ const FormLabel = React.forwardRef<
       {...props}
     />
   );
-});
+
 FormLabel.displayName = "FormLabel";
 
 const FormControl = React.forwardRef<
@@ -117,7 +117,7 @@ const FormControl = React.forwardRef<
       {...props}
     />
   );
-});
+
 FormControl.displayName = "FormControl";
 
 const FormDescription = React.forwardRef<
@@ -134,7 +134,7 @@ const FormDescription = React.forwardRef<
       {...props}
     />
   );
-});
+
 FormDescription.displayName = "FormDescription";
 
 const FormMessage = React.forwardRef<
@@ -158,7 +158,7 @@ const FormMessage = React.forwardRef<
       {body}
     </p>
   );
-});
+
 FormMessage.displayName = "FormMessage";
 
 export {

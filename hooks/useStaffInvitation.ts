@@ -8,15 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface StaffMember {
-  id: string;
-  name: string;
-  role: string;
-  email?: string;
+
 }
 
 interface UseStaffInvitationOptions {
-  venueId: string;
-  onSuccess?: () => void;
+
 }
 
 export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOptions) {
@@ -35,10 +31,7 @@ export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOpt
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter an email address",
-        variant: "destructive",
-      });
+
       return;
     }
 
@@ -53,10 +46,7 @@ export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOpt
 
     if (user?.email?.toLowerCase() === inviteEmail.trim().toLowerCase()) {
       toast({
-        title: "Error",
-        description: "You cannot invite yourself. You already have access to this venue.",
-        variant: "destructive",
-      });
+
       return;
     }
 
@@ -65,19 +55,14 @@ export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOpt
     try {
       // Send invitation - API will get user from cookies
       const requestBody = {
-        venue_id: venueId,
-        email: inviteEmail.trim(),
-        role: selectedStaffForInvite.role,
+
       };
 
       const res = await fetch("/api/staff/invitations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        body: JSON.stringify(requestBody),
+
         credentials: "include", // Ensure cookies are sent
-      });
 
       const data = await res.json();
 
@@ -89,18 +74,13 @@ export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOpt
       if (data.emailSent) {
         const isRefresh = data.message?.includes("refreshed");
         toast({
-          title: isRefresh ? "Invitation refreshed!" : "Invitation sent!",
-          description: isRefresh
+
             ? `A new invitation link has been sent to ${inviteEmail}`
             : `Invitation sent to ${inviteEmail} with ${selectedStaffForInvite.role} role`,
-        });
+
       } else {
         toast({
-          title: "Invitation created",
-          description:
-            "Invitation created but email failed to send. Check server logs for invitation link.",
-          variant: "destructive",
-        });
+
       }
 
       setInviteDialogOpen(false);
@@ -112,10 +92,7 @@ export function useStaffInvitation({ venueId, onSuccess }: UseStaffInvitationOpt
       }
     } catch (err) {
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to send invitation",
-        variant: "destructive",
-      });
+
     } finally {
       setInviteLoading(false);
     }

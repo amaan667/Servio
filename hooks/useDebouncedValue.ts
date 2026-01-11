@@ -25,9 +25,7 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
  * Useful for API calls and expensive operations
  */
 export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
-  callback: T,
-  delay: number
-): T {
+
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
   return ((...args: Parameters<T>) => {

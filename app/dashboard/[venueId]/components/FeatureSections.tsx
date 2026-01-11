@@ -19,23 +19,15 @@ import {
 import { LucideIcon } from "lucide-react";
 
 interface Feature {
-  title: string;
-  description: string;
-  href: string;
-  icon: LucideIcon;
-  color: string;
-  bgColor: string;
+
 }
 
 interface FeatureSection {
-  title: string;
-  description: string;
-  features: Feature[];
+
 }
 
 interface FeatureSectionsProps {
-  venueId: string;
-  userRole?: string;
+
 }
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
@@ -48,79 +40,47 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
 
   const sections: FeatureSection[] = [
     {
-      title: "Operations",
-      description: "Core day-to-day operations",
-      features: [
-        {
-          title: "Live Orders",
-          description: "Monitor and manage incoming orders in real-time",
+
           href: `/dashboard/${venueId}/live-orders`,
-          icon: Clock,
-          color: "text-blue-600",
-          bgColor: "bg-blue-100",
+
         },
         {
-          title: "Kitchen Display",
-          description: "View and manage orders in the kitchen",
+
           href: `/dashboard/${venueId}/kds`,
-          icon: ChefHat,
-          color: "text-red-600",
-          bgColor: "bg-red-100",
+
         },
         {
-          title: "Table Management",
+
           description: "Manage tables, reservations, and seating",
           href: `/dashboard/${venueId}/tables`,
-          icon: Table,
-          color: "text-purple-600",
-          bgColor: "bg-purple-100",
+
         },
         {
-          title: "Payments",
-          description:
-            "Manage payments (pay-at-till orders) and view receipts for all completed orders",
+
           href: `/dashboard/${venueId}/payments`,
-          icon: Receipt,
-          color: "text-emerald-600",
-          bgColor: "bg-emerald-100",
+
         },
       ],
     },
     {
-      title: "Management",
-      description: "Configure and manage your venue",
-      features: [
-        {
-          title: "Menu Builder",
-          description: "Create and edit your menu items",
+
           href: `/dashboard/${venueId}/menu-management`,
-          icon: ShoppingBag,
-          color: "text-orange-600",
-          bgColor: "bg-orange-100",
+
         },
         {
-          title: "Staff Management",
-          description: "Manage staff roles and permissions",
+
           href: `/dashboard/${venueId}/staff`,
-          icon: Users,
-          color: "text-green-600",
-          bgColor: "bg-green-100",
+
         },
         {
-          title: "Inventory",
-          description: "Track and manage inventory levels",
+
           href: `/dashboard/${venueId}/inventory`,
-          icon: Package,
-          color: "text-yellow-600",
-          bgColor: "bg-yellow-100",
+
         },
         {
-          title: "QR Codes",
-          description: "Generate and manage QR codes for tables",
+
           href: `/dashboard/${venueId}/qr-codes`,
-          icon: QrCode,
-          color: "text-green-600",
-          bgColor: "bg-green-100",
+
         },
       ],
     },
@@ -131,35 +91,22 @@ export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
 
   if (isPrivileged) {
     sections.push({
-      title: "Insights",
-      description: "Analytics and customer feedback",
-      features: [
-        {
-          title: "Analytics",
-          description: "View detailed analytics and reports",
+
           href: `/dashboard/${venueId}/analytics`,
-          icon: BarChart,
-          color: "text-indigo-600",
-          bgColor: "bg-indigo-100",
+
         },
         {
-          title: "Feedback",
-          description: "View and respond to customer feedback",
+
           href: `/dashboard/${venueId}/feedback`,
-          icon: MessageSquare,
-          color: "text-pink-600",
-          bgColor: "bg-pink-100",
+
         },
         {
-          title: "Settings",
-          description: "Configure venue settings and preferences",
+
           href: `/dashboard/${venueId}/settings`,
-          icon: Settings,
-          color: "text-gray-600",
-          bgColor: "bg-gray-100",
+
         },
       ],
-    });
+
   } else {
     // Staff role - sections configured above
   }

@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
-import { logger } from "@/lib/logger";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -16,20 +15,15 @@ export const runtime = "nodejs";
 
 export interface MenuItemModifier {
   id?: string;
-  menu_item_id: string;
+
   name: string; // e.g., "Size", "Toppings", "Extras"
-  type: "single" | "multiple"; // Single choice or multiple selections
-  required: boolean;
-  options: ModifierOption[];
-  display_order?: number;
+
 }
 
 export interface ModifierOption {
   id?: string;
   name: string; // e.g., "Small", "Medium", "Large"
-  price_modifier: number; // Additional cost (can be negative for discounts)
-  is_available: boolean;
-  display_order?: number;
+
 }
 
 export async function GET(req: NextRequest, context: { params: Promise<{ itemId: string }> }) {
@@ -68,10 +62,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ itemId:
       .single();
 
     if (fetchError) {
-      logger.error("[MODIFIERS GET] Error fetching modifiers", {
-        error: fetchError.message,
-        itemId,
-      });
+      
       return apiErrors.database("Failed to fetch modifiers");
     }
 
@@ -80,10 +71,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ itemId:
     return success({ modifiers });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("[MODIFIERS GET] Unexpected error", {
-      error: errorMessage,
-      itemId,
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }
@@ -165,28 +153,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ itemId
     const { error: updateError } = await supabase
       .from("menu_items")
       .update({
-        modifiers: modifiers,
-        updated_at: new Date().toISOString(),
-      })
+
       .eq("id", itemId);
 
     if (updateError) {
-      logger.error("[MODIFIERS POST] Error updating modifiers:", { error: updateError });
+      
       return apiErrors.internal("Failed to update modifiers");
     }
 
-    logger.info("[MODIFIERS POST] Modifiers updated successfully", {
-      itemId,
-      modifierCount: modifiers.length,
-    });
+    
 
     return success({ modifiers });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("[MODIFIERS POST] Unexpected error", {
-      error: errorMessage,
-      itemId,
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }
@@ -241,26 +221,18 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ ite
     const { error: updateError } = await supabase
       .from("menu_items")
       .update({
-        modifiers: null,
-        updated_at: new Date().toISOString(),
-      })
+
       .eq("id", itemId);
 
     if (updateError) {
-      logger.error("[MODIFIERS DELETE] Error removing modifiers", {
-        error: updateError.message,
-        itemId,
-      });
+      
       return apiErrors.database("Failed to remove modifiers");
     }
 
     return success({});
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("[MODIFIERS DELETE] Unexpected error", {
-      error: errorMessage,
-      itemId,
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

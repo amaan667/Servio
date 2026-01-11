@@ -22,16 +22,7 @@ import { DeleteAccountCard } from "./components/DeleteAccountCard";
 import { ReceiptSettingsCard } from "./components/ReceiptSettingsCard";
 
 interface VenueSettingsClientProps {
-  user: User;
-  venue: Venue;
-  venues: Venue[];
-  isOwner?: boolean;
-  organization?: {
-    id: string;
-    subscription_tier?: string;
-    stripe_customer_id?: string;
-    subscription_status?: string;
-    trial_ends_at?: string;
+
   };
 }
 
@@ -215,9 +206,7 @@ export default function VenueSettingsClient({
         venueId={venue.venue_id}
         venueName={venue.venue_name}
         counts={{
-          live_orders: 0,
-          total_orders: 0,
-          notifications: 0,
+
         }}
       />
     </>

@@ -5,7 +5,6 @@
  */
 
 import Stripe from "stripe";
-import { logger } from "@/lib/logger";
 
 export type SubscriptionTier = "starter" | "pro" | "enterprise";
 
@@ -18,45 +17,21 @@ export type SubscriptionTier = "starter" | "pro" | "enterprise";
  * 4. Default to starter
  */
 export async function getTierFromStripeSubscription(
-  subscription: Stripe.Subscription,
-  stripe: Stripe
-): Promise<SubscriptionTier> {
-  try {
-    const priceId = subscription.items.data[0]?.price.id;
 
-    if (!priceId) {
-      logger.warn("[STRIPE TIER] No price ID found in subscription", {
-        subscriptionId: subscription.id,
-      });
-      return "starter";
     }
 
     // Fetch full price details with product
     const price = await stripe.prices.retrieve(priceId, {
-      expand: ["product"],
-    });
-
-    logger.info("[STRIPE TIER] Fetched price details", {
-      priceId: price.id,
-      hasMetadata: !!price.metadata,
-      productId: typeof price.product === "string" ? price.product : price.product.id,
-    });
 
     // 1. Check price metadata first - use raw value from Stripe
     if (price.metadata?.tier) {
       const tier = price.metadata.tier.toLowerCase().trim() as SubscriptionTier;
-      logger.info("[STRIPE TIER] Found tier in price metadata", {
-        tier,
-        rawValue: price.metadata.tier,
-      });
+      
       // Validate it's a valid tier
       if (["starter", "pro", "enterprise"].includes(tier)) {
         return tier;
       }
-      logger.warn("[STRIPE TIER] Invalid tier in price metadata, falling back", {
-        tier,
-        rawValue: price.metadata.tier,
-      });
+      
     }
 
     // 2. Check product metadata - use raw value from Stripe
@@ -65,41 +40,26 @@ export async function getTierFromStripeSubscription(
     // Type guard: Check if product is not deleted and has metadata
     if (product && !product.deleted && "metadata" in product && product.metadata?.tier) {
       const tier = product.metadata.tier.toLowerCase().trim() as SubscriptionTier;
-      logger.info("[STRIPE TIER] Found tier in product metadata", {
-        tier,
-        rawValue: product.metadata.tier,
-      });
+      
       // Validate it's a valid tier
       if (["starter", "pro", "enterprise"].includes(tier)) {
         return tier;
       }
-      logger.warn("[STRIPE TIER] Invalid tier in product metadata, falling back", {
-        tier,
-        rawValue: product.metadata.tier,
-      });
+      
     }
 
     // 3. Parse from product name
     if (product && !product.deleted && "name" in product && product.name) {
       const tier = parseTierFromName(product.name);
-      logger.info("[STRIPE TIER] Parsed tier from product name", {
-        tier,
-        productName: product.name,
-      });
+      
       return tier;
     }
 
     // 4. Default
-    logger.warn("[STRIPE TIER] Could not determine tier, defaulting to starter", {
-      priceId: price.id,
-      productName: product && "name" in product ? product.name : "unknown",
-    });
+    
     return "starter";
   } catch (error) {
-    logger.error("[STRIPE TIER] Error extracting tier", {
-      error: error instanceof Error ? error.message : String(error),
-      subscriptionId: subscription.id,
-    });
+
     return "starter";
   }
 }

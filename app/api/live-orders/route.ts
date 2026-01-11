@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -50,9 +49,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      logger.error("[LIVE ORDERS] Error", {
-        error: error.message,
-      });
+      
       return apiErrors.database(error.message);
     }
 
@@ -68,7 +65,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       })) || [];
 
     const response = {
-      orders: transformedOrders,
+
     };
 
     // Cache the response for 30 seconds (live orders change frequently)
@@ -79,11 +76,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-    logger.error("[LIVE ORDERS] Unexpected error:", {
-      error: errorMessage,
-      stack: errorStack,
-      venueId: context.venueId,
-    });
+    
 
     // Check if it's an authentication/authorization error
     if (errorMessage.includes("Unauthorized")) {
@@ -98,4 +91,3 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       isDevelopment() && errorStack ? { stack: errorStack } : undefined
     );
   }
-});

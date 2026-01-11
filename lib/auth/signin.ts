@@ -1,7 +1,6 @@
 "use client";
 import { createClient } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/auth";
-import { authLogger as logger } from "@/lib/logger";
 
 export async function signInWithGoogle() {
   const sb = await createClient();
@@ -16,26 +15,14 @@ export async function signInWithGoogle() {
 
   const redirectTo = getAuthRedirectUrl("/auth/callback");
 
-  logger.debug("[AUTH] Environment check:", {
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NODE_ENV: process.env.NODE_ENV,
-    origin: window.location.origin,
-  });
+  
 
-  logger.debug("[AUTH] Supabase config check:", {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + "...",
-    hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  });
+   + "...",
 
   // Test Supabase connection before OAuth
   try {
     const { data: testData, error: testError } = await sb.auth.getSession();
-    logger.debug("[AUTH] Session test:", {
-      hasTestData: !!testData,
-      hasTestError: !!testError,
-      testErrorMessage: testError?.message,
-    });
+    
   } catch (e) {
     // Error handled
   }
@@ -49,24 +36,9 @@ export async function signInWithGoogle() {
   }
 
   const { data, error } = await sb.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: redirectTo,
-      queryParams: {
-        prompt: "select_account",
-        access_type: "offline",
+
       },
     },
-  });
-
-  logger.debug("[AUTH] OAuth result:", {
-    hasData: !!data,
-    hasError: !!error,
-    errorMessage: error?.message,
-    errorStatus: error?.status,
-    hasUrl: !!data?.url,
-    urlLength: data?.url?.length,
-  });
 
   if (error) {
     throw error;

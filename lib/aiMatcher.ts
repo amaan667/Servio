@@ -6,15 +6,9 @@
  */
 
 import { getOpenAI } from "./openai";
-import { logger } from "./logger";
 
 export interface MatchableMenuItem {
-  name: string;
-  description?: string;
-  price?: number;
-  category?: string;
-  image_url?: string;
-  name_normalized?: string;
+
 }
 
 /**
@@ -22,8 +16,7 @@ export interface MatchableMenuItem {
  * Returns confidence score (0-1) and reasoning
  */
 export async function matchItemsWithAI(
-  pdfItem: MatchableMenuItem,
-  urlItem: MatchableMenuItem
+
 ): Promise<{ isSame: boolean; confidence: number; reasoning: string }> {
   const openai = getOpenAI();
 
@@ -41,19 +34,6 @@ Description: "${urlItem.description || "N/A"}"
 Price: £${urlItem.price || "N/A"}
 Category: "${urlItem.category || "N/A"}"
 
-QUESTION: Are these the SAME menu item?
-
-CONSIDER:
-- Name variations: "Pain au Chocolat" = "Chocolate Croissant"
-- Word order: "Chicken Shawarma Wrap" = "Shawarma Wrap Chicken"
-- Abbreviations: "Black (Americano / Long Black)" = "Long Black"
-- Descriptions: Similar ingredients/descriptions = likely same item
-- Price: Similar price is strong evidence (within £2)
-- Category: Same category is good evidence
-
-RESPOND WITH JSON:
-{
-  "is_same": true/false,
   "confidence": 0.0-1.0,
   "reasoning": "brief explanation"
 }
@@ -64,12 +44,10 @@ Example responses:
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.1,
-      max_tokens: 100,
+
       response_format: { type: "json_object" },
-    });
 
     const content = response.choices[0]?.message?.content?.trim();
     if (!content) {
@@ -78,28 +56,16 @@ Example responses:
 
     const result = JSON.parse(content);
 
-    logger.info("[AI MATCHER] Match result", {
-      pdf: pdfItem.name,
-      url: urlItem.name,
-      isSame: result.is_same,
-      confidence: result.confidence,
-      reasoning: result.reasoning,
-    });
+    
 
     return {
-      isSame: result.is_same === true,
-      confidence: result.confidence || 0.5,
-      reasoning: result.reasoning || "Unknown",
+
     };
   } catch (error) {
-    logger.error("[AI MATCHER] Failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
 
     // Fallback: conservative approach - don't match if unsure
     return {
-      isSame: false,
-      confidence: 0.5,
+
       reasoning: "AI matching failed, defaulting to no match",
     };
   }
@@ -109,8 +75,7 @@ Example responses:
  * Batch match multiple items (more efficient)
  */
 export async function batchMatchItemsWithAI(
-  pdfItem: MatchableMenuItem,
-  urlItems: MatchableMenuItem[]
+
 ): Promise<{ item: MatchableMenuItem; confidence: number } | null> {
   // If only a few items, check them all
   if (urlItems.length <= 5) {
@@ -127,7 +92,6 @@ export async function batchMatchItemsWithAI(
   const priceFiltered = urlItems.filter((u) => {
     if (!pdfItem.price || !u.price) return true;
     return Math.abs(pdfItem.price - u.price) <= 3.0;
-  });
 
   for (const urlItem of priceFiltered.slice(0, 3)) {
     const result = await matchItemsWithAI(pdfItem, urlItem);

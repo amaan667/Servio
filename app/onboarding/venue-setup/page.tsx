@@ -35,7 +35,7 @@ export default function OnboardingVenueSetupPage() {
     friday: { open: "09:00", close: "17:00", closed: false },
     saturday: { open: "09:00", close: "17:00", closed: false },
     sunday: { open: "09:00", close: "17:00", closed: false },
-  });
+
   const [taxRate, setTaxRate] = useState("20"); // Default UK VAT
   const [taxIncluded, setTaxIncluded] = useState(true);
 
@@ -131,10 +131,7 @@ export default function OnboardingVenueSetupPage() {
 
       if (!session?.user) {
         toast({
-          title: "Error",
-          description: "Please sign in to upload logo",
-          variant: "destructive",
-        });
+
         setUploadingLogo(false);
         return;
       }
@@ -144,9 +141,8 @@ export default function OnboardingVenueSetupPage() {
       if (!currentVenueId) {
         // Create organization/venue first
         const response = await fetch("/api/signup/complete-onboarding", {
-          method: "POST",
+
           headers: { "Content-Type": "application/json" },
-        });
 
         const data = await response.json();
         if (!response.ok || !data.success || !data.venueId) {
@@ -160,10 +156,9 @@ export default function OnboardingVenueSetupPage() {
       // Ensure bucket exists
       try {
         await supabase.storage.createBucket("venue-assets", {
-          public: true,
+
           allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"],
-          fileSizeLimit: 2097152,
-        });
+
       } catch (bucketError: unknown) {
         if (!(bucketError as Error).message?.includes("already exists")) {
           // Bucket creation failed but not because it exists
@@ -186,22 +181,12 @@ export default function OnboardingVenueSetupPage() {
 
       // Save to menu_design_settings
       await supabase.from("menu_design_settings").upsert({
-        venue_id: currentVenueId,
-        logo_url: urlData.publicUrl,
-        updated_at: new Date().toISOString(),
-      });
 
       toast({
-        title: "Logo uploaded!",
-        description: "Your logo has been saved successfully.",
-      });
+
     } catch (_error) {
       toast({
-        title: "Upload failed",
-        description:
-          _error instanceof Error ? _error.message : "Failed to upload logo. Please try again.",
-        variant: "destructive",
-      });
+
     } finally {
       setUploadingLogo(false);
     }
@@ -224,9 +209,8 @@ export default function OnboardingVenueSetupPage() {
       // If venue doesn't exist yet, create organization and venue first
       if (!venueId) {
         const response = await fetch("/api/signup/complete-onboarding", {
-          method: "POST",
+
           headers: { "Content-Type": "application/json" },
-        });
 
         const data = await response.json();
 
@@ -243,21 +227,14 @@ export default function OnboardingVenueSetupPage() {
         await supabase
           .from("venues")
           .update({
-            address: fullAddress || null,
-            phone: phone || null,
-          })
+
           .eq("venue_id", venueId || "");
       }
 
       // Save business hours
       if (venueId) {
         await supabase.from("venue_settings").upsert({
-          venue_id: venueId,
-          business_hours: businessHours,
-          tax_rate: parseFloat(taxRate) || 0,
-          tax_included: taxIncluded,
-          updated_at: new Date().toISOString(),
-        });
+
       }
 
       // Store progress (both local and server-side)
@@ -268,18 +245,12 @@ export default function OnboardingVenueSetupPage() {
       );
 
       toast({
-        title: "Setup complete!",
-        description: "Moving to menu setup...",
-      });
 
       // Move to next step
       router.push("/onboarding/menu");
     } catch (_error) {
       toast({
-        title: "Failed to save",
-        description: _error instanceof Error ? _error.message : "Please try again.",
-        variant: "destructive",
-      });
+
     } finally {
       setSaving(false);
     }
@@ -293,8 +264,7 @@ export default function OnboardingVenueSetupPage() {
         return "Pro Plan";
       case "enterprise":
         return "Enterprise Plan";
-      default:
-        return "Your Plan";
+
     }
   };
 
@@ -430,7 +400,7 @@ export default function OnboardingVenueSetupPage() {
                       setBusinessHours({
                         ...businessHours,
                         [day]: { ...hours, closed: !e.target.checked },
-                      })
+
                     }
                     className="rounded"
                     disabled={saving}
@@ -444,7 +414,7 @@ export default function OnboardingVenueSetupPage() {
                           setBusinessHours({
                             ...businessHours,
                             [day]: { ...hours, open: e.target.value },
-                          })
+
                         }
                         className="w-32"
                         disabled={saving}
@@ -457,7 +427,7 @@ export default function OnboardingVenueSetupPage() {
                           setBusinessHours({
                             ...businessHours,
                             [day]: { ...hours, close: e.target.value },
-                          })
+
                         }
                         className="w-32"
                         disabled={saving}

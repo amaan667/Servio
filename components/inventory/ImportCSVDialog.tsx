@@ -16,23 +16,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, CheckCircle, XCircle } from "lucide-react";
 
 interface ImportCSVDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  venueId: string;
-  onSuccess: () => void;
+
 }
 
 interface CSVError {
-  row: number;
-  error: string;
+
 }
 
 interface ImportResult {
-  success: boolean;
-  error_count: number;
-  imported_count?: number;
-  error?: string;
-  errors?: CSVError[];
+
 }
 
 export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: ImportCSVDialogProps) {
@@ -53,9 +45,6 @@ export function ImportCSVDialog({ open, onOpenChange, venueId, onSuccess }: Impo
       formData.append("venue_id", venueId);
 
       const response = await fetch("/api/inventory/import/csv", {
-        method: "POST",
-        body: formData,
-      });
 
       const data = await response.json();
       setResult(data);

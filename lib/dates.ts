@@ -8,10 +8,7 @@ export function todayWindowForTZ(tz: string | undefined) {
 
   // Format current date components in the target timezone as YYYY-MM-DD
   const todayYmd = new Intl.DateTimeFormat("en-CA", {
-    timeZone: zone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+
   }).format(new Date());
 
   // Local midnight and next midnight in that timezone
@@ -23,8 +20,7 @@ export function todayWindowForTZ(tz: string | undefined) {
     new Date(d.toLocaleString("en-US", { timeZone: "UTC" })).toISOString();
 
   return {
-    startUtcISO: toUtcIso(startLocal),
-    endUtcISO: toUtcIso(endLocal),
+
   };
 }
 
@@ -39,8 +35,7 @@ export function todayPlus30MinWindow() {
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
 
   return {
-    startUtcISO: thirtyMinutesAgo.toISOString(),
-    endUtcISO: now.toISOString(),
+
   };
 }
 
@@ -50,8 +45,7 @@ export function liveOrdersWindow() {
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
 
   const result = {
-    startUtcISO: thirtyMinutesAgo.toISOString(),
-    endUtcISO: now.toISOString(),
+
   };
 
   return result;

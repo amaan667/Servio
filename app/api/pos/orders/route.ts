@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -52,11 +51,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      logger.error("[POS ORDERS] Error fetching orders:", {
-        error: fetchError.message,
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to fetch POS orders",
         isDevelopment() ? fetchError.message : undefined
@@ -72,13 +67,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       }) => {
         const tablesArray = Array.isArray(order.tables)
           ? order.tables
-          : order.tables
-            ? [order.tables]
-            : [];
+
         const tableLabel = tablesArray[0]?.label || `Table ${order.table_number || ""}`;
         return {
           ...order,
-          table_label: tableLabel,
+
         };
       }
     );
@@ -88,21 +81,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     // STEP 6: Cache the response for 1 minute
     await cache.set(cacheKey, response, { ttl: 60 });
 
-    logger.info("[POS ORDERS] Orders fetched successfully", {
-      venueId,
-      orderCount: transformedOrders.length,
-      userId: context.user.id,
-    });
+    
 
     // STEP 7: Return success response
     return success(response);
   } catch (error) {
-    logger.error("[POS ORDERS] Unexpected error:", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      venueId: context.venueId,
-      userId: context.user.id,
-    });
 
     if (isZodError(error)) {
       return handleZodError(error);
@@ -110,4 +93,3 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
-});

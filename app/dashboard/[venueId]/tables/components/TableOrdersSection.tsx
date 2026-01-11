@@ -3,7 +3,7 @@ import type { TableOrder } from "@/hooks/useTableOrders";
 
 interface TableOrdersSectionProps {
   groupedTableOrders: { [key: string]: unknown[] };
-  venueId: string;
+
 }
 
 export function TableOrdersSection({ groupedTableOrders, venueId }: TableOrdersSectionProps) {

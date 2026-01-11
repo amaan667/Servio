@@ -4,14 +4,10 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
 import { trackOrderError } from "@/lib/monitoring/error-tracking";
 
 export interface TransactionResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  rollback?: () => Promise<void>;
+
 }
 
 /**
@@ -19,7 +15,7 @@ export interface TransactionResult<T> {
  * Note: Supabase doesn't support true transactions, so we use best-effort rollback
  */
 export async function createOrderWithKDSTickets<T>(
-  supabase: SupabaseClient,
+
   orderData: Record<string, unknown>,
   createKDSTicketsFn: (supabase: SupabaseClient, order: T) => Promise<void>
 ): Promise<TransactionResult<T>> {
@@ -35,12 +31,9 @@ export async function createOrderWithKDSTickets<T>(
       .single();
 
     if (orderError || !insertedOrder) {
-      logger.error("[TRANSACTION] Order creation failed", {
-        error: orderError?.message,
-      });
+      
       return {
-        success: false,
-        error: orderError?.message || "Failed to create order",
+
       };
     }
 
@@ -51,56 +44,36 @@ export async function createOrderWithKDSTickets<T>(
     try {
       await createKDSTicketsFn(supabase, createdOrder);
     } catch (kdsError) {
-      logger.warn("[TRANSACTION] KDS ticket creation failed", {
-        orderId: createdOrderId,
-        error: kdsError instanceof Error ? kdsError.message : "Unknown error",
-      });
+      
 
       // Track but don't fail - KDS tickets are non-critical
       trackOrderError(kdsError, {
-        orderId: createdOrderId,
-        action: "kds_ticket_creation",
-      });
 
       // Continue - order is created successfully even if KDS fails
     }
 
     return {
-      success: true,
-      data: createdOrder,
-      rollback: async () => {
-        if (createdOrderId) {
-          logger.warn("[TRANSACTION] Rolling back order creation", {
-            orderId: createdOrderId,
-          });
+
           await supabase.from("orders").delete().eq("id", createdOrderId);
         }
       },
     };
   } catch (error) {
-    logger.error("[TRANSACTION] Unexpected error in order creation", {
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    
 
     trackOrderError(error, {
-      action: "order_creation_transaction",
-    });
 
     // Attempt rollback if order was created
     if (createdOrderId) {
       try {
         await supabase.from("orders").delete().eq("id", createdOrderId);
       } catch (rollbackError) {
-        logger.error("[TRANSACTION] Rollback failed", {
-          orderId: createdOrderId,
-          error: rollbackError instanceof Error ? rollbackError.message : "Unknown error",
-        });
+        
       }
     }
 
     return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+
     };
   }
 }
@@ -109,8 +82,7 @@ export async function createOrderWithKDSTickets<T>(
  * Validate order data before creation
  */
 export function validateOrderData(orderData: Record<string, unknown>): {
-  isValid: boolean;
-  error?: string;
+
 } {
   // Required fields
   if (!orderData.venue_id || typeof orderData.venue_id !== "string") {

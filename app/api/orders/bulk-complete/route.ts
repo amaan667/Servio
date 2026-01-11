@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
         .in("order_status", ["PLACED", "IN_PREP", "READY", "SERVING"]);
 
       if (fetchError) {
-        logger.error("[BULK COMPLETE] Error fetching active orders:", { value: fetchError });
+        
         return apiErrors.internal("Failed to fetch active orders");
       }
 
@@ -36,10 +35,7 @@ export async function POST(req: Request) {
 
     if (targetOrderIds.length === 0) {
       return NextResponse.json({
-        success: true,
-        completedCount: 0,
-        message: "No active orders to complete",
-      });
+
     }
 
     // CRITICAL: Verify all orders are paid before bulk completing
@@ -50,7 +46,7 @@ export async function POST(req: Request) {
       .eq("venue_id", venueId);
 
     if (fetchError) {
-      logger.error("[BULK COMPLETE] Error fetching orders:", { value: fetchError });
+      
       return apiErrors.internal("Failed to fetch orders");
     }
 
@@ -64,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: `Cannot complete ${unpaidOrders.length} unpaid order(s). All orders must be PAID or TILL before completion.`,
-          unpaid_order_ids: unpaidOrders.map((o) => o.id),
+
         },
         { status: 400 }
       );
@@ -76,9 +72,8 @@ export async function POST(req: Request) {
       ordersToComplete?.filter((order) => !completableStatuses.includes(order.order_status)) || [];
 
     if (nonCompletableOrders.length > 0) {
-      logger.warn("[BULK COMPLETE] Some orders not in completable status", {
-        order_ids: nonCompletableOrders.map((o) => o.id),
-      });
+       => o.id),
+
       // Continue with completable orders only
       const completableOrderIds =
         ordersToComplete
@@ -100,10 +95,7 @@ export async function POST(req: Request) {
     // Update all orders to COMPLETED using unified lifecycle RPC (atomic eligibility check)
     // This ensures completion_status is set correctly and triggers any database-level cleanup
     const completedOrders: Array<{
-      id: string;
-      table_id?: string | null;
-      table_number?: number | null;
-      source?: string;
+
     }> = [];
 
     for (const orderId of targetOrderIds) {
@@ -111,19 +103,12 @@ export async function POST(req: Request) {
         const { data: completedRows, error: completeError } = await supabase.rpc(
           "orders_complete",
           {
-            p_order_id: orderId,
-            p_venue_id: venueId,
-            p_forced: false,
-            p_forced_by: null,
-            p_forced_reason: null,
+
           }
         );
 
         if (completeError) {
-          logger.warn("[BULK COMPLETE] Failed to complete order via RPC:", {
-            orderId,
-            error: completeError.message,
-          });
+          
           // Fallback: try direct update if RPC fails (backward compatibility)
           const { data: fallbackOrder } = await supabase
             .from("orders")
@@ -134,11 +119,7 @@ export async function POST(req: Request) {
             await supabase
               .from("orders")
               .update({
-                order_status: "COMPLETED",
-                completion_status: "COMPLETED",
-                completed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
+
               .eq("id", orderId);
             completedOrders.push(fallbackOrder);
           }
@@ -154,10 +135,7 @@ export async function POST(req: Request) {
           }
         }
       } catch (error) {
-        logger.error("[BULK COMPLETE] Error completing order:", {
-          orderId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+
       }
     }
 
@@ -173,9 +151,7 @@ export async function POST(req: Request) {
           tableCleanupTasks.push(
             cleanupTableOnOrderCompletion({
               venueId: venueId, // Use the venueId from the request parameter
-              tableId: order.table_id || undefined,
-              tableNumber: order.table_number?.toString() || undefined,
-            })
+
           );
         }
       }
@@ -187,17 +163,13 @@ export async function POST(req: Request) {
       cleanupResults.forEach((result, index) => {
         if (result.status === "fulfilled") {
           if (result.value.success) {
-            logger.debug(
-              `[BULK COMPLETE] Table cleanup ${index + 1} successful:`,
-              result.value.details
-            );
+            
           } else {
-            logger.error(`[BULK COMPLETE] Table cleanup ${index + 1} failed:`, result.value.error);
+            
           }
         } else {
-          logger.error(`[BULK COMPLETE] Table cleanup ${index + 1} rejected:`, result.reason);
+          
         }
-      });
 
       // Legacy table deletion logic (commented out - use cleanup instead)
       /*
@@ -218,7 +190,7 @@ export async function POST(req: Request) {
             .single();
 
           if (tableDetailsError) {
-            logger.error('[BULK COMPLETE] Error fetching table details:', { value: tableDetailsError });
+            
             continue; // Skip this table if we can't get details
           }
 
@@ -230,8 +202,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (clearTableRefsError) {
-            logger.error('[BULK COMPLETE] Error clearing table references in orders:', { value: clearTableRefsError });
-            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
+            
+            
           } else {
       // Intentionally empty
     }
@@ -244,8 +216,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteSessionError) {
-            logger.error('[BULK COMPLETE] Error deleting table sessions:', { value: deleteSessionError });
-            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
+            
+            
           } else {
       // Intentionally empty
     }
@@ -258,8 +230,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteRuntimeError) {
-            logger.error('[BULK COMPLETE] Error deleting table runtime state:', { value: deleteRuntimeError });
-            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
+            
+            
           } else {
       // Intentionally empty
     }
@@ -272,8 +244,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteGroupSessionError) {
-            logger.error('[BULK COMPLETE] Error deleting group sessions:', { value: deleteGroupSessionError });
-            logger.warn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
+            
+            
           } else {
       // Intentionally empty
     }
@@ -286,33 +258,25 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteTableError) {
-            logger.error('[BULK COMPLETE] Error deleting table:', { value: deleteTableError });
-            logger.error('[BULK COMPLETE] Error details:', {
-              message: deleteTableError.message,
-              details: deleteTableError.details,
-              hint: deleteTableError.hint,
-              code: deleteTableError.code
-            });
+            
+            
           } else {
       // Intentionally empty
     }
           
         } catch (tableError) {
-          logger.error('[BULK COMPLETE] Error handling table cleanup for table:', { error: tableId, context: tableError });
+          
         }
       }
       */
     }
 
     return NextResponse.json({
-      success: true,
-      completedCount: updatedOrders?.length || 0,
+
       message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`,
-    });
+
   } catch (_error) {
-    logger.error("[BULK COMPLETE] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
 }

@@ -7,42 +7,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { getAccessContext } from "@/lib/access/getAccessContext";
 
 export interface Venue {
-  venue_id: string;
-  owner_user_id: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  created_at: string;
-  updated_at: string;
-  [key: string]: unknown;
+
 }
 
 export interface User {
-  id: string;
-  email?: string;
-  [key: string]: unknown;
+
 }
 
 export interface VenueAccess {
-  venue: Venue;
-  user: User;
-  role: string;
-  tier: string;
-  venue_ids: string[];
+
 }
 
 export interface AuthorizedContext {
-  venue: Venue;
-  user: User;
-  role: string;
-  venueId: string;
-  tier: string;
-  venue_ids: string[];
+
 }
 
 /**
@@ -50,35 +30,18 @@ export interface AuthorizedContext {
  * Uses unified get_access_context RPC for single database call
  */
 export async function verifyVenueAccess(
-  venueId: string,
-  userId: string
-): Promise<VenueAccess | null> {
-  try {
-    // Use unified access context RPC - single database call for all access info
-    const accessContext = await getAccessContext(venueId);
 
-    if (!accessContext) {
-      logger.warn("[VENUE ACCESS] Access denied - no context returned", { venueId, userId });
-      return null;
     }
 
     // Verify the access context matches the requested user
     if (accessContext.user_id !== userId) {
-      logger.warn("[VENUE ACCESS] User ID mismatch", {
-        requested: userId,
-        context: accessContext.user_id,
-        venueId
-      });
+      
       return null;
     }
 
     // Verify venue access
     if (accessContext.venue_id !== venueId) {
-      logger.warn("[VENUE ACCESS] Venue ID mismatch", {
-        requested: venueId,
-        context: accessContext.venue_id,
-        userId
-      });
+      
       return null;
     }
 
@@ -91,34 +54,19 @@ export async function verifyVenueAccess(
       .single();
 
     if (venueError || !venue) {
-      logger.error("[VENUE ACCESS] Venue fetch failed", {
-        venueId,
-        userId,
-        error: venueError?.message
-      });
+      
       return null;
     }
 
-    logger.debug("[VENUE ACCESS] Access granted", {
-      userId,
-      venueId,
-      role: accessContext.role,
-      tier: accessContext.tier
-    });
+    
 
     return {
       venue,
       user: { id: userId },
-      role: accessContext.role,
-      tier: accessContext.tier,
-      venue_ids: accessContext.venue_ids,
+
     };
   } catch (error) {
-    logger.error("[VENUE ACCESS] Error verifying venue access", {
-      venueId,
-      userId,
-      error: error instanceof Error ? error.message : String(error)
-    });
+
     return null;
   }
 }
@@ -129,7 +77,7 @@ export async function verifyVenueAccess(
  * but ensures the venue exists and is accessible
  */
 export async function verifyVenueExists(
-  venueId: string
+
 ): Promise<{ valid: boolean; venue?: Venue; error?: string }> {
   try {
     const supabase = await createSupabaseClient();
@@ -143,18 +91,18 @@ export async function verifyVenueExists(
       .maybeSingle();
 
     if (venueError) {
-      logger.warn("[VENUE VERIFY] Venue lookup error", { venueId, error: venueError.message });
+      
       return { valid: false, error: venueError.message };
     }
 
     if (!venue) {
-      logger.warn("[VENUE VERIFY] Venue not found", { venueId });
+      
       return { valid: false, error: "Venue not found" };
     }
 
     return { valid: true, venue };
   } catch (error) {
-    logger.error("[VENUE VERIFY] Error verifying venue", { venueId, error });
+    
     return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
@@ -164,8 +112,7 @@ export async function verifyVenueExists(
  * Ensures cross-venue access is prevented
  */
 export async function verifyOrderVenueAccess(
-  orderId: string,
-  venueId: string
+
 ): Promise<{ valid: boolean; error?: string }> {
   try {
     const supabase = await createSupabaseClient();
@@ -178,29 +125,18 @@ export async function verifyOrderVenueAccess(
       .maybeSingle();
 
     if (orderError) {
-      logger.warn("[ORDER VENUE VERIFY] Order lookup error", {
-        orderId,
-        venueId,
-        error: orderError.message,
-      });
+      
       return { valid: false, error: orderError.message };
     }
 
     if (!order) {
-      logger.warn("[ORDER VENUE VERIFY] Order not found or doesn't belong to venue", {
-        orderId,
-        venueId,
-      });
+      
       return { valid: false, error: "Order not found or access denied" };
     }
 
     return { valid: true };
   } catch (error) {
-    logger.error("[ORDER VENUE VERIFY] Error verifying order venue access", {
-      orderId,
-      venueId,
-      error,
-    });
+    
     return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
@@ -256,15 +192,11 @@ export function withAuthorization(
 
       // Call handler with authorized context
       return await handler(req, {
-        venue: access.venue,
-        user: access.user,
-        role: access.role,
+
         venueId,
-        tier: access.tier,
-        venue_ids: access.venue_ids,
-      });
+
     } catch (_error) {
-      logger.error("Authorization middleware error", { error: _error });
+      
       return NextResponse.json(
         { error: "Internal Server Error", message: "Authorization failed" },
         { status: 500 }
@@ -305,15 +237,11 @@ export function withOptionalAuth(
 
       // Call handler with authorized context
       return await handler(req, {
-        venue: access.venue,
-        user: access.user,
-        role: access.role,
+
         venueId,
-        tier: access.tier,
-        venue_ids: access.venue_ids,
-      });
+
     } catch (_error) {
-      logger.error("Optional auth middleware error", { error: _error });
+      
       return await handler(req, null);
     }
   };

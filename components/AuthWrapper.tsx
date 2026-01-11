@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import { useAuth } from "@/app/auth/AuthProvider";
 
 interface AuthWrapperProps {
-  children: ReactNode;
+
 }
 
 export default function AuthWrapper({ children }: AuthWrapperProps) {

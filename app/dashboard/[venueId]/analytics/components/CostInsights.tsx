@@ -16,38 +16,17 @@ import {
 import { supabaseBrowser } from "@/lib/supabase";
 
 interface MenuItemProfitability {
-  menu_item_id: string;
-  name: string;
-  category: string;
-  price: number;
-  cogs: number; // Cost of Goods Sold
-  revenue: number;
-  quantity_sold: number;
-  profit: number;
-  margin_percentage: number;
+
 }
 
 interface CostInsightsData {
-  totalRevenue: number;
-  totalCOGS: number;
-  grossProfit: number;
-  grossMargin: number;
-  averageMargin: number;
-  itemProfitability: MenuItemProfitability[];
-  categoryBreakdown: Array<{
-    category: string;
-    revenue: number;
-    cogs: number;
-    profit: number;
-    margin: number;
+
   }>;
-  lowMarginItems: MenuItemProfitability[];
-  highMarginItems: MenuItemProfitability[];
+
 }
 
 interface CostInsightsProps {
-  venueId: string;
-  timePeriod?: "7d" | "30d" | "90d" | "all";
+
 }
 
 export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps) {
@@ -78,8 +57,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
         case "90d":
           startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
           break;
-        default:
-          startDate = new Date(0); // All time
+
       }
 
       // Fetch all data in parallel for faster loading
@@ -116,33 +94,26 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
             `
             menu_item_id,
             qty_per_item,
-            ingredient:ingredients(cost_per_unit)
-          `
-          )
-          .in(
-            "menu_item_id",
+
             menuItems.map((item) => item.id)
           );
 
         // Process recipes
         if (allRecipes) {
           type RecipeType = {
-            menu_item_id: string;
-            qty_per_item: number;
+
             ingredient?: { cost_per_unit: number } | null;
           };
           const recipeMap = new Map<string, RecipeType[]>();
           allRecipes.forEach((recipe: unknown) => {
             const recipeTyped = recipe as {
-              menu_item_id: string;
-              qty_per_item: number;
+
               ingredient?: { cost_per_unit: number } | null;
             };
             if (!recipeMap.has(recipeTyped.menu_item_id)) {
               recipeMap.set(recipeTyped.menu_item_id, []);
             }
             recipeMap.get(recipeTyped.menu_item_id)!.push(recipeTyped);
-          });
 
           // Calculate costs for each item
           menuItems.forEach((item) => {
@@ -152,7 +123,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
               return sum + ingredientCost * (recipe.qty_per_item || 0);
             }, 0);
             recipeCosts.set(item.id, totalCost);
-          });
+
         }
       }
 
@@ -195,19 +166,15 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
             const profit = revenue - cogs;
             const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
             itemStats.set(menuItemId, {
-              menu_item_id: menuItemId,
-              name: itemName,
+
               category,
               price,
-              cogs: cogs,
+
               revenue,
-              quantity_sold: quantity,
+
               profit,
-              margin_percentage: margin,
-            });
+
           }
-        });
-      });
 
       const itemProfitability = Array.from(itemStats.values());
 
@@ -220,9 +187,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
         itemProfitability.length > 0
           ? itemProfitability.reduce((sum, item) => sum + item.margin_percentage, 0) /
             itemProfitability.length
-          : 0;
 
-      // Category breakdown
       const categoryMap = new Map<string, { revenue: number; cogs: number; profit: number }>();
       itemProfitability.forEach((item) => {
         const existing = categoryMap.get(item.category);
@@ -232,17 +197,13 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
           existing.profit += item.profit;
         } else {
           categoryMap.set(item.category, {
-            revenue: item.revenue,
-            cogs: item.cogs,
-            profit: item.profit,
-          });
+
         }
-      });
 
       const categoryBreakdown = Array.from(categoryMap.entries()).map(([category, stats]) => ({
         category,
         ...stats,
-        margin: stats.revenue > 0 ? (stats.profit / stats.revenue) * 100 : 0,
+
       }));
 
       // Sort items by margin
@@ -262,7 +223,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
         categoryBreakdown,
         lowMarginItems,
         highMarginItems,
-      });
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load cost insights");
     }
@@ -566,9 +527,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
                             className={`text-right py-2 px-2 text-sm font-semibold ${
                               item.margin_percentage >= 30
                                 ? "text-green-600"
-                                : item.margin_percentage >= 10
-                                  ? "text-yellow-600"
-                                  : "text-red-600"
+
                             }`}
                           >
                             {item.margin_percentage.toFixed(1)}%
@@ -600,9 +559,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
                           className={`font-semibold ${
                             cat.margin >= 30
                               ? "text-green-600"
-                              : cat.margin >= 10
-                                ? "text-yellow-600"
-                                : "text-red-600"
+
                           }`}
                         >
                           {cat.margin.toFixed(1)}% margin
@@ -627,9 +584,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
                           className={`h-2 rounded-full ${
                             cat.margin >= 30
                               ? "bg-green-500"
-                              : cat.margin >= 10
-                                ? "bg-yellow-500"
-                                : "bg-red-500"
+
                           }`}
                           style={{ width: `${Math.min(cat.margin, 100)}%` }}
                         ></div>
@@ -707,11 +662,7 @@ function MetricCard({
   icon,
   trend,
 }: {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  trend?: number;
+
 }) {
   return (
     <Card>

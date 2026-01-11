@@ -23,9 +23,7 @@ export async function canExportData(tier: string, userRole: UserRole): Promise<b
  * Check if user can access a feature with both role and tier checks
  */
 export async function canAccessFeature(
-  tier: string,
-  userRole: UserRole,
-  feature: string,
+
   tierFeature?: keyof import("@/lib/tier-restrictions").TierLimits["features"]
 ): Promise<{ allowed: boolean; reason?: string; currentTier?: string; requiredTier?: string }> {
   return checkAccessByTier(userRole, tier, feature, tierFeature);
@@ -35,14 +33,10 @@ export async function canAccessFeature(
  * Check if user can create a resource (staff, table, etc.)
  */
 export async function canCreateResource(
-  tier: string,
-  resourceType: "staff" | "table" | "menuItem",
-  currentCount: number
+
 ): Promise<{ allowed: boolean; reason?: string; limit?: number; currentTier?: string }> {
   const limitTypeMap: Record<string, "maxStaff" | "maxTables" | "maxMenuItems"> = {
-    staff: "maxStaff",
-    table: "maxTables",
-    menuItem: "maxMenuItems",
+
   };
 
   const limitType = limitTypeMap[resourceType];
@@ -62,6 +56,6 @@ export async function canCreateResource(
     allowed,
     reason: allowed ? undefined : `Limit reached: ${currentCount}/${limit}`,
     limit,
-    currentTier: tierKey,
+
   };
 }

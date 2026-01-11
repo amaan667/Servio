@@ -3,11 +3,6 @@ import { z } from "zod";
 
 const dashboardLogSchema = z.object({
   level: z.enum(["info", "warn", "error"]).default("info"),
-  event: z.string(),
-  venueId: z.string().optional(),
-  timestamp: z.string().optional(),
-  details: z.record(z.unknown()).optional(),
-});
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,9 +12,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "Invalid log payload",
-          issues: parsed.error.issues,
+
         },
         { status: 400 }
       );
@@ -28,10 +21,9 @@ export async function POST(req: NextRequest) {
     const { level, event, venueId, timestamp, details } = parsed.data;
 
     const logPayload = {
-      source: "dashboard",
+
       event,
-      venueId: venueId ?? "unknown",
-      timestamp: timestamp ?? new Date().toISOString(),
+
       details: details ?? {},
     };
 
@@ -39,19 +31,13 @@ export async function POST(req: NextRequest) {
 
     // Use console.* so Railway always captures these logs from server runtime
     if (level === "error") {
-      console.error(message, logPayload);
-    } else if (level === "warn") {
-      console.warn(message, logPayload);
-    } else {
-      console.info(message, logPayload);
-    }
+          } else if (level === "warn") {
+          } else {
+          }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[DASHBOARD] Failed to write log", {
-      error: errorMessage,
-    });
-    return NextResponse.json({ ok: false }, { status: 500 });
+        return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

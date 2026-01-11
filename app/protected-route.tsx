@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import { useAuth } from "./auth/AuthProvider";
 
 interface ProtectedRouteProps {
-  children: ReactNode;
+
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {

@@ -4,33 +4,17 @@
  */
 
 interface AnalyticsMetric {
-  name: string;
-  value: number;
-  trend: "up" | "down" | "stable";
-  change: number;
-  period: string;
+
 }
 
 interface PredictiveInsight {
-  id: string;
-  type: "revenue" | "orders" | "customers" | "efficiency";
-  title: string;
-  description: string;
-  confidence: number;
-  impact: "high" | "medium" | "low";
-  recommendation: string;
-  timeframe: string;
+
 }
 
 interface BusinessIntelligence {
-  kpis: AnalyticsMetric[];
-  insights: PredictiveInsight[];
-  forecasts: {
-    revenue: number[];
-    orders: number[];
-    customers: number[];
+
   };
-  recommendations: string[];
+
 }
 
 class AnalyticsService {
@@ -41,34 +25,13 @@ class AnalyticsService {
     // Mock insights - integrate with AI service in production
     const mockInsights: PredictiveInsight[] = [
       {
-        id: "revenue-optimization",
-        type: "revenue",
-        title: "Revenue Optimization Opportunity",
-        description: "Peak hours show 40% higher revenue potential",
-        confidence: 0.85,
-        impact: "high",
-        recommendation: "Extend peak hour operations by 2 hours",
-        timeframe: "next_week",
+
       },
       {
-        id: "customer-retention",
-        type: "customers",
-        title: "Customer Retention Alert",
-        description: "Customer return rate decreased by 15% this month",
-        confidence: 0.92,
-        impact: "high",
-        recommendation: "Implement loyalty program and follow-up campaigns",
-        timeframe: "next_month",
+
       },
       {
-        id: "operational-efficiency",
-        type: "efficiency",
-        title: "Operational Efficiency Improvement",
-        description: "Table turnover time can be reduced by 20%",
-        confidence: 0.78,
-        impact: "medium",
-        recommendation: "Optimize staff scheduling and table management",
-        timeframe: "next_2_weeks",
+
       },
     ];
 
@@ -79,12 +42,7 @@ class AnalyticsService {
    * Generate revenue forecasts
    */
   async generateForecasts(
-    _venueId: string,
-    days: number = 30
-  ): Promise<{
-    revenue: number[];
-    orders: number[];
-    customers: number[];
+
   }> {
     // Placeholder forecasts - implement ML-based forecasting in production
     const forecasts = {
@@ -105,38 +63,23 @@ class AnalyticsService {
     // Mock KPIs - implement real calculations with venue data in production
     const kpis: AnalyticsMetric[] = [
       {
-        name: "Revenue",
-        value: 12500,
-        trend: "up",
-        change: 12.5,
+
         period,
       },
       {
-        name: "Orders",
-        value: 245,
-        trend: "up",
-        change: 8.3,
+
         period,
       },
       {
-        name: "Average Order Value",
-        value: 51.02,
-        trend: "stable",
-        change: 2.1,
+
         period,
       },
       {
-        name: "Customer Satisfaction",
-        value: 4.7,
-        trend: "up",
-        change: 5.2,
+
         period,
       },
       {
-        name: "Table Utilization",
-        value: 78.5,
-        trend: "down",
-        change: -3.2,
+
         period,
       },
     ];
@@ -188,8 +131,7 @@ export function pageview(url: string) {
     const windowWithGtag = window as Window & { gtag?: (...args: unknown[]) => void };
     if (windowWithGtag.gtag) {
       windowWithGtag.gtag("config", process.env.NEXT_PUBLIC_GA_ID, {
-        page_path: url,
-      });
+
     }
 
     // Plausible Analytics

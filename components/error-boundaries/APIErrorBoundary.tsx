@@ -5,13 +5,11 @@ import { trackError } from "@/lib/monitoring/error-tracking";
 import { AlertCircle } from "lucide-react";
 
 interface Props {
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+
 }
 
 interface State {
-  hasError: boolean;
-  error?: Error;
+
 }
 
 export class APIErrorBoundary extends React.Component<Props, State> {
@@ -26,9 +24,7 @@ export class APIErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     trackError(error, {
-      componentStack: errorInfo.componentStack,
-      boundary: "APIErrorBoundary",
-    });
+
   }
 
   render() {

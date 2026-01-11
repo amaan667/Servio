@@ -2,16 +2,7 @@ import { useState } from "react";
 import { CartItem, CustomerInfo } from "../types";
 
 interface OrderSubmissionParams {
-  cart: CartItem[];
-  customerInfo: CustomerInfo;
-  venueSlug: string;
-  tableNumber: string;
-  counterNumber: string;
-  orderLocation: string;
-  orderType: "counter" | "table";
-  isCounterOrder: boolean;
-  isDemo: boolean;
-  isDemoFallback: boolean;
+
 }
 
 export function useOrderSubmission() {
@@ -66,28 +57,17 @@ export function useOrderSubmission() {
       // For demo orders - skip customer info and go straight to order summary
       if (isDemo || isDemoFallback) {
         const orderData = {
-          venueId: venueSlug,
-          venueName: "Demo Café",
-          tableNumber: parseInt(orderLocation) || 1,
-          counterNumber: counterNumber,
-          orderType: orderType,
-          orderLocation: orderLocation,
+
           customerName: "Demo Customer", // Default name for demo
           customerPhone: "00000000000", // Default phone for demo
-          cart: cart.map((item) => ({
-            id: item.id && item.id.startsWith("demo-") ? null : item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            specialInstructions: item.specialInstructions || null,
+
             image: (item as { image?: unknown }).image || null,
           })),
           total: cart.reduce((total, item) => total + item.price * item.quantity, 0),
-          notes: cart
-            .filter((item) => item.specialInstructions)
+
             .map((item) => `${item.name}: ${item.specialInstructions}`)
             .join("; "),
-          isDemo: true,
+
         };
 
         localStorage.setItem("servio-pending-order", JSON.stringify(orderData));
@@ -105,75 +85,38 @@ export function useOrderSubmission() {
       localStorage.setItem("servio-current-session", sessionId);
 
       const checkoutData = {
-        venueId: venueSlug,
-        venueName: "Restaurant",
-        tableNumber: parseInt(orderLocation) || 1,
-        counterNumber: counterNumber,
+
         counterLabel: counterNumber ? `Counter ${counterNumber}` : null, // New: counter label
-        orderType: orderType,
-        orderLocation: orderLocation,
-        customerName: customerInfo.name.trim(),
-        customerPhone: customerInfo.phone.trim(),
-        cart: cart.map((item) => ({
-          id: item.id && item.id.startsWith("demo-") ? null : item.id,
-          name: item.name,
-          price: item.price + (item.modifierPrice || 0),
-          quantity: item.quantity,
-          specialInstructions: item.specialInstructions || null,
+
           image: (item as { image?: string | null }).image || null,
-          modifiers: item.selectedModifiers || null,
-          modifierPrice: item.modifierPrice || 0,
+
         })),
         total: cart.reduce((total, item) => {
           const itemPrice = item.price + (item.modifierPrice || 0);
           return total + itemPrice * item.quantity;
         }, 0),
-        notes: cart
-          .filter((item) => item.specialInstructions)
+
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
-        sessionId: sessionId,
-        isDemo: isDemo,
-        paymentMode: paymentMode,
-        source: orderType === "counter" ? "counter" : "qr",
+
       };
 
       // Comprehensive logging for order submission - send to server
       const submissionLog = {
-        level: "info",
-        event: "ORDER_SUBMITTED",
-        details: {
-          timestamp: new Date().toISOString(),
-          venueId: venueSlug,
-          tableNumber: orderLocation,
-          customerName: customerInfo.name,
-          customerPhone: customerInfo.phone,
-          cartItemCount: cart.length,
-          total: checkoutData.total,
-          sessionId: sessionId,
-          orderType: orderType,
-          checkoutData: {
-            venueId: checkoutData.venueId,
-            tableNumber: checkoutData.tableNumber,
-            cart: checkoutData.cart.map((item) => ({
-              id: item.id,
-              name: item.name,
-              price: item.price,
-              quantity: item.quantity,
+
             })),
-            total: checkoutData.total,
+
           },
         },
       };
 
       // Send to server so it appears in Railway logs
       fetch("/api/log-payment-flow", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submissionLog),
+
       }).catch(() => {
         // Silently handle - error logging failed
-      });
 
       // Also log to browser console
 

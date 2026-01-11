@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -37,11 +36,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (venueError || !venue) {
-      logger.error("[DAILY RESET] Venue not found:", {
-        venueId,
-        error: venueError,
-        userId: context.user.id,
-      });
+      
       return apiErrors.notFound("Venue not found");
     }
 
@@ -53,11 +48,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
     if (activeOrdersError) {
-      logger.error("[DAILY RESET] Error fetching active orders:", {
-        error: activeOrdersError.message || "Unknown error",
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to fetch active orders",
         isDevelopment() ? activeOrdersError.message : undefined
@@ -68,18 +59,12 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       const { error: completeOrdersError } = await supabase
         .from("orders")
         .update({
-          order_status: "COMPLETED",
-          updated_at: new Date().toISOString(),
-        })
+
         .eq("venue_id", venueId)
         .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
       if (completeOrdersError) {
-        logger.error("[DAILY RESET] Error completing orders:", {
-          error: completeOrdersError.message || "Unknown error",
-          venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to complete active orders",
           isDevelopment() ? completeOrdersError.message : undefined
@@ -95,11 +80,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("status", "BOOKED");
 
     if (activeReservationsError) {
-      logger.error("[DAILY RESET] Error fetching active reservations:", {
-        error: activeReservationsError.message || "Unknown error",
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to fetch active reservations",
         isDevelopment() ? activeReservationsError.message : undefined
@@ -110,18 +91,12 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       const { error: cancelReservationsError } = await supabase
         .from("reservations")
         .update({
-          status: "CANCELLED",
-          updated_at: new Date().toISOString(),
-        })
+
         .eq("venue_id", venueId)
         .eq("status", "BOOKED");
 
       if (cancelReservationsError) {
-        logger.error("[DAILY RESET] Error cancelling reservations:", {
-          error: cancelReservationsError.message || "Unknown error",
-          venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to cancel active reservations",
           isDevelopment() ? cancelReservationsError.message : undefined
@@ -136,11 +111,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", venueId);
 
     if (clearSessionsError) {
-      logger.error("[DAILY RESET] Error clearing table sessions:", {
-        error: clearSessionsError.message || "Unknown error",
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to clear table sessions",
         isDevelopment() ? clearSessionsError.message : undefined
@@ -151,17 +122,11 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { error: resetTablesError } = await supabase
       .from("tables")
       .update({
-        status: "AVAILABLE",
-        updated_at: new Date().toISOString(),
-      })
+
       .eq("venue_id", venueId);
 
     if (resetTablesError) {
-      logger.error("[DAILY RESET] Error resetting tables:", {
-        error: resetTablesError.message || "Unknown error",
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to reset tables",
         isDevelopment() ? resetTablesError.message : undefined
@@ -170,17 +135,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // STEP 7: Return success response
     return success({
-      message: "Daily reset completed successfully",
-      ordersCompleted: activeOrders?.length || 0,
-      reservationsCancelled: activeReservations?.length || 0,
-    });
+
   } catch (error) {
-    logger.error("[DAILY RESET] Unexpected error:", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      venueId: context.venueId,
-      userId: context.user?.id,
-    });
 
     if (isZodError(error)) {
       return handleZodError(error);
@@ -188,7 +144,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
-});
 
 // Simple GET handler for health/testing
 export async function GET() {

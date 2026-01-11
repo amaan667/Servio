@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { seedInventoryData } from "@/lib/inventory-seed";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,8 +10,6 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const seedInventorySchema = z.object({
-  venue_id: z.string().uuid().optional(),
-});
 
 // POST /api/inventory/seed
 // Seeds inventory data for a venue (for testing/demo purposes)
@@ -36,20 +33,11 @@ export const POST = withUnifiedAuth(
       // STEP 3: Business logic
       const result = await seedInventoryData(venue_id);
 
-      logger.info("[INVENTORY SEED] Inventory seeded successfully", {
-        venueId: venue_id,
-        userId: context.user.id,
-      });
+      
 
       // STEP 4: Return success response
       return success(result);
     } catch (error) {
-      logger.error("[INVENTORY SEED] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -63,8 +51,7 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
+
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

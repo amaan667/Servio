@@ -1,21 +1,18 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cache, cacheKeys } from "@/lib/cache/index";
-import { logger } from "@/lib/logger";
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { paginationSchema, validateQuery } from "@/lib/api/validation-schemas";
 import { z } from "zod";
 
 export async function GET(
-  _request: NextRequest,
+
   context: { params: Promise<{ venueId: string }> }
 ) {
   let rawVenueId = "unknown";
 
   const menuPaginationSchema = paginationSchema.extend({
-    limit: z.coerce.number().int().min(1).max(500).default(200),
-  });
 
   try {
     // PUBLIC ENDPOINT: enforce strict rate limiting to protect venue menus from scraping
@@ -30,9 +27,6 @@ export async function GET(
     const normalizeParam = (value: string | null) =>
       value === null || value === "" ? undefined : value;
     const { limit, offset } = validateQuery(menuPaginationSchema, {
-      limit: normalizeParam(searchParams.get("limit")),
-      offset: normalizeParam(searchParams.get("offset")),
-    });
 
     const params = await context.params;
     rawVenueId = params.venueId;
@@ -44,9 +38,7 @@ export async function GET(
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
     const venueId = rawVenueId.startsWith("venue-") ? rawVenueId : `venue-${rawVenueId}`;
 
-    logger.debug("[MENU API] Looking up venue:", {
-      data: { rawVenueId, transformedVenueId: venueId },
-    });
+    
 
     // Try to get from cache first
     const cacheKey = cacheKeys.menuItems(`${venueId}:l${limit}:o${offset}`);
@@ -68,9 +60,7 @@ export async function GET(
 
     // If not found with transformed ID, try with original ID as fallback
     if (venueError || !venue) {
-      logger.debug("[MENU API] Trying fallback venue lookup with original ID:", {
-        value: rawVenueId,
-      });
+      
       const { data: fallbackVenue, error: fallbackError } = await supabase
         .from("venues")
         .select("venue_id, venue_name")
@@ -84,20 +74,14 @@ export async function GET(
     }
 
     if (venueError || !venue) {
-      logger.error("[MENU API] Venue not found", {
-        rawVenueId,
-        transformedVenueId: venueId,
-        error: venueError,
-      });
+      
       return apiErrors.notFound("Venue not found");
     }
 
     // Fetch menu items for the venue using the same venue_id that was found
     // Use created_at ordering as fallback since order_index column may not exist
     const {
-      data: menuItems,
-      error: menuError,
-      count: menuCount,
+
     } = await supabase
       .from("menu_items")
       .select("*", { count: "exact" })
@@ -108,22 +92,10 @@ export async function GET(
 
     const totalItems = typeof menuCount === "number" ? menuCount : menuItems?.length || 0;
 
-    logger.debug("[MENU API] Menu items query", {
-      rawVenueId,
-      transformedVenueId: venueId,
-      actualVenueId: venue.venue_id,
-      count: totalItems,
-      error: menuError?.message || null,
-      errorCode: menuError?.code || null,
-    });
+    
 
     if (menuError) {
-      logger.error("[MENU API] Error fetching menu items", {
-        error: menuError.message,
-        code: menuError.code,
-        details: menuError.details,
-        venueId: venue.venue_id,
-      });
+      
       return apiErrors.database("Failed to load menu items");
     }
 
@@ -142,33 +114,19 @@ export async function GET(
 
     const categoryOrder: string[] | null = Array.isArray(uploadData?.category_order)
       ? (uploadData?.category_order as string[])
-      : null;
 
-    // Return menu items with venue info
-    const response = {
-      venue: {
-        id: venue.venue_id,
-        name: venue.venue_name,
       },
-      menuItems: menuItems || [],
+
       totalItems,
       pdfImages,
       categoryOrder,
-      pagination: {
-        limit,
+
         offset,
-        returned: menuItems?.length || 0,
-        hasMore: totalItems > offset + (menuItems?.length || 0),
+
       },
     };
 
-    logger.debug("[MENU API] Returning response", {
-      venueId: venue.venue_id,
-      totalItems,
-      hasItems: totalItems > 0,
-      limit,
-      offset,
-    });
+    
 
     // Cache the response for 5 minutes (300 seconds)
     await cache.set(cacheKey, response, { ttl: 300 });
@@ -177,11 +135,7 @@ export async function GET(
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
-    logger.error("[MENU API] Unexpected error", {
-      error: errorMessage,
-      stack: errorStack,
-      venueId: rawVenueId,
-    });
+    
 
     return apiErrors.internal(errorMessage);
   }

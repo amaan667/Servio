@@ -28,4 +28,3 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
   } catch (_error) {
     return apiErrors.internal(_error instanceof Error ? _error.message : "Internal server error");
   }
-});

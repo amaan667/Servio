@@ -32,9 +32,7 @@ export function useOrderManagement(venueId: string) {
     const window = todayWindowForTZ("Europe/London");
     if (window.startUtcISO && window.endUtcISO) {
       setTodayWindow({
-        startUtcISO: window.startUtcISO,
-        endUtcISO: window.endUtcISO,
-      });
+
     }
 
     const liveOrdersCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
@@ -83,7 +81,6 @@ export function useOrderManagement(venueId: string) {
 
         // Both same type, sort by creation time (newest first)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
 
       setOrders(sortedLiveOrders);
       // ANTI-FLICKER: Cache live orders
@@ -105,8 +102,7 @@ export function useOrderManagement(venueId: string) {
     if (!historyError && historyData) {
       const processedHistory = (historyData as Order[]).map((order: Order) => ({
         ...order,
-        payment_status: "PAID",
-        order_status: "COMPLETED" as const,
+
       }));
 
       setHistoryOrders(processedHistory);
@@ -116,10 +112,7 @@ export function useOrderManagement(venueId: string) {
       const grouped = processedHistory.reduce(
         (acc: Record<string, Order[]>, order) => {
           const date = new Date(order.created_at).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          });
+
           if (!acc[date]) acc[date] = [];
           acc[date].push(order);
           return acc;
@@ -147,13 +140,11 @@ export function useOrderManagement(venueId: string) {
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "orders",
+
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: {
-          eventType: string;
+
           new?: Record<string, unknown>;
           old?: Record<string, unknown>;
         }) => {
@@ -207,8 +198,7 @@ export function useOrderManagement(venueId: string) {
           if (aIsCompleted && !bIsCompleted) return 1;
           if (!aIsCompleted && bIsCompleted) return -1;
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-      });
+
     }
 
     const isInTodayWindow =
@@ -222,16 +212,12 @@ export function useOrderManagement(venueId: string) {
     } else if (!isInTodayWindow) {
       const processedOrder = {
         ...order,
-        payment_status: "PAID",
-        order_status: "COMPLETED" as const,
+
       };
       setHistoryOrders((prev) => [processedOrder, ...prev]);
 
       const date = new Date(order.created_at).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
+
       setGroupedHistoryOrders((prev) => ({
         ...prev,
         [date]: [processedOrder, ...(prev[date] || [])],

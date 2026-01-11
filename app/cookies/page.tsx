@@ -4,12 +4,10 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy",
+
   description:
     "Understand how Servio uses cookies and similar technologies. Learn about essential, functional, and analytics cookies on our platform.",
-  openGraph: {
-    title: "Cookie Policy | Servio",
-    description: "How Servio uses cookies to improve your experience.",
+
   },
 };
 
@@ -29,9 +27,7 @@ export default function CookiePolicyPage() {
           <p className="text-gray-600 mb-8">
             Last updated:{" "}
             {new Date().toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
+
             })}
           </p>
 

@@ -4,7 +4,6 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
-import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -44,32 +43,18 @@ export const GET = withUnifiedAuth(
         .order("created_at", { ascending: false });
 
       if (error) {
-        logger.error("[STAFF LIST] Error fetching staff:", {
-          error: error.message,
-          venueId: context.venueId,
-          userId: context.user.id,
-        });
+        
         return apiErrors.database(
           "Failed to fetch staff",
           isDevelopment() ? error.message : undefined
         );
       }
 
-      logger.info("[STAFF LIST] Staff fetched successfully", {
-        venueId: context.venueId,
-        count: staff?.length || 0,
-        userId: context.user.id,
-      });
+      
 
       // STEP 4: Return success response
       return success({ staff: staff || [] });
     } catch (error) {
-      logger.error("[STAFF LIST] Unexpected error:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        venueId: context.venueId,
-        userId: context.user.id,
-      });
 
       if (isZodError(error)) {
         return handleZodError(error);
@@ -80,8 +65,7 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query
-    extractVenueId: async (req) => {
-      try {
+
         const { searchParams } = new URL(req.url);
         return searchParams.get("venueId") || searchParams.get("venue_id");
       } catch {

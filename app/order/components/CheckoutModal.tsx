@@ -8,13 +8,9 @@ import { CustomerInfo } from "../types";
 import { useState } from "react";
 
 interface CheckoutModalProps {
-  show: boolean;
-  customerInfo: CustomerInfo;
-  totalPrice: number;
-  isSubmitting: boolean;
-  onClose: () => void;
+
   onUpdateCustomerInfo: (field: "name" | "phone", value: string) => void;
-  onSubmit: () => void;
+
 }
 
 export function CheckoutModal({

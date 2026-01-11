@@ -49,13 +49,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
         const staffData =
           staffObj && typeof staffObj === "object"
             ? (staffObj as Record<string, unknown>)
-            : {
-                /* Empty */
+
               };
         return {
           ...shift,
-          staff_name: staffData.name ? String(staffData.name) : "Unknown",
-          staff_role: staffData.role ? String(staffData.role) : "Unknown",
+
         };
       }) || [];
 
@@ -63,4 +61,3 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
   } catch (_error) {
     return apiErrors.internal(_error instanceof Error ? _error.message : "Unknown error");
   }
-});

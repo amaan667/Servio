@@ -6,18 +6,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 
 interface MenuItem {
-  id: string;
-  venue_id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  category: string;
-  is_available: boolean;
-  created_at: string;
-  position?: number;
+
 }
 
 export function useMenuItems(venueId: string) {
@@ -42,7 +33,7 @@ export function useMenuItems(venueId: string) {
 
       setMenuItems(data || []);
     } catch (_err) {
-      logger.error("Error fetching menu items", { venueId, error: _err });
+      
       setError("Failed to load menu items");
     } finally {
       setLoading(false);
@@ -69,7 +60,7 @@ export function useMenuItems(venueId: string) {
       setMenuItems((prev) => [...prev, data]);
       return { success: true, data };
     } catch (_err) {
-      logger.error("Error adding menu item", { error: _err });
+      
       return { success: false, error: _err };
     }
   }, []);
@@ -89,7 +80,7 @@ export function useMenuItems(venueId: string) {
       setMenuItems((prev) => prev.map((item) => (item.id === id ? data : item)));
       return { success: true, data };
     } catch (_err) {
-      logger.error("Error updating menu item", { id, error: _err });
+      
       return { success: false, error: _err };
     }
   }, []);
@@ -104,7 +95,7 @@ export function useMenuItems(venueId: string) {
       setMenuItems((prev) => prev.filter((item) => item.id !== id));
       return { success: true };
     } catch (_err) {
-      logger.error("Error deleting menu item", { id, error: _err });
+      
       return { success: false, error: _err };
     }
   }, []);
@@ -129,8 +120,7 @@ export function useMenuItems(venueId: string) {
 
       // Update positions
       const updates = items.map((item, index) => ({
-        id: item.id,
-        position: index,
+
       }));
 
       const { error: updateError } = await supabase
@@ -142,7 +132,7 @@ export function useMenuItems(venueId: string) {
       setMenuItems(items);
       return { success: true };
     } catch (_err) {
-      logger.error("Error reordering items", { error: _err });
+      
       return { success: false, error: _err };
     }
   }, []);

@@ -35,38 +35,17 @@ import {
 } from "@/components/ui/select";
 
 interface TableEntity {
-  table_id: string;
-  table_label: string;
-  area: string;
-  seat_count: number;
-  session_id: string | null;
-  session_status: string;
-  opened_at: string | null;
-  server_id: string | null;
-  guest_count: number;
-  active_orders_count: number;
-  total_amount: number;
-  unpaid_amount: number;
+
   payment_mode_mix: Record<string, number>;
-  last_order_at: string;
+
 }
 
 interface CounterEntity {
-  counter_id: string;
-  counter_label: string;
-  area: string;
-  session_id: string | null;
-  session_status: string;
-  opened_at: string | null;
-  server_id: string | null;
-  active_orders_count: number;
-  total_amount: number;
-  unpaid_amount: number;
-  last_order_at: string;
+
 }
 
 interface TableManagementEntityProps {
-  venueId: string;
+
 }
 
 export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
@@ -114,17 +93,11 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
 
     try {
       const response = await fetch("/api/pos/table-sessions", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venue_id: venueId,
-          table_id: selectedTable.table_id,
-          action: "seat_party",
-          server_id: serverId,
-          guest_count: guestCount,
+
           notes,
         }),
-      });
 
       if (response.ok) {
         setShowSeatDialog(false);
@@ -139,14 +112,11 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
   const handleTableAction = async (table: TableEntity, action: string) => {
     try {
       const response = await fetch("/api/pos/table-sessions", {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          venue_id: venueId,
-          table_id: table.table_id,
+
           action,
         }),
-      });
 
       if (response.ok) {
         fetchEntities();
@@ -168,8 +138,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         return "bg-orange-100 text-orange-800";
       case "RESERVED":
         return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+
     }
   };
 
@@ -185,8 +154,7 @@ export function TableManagementEntity({ venueId }: TableManagementEntityProps) {
         return <AlertTriangle className="h-4 w-4" />;
       case "RESERVED":
         return <Clock className="h-4 w-4" />;
-      default:
-        return <Table className="h-4 w-4" />;
+
     }
   };
 

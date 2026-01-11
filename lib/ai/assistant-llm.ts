@@ -5,7 +5,6 @@
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { aiLogger as logger } from "@/lib/logger";
 import { errorToContext } from "@/lib/utils/error-to-context";
 import {
   AIAssistantContext,
@@ -32,7 +31,7 @@ function getOpenAI() {
     }
     openai = new OpenAI({
       apiKey,
-    });
+
   }
   return openai;
 }
@@ -147,12 +146,7 @@ function selectModel(userPrompt: string, firstToolName?: ToolName): string {
 // ============================================================================
 
 function buildSystemPrompt(
-  context: AIAssistantContext,
-  dataSummaries: {
-    menu?: MenuSummary;
-    inventory?: InventorySummary;
-    orders?: OrdersSummary;
-    analytics?: AnalyticsSummary;
+
   }
 ): string {
   const { userRole, venueTier, features } = context;
@@ -214,11 +208,6 @@ ANALYTICS & REPORTING:
 - Analyze menu performance
 - Navigate to analytics pages
 
-NAVIGATION:
-- Take users to any page in the system
-- Find specific features and sections
-
-CONTEXT:
 - User Role: ${userRole}
 - Venue Tier: ${venueTier}
 - Timezone: ${context.timezone}
@@ -239,7 +228,7 @@ Top Sellers: ${
 Items Without Images: ${dataSummaries.menu.itemsWithoutImages}
 All Items (for reference - use IDs from here): ${JSON.stringify(dataSummaries.menu.allItems?.slice(0, 100) || [], null, 2)}
 ${dataSummaries.menu.allItems && dataSummaries.menu.allItems.length > 100 ? `\nNote: Showing first 100 of ${dataSummaries.menu.allItems.length} items. Use allItems array to find item IDs by name.` : ""}`
-    : ""
+
 }
 ${dataSummaries.inventory ? `\nINVENTORY:\n${JSON.stringify(dataSummaries.inventory, null, 2)}` : ""}
 ${dataSummaries.orders ? `\nORDERS:\n${JSON.stringify(dataSummaries.orders, null, 2)}` : ""}
@@ -253,19 +242,7 @@ QR CODE TOOLS:
 - qr.generate_counter: Generate QR code for counter orders
 - qr.list_all: List all existing QR codes (tables and counters)
 - qr.export_pdf: Prepare QR codes for PDF download
-NOTE: QR codes work immediately without table setup. Only use tables.create if user explicitly wants to manage tables in the system.
 
-MENU TOOLS:
-- menu.update_prices: Update prices for menu items
-- menu.toggle_availability: Show/hide menu items
-- menu.create_item: Create new menu item
-- menu.delete_item: Delete menu item
-- menu.translate: Translate menu to another language
-- menu.translate_extended: Translate menu with category filtering (for large menus)
-- menu.query_no_images: Find all items without images
-- menu.upload_image: Add/update image for menu item
-
-ORDER TOOLS:
 - orders.update_status: Update order status (PLACED, ACCEPTED, IN_PREP, READY, COMPLETED)
 - orders.get_pending: Get all pending/active orders
 - orders.get_kitchen: Get orders currently in kitchen (IN_PREP status)
@@ -325,7 +302,7 @@ ${Object.entries(DEFAULT_GUARDRAILS)
       constraints.push(`max ${rules.maxBulkOperationSize} items per call`);
     if (rules.requiresManagerApproval) constraints.push("requires manager approval");
     return constraints.length > 0 ? `- ${tool}: ${constraints.join(", ")}` : "";
-  })
+
   .filter(Boolean)
   .join("\n")}
 
@@ -483,9 +460,7 @@ Return a structured plan with:
 
 // Intelligent Fast-Path Classification (replaces hardcoded patterns)
 interface FastPathResult {
-  canAnswer: boolean;
-  answer?: string;
-  confidence: number;
+
 }
 
 // Smart data formatter for natural language responses
@@ -582,7 +557,7 @@ function formatDataAsAnswer(data: unknown, question: string): string {
           const aRev = (a[1] as { revenue?: number })?.revenue || 0;
           const bRev = (b[1] as { revenue?: number })?.revenue || 0;
           return bRev - aRev;
-        })
+
         .map(([key, val]) => {
           const v = val as Record<string, unknown>;
           if (v.revenue && v.count) {
@@ -592,7 +567,7 @@ function formatDataAsAnswer(data: unknown, question: string): string {
             return `- ${key}: £${(v.revenue as number).toFixed(2)} from ${v.orders} orders${v.itemCount ? ` (${v.itemCount} items)` : ""}`;
           }
           return `- ${key}: ${JSON.stringify(v)}`;
-        })
+
         .join("\n");
       return formatted;
     }
@@ -617,12 +592,7 @@ function getNestedData(obj: unknown, path: string): unknown {
 }
 
 async function tryFastPath(
-  userPrompt: string,
-  dataSummaries: {
-    menu?: MenuSummary;
-    inventory?: InventorySummary;
-    orders?: OrdersSummary;
-    analytics?: AnalyticsSummary;
+
   }
 ): Promise<FastPathResult> {
   const prompt = userPrompt.toLowerCase().trim();
@@ -708,21 +678,13 @@ Respond with JSON only:
 }`;
 
     const response = await getOpenAI().chat.completions.create({
-      model: MODEL_MINI,
+
       messages: [{ role: "user", content: classificationPrompt }],
       response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: 150,
-    });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
 
-    logger.info("[AI FAST-PATH] Classification result:", {
-      prompt: userPrompt,
-      canAnswer: result.canAnswer,
-      dataPath: result.dataPath,
-      confidence: result.confidence,
-    });
+    
 
     // High confidence threshold for direct answers
     if (result.canAnswer && result.confidence >= 0.85 && result.dataPath) {
@@ -733,50 +695,38 @@ Respond with JSON only:
         const answer = formatDataAsAnswer(data, userPrompt);
 
         return {
-          canAnswer: true,
+
           answer,
-          confidence: result.confidence,
+
         };
       }
     }
 
     return { canAnswer: false, confidence: result.confidence };
   } catch (error) {
-    logger.error("[AI FAST-PATH] Classification failed:", errorToContext(error));
+    );
     // Graceful degradation - proceed to full planner
     return { canAnswer: false, confidence: 0 };
   }
 }
 
 export async function planAssistantAction(
-  userPrompt: string,
-  context: AIAssistantContext,
-  dataSummaries: {
-    menu?: MenuSummary;
-    inventory?: InventorySummary;
-    orders?: OrdersSummary;
-    analytics?: AnalyticsSummary;
+
   }
 ): Promise<AIPlanResponse & { modelUsed?: string }> {
   // Try intelligent fast-path (LLM-based classification for read-only queries)
   const fastPath = await tryFastPath(userPrompt, dataSummaries);
   if (fastPath.canAnswer && fastPath.confidence >= 0.85) {
-    logger.info("[AI PLANNER] Using fast-path answer", {
-      prompt: userPrompt,
-      confidence: fastPath.confidence,
-      answer: fastPath.answer?.substring(0, 100),
-    });
+
     return {
-      intent: userPrompt,
-      tools: [],
+
       reasoning: `Answered directly from data summaries (confidence: ${(fastPath.confidence * 100).toFixed(0)}%)`,
-      warnings: null,
-      directAnswer: fastPath.answer,
+
     };
   }
 
   // Otherwise, use LLM planner for complex queries
-  logger.info("[AI PLANNER] Using LLM planner", { prompt: userPrompt });
+  
 
   const systemPrompt = buildSystemPrompt(context, dataSummaries);
 
@@ -787,14 +737,12 @@ export async function planAssistantAction(
   try {
     // Attempt with selected model
     const completion = await getOpenAI().chat.completions.create({
-      model: selectedModel,
-      messages: [
+
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
       response_format: zodResponseFormat(AssistantPlanSchema, "assistant_plan"),
       temperature: 0.1, // Low temperature for consistent, safe outputs
-    });
 
     // Get the message from completion
     const message = completion.choices[0].message;
@@ -806,11 +754,7 @@ export async function planAssistantAction(
       // Response was successfully parsed and validated by zodResponseFormat
       const typedParsed = parsed as AIPlanResponse;
       return {
-        intent: typedParsed.intent,
-        tools: typedParsed.tools,
-        reasoning: typedParsed.reasoning,
-        warnings: typedParsed.warnings,
-        modelUsed: selectedModel,
+
       };
     }
 
@@ -820,17 +764,13 @@ export async function planAssistantAction(
       const parsedContent = JSON.parse(content);
       const validated = AssistantPlanSchema.parse(parsedContent);
       return {
-        intent: validated.intent,
-        tools: validated.tools,
-        reasoning: validated.reasoning,
-        warnings: validated.warnings,
-        modelUsed: selectedModel,
+
       };
     }
 
     throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (_error) {
-    logger.error(`[AI ASSISTANT] Planning _error with ${selectedModel}:`, errorToContext(_error));
+    );
 
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {
@@ -839,14 +779,11 @@ export async function planAssistantAction(
 
       try {
         const completion = await getOpenAI().chat.completions.create({
-          model: selectedModel,
-          messages: [
+
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
           response_format: zodResponseFormat(AssistantPlanSchema, "assistant_plan"),
-          temperature: 0.1,
-        });
 
         const message = completion.choices[0].message;
         const parsed = (message as { parsed?: unknown }).parsed;
@@ -854,10 +791,7 @@ export async function planAssistantAction(
         if (parsed) {
           const typedParsed = parsed as AIPlanResponse;
           return {
-            intent: typedParsed.intent,
-            tools: typedParsed.tools,
-            reasoning: typedParsed.reasoning,
-            warnings: typedParsed.warnings,
+
             modelUsed: `${selectedModel} (fallback)`,
           };
         }
@@ -867,23 +801,15 @@ export async function planAssistantAction(
           const parsedContent = JSON.parse(content);
           const validated = AssistantPlanSchema.parse(parsedContent);
           return {
-            intent: validated.intent,
-            tools: validated.tools,
-            reasoning: validated.reasoning,
-            warnings: validated.warnings,
+
             modelUsed: `${selectedModel} (fallback)`,
           };
         }
       } catch (fallbackError) {
-        logger.error(
-          "[AI ASSISTANT] Fallback to GPT-4o also failed:",
-          fallbackError as Record<string, unknown>
-        );
+        
         // Re-throw the fallback error
         if (fallbackError instanceof z.ZodError) {
-          logger.error(
-            "[AI ASSISTANT] Zod validation errors:",
-            JSON.stringify(fallbackError.errors, null, 2)
+          
           );
         }
         throw fallbackError;
@@ -892,7 +818,7 @@ export async function planAssistantAction(
 
     // If original error wasn't from mini, or fallback also failed
     if (_error instanceof z.ZodError) {
-      logger.error("[AI ASSISTANT] Zod validation errors:", JSON.stringify(_error.errors, null, 2));
+      );
     }
     throw _error;
   }
@@ -903,10 +829,7 @@ export async function planAssistantAction(
 // ============================================================================
 
 export async function explainAction(
-  toolName: ToolName,
-  _params: unknown,
-  context: AIAssistantContext
-): Promise<string> {
+
   const systemPrompt = `You are Servio Assistant. Explain the following action in simple, human terms.
 Be concise (1-2 sentences). Focus on what will change and potential impact.`;
 
@@ -918,18 +841,14 @@ User Role: ${context.userRole}`;
   try {
     // Use mini for simple explanations (cost savings)
     const completion = await getOpenAI().chat.completions.create({
-      model: MODEL_MINI,
-      messages: [
+
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.3,
-      max_tokens: 150,
-    });
 
     return completion.choices[0].message.content || "Action explanation unavailable.";
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Explanation error:", _error as Record<string, unknown>);
+    
     return "Unable to generate explanation.";
   }
 }
@@ -939,7 +858,7 @@ User Role: ${context.userRole}`;
 // ============================================================================
 
 export async function generateSuggestions(
-  pageContext: "menu" | "inventory" | "kds" | "orders" | "analytics",
+
   dataSummary: Record<string, unknown>
 ): Promise<string[]> {
   const systemPrompt = `Generate 3-4 actionable suggestions for a ${pageContext} dashboard.
@@ -951,20 +870,16 @@ Focus on common tasks, optimizations, or insights based on the data.`;
   try {
     // Use mini for suggestions (cost savings, still good quality)
     const completion = await getOpenAI().chat.completions.create({
-      model: MODEL_MINI,
-      messages: [
+
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.5,
-      max_tokens: 200,
-    });
 
     const response = JSON.parse(completion.choices[0].message.content || "{ /* Empty */ }");
     return response.suggestions || [];
   } catch (_error) {
-    logger.error("[AI ASSISTANT] Suggestion generation error:", _error as Record<string, unknown>);
+    
     return [];
   }
 }
@@ -979,18 +894,7 @@ export function estimateTokens(text: string): number {
 }
 
 export function calculateCost(
-  inputTokens: number,
-  outputTokens: number,
-  model: string = MODEL_MINI
-): number {
-  // Pricing as of 2024
-  let inputCostPer1k: number;
-  let outputCostPer1k: number;
 
-  if (model.includes("gpt-4o-mini")) {
-    // GPT-4o-mini pricing (90% cheaper!)
-    inputCostPer1k = 0.00015;
-    outputCostPer1k = 0.0006;
   } else {
     // GPT-4o pricing
     inputCostPer1k = 0.0025;
@@ -1008,20 +912,15 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
   try {
     const response = await getOpenAI().chat.completions.create({
       model: MODEL_MINI, // Use cheaper model for simple title generation
-      messages: [
-        {
-          role: "user",
+
           content: `Make a 5-word title for this chat: "${firstUserMessage}". Return only the title.`,
         },
       ],
-      temperature: 0.3,
-      max_tokens: 20,
-    });
 
     const title = response.choices[0].message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
   } catch (error) {
-    logger.error("[AI] Title generation error:", errorToContext(error));
+    );
     return firstUserMessage.substring(0, 60);
   }
 }

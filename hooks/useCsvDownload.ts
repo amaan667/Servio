@@ -6,11 +6,9 @@
  */
 
 import { useState, useCallback } from "react";
-import { logger } from "@/lib/logger";
 
 export interface CsvDownloadOptions {
-  filename: string;
-  csv: string;
+
 }
 
 /**
@@ -30,7 +28,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
   try {
     // Validate inputs
     if (!filename || !csv) {
-      logger.warn("[CSV Download] Missing filename or CSV content");
+      
       return;
     }
 
@@ -39,8 +37,6 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
 
     // Create blob with CSV content and UTF-8 encoding
     const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
 
     // Create temporary URL for the blob
     const url = URL.createObjectURL(blob);
@@ -59,7 +55,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
     // Clean up the URL object
     URL.revokeObjectURL(url);
   } catch (_error) {
-    logger.warn("[CSV Download] Failed to download CSV:", _error as Record<string, unknown>);
+    
 
     // Fallback: try to open in new window (may not work in all browsers)
     try {
@@ -69,10 +65,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
       // Note: We don't revoke this URL immediately as the new window might need it
       // It will be garbage collected when the window closes
     } catch (fallbackError) {
-      logger.error(
-        "[CSV Download] Fallback method also failed:",
-        fallbackError as Record<string, unknown>
-      );
+      
     }
   }
 }
@@ -113,7 +106,7 @@ export function useCsvDownload() {
   }, []);
 
   return {
-    downloadCSV: download,
+
     isDownloading,
   };
 }

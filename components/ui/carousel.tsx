@@ -20,12 +20,7 @@ type CarouselProps = {
 };
 
 type CarouselContextProps = {
-  carouselRef: ReturnType<typeof useEmblaCarousel>[0];
-  api: ReturnType<typeof useEmblaCarousel>[1];
-  scrollPrev: () => void;
-  scrollNext: () => void;
-  canScrollPrev: boolean;
-  canScrollNext: boolean;
+
 } & CarouselProps;
 
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
@@ -47,7 +42,7 @@ const Carousel = React.forwardRef<
   const [carouselRef, api] = useEmblaCarousel(
     {
       ...opts,
-      axis: orientation === "horizontal" ? "x" : "y",
+
     },
     plugins
   );
@@ -110,9 +105,9 @@ const Carousel = React.forwardRef<
     <CarouselContext.Provider
       value={{
         carouselRef,
-        api: api,
+
         opts,
-        orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
+
         scrollPrev,
         scrollNext,
         canScrollPrev,
@@ -131,7 +126,7 @@ const Carousel = React.forwardRef<
       </div>
     </CarouselContext.Provider>
   );
-});
+
 Carousel.displayName = "Carousel";
 
 const CarouselContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
@@ -189,7 +184,7 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
           "absolute  h-8 w-8 rounded-full",
           orientation === "horizontal"
             ? "-left-12 top-1/2 -translate-y-1/2"
-            : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
+
           className
         )}
         disabled={!canScrollPrev}
@@ -217,7 +212,7 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
           "absolute h-8 w-8 rounded-full",
           orientation === "horizontal"
             ? "-right-12 top-1/2 -translate-y-1/2"
-            : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
+
           className
         )}
         disabled={!canScrollNext}

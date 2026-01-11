@@ -8,15 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRouter } from "next/navigation";
 
 interface Message {
-  role: "user" | "assistant";
-  content: string;
+
 }
 
 interface SimpleChatInterfaceProps {
-  isOpen: boolean;
-  onClose: () => void;
-  venueId: string;
-  currentPage?: string;
+
 }
 
 export function SimpleChatInterface({
@@ -42,16 +38,9 @@ export function SimpleChatInterface({
     if (!userMessage || loading) return;
 
     // DETAILED LOGGING - START
-    console.group("🤖 [AI ASSISTANT] User Command");
-    console.log("📝 User Message:", userMessage);
-    console.log("📍 Current Page:", currentPage);
-    console.log("🏢 Venue ID:", venueId);
-    console.log("💬 Conversation History Length:", messages.length);
-    console.log("📋 Full Conversation History:", messages);
-
+                        
     const newUserMessage: Message = {
-      role: "user",
-      content: userMessage,
+
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
@@ -60,112 +49,74 @@ export function SimpleChatInterface({
     setError(null);
 
     const requestPayload = {
-      message: userMessage,
+
       venueId,
       currentPage,
-      conversationHistory: messages,
+
     };
 
-    console.log("📤 Request Payload:", requestPayload);
-    console.log("🌐 API Endpoint: /api/ai/simple-chat");
-    console.log("⏱️ Request Timestamp:", new Date().toISOString());
+            .toISOString());
 
     try {
-      console.log("🚀 Starting fetch request...");
-      const fetchStartTime = Date.now();
+            const fetchStartTime = Date.now();
 
       const response = await fetch("/api/ai/simple-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
         },
-        credentials: "include",
-        body: JSON.stringify(requestPayload),
-      });
 
       const fetchDuration = Date.now() - fetchStartTime;
-      console.log("✅ Fetch completed in", fetchDuration, "ms");
-      console.log("📊 Response Status:", response.status, response.statusText);
-      console.log("📋 Response Headers:", Object.fromEntries(response.headers.entries()));
-      console.log("🔗 Response URL:", response.url);
-      console.log("📦 Response OK:", response.ok);
-
+                  ));
+            
       if (!response.ok) {
-        console.error("❌ Response not OK - Status:", response.status);
-        let errorData;
+                let errorData;
         try {
           const responseText = await response.text();
-          console.error("📄 Response Body (text):", responseText);
+          :", responseText);
           errorData = JSON.parse(responseText);
-          console.error("📄 Response Body (parsed):", errorData);
+          :", errorData);
           
           // Log debug information if available
           if (errorData.debug) {
-            console.error("🐛 DEBUG INFO:");
-            console.error("  Error Type:", errorData.debug.errorType);
-            console.error("  Error Message:", errorData.debug.errorMessage);
-            if (errorData.debug.stack) {
-              console.error("  Stack Trace:", errorData.debug.stack);
-            }
+                                                if (errorData.debug.stack) {
+                          }
           }
         } catch (parseError) {
-          console.error("❌ Failed to parse error response:", parseError);
-          errorData = { error: "Unknown error", rawResponse: await response.text().catch(() => "Could not read response") };
+                    errorData = { error: "Unknown error", rawResponse: await response.text().catch(() => "Could not read response") };
         }
-        console.error("🚨 Error Data:", errorData);
-        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+                throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
       }
 
-      console.log("📥 Parsing response JSON...");
-      const data = await response.json();
-      console.log("✅ Response Data:", data);
-      console.log("💬 Assistant Response:", data.response);
-      console.log("🧭 Navigation Info:", data.navigation);
-
+            const data = await response.json();
+                  
       const assistantMessage: Message = {
-        role: "assistant",
-        content: data.response || "I processed your request.",
+
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-      console.log("✅ Message added to conversation");
-
+      
       // Handle navigation if present
       if (data.navigation?.route) {
-        console.log("🧭 Navigation detected - Route:", data.navigation.route);
-        console.log("🧭 Navigation - Page:", data.navigation.page);
-        setTimeout(() => {
-          console.log("🚀 Navigating to:", data.navigation.route);
-          router.push(data.navigation.route);
+                        setTimeout(() => {
+                    router.push(data.navigation.route);
           onClose();
         }, 500);
       } else {
-        console.log("ℹ️ No navigation required");
-      }
+              }
 
-      console.log("✅ Request completed successfully");
-      console.groupEnd();
-    } catch (err) {
-      console.error("❌ ERROR CAUGHT:");
-      console.error("Error Type:", err?.constructor?.name || typeof err);
-      console.error("Error Message:", err instanceof Error ? err.message : String(err));
-      console.error("Error Stack:", err instanceof Error ? err.stack : "No stack trace");
-      console.error("Full Error Object:", err);
-      
+                } catch (err) {
+                  );
+                  
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
 
       const errorMsg: Message = {
-        role: "assistant",
+
         content: `Sorry, I encountered an error: ${errorMessage}`,
       };
       setMessages((prev) => [...prev, errorMsg]);
-      console.error("❌ Request failed - Error message displayed to user");
-      console.groupEnd();
-    } finally {
+                } finally {
       setLoading(false);
-      console.log("🏁 Request finished - Loading state reset");
-    }
+          }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

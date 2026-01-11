@@ -3,7 +3,7 @@ import { mapCounterOrderToCardData } from "@/lib/orders/mapCounterOrderToCardDat
 import type { CounterOrder } from "@/hooks/useCounterOrders";
 
 interface CounterOrdersSectionProps {
-  counterOrders: CounterOrder[];
+
 }
 
 export function CounterOrdersSection({ counterOrders }: CounterOrdersSectionProps) {

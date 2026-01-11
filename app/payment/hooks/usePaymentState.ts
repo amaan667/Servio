@@ -1,29 +1,10 @@
-import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export interface CheckoutData {
-  venueId: string;
-  venueName?: string;
-  tableNumber: number;
-  cart: Array<{
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-    specialInstructions?: string;
+
   }>;
-  total: number;
-  tableId?: string | null;
-  sessionId?: string | null;
-  orderId?: string;
-  orderNumber?: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  orderType?: string;
-  isDemo?: boolean;
-  isSplit?: boolean;
+
 }
 
 export type PaymentAction = "demo" | "stripe" | "till" | "later";
@@ -99,12 +80,12 @@ export function usePaymentState() {
         }
       } catch (_error) {
         // Don't redirect - payment processing will handle redirect to order summary
-        logger.error("[PAYMENT STATE] Failed to parse checkout data", _error);
+        
       }
     } else {
       // Don't redirect if no checkout data - payment flow will handle it
       // This prevents race condition where redirect to order summary is interrupted
-      logger.warn("[PAYMENT STATE] No checkout data found - waiting for payment flow");
+      
     }
   }, [router, isDemoFromUrl]);
 
@@ -122,7 +103,7 @@ export function usePaymentState() {
     feedbackSubmitted,
     setFeedbackSubmitted,
     error,
-    setError: setErrorSafe,
+
     paymentAction,
     setPaymentAction,
     isDemo,

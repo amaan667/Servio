@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -13,7 +12,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -27,8 +26,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!Array.isArray(tableNumbers) || tableNumbers.length === 0) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "Table numbers must be a non-empty array",
+
         },
         { status: 400 }
       );
@@ -37,8 +35,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!tableNumbers.every((num) => Number.isInteger(num) && num > 0)) {
       return NextResponse.json(
         {
-          ok: false,
-          error: "All table numbers must be positive integers",
+
         },
         { status: 400 }
       );
@@ -50,19 +47,17 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: updatedOrders, error: updateError } = await adminSupabase
       .from("orders")
       .update({
-        order_status: "COMPLETED",
-        updated_at: new Date().toISOString(),
-      })
+
       .in("table_number", tableNumbers)
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"])
       .eq("venue_id", context.venueId)
       .select("id, table_number, order_status");
 
     if (updateError) {
-      logger.error("[TABLE REMOVAL] Error updating orders:", updateError);
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: `Failed to update orders: ${updateError.message}`,
         },
         { status: 500 }
@@ -77,10 +72,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", context.venueId);
 
     if (tablesError) {
-      logger.error("[TABLE REMOVAL] Error fetching tables:", tablesError);
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: `Failed to fetch tables: ${tablesError.message}`,
         },
         { status: 500 }
@@ -93,18 +88,16 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: clearedOrders, error: clearError } = await adminSupabase
       .from("orders")
       .update({
-        table_id: null,
-        updated_at: new Date().toISOString(),
-      })
+
       .in("table_id", tableIdsToRemove)
       .eq("venue_id", context.venueId)
       .select("id, table_id");
 
     if (clearError) {
-      logger.error("[TABLE REMOVAL] Error clearing table_id references:", clearError);
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: `Failed to clear table references: ${clearError.message}`,
         },
         { status: 500 }
@@ -120,12 +113,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .select("id, label");
 
     if (tableError) {
-      logger.error("[TABLE REMOVAL] Error removing tables:", {
-        error: tableError instanceof Error ? tableError.message : "Unknown error",
-      });
+      
       return NextResponse.json(
         {
-          ok: false,
+
           error: `Failed to remove tables: ${tableError.message}`,
         },
         { status: 500 }
@@ -145,10 +136,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         .select("id");
 
       if (sessionError) {
-        logger.error("[TABLE REMOVAL] Error removing table sessions:", sessionError);
+        
         return NextResponse.json(
           {
-            ok: false,
+
             error: `Failed to remove table sessions: ${sessionError.message}`,
           },
           { status: 500 }
@@ -170,10 +161,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         .select("id");
 
       if (reservationError) {
-        logger.error("[TABLE REMOVAL] Error removing reservations:", reservationError);
+        
         return NextResponse.json(
           {
-            ok: false,
+
             error: `Failed to remove reservations: ${reservationError.message}`,
           },
           { status: 500 }
@@ -198,30 +189,19 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", context.venueId);
 
     const result = {
-      ok: true,
+
       message: `Successfully removed tables ${tableNumbers.join(", ")}`,
-      data: {
-        removedTables: removedTables?.length || 0,
-        updatedOrders: updatedOrders?.length || 0,
-        clearedOrders: clearedOrders?.length || 0,
-        removedSessions: removedSessions?.length || 0,
-        removedReservations: removedReservations?.length || 0,
-        remainingTables: remainingTables?.length || 0,
-        remainingActiveOrders: remainingOrders?.length || 0,
+
       },
     };
 
     return NextResponse.json(result);
   } catch (_error) {
-    logger.error("[TABLE REMOVAL] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return NextResponse.json(
       {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "An unexpected error occurred",
+
       },
       { status: 500 }
     );
   }
-});

@@ -13,9 +13,7 @@ export interface LogContext {
 export function errorToContext(error: unknown): LogContext {
   if (error instanceof Error) {
     return {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
+
     };
   }
 

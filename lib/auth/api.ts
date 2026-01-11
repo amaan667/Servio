@@ -20,7 +20,7 @@ import { NextResponse } from "next/server";
 // NOTE: This is a temporary compatibility layer. Routes should migrate to withUnifiedAuth
 // IMPORTANT: Always pass the request object for proper cookie reading
 export async function requireVenueAccessForAPI(
-  venueId: string | null | undefined,
+
   request?: NextRequest
 ): Promise<{ success: true; context: AuthContext } | { success: false; response: NextResponse }> {
   // Use provided request or create a minimal one
@@ -28,9 +28,6 @@ export async function requireVenueAccessForAPI(
   const req =
     request ||
     new NextRequest("http://localhost", {
-      method: "GET",
-      headers: new Headers(),
-    });
 
   return await requireAuthAndVenueAccess(req, venueId);
 }

@@ -18,18 +18,11 @@ import {
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface WaitingParty {
-  id: string;
-  customer_name: string;
-  customer_phone?: string;
-  party_size: number;
-  status: "WAITING" | "SEATED" | "CANCELLED" | "NO_SHOW";
-  created_at: string;
-  seated_at?: string;
-  table_id?: string;
+
 }
 
 interface WaitingListProps {
-  venueId: string;
+
   availableTables: Array<{ id: string; label: string; seat_count: number }>;
   onPartySeated?: () => void;
 }
@@ -40,10 +33,6 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [seatingParty, setSeatingParty] = useState<string | null>(null);
   const [newParty, setNewParty] = useState({
-    customer_name: "",
-    customer_phone: "",
-    party_size: 2,
-  });
 
   const supabase = createClient();
 
@@ -75,11 +64,7 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
       const { data, error } = await supabase
         .from("waiting_list")
         .insert({
-          venue_id: venueId,
-          customer_name: newParty.customer_name,
-          customer_phone: newParty.customer_phone || null,
-          party_size: newParty.party_size,
-        })
+
         .select()
         .single();
 
@@ -98,10 +83,6 @@ export function WaitingList({ venueId, availableTables, onPartySeated }: Waiting
       setSeatingParty(waitingId);
 
       const { data, error } = await supabase.rpc("api_seat_waiting_party", {
-        p_waiting_id: waitingId,
-        p_table_id: tableId,
-        p_venue_id: venueId,
-      });
 
       if (error) throw error;
 

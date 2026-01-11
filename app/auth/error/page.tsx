@@ -22,8 +22,7 @@ function AuthErrorContent() {
         return "Authentication completed but no session was created. Please try again.";
       case "unexpected_error":
         return "An unexpected error occurred during authentication. Please try again.";
-      default:
-        return reason || "An error occurred during authentication. Please try again.";
+
     }
   };
 
@@ -34,7 +33,7 @@ function AuthErrorContent() {
         if ((k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("pkce")) {
           localStorage.removeItem(k);
         }
-      });
+
       sessionStorage.removeItem("sb_oauth_retry");
       sessionStorage.removeItem("sb_oauth_in_progress");
     }

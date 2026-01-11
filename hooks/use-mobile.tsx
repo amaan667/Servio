@@ -57,9 +57,6 @@ export function useIsMobile() {
 
 export function useWindowSize() {
   const [windowSize, setWindowSize] = React.useState({
-    width: 0,
-    height: 0,
-  });
 
   React.useEffect(() => {
     if (typeof window === "undefined") {
@@ -68,9 +65,7 @@ export function useWindowSize() {
 
     const handleResize = () => {
       setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
+
     };
 
     // Set initial size

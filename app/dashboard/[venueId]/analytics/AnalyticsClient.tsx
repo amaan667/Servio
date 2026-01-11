@@ -15,38 +15,22 @@ import {
 import { CostInsights } from "./components/CostInsights";
 
 interface TopSellingItem {
-  name: string;
-  quantity: number;
-  revenue: number;
-  category?: string;
-  ordersCount?: number;
-  price?: number;
+
 }
 
 interface AnalyticsClientProps {
-  ordersData: {
-    totalOrders: number;
-    pendingOrders: number;
-    completedOrders: number;
-    avgOrderValue: number;
+
     ordersByStatus: Record<string, number>;
   };
-  menuData: {
-    totalItems: number;
-    activeItems: number;
-    topSellingItems: TopSellingItem[];
-    itemsWithImages: number;
+
     itemsByCategory: Record<string, number>;
   };
-  revenueData: {
-    totalRevenue: number;
-    averageOrderValue: number;
-    revenueByHour: unknown[];
+
     revenueByDay: Record<string, number>;
   };
   hasAdvancedAnalytics?: boolean;
   currentTier?: string;
-  venueId: string;
+
 }
 
 export default function AnalyticsClient({
@@ -367,11 +351,7 @@ function MetricCard({
   icon,
   trend,
 }: {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  trend?: number;
+
 }) {
   return (
     <Card>
@@ -401,12 +381,7 @@ function MetricCard({
 
 function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    placed: "bg-yellow-500",
-    in_prep: "bg-blue-500",
-    ready: "bg-green-500",
-    serving: "bg-purple-500",
-    completed: "bg-gray-500",
-    cancelled: "bg-red-500",
+
   };
   return colors[status.toLowerCase()] || "bg-gray-400";
 }

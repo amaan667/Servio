@@ -8,20 +8,12 @@ import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 
 export interface ModifierOption {
   id?: string;
-  name: string;
-  price_modifier: number;
-  is_available: boolean;
-  display_order?: number;
+
 }
 
 export interface MenuItemModifier {
   id?: string;
-  menu_item_id: string;
-  name: string;
-  type: "single" | "multiple";
-  required: boolean;
-  options: ModifierOption[];
-  display_order?: number;
+
 }
 
 export interface SelectedModifiers {
@@ -29,7 +21,7 @@ export interface SelectedModifiers {
 }
 
 interface ModifierSelectorProps {
-  modifiers: MenuItemModifier[];
+
   onModifiersChange: (selectedModifiers: SelectedModifiers, priceModifier: number) => void;
   initialSelected?: SelectedModifiers;
 }
@@ -51,9 +43,6 @@ export function ModifierSelector({
           if (option) {
             totalModifier += option.price_modifier;
           }
-        });
-      });
-    });
 
     onModifiersChange(selectedModifiers, totalModifier);
   }, [selectedModifiers, modifiers, onModifiersChange]);
@@ -79,7 +68,7 @@ export function ModifierSelector({
           [modifierName]: current.filter((name) => name !== optionName),
         };
       }
-    });
+
   };
 
   // Sort modifiers by display_order

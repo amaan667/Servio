@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -17,9 +16,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { order_ids, payment_method, venue_id } = body;
 
-    logger.info("[PAY MULTIPLE] Processing payment for multiple orders", {
-      data: { orderCount: order_ids?.length || 0, payment_method, venue_id },
-    });
+    
 
     // Validation
     if (!order_ids || !Array.isArray(order_ids) || order_ids.length === 0) {
@@ -50,22 +47,19 @@ export async function POST(req: NextRequest) {
       .eq("venue_id", venue_id);
 
     if (fetchError || !orders || orders.length === 0) {
-      logger.error("[PAY MULTIPLE] Orders not found", {
-        data: { order_ids, venue_id, error: fetchError },
-      });
+      
       return apiErrors.notFound("Orders not found");
     }
 
     // Validate all orders are unpaid
     const alreadyPaid = orders.filter((o) => o.payment_status === "PAID");
     if (alreadyPaid.length > 0) {
-      logger.warn("[PAY MULTIPLE] Some orders already paid", {
-        data: { alreadyPaid: alreadyPaid.map((o) => o.id) },
-      });
+       => o.id) },
+
       return NextResponse.json(
         {
           error: `Some orders are already paid: ${alreadyPaid.map((o) => o.id.slice(-6)).join(", ")}`,
-          alreadyPaid: alreadyPaid.map((o) => o.id),
+
         },
         { status: 400 }
       );
@@ -74,9 +68,7 @@ export async function POST(req: NextRequest) {
     // Validate all orders are from same table (optional but recommended)
     const tableNumbers = [...new Set(orders.map((o) => o.table_number).filter(Boolean))];
     if (tableNumbers.length > 1) {
-      logger.warn("[PAY MULTIPLE] Orders from different tables", {
-        data: { tableNumbers },
-      });
+      
       // Allow it but log warning
     }
 
@@ -84,47 +76,32 @@ export async function POST(req: NextRequest) {
     const { data: updatedOrders, error: updateError } = await admin
       .from("orders")
       .update({
-        payment_status: "PAID",
-        payment_method: payment_method === "till" ? "till" : payment_method,
-        updated_at: new Date().toISOString(),
-      })
+
       .in("id", order_ids)
       .eq("venue_id", venue_id)
       .select("*");
 
     if (updateError) {
-      logger.error("[PAY MULTIPLE] Failed to update orders", {
-        data: { order_ids, error: updateError },
-      });
+      
       return apiErrors.internal("Failed to mark orders as paid");
     }
 
     // Calculate total
     const totalAmount = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
 
-    logger.info("[PAY MULTIPLE] Successfully paid multiple orders", {
-      data: {
-        orderCount: updatedOrders?.length || 0,
-        totalAmount,
-        payment_method,
-        tableNumber: tableNumbers[0] || null,
-      },
-    });
+    
 
     return NextResponse.json({
-      ok: true,
-      orders: updatedOrders || [],
+
       totalAmount,
-      orderCount: updatedOrders?.length || 0,
+
       payment_method,
       message: `Successfully marked ${updatedOrders?.length || 0} order(s) as paid`,
-    });
+
   } catch (_error) {
-    logger.error("[PAY MULTIPLE] Unexpected error", {
-      data: {
-        error: _error instanceof Error ? _error.message : String(_error),
+
       },
-    });
+
     return apiErrors.internal("Internal server error");
   }
 }

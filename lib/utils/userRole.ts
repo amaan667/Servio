@@ -8,8 +8,5 @@ export function isValidUserRole(role: string | null | undefined): role is UserRo
 
 // Helper to safely cast a string to UserRole with fallback
 export function toUserRole(
-  role: string | null | undefined,
-  fallback: UserRole = "staff"
-): UserRole {
-  return isValidUserRole(role) ? role : fallback;
+
 }

@@ -58,30 +58,23 @@ export function handleAuthError(error: unknown): { message: string; code: string
     case "invalid_grant":
     case "refresh_token_not_found":
       return {
-        message: "Your session has expired. Please sign in again.",
-        code: "session_expired",
+
       };
     case "invalid_request":
     case "validation_failed":
       return {
-        message: "Invalid authentication request. Please try again.",
-        code: "invalid_request",
+
       };
     case "network_error":
     case "fetch_error":
       return {
-        message: "Network connection issue. Please check your internet connection.",
-        code: "network_error",
+
       };
     case "timeout_error":
       return {
-        message: "Authentication timed out. Please try again.",
-        code: "timeout_error",
+
       };
-    default:
-      return {
-        message: errorMessage,
-        code: errorCode,
+
       };
   }
 }
@@ -118,10 +111,7 @@ export function validateSession(session: unknown): { isValid: boolean; error?: s
 // Get user agent info for debugging
 export function getUserAgentInfo(userAgent: string) {
   return {
-    isMobile: isMobileDevice(userAgent),
-    userAgent: userAgent,
-    browser: getBrowserInfo(userAgent),
-    os: getOSInfo(userAgent),
+
   };
 }
 

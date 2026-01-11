@@ -10,10 +10,7 @@ export async function markPaid(orderId: string) {
 }
 
 export async function setOrderStatus(
-  orderId: string,
-  next: "IN_PREP" | "READY" | "SERVING" | "SERVED" | "CANCELLED"
-) {
-  const supabase = await createClient();
+
   const { error } = await supabase.from("orders").update({ order_status: next }).eq("id", orderId);
   if (error) throw error;
 }
@@ -23,10 +20,7 @@ export function todayBounds(tz: string) {
   const now = new Date();
   const start = new Date(
     new Intl.DateTimeFormat("en-GB", {
-      timeZone: tz,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
+
     }).format(now) + " 00:00:00"
   );
   const end = new Date(start);

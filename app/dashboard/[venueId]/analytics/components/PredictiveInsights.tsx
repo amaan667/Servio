@@ -5,11 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingDown, TrendingUp, Clock, AlertTriangle, Lightbulb } from "lucide-react";
 
 interface Insight {
-  type: "warning" | "opportunity" | "info";
-  title: string;
-  description: string;
-  metric?: string;
-  trend?: "up" | "down" | "neutral";
+
 }
 
 interface OrdersData {
@@ -29,16 +25,13 @@ interface MenuData {
 interface RevenueData {
   totalRevenue?: number;
   revenueByHour?: Array<{
-    hour: string;
-    revenue: number;
+
   }>;
   revenueByDay?: Record<string, number>;
 }
 
 interface PredictiveInsightsProps {
-  ordersData: OrdersData;
-  menuData: MenuData;
-  revenueData: RevenueData;
+
 }
 
 export function PredictiveInsights({ ordersData, menuData, revenueData }: PredictiveInsightsProps) {
@@ -59,12 +52,10 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
     const percentage = ((lowMarginRevenue / totalRevenue) * 100).toFixed(1);
 
     insights.push({
-      type: "warning",
-      title: "Low-Margin Items Underperforming",
+
       description: `Your low-margin items contribute ${percentage}% of revenue but may be reducing overall profitability. Consider adjusting prices or promoting higher-margin items.`,
       metric: `-${percentage}%`,
-      trend: "down",
-    });
+
   }
 
   // Peak time analysis
@@ -75,12 +66,10 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
 
     if (peakHour && peakHour.hour) {
       insights.push({
-        type: "info",
-        title: "Peak Time Identified",
+
         description: `Your busiest hour is ${peakHour.hour}:00. Consider prepping ingredients 1-2 hours earlier and ensuring adequate staffing during this time.`,
         metric: `${peakHour.hour}:00`,
-        trend: "neutral",
-      });
+
     }
   }
 
@@ -98,20 +87,16 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
 
     if (change > 10) {
       insights.push({
-        type: "opportunity",
-        title: "Revenue Trending Upward",
+
         description: `Revenue increased by ${change.toFixed(1)}% this week. This trend suggests strong customer demand - consider expanding menu offerings or increasing inventory.`,
         metric: `+${change.toFixed(1)}%`,
-        trend: "up",
-      });
+
     } else if (change < -10) {
       insights.push({
-        type: "warning",
-        title: "Revenue Declining",
+
         description: `Revenue decreased by ${Math.abs(change).toFixed(1)}% this week. Consider promotional campaigns or reviewing menu prices and availability.`,
         metric: `${change.toFixed(1)}%`,
-        trend: "down",
-      });
+
     }
   }
 
@@ -125,12 +110,10 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
 
     if (concentration > 50) {
       insights.push({
-        type: "warning",
-        title: "Revenue Concentration Risk",
+
         description: `Your top 3 items account for ${concentration.toFixed(0)}% of revenue. Diversify your menu to reduce dependency on specific items.`,
         metric: `${concentration.toFixed(0)}%`,
-        trend: "neutral",
-      });
+
     }
   }
 
@@ -141,12 +124,10 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
 
   if (completionRate < 90 && totalOrders > 10) {
     insights.push({
-      type: "warning",
-      title: "Order Completion Rate Below Target",
+
       description: `Only ${completionRate.toFixed(0)}% of orders are being completed. Review kitchen efficiency and identify bottlenecks.`,
       metric: `${completionRate.toFixed(0)}%`,
-      trend: "down",
-    });
+
   }
 
   const getIcon = (type: string) => {
@@ -155,8 +136,7 @@ export function PredictiveInsights({ ordersData, menuData, revenueData }: Predic
         return <AlertTriangle className="h-5 w-5 text-orange-500" />;
       case "opportunity":
         return <Lightbulb className="h-5 w-5 text-green-500" />;
-      default:
-        return <TrendingUp className="h-5 w-5 text-blue-500" />;
+
     }
   };
 

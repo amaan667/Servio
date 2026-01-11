@@ -5,12 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 interface StatusHeaderProps {
-  autoRefreshEnabled: boolean;
-  refreshInterval: number;
-  onToggleAutoRefresh: () => void;
-  onChangeRefreshInterval: (interval: number) => void;
-  tableFilter: string | null;
-  venueId: string;
+
 }
 
 export function StatusHeader({

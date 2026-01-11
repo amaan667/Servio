@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,10 +10,9 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const updatePaymentSchema = z.object({
-  order_id: z.string().uuid("Invalid order ID"),
+
   payment_status: z.enum(["PAID", "UNPAID", "REFUNDED"]),
   payment_mode: z.enum(["online", "pay_later", "pay_at_till"]).optional(),
-});
 
 /**
  * Update payment status for an order
@@ -54,23 +52,15 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (checkError || !orderCheck) {
-      logger.error("[POS PAYMENTS POST] Order not found:", {
-        error: checkError?.message,
-        orderId: body.order_id,
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.notFound("Order not found");
     }
 
     // Update order payment status
     const updateData: {
-      payment_status: string;
-      payment_mode?: string;
-      updated_at: string;
+
     } = {
-      payment_status: body.payment_status,
-      updated_at: new Date().toISOString(),
+
     };
 
     if (body.payment_mode) {
@@ -88,34 +78,18 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (updateError || !updatedOrder) {
-      logger.error("[POS PAYMENTS POST] Error updating payment status:", {
-        error: updateError?.message,
-        orderId: body.order_id,
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(
         "Failed to update payment status",
         isDevelopment() ? updateError?.message : undefined
       );
     }
 
-    logger.info("[POS PAYMENTS POST] Payment status updated successfully", {
-      orderId: body.order_id,
-      paymentStatus: body.payment_status,
-      venueId,
-      userId: context.user.id,
-    });
+    
 
     // STEP 5: Return success response
     return success({ order: updatedOrder });
   } catch (error) {
-    logger.error("[POS PAYMENTS POST] Unexpected error:", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      venueId: context.venueId,
-      userId: context.user.id,
-    });
 
     if (isZodError(error)) {
       return handleZodError(error);
@@ -123,7 +97,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
-});
 
 /**
  * Get payment information for orders
@@ -189,28 +162,14 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: orders, error } = await query;
 
     if (error) {
-      logger.error("[POS PAYMENTS GET] Error:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        venueId,
-        userId: context.user.id,
-      });
+      
       return apiErrors.database(error.message || "Internal server error");
     }
 
-    logger.info("[POS PAYMENTS GET] Payments fetched successfully", {
-      venueId,
-      orderCount: orders?.length || 0,
-      userId: context.user.id,
-    });
+    
 
     return success({ orders: orders || [] });
   } catch (error) {
-    logger.error("[POS PAYMENTS GET] Unexpected error:", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      venueId: context.venueId,
-      userId: context.user.id,
-    });
 
     if (isZodError(error)) {
       return handleZodError(error);
@@ -218,4 +177,3 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
-});

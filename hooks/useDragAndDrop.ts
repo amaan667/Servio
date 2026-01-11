@@ -6,16 +6,13 @@
 
 import { useState, useCallback } from "react";
 import { DropResult } from "@hello-pangea/dnd";
-import { logger } from "@/lib/logger";
 
 interface MenuItem {
-  id: string;
-  position?: number;
-  [key: string]: unknown;
+
 }
 
 export function useDragAndDrop<T extends MenuItem>(
-  items: T[],
+
   onReorder: (items: T[]) => Promise<{ success: boolean; error?: unknown }>
 ) {
   const [draggedItem, setDraggedItem] = useState<T | null>(null);
@@ -55,18 +52,18 @@ export function useDragAndDrop<T extends MenuItem>(
         // Update positions
         const reorderedItems = newItems.map((item, index) => ({
           ...item,
-          position: index,
+
         }));
 
         // Save to database
         const result = await onReorder(reorderedItems);
 
         if (!result.success) {
-          logger.error("Failed to reorder items", { error: result.error });
+          
           throw result.error;
         }
       } catch (error) {
-        logger.error("Error reordering items", { error });
+        
         // Could show toast notification here
       } finally {
         setIsReordering(false);

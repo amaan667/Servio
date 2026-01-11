@@ -6,14 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 
 interface FeatureErrorBoundaryProps {
-  children: React.ReactNode;
-  featureName: string;
-  fallback?: React.ReactNode;
+
 }
 
 interface FeatureErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
+
 }
 
 /**

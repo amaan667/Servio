@@ -2,15 +2,8 @@ import { errorToContext } from "@/lib/utils/error-to-context";
 
 // Session management utilities for QR rescan and order resume functionality
 
-import { logger } from "@/lib/logger";
 export interface SessionData {
-  sessionId: string;
-  tableId?: string | null;
-  tableNumber?: number;
-  venueId: string;
-  orderId?: string;
-  paymentStatus?: "unpaid" | "paid" | "till";
-  createdAt: string;
+
 }
 
 /**
@@ -47,11 +40,7 @@ export function getOrCreateSessionId(tableNumber?: number, venueId?: string): st
 
     // Store session data
     const sessionData: SessionData = {
-      sessionId: newSessionId,
-      tableId: null,
-      tableNumber: tableNumber || undefined,
-      venueId: venueId || "",
-      createdAt: new Date().toISOString(),
+
     };
 
     localStorage.setItem(`servio-session-${newSessionId}`, JSON.stringify(sessionData));
@@ -82,7 +71,7 @@ export function getSessionData(sessionId: string): SessionData | null {
       try {
         return JSON.parse(stored);
       } catch (_error) {
-        logger.error("[SESSION] Error parsing session data:", errorToContext(_error));
+        );
       }
     }
   }
@@ -93,15 +82,7 @@ export function getSessionData(sessionId: string): SessionData | null {
  * Update session data with order information
  */
 export function updateSessionWithOrder(
-  sessionId: string,
-  orderId: string,
-  paymentStatus: "unpaid" | "paid" | "till"
-): void {
-  const sessionData = getSessionData(sessionId);
-  if (sessionData) {
-    sessionData.orderId = orderId;
-    sessionData.paymentStatus = paymentStatus;
-    storeSessionData(sessionData);
+
   }
 }
 
@@ -129,7 +110,7 @@ export async function checkForOpenOrder(sessionId: string): Promise<unknown | nu
 
     return null;
   } catch (_error) {
-    logger.error("[SESSION] Error checking for open order:", errorToContext(_error));
+    );
     return null;
   }
 }

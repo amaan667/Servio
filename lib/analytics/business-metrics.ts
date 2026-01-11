@@ -1,50 +1,15 @@
 import { supabaseBrowser } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface BusinessMetrics {
   // Revenue metrics
-  totalRevenue: number;
-  averageOrderValue: number;
-  revenueGrowth: number;
 
-  // Order metrics
-  totalOrders: number;
-  ordersToday: number;
-  ordersThisWeek: number;
-  ordersThisMonth: number;
-  orderGrowth: number;
-
-  // Customer metrics
-  totalCustomers: number;
-  newCustomers: number;
-  returningCustomers: number;
-  customerRetentionRate: number;
-
-  // Performance metrics
-  averageOrderTime: number;
-  peakHours: string[];
-  busiestDay: string;
-
-  // Menu metrics
-  topSellingItems: Array<{
-    name: string;
-    quantity: number;
-    revenue: number;
   }>;
-  leastSellingItems: Array<{
-    name: string;
-    quantity: number;
-    revenue: number;
+
   }>;
 
   // Table metrics
-  tableUtilization: number;
-  averageTableTurnover: number;
 
-  // Staff metrics
-  staffEfficiency: number;
-  ordersPerStaff: number;
 }
 
 export class BusinessMetricsService {
@@ -52,10 +17,7 @@ export class BusinessMetricsService {
    * Get comprehensive business metrics for a venue
    */
   static async getVenueMetrics(
-    venueId: string,
-    dateRange: {
-      start: Date;
-      end: Date;
+
     }
   ): Promise<BusinessMetrics> {
     try {
@@ -90,10 +52,7 @@ export class BusinessMetricsService {
         ...staffMetrics,
       };
     } catch (_error) {
-      logger.error(
-        "[BUSINESS METRICS] Error fetching venue metrics:",
-        _error as Record<string, unknown>
-      );
+      
       throw _error;
     }
   }
@@ -102,8 +61,7 @@ export class BusinessMetricsService {
    * Get revenue metrics
    */
   private static async getRevenueMetrics(
-    supabase: SupabaseClient,
-    venueId: string,
+
     dateRange: { start: Date; end: Date }
   ) {
     const { data: orders } = await supabase
@@ -228,8 +186,7 @@ export class BusinessMetricsService {
    * Get customer metrics
    */
   private static async getCustomerMetrics(
-    supabase: SupabaseClient,
-    venueId: string,
+
     dateRange: { start: Date; end: Date }
   ) {
     const { data: customers } = await supabase
@@ -256,7 +213,6 @@ export class BusinessMetricsService {
       if (!customerFirstOrders.has(order.customer_name)) {
         customerFirstOrders.set(order.customer_name, order.created_at);
       }
-    });
 
     const newCustomers = Array.from(customerFirstOrders.entries()).filter(
       ([, firstOrder]) =>
@@ -279,8 +235,7 @@ export class BusinessMetricsService {
    * Get performance metrics
    */
   private static async getPerformanceMetrics(
-    supabase: SupabaseClient,
-    venueId: string,
+
     dateRange: { start: Date; end: Date }
   ) {
     const { data: orders } = await supabase
@@ -305,14 +260,11 @@ export class BusinessMetricsService {
           ) /
           completedOrders.length /
           (1000 * 60) // Convert to minutes
-        : 0;
 
-    // Find peak hours
     const hourCounts = new Map<number, number>();
     orders?.forEach((order: { created_at: string }) => {
       const hour = new Date(order.created_at).getHours();
       hourCounts.set(hour, (hourCounts.get(hour) || 0) + 1);
-    });
 
     const peakHours = Array.from(hourCounts.entries())
       .sort(([, a], [, b]) => b - a)
@@ -324,7 +276,6 @@ export class BusinessMetricsService {
     orders?.forEach((order: { created_at: string }) => {
       const day = new Date(order.created_at).toLocaleDateString("en-US", { weekday: "long" });
       dayCounts.set(day, (dayCounts.get(day) || 0) + 1);
-    });
 
     const busiestDay =
       Array.from(dayCounts.entries()).sort(([, a], [, b]) => b - a)[0]?.[0] || "Unknown";
@@ -340,8 +291,7 @@ export class BusinessMetricsService {
    * Get menu metrics
    */
   private static async getMenuMetrics(
-    supabase: SupabaseClient,
-    venueId: string,
+
     dateRange: { start: Date; end: Date }
   ) {
     const { data: orderItems } = await supabase
@@ -362,8 +312,7 @@ export class BusinessMetricsService {
     const itemStats = new Map<string, { quantity: number; revenue: number }>();
 
     interface OrderItemWithMenu {
-      quantity: number;
-      price: number;
+
       menu_items: { name: string } | null;
     }
 
@@ -371,10 +320,6 @@ export class BusinessMetricsService {
       const name = item.menu_items?.name || "Unknown";
       const existing = itemStats.get(name) || { quantity: 0, revenue: 0 };
       itemStats.set(name, {
-        quantity: existing.quantity + item.quantity,
-        revenue: existing.revenue + item.quantity * item.price,
-      });
-    });
 
     const sortedItems = Array.from(itemStats.entries())
       .map(([name, stats]) => ({ name, ...stats }))
@@ -393,8 +338,7 @@ export class BusinessMetricsService {
    * Get table metrics
    */
   private static async getTableMetrics(
-    supabase: SupabaseClient,
-    venueId: string,
+
     dateRange: { start: Date; end: Date }
   ) {
     const { data: tables } = await supabase
@@ -423,10 +367,7 @@ export class BusinessMetricsService {
     );
     const averageTableTurnover = tables?.length
       ? (orders?.length || 0) / tables.length / daysInPeriod
-      : 0;
 
-    return {
-      tableUtilization,
       averageTableTurnover,
     };
   }
@@ -435,8 +376,7 @@ export class BusinessMetricsService {
    * Get staff metrics
    */
   private static async getStaffMetrics(
-    supabase: SupabaseClient,
-    venueId: string,
+
     dateRange: { start: Date; end: Date }
   ) {
     const { data: staff } = await supabase
@@ -468,10 +408,7 @@ export class BusinessMetricsService {
    * Get real-time metrics for dashboard
    */
   static async getRealTimeMetrics(venueId: string): Promise<{
-    activeOrders: number;
-    pendingOrders: number;
-    todayRevenue: number;
-    todayOrders: number;
+
   }> {
     try {
       const supabase = supabaseBrowser();
@@ -516,10 +453,7 @@ export class BusinessMetricsService {
         todayOrders,
       };
     } catch (_error) {
-      logger.error(
-        "[BUSINESS METRICS] Error fetching real-time metrics:",
-        _error as Record<string, unknown>
-      );
+      
       throw _error;
     }
   }

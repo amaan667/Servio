@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors } from "@/lib/api/standard-response";
@@ -18,7 +17,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: "Too many requests",
+
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -70,12 +69,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     // Log ticket generation
-    logger.info("[TICKET PRINT] Generated ticket", {
-      orderId,
-      finalVenueId,
-      printerType,
-      length: ticketContent.length,
-    });
+    
 
     // In production, this would send to actual printer
     // For now, return the ticket content
@@ -85,38 +79,25 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // await sendToPrinter(printerId, ticketContent);
 
     return NextResponse.json({
-      success: true,
-      ticket: ticketContent,
-      format: printerType,
-      note: "Ticket content generated. Integrate with printer API for physical printing.",
-    });
+
   } catch (error) {
-    logger.error("[TICKET PRINT] Error:", error);
+    
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
-});
 
 /**
  * Generate ESC/POS formatted ticket
  */
 function generateESCPOSTicket(
-  order: {
-    id: string;
-    table_number?: number | null;
-    customer_name?: string;
+
     items?: Array<{ item_name?: string; quantity?: number; price?: number }>;
     total_amount?: number;
-    created_at: string;
+
   },
-  venueName: string,
-  venueAddress: string,
-  venuePhone: string
-): string {
-  const orderNumber = order.id.slice(-6).toUpperCase();
-  const date = new Date(order.created_at).toLocaleString();
+
   const tableLabel = order.table_number ? `Table ${order.table_number}` : "Counter Order";
 
   // ESC/POS commands
@@ -167,7 +148,7 @@ function generateESCPOSTicket(
       const price = (item.price || 0) * qty;
       ticket += `${qty}x ${name}\n`;
       ticket += `    £${price.toFixed(2)}\n`;
-    });
+
   }
 
   ticket += "--------------------------------\n";
@@ -186,20 +167,12 @@ function generateESCPOSTicket(
  * Generate plain text ticket
  */
 function generatePlainTextTicket(
-  order: {
-    id: string;
-    table_number?: number | null;
-    customer_name?: string;
+
     items?: Array<{ item_name?: string; quantity?: number; price?: number }>;
     total_amount?: number;
-    created_at: string;
+
   },
-  venueName: string,
-  venueAddress: string,
-  venuePhone: string
-): string {
-  const orderNumber = order.id.slice(-6).toUpperCase();
-  const date = new Date(order.created_at).toLocaleString();
+
   const tableLabel = order.table_number ? `Table ${order.table_number}` : "Counter Order";
 
   let ticket = `${venueName}\n`;
@@ -223,7 +196,7 @@ function generatePlainTextTicket(
       const name = item.item_name || "Item";
       const price = (item.price || 0) * qty;
       ticket += `${qty}x ${name} - £${price.toFixed(2)}\n`;
-    });
+
   }
 
   ticket += "--------------------------------\n";

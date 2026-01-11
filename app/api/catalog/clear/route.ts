@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { logger } from "@/lib/logger";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors } from "@/lib/api/standard-response";
@@ -16,9 +15,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, _context) => {
 
     return success({ message: "All menu items cleared" });
   } catch (_error) {
-    logger.error("[CATALOG CLEAR] Unexpected error:", {
-      error: _error instanceof Error ? _error.message : "Unknown _error",
-    });
+    
     return apiErrors.internal("Internal server error");
   }
-});

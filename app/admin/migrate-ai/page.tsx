@@ -14,11 +14,7 @@ export default function MigrateAIPage() {
   const [loading, setLoading] = useState(false);
   const [migrationStatus, setMigrationStatus] = useState<{
     migrationStatus?: Array<{
-      table_name: string;
-      total_conversations: number;
-      generic_titles: number;
-      oldest_conversation: string;
-      newest_conversation: string;
+
     }>;
     conversationsNeedingAiTitles?: number;
   } | null>(null);
@@ -55,8 +51,7 @@ export default function MigrateAIPage() {
 
     try {
       const response = await fetch("/api/migrate-ai-conversations", {
-        method: "POST",
-      });
+
       const data = await response.json();
 
       if (response.ok) {

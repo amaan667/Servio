@@ -4,47 +4,27 @@
 import { createClient } from "@/lib/supabase";
 
 interface KitchenBottleneckResult {
-  bottlenecks: Array<{
-    station: string;
-    avgPrepTime: number;
-    ticketsInProgress: number;
-    overdueTickets: number;
-    recommendation: string;
+
   }>;
-  summary: string;
+
 }
 
 interface StaffScheduleResult {
-  recommendations: Array<{
-    dayOfWeek: string;
-    timeSlot: string;
-    suggestedStaff: number;
-    reasoning: string;
-    expectedOrders: number;
+
   }>;
-  summary: string;
+
 }
 
 interface WasteAnalysisResult {
-  wastePatterns: Array<{
-    item: string;
-    category: string;
-    estimatedWaste: number;
-    wastePercent: number;
-    recommendation: string;
+
   }>;
-  totalEstimatedWaste: number;
-  summary: string;
+
 }
 
 interface TableTurnoverResult {
-  avgTurnoverTime: number;
-  byTable: Array<{
-    tableNumber: number;
-    avgTime: number;
-    completedOrders: number;
+
   }>;
-  recommendations: string[];
+
 }
 
 /**
@@ -65,8 +45,7 @@ export async function analyzeKitchenBottlenecks(venueId: string): Promise<Kitche
 
   if (!tickets || tickets.length === 0) {
     return {
-      bottlenecks: [],
-      summary: "No KDS data available. Enable Kitchen Display System to track kitchen performance.",
+
     };
   }
 
@@ -74,20 +53,14 @@ export async function analyzeKitchenBottlenecks(venueId: string): Promise<Kitche
   const stationStats = new Map<
     string,
     {
-      prepTimes: number[];
-      inProgress: number;
-      overdue: number;
-      total: number;
+
     }
   >();
 
   tickets.forEach((ticket) => {
     const station = ticket.station_name || "Unknown";
     const stats = stationStats.get(station) || {
-      prepTimes: [],
-      inProgress: 0,
-      overdue: 0,
-      total: 0,
+
     };
 
     stats.total++;
@@ -111,16 +84,12 @@ export async function analyzeKitchenBottlenecks(venueId: string): Promise<Kitche
     }
 
     stationStats.set(station, stats);
-  });
 
   const bottlenecks = Array.from(stationStats.entries()).map(([station, stats]) => {
     const avgPrepTime =
       stats.prepTimes.length > 0
         ? stats.prepTimes.reduce((a, b) => a + b, 0) / stats.prepTimes.length
-        : 0;
 
-    let recommendation = "";
-    if (avgPrepTime > 12) {
       recommendation = `Slow station - avg prep time ${avgPrepTime.toFixed(1)} min. Consider additional staff or equipment.`;
     } else if (stats.overdue > 5) {
       recommendation = `${stats.overdue} overdue tickets. Check for process bottlenecks or staffing issues.`;
@@ -132,12 +101,9 @@ export async function analyzeKitchenBottlenecks(venueId: string): Promise<Kitche
 
     return {
       station,
-      avgPrepTime: Math.round(avgPrepTime * 10) / 10,
-      ticketsInProgress: stats.inProgress,
-      overdueTickets: stats.overdue,
+
       recommendation,
     };
-  });
 
   // Sort by avg prep time (slowest first)
   bottlenecks.sort((a, b) => b.avgPrepTime - a.avgPrepTime);
@@ -145,10 +111,7 @@ export async function analyzeKitchenBottlenecks(venueId: string): Promise<Kitche
   const summary =
     bottlenecks.length > 0
       ? `Slowest station: ${bottlenecks[0].station} (${bottlenecks[0].avgPrepTime} min avg). ${bottlenecks.filter((b) => b.overdueTickets > 0).length} stations have overdue tickets.`
-      : "All stations operating within normal parameters.";
 
-  return {
-    bottlenecks,
     summary,
   };
 }
@@ -172,8 +135,7 @@ export async function optimizeStaffSchedule(venueId: string): Promise<StaffSched
 
   if (!orders || orders.length < 20) {
     return {
-      recommendations: [],
-      summary: "Not enough order history (need at least 20 orders). Continue collecting data.",
+
     };
   }
 
@@ -188,7 +150,6 @@ export async function optimizeStaffSchedule(venueId: string): Promise<StaffSched
     const key = `${dayOfWeek}-${hour}`;
 
     demandMap.set(key, (demandMap.get(key) || 0) + 1);
-  });
 
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -214,14 +175,13 @@ export async function optimizeStaffSchedule(venueId: string): Promise<StaffSched
         const suggestedStaff = Math.ceil(orders / 5); // Rough estimate: 1 staff per 5 orders/hour
 
         recommendations.push({
-          dayOfWeek: dayNames[day],
+
           timeSlot: `${hour}:00-${hour + 1}:00`,
           suggestedStaff,
           reasoning: `Peak period with ${orders} orders/hour (${((orders / avgOrders - 1) * 100).toFixed(0)}% above average)`,
-          expectedOrders: orders,
-        });
+
       }
-    });
+
   }
 
   // Sort by expected orders (busiest first)
@@ -230,9 +190,7 @@ export async function optimizeStaffSchedule(venueId: string): Promise<StaffSched
   const summary =
     recommendations.length > 0
       ? `Identified ${recommendations.length} peak periods. Busiest: ${recommendations[0].dayOfWeek} ${recommendations[0].timeSlot} (${recommendations[0].expectedOrders} orders/hour).`
-      : "Order volume is consistent throughout the week. Standard staffing recommended.";
 
-  return {
     recommendations: recommendations.slice(0, 10), // Top 10 busiest periods
     summary,
   };
@@ -267,8 +225,6 @@ export async function analyzeWastePatterns(venueId: string): Promise<WasteAnalys
     const items = order.items as Array<{ item_name: string; quantity: number }>;
     items?.forEach((item) => {
       salesMap.set(item.item_name, (salesMap.get(item.item_name) || 0) + item.quantity);
-    });
-  });
 
   const wastePatterns: WasteAnalysisResult["wastePatterns"] = [];
   let totalEstimatedWaste = 0;
@@ -294,14 +250,12 @@ export async function analyzeWastePatterns(venueId: string): Promise<WasteAnalys
       }
 
       wastePatterns.push({
-        item: item.name,
-        category: item.category || "Uncategorized",
+
         estimatedWaste,
-        wastePercent: Math.round(estimatedWastePercent),
+
         recommendation,
-      });
+
     }
-  });
 
   // Sort by estimated waste (highest first)
   wastePatterns.sort((a, b) => b.estimatedWaste - a.estimatedWaste);
@@ -309,11 +263,9 @@ export async function analyzeWastePatterns(venueId: string): Promise<WasteAnalys
   const summary =
     wastePatterns.length > 0
       ? `Identified ${wastePatterns.length} items with potential waste. Estimated monthly waste cost: ${totalEstimatedWaste.toFixed(2)}. Focus on top 3 items for maximum impact.`
-      : "No significant waste patterns detected. Menu appears well-optimized.";
 
-  return {
     wastePatterns: wastePatterns.slice(0, 15), // Top 15 waste items
-    totalEstimatedWaste: Math.round(totalEstimatedWaste * 100) / 100,
+
     summary,
   };
 }
@@ -338,9 +290,7 @@ export async function improveTurnover(venueId: string): Promise<TableTurnoverRes
 
   if (!orders || orders.length === 0) {
     return {
-      avgTurnoverTime: 0,
-      byTable: [],
-      recommendations: ["Not enough completed order data. Continue tracking orders."],
+
     };
   }
 
@@ -357,12 +307,11 @@ export async function improveTurnover(venueId: string): Promise<TableTurnoverRes
     stats.times.push(turnoverTime);
     stats.count++;
     tableStats.set(order.table_number, stats);
-  });
 
   const byTable = Array.from(tableStats.entries()).map(([tableNumber, stats]) => ({
     tableNumber,
     avgTime: Math.round(stats.times.reduce((a, b) => a + b, 0) / stats.times.length),
-    completedOrders: stats.count,
+
   }));
 
   byTable.sort((a, b) => b.avgTime - a.avgTime); // Slowest first

@@ -6,7 +6,6 @@
  */
 
 import { Stripe } from "stripe";
-import { logger } from "./logger";
 
 interface RetryOptions {
   maxRetries?: number;
@@ -17,18 +16,12 @@ interface RetryOptions {
 }
 
 interface CircuitBreakerState {
-  state: "closed" | "open" | "half-open";
-  failureCount: number;
-  lastFailureTime: number;
-  successCount: number;
+
 }
 
 class CircuitBreaker {
   private state: CircuitBreakerState = {
-    state: "closed",
-    failureCount: 0,
-    lastFailureTime: 0,
-    successCount: 0,
+
   };
 
   private readonly failureThreshold = 5;
@@ -54,8 +47,6 @@ class CircuitBreaker {
       case "half-open":
         return this.state.successCount < this.halfOpenMaxAttempts;
 
-      default:
-        return false;
     }
   }
 
@@ -79,9 +70,7 @@ class CircuitBreaker {
 
     if (this.state.failureCount >= this.failureThreshold) {
       this.state.state = "open";
-      logger.warn("[CIRCUIT BREAKER] Circuit opened due to failures", {
-        failureCount: this.state.failureCount,
-      });
+      
     }
   }
 
@@ -94,12 +83,10 @@ class CircuitBreaker {
 const circuitBreaker = new CircuitBreaker();
 
 const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
-  maxRetries: 3,
+
   initialDelay: 1000, // 1 second
   maxDelay: 10000, // 10 seconds
-  backoffMultiplier: 2,
-  retryableErrors: [
-    "StripeConnectionError",
+
     "StripeAPIError",
     "rate_limit",
     "idempotency",
@@ -152,7 +139,7 @@ function calculateDelay(attempt: number, options: Required<RetryOptions>): numbe
  * @returns Promise with the result of the function
  */
 export async function withStripeRetry<T>(
-  fn: () => Promise<T>,
+
   options: RetryOptions = {}
 ): Promise<T> {
   const config = { ...DEFAULT_RETRY_OPTIONS, ...options };
@@ -161,9 +148,7 @@ export async function withStripeRetry<T>(
   // Check circuit breaker
   if (!circuitBreaker.canAttempt()) {
     const error = new Error("Circuit breaker is open. Stripe API temporarily unavailable.");
-    logger.error("[STRIPE RETRY] Circuit breaker blocked request", {
-      state: circuitBreaker.getState(),
-    });
+
     throw error;
   }
 
@@ -175,9 +160,7 @@ export async function withStripeRetry<T>(
       circuitBreaker.recordSuccess();
 
       if (attempt > 0) {
-        logger.info("[STRIPE RETRY] Request succeeded after retry", {
-          attempt: attempt + 1,
-        });
+        
       }
 
       return result;
@@ -193,21 +176,12 @@ export async function withStripeRetry<T>(
       // If this was the last attempt, throw the error
       if (attempt === config.maxRetries) {
         circuitBreaker.recordFailure();
-        logger.error("[STRIPE RETRY] Max retries exceeded", {
-          attempts: attempt + 1,
-          error: error instanceof Error ? error.message : String(error),
-        });
+
         throw error;
       }
 
       // Calculate delay and wait
       const delay = calculateDelay(attempt, config);
-      logger.warn("[STRIPE RETRY] Retrying after error", {
-        attempt: attempt + 1,
-        maxRetries: config.maxRetries,
-        delay,
-        error: error instanceof Error ? error.message : String(error),
-      });
 
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -222,10 +196,10 @@ export async function withStripeRetry<T>(
  * Get current circuit breaker state (for monitoring)
  */
 export function getCircuitBreakerState(): {
-  state: "closed" | "open" | "half-open";
+
 } {
   return {
-    state: circuitBreaker.getState(),
+
   };
 }
 
@@ -234,5 +208,5 @@ export function getCircuitBreakerState(): {
  */
 export function resetCircuitBreaker(): void {
   circuitBreaker.recordSuccess();
-  logger.info("[CIRCUIT BREAKER] Manually reset");
+  
 }

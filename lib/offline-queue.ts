@@ -3,15 +3,8 @@
  * Stores operations locally when offline and syncs when connection is restored
  */
 
-import { logger } from "@/lib/logger";
-
 export interface QueuedOperation {
-  id: string;
-  type: "order" | "payment" | "status_update" | "receipt";
-  data: unknown;
-  timestamp: number;
-  retries: number;
-  maxRetries?: number;
+
 }
 
 class OfflineQueue {
@@ -37,10 +30,10 @@ class OfflineQueue {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         this.queue = JSON.parse(stored);
-        logger.debug("[OFFLINE QUEUE] Loaded queue from storage", { count: this.queue.length });
+        
       }
     } catch (error) {
-      logger.error("[OFFLINE QUEUE] Failed to load queue:", error);
+      
       this.queue = [];
     }
   }
@@ -52,7 +45,7 @@ class OfflineQueue {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.queue));
     } catch (error) {
-      logger.error("[OFFLINE QUEUE] Failed to save queue:", error);
+      
     }
   }
 
@@ -63,9 +56,8 @@ class OfflineQueue {
     if (typeof window === "undefined") return;
 
     window.addEventListener("online", () => {
-      logger.info("[OFFLINE QUEUE] Connection restored, syncing queue");
+      
       this.syncQueue();
-    });
 
     // Also check periodically when online
     setInterval(() => {
@@ -79,24 +71,20 @@ class OfflineQueue {
    * Add operation to queue
    */
   async queueOperation(
-    type: QueuedOperation["type"],
-    data: unknown,
-    maxRetries: number = this.MAX_RETRIES
-  ): Promise<string> {
+
     const id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const operation: QueuedOperation = {
       id,
       type,
       data,
-      timestamp: Date.now(),
-      retries: 0,
+
       maxRetries,
     };
 
     this.queue.push(operation);
     this.saveQueue();
 
-    logger.debug("[OFFLINE QUEUE] Queued operation", { id, type });
+    
 
     // Try to sync immediately if online
     if (navigator.onLine) {
@@ -115,12 +103,12 @@ class OfflineQueue {
     }
 
     if (!navigator.onLine) {
-      logger.debug("[OFFLINE QUEUE] Still offline, skipping sync");
+      
       return;
     }
 
     this.isProcessing = true;
-    logger.info("[OFFLINE QUEUE] Starting queue sync", { count: this.queue.length });
+    
 
     const operationsToRetry: QueuedOperation[] = [];
 
@@ -132,16 +120,10 @@ class OfflineQueue {
           operation.retries++;
           operationsToRetry.push(operation);
         } else if (!success) {
-          logger.warn("[OFFLINE QUEUE] Operation failed after max retries", {
-            id: operation.id,
-            type: operation.type,
-          });
+          
         }
       } catch (error) {
-        logger.error("[OFFLINE QUEUE] Error processing operation:", {
-          id: operation.id,
-          error,
-        });
+        
 
         if (operation.retries < (operation.maxRetries || this.MAX_RETRIES)) {
           operation.retries++;
@@ -157,11 +139,9 @@ class OfflineQueue {
     this.isProcessing = false;
 
     if (operationsToRetry.length === 0) {
-      logger.info("[OFFLINE QUEUE] Queue sync completed successfully");
+      
     } else {
-      logger.warn("[OFFLINE QUEUE] Some operations failed, will retry later", {
-        failed: operationsToRetry.length,
-      });
+      
     }
   }
 
@@ -185,16 +165,10 @@ class OfflineQueue {
           return await this.processReceipt(
             operation.data as { orderId: string; email?: string; phone?: string; endpoint: string }
           );
-        default:
-          logger.warn("[OFFLINE QUEUE] Unknown operation type", { type: operation.type });
-          return false;
+
       }
     } catch (error) {
-      logger.error("[OFFLINE QUEUE] Error processing operation:", {
-        id: operation.id,
-        type: operation.type,
-        error,
-      });
+      
       return false;
     }
   }
@@ -204,10 +178,8 @@ class OfflineQueue {
    */
   private async processOrder(data: { order: unknown; endpoint: string }): Promise<boolean> {
     const response = await fetch(data.endpoint, {
-      method: "POST",
+
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data.order),
-    });
 
     return response.ok;
   }
@@ -217,10 +189,8 @@ class OfflineQueue {
    */
   private async processPayment(data: { payment: unknown; endpoint: string }): Promise<boolean> {
     const response = await fetch(data.endpoint, {
-      method: "POST",
+
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data.payment),
-    });
 
     return response.ok;
   }
@@ -229,32 +199,24 @@ class OfflineQueue {
    * Process status update operation
    */
   private async processStatusUpdate(data: {
-    orderId: string;
-    status: string;
-    endpoint: string;
-    paymentStatus?: string;
-    paymentMethod?: string;
+
   }): Promise<boolean> {
     // Handle payment status updates (POST to /api/orders/update-payment-status)
     if (data.endpoint.includes("update-payment-status")) {
       const response = await fetch(data.endpoint, {
-        method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: data.orderId,
-          paymentStatus: data.paymentStatus || data.status,
-          paymentMethod: data.paymentMethod,
+
         }),
-      });
+
       return response.ok;
     }
 
     // Handle order status updates (PATCH)
     const response = await fetch(data.endpoint, {
-      method: "PATCH",
+
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId: data.orderId, status: data.status }),
-    });
 
     return response.ok;
   }
@@ -263,25 +225,18 @@ class OfflineQueue {
    * Process receipt operation
    */
   private async processReceipt(data: {
-    orderId: string;
-    email?: string;
-    phone?: string;
-    endpoint: string;
-    venueId?: string;
+
   }): Promise<boolean> {
     const body: { orderId: string; email?: string; phone?: string; venueId?: string } = {
-      orderId: data.orderId,
-      venueId: data.venueId || "",
+
     };
 
     if (data.email) body.email = data.email;
     if (data.phone) body.phone = data.phone;
 
     const response = await fetch(data.endpoint, {
-      method: "POST",
+
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
 
     return response.ok;
   }
@@ -296,8 +251,7 @@ class OfflineQueue {
 
     const oldest = Math.min(...this.queue.map((op) => op.timestamp));
     return {
-      count: this.queue.length,
-      oldestTimestamp: oldest,
+
     };
   }
 
@@ -307,7 +261,7 @@ class OfflineQueue {
   clearQueue(): void {
     this.queue = [];
     this.saveQueue();
-    logger.info("[OFFLINE QUEUE] Queue cleared");
+    
   }
 }
 
@@ -318,7 +272,7 @@ export function getOfflineQueue(): OfflineQueue {
   if (typeof window === "undefined") {
     // Return a no-op instance for SSR
     return {
-      queueOperation: async () => "",
+
       syncQueue: async () => {},
       getQueueStatus: () => ({ count: 0, oldestTimestamp: null }),
       clearQueue: () => {},
@@ -350,9 +304,7 @@ export async function queuePayment(payment: unknown, endpoint: string): Promise<
  * Queue a status update when offline
  */
 export async function queueStatusUpdate(
-  orderId: string,
-  status: string,
-  endpoint: string,
+
   paymentStatus?: string,
   paymentMethod?: string
 ): Promise<string> {
@@ -363,15 +315,14 @@ export async function queueStatusUpdate(
     endpoint,
     paymentStatus,
     paymentMethod,
-  });
+
 }
 
 /**
  * Queue a receipt send when offline
  */
 export async function queueReceipt(
-  orderId: string,
-  endpoint: string,
+
   email?: string,
   phone?: string
 ): Promise<string> {
