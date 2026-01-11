@@ -46,18 +46,26 @@ export default function QRCodeClient({
   useEffect(() => {
     const tableParam = searchParams.get("table");
     const counterParam = searchParams.get("counter");
+    const bulkPrefixParam = searchParams.get("bulkPrefix");
+    const bulkCountParam = searchParams.get("bulkCount");
+    const bulkTypeParam = searchParams.get("bulkType");
 
     // Create a unique key for this set of parameters
     const paramKey = tableParam
       ? `table:${tableParam}`
       : counterParam
         ? `counter:${counterParam}`
-        : null;
+        : bulkPrefixParam && bulkCountParam
+          ? `bulk:${bulkPrefixParam}:${bulkCountParam}:${bulkTypeParam || "table"}`
+          : null;
 
     // Skip if we've already processed these exact parameters
     if (!paramKey || hasProcessedParams.current === paramKey) {
       return;
     }
+
+    // Mark as processed FIRST to prevent duplicate calls
+    hasProcessedParams.current = paramKey;
 
     // Auto-generate QR code for a specific table
     if (tableParam) {
@@ -72,9 +80,7 @@ export default function QRCodeClient({
       }
       setSingleName(tableName);
       setQrType("table");
-      // Mark as processed
-      hasProcessedParams.current = paramKey;
-      // Generate QR code immediately - no database table needed
+      // Generate QR code immediately
       qrManagement.generateQRForName(tableName, "table");
     }
 
@@ -91,13 +97,28 @@ export default function QRCodeClient({
       }
       setSingleName(counterName);
       setQrType("counter");
-      // Mark as processed
-      hasProcessedParams.current = paramKey;
-      // Generate QR code immediately - no database counter needed
+      // Generate QR code immediately
       qrManagement.generateQRForName(counterName, "counter");
     }
 
-  }, [searchParams, qrManagement.generateQRForName]);
+    // Auto-generate bulk QR codes
+    if (bulkPrefixParam && bulkCountParam) {
+      const prefix = decodeURIComponent(bulkPrefixParam).trim();
+      const count = parseInt(bulkCountParam, 10);
+      const type = (bulkTypeParam || "table") as "table" | "counter";
+      
+      if (count > 0 && count <= 100) {
+        setQrType(type);
+        setBulkPrefix(prefix);
+        setBulkCount(count.toString());
+        // Generate all QR codes immediately
+        for (let i = 1; i <= count; i++) {
+          qrManagement.generateQRForName(`${prefix} ${i}`, type);
+        }
+      }
+    }
+
+  }, [searchParams, venueId]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {

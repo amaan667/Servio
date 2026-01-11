@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { aiLogger as logger } from "@/lib/logger";
 import {
   MenuUpdatePricesParams,
@@ -17,7 +17,7 @@ export async function executeMenuUpdatePrices(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   if (!params.items || params.items.length === 0) {
     throw new AIAssistantError("No items specified for price update", "INVALID_PARAMS");
@@ -162,7 +162,7 @@ export async function executeMenuToggleAvailability(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: items } = await supabase
     .from("menu_items")
@@ -209,7 +209,62 @@ export async function executeMenuCreateItem(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
+
+  // If categoryId is not a valid UUID, try to find it by category name
+  let categoryId = params.categoryId;
+  if (categoryId && !categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    // It's a category name, not an ID - look it up (case-insensitive)
+    const { data: categories, error: categoryError } = await supabase
+      .from("menu_categories")
+      .select("id, name")
+      .eq("venue_id", venueId);
+    
+    if (categoryError) {
+      logger.error("[AI ASSISTANT] Error fetching categories:", categoryError);
+      throw new AIAssistantError(
+        `Failed to lookup category: ${categoryError.message}`,
+        "EXECUTION_FAILED",
+        { error: categoryError }
+      );
+    }
+    
+    // Try exact match first (case-insensitive), then partial match
+    const category = categories?.find(
+      (c) => c.name.toLowerCase() === categoryId.toLowerCase()
+    ) || categories?.find(
+      (c) => c.name.toLowerCase().includes(categoryId.toLowerCase()) || categoryId.toLowerCase().includes(c.name.toLowerCase())
+    );
+    
+    if (category) {
+      categoryId = category.id;
+      logger.info(`[AI ASSISTANT] Resolved category name "${params.categoryId}" to ID "${categoryId}"`);
+    } else {
+      const availableCategories = categories?.map((c) => c.name).join(", ") || "none";
+      throw new AIAssistantError(
+        `Category "${params.categoryId}" not found. Available categories: ${availableCategories}. Please use an existing category name.`,
+        "INVALID_PARAMS",
+        { availableCategories: categories?.map((c) => c.name) || [] }
+      );
+    }
+  }
+  
+  // Validate categoryId exists if it's a UUID
+  if (categoryId && categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    const { data: categoryExists } = await supabase
+      .from("menu_categories")
+      .select("id")
+      .eq("id", categoryId)
+      .eq("venue_id", venueId)
+      .single();
+    
+    if (!categoryExists) {
+      throw new AIAssistantError(
+        `Category ID "${categoryId}" not found or doesn't belong to this venue.`,
+        "INVALID_PARAMS"
+      );
+    }
+  }
 
   if (preview) {
     return {
@@ -221,7 +276,7 @@ export async function executeMenuCreateItem(
           name: params.name,
           price: params.price,
           description: params.description,
-          categoryId: params.categoryId,
+          categoryId: categoryId,
           available: params.available,
         },
       ],
@@ -240,17 +295,21 @@ export async function executeMenuCreateItem(
       name: params.name,
       description: params.description,
       price: params.price,
-      category_id: params.categoryId,
-      available: params.available,
+      category_id: categoryId,
+      available: params.available ?? true,
       image_url: params.imageUrl,
-      allergens: params.allergens,
+      allergens: params.allergens ?? [],
       created_by: _userId,
     })
     .select("id, name, price")
     .single();
 
   if (error) {
-    throw new AIAssistantError("Failed to create menu item", "EXECUTION_FAILED", { error });
+    throw new AIAssistantError(
+      `Failed to create menu item: ${error.message}`,
+      "EXECUTION_FAILED",
+      { error: error.message, details: error }
+    );
   }
 
   return {
@@ -271,7 +330,7 @@ export async function executeMenuDeleteItem(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: currentItem } = await supabase
     .from("menu_items")

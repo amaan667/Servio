@@ -62,6 +62,7 @@ export async function executeQRGenerateTable(
       message: result.message,
       tableLabel: normalizedLabel, // Pass normalized table label for navigation
       navigateTo: `/dashboard/${venueId}/qr-codes?table=${encodeURIComponent(normalizedLabel)}`,
+      table: normalizedLabel, // Pass table name for navigation tool
     },
     auditId: "",
   };
@@ -71,27 +72,30 @@ export async function executeQRGenerateTable(
  * Execute bulk QR code generation for tables
  */
 export async function executeQRGenerateBulk(
-  params: { startNumber: number; endNumber: number },
+  params: { startNumber: number; endNumber: number; prefix?: string; type?: "table" | "counter" },
   venueId: string,
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
+  const prefix = params.prefix || (params.type === "counter" ? "Counter" : "Table");
+  const type = params.type || "table";
+  
   if (preview) {
     const count = params.endNumber - params.startNumber + 1;
     return {
       toolName: "qr.generate_bulk",
       before: [],
       after: Array.from({ length: Math.min(count, 5) }, (_, i) => ({
-        label: `Table ${params.startNumber + i}`,
+        label: `${prefix} ${params.startNumber + i}`,
       })),
       impact: {
         itemsAffected: count,
-        description: `Will generate ${count} QR codes for tables ${params.startNumber}-${params.endNumber}`,
+        description: `Will generate ${count} QR codes for ${prefix} ${params.startNumber}-${params.endNumber}`,
       },
     };
   }
 
-  const result = await generateBulkTableQRCodes(venueId, params.startNumber, params.endNumber);
+  const result = await generateBulkTableQRCodes(venueId, params.startNumber, params.endNumber, prefix, type);
 
   return {
     success: true,
@@ -100,6 +104,9 @@ export async function executeQRGenerateBulk(
       count: result.qrCodes.length,
       qrCodes: result.qrCodes,
       message: result.message,
+      prefix,
+      type,
+      navigateTo: `/dashboard/${venueId}/qr-codes?bulkPrefix=${encodeURIComponent(prefix)}&bulkCount=${result.qrCodes.length}&bulkType=${type}`,
     },
     auditId: "",
   };
@@ -144,6 +151,7 @@ export async function executeQRGenerateCounter(
       message: result.message,
       counterLabel: params.counterLabel, // Pass counter label for navigation
       navigateTo: `/dashboard/${venueId}/qr-codes?counter=${encodeURIComponent(params.counterLabel)}`,
+      counter: params.counterLabel, // Pass counter name for navigation tool
     },
     auditId: "",
   };

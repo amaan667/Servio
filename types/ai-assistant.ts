@@ -498,6 +498,7 @@ export const NavigationGoToPageSchema = z
       "live-orders",
       "kds",
       "kitchen-display",
+      "qr",
       "qr-codes",
       "analytics",
       "settings",
@@ -518,6 +519,31 @@ export const NavigationGoToPageSchema = z
       .nullable()
       .default(null)
       .describe("Specific action to perform on the item"),
+    table: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("Table name for QR code generation (e.g., 'Table 6')"),
+    counter: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("Counter name for QR code generation (e.g., 'Counter 1')"),
+    bulkPrefix: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("Prefix for bulk QR code generation (e.g., 'Table', 'VIP', 'Counter')"),
+    bulkCount: z
+      .number()
+      .nullable()
+      .default(null)
+      .describe("Number of QR codes to generate in bulk (1-100)"),
+    bulkType: z
+      .enum(["table", "counter"])
+      .nullable()
+      .default(null)
+      .describe("Type for bulk generation: 'table' or 'counter'"),
   })
   .strict();
 
@@ -535,6 +561,8 @@ export const QRGenerateBulkSchema = z
   .object({
     startNumber: z.number().int().min(1),
     endNumber: z.number().int().min(1),
+    prefix: z.string().optional().describe("Prefix for QR code labels (e.g., 'Table', 'VIP', 'Counter'). Defaults to 'Table'"),
+    type: z.enum(["table", "counter"]).optional().describe("Type of QR codes to generate. Defaults to 'table'"),
   })
   .strict();
 

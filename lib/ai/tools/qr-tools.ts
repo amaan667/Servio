@@ -64,12 +64,15 @@ export async function generateTableQRCode(
 export async function generateBulkTableQRCodes(
   venueId: string,
   startNumber: number,
-  endNumber: number
+  endNumber: number,
+  prefix?: string,
+  type: "table" | "counter" = "table"
 ): Promise<QRCodeGenerationResult> {
-  aiLogger.info(`[AI QR] Generating bulk QR codes for tables ${startNumber}-${endNumber}`);
+  const actualPrefix = prefix || (type === "table" ? "Table" : "Counter");
+  aiLogger.info(`[AI QR] Generating bulk QR codes for ${actualPrefix} ${startNumber}-${endNumber}`);
 
   if (startNumber < 1 || endNumber < startNumber || endNumber - startNumber > 100) {
-    throw new Error("Invalid range. Please specify 1-100 tables.");
+    throw new Error("Invalid range. Please specify 1-100 items.");
   }
 
   const qrCodes: QRCodeGenerationResult["qrCodes"] = [];
@@ -77,19 +80,20 @@ export async function generateBulkTableQRCodes(
 
   // Generate QR codes for the range (no database tables required)
   for (let i = startNumber; i <= endNumber; i++) {
-    const label = `Table ${i}`;
+    const label = `${actualPrefix} ${i}`;
+    const paramName = type === "table" ? "table" : "counter";
     qrCodes.push({
-      id: `qr-table-${i}`,
+      id: `qr-${type}-${i}`,
       label,
-      type: "table",
-      url: `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(label)}`,
+      type,
+      url: `${baseUrl}/order?venue=${venueId}&${paramName}=${encodeURIComponent(label)}`,
     });
   }
 
   return {
     success: true,
     qrCodes,
-    message: `Generated ${qrCodes.length} QR codes for tables ${startNumber}-${endNumber}. View them on the QR Codes page to download.`,
+    message: `Generated ${qrCodes.length} QR codes for ${actualPrefix} ${startNumber}-${endNumber}. View them on the QR Codes page to download.`,
   };
 }
 
