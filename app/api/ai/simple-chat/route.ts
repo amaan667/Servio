@@ -37,7 +37,25 @@ export const POST = withUnifiedAuth(
         );
       }
 
-      const body = await req.json();
+      // Parse request body with error handling
+      let body: { message?: string; currentPage?: string; conversationHistory?: unknown[] };
+      try {
+        body = await req.json();
+      } catch (jsonError) {
+        logger.error("[AI SIMPLE CHAT] Failed to parse JSON body:", {
+          error: jsonError instanceof Error ? jsonError.message : String(jsonError),
+          contentType: req.headers.get("content-type"),
+        });
+        return NextResponse.json(
+          {
+            error: "Invalid request body",
+            message: "Request body must be valid JSON",
+            response: "I'm sorry, but I couldn't understand your request. Please try again.",
+          },
+          { status: 400 }
+        );
+      }
+
       const { message, currentPage, conversationHistory } = body;
 
       // Structured audit log for AI assistant command entry
@@ -47,11 +65,6 @@ export const POST = withUnifiedAuth(
         currentPage,
         messagePreview: typeof message === "string" ? message.slice(0, 200) : null,
         hasHistory: Array.isArray(conversationHistory) && conversationHistory.length > 0,
-      });
-      logger.info("[AI SIMPLE CHAT] Command received", {
-        venueId: context.venueId,
-        currentPage,
-        messagePreview: typeof message === "string" ? message.slice(0, 200) : null,
       });
 
       if (!message) {
@@ -84,12 +97,7 @@ export const POST = withUnifiedAuth(
           userId: context.user?.id,
           error: contextError instanceof Error ? contextError.message : String(contextError),
           stack: contextError instanceof Error ? contextError.stack : undefined,
-        });
-        logger.error("[AI SIMPLE CHAT] Failed to get context:", {
-          venueId: context.venueId,
-          userId: context.user?.id,
-          error: contextError instanceof Error ? contextError.message : String(contextError),
-          stack: contextError instanceof Error ? contextError.stack : undefined,
+          errorType: contextError?.constructor?.name || typeof contextError,
         });
         return NextResponse.json(
           { error: "Failed to load assistant context", message: "Please try again" },
@@ -101,12 +109,19 @@ export const POST = withUnifiedAuth(
 
       logger.debug("[AI SIMPLE CHAT] Step 5: Building conversation context...");
       let conversationContext = "";
-      if (conversationHistory && conversationHistory.length > 0) {
+      if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
         const recentMessages = conversationHistory.slice(-5); // Last 5 messages
         conversationContext =
           "\n\nRECENT CONVERSATION:\n" +
           recentMessages
-            .map((m: { role: string; content: string }) => `${m.role.toUpperCase()}: ${m.content}`)
+            .map((m: unknown) => {
+              if (typeof m === "object" && m !== null && "role" in m && "content" in m) {
+                const msg = m as { role: string; content: string };
+                return `${msg.role.toUpperCase()}: ${msg.content}`;
+              }
+              return "";
+            })
+            .filter((s) => s.length > 0)
             .join("\n");
         // Conversation context built
         logger.debug({

@@ -17,7 +17,18 @@ export async function executeMenuUpdatePrices(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = createAdminClient();
+  let supabase;
+  try {
+    supabase = createAdminClient();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("[AI ASSISTANT] Failed to create admin client:", errorMessage);
+    throw new AIAssistantError(
+      "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
+      "EXECUTION_FAILED",
+      { error: errorMessage }
+    );
+  }
 
   if (!params.items || params.items.length === 0) {
     throw new AIAssistantError("No items specified for price update", "INVALID_PARAMS");
@@ -162,7 +173,18 @@ export async function executeMenuToggleAvailability(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = createAdminClient();
+  let supabase;
+  try {
+    supabase = createAdminClient();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("[AI ASSISTANT] Failed to create admin client:", errorMessage);
+    throw new AIAssistantError(
+      "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
+      "EXECUTION_FAILED",
+      { error: errorMessage }
+    );
+  }
 
   const { data: items } = await supabase
     .from("menu_items")
@@ -209,10 +231,30 @@ export async function executeMenuCreateItem(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = createAdminClient();
+  let supabase;
+  try {
+    supabase = createAdminClient();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("[AI ASSISTANT] Failed to create admin client:", errorMessage);
+    throw new AIAssistantError(
+      "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
+      "EXECUTION_FAILED",
+      { error: errorMessage }
+    );
+  }
 
   // If categoryId is not a valid UUID, try to find it by category name
   let categoryId = params.categoryId;
+  
+  // Validate categoryId is provided
+  if (!categoryId) {
+    throw new AIAssistantError(
+      "Category is required. Please specify a category name or ID.",
+      "INVALID_PARAMS"
+    );
+  }
+  
   if (categoryId && !categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
     // It's a category name, not an ID - look it up (case-insensitive)
     const { data: categories, error: categoryError } = await supabase
@@ -330,7 +372,18 @@ export async function executeMenuDeleteItem(
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const supabase = createAdminClient();
+  let supabase;
+  try {
+    supabase = createAdminClient();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("[AI ASSISTANT] Failed to create admin client:", errorMessage);
+    throw new AIAssistantError(
+      "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
+      "EXECUTION_FAILED",
+      { error: errorMessage }
+    );
+  }
 
   const { data: currentItem } = await supabase
     .from("menu_items")
