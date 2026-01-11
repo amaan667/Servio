@@ -98,6 +98,16 @@ export function SimpleChatInterface({
           console.error("📄 Response Body (text):", responseText);
           errorData = JSON.parse(responseText);
           console.error("📄 Response Body (parsed):", errorData);
+          
+          // Log debug information if available
+          if (errorData.debug) {
+            console.error("🐛 DEBUG INFO:");
+            console.error("  Error Type:", errorData.debug.errorType);
+            console.error("  Error Message:", errorData.debug.errorMessage);
+            if (errorData.debug.stack) {
+              console.error("  Stack Trace:", errorData.debug.stack);
+            }
+          }
         } catch (parseError) {
           console.error("❌ Failed to parse error response:", parseError);
           errorData = { error: "Unknown error", rawResponse: await response.text().catch(() => "Could not read response") };

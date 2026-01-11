@@ -421,21 +421,25 @@ export const POST = withUnifiedAuth(
         userId: context.user?.id,
         message: errorMessage,
         stack: errorStack,
+        errorType: _error?.constructor?.name || typeof _error,
+        fullError: JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2),
       };
       logger.error("[AI SIMPLE CHAT] Error", errorPayload);
       logger.error("[AI SIMPLE CHAT] Error:", errorPayload);
 
-      // Return user-friendly error in production, detailed in development
+      // Return detailed error for debugging (will be removed later)
+      // Include error details in response to help identify the issue
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: isDevelopment()
-            ? errorMessage
-            : "An unexpected error occurred while processing your request",
-          response: isDevelopment()
-            ? `I encountered an error: ${errorMessage}. Please try again or contact support if the issue persists.`
-            : "I'm sorry, but I encountered an unexpected error. Please try again in a moment. If the problem persists, please contact support.",
-          ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
+          message: errorMessage, // Include actual error message for debugging
+          response: `I encountered an error: ${errorMessage}. Please try again or contact support if the issue persists.`,
+          // Include debug info in response (temporary for debugging)
+          debug: {
+            errorType: _error?.constructor?.name || typeof _error,
+            errorMessage,
+            ...(errorStack ? { stack: errorStack.substring(0, 500) } : {}), // Limit stack trace length
+          },
         },
         { status: 500 }
       );
