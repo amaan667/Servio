@@ -8,7 +8,8 @@ import AnalyticsClientPage from "./page.client";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
 export const metadata = {
-
+  title: "Analytics | Servio",
+  description: "Business analytics and insights for your venue",
 };
 
 export default async function AnalyticsPage({ params }: { params: { venueId: string } }) {
@@ -83,13 +84,13 @@ async function fetchOrderAnalytics(venueId: string) {
     .reduce((sum, [, count]) => sum + count, 0);
 
   return {
-
+    totalOrders: orders?.length || 0,
     pendingOrders,
     completedOrders,
     avgOrderValue:
       (orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0) / (orders?.length || 1),
     ordersByStatus,
-
+    ordersByDay: groupByDay(orders || []),
     recentOrders: orders?.slice(0, 10) || [],
   };
 }
@@ -110,9 +111,12 @@ async function fetchMenuAnalytics(venueId: string) {
 
   if (!menuItems || menuItems.length === 0) {
     return {
-
+      totalItems: 0,
+      activeItems: 0,
       itemsByCategory: {},
-
+      itemsWithImages: 0,
+      unavailableItems: 0,
+      topSellingItems: [],
     };
   }
 
@@ -132,7 +136,11 @@ async function fetchMenuAnalytics(venueId: string) {
   >();
 
   interface OrderWithItems {
-
+    items: Array<{
+      menu_item_id: string;
+      item_name: string;
+      quantity: number;
+      price: number;
     }>;
   }
 
@@ -144,23 +152,37 @@ async function fetchMenuAnalytics(venueId: string) {
       if (!menuItem) return;
 
       const current = itemStatsMap.get(item.menu_item_id) || {
-
+        quantity: 0,
+        revenue: 0,
+        name: menuItem.name,
+        category: menuItem.category,
+        price: menuItem.price,
       };
       current.quantity += item.quantity;
       current.revenue += item.quantity * (item.price || 0);
       itemStatsMap.set(item.menu_item_id, current);
+    });
+  });
 
   const topItems = Array.from(itemStatsMap.values())
     .map((stats) => ({
-
+      name: stats.name,
+      quantity: stats.quantity,
+      revenue: stats.revenue,
+      category: stats.category,
+      ordersCount: stats.quantity,
+      price: stats.price,
     }))
     .sort((a, b) => b.ordersCount - a.ordersCount)
     .slice(0, 10);
 
   return {
-
+    totalItems: menuItems?.length || 0,
+    activeItems: menuItems?.filter((i) => i.is_available).length || 0,
     itemsByCategory: groupBy(menuItems || [], "category"),
-
+    itemsWithImages: menuItems?.filter((i) => i.image_url).length || 0,
+    unavailableItems: menuItems?.filter((i) => !i.is_available).length || 0,
+    topSellingItems: topItems,
   };
 }
 
@@ -188,7 +210,8 @@ async function fetchRevenueAnalytics(venueId: string) {
   return {
     totalRevenue,
     totalOrders,
-
+    avgOrderValue: totalRevenue / (totalOrders || 1),
+    averageOrderValue: totalRevenue / (totalOrders || 1),
     revenueByDay: groupByDay(orders || [], "total_amount"),
     revenueByHour: [], // Placeholder - can be calculated if needed
   };

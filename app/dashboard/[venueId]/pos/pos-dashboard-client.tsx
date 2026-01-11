@@ -9,7 +9,7 @@ import { TableManagementEntity } from "@/components/pos/TableManagementEntity";
 import { LiveOrdersPOS } from "@/components/pos/LiveOrdersPOS";
 
 interface POSDashboardClientProps {
-
+  venueId: string;
 }
 
 export default function POSDashboardClient({ venueId }: POSDashboardClientProps) {

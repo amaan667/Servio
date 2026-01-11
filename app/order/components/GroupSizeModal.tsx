@@ -6,7 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Check } from "lucide-react";
 
 interface GroupSizeModalProps {
-
+  show: boolean;
+  groupSize: number | null;
+  showCustomGroupSize: boolean;
+  customGroupSize: string;
+  onClose: () => void;
+  onSetGroupSize: (size: number) => void;
+  onShowCustomGroupSize: () => void;
+  onSetCustomGroupSize: (value: string) => void;
+  onHideCustomGroupSize: () => void;
+  onSubmit: (size: number) => void;
+  mode: "initial" | "update";
 }
 
 export function GroupSizeModal({
@@ -56,7 +66,7 @@ export function GroupSizeModal({
                     className={`h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 !text-white ${
                       groupSize === size
                         ? "bg-servio-purple hover:bg-servio-purple-dark border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
-
+                        : "hover:bg-gray-50 border-gray-300"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -74,7 +84,7 @@ export function GroupSizeModal({
                   className={`w-full h-10 sm:h-12 text-sm sm:text-base border-dashed transition-all duration-200 !text-white ${
                     showCustomGroupSize
                       ? "bg-servio-purple hover:bg-servio-purple-dark border-servio-purple shadow-lg ring-2 ring-servio-purple ring-opacity-50"
-
+                      : "hover:bg-gray-50 border-gray-300"
                   }`}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -140,7 +150,7 @@ export function GroupSizeModal({
                   ? !customGroupSize ||
                     parseInt(customGroupSize) < 9 ||
                     isNaN(parseInt(customGroupSize))
-
+                  : !groupSize || groupSize <= 0
               }
             >
               {mode === "initial" ? "Continue" : "Update"}

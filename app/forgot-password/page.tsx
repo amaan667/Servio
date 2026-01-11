@@ -42,9 +42,10 @@ export default function ForgotPasswordPage() {
       const startTime = Date.now();
 
       const response = await fetch("/api/auth/forgot-password", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
+      });
 
       const data = await response.json();
       const duration = Date.now() - startTime;

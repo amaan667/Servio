@@ -14,11 +14,14 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 interface UnassignedReservationsPanelProps {
-
+  venueId: string;
+  reservations: UnassignedReservation[];
+  onActionComplete: () => void;
+  availableTables: TableRuntimeState[];
 }
 
 export function UnassignedReservationsPanel({
-
+  venueId: _venueId,
   reservations,
   onActionComplete,
   availableTables,
@@ -38,7 +41,7 @@ export function UnassignedReservationsPanel({
             await assignReservation.mutateAsync({
               reservationId,
               tableId,
-
+            });
           }
           break;
         case "cancel":
@@ -129,7 +132,8 @@ export function UnassignedReservationsPanel({
                     <div className="flex items-center gap-2 text-sm text-gray-900">
                       <Clock className="h-4 w-4 text-gray-700" />
                       {new Date(reservation.start_at).toLocaleTimeString([], {
-
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </div>
                   </div>

@@ -37,6 +37,7 @@ function SignInPageContent() {
             if (name.startsWith("sb-") && !name.includes("code-verifier")) {
               document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
             }
+          });
 
           // Also clear localStorage auth items (except PKCE verifier)
           const allKeys = Object.keys(localStorage);
@@ -44,8 +45,8 @@ function SignInPageContent() {
             if (key.startsWith("sb-") && !key.includes("code-verifier")) {
               localStorage.removeItem(key);
             }
-
-        } catch (e) {}
+          });
+        } catch (e) { /* Error handled silently */ }
       } else if (hasRefreshToken && !hasAccessToken && isOAuthCallback) {
         // OAuth callback detected with refresh token
       }
@@ -76,7 +77,8 @@ function SignInPageContent() {
         case "refresh_token_error":
           setError("Your session has expired. Please sign in again.");
           break;
-
+        default:
+          setError("Authentication failed. Please try again.");
       }
     }
 
@@ -146,17 +148,24 @@ function SignInPageContent() {
           ) {
             sessionStorage.removeItem(key);
           }
-
+        });
       }
 
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl("/auth/callback");
 
       const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
-
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+            include_granted_scopes: "true",
           },
           // PKCE is enabled by default in Supabase v2
         },
+      });
 
       // Log localStorage after OAuth initiation
       const allKeys = Object.keys(localStorage);

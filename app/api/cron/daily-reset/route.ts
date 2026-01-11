@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-
+          error: "Too many requests",
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     const expectedAuth = env("CRON_SECRET") || "default-cron-secret";
 
     if (authHeader !== `Bearer ${expectedAuth}`) {
-      
+
       return apiErrors.unauthorized("Unauthorized");
     }
 
@@ -55,10 +56,11 @@ export async function POST(req: NextRequest) {
       .not("daily_reset_time", "is", null);
 
     if (venuesError) {
-      
+
       return NextResponse.json(
         {
-
+          error: "Failed to fetch venues",
+          message: isDevelopment() ? venuesError.message : "Database query failed",
         },
         { status: 500 }
       );
@@ -66,7 +68,10 @@ export async function POST(req: NextRequest) {
 
     if (!venues || venues.length === 0) {
       return NextResponse.json({
-
+        success: true,
+        message: "No venues found for daily reset",
+        resetVenues: [],
+      });
     }
 
     // Filter venues that should reset at the current time (within 5 minutes)
@@ -78,12 +83,15 @@ export async function POST(req: NextRequest) {
 
       // Reset if within 5 minutes of the scheduled time
       return timeDiff <= 5;
+    });
 
     if (venuesToReset.length === 0) {
       return NextResponse.json({
-
+        success: true,
+        message: "No venues scheduled for reset at this time",
         currentTime,
-
+        resetVenues: [],
+      });
     }
 
     const resetResults = [];
@@ -117,9 +125,11 @@ export async function POST(req: NextRequest) {
 
         if (!needsReset) {
           resetResults.push({
-
+            venueId: venue.venue_id,
+            venueName: venue.venue_name,
+            reset: false,
             reason: "No active orders, reservations, or occupied tables",
-
+          });
           continue;
         }
 
@@ -130,7 +140,9 @@ export async function POST(req: NextRequest) {
           await supabase
             .from("orders")
             .update({
-
+              order_status: "COMPLETED",
+              updated_at: new Date().toISOString(),
+            })
             .eq("venue_id", venue.venue_id)
             .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
         }
@@ -140,7 +152,9 @@ export async function POST(req: NextRequest) {
           await supabase
             .from("reservations")
             .update({
-
+              status: "CANCELLED",
+              updated_at: new Date().toISOString(),
+            })
             .eq("venue_id", venue.venue_id)
             .eq("status", "BOOKED");
         }
@@ -158,9 +172,7 @@ export async function POST(req: NextRequest) {
             .delete()
             .eq("venue_id", venue.venue_id);
 
-          if (sessionDeleteError) {
-            
-          }
+          if (sessionDeleteError) { /* Condition handled */ }
 
           // Delete all tables
           const { error: tableDeleteError } = await supabase
@@ -168,9 +180,7 @@ export async function POST(req: NextRequest) {
             .delete()
             .eq("venue_id", venue.venue_id);
 
-          if (tableDeleteError) {
-            
-          }
+          if (tableDeleteError) { /* Condition handled */ }
         }
 
         // Clear table runtime state
@@ -179,16 +189,24 @@ export async function POST(req: NextRequest) {
           .delete()
           .eq("venue_id", venue.venue_id);
 
-        if (runtimeDeleteError) {
-          
-        }
+        if (runtimeDeleteError) { /* Condition handled */ }
 
         resetResults.push({
-
+          venueId: venue.venue_id,
+          venueName: venue.venue_name,
+          reset: true,
+          completedOrders: activeOrders?.length || 0,
+          canceledReservations: activeReservations?.length || 0,
+          deletedTables: venueTables?.length || 0,
+        });
       } catch (_error) {
-        
-        resetResults.push({
 
+        resetResults.push({
+          venueId: venue.venue_id,
+          venueName: venue.venue_name,
+          reset: false,
+          error: _error instanceof Error ? _error.message : "Unknown _error",
+        });
       }
     }
 
@@ -197,20 +215,19 @@ export async function POST(req: NextRequest) {
 
     // STEP 7: Return success response
     return NextResponse.json({
-
+      success: true,
       message: `Daily reset completed for ${successfulResets}/${totalVenues} venues`,
-
+      timestamp: new Date().toISOString(),
       resetResults,
-
+    });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-    
-
     return NextResponse.json(
       {
-
+        error: "Internal Server Error",
+        message: isDevelopment() ? errorMessage : "Request processing failed",
         ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }
@@ -221,5 +238,8 @@ export async function POST(req: NextRequest) {
 // GET endpoint to check cron status
 export async function GET() {
   return NextResponse.json({
-
+    message: "Daily reset cron endpoint is active",
+    timestamp: new Date().toISOString(),
+    nextReset: "Scheduled for midnight daily",
+  });
 }

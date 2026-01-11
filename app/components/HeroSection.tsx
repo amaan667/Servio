@@ -5,12 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { QrCode, ArrowRight, CheckCircle } from "lucide-react";
 
 interface HeroSectionProps {
-
+  isSignedIn: boolean;
+  authLoading: boolean;
+  onGetStarted: () => void;
+  onSignIn: () => void;
+  onDemo: () => void;
 }
 
 export function HeroSection({
   isSignedIn,
-
+  authLoading: _authLoading,
   onGetStarted,
   onSignIn,
   onDemo,

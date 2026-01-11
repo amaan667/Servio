@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -9,14 +10,14 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
  * Note: This is an admin function that requires authentication but doesn't need venue access
  */
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -118,10 +119,14 @@ export const POST = withUnifiedAuth(
         "message" in error &&
         error.message !== "exec_sql not available"
       ) {
-        
+
         return NextResponse.json(
           {
-
+            success: false,
+            error: "Failed to create function",
+            details: error,
+            message:
+              "Please run the SQL manually in your Supabase dashboard SQL editor. Check the migration file: supabase/migrations/20251029000000_create_get_invitation_function.sql",
           },
           { status: 500 }
         );
@@ -129,18 +134,21 @@ export const POST = withUnifiedAuth(
 
       // STEP 7: Return success response
       return NextResponse.json({
-
+        success: true,
+        message: "Database function created successfully",
+        note: "The get_invitation_by_token function is now available and will properly join with auth.users to get inviter details.",
+      });
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      
-
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-
+            success: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -148,7 +156,11 @@ export const POST = withUnifiedAuth(
 
       return NextResponse.json(
         {
-
+          success: false,
+          error: "Unexpected error creating function",
+          details: errorMessage,
+          message:
+            "Please run the SQL manually in your Supabase dashboard SQL editor. Check the migration file: supabase/migrations/20251029000000_create_get_invitation_function.sql",
         },
         { status: 500 }
       );
@@ -156,6 +168,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

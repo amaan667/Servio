@@ -9,7 +9,15 @@ import { DesignSettings } from "../types";
 import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 
 interface BrandingSettingsProps {
-
+  designSettings: DesignSettings;
+  setDesignSettings: (settings: DesignSettings) => void;
+  onLogoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  isUploadingLogo: boolean;
+  venueId: string;
+  // Tier/access info passed from page (no client-side checks)
+  // Optional for now - will be passed from page in future
+  hasAccess?: boolean;
+  currentTier?: string;
 }
 
 export function BrandingSettings({
@@ -122,7 +130,8 @@ export function BrandingSettings({
                 onChange={(e) =>
                   setDesignSettings({
                     ...designSettings,
-
+                    logo_size_numeric: parseInt(e.target.value),
+                  })
                 }
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
               />

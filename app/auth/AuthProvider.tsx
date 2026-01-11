@@ -6,17 +6,30 @@ import { supabaseBrowser } from "@/lib/supabase";
 
 interface ExtendedSession extends Session {
   primaryVenue?: {
-
+    venueId: string;
+    role: string;
   };
 }
 
 type AuthValue = {
-
+  session: Session | null;
+  user: User | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  primaryVenueId: string | null;
+  userRole: string | null;
 };
 
 const AuthCtx = createContext<AuthValue>({
-
+  session: null,
+  user: null,
+  loading: true,
+  signOut: async () => {
+    /* Empty */
   },
+  primaryVenueId: null,
+  userRole: null,
+});
 
 export function useAuth() {
   return useContext(AuthCtx);
@@ -26,7 +39,8 @@ export default function AuthProvider({
   initialSession,
   children,
 }: {
-
+  initialSession: Session | null;
+  children: React.ReactNode;
 }) {
   // Get initial session from server OR from stored auth
   const getInitialSession = () => {
@@ -59,7 +73,8 @@ export default function AuthProvider({
     const sessionWithVenue = initialSession as ExtendedSession;
     if (sessionWithVenue?.primaryVenue) {
       return {
-
+        primaryVenueId: sessionWithVenue.primaryVenue.venueId,
+        userRole: sessionWithVenue.primaryVenue.role
       };
     }
 
@@ -146,7 +161,9 @@ export default function AuthProvider({
                 setSession(newSession as Session | null);
                 setUser((newSession as { user?: User } | null)?.user ?? null);
                 break;
-
+              default:
+                if (newSession) {
+                  setSession(newSession as Session | null);
                   setUser((newSession as { user?: User } | null)?.user ?? null);
                 }
                 setLoading(false);
@@ -233,7 +250,9 @@ export default function AuthProvider({
                 setSession(newSession as Session | null);
                 setUser((newSession as { user?: User } | null)?.user ?? null);
                 break;
-
+              default:
+                if (newSession) {
+                  setSession(newSession as Session | null);
                   setUser((newSession as { user?: User } | null)?.user ?? null);
                 }
                 setLoading(false);
@@ -273,7 +292,7 @@ export default function AuthProvider({
           if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
             sessionStorage.removeItem(key);
           }
-
+        });
       }
     } catch {
       // Clear local state even if there's an error
@@ -287,7 +306,7 @@ export default function AuthProvider({
           if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
             sessionStorage.removeItem(key);
           }
-
+        });
       }
     }
   };

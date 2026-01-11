@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 
 interface ClientOnlyWrapperProps {
-
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
 }
 
 /**

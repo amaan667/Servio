@@ -3,7 +3,14 @@ import { LegacyShift } from "./useStaffManagement";
 import { supabaseBrowser } from "@/lib/supabase";
 
 interface ShiftWithStaff {
-
+  id: string;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
+  area: string | null;
+  staff?: {
+    name: string;
+    role: string;
   } | null;
 }
 
@@ -23,7 +30,8 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
           .select(
             `
             *,
-
+            staff:staff_id (
+              name,
               role
             )
           `
@@ -39,7 +47,13 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
         } else if (shiftsData) {
           // Transform to match LegacyShift format
           const shifts = shiftsData.map((shift: ShiftWithStaff) => ({
-
+            id: shift.id,
+            staff_id: shift.staff_id,
+            start_time: shift.start_time,
+            end_time: shift.end_time,
+            area: shift.area || undefined,
+            staff_name: shift.staff?.name || "",
+            staff_role: shift.staff?.role || "",
           }));
           setAllShifts(shifts);
           setShiftsLoaded(true);
@@ -62,11 +76,17 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
       const { data: newShift, error } = await supabase
         .from("staff_shifts")
         .insert({
-
+          venue_id: venueId,
+          staff_id: staffId,
+          start_time: startTime,
+          end_time: endTime,
+          area: area || null,
+        })
         .select(
           `
           *,
-
+          staff:staff_id (
+            name,
             role
           )
         `
@@ -80,7 +100,13 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
       // Transform to match LegacyShift format
       const shiftData = newShift as ShiftWithStaff;
       const shift: LegacyShift = {
-
+        id: shiftData.id,
+        staff_id: shiftData.staff_id,
+        start_time: shiftData.start_time,
+        end_time: shiftData.end_time,
+        area: shiftData.area || undefined,
+        staff_name: shiftData.staff?.name || "",
+        staff_role: shiftData.staff?.role || "",
       };
 
       setAllShifts((prev) => [...prev, shift]);

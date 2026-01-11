@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+
 import { useToast } from "@/hooks/use-toast";
 import { MenuItem } from "../types";
 
@@ -40,9 +41,10 @@ export function useMenuItems(venueId: string) {
           clientError instanceof Error ? clientError.message : String(clientError);
 
         toast({
-
+          title: "Configuration Error",
           description: `Database connection failed: ${errorMessage}. Please refresh the page or contact support.`,
-
+          variant: "destructive",
+        });
         return;
       }
 
@@ -57,11 +59,12 @@ export function useMenuItems(venueId: string) {
       const actualItemCount = items?.length || 0;
 
       if (error) {
-        
+
         toast({
-
+          title: "Error",
           description: `Failed to load menu items: ${error.message}`,
-
+          variant: "destructive",
+        });
         setMenuItems([]);
         return;
       }
@@ -73,14 +76,17 @@ export function useMenuItems(venueId: string) {
       const menuBuilderLogData = {
         venueId,
         normalizedVenueId,
-
+        totalMenuItems: actualItemCount,
+        itemsArrayLength: items?.length || 0,
+        first3Items:
+          items
             ?.slice(0, 3)
             .map((i) => ({ id: i.id, name: i.name, is_available: i.is_available })) || [],
-
+        allItemIds: items?.map((i) => i.id) || [],
+        timestamp: new Date().toISOString(),
       };
 
       // Log to Railway
-      
 
       setMenuItems(items || []);
 
@@ -99,9 +105,10 @@ export function useMenuItems(venueId: string) {
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
         description: `Failed to load menu items: ${_error instanceof Error ? _error.message : "Unknown error"}`,
-
+        variant: "destructive",
+      });
       setMenuItems([]);
     } finally {
       setLoading(false);

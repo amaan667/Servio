@@ -9,12 +9,25 @@ import { Save } from "lucide-react";
 import { MenuItem } from "../types";
 
 interface MenuItemFormProps {
-
+  formData: {
+    name: string;
+    description: string;
+    price: string;
+    category: string;
+    available: boolean;
   };
-
+  setFormData: React.Dispatch<
+    React.SetStateAction<{
+      name: string;
+      description: string;
+      price: string;
+      category: string;
+      available: boolean;
     }>
   >;
-
+  editingItem: MenuItem | null;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
 }
 
 export function MenuItemForm({

@@ -10,6 +10,8 @@ import { isDevelopment } from "@/lib/env";
 export const runtime = "nodejs";
 
 const bumpSchema = z.object({
+  orderId: z.string().uuid("Invalid order ID"),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -27,9 +29,12 @@ export const POST = withUnifiedAuth(
 
       const admin = createAdminClient();
       const { data, error } = await admin.rpc("orders_set_kitchen_bumped", {
+        p_order_id: orderId,
+        p_venue_id: venueId,
+      });
 
       if (error) {
-        
+
         return apiErrors.badRequest(isDevelopment() ? error.message : "Failed to bump order");
       }
 

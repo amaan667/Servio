@@ -14,7 +14,13 @@ import chromium from "@sparticuz/chromium";
 import { extractMenuFromImage } from "./gptVisionMenuParser";
 
 interface WebMenuItem {
-
+  name: string;
+  name_normalized: string;
+  description?: string;
+  price?: number;
+  image_url?: string;
+  category?: string;
+  source: "dom" | "vision" | "merged";
 }
 
 /**
@@ -44,7 +50,7 @@ async function getChromiumPath() {
       } catch {
         return false;
       }
-
+    });
   }
 }
 
@@ -54,10 +60,10 @@ async function getChromiumPath() {
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
   const executablePath = await getChromiumPath();
-  
 
   const browser = await puppeteer.launch({
-
+    args: [
+      ...chromium.args,
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
@@ -84,11 +90,14 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       "--no-zygote",
       "--single-process", // Important for serverless
     ],
-
+    defaultViewport: {
+      width: 1920,
+      height: 1080,
     },
     executablePath,
-
-    wsEndpoint: browser.wsEndpoint().substring(0, 50) + "...",
+    headless: true,
+    ignoreDefaultArgs: ["--disable-extensions"],
+  });
 
   try {
     const page = await browser.newPage();
@@ -99,30 +108,32 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     // Navigate with simple, reliable wait strategy (NO networkidle!)
     await page.goto(url, {
       waitUntil: "domcontentloaded", // Fast and reliable
+      timeout: 20000,
+    });
 
     // Wait for menu content to appear with fallback
     await Promise.race([
       // Try to find menu-related elements
       page
         .waitForSelector('[class*="menu"], [class*="item"], [class*="dish"], article', {
-
+          timeout: 5000,
+        })
         .catch(() => null),
       // Fallback: just wait 3 seconds
       new Promise((resolve) => setTimeout(resolve, 3000)),
-    ]).catch(() => {
+    ]).catch(() => { /* Intentionally empty */ });
 
     // Additional wait for dynamic content
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Strategy 1: DOM Scraping (fast, gets images/URLs)
     const domItems = await extractFromDOM(page);
-    
-        .map((i) => ({ name: i.name, price: i.price, hasImage: !!i.image_url })),
 
     // Strategy 2: Screenshot + Vision AI (accurate, handles any layout)
     const screenshot = (await page.screenshot({
       fullPage: true, // Captures entire page without manual scrolling
-
+      type: "png",
+      encoding: "base64",
     })) as string;
 
     const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
@@ -135,17 +146,19 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     const visionCategories = Array.from(
       new Set(visionItems.map((item) => item.category).filter(Boolean))
     );
-    
 
     // Category breakdown
     const categoryBreakdown: Record<string, number> = {};
     visionItems.forEach((item) => {
       const cat = item.category || "Uncategorized";
       categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+    });
 
     // Sample items by category
     interface CategorySample {
-
+      name: string;
+      price?: number;
+      hasDescription: boolean;
     }
     const samplesByCategory: Record<string, CategorySample[]> = {};
     visionItems.forEach((item) => {
@@ -155,23 +168,19 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       }
       if (samplesByCategory[cat].length < 3) {
         samplesByCategory[cat].push({
-
+          name: item.name,
+          price: item.price,
+          hasDescription: !!item.description,
+        });
       }
+    });
 
     // Warnings for issues
     const menuItemsCount = visionItems.filter((item) => item.category === "Menu Items").length;
-    if (menuItemsCount > 0) {
-       * 100),
-
-    }
-
-     => i.description).length,
+    if (menuItemsCount > 0) { /* Condition handled */ }
 
     // Strategy 3: Intelligent merge
     const mergedItems = mergeExtractedData(domItems, visionItems);
-     => i.image_url).length,
-
-      },
 
     // Final category analysis after merge
     const finalCategories = Array.from(
@@ -181,15 +190,11 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     mergedItems.forEach((item) => {
       const cat = item.category || "Uncategorized";
       finalCategoryBreakdown[cat] = (finalCategoryBreakdown[cat] || 0) + 1;
+    });
 
     // Final warning if still have Menu Items
     const finalMenuItemsCount = mergedItems.filter((item) => item.category === "Menu Items").length;
-    if (finalMenuItemsCount > 0) {
-       * 100),
-
-    }
-
-     => i.image_url).length,
+    if (finalMenuItemsCount > 0) { /* Condition handled */ }
 
     return mergedItems;
   } catch (error) {
@@ -202,9 +207,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     try {
 
       await browser.close();
-    } catch (closeError) {
-
-    }
+    } catch (closeError) { /* Error handled silently */ }
   }
 }
 
@@ -215,7 +218,14 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebMenuItem[]> {
   return await page.evaluate(() => {
     interface DOMMenuItem {
-
+      name: string;
+      name_normalized: string;
+      description?: string;
+      price?: number;
+      image_url?: string;
+      category?: string;
+      source: string;
+      index: number;
     }
     const items: DOMMenuItem[] = [];
 
@@ -256,7 +266,7 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         const text = el.textContent || "";
         // Has both name-like text and price pattern
         return text.length > 10 && text.length < 500 && /[£$€]?\d+[.,]\d{2}/.test(text);
-
+      });
     }
 
     elements.forEach((el, index) => {
@@ -384,7 +394,7 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
             try {
               imageUrl = new URL(imageUrl, window.location.origin).href;
             } catch {
-              
+
               imageUrl = undefined;
             }
           }
@@ -408,18 +418,25 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         // Only add items with at least a name
         if (name) {
           items.push({
-
+            name: name,
+            name_normalized: name.toLowerCase().trim(),
+            description: description || undefined,
+            price: price,
+            image_url: imageUrl || undefined,
             category: undefined, // Never extract categories from URL DOM
-
+            source: "dom",
+            index: index,
+          });
         }
       } catch {
         // Error extracting item - logging removed for production
       }
+    });
 
     // Successfully extracted items - logging removed for production
 
     return items as unknown as WebMenuItem[];
-
+  });
 }
 
 /**
@@ -427,27 +444,45 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
  * Strategy: Vision AI is more accurate for text, DOM is better for images/URLs
  */
 function mergeExtractedData(
+  domItems: WebMenuItem[],
+  visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[]
+): WebMenuItem[] {
 
+  // Start with Vision AI data (more accurate text extraction)
+  const merged: WebMenuItem[] = visionItems.map((visionItem) => {
+    // Find matching DOM item by name similarity
+    const domMatch = domItems.find((domItem) => {
+      const similarity = calculateSimilarity(
+        visionItem.name.toLowerCase().trim(),
         domItem.name_normalized
       );
       return similarity > 0.8; // 80% similarity threshold
+    });
 
     if (domMatch) {
-      
 
       return {
         name: visionItem.name, // Prefer Vision AI for text accuracy
-
+        name_normalized: visionItem.name.toLowerCase().trim(),
+        description: domMatch.description || visionItem.description,
         price: visionItem.price || domMatch.price, // Prefer Vision AI price
         image_url: domMatch.image_url, // DOM has actual image URLs
-
+        category: visionItem.category || domMatch.category,
+        source: "merged" as const,
       };
     }
 
     // No DOM match - use Vision AI data only
     return {
-
+      name: visionItem.name,
+      name_normalized: visionItem.name.toLowerCase().trim(),
+      description: visionItem.description,
+      price: visionItem.price,
+      image_url: undefined,
+      category: visionItem.category,
+      source: "vision" as const,
     };
+  });
 
   // Add DOM-only items that Vision AI missed
   domItems.forEach((domItem) => {
@@ -457,10 +492,16 @@ function mergeExtractedData(
 
     if (!exists && domItem.name && domItem.price) {
       merged.push({
-
+        name: domItem.name,
+        name_normalized: domItem.name_normalized,
+        description: domItem.description,
+        price: domItem.price,
+        image_url: domItem.image_url,
+        category: domItem.category,
+        source: "dom" as const,
+      });
     }
-
-   => i.image_url).length,
+  });
 
   return merged;
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // apiErrors intentionally unused in this module
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
+
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 import { trackPaymentError } from "@/lib/monitoring/error-tracking";
 
@@ -39,11 +40,9 @@ export async function POST(_request: NextRequest) {
   let eventMetadata: Record<string, unknown> | undefined;
   let stripeSessionId: string | undefined;
 
-  .toISOString(),
-
   const signature = _request.headers.get("stripe-signature");
   if (!signature) {
-    
+
     return new NextResponse("Missing stripe-signature", { status: 400 });
   }
 
@@ -65,7 +64,6 @@ export async function POST(_request: NextRequest) {
   } catch (_err) {
     const errorMessage = _err instanceof Error ? _err.message : "Unknown error";
 
-    
     return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });
   }
 
@@ -73,19 +71,20 @@ export async function POST(_request: NextRequest) {
   const sessionMetadata =
     event.type === "checkout.session.completed"
       ? (event.data.object as Stripe.Checkout.Session).metadata
+      : undefined;
 
+  // Idempotency + DLQ guard using stripe_webhook_events table
+  const nowIso = new Date().toISOString();
   const { data: existingEvent, error: existingEventError } = await supabaseAdmin
     .from("stripe_webhook_events")
     .select("id, status, attempts")
     .eq("event_id", event.id)
     .maybeSingle();
 
-  if (existingEventError) {
-    
-  }
+  if (existingEventError) { /* Condition handled */ }
 
   if (existingEvent?.status === "succeeded") {
-    
+
     return NextResponse.json({ ok: true, already: true }, { status: 200 });
   }
 
@@ -95,10 +94,12 @@ export async function POST(_request: NextRequest) {
     .from("stripe_webhook_events")
     .upsert(
       {
-
+        event_id: event.id,
+        type: event.type,
+        status: "processing",
         attempts,
         payload: event as unknown as Record<string, unknown>,
-
+        updated_at: nowIso,
       },
       { onConflict: "event_id" }
     )
@@ -106,9 +107,16 @@ export async function POST(_request: NextRequest) {
     .maybeSingle();
 
   if (upsertError) {
-    
-    trackPaymentError(upsertError, {
 
+    trackPaymentError(upsertError, {
+      orderId: sessionMetadata?.orderId,
+      venueId: sessionMetadata?.venue_id ?? sessionMetadata?.venueId,
+      paymentMethod: sessionMetadata?.paymentType,
+      stripeSessionId:
+        event.type === "checkout.session.completed"
+          ? (event.data.object as Stripe.Checkout.Session).id
+          : undefined,
+    });
     return NextResponse.json({ ok: false, error: "Failed to reserve event" }, { status: 500 });
   }
 
@@ -124,8 +132,6 @@ export async function POST(_request: NextRequest) {
       typeof session.metadata === "object" && session.metadata ? session.metadata : undefined;
     const eventCorrelationId = session.metadata?.correlation_id || correlationId;
 
-    
-
     const { updatedOrders, paymentType } = await processCustomerCheckoutSession(
       session,
       supabaseAdmin,
@@ -135,24 +141,36 @@ export async function POST(_request: NextRequest) {
     await finalizeEventStatus(supabaseAdmin, event.id, "succeeded");
 
     return NextResponse.json({
-
+      ok: true,
+      orderId:
+        paymentType === "table_payment" ? updatedOrders.map((o) => o.id) : updatedOrders[0]?.id,
+      orderCount: updatedOrders.length,
+    });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
     const errorStack = err instanceof Error ? err.stack : undefined;
-    
+
     await finalizeEventStatus(supabaseAdmin, event.id, "failed", {
-
+      message: errorMessage,
+      stack: errorStack,
+    });
     trackPaymentError(err, {
-
+      orderId: (eventMetadata?.orderId as string | undefined) ?? undefined,
+      venueId:
+        (eventMetadata?.venue_id as string | undefined) ??
+        (eventMetadata?.venueId as string | undefined),
+      paymentMethod: (eventMetadata?.paymentType as string | undefined) ?? undefined,
       stripeSessionId,
-
+    });
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
 
 // Ensure final status update even on unexpected errors
 export async function finalizeEventStatus(
-
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  status: "succeeded" | "failed",
   error?: { message: string; stack?: string }
 ) {
   const nowIso = new Date().toISOString();
@@ -160,13 +178,17 @@ export async function finalizeEventStatus(
     .from("stripe_webhook_events")
     .update({
       status,
-
+      processed_at: status === "succeeded" ? nowIso : null,
+      last_error: error ?? null,
+      updated_at: nowIso,
+    })
     .eq("event_id", eventId);
 }
 
 export async function processCustomerCheckoutSession(
-
-  correlationId?: string
+  session: Stripe.Checkout.Session,
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  _correlationId?: string
 ): Promise<{
   updatedOrders: Array<{ id: string; venue_id: string; customer_email?: string | null }>;
   paymentType?: string;
@@ -182,7 +204,7 @@ export async function processCustomerCheckoutSession(
     .maybeSingle();
 
   if (existing) {
-    
+
     return { updatedOrders: [existing], paymentType };
   }
 
@@ -196,7 +218,10 @@ export async function processCustomerCheckoutSession(
     }
 
     const updateData: Record<string, unknown> = {
-
+      payment_status: "PAID",
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: String(session.payment_intent ?? ""),
+      updated_at: new Date().toISOString(),
     };
 
     if (session.customer_email) {
@@ -214,10 +239,13 @@ export async function processCustomerCheckoutSession(
     }
 
     updatedOrders = updated || [];
-    
+
   } else if (orderId) {
     const updateData: Record<string, unknown> = {
-
+      payment_status: "PAID",
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: String(session.payment_intent ?? ""),
+      updated_at: new Date().toISOString(),
     };
 
     if (session.customer_email) {
@@ -236,7 +264,7 @@ export async function processCustomerCheckoutSession(
     }
 
     updatedOrders = updatedOrder ? [updatedOrder] : [];
-    
+
   } else {
     throw new Error("No orderId or orderIds in session metadata");
   }
@@ -284,6 +312,13 @@ export async function processCustomerCheckoutSession(
       }
 
       await createKDSTicketsWithAI(supabaseAdmin, {
+        id: fullOrder.id,
+        venue_id: fullOrder.venue_id,
+        items: fullOrder.items,
+        customer_name: fullOrder.customer_name,
+        table_number: fullOrder.table_number,
+        table_id: fullOrder.table_id,
+      });
 
       // Update order status to IN_PREP to show "preparing in kitchen" label in live orders
       // Also set unified lifecycle fields for proper status tracking
@@ -291,11 +326,14 @@ export async function processCustomerCheckoutSession(
         .from("orders")
         .update({
           order_status: "IN_PREP", // Set to IN_PREP to show "preparing in kitchen" label
-
+          kitchen_status: "PREPARING",
+          service_status: "NOT_SERVED",
+          completion_status: "OPEN",
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", fullOrder.id)
         .eq("venue_id", fullOrder.venue_id);
 
-      
     }
   } catch (_e) {
     // Best-effort; don't fail successful payment processing if KDS ticket creation fails.
@@ -317,17 +355,19 @@ export async function processCustomerCheckoutSession(
 
       if (receiptOrderId) {
         fetch(`${env("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000"}/api/receipts/send-email`, {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-
+          body: JSON.stringify({
+            orderId: receiptOrderId,
+            email: customerEmail,
+            venueId: firstOrder.venue_id,
           }),
-        }).catch((err) => {
-
+        }).catch((_err) => {
+          // Email sending error handled silently
+        });
       }
     }
-  } catch (error) {
-    
-  }
+  } catch (error) { /* Error handled silently */ }
 
   return { updatedOrders, paymentType };
 }

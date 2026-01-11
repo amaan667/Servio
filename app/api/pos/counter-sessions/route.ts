@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
@@ -22,9 +23,11 @@ export const GET = withUnifiedAuth(
 
       // Get counter status using the function
       const { data: counterStatus, error } = await supabase.rpc("get_counter_status", {
+        p_venue_id: venueId,
+      });
 
       if (error) {
-        
+
         return apiErrors.database(
           "Failed to fetch counter status",
           isDevelopment() ? error.message : undefined
@@ -44,7 +47,8 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query params
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         return searchParams.get("venue_id") || searchParams.get("venueId");
       } catch {
@@ -88,19 +92,21 @@ export const POST = withUnifiedAuth(
         const { data: session, error } = await supabase
           .from("counter_sessions")
           .insert({
-
+            venue_id: venueId,
+            counter_number: counter_number,
+            customer_name: customer_name,
+            status: "ACTIVE",
+          })
           .select()
           .single();
 
         if (error || !session) {
-          
+
           return apiErrors.database(
             "Failed to start counter session",
             isDevelopment() ? error?.message : undefined
           );
         }
-
-        
 
         return success({ session });
       } else {
@@ -114,14 +120,12 @@ export const POST = withUnifiedAuth(
           .single();
 
         if (error || !session) {
-          
+
           return apiErrors.database(
             "Failed to end counter session",
             isDevelopment() ? error?.message : undefined
           );
         }
-
-        
 
         return success({ session });
       }
@@ -136,7 +140,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

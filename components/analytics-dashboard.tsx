@@ -30,22 +30,50 @@ import {
 } from "recharts";
 
 interface OrderWithItems {
-
+  id: string;
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone?: string;
+  customer_email?: string;
+  order_status: string;
+  total_amount: number;
+  notes?: string;
+  payment_method?: string;
+  payment_status?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
+  items: Array<{
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
   }>;
-
+  created_at: string;
+  updated_at: string;
 }
 
 interface AnalyticsDashboardProps {
-
+  venueId: string;
 }
 
 interface ChartData {
-
+  name: string;
+  value: number;
+  revenue?: number;
+  orders?: number;
 }
 
 export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   const [stats, setStats] = useState({
-
+    revenue: 0,
+    orderCount: 0,
+    activeTables: 0,
+    unpaidOrders: 0,
+    averageOrderValue: 0,
+    completionRate: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<"today" | "week" | "month">("today");
   const [hourlyData, setHourlyData] = useState<ChartData[]>([]);
@@ -89,7 +117,13 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
 
       if (ordersError) {
         setStats({
-
+          revenue: 0,
+          orderCount: 0,
+          activeTables: 0,
+          unpaidOrders: 0,
+          averageOrderValue: 0,
+          completionRate: 0,
+        });
         return;
       }
 
@@ -104,10 +138,11 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         const id = mi?.id as string | undefined;
         const category = mi?.category as string | undefined;
         if (id) itemIdToCategory.set(id, category || "Other");
-
+      });
       const filteredOrders = orders.filter((order) => {
         const orderDate = new Date(order.created_at);
         return orderDate >= startDate && order.order_status !== "CANCELLED";
+      });
 
       // Calculate basic stats
       const revenue = filteredOrders.reduce((acc, order) => {
@@ -144,11 +179,14 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         unpaidOrders,
         averageOrderValue,
         completionRate,
+      });
 
       // Calculate hourly data
       const hourlyStats = new Array(24).fill(0).map((_, hour) => ({
         name: `${hour}:00`,
-
+        value: 0,
+        revenue: 0,
+        orders: 0,
       }));
 
       filteredOrders.forEach((order) => {
@@ -167,6 +205,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           }, 0);
         }
         hourlyStats[orderHour].revenue += amount;
+      });
 
       setHourlyData(hourlyStats);
 
@@ -195,11 +234,14 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             catStat.quantity += item.quantity;
             catStat.revenue += item.quantity * item.price;
           }
+        });
+      });
 
       const topItemsData = Object.entries(itemStats)
         .map(([name, stats]) => ({
           name,
-
+          value: stats.quantity,
+          revenue: stats.revenue,
         }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
@@ -220,11 +262,12 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       filteredOrders.forEach((order) => {
         const customerKey = order.customer_phone || order.customer_email || order.customer_name;
         customerStats[customerKey] = (customerStats[customerKey] || 0) + 1;
+      });
 
       const customerFrequencyData = Object.entries(customerStats)
         .map(([customer, frequency]) => ({
           name: customer.length > 20 ? customer.substring(0, 20) + "..." : customer,
-
+          value: frequency,
         }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
@@ -255,10 +298,11 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             }
             dailyRevenue[orderDate] += amount;
           }
+        });
 
         const revenueTrendData = Object.entries(dailyRevenue).map(([date, revenue]) => ({
           name: new Date(date).toLocaleDateString("en-US", { weekday: "short" }),
-
+          value: revenue,
         }));
 
         setRevenueTrend(revenueTrendData);
@@ -281,11 +325,17 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           );
         }
         dow[d].revenue += amt;
-
+      });
       setDayOfWeekData(dow);
     } catch (_error) {
       setStats({
-
+        revenue: 0,
+        orderCount: 0,
+        activeTables: 0,
+        unpaidOrders: 0,
+        averageOrderValue: 0,
+        completionRate: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -304,11 +354,13 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       .on(
         "postgres_changes",
         {
-
+          event: "*",
+          schema: "public",
+          table: "orders",
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: {
-
+          eventType: string;
           new?: Record<string, unknown>;
           old?: Record<string, unknown>;
         }) => {
@@ -352,7 +404,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   }, [venueId, timeRange, calculateStats]);
 
   interface StatCardProps {
-
+    title: string;
+    value: number;
     icon: React.ComponentType<{ className?: string }>;
     formatAsCurrency?: boolean;
     subtitle?: string;
@@ -362,7 +415,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   const StatCard = ({
     title,
     value,
-
+    icon: Icon,
     formatAsCurrency = false,
     subtitle,
     trend,
@@ -421,7 +474,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           <CardTitle className="flex items-center justify-between">
             {timeRange === "today"
               ? "Today's Analytics"
-
+              : timeRange === "week"
+                ? "Last 7 Days Analytics"
                 : "This Month's Analytics"}
             <RefreshCw
               className={`h-4 w-4 text-gray-800 cursor-pointer ${loading ? "animate-spin" : ""}`}
@@ -462,7 +516,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
                         (hour.orders || 0) > (max.orders || 0) ? hour : max
                       ).name || "0"
                     )
-
+                  : 0
               }
               icon={Clock}
             />

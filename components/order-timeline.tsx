@@ -5,24 +5,51 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, ChefHat, Truck, Utensils } from "lucide-react";
 
 interface OrderTimelineProps {
-
+  orderId: string;
+  currentStatus?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED";
+  estimatedTime?: string;
 }
 
 const ORDER_STATUSES = [
   {
-
+    id: "PLACED",
+    label: "Order Placed",
+    description: "Your order has been received",
+    icon: CheckCircle,
+    color: "bg-green-500",
+    textColor: "text-green-600",
   },
   {
-
+    id: "ACCEPTED",
+    label: "Order Confirmed",
+    description: "Kitchen has confirmed your order",
+    icon: ChefHat,
+    color: "bg-blue-500",
+    textColor: "text-blue-600",
   },
   {
-
+    id: "IN_PREP",
+    label: "Preparing",
+    description: "Your food is being prepared",
+    icon: Utensils,
+    color: "bg-orange-500",
+    textColor: "text-orange-600",
   },
   {
-
+    id: "READY",
+    label: "Ready for Pickup",
+    description: "Your order is ready!",
+    icon: Truck,
+    color: "bg-purple-500",
+    textColor: "text-purple-600",
   },
   {
-
+    id: "COMPLETED",
+    label: "Delivered",
+    description: "Enjoy your meal!",
+    icon: CheckCircle,
+    color: "bg-green-500",
+    textColor: "text-green-600",
   },
 ];
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors } from "@/lib/api/standard-response";
@@ -12,7 +13,7 @@ export const GET = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -41,8 +42,6 @@ export const GET = withUnifiedAuth(
       // Tier information is already available in the unified context from get_access_context RPC
       // No need for additional database queries - this eliminates duplicate calls
 
-      
-
       // DEBUG: Also log what the database actually contains
       const supabase = await createAdminClient();
       const { data: orgData } = await supabase
@@ -51,24 +50,22 @@ export const GET = withUnifiedAuth(
         .eq("owner_user_id", context.user.id)
         .maybeSingle();
 
-      
-
       // STEP 7: Return success response
       return NextResponse.json({
-
+        tier: context.tier,
         status: "active", // Status is handled by the RPC logic (inactive subscriptions return 'starter' tier)
-
+      });
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      
-
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-
+            tier: "starter",
+            status: "active",
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -76,7 +73,8 @@ export const GET = withUnifiedAuth(
 
       return NextResponse.json(
         {
-
+          tier: "starter",
+          status: "active",
         },
         { status: 200 }
       );

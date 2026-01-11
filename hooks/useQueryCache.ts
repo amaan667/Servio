@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 interface CacheEntry<T> {
-
+  data: T;
+  timestamp: number;
+  expiresAt: number;
 }
 
 interface QueryOptions {
@@ -15,7 +17,10 @@ interface QueryOptions {
  * Provides intelligent caching, background updates, and stale-while-revalidate pattern
  */
 export function useQueryCache<T>(
-
+  key: string,
+  fetcher: () => Promise<T>,
+  options: QueryOptions = {
+    /* Empty */
   }
 ) {
   const {
@@ -59,7 +64,9 @@ export function useQueryCache<T>(
 
         const result = await fetcherRef.current();
         const newCacheEntry: CacheEntry<T> = {
-
+          data: result,
+          timestamp: now,
+          expiresAt: now + cacheTime,
         };
 
         cacheRef.current.set(key, newCacheEntry);
@@ -116,6 +123,6 @@ export function useQueryCache<T>(
     isLoading,
     error,
     refetch,
-
+    isStale: data ? Date.now() > (cacheRef.current.get(key)?.timestamp || 0) + staleTime : false,
   };
 }

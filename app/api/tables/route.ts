@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
@@ -8,7 +9,11 @@ import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standa
 export const runtime = "nodejs";
 
 interface TableRow {
-
+  id: string;
+  table_id?: string;
+  table_number?: number;
+  label?: string;
+  [key: string]: unknown;
 }
 
 // GET /api/tables?venueId=xxx - Get table runtime state for a venue
@@ -35,7 +40,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("label", { ascending: true });
 
     if (tablesError) {
-      
+
       return apiErrors.database(
         "Failed to fetch tables",
         isDevelopment() ? tablesError.message : undefined
@@ -69,7 +74,8 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
         orderCompletionMap = orders.reduce(
           (acc, order) => {
             acc[order.id] = {
-
+              completion_status: order.completion_status,
+              order_status: order.order_status,
             };
             return acc;
           },
@@ -79,7 +85,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     if (sessionsError) {
-      
+
       return apiErrors.database(
         "Failed to fetch table sessions",
         isDevelopment() ? sessionsError.message : undefined
@@ -112,16 +118,46 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
           ...tableRecord,
           table_id: tableRecord.id as string, // Add table_id field for consistency with TableRuntimeState interface
           merged_with_table_id: (tableRecord.merged_with_table_id as string | null) || null, // Include merge relationship
-
+          session_id: (effectiveSession?.id as string | null) || null,
+          status: isOrderCompleted ? "FREE" : (effectiveSession?.status as string) || "FREE",
+          order_id: isOrderCompleted ? null : (effectiveSession?.order_id as string | null) || null,
+          opened_at: (effectiveSession?.opened_at as string | null) || null,
+          closed_at: (effectiveSession?.closed_at as string | null) || null,
+          total_amount: (effectiveSession?.total_amount as number | null) || null,
+          customer_name: (effectiveSession?.customer_name as string | null) || null,
+          order_status: isOrderCompleted
+            ? null
+            : (effectiveSession?.order_status as string | null) || null,
           completion_status: order?.completion_status || null, // Include completion_status for table state logic
           // If order is completed, automatically close the session (cleanup)
           ...(isOrderCompleted && effectiveSession
             ? {
                 // Trigger cleanup: close session and clear order_id
-
+                _shouldCleanup: true,
               }
             : {}),
-
+          payment_status: (effectiveSession?.payment_status as string | null) || null,
+          order_updated_at: (effectiveSession?.order_updated_at as string | null) || null,
+          reservation_time: (effectiveSession?.reservation_time as string | null) || null,
+          reservation_duration_minutes:
+            (effectiveSession?.reservation_duration_minutes as number | null) || null,
+          reservation_end_time: (effectiveSession?.reservation_end_time as string | null) || null,
+          reservation_created_at:
+            (effectiveSession?.reservation_created_at as string | null) || null,
+          most_recent_activity:
+            (effectiveSession?.most_recent_activity as string) ||
+            (tableRecord.table_created_at as string),
+          reserved_now_id: null,
+          reserved_now_start: null,
+          reserved_now_end: null,
+          reserved_now_name: null,
+          reserved_now_phone: null,
+          reserved_later_id: null,
+          reserved_later_start: null,
+          reserved_later_end: null,
+          reserved_later_name: null,
+          reserved_later_phone: null,
+          block_window_mins: 0,
         };
 
         return result;
@@ -140,6 +176,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
             order.order_status.toUpperCase()
           ))
       );
+    });
 
     if (sessionsToCleanup.length > 0) {
       // Clean up in background (don't block response)
@@ -155,7 +192,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
             await supabase
               .from("table_sessions")
               .update({
-
+                status: "FREE",
+                order_id: null,
+                closed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
               .eq("id", sessionId);
 
             // Also clear table runtime state if we have table_number
@@ -163,7 +204,10 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
               await supabase
                 .from("table_runtime_state")
                 .update({
-
+                  primary_status: "FREE",
+                  order_id: null,
+                  updated_at: new Date().toISOString(),
+                })
                 .eq("venue_id", context.venueId)
                 .eq("label", `Table ${tableNumber}`);
             }
@@ -173,18 +217,19 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
               await supabase
                 .from("table_runtime_state")
                 .update({
-
+                  primary_status: "FREE",
+                  order_id: null,
+                  updated_at: new Date().toISOString(),
+                })
                 .eq("venue_id", context.venueId)
                 .eq("table_id", tableId);
             }
 
-            
-          } catch (cleanupError) {
-
-          }
-
-      ).catch((error) => {
-
+          } catch (cleanupError) { /* Error handled silently */ }
+        })
+      ).catch((_error) => {
+        // Cleanup errors handled silently
+      });
     }
 
     // Ensure all tables have active sessions (create missing ones)
@@ -196,10 +241,14 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
         const tableId = tableWithId.table_id || tableWithId.id;
         // RLS ensures user can only create sessions for venues they have access to
         const { error: sessionError } = await supabase.from("table_sessions").insert({
+          venue_id: context.venueId,
+          table_id: tableId,
+          status: "FREE",
+          opened_at: new Date().toISOString(),
+          closed_at: null,
+        });
 
-        if (sessionError) {
-          
-        }
+        if (sessionError) { /* Condition handled */ }
       }
 
       // Refetch sessions after creating missing ones
@@ -225,7 +274,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
             table.opened_at = newSession.opened_at as string | null;
           }
         }
-
+      });
     }
 
     return success({ tables: tablesWithSessions });
@@ -237,12 +286,13 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});
 
 // POST /api/tables - Create a new table
 export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
   // Log route entry (only in development)
   if (isDevelopment()) {
-    
+    // Development mode logging
   }
 
   try {
@@ -289,11 +339,14 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // IMPORTANT: Tier limits are based on the venue owner's subscription
     const limitCheck = await checkLimit(venue.owner_user_id, "maxTables", tableCount);
     if (!limitCheck.allowed) {
-      
+
       return apiErrors.forbidden(
         `Table limit reached. You have ${tableCount}/${limitCheck.limit} tables. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more tables.`,
         {
-
+          limitReached: true,
+          currentCount: tableCount,
+          limit: limitCheck.limit,
+          tier: limitCheck.currentTier,
         }
       );
     }
@@ -314,7 +367,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .maybeSingle();
 
     if (existingTable) {
-      
+
       return apiErrors.badRequest(
         `Table "${label}" already exists. Please choose a different label.`
       );
@@ -325,14 +378,16 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: table, error: tableError } = await supabase
       .from("tables")
       .insert({
-
+        venue_id: context.venueId,
         label,
-
+        seat_count: seat_count || null,
+        area: area || null,
+      })
       .select()
       .single();
 
     if (tableError || !table) {
-      
+
       return apiErrors.database(
         "Failed to create table",
         isDevelopment() ? tableError?.message : undefined
@@ -340,7 +395,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     // Check if session already exists for this table
-    
+
     // RLS ensures user can only access sessions for venues they have access to
     const { data: existingSession } = await supabase
       .from("table_sessions")
@@ -351,33 +406,39 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // Only create session if one doesn't already exist
     if (!existingSession) {
-      
+
       // RLS ensures user can only create sessions for venues they have access to
       const { error: sessionError } = await supabase.from("table_sessions").insert({
+        venue_id: context.venueId,
+        table_id: table.id,
+        status: "FREE",
+        opened_at: new Date().toISOString(),
+        closed_at: null,
+      });
 
       if (sessionError) {
         const sessionErrorPayload = {
-
+          venueId: context.venueId,
+          userId: context.user?.id,
+          tableId: table.id,
+          error: sessionError.message,
         };
-        
+
         return apiErrors.database(
           "Failed to create table session",
           isDevelopment() ? sessionError.message : undefined
         );
       }
-      
-    } else {
-      
-    }
+
+    } else { /* Else case handled */ }
 
     // Success audit log
-    
 
     // STEP 4: Return success response
     return success({
       table,
       message: `Table "${table.label}" created successfully!`,
-
+    });
   } catch (error) {
 
     if (isZodError(error)) {
@@ -386,3 +447,4 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

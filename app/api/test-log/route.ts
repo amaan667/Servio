@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   // Test all logging methods
-        
+
   if (typeof process !== "undefined" && process.stdout) {
     process.stdout.write("[RAILWAY TEST] process.stdout.write - This should appear\n");
   }
@@ -15,5 +15,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-
+    message: "Check Railway logs for test messages",
+    timestamp: new Date().toISOString(),
+  });
 }

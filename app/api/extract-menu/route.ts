@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       // Attach venue_id to each item if not present
       const itemsToInsert = body.items.map((item: Record<string, unknown>) => ({
         ...item,
-
+        venue_id: body.venue_id,
         is_available: (item.available as boolean | undefined) !== false, // default to true
       }));
       const { error } = await supabase.from("menu_items").insert(itemsToInsert);

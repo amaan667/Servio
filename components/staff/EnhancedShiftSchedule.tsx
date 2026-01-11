@@ -20,15 +20,29 @@ import TimeField24, { TimeValue24 } from "@/components/inputs/TimeField24";
 import { buildIsoFromLocal, isOvernight, addDaysISO } from "@/lib/time";
 
 type StaffMember = {
-
+  id: string;
+  name: string;
+  role: string;
+  active: boolean;
+  created_at: string;
 };
 
 type Shift = {
-
+  id: string;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
+  area?: string;
+  staff_name: string;
+  staff_role: string;
+  date?: string;
 };
 
 interface EnhancedShiftScheduleProps {
-
+  staff: StaffMember[];
+  shifts: Shift[];
+  venueId: string;
+  onShiftAdded: () => void;
 }
 
 type ViewMode = "day" | "week" | "month";
@@ -69,7 +83,7 @@ export default function EnhancedShiftSchedule({
             break;
         }
         return newDate;
-
+      });
     },
     [viewMode]
   );
@@ -94,8 +108,10 @@ export default function EnhancedShiftSchedule({
             shiftDate.getMonth() === currentDate.getMonth() &&
             shiftDate.getFullYear() === currentDate.getFullYear()
           );
-
+        default:
+          return false;
       }
+    });
 
     return filteredShifts;
   }, [shifts, currentDate, viewMode]);
@@ -112,6 +128,7 @@ export default function EnhancedShiftSchedule({
         grouped[shiftDate] = [];
       }
       grouped[shiftDate].push(shift);
+    });
 
     return grouped;
   }, [shiftsForPeriod]);
@@ -121,7 +138,11 @@ export default function EnhancedShiftSchedule({
     switch (viewMode) {
       case "day":
         return currentDate.toLocaleDateString("en-US", {
-
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
       case "week": {
         const weekStart = new Date(currentDate);
         weekStart.setDate(currentDate.getDate() - currentDate.getDay());
@@ -135,7 +156,11 @@ export default function EnhancedShiftSchedule({
       }
       case "month":
         return currentDate.toLocaleDateString("en-US", {
-
+          year: "numeric",
+          month: "long",
+        });
+      default:
+        return "";
     }
   };
 
@@ -164,10 +189,16 @@ export default function EnhancedShiftSchedule({
       const endIso = buildIsoFromLocal(endDate, endTime.hour, endTime.minute);
 
       const response = await fetch("/api/staff/shifts/add", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          staff_id: selectedStaffId,
+          venue_id: venueId,
+          start_time: startIso,
+          end_time: endIso,
+          area: area || null,
         }),
+      });
 
       const result = await response.json();
 
@@ -220,11 +251,15 @@ export default function EnhancedShiftSchedule({
                 </div>
                 <span className="text-sm text-gray-600">
                   {new Date(shift.start_time).toLocaleTimeString("en-US", {
-
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
                   })}{" "}
                   -{" "}
                   {new Date(shift.end_time).toLocaleTimeString("en-US", {
-
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
                   })}
                 </span>
               </div>
@@ -252,11 +287,15 @@ export default function EnhancedShiftSchedule({
                     <div>{shift.area}</div>
                     <div>
                       {new Date(shift.start_time).toLocaleTimeString("en-US", {
-
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
                       })}{" "}
                       -{" "}
                       {new Date(shift.end_time).toLocaleTimeString("en-US", {
-
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
                       })}
                     </div>
                   </div>
@@ -378,7 +417,9 @@ export default function EnhancedShiftSchedule({
                 <div key={date} className="border rounded-lg p-4">
                   <h4 className="font-semibold mb-3">
                     {new Date(date).toLocaleDateString("en-US", {
-
+                      weekday: "long",
+                      month: "short",
+                      day: "numeric",
                     })}
                   </h4>
                   {renderShiftDisplay(dateShifts, date)}

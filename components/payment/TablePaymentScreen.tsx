@@ -8,13 +8,25 @@ import { Loader2, CreditCard, Users, AlertCircle, CheckCircle } from "lucide-rea
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Order {
-
+  id: string;
+  customer_name?: string;
+  total_amount: number;
+  payment_mode?: string;
+  items: Array<{
+    item_name: string;
+    quantity: number;
+    price: number;
   }>;
-
+  created_at: string;
 }
 
 interface TablePaymentScreenProps {
-
+  venueId: string;
+  tableNumber: number | string;
+  customerName?: string;
+  customerEmail?: string;
+  onPaymentComplete?: () => void; // Used by parent component if provided
+  onCancel?: () => void;
 }
 
 export function TablePaymentScreen({
@@ -78,12 +90,17 @@ export function TablePaymentScreen({
 
       // Create Stripe checkout for all orders
       const response = await fetch("/api/stripe/create-table-checkout", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          orderIds,
+          amount: totalAmount,
+          customerEmail: customerEmail || "",
+          customerName: customerName || "Customer",
           venueName: "Restaurant", // Could fetch from venue
           tableNumber,
         }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -201,7 +218,8 @@ export function TablePaymentScreen({
                     <p className="text-xs text-gray-500">
                       {order.items?.length || 0} item(s) •{" "}
                       {new Date(order.created_at).toLocaleTimeString("en-GB", {
-
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </p>
                   </div>

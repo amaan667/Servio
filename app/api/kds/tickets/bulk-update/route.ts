@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -12,6 +13,8 @@ export const runtime = "nodejs";
 const bulkUpdateTicketsSchema = z.object({
   ticket_ids: z.array(z.string().uuid()).min(1, "At least one ticket ID is required"),
   status: z.enum(["ready", "preparing", "bumped", "served", "cancelled"]),
+  order_id: z.string().uuid().optional(),
+});
 
 // PATCH - Bulk update multiple tickets (e.g., bump all ready tickets for an order)
 export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -41,13 +44,14 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
       .from("kds_tickets")
       .update({
         status,
-
+        updated_at: now,
+      })
       .in("id", ticket_ids)
       .eq("venue_id", venueId)
       .select();
 
     if (updateError) {
-      
+
       return apiErrors.database(
         "Failed to update tickets",
         isDevelopment() ? updateError.message : undefined
@@ -65,9 +69,6 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
       const allBumped = allOrderTickets?.every((t) => t.status === "bumped") || false;
 
-       => t.status === "bumped").length,
-        allBumped,
-
       // Only update order status if ALL tickets are bumped
       if (allBumped) {
         const { data: currentOrder } = await supabase
@@ -77,26 +78,20 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
           .eq("venue_id", venueId)
           .single();
 
-        ?.kitchen_status,
-
         const { error: orderUpdateError } = await supabase.rpc("orders_set_kitchen_bumped", {
+          p_order_id: orderId,
+          p_venue_id: venueId,
+        });
 
-        if (orderUpdateError) {
-          
-        } else {
-          
-        }
-      } else {
-         => t.status === "bumped").length,
-
-      }
+        if (orderUpdateError) { /* Condition handled */ } else { /* Else case handled */ }
+      } else { /* Else case handled */ }
     }
-
-    
 
     // STEP 6: Return success response
     return success({
-
+      updated: tickets?.length || 0,
+      tickets: tickets || [],
+    });
   } catch (error) {
 
     if (isZodError(error)) {
@@ -105,3 +100,4 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

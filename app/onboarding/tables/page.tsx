@@ -13,7 +13,9 @@ import { toast } from "@/hooks/use-toast";
 import QRCode from "qrcode";
 
 interface PreviewTable {
-
+  number: number;
+  qrCode: string;
+  url: string;
 }
 
 export default function OnboardingTablesPage() {
@@ -59,8 +61,9 @@ export default function OnboardingTablesPage() {
         if (pendingSignup) {
           // Ensure venue is created
           const response = await fetch("/api/signup/complete-onboarding", {
-
+            method: "POST",
             headers: { "Content-Type": "application/json" },
+          });
 
           const data = await response.json();
           if (response.ok && data.success && data.venueId) {
@@ -93,11 +96,18 @@ export default function OnboardingTablesPage() {
       const tableUrl = `${baseUrl}/order?venue=${vId}&table=${i}`;
       try {
         const qrDataUrl = await QRCode.toDataURL(tableUrl, {
-
+          width: 200,
+          margin: 2,
+          color: {
+            dark: qrColor,
+            light: "#ffffff",
           },
-
+        });
         previews.push({
-
+          number: i,
+          qrCode: qrDataUrl,
+          url: tableUrl,
+        });
       } catch (_error) {
         // Error silently handled
       }
@@ -112,7 +122,8 @@ export default function OnboardingTablesPage() {
       setTables(
         Array.from({ length: selectedCount }, (_, i) => ({
           name: `Table ${i + 1}`,
-
+          section: "Main",
+          capacity: 4,
         }))
       );
     } else if (selectedCount !== tables.length) {
@@ -150,7 +161,12 @@ export default function OnboardingTablesPage() {
 
       // Create tables with custom names, sections, and capacity
       const tablesToInsert = tables.slice(0, selectedCount).map((table, i) => ({
-
+        venue_id: venueId,
+        table_number: i + 1,
+        label: table.name,
+        section: table.section,
+        seat_count: table.capacity,
+        status: "available",
       }));
 
       const { error } = await supabase.from("tables").insert(tablesToInsert);
@@ -160,15 +176,17 @@ export default function OnboardingTablesPage() {
         if (error.code === "23505") {
           // Unique constraint violation - tables already exist
           toast({
-
+            title: "Tables already exist",
+            description: "Moving to next step...",
+          });
         } else {
           throw error;
         }
       } else {
         toast({
-
+          title: "Tables created!",
           description: `Successfully created ${selectedCount} tables with QR codes.`,
-
+        });
       }
 
       // Store progress (both local and server-side)
@@ -182,7 +200,10 @@ export default function OnboardingTablesPage() {
       router.push("/onboarding/test-order");
     } catch (_error) {
       toast({
-
+        title: "Failed to create tables",
+        description: _error instanceof Error ? _error.message : "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setCreating(false);
     }
@@ -192,7 +213,9 @@ export default function OnboardingTablesPage() {
     if (!venueId) return;
 
     toast({
-
+      title: "Coming soon!",
+      description: "QR code download will be available after setup.",
+    });
   };
 
   const handleSkip = () => {
@@ -392,11 +415,12 @@ export default function OnboardingTablesPage() {
                     tables.slice(0, selectedCount).map(async (table, i) => {
                       const tableUrl = `${baseUrl}/order?venue=${venueId}&table=${i + 1}`;
                       const qrDataUrl = await QRCode.toDataURL(tableUrl, {
-
+                        width: 400,
+                        margin: 2,
                         color: { dark: qrColor, light: "#ffffff" },
-
+                      });
                       return { name: table.name, qr: qrDataUrl };
-
+                    })
                   );
 
                   // Create download links
@@ -405,14 +429,18 @@ export default function OnboardingTablesPage() {
                     link.href = qr;
                     link.download = `${name.replace(/\s+/g, "-")}-qr-code.png`;
                     link.click();
+                  });
 
                   toast({
-
+                    title: "QR codes downloaded!",
                     description: `Downloaded ${qrCodes.length} QR code images.`,
-
+                  });
                 } catch (_error) {
                   toast({
-
+                    title: "Download failed",
+                    description: "Failed to generate QR codes. Please try again.",
+                    variant: "destructive",
+                  });
                 }
               }}
               disabled={creating}

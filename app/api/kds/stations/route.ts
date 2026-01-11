@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,10 +12,14 @@ export const runtime = "nodejs";
 
 const createStationSchema = z.object({
   stationName: z.string().min(1, "Station name is required"),
-
+  stationType: z.string().optional().default("general"),
+  displayOrder: z.number().int().optional().default(0),
+  colorCode: z
+    .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color code")
     .optional()
     .default("#3b82f6"),
+});
 
 // GET - Fetch all KDS stations for a venue
 export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -43,7 +48,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("display_order", { ascending: true });
 
     if (fetchError) {
-      
+
       return apiErrors.database(
         "Failed to fetch KDS stations",
         isDevelopment() ? fetchError.message : undefined
@@ -53,9 +58,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     // If no stations exist, create default ones
     if (!stations || stations.length === 0) {
       const { error: setupError } = await supabase.rpc("setup_default_kds_stations", {
+        p_venue_id: venueId,
+      });
 
       if (setupError) {
-        
+
         // Continue anyway - return empty array
       } else {
         // Fetch again after setup
@@ -66,17 +73,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
           .eq("is_active", true)
           .order("display_order", { ascending: true });
 
-        if (refetchError) {
-          
-        }
-
-        
+        if (refetchError) { /* Condition handled */ }
 
         return success({ stations: newStations || [] });
       }
     }
-
-    
 
     // STEP 4: Return success response
     return success({ stations: stations || [] });
@@ -88,6 +89,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});
 
 // POST - Create a new KDS station
 export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -136,13 +138,16 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     );
 
     if (!stationLimitCheck.allowed) {
-      
 
       if (stationLimitCheck.kdsTier === "basic") {
         return apiErrors.forbidden(
           `Station limit reached. Basic KDS supports only 1 station. Upgrade to Pro or Enterprise for unlimited stations.`,
           {
-
+            limitReached: true,
+            currentCount: currentStationCount || 0,
+            limit: stationLimitCheck.limit,
+            tier: stationLimitCheck.currentTier,
+            kdsTier: stationLimitCheck.kdsTier,
           }
         );
       }
@@ -150,7 +155,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       return apiErrors.forbidden(
         `Station limit reached. You have ${currentStationCount || 0}/${stationLimitCheck.limit} stations.`,
         {
-
+          limitReached: true,
+          currentCount: currentStationCount || 0,
+          limit: stationLimitCheck.limit,
+          tier: stationLimitCheck.currentTier,
         }
       );
     }
@@ -160,19 +168,23 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: station, error: insertError } = await supabase
       .from("kds_stations")
       .insert({
-
+        venue_id: venueId,
+        station_name: body.stationName,
+        station_type: body.stationType || "general",
+        display_order: body.displayOrder || 0,
+        color_code: body.colorCode || "#3b82f6",
+        is_active: true,
+      })
       .select()
       .single();
 
     if (insertError || !station) {
-      
+
       return apiErrors.database(
         "Failed to create KDS station",
         isDevelopment() ? insertError?.message : undefined
       );
     }
-
-    
 
     // STEP 5: Return success response
     return success({ station });
@@ -184,3 +196,4 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

@@ -14,7 +14,11 @@ import {
 import { QrCode, Plus } from "lucide-react";
 
 interface TableItem {
-
+  id: string;
+  label: string;
+  table_number?: number;
+  table_id?: string;
+  name?: string;
 }
 
 interface CounterItem {
@@ -28,7 +32,14 @@ interface CounterItem {
 }
 
 interface QRCodeGeneratorProps {
-
+  qrCodeType: "tables" | "counters" | "custom";
+  onTypeChange: (type: "tables" | "counters" | "custom") => void;
+  inputName: string;
+  onInputNameChange: (name: string) => void;
+  onGenerate: () => void;
+  onGenerateAll: () => void;
+  tables: TableItem[];
+  counters: CounterItem[];
 }
 
 export function QRCodeGenerator({

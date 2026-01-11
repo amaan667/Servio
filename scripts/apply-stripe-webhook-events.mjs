@@ -12,6 +12,7 @@ const REQUIRED_MIGRATION = "20251210000100_add_stripe_webhook_events.sql";
 function requireEnv(name) {
   const value = process.env[name];
   if (!value) {
+
     process.exit(1);
   }
   return value;
@@ -28,15 +29,18 @@ function getSupabase() {
 
 async function ensureMigrationsTable(supabase) {
   const { error } = await supabase.rpc("exec_sql", {
-
+    sql: `
+      CREATE TABLE IF NOT EXISTS _migrations (
+        id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
         executed_at TIMESTAMP DEFAULT NOW(),
         checksum TEXT
       );
       CREATE INDEX IF NOT EXISTS idx_migrations_name ON _migrations(name);
     `,
-
+  });
   if (error) {
+
     process.exit(2);
   }
 }
@@ -48,6 +52,7 @@ async function migrationApplied(supabase) {
     .eq("name", REQUIRED_MIGRATION)
     .limit(1);
   if (error) {
+
     process.exit(3);
   }
   return (data ?? []).length > 0;
@@ -60,13 +65,16 @@ async function applyMigration(supabase) {
 
   const { error } = await supabase.rpc("exec_sql", { sql });
   if (error) {
+
     process.exit(4);
   }
 
   const { error: recordError } = await supabase.from("_migrations").insert({
-
+    name: REQUIRED_MIGRATION,
+    checksum: null,
+  });
   if (recordError) {
-    
+
     process.exit(5);
   }
 }
@@ -74,6 +82,7 @@ async function applyMigration(supabase) {
 async function verifyTable(supabase) {
   const { error } = await supabase.from("stripe_webhook_events").select("id").limit(1);
   if (error) {
+
     process.exit(6);
   }
 }
@@ -84,13 +93,18 @@ async function main() {
 
   const already = await migrationApplied(supabase);
   if (already) {
+
     await verifyTable(supabase);
+
     return;
   }
 
   await applyMigration(supabase);
   await verifyTable(supabase);
+
 }
 
 main().catch((err) => {
+
   process.exit(1);
+});

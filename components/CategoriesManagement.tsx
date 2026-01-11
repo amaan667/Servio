@@ -18,7 +18,8 @@ import { GripVertical, Plus, Edit, Trash2, Save, X, RotateCcw } from "lucide-rea
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 interface CategoriesManagementProps {
-
+  venueId: string;
+  onCategoriesUpdate?: (categories: string[]) => void;
 }
 
 export function CategoriesManagement({ venueId, onCategoriesUpdate }: CategoriesManagementProps) {
@@ -90,7 +91,10 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       localStorage.setItem(`category-order-${venueId}`, JSON.stringify(finalCategories));
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: "Failed to load categories",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -115,26 +119,33 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
 
       // Also call API for consistency (even though it doesn't persist to DB yet)
       const response = await fetch("/api/menu/categories", {
-
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ venueId, categories: categoriesToSave }),
+      });
 
       const data = await response.json();
 
       if (response.ok) {
         toast({
-
+          title: "Success",
+          description: "Category order updated successfully",
+        });
         onCategoriesUpdate?.(categoriesToSave);
       } else {
         toast({
-
+          title: "Success",
+          description: "Category order updated (saved locally)",
+        });
         // Still update the parent component since we saved to localStorage
         onCategoriesUpdate?.(categoriesToSave);
       }
     } catch (_error) {
       // Still show success since we saved to localStorage
       toast({
-
+        title: "Success",
+        description: "Category order updated (saved locally)",
+      });
       onCategoriesUpdate?.(categoriesToSave);
     } finally {
       setSaving(false);
@@ -144,13 +155,19 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
       toast({
-
+        title: "Error",
+        description: "Category name cannot be empty",
+        variant: "destructive",
+      });
       return;
     }
 
     if (categories.includes(newCategoryName.trim())) {
       toast({
-
+        title: "Error",
+        description: "Category already exists",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -163,17 +180,20 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       setNewCategoryName("");
       setIsAddModalOpen(false);
       toast({
-
+        title: "Success",
         description: `Category "${newCategoryName.trim()}" added successfully`,
-
+      });
       onCategoriesUpdate?.(newCategories);
 
       // Also call API for consistency
       const response = await fetch("/api/menu/categories", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          venueId,
+          categoryName: newCategoryName.trim(),
         }),
+      });
 
       if (!response.ok) {
         // Empty block
@@ -181,9 +201,9 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
     } catch (_error) {
       // Category was already added locally, so show success
       toast({
-
+        title: "Success",
         description: `Category "${newCategoryName.trim()}" added successfully`,
-
+      });
     }
   };
 
@@ -200,17 +220,24 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
 
     if (categories.includes(editingName.trim()) && editingName.trim() !== editingCategory) {
       toast({
-
+        title: "Error",
+        description: "Category already exists",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
       // Update category name in menu items
       const response = await fetch("/api/menu/update-category", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          venueId,
+          oldCategory: editingCategory,
+          newCategory: editingName.trim(),
         }),
+      });
 
       if (response.ok) {
         // Update local categories list
@@ -220,18 +247,24 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         setCategories(newCategories);
         setEditingCategory(null);
         toast({
-
+          title: "Success",
           description: `Category renamed to "${editingName.trim()}"`,
-
+        });
         onCategoriesUpdate?.(newCategories);
       } else {
         const data = await response.json();
         toast({
-
+          title: "Error",
+          description: data.error || "Failed to rename category",
+          variant: "destructive",
+        });
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: "Failed to rename category",
+        variant: "destructive",
+      });
     }
   };
 
@@ -248,7 +281,11 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
 
     if (isOriginalCategory) {
       toast({
-
+        title: "Cannot Delete",
+        description:
+          "Cannot delete original categories from PDF upload. Use the reset button to restore original order.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -264,10 +301,13 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
     try {
       // Call API to delete category and its items
       const response = await fetch("/api/menu/delete-category", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          venueId,
+          categoryName: categoryToDelete,
         }),
+      });
 
       if (response.ok) {
         // Remove from local state
@@ -276,18 +316,24 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         localStorage.setItem(`category-order-${venueId}`, JSON.stringify(newCategories));
 
         toast({
-
+          title: "Success",
           description: `Category "${categoryToDelete}" and its items deleted successfully`,
-
+        });
         onCategoriesUpdate?.(newCategories);
       } else {
         const data = await response.json();
         toast({
-
+          title: "Error",
+          description: data.error || "Failed to delete category",
+          variant: "destructive",
+        });
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -306,9 +352,10 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
     try {
       // Always call the reset API to get the original categories from PDF
       const response = await fetch("/api/menu/categories/reset", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ venueId }),
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -323,12 +370,17 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           );
 
           toast({
-
+            title: "Success",
+            description: "Categories reset to original PDF order successfully",
+          });
           onCategoriesUpdate?.(data.originalCategories);
         } else {
           // No original categories found
           toast({
-
+            title: "No Original Categories",
+            description: "No original categories found from PDF upload to reset to.",
+            variant: "destructive",
+          });
         }
       } else {
         const errorData = await response.json();
@@ -336,15 +388,24 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         if (response.status === 404) {
           // No original categories found
           toast({
-
+            title: "No Original Categories",
+            description: "No original categories found from PDF upload to reset to.",
+            variant: "destructive",
+          });
         } else {
           toast({
-
+            title: "Error",
+            description: errorData.error || "Failed to reset categories",
+            variant: "destructive",
+          });
         }
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: "Failed to reset categories",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }

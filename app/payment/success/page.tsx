@@ -24,6 +24,7 @@ export default function PaymentSuccessPage() {
         // Reconcile payment status in case webhook is delayed/missed (idempotent)
         await fetch(`/api/orders/verify?sessionId=${encodeURIComponent(sessionId)}`).catch(() => {
           // Non-blocking: fallback still tries to find the order and redirect
+        });
 
         // Look up order by session ID
         const response = await fetch(
@@ -47,6 +48,7 @@ export default function PaymentSuccessPage() {
         // Retry reconcile once more as well (idempotent)
         await fetch(`/api/orders/verify?sessionId=${encodeURIComponent(sessionId)}`).catch(() => {
           // Non-blocking
+        });
 
         const retryResponse = await fetch(
           `/api/orders/by-session?sessionId=${encodeURIComponent(sessionId)}`

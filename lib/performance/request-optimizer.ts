@@ -1,7 +1,8 @@
 // Request deduplication and batching for optimal network performance
 
 interface PendingRequest<T> {
-
+  promise: Promise<T>;
+  timestamp: number;
 }
 
 class RequestDeduplicator {
@@ -23,9 +24,12 @@ class RequestDeduplicator {
       setTimeout(() => {
         this.pendingRequests.delete(key);
       }, this.dedupWindow);
+    });
 
     this.pendingRequests.set(key, {
       promise,
+      timestamp: now,
+    });
 
     return promise;
   }
@@ -45,7 +49,8 @@ class RequestBatcher {
   private batchTimers = new Map<string, NodeJS.Timeout>();
 
   async batch<T>(
-
+    batchKey: string,
+    itemId: string,
     batchFetcher: (ids: string[]) => Promise<Record<string, T>>
   ): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -81,7 +86,7 @@ class RequestBatcher {
             } else {
               item.reject(new Error(`No result for ${item.id}`));
             }
-
+          });
         } catch (_error) {
           // Reject all promises in batch
           batch.forEach((item) => item.reject(_error));
@@ -89,7 +94,7 @@ class RequestBatcher {
       }, this.batchTimeout);
 
       this.batchTimers.set(batchKey, timer);
-
+    });
   }
 
   clear(): void {
@@ -118,12 +123,13 @@ export async function deduplicatedFetch<T>(url: string, options?: RequestInit): 
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
-
+  });
 }
 
 // Helper function for batching multiple item requests
 export async function batchedItemFetch<T>(
-
+  batchKey: string,
+  itemId: string,
   fetchMultiple: (ids: string[]) => Promise<Record<string, T>>
 ): Promise<T> {
   return requestBatcher.batch(batchKey, itemId, fetchMultiple);

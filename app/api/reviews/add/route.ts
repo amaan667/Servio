@@ -10,12 +10,13 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const reviewSchema = z.object({
-
+  orderId: z.string().uuid("Invalid order ID"),
   rating: z.number().int().min(1).max(5, "Rating must be between 1 and 5"),
   comment: z.string().max(500, "Comment too long").optional(),
+});
 
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -37,24 +38,25 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (orderError || !order) {
-        
+
         return apiErrors.notFound("Order not found");
       }
 
       // Insert review
       const { error: insErr } = await admin.from("reviews").insert({
-
+        order_id: body.orderId,
+        venue_id: order.venue_id,
+        rating: body.rating,
         comment: (body.comment ?? "").slice(0, 500),
+      });
 
       if (insErr) {
-        
+
         return apiErrors.database(
           "Failed to save review",
           isDevelopment() ? insErr.message : undefined
         );
       }
-
-      
 
       // STEP 4: Return success response
       return success({ success: true });
@@ -69,6 +71,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required (reviews can be for any order)
-
+    extractVenueId: async () => null,
   }
 );

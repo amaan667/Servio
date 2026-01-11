@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -33,7 +34,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("is_active", true);
 
     if (fetchError) {
-      
+
       return apiErrors.database(
         "Failed to fetch tables",
         isDevelopment() ? fetchError.message : undefined
@@ -54,6 +55,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         tablesByLabel.set(table.label, []);
       }
       tablesByLabel.get(table.label)!.push(table);
+    });
 
     // Find duplicates (keep the oldest one, remove the rest)
     const duplicatesToRemove: string[] = [];
@@ -64,12 +66,14 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
           const aCreated = a.created_at;
           const bCreated = b.created_at;
           return new Date(aCreated || 0).getTime() - new Date(bCreated || 0).getTime();
+        });
 
         // Mark all but the first (oldest) for removal
         for (let i = 1; i < sorted.length; i++) {
           duplicatesToRemove.push(sorted[i].id);
         }
       }
+    });
 
     if (duplicatesToRemove.length === 0) {
       return success({ message: "No duplicates found", duplicates_removed: 0 });
@@ -84,7 +88,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
     if (ordersError) {
-      
+
       return apiErrors.database(
         "Failed to check for active orders",
         isDevelopment() ? ordersError.message : undefined
@@ -99,7 +103,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("status", "BOOKED");
 
     if (reservationsError) {
-      
+
       return apiErrors.database(
         "Failed to check for active reservations",
         isDevelopment() ? reservationsError.message : undefined
@@ -121,25 +125,27 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (safeToRemove.length === 0) {
       return success({
-
+        message:
+          "No duplicate tables can be safely removed (all have active orders or reservations)",
+        duplicates_removed: 0,
+      });
     }
 
     // Remove duplicate tables that are safe to remove
     const { error: deleteError } = await supabase.from("tables").delete().in("id", safeToRemove);
 
     if (deleteError) {
-      
+
       return apiErrors.database(
         "Failed to remove duplicate tables",
         isDevelopment() ? deleteError.message : undefined
       );
     }
 
-    
-
     return success({
       message: `Successfully removed ${safeToRemove.length} duplicate tables`,
-
+      duplicates_removed: safeToRemove.length,
+    });
   } catch (error) {
 
     if (isZodError(error)) {
@@ -148,3 +154,4 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

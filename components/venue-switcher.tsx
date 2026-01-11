@@ -13,7 +13,10 @@ import { Building2, Plus } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface Venue {
-
+  venue_id: string;
+  venue_name: string;
+  organization_name: string;
+  user_role: string;
 }
 
 interface VenueSwitcherProps {
@@ -44,6 +47,8 @@ export function VenueSwitcher({ currentVenueId }: VenueSwitcherProps) {
 
       // Get user's venues using the RPC function
       const { data: venuesData, error } = await supabase.rpc("get_user_venues", {
+        p_user_id: user.id,
+      });
 
       if (error) {
         // Empty block

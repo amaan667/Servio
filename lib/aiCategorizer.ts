@@ -10,10 +10,12 @@
  */
 
 import { getOpenAI } from "./openai";
+
 import { AICache } from "./cache";
 
 interface CategoryWithExamples {
-
+  name: string;
+  examples: string[];
 }
 
 /**
@@ -21,11 +23,16 @@ interface CategoryWithExamples {
  * Returns either an existing category or suggests creating a new one
  */
 interface MenuItem {
-
+  name: string;
+  category?: string;
+  description?: string;
 }
 
 export async function categorizeItemWithAI(
-
+  itemName: string,
+  itemDescription: string | undefined,
+  pdfCategories: string[],
+  pdfItems: MenuItem[]
 ): Promise<{ category: string; confidence: number; shouldCreateNew: boolean }> {
   // Check cache first to avoid duplicate AI calls
   const cached = await AICache.categorization.get(itemName, pdfCategories);
@@ -35,7 +42,9 @@ export async function categorizeItemWithAI(
 
   // Build category examples from PDF items
   const categoryExamples: CategoryWithExamples[] = pdfCategories.map((category) => ({
-
+    name: category,
+    examples: pdfItems
+      .filter((item) => item.category === category)
       .slice(0, 5)
       .map((item) => item.name),
   }));
@@ -66,10 +75,20 @@ CATEGORIZATION PRIORITY:
 2. SECOND: Check if similar items exist in current categories (match by type, not ingredients)
 3. THIRD: Only create NEW category if truly a different cuisine/type
 
+RULES:
+1. Prefer EXISTING categories over creating new ones
 2. Match by ITEM TYPE (e.g., all drinks together, all desserts together)
 3. "Raspberry" in name doesn't mean dessert if it's a drink brand
 4. Return "NEW_CATEGORY: [Name]" only if genuinely new type
 
+EXAMPLES:
+✅ "San Pellegrino Lemonade" + Juices exists [Orange Juice] → "Juices"
+✅ "Aspire Raspberry" → This is Aspire brand energy drink → "Beverages" or "NEW_CATEGORY: Beverages"
+❌ "Aspire Raspberry" → "Desserts" (WRONG! It's a drink!)
+✅ "Espresso" + Coffee exists → "Coffee" or "Hot Coffee"
+✅ "Croissant" + NO pastry category → "NEW_CATEGORY: Pastries"
+
+RESPOND WITH ONLY:
 - Existing category name, OR
 - "NEW_CATEGORY: [Name]"`;
 
@@ -77,16 +96,19 @@ CATEGORIZATION PRIORITY:
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini", // Fast and cheap for this task
       messages: [{ role: "user", content: prompt }],
+      temperature: 0.1,
+      max_tokens: 50,
+    });
 
     const result = response.choices[0]?.message?.content?.trim() || "Menu Items";
-
-    
 
     // Check if AI suggests new category
     if (result.startsWith("NEW_CATEGORY:")) {
       const newCategoryName = result.replace("NEW_CATEGORY:", "").trim();
       const categoryResult = {
-
+        category: newCategoryName,
+        confidence: 0.9,
+        shouldCreateNew: true,
       };
       await AICache.categorization.set(itemName, pdfCategories, categoryResult);
       return categoryResult;
@@ -98,7 +120,9 @@ CATEGORIZATION PRIORITY:
 
     if (matchedCategory) {
       const categoryResult = {
-
+        category: matchedCategory,
+        confidence: 0.95,
+        shouldCreateNew: false,
       };
       await AICache.categorization.set(itemName, pdfCategories, categoryResult);
       return categoryResult;
@@ -108,7 +132,9 @@ CATEGORIZATION PRIORITY:
     for (const pdfCat of pdfCategories) {
       if (pdfCat.toLowerCase().includes(normalized) || normalized.includes(pdfCat.toLowerCase())) {
         const categoryResult = {
-
+          category: pdfCat,
+          confidence: 0.85,
+          shouldCreateNew: false,
         };
         await AICache.categorization.set(itemName, pdfCategories, categoryResult);
         return categoryResult;
@@ -116,10 +142,11 @@ CATEGORIZATION PRIORITY:
     }
 
     // Fallback: create new category with AI's suggestion
-    
 
     const categoryResult = {
-
+      category: result,
+      confidence: 0.7,
+      shouldCreateNew: true,
     };
     await AICache.categorization.set(itemName, pdfCategories, categoryResult);
     return categoryResult;
@@ -127,7 +154,9 @@ CATEGORIZATION PRIORITY:
 
     // Fallback to most common PDF category (don't cache failures)
     return {
-
+      category: pdfCategories[0] || "Menu Items",
+      confidence: 0.5,
+      shouldCreateNew: false,
     };
   }
 }
@@ -137,7 +166,8 @@ CATEGORIZATION PRIORITY:
  */
 export async function categorizeItemsBatch(
   items: Array<{ name: string; description?: string }>,
-
+  pdfCategories: string[],
+  pdfItems: MenuItem[]
 ): Promise<Map<string, { category: string; confidence: number; shouldCreateNew: boolean }>> {
   const results = new Map();
 
@@ -154,7 +184,7 @@ export async function categorizeItemsBatch(
 
     batch.forEach((item, idx) => {
       results.set(item.name, batchResults[idx]);
-
+    });
   }
 
   return results;

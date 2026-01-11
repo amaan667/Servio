@@ -11,7 +11,9 @@ export default function MenuManagementClientPage({
   venueId,
   role,
 }: {
-
+  venueId: string;
+  tier: string;
+  role: string;
 }) {
   const { user } = useAuth();
   const router = useRouter();

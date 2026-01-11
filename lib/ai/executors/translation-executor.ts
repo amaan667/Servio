@@ -1,51 +1,146 @@
 import { createClient } from "@/lib/supabase";
+
 import { AIPreviewDiff, AIExecutionResult, AIAssistantError } from "@/types/ai-assistant";
 
 const LANGUAGE_NAMES: Record<string, string> = {
-
+  en: "English",
+  es: "Spanish",
+  ar: "Arabic",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  zh: "Chinese",
+  ja: "Japanese",
 };
 
 const CATEGORY_MAPPINGS: Record<string, Record<string, string>> = {
   "en-es": {
-
+    STARTERS: "ENTRADAS",
+    APPETIZERS: "APERITIVOS",
     "MAIN COURSES": "PLATOS PRINCIPALES",
-
+    ENTREES: "PLATOS PRINCIPALES",
+    DESSERTS: "POSTRES",
+    SALADS: "ENSALADAS",
+    KIDS: "NIÑOS",
+    CHILDREN: "NIÑOS",
+    DRINKS: "BEBIDAS",
+    BEVERAGES: "BEBIDAS",
+    COFFEE: "CAFÉ",
     "SPECIAL COFFEE": "CAFÉ ESPECIAL",
-
+    TEA: "TÉ",
+    SPECIALS: "ESPECIALES",
+    SPECIAL: "ESPECIAL",
+    WRAPS: "WRAPS",
+    SANDWICHES: "SÁNDWICHES",
+    MILKSHAKES: "MALTEADAS",
+    SHAKES: "BATIDOS",
+    SMOOTHIES: "BATIDOS",
+    BRUNCH: "BRUNCH",
+    BREAKFAST: "DESAYUNO",
+    LUNCH: "ALMUERZO",
+    DINNER: "CENA",
+    SOUP: "SOPA",
+    SOUPS: "SOPAS",
+    PASTA: "PASTA",
+    PIZZA: "PIZZA",
+    SEAFOOD: "MARISCOS",
+    CHICKEN: "POLLO",
+    BEEF: "CARNE DE RES",
+    PORK: "CERDO",
+    VEGETARIAN: "VEGETARIANO",
+    VEGAN: "VEGANO",
     "GLUTEN FREE": "SIN GLUTEN",
   },
   "es-en": {
-
+    ENTRADAS: "STARTERS",
+    APERITIVOS: "APPETIZERS",
     "PLATOS PRINCIPALES": "MAIN COURSES",
-
+    POSTRES: "DESSERTS",
+    ENSALADAS: "SALADS",
     NIÑOS: "KIDS",
-
+    NINOS: "KIDS",
+    BEBIDAS: "DRINKS",
     CAFÉ: "COFFEE",
-
+    CAFE: "COFFEE",
     "CAFÉ ESPECIAL": "SPECIAL COFFEE",
     "CAFE ESPECIAL": "SPECIAL COFFEE",
     TÉ: "TEA",
-
+    TE: "TEA",
+    ESPECIALES: "SPECIALS",
+    ESPECIAL: "SPECIAL",
     SÁNDWICHES: "SANDWICHES",
-
+    SANDWICHES: "SANDWICHES",
+    MALTEADAS: "MILKSHAKES",
+    BATIDOS: "SHAKES",
+    SHAKES: "SHAKES",
+    DESAYUNO: "BREAKFAST",
+    ALMUERZO: "LUNCH",
+    CENA: "DINNER",
+    SOPA: "SOUP",
+    SOPAS: "SOUPS",
+    MARISCOS: "SEAFOOD",
+    POLLO: "CHICKEN",
     "CARNE DE RES": "BEEF",
-
+    CERDO: "PORK",
+    VEGETARIANO: "VEGETARIAN",
+    VEGANO: "VEGAN",
     "SIN GLUTEN": "GLUTEN FREE",
   },
   "en-ar": {
-
+    STARTERS: "المقبلات",
+    APPETIZERS: "المقبلات",
     "MAIN COURSES": "الأطباق الرئيسية",
-
+    ENTREES: "الأطباق الرئيسية",
+    MAINS: "الأطباق الرئيسية",
+    DESSERTS: "الحلويات",
+    SWEETS: "الحلويات",
+    SALADS: "السلطات",
+    SALAD: "السلطات",
+    KIDS: "الأطفال",
+    CHILDREN: "الأطفال",
+    DRINKS: "المشروبات",
+    BEVERAGES: "المشروبات",
+    COFFEE: "القهوة",
     "SPECIAL COFFEE": "القهوة الخاصة",
-
+    TEA: "الشاي",
+    SPECIALS: "العروض الخاصة",
+    SPECIAL: "خاص",
+    WRAPS: "السندويشات الملفوفة",
+    SANDWICHES: "السندويشات",
+    MILKSHAKES: "ميلك شيك",
+    SHAKES: "المخفوقات",
+    SMOOTHIES: "السموذي",
+    BRUNCH: "فطور وغداء",
     "ALL DAY BRUNCH": "فطور وغداء طوال اليوم",
-
+    BREAKFAST: "فطور",
     "ALL DAY BREAKFAST": "فطور طوال اليوم",
     "LATE BREAKFAST": "فطور متأخر",
     "LATE BREAKFAST ALL DAY": "فطور متأخر طوال اليوم",
-
+    LUNCH: "غداء",
+    DINNER: "عشاء",
+    SOUP: "الحساء",
+    SOUPS: "الحساء",
+    PASTA: "المعكرونة",
+    PIZZA: "البيتزا",
+    SEAFOOD: "المأكولات البحرية",
+    CHICKEN: "الدجاج",
+    BEEF: "لحم البقر",
+    LAMB: "لحم الغنم",
+    PORK: "لحم الخنزير",
+    VEGETARIAN: "نباتي",
+    VEGAN: "نباتي صرف",
     "GLUTEN FREE": "خالي من الغلوتين",
-
+    SIDES: "الأطباق الجانبية",
+    PLATTERS: "الأطباق الكبيرة",
+    GRILLS: "المشاوي",
+    GRILLED: "مشوي",
+    FRIED: "مقلي",
+    BAKED: "مخبوز",
+    FRESH: "طازج",
+    HOT: "ساخن",
+    COLD: "بارد",
+    SNACKS: "الوجبات الخفيفة",
     "LIGHT BITES": "وجبات خفيفة",
   },
   "ar-en": {
@@ -98,217 +193,575 @@ const CATEGORY_MAPPINGS: Record<string, Record<string, string>> = {
   },
   // French mappings
   "en-fr": {
-
+    STARTERS: "ENTRÉES",
+    APPETIZERS: "ENTRÉES",
     "MAIN COURSES": "PLATS PRINCIPAUX",
-
+    ENTREES: "PLATS PRINCIPAUX",
+    MAINS: "PLATS PRINCIPAUX",
+    DESSERTS: "DESSERTS",
+    SWEETS: "DOUCEURS",
+    SALADS: "SALADES",
+    SALAD: "SALADE",
+    KIDS: "ENFANTS",
+    CHILDREN: "ENFANTS",
+    DRINKS: "BOISSONS",
+    BEVERAGES: "BOISSONS",
+    COFFEE: "CAFÉ",
     "SPECIAL COFFEE": "CAFÉ SPÉCIAL",
-
+    TEA: "THÉ",
+    SPECIALS: "SPÉCIALITÉS",
+    SPECIAL: "SPÉCIAL",
+    WRAPS: "WRAPS",
+    SANDWICHES: "SANDWICHES",
+    MILKSHAKES: "MILK-SHAKES",
+    SHAKES: "SHAKES",
+    SMOOTHIES: "SMOOTHIES",
+    BRUNCH: "BRUNCH",
     "ALL DAY BRUNCH": "BRUNCH TOUTE LA JOURNÉE",
-
+    BREAKFAST: "PETIT DÉJEUNER",
     "ALL DAY BREAKFAST": "PETIT DÉJEUNER TOUTE LA JOURNÉE",
-
+    LUNCH: "DÉJEUNER",
+    DINNER: "DÎNER",
+    SOUP: "SOUPE",
+    SOUPS: "SOUPES",
+    PASTA: "PÂTES",
+    PIZZA: "PIZZA",
+    SEAFOOD: "FRUITS DE MER",
+    CHICKEN: "POULET",
+    BEEF: "BŒUF",
+    LAMB: "AGNEAU",
+    PORK: "PORC",
+    VEGETARIAN: "VÉGÉTARIEN",
+    VEGAN: "VÉGÉTALIEN",
     "GLUTEN FREE": "SANS GLUTEN",
-
+    SIDES: "ACCOMPAGNEMENTS",
+    PLATTERS: "PLATEAUX",
+    GRILLS: "GRILLADES",
+    GRILLED: "GRILLÉ",
+    FRIED: "FRIT",
+    BAKED: "CUIT AU FOUR",
+    FRESH: "FRAIS",
+    HOT: "CHAUD",
+    COLD: "FROID",
+    SNACKS: "COLLATIONS",
     "LIGHT BITES": "PETITES BOUCHÉES",
-
+    WINE: "VIN",
+    BEER: "BIÈRE",
+    COCKTAILS: "COCKTAILS",
     "SOFT DRINKS": "BOISSONS SANS ALCOOL",
-
+    JUICE: "JUS",
     "ICE CREAM": "GLACE",
-
+    BURGERS: "BURGERS",
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NOODLES: "NOUILLES",
+    RICE: "RIZ",
+    BOWLS: "BOLS",
   },
   "fr-en": {
     ENTRÉES: "STARTERS",
     "PLATS PRINCIPAUX": "MAIN COURSES",
-
+    DESSERTS: "DESSERTS",
+    DOUCEURS: "SWEETS",
+    SALADES: "SALADS",
+    SALADE: "SALAD",
+    ENFANTS: "KIDS",
+    BOISSONS: "DRINKS",
     CAFÉ: "COFFEE",
     "CAFÉ SPÉCIAL": "SPECIAL COFFEE",
     THÉ: "TEA",
     SPÉCIALITÉS: "SPECIALS",
     SPÉCIAL: "SPECIAL",
     "MILK-SHAKES": "MILKSHAKES",
-
+    SHAKES: "SHAKES",
+    SMOOTHIES: "SMOOTHIES",
+    BRUNCH: "BRUNCH",
     "BRUNCH TOUTE LA JOURNÉE": "ALL DAY BRUNCH",
     "PETIT DÉJEUNER": "BREAKFAST",
     "PETIT DÉJEUNER TOUTE LA JOURNÉE": "ALL DAY BREAKFAST",
     DÉJEUNER: "LUNCH",
     DÎNER: "DINNER",
-
+    SOUPE: "SOUP",
+    SOUPES: "SOUPS",
     PÂTES: "PASTA",
-
+    PIZZA: "PIZZA",
     "FRUITS DE MER": "SEAFOOD",
-
+    POULET: "CHICKEN",
     BŒUF: "BEEF",
-
+    AGNEAU: "LAMB",
+    PORC: "PORK",
     VÉGÉTARIEN: "VEGETARIAN",
     VÉGÉTALIEN: "VEGAN",
     "SANS GLUTEN": "GLUTEN FREE",
-
+    ACCOMPAGNEMENTS: "SIDES",
+    PLATEAUX: "PLATTERS",
+    GRILLADES: "GRILLS",
     GRILLÉ: "GRILLED",
-
+    FRIT: "FRIED",
     "CUIT AU FOUR": "BAKED",
-
+    FRAIS: "FRESH",
+    CHAUD: "HOT",
+    FROID: "COLD",
+    COLLATIONS: "SNACKS",
     "PETITES BOUCHÉES": "LIGHT BITES",
-
+    VIN: "WINE",
     BIÈRE: "BEER",
-
+    COCKTAILS: "COCKTAILS",
     "BOISSONS SANS ALCOOL": "SOFT DRINKS",
-
+    JUS: "JUICE",
+    GLACE: "ICE CREAM",
+    BURGERS: "BURGERS",
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NOUILLES: "NOODLES",
+    RIZ: "RICE",
+    BOLS: "BOWLS",
   },
   // German mappings
   "en-de": {
-
+    STARTERS: "VORSPEISEN",
+    APPETIZERS: "VORSPEISEN",
     "MAIN COURSES": "HAUPTGERICHTE",
-
+    ENTREES: "HAUPTGERICHTE",
+    MAINS: "HAUPTGERICHTE",
+    DESSERTS: "NACHSPEISEN",
+    SWEETS: "SÜSSIGKEITEN",
+    SALADS: "SALATE",
+    SALAD: "SALAT",
+    KIDS: "KINDER",
+    CHILDREN: "KINDER",
+    DRINKS: "GETRÄNKE",
+    BEVERAGES: "GETRÄNKE",
+    COFFEE: "KAFFEE",
     "SPECIAL COFFEE": "SPEZIAL KAFFEE",
-
+    TEA: "TEE",
+    SPECIALS: "SPEZIALITÄTEN",
+    SPECIAL: "SPEZIAL",
+    WRAPS: "WRAPS",
+    SANDWICHES: "SANDWICHES",
+    MILKSHAKES: "MILCHSHAKES",
+    SHAKES: "SHAKES",
+    SMOOTHIES: "SMOOTHIES",
+    BRUNCH: "BRUNCH",
     "ALL DAY BRUNCH": "GANZTÄGIGER BRUNCH",
-
+    BREAKFAST: "FRÜHSTÜCK",
     "ALL DAY BREAKFAST": "GANZTÄGIGES FRÜHSTÜCK",
-
+    LUNCH: "MITTAGESSEN",
+    DINNER: "ABENDESSEN",
+    SOUP: "SUPPE",
+    SOUPS: "SUPPEN",
+    PASTA: "PASTA",
+    PIZZA: "PIZZA",
+    SEAFOOD: "MEERESFRÜCHTE",
+    CHICKEN: "HÄHNCHEN",
+    BEEF: "RINDFLEISCH",
+    LAMB: "LAMM",
+    PORK: "SCHWEINEFLEISCH",
+    VEGETARIAN: "VEGETARISCH",
+    VEGAN: "VEGAN",
     "GLUTEN FREE": "GLUTENFREI",
-
+    SIDES: "BEILAGEN",
+    PLATTERS: "PLATTEN",
+    GRILLS: "GRILLGERICHTE",
+    GRILLED: "GEGRILLT",
+    FRIED: "FRITTIERT",
+    BAKED: "GEBACKEN",
+    FRESH: "FRISCH",
+    HOT: "HEISS",
+    COLD: "KALT",
+    SNACKS: "SNACKS",
     "LIGHT BITES": "KLEINE GERICHTE",
-
+    WINE: "WEIN",
+    BEER: "BIER",
+    COCKTAILS: "COCKTAILS",
     "SOFT DRINKS": "ALKOHOLFREIE GETRÄNKE",
-
+    JUICE: "SAFT",
     "ICE CREAM": "EIS",
-
+    BURGERS: "BURGER",
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NOODLES: "NUDELN",
+    RICE: "REIS",
+    BOWLS: "SCHALEN",
   },
   "de-en": {
-
+    VORSPEISEN: "STARTERS",
+    HAUPTGERICHTE: "MAIN COURSES",
+    NACHSPEISEN: "DESSERTS",
     SÜSSIGKEITEN: "SWEETS",
-
+    SALATE: "SALADS",
+    SALAT: "SALAD",
+    KINDER: "KIDS",
     GETRÄNKE: "DRINKS",
-
+    KAFFEE: "COFFEE",
     "SPEZIAL KAFFEE": "SPECIAL COFFEE",
-
+    TEE: "TEA",
     SPEZIALITÄTEN: "SPECIALS",
-
+    SPEZIAL: "SPECIAL",
+    MILCHSHAKES: "MILKSHAKES",
+    SHAKES: "SHAKES",
+    SMOOTHIES: "SMOOTHIES",
+    BRUNCH: "BRUNCH",
     "GANZTÄGIGER BRUNCH": "ALL DAY BRUNCH",
     FRÜHSTÜCK: "BREAKFAST",
     "GANZTÄGIGES FRÜHSTÜCK": "ALL DAY BREAKFAST",
-
+    MITTAGESSEN: "LUNCH",
+    ABENDESSEN: "DINNER",
+    SUPPE: "SOUP",
+    SUPPEN: "SOUPS",
+    PASTA: "PASTA",
+    PIZZA: "PIZZA",
     MEERESFRÜCHTE: "SEAFOOD",
     HÄHNCHEN: "CHICKEN",
-
+    RINDFLEISCH: "BEEF",
+    LAMM: "LAMB",
+    SCHWEINEFLEISCH: "PORK",
+    VEGETARISCH: "VEGETARIAN",
+    VEGAN: "VEGAN",
+    GLUTENFREI: "GLUTEN FREE",
+    BEILAGEN: "SIDES",
+    PLATTEN: "PLATTERS",
+    GRILLGERICHTE: "GRILLS",
+    GEGRILLT: "GRILLED",
+    FRITTIERT: "FRIED",
+    GEBACKEN: "BAKED",
+    FRISCH: "FRESH",
+    HEISS: "HOT",
+    KALT: "COLD",
+    SNACKS: "SNACKS",
     "KLEINE GERICHTE": "LIGHT BITES",
-
+    WEIN: "WINE",
+    BIER: "BEER",
+    COCKTAILS: "COCKTAILS",
     "ALKOHOLFREIE GETRÄNKE": "SOFT DRINKS",
-
+    SAFT: "JUICE",
+    EIS: "ICE CREAM",
+    BURGER: "BURGERS",
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NUDELN: "NOODLES",
+    REIS: "RICE",
+    SCHALEN: "BOWLS",
   },
   // Italian mappings
   "en-it": {
-
+    STARTERS: "ANTIPASTI",
+    APPETIZERS: "ANTIPASTI",
     "MAIN COURSES": "PIATTI PRINCIPALI",
-
+    ENTREES: "PIATTI PRINCIPALI",
+    MAINS: "PIATTI PRINCIPALI",
+    DESSERTS: "DOLCI",
+    SWEETS: "DOLCI",
+    SALADS: "INSALATE",
+    SALAD: "INSALATA",
+    KIDS: "BAMBINI",
+    CHILDREN: "BAMBINI",
+    DRINKS: "BEVANDE",
+    BEVERAGES: "BEVANDE",
+    COFFEE: "CAFFÈ",
     "SPECIAL COFFEE": "CAFFÈ SPECIALE",
-
+    TEA: "TÈ",
+    SPECIALS: "SPECIALITÀ",
+    SPECIAL: "SPECIALE",
+    WRAPS: "WRAPS",
+    SANDWICHES: "PANINI",
+    MILKSHAKES: "FRAPPÈ",
+    SHAKES: "FRULLATI",
+    SMOOTHIES: "SMOOTHIE",
+    BRUNCH: "BRUNCH",
     "ALL DAY BRUNCH": "BRUNCH TUTTO IL GIORNO",
-
+    BREAKFAST: "COLAZIONE",
     "ALL DAY BREAKFAST": "COLAZIONE TUTTO IL GIORNO",
-
+    LUNCH: "PRANZO",
+    DINNER: "CENA",
+    SOUP: "ZUPPA",
+    SOUPS: "ZUPPE",
+    PASTA: "PASTA",
+    PIZZA: "PIZZA",
+    SEAFOOD: "FRUTTI DI MARE",
+    CHICKEN: "POLLO",
+    BEEF: "MANZO",
+    LAMB: "AGNELLO",
+    PORK: "MAIALE",
+    VEGETARIAN: "VEGETARIANO",
+    VEGAN: "VEGANO",
     "GLUTEN FREE": "SENZA GLUTINE",
-
+    SIDES: "CONTORNI",
+    PLATTERS: "TAGLIERI",
+    GRILLS: "GRIGLIATE",
+    GRILLED: "ALLA GRIGLIA",
+    FRIED: "FRITTO",
+    BAKED: "AL FORNO",
+    FRESH: "FRESCO",
+    HOT: "CALDO",
+    COLD: "FREDDO",
+    SNACKS: "SPUNTINI",
     "LIGHT BITES": "STUZZICHINI",
-
+    WINE: "VINO",
+    BEER: "BIRRA",
+    COCKTAILS: "COCKTAIL",
     "SOFT DRINKS": "BIBITE",
-
+    JUICE: "SUCCO",
     "ICE CREAM": "GELATO",
-
+    BURGERS: "HAMBURGER",
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NOODLES: "NOODLES",
+    RICE: "RISO",
+    BOWLS: "CIOTOLE",
   },
   "it-en": {
-
+    ANTIPASTI: "STARTERS",
     "PIATTI PRINCIPALI": "MAIN COURSES",
-
+    DOLCI: "DESSERTS",
+    INSALATE: "SALADS",
+    INSALATA: "SALAD",
+    BAMBINI: "KIDS",
+    BEVANDE: "DRINKS",
     CAFFÈ: "COFFEE",
     "CAFFÈ SPECIALE": "SPECIAL COFFEE",
     TÈ: "TEA",
     SPECIALITÀ: "SPECIALS",
-
+    SPECIALE: "SPECIAL",
+    PANINI: "SANDWICHES",
     FRAPPÈ: "MILKSHAKES",
-
+    FRULLATI: "SHAKES",
+    SMOOTHIE: "SMOOTHIES",
+    BRUNCH: "BRUNCH",
     "BRUNCH TUTTO IL GIORNO": "ALL DAY BRUNCH",
-
+    COLAZIONE: "BREAKFAST",
     "COLAZIONE TUTTO IL GIORNO": "ALL DAY BREAKFAST",
-
+    PRANZO: "LUNCH",
+    CENA: "DINNER",
+    ZUPPA: "SOUP",
+    ZUPPE: "SOUPS",
+    PASTA: "PASTA",
+    PIZZA: "PIZZA",
     "FRUTTI DI MARE": "SEAFOOD",
-
+    POLLO: "CHICKEN",
+    MANZO: "BEEF",
+    AGNELLO: "LAMB",
+    MAIALE: "PORK",
+    VEGETARIANO: "VEGETARIAN",
+    VEGANO: "VEGAN",
     "SENZA GLUTINE": "GLUTEN FREE",
-
+    CONTORNI: "SIDES",
+    TAGLIERI: "PLATTERS",
+    GRIGLIATE: "GRILLS",
     "ALLA GRIGLIA": "GRILLED",
-
+    FRITTO: "FRIED",
     "AL FORNO": "BAKED",
-
+    FRESCO: "FRESH",
+    CALDO: "HOT",
+    FREDDO: "COLD",
+    SPUNTINI: "SNACKS",
+    STUZZICHINI: "LIGHT BITES",
+    VINO: "WINE",
+    BIRRA: "BEER",
+    COCKTAIL: "COCKTAILS",
+    BIBITE: "SOFT DRINKS",
+    SUCCO: "JUICE",
+    GELATO: "ICE CREAM",
+    HAMBURGER: "BURGERS",
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NOODLES: "NOODLES",
+    RISO: "RICE",
+    CIOTOLE: "BOWLS",
   },
   // Portuguese mappings
   "en-pt": {
-
+    STARTERS: "ENTRADAS",
+    APPETIZERS: "PETISCOS",
     "MAIN COURSES": "PRATOS PRINCIPAIS",
-
+    ENTREES: "PRATOS PRINCIPAIS",
+    MAINS: "PRATOS PRINCIPAIS",
+    DESSERTS: "SOBREMESAS",
+    SWEETS: "DOCES",
+    SALADS: "SALADAS",
+    SALAD: "SALADA",
+    KIDS: "CRIANÇAS",
+    CHILDREN: "CRIANÇAS",
+    DRINKS: "BEBIDAS",
+    BEVERAGES: "BEBIDAS",
+    COFFEE: "CAFÉ",
     "SPECIAL COFFEE": "CAFÉ ESPECIAL",
-
+    TEA: "CHÁ",
+    SPECIALS: "ESPECIALIDADES",
+    SPECIAL: "ESPECIAL",
+    WRAPS: "WRAPS",
+    SANDWICHES: "SANDUÍCHES",
+    MILKSHAKES: "MILKSHAKES",
+    SHAKES: "BATIDOS",
+    SMOOTHIES: "SMOOTHIES",
+    BRUNCH: "BRUNCH",
     "ALL DAY BRUNCH": "BRUNCH O DIA TODO",
-
+    BREAKFAST: "CAFÉ DA MANHÃ",
     "ALL DAY BREAKFAST": "CAFÉ DA MANHÃ O DIA TODO",
-
+    LUNCH: "ALMOÇO",
+    DINNER: "JANTAR",
+    SOUP: "SOPA",
+    SOUPS: "SOPAS",
+    PASTA: "MASSA",
+    PIZZA: "PIZZA",
+    SEAFOOD: "FRUTOS DO MAR",
+    CHICKEN: "FRANGO",
+    BEEF: "CARNE DE VACA",
+    LAMB: "CORDEIRO",
+    PORK: "PORCO",
+    VEGETARIAN: "VEGETARIANO",
+    VEGAN: "VEGANO",
     "GLUTEN FREE": "SEM GLÚTEN",
-
+    SIDES: "ACOMPANHAMENTOS",
+    PLATTERS: "TRAVESSAS",
+    GRILLS: "GRELHADOS",
+    GRILLED: "GRELHADO",
+    FRIED: "FRITO",
+    BAKED: "ASSADO",
+    FRESH: "FRESCO",
+    HOT: "QUENTE",
+    COLD: "FRIO",
+    SNACKS: "PETISCOS",
     "LIGHT BITES": "LANCHES LEVES",
-
+    WINE: "VINHO",
+    BEER: "CERVEJA",
+    COCKTAILS: "COQUETÉIS",
     "SOFT DRINKS": "REFRIGERANTES",
-
+    JUICE: "SUCO",
     "ICE CREAM": "SORVETE",
-
+    BURGERS: "HAMBÚRGUERES",
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NOODLES: "NOODLES",
+    RICE: "ARROZ",
+    BOWLS: "TIGELAS",
   },
   "pt-en": {
-
+    ENTRADAS: "STARTERS",
+    PETISCOS: "APPETIZERS",
     "PRATOS PRINCIPAIS": "MAIN COURSES",
-
+    SOBREMESAS: "DESSERTS",
+    DOCES: "SWEETS",
+    SALADAS: "SALADS",
+    SALADA: "SALAD",
     CRIANÇAS: "KIDS",
-
+    BEBIDAS: "DRINKS",
     CAFÉ: "COFFEE",
     "CAFÉ ESPECIAL": "SPECIAL COFFEE",
     CHÁ: "TEA",
-
+    ESPECIALIDADES: "SPECIALS",
+    ESPECIAL: "SPECIAL",
     SANDUÍCHES: "SANDWICHES",
-
+    MILKSHAKES: "MILKSHAKES",
+    BATIDOS: "SHAKES",
+    SMOOTHIES: "SMOOTHIES",
+    BRUNCH: "BRUNCH",
     "BRUNCH O DIA TODO": "ALL DAY BRUNCH",
     "CAFÉ DA MANHÃ": "BREAKFAST",
     "CAFÉ DA MANHÃ O DIA TODO": "ALL DAY BREAKFAST",
     ALMOÇO: "LUNCH",
-
+    JANTAR: "DINNER",
+    SOPA: "SOUP",
+    SOPAS: "SOUPS",
+    MASSA: "PASTA",
+    PIZZA: "PIZZA",
     "FRUTOS DO MAR": "SEAFOOD",
-
+    FRANGO: "CHICKEN",
     "CARNE DE VACA": "BEEF",
-
+    CORDEIRO: "LAMB",
+    PORCO: "PORK",
+    VEGETARIANO: "VEGETARIAN",
+    VEGANO: "VEGAN",
     "SEM GLÚTEN": "GLUTEN FREE",
-
+    ACOMPANHAMENTOS: "SIDES",
+    TRAVESSAS: "PLATTERS",
+    GRELHADOS: "GRILLS",
+    GRELHADO: "GRILLED",
+    FRITO: "FRIED",
+    ASSADO: "BAKED",
+    FRESCO: "FRESH",
+    QUENTE: "HOT",
+    FRIO: "COLD",
     "LANCHES LEVES": "LIGHT BITES",
-
+    VINHO: "WINE",
+    CERVEJA: "BEER",
     COQUETÉIS: "COCKTAILS",
-
+    REFRIGERANTES: "SOFT DRINKS",
+    SUCO: "JUICE",
+    SORVETE: "ICE CREAM",
     HAMBÚRGUERES: "BURGERS",
-
+    TACOS: "TACOS",
+    SUSHI: "SUSHI",
+    NOODLES: "NOODLES",
+    ARROZ: "RICE",
+    TIGELAS: "BOWLS",
   },
   // Chinese (Simplified) mappings
   "en-zh": {
-
+    STARTERS: "开胃菜",
+    APPETIZERS: "开胃菜",
     "MAIN COURSES": "主菜",
-
+    ENTREES: "主菜",
+    MAINS: "主菜",
+    DESSERTS: "甜点",
+    SWEETS: "甜品",
+    SALADS: "沙拉",
+    SALAD: "沙拉",
+    KIDS: "儿童",
+    CHILDREN: "儿童",
+    DRINKS: "饮料",
+    BEVERAGES: "饮料",
+    COFFEE: "咖啡",
     "SPECIAL COFFEE": "特色咖啡",
-
+    TEA: "茶",
+    SPECIALS: "特色菜",
+    SPECIAL: "特色",
+    WRAPS: "卷饼",
+    SANDWICHES: "三明治",
+    MILKSHAKES: "奶昔",
+    SHAKES: "奶昔",
+    SMOOTHIES: "冰沙",
+    BRUNCH: "早午餐",
     "ALL DAY BRUNCH": "全天早午餐",
-
+    BREAKFAST: "早餐",
     "ALL DAY BREAKFAST": "全天早餐",
-
+    LUNCH: "午餐",
+    DINNER: "晚餐",
+    SOUP: "汤",
+    SOUPS: "汤类",
+    PASTA: "意大利面",
+    PIZZA: "披萨",
+    SEAFOOD: "海鲜",
+    CHICKEN: "鸡肉",
+    BEEF: "牛肉",
+    LAMB: "羊肉",
+    PORK: "猪肉",
+    VEGETARIAN: "素食",
+    VEGAN: "纯素",
     "GLUTEN FREE": "无麸质",
-
+    SIDES: "配菜",
+    PLATTERS: "拼盘",
+    GRILLS: "烧烤",
+    GRILLED: "烤",
+    FRIED: "炸",
+    BAKED: "烘烤",
+    FRESH: "新鲜",
+    HOT: "热",
+    COLD: "冷",
+    SNACKS: "小吃",
     "LIGHT BITES": "轻食",
-
+    WINE: "葡萄酒",
+    BEER: "啤酒",
+    COCKTAILS: "鸡尾酒",
     "SOFT DRINKS": "软饮",
-
+    JUICE: "果汁",
     "ICE CREAM": "冰淇淋",
-
+    BURGERS: "汉堡",
+    TACOS: "塔可",
+    SUSHI: "寿司",
+    NOODLES: "面条",
+    RICE: "米饭",
+    BOWLS: "碗",
   },
   "zh-en": {
     开胃菜: "STARTERS",
@@ -371,23 +824,70 @@ const CATEGORY_MAPPINGS: Record<string, Record<string, string>> = {
   },
   // Japanese mappings
   "en-ja": {
-
+    STARTERS: "前菜",
+    APPETIZERS: "前菜",
     "MAIN COURSES": "メインディッシュ",
-
+    ENTREES: "メインディッシュ",
+    MAINS: "メインディッシュ",
+    DESSERTS: "デザート",
+    SWEETS: "スイーツ",
+    SALADS: "サラダ",
+    SALAD: "サラダ",
+    KIDS: "お子様",
+    CHILDREN: "お子様",
+    DRINKS: "ドリンク",
+    BEVERAGES: "飲み物",
+    COFFEE: "コーヒー",
     "SPECIAL COFFEE": "スペシャルコーヒー",
-
+    TEA: "お茶",
+    SPECIALS: "本日のおすすめ",
+    SPECIAL: "スペシャル",
+    WRAPS: "ラップ",
+    SANDWICHES: "サンドイッチ",
+    MILKSHAKES: "ミルクセーキ",
+    SHAKES: "シェイク",
+    SMOOTHIES: "スムージー",
+    BRUNCH: "ブランチ",
     "ALL DAY BRUNCH": "終日ブランチ",
-
+    BREAKFAST: "朝食",
     "ALL DAY BREAKFAST": "終日朝食",
-
+    LUNCH: "ランチ",
+    DINNER: "ディナー",
+    SOUP: "スープ",
+    SOUPS: "スープ類",
+    PASTA: "パスタ",
+    PIZZA: "ピザ",
+    SEAFOOD: "シーフード",
+    CHICKEN: "チキン",
+    BEEF: "ビーフ",
+    LAMB: "ラム",
+    PORK: "ポーク",
+    VEGETARIAN: "ベジタリアン",
+    VEGAN: "ヴィーガン",
     "GLUTEN FREE": "グルテンフリー",
-
+    SIDES: "サイド",
+    PLATTERS: "盛り合わせ",
+    GRILLS: "グリル",
+    GRILLED: "グリルした",
+    FRIED: "揚げ物",
+    BAKED: "焼き物",
+    FRESH: "新鮮",
+    HOT: "温かい",
+    COLD: "冷たい",
+    SNACKS: "スナック",
     "LIGHT BITES": "軽食",
-
+    WINE: "ワイン",
+    BEER: "ビール",
+    COCKTAILS: "カクテル",
     "SOFT DRINKS": "ソフトドリンク",
-
+    JUICE: "ジュース",
     "ICE CREAM": "アイスクリーム",
-
+    BURGERS: "ハンバーガー",
+    TACOS: "タコス",
+    SUSHI: "寿司",
+    NOODLES: "麺類",
+    RICE: "ご飯",
+    BOWLS: "丼",
   },
   "ja-en": {
     前菜: "STARTERS",
@@ -454,7 +954,10 @@ const CATEGORY_MAPPINGS: Record<string, Record<string, string>> = {
 
 function detectSourceLanguage(
   items: Array<{ name: string; category: string }>,
-
+  targetLanguage: string
+): string {
+  const spanishIndicators = [
+    "CAFÉ",
     "CAFE",
     "BEBIDAS",
     "TÉ",
@@ -657,12 +1160,16 @@ function detectSourceLanguage(
 
     spanishIndicators.forEach((indicator) => {
       if (textUpper.includes(indicator)) spanishCount++;
+    });
 
     englishIndicators.forEach((indicator) => {
       if (textUpper.includes(indicator)) englishCount++;
+    });
 
     arabicIndicators.forEach((indicator) => {
       if (text.includes(indicator)) arabicCount++;
+    });
+  });
 
   // Return the language with the highest count
   const counts = [
@@ -692,7 +1199,11 @@ function detectSourceLanguage(
 }
 
 export async function executeMenuTranslate(
-
+  _params: unknown,
+  venueId: string,
+  _userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
   const typedParams = _params as { targetLanguage: string; includeDescriptions?: boolean };
   const supabase = await createClient();
 
@@ -706,8 +1217,6 @@ export async function executeMenuTranslate(
     throw new AIAssistantError("No menu items found", "INVALID_PARAMS");
   }
 
-  
-
   const targetLangName = LANGUAGE_NAMES[typedParams.targetLanguage] || typedParams.targetLanguage;
   const uniqueCategories = Array.from(new Set(items.map((item) => item.category).filter(Boolean)));
   const detectedSourceLanguage = detectSourceLanguage(items, typedParams.targetLanguage);
@@ -720,10 +1229,13 @@ export async function executeMenuTranslate(
       const sampleItems = items.slice(0, 5);
 
       const itemsToTranslate = sampleItems.map((item) => ({
-
+        id: item.id,
+        name: item.name,
+        category: item.category,
         ...(typedParams.includeDescriptions && item.description
           ? { description: item.description }
-
+          : {
+              /* Empty */
             }),
       }));
 
@@ -760,14 +1272,21 @@ OUTPUT FORMAT:
 {"items": [{"id": "exact-id-from-input", "name": "translated name", "category": "translated category", "description": "translated description (if provided)"}]}`;
 
       const response = await openai.chat.completions.create({
-
+        model: "gpt-4o-2024-08-06",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a professional menu translator. Return valid JSON with an 'items' array containing the EXACT same number of items as provided.",
           },
           {
-
+            role: "user",
+            content: prompt,
           },
         ],
-
+        temperature: 0.1,
         response_format: { type: "json_object" },
+      });
 
       const content = response.choices[0]?.message?.content;
       if (content) {
@@ -775,34 +1294,49 @@ OUTPUT FORMAT:
         const translatedArray = translated.items || [];
 
         return {
-
+          toolName: "menu.translate",
+          before: sampleItems.map((i) => ({
+            name: i.name,
+            description: i.description || "",
+            category: i.category || "",
           })),
-
+          after: translatedArray.map((i: unknown) => {
+            const item = i as {
+              name?: string;
+              originalName?: string;
+              description?: string;
+              category?: string;
             };
             return {
-
+              name: item.name || item.originalName || "",
+              description: item.description || "",
+              category: item.category || "",
             };
           }),
-
+          impact: {
+            itemsAffected: items.length,
+            categoriesAffected: uniqueCategories.length,
             description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${typedParams.includeDescriptions ? " (including descriptions)" : ""}.`,
           },
         };
       }
-    } catch (_error) {
-      
-    }
+    } catch (_error) { /* Error handled silently */ }
 
     return {
-
+      toolName: "menu.translate",
       before: items.slice(0, 5).map((i) => ({
-
+        name: i.name,
+        description: i.description || "",
+        category: i.category || "",
       })),
       after: items.slice(0, 5).map((i) => ({
         name: `[Will translate to ${targetLangName}] ${i.name}`,
         description: i.description ? `[Will translate to ${targetLangName}] ${i.description}` : "",
         category: i.category ? `[Will translate to ${targetLangName}] ${i.category}` : "",
       })),
-
+      impact: {
+        itemsAffected: items.length,
+        categoriesAffected: uniqueCategories.length,
         description: `Menu will be translated to ${targetLangName}. This will update ${items.length} items and ${uniqueCategories.length} categories${typedParams.includeDescriptions ? " (including descriptions)" : ""}.`,
       },
     };
@@ -819,14 +1353,15 @@ OUTPUT FORMAT:
 
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
-       + 1}/${Math.ceil(items.length / batchSize)}`
-      );
 
       const itemsToTranslate = batch.map((item) => ({
-
+        id: item.id,
+        name: item.name,
+        category: item.category,
         ...(typedParams.includeDescriptions && item.description
           ? { description: item.description }
-
+          : {
+              /* Empty */
             }),
       }));
 
@@ -869,15 +1404,20 @@ OUTPUT FORMAT:
       while (!batchTranslated && retryCount < maxRetries) {
         try {
           const response = await openai.chat.completions.create({
-
+            model: "gpt-4o-2024-08-06",
+            messages: [
+              {
+                role: "system",
                 content: `You are a professional menu translator. Return valid JSON with an 'items' array containing EXACTLY ${batch.length} items. Never omit items.`,
               },
               {
-
+                role: "user",
+                content: prompt,
               },
             ],
-
+            temperature: 0.1,
             response_format: { type: "json_object" },
+          });
 
           const content = response.choices[0]?.message?.content;
           if (content) {
@@ -902,18 +1442,18 @@ OUTPUT FORMAT:
             retryCount++;
           }
         } catch (batchError) {
-           + 1} translation error:`,
-            batchError
-          );
+
           retryCount++;
         }
       }
 
       if (!batchTranslated) {
-         + 1} failed after ${maxRetries} retries`
-        );
-        const fallbackItems = batch.map((item) => ({
 
+        const fallbackItems = batch.map((item) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          description: item.description || "",
         }));
         translatedItems.push(...fallbackItems);
       }
@@ -930,7 +1470,10 @@ OUTPUT FORMAT:
     let failedCount = 0;
 
     interface TranslatedItem {
-
+      id: string;
+      name: string;
+      category?: string;
+      description?: string;
     }
 
     for (const translatedItem of translatedItems) {
@@ -941,11 +1484,15 @@ OUTPUT FORMAT:
       }
 
       interface UpdateData {
-
+        name: string;
+        updated_at: string;
+        category?: string;
+        description?: string;
       }
 
       const updateData: UpdateData = {
-
+        name: item.name,
+        updated_at: new Date().toISOString(),
       };
 
       if (item.category) {
@@ -969,8 +1516,6 @@ OUTPUT FORMAT:
       }
     }
 
-    
-
     if (updatedCount === 0 && translatedItems.length > 0) {
       throw new AIAssistantError(
         `Translation failed: Could not update unknown items (${failedCount} failed)`,
@@ -983,22 +1528,27 @@ OUTPUT FORMAT:
       const { revalidatePath } = await import("next/cache");
       revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
     } catch (revalidateError) {
-      
+
       // Don't fail the whole operation if revalidation fails
     }
 
     return {
-
+      success: true,
+      toolName: "menu.translate",
+      result: {
         message: `Successfully translated ${updatedCount} menu items and categories to ${targetLangName}${failedCount > 0 ? ` (${failedCount} failed)` : ""}`,
-
+        itemsTranslated: updatedCount,
+        itemsFailed: failedCount,
+        categoriesTranslated: uniqueCategories.length,
+        targetLanguage: typedParams.targetLanguage,
+        includeDescriptions: typedParams.includeDescriptions,
         originalItemCount,
-
+        finalItemCount: translatedItems.length,
       },
-
+      auditId: "",
     };
   } catch (_error) {
-     }
-    );
+
     const errorDetails =
       _error instanceof Error
         ? { message: _error.message, stack: _error.stack }

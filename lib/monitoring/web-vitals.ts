@@ -7,7 +7,12 @@ import { onCLS, onFCP, onINP, onLCP, onTTFB, Metric } from "web-vitals";
 import { EnhancedErrorTracker } from "./sentry-enhanced";
 
 export interface PerformanceMetric {
-
+  name: string;
+  value: number;
+  rating: "good" | "needs-improvement" | "poor";
+  delta: number;
+  id: string;
+  navigationType?: string;
 }
 
 /**
@@ -15,18 +20,29 @@ export interface PerformanceMetric {
  */
 function sendToAnalytics(metric: Metric) {
   const body = JSON.stringify({
+    name: metric.name,
+    value: metric.value,
+    rating: metric.rating,
+    delta: metric.delta,
+    id: metric.id,
+    navigationType: metric.navigationType,
+    timestamp: Date.now(),
+    url: window.location.href,
+    userAgent: navigator.userAgent,
+  });
 
   // Send to analytics endpoint
   if (navigator.sendBeacon) {
     navigator.sendBeacon("/api/analytics/vitals", body);
   } else {
     fetch("/api/analytics/vitals", {
-
+      method: "POST",
       body,
       headers: { "Content-Type": "application/json" },
-
-    }).catch((error) => {
-
+      keepalive: true,
+    }).catch((_error) => {
+      // Web vitals sending error handled silently
+    });
   }
 
   // Send to Sentry for monitoring
@@ -35,14 +51,14 @@ function sendToAnalytics(metric: Metric) {
     "performance",
     metric.rating === "good" ? "info" : metric.rating === "needs-improvement" ? "warning" : "error",
     {
-
+      value: metric.value,
+      rating: metric.rating,
+      delta: metric.delta,
     }
   );
 
   // Log poor ratings
-  if (metric.rating === "poor") {
-    
-  }
+  if (metric.rating === "poor") { /* Condition handled */ }
 }
 
 /**
@@ -61,9 +77,7 @@ export function initWebVitals() {
     onFCP(sendToAnalytics); // First Contentful Paint
     onINP(sendToAnalytics); // Interaction to Next Paint
     onTTFB(sendToAnalytics); // Time to First Byte
-  } catch (_error) {
-    
-  }
+  } catch (_error) { /* Error handled silently */ }
 }
 
 /**
@@ -81,9 +95,7 @@ export class PerformanceTracker {
     try {
       this.marks.set(name, performance.now());
       performance.mark(name);
-    } catch (_error) {
-      
-    }
+    } catch (_error) { /* Error handled silently */ }
   }
 
   /**
@@ -98,24 +110,25 @@ export class PerformanceTracker {
 
       const measure = performance.measure(name, startMark, end);
 
-      
-
       // Send to analytics if significant
       if (measure.duration > 1000) {
         fetch("/api/analytics/vitals", {
-
+          method: "POST",
+          body: JSON.stringify({
             name: `custom-${name}`,
-
+            value: measure.duration,
+            timestamp: Date.now(),
+            url: window.location.href,
           }),
           headers: { "Content-Type": "application/json" },
         }).catch(() => {
           // Silent fail
-
+        });
       }
 
       return measure.duration;
     } catch (_error) {
-      
+
       return null;
     }
   }
@@ -146,22 +159,31 @@ export class PerformanceTracker {
 
         if (perfData) {
           const metrics = {
-
+            dns: perfData.domainLookupEnd - perfData.domainLookupStart,
+            tcp: perfData.connectEnd - perfData.connectStart,
+            ttfb: perfData.responseStart - perfData.requestStart,
+            download: perfData.responseEnd - perfData.responseStart,
+            domInteractive: perfData.domInteractive - perfData.fetchStart,
+            domComplete: perfData.domComplete - perfData.fetchStart,
+            loadComplete: perfData.loadEventEnd - perfData.fetchStart,
           };
 
           // Send to analytics
           fetch("/api/analytics/vitals", {
-
+            method: "POST",
+            body: JSON.stringify({
+              name: "page-load",
               metrics,
-
+              timestamp: Date.now(),
+              url: window.location.href,
             }),
             headers: { "Content-Type": "application/json" },
           }).catch(() => {
             // Silent fail
-
+          });
         }
       }, 0);
-
+    });
   }
 
   /**
@@ -172,12 +194,9 @@ export class PerformanceTracker {
 
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.duration > 2000) {
-          .initiatorType,
-            },
-
-        }
+        if (entry.duration > 2000) { /* Condition handled */ }
       }
+    });
 
     observer.observe({ entryTypes: ["resource"] });
   }
@@ -191,11 +210,13 @@ export class PerformanceTracker {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          
 
           EnhancedErrorTracker.addBreadcrumb("Long Task", "performance", "warning", {
-
+            duration: entry.duration,
+            startTime: entry.startTime,
+          });
         }
+      });
 
       observer.observe({ entryTypes: ["longtask"] });
     } catch (_error) {

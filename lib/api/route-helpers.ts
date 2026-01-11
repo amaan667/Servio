@@ -24,11 +24,11 @@ export function createApiHandler<TRequest, TResponse>(
         const validation = schema.safeParse(rawBody);
 
         if (!validation.success) {
-          
 
           return NextResponse.json(
             {
-
+              ok: false,
+              error: "Invalid request data",
               message: validation.error.errors.map((e) => e.message).join(", "),
             },
             { status: 400 }
@@ -47,15 +47,17 @@ export function createApiHandler<TRequest, TResponse>(
 
       // Return success response
       return NextResponse.json({
-
+        ok: true,
+        data: result,
+      });
     } catch (_error) {
-      
 
       // Handle known errors
       if (_error instanceof ZodError) {
         return NextResponse.json(
           {
-
+            ok: false,
+            error: "Validation error",
             message: _error.errors.map((e) => e.message).join(", "),
           },
           { status: 400 }
@@ -65,7 +67,8 @@ export function createApiHandler<TRequest, TResponse>(
       // Handle unknown errors
       return NextResponse.json(
         {
-
+          ok: false,
+          error: _error instanceof Error ? _error.message : "Internal server _error",
         },
         { status: 500 }
       );
@@ -82,13 +85,15 @@ export function createGetHandler<TResponse>(handler: (req: NextRequest) => Promi
       const result = await handler(req);
 
       return NextResponse.json({
-
+        ok: true,
+        data: result,
+      });
     } catch (_error) {
-      
 
       return NextResponse.json(
         {
-
+          ok: false,
+          error: _error instanceof Error ? _error.message : "Internal server _error",
         },
         { status: 500 }
       );
@@ -128,9 +133,9 @@ export function createDeleteHandler<TResponse>(handler: (req: NextRequest) => Pr
  */
 export function successResponse<T>(data: T): NextResponse<ApiResponse<T>> {
   return NextResponse.json({
-
+    ok: true,
     data,
-
+  });
 }
 
 /**
@@ -139,7 +144,7 @@ export function successResponse<T>(data: T): NextResponse<ApiResponse<T>> {
 export function errorResponse(error: string, status: number = 500): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
-
+      ok: false,
       error,
     },
     { status }
@@ -152,7 +157,8 @@ export function errorResponse(error: string, status: number = 500): NextResponse
 export function validationErrorResponse(errors: string[]): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
-
+      ok: false,
+      error: "Validation error",
       message: errors.join(", "),
     },
     { status: 400 }
@@ -165,7 +171,8 @@ export function validationErrorResponse(errors: string[]): NextResponse<ApiRespo
 export function unauthorizedResponse(): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
-
+      ok: false,
+      error: "Unauthorized",
     },
     { status: 401 }
   );
@@ -177,7 +184,8 @@ export function unauthorizedResponse(): NextResponse<ApiResponse> {
 export function forbiddenResponse(): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
-
+      ok: false,
+      error: "Forbidden",
     },
     { status: 403 }
   );
@@ -189,7 +197,8 @@ export function forbiddenResponse(): NextResponse<ApiResponse> {
 export function notFoundResponse(): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
-
+      ok: false,
+      error: "Not found",
     },
     { status: 404 }
   );

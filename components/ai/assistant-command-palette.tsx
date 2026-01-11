@@ -33,12 +33,13 @@ import { AIAssistantFloat } from "./ai-assistant-float";
 import { SimpleChatInterface } from "./simple-chat-interface";
 
 interface Tool {
-
+  name: string;
   params: Record<string, unknown>;
 }
 
 interface ExecutionResult {
-
+  tool: string;
+  result: {
     topItems?: Array<{ name: string; revenue: number }>;
     message?: string;
     revenue?: number;
@@ -61,7 +62,10 @@ interface PreviewItem {
 }
 
 interface AssistantCommandPaletteProps {
-
+  venueId: string;
+  page?: "menu" | "inventory" | "kds" | "orders" | "analytics" | "general";
+  suggestions?: string[];
+  showChatHistory?: boolean;
 }
 
 export function AssistantCommandPalette({
@@ -130,12 +134,14 @@ export function AssistantCommandPalette({
 
     try {
       const response = await fetch("/api/ai-assistant/plan", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          prompt: prompt.trim(),
           venueId,
           context: { page },
         }),
+      });
 
       const data = await response.json();
 
@@ -143,21 +149,24 @@ export function AssistantCommandPalette({
         // If access denied, try to fix it automatically
         if (response.status === 403 && data.error?.includes("Access denied")) {
           const fixResponse = await fetch("/api/ai-assistant/fix-access", {
-
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ venueId }),
+          });
 
           const fixData = await fixResponse.json();
 
           if (fixResponse.ok) {
             // Retry the original request
             const retryResponse = await fetch("/api/ai-assistant/plan", {
-
+              method: "POST",
               headers: { "Content-Type": "application/json" },
-
+              body: JSON.stringify({
+                prompt: prompt.trim(),
                 venueId,
                 context: { page },
               }),
+            });
 
             const retryData = await retryResponse.json();
 
@@ -170,9 +179,13 @@ export function AssistantCommandPalette({
             // Fetch previews for each tool after successful retry
             const retryPreviewPromises = retryData.plan.tools.map((tool: unknown) =>
               fetch("/api/ai-assistant/execute", {
-
+                method: "POST",
                 headers: { "Content-Type": "application/json" },
-
+                body: JSON.stringify({
+                  venueId,
+                  toolName: (tool as Tool).name,
+                  params: (tool as Tool).params,
+                  preview: true,
                 }),
               }).then((res) => res.json())
             );
@@ -192,10 +205,15 @@ export function AssistantCommandPalette({
         const previewPromises = data.plan.tools.map(async (tool: unknown) => {
           try {
             const res = await fetch("/api/ai-assistant/execute", {
-
+              method: "POST",
               headers: { "Content-Type": "application/json" },
-
+              body: JSON.stringify({
+                venueId,
+                toolName: (tool as Tool).name,
+                params: (tool as Tool).params,
+                preview: true,
               }),
+            });
 
             const json = await res.json();
 
@@ -207,6 +225,7 @@ export function AssistantCommandPalette({
           } catch (previewError) {
             throw previewError instanceof Error ? previewError : new Error("Preview failed");
           }
+        });
 
         const previewResults = await Promise.all(previewPromises);
         setPreviews(previewResults.map((r) => r.preview).filter(Boolean));
@@ -230,10 +249,15 @@ export function AssistantCommandPalette({
 
       for (const tool of plan.tools) {
         const response = await fetch("/api/ai-assistant/execute", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-
+          body: JSON.stringify({
+            venueId,
+            toolName: tool.name,
+            params: tool.params,
+            preview: false,
           }),
+        });
 
         const data = await response.json();
 

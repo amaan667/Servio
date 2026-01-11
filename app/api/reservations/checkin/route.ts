@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -12,7 +13,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-
+          error: "Too many requests",
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -25,7 +26,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!reservationId || !tableId) {
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "reservationId and tableId are required",
         },
         { status: 400 }
       );
@@ -45,7 +47,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (reservationError || !reservation) {
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "Reservation not found",
         },
         { status: 404 }
       );
@@ -55,16 +58,19 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: updatedReservation, error: updateError } = await supabase
       .from("reservations")
       .update({
-
+        status: "CHECKED_IN",
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", reservationId)
       .select()
       .single();
 
     if (updateError) {
-      
+
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "Failed to check in reservation",
         },
         { status: 500 }
       );
@@ -73,26 +79,33 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Also update the table session to OCCUPIED if it's not already
     const { error: tableError } = await supabase.from("table_sessions").upsert(
       {
-
+        table_id: tableId,
+        status: "OCCUPIED",
+        opened_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
       {
-
+        onConflict: "table_id",
       }
     );
 
     if (tableError) {
-      
+
       // Don't fail the request, just log the error
     }
 
     return NextResponse.json({
-
+      ok: true,
+      reservation: updatedReservation,
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        ok: false,
+        error: _error instanceof Error ? _error.message : "Internal server _error",
       },
       { status: 500 }
     );
   }
+});

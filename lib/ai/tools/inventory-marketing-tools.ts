@@ -8,15 +8,27 @@ import { createClient } from "@/lib/supabase";
 // ============================================================================
 
 interface InventoryPredictionResult {
-
+  predictions: Array<{
+    ingredient: string;
+    currentStock: number;
+    predictedNeeded: number;
+    daysUntilStockout: number;
+    recommendedOrder: number;
   }>;
-
+  summary: string;
 }
 
 interface CostAnalysisResult {
-
+  itemCosts: Array<{
+    itemName: string;
+    estimatedCost: number;
+    sellingPrice: number;
+    profit: number;
+    profitMargin: number;
   }>;
-
+  totalMonthlyCost: number;
+  highestCost: string;
+  recommendations: string[];
 }
 
 /**
@@ -30,7 +42,8 @@ export async function predictInventoryNeeds(venueId: string): Promise<InventoryP
 
   if (!inventory || inventory.length === 0) {
     return {
-
+      predictions: [],
+      summary: "No inventory data available. Set up inventory tracking to get predictions.",
     };
   }
 
@@ -56,11 +69,13 @@ export async function predictInventoryNeeds(venueId: string): Promise<InventoryP
     const predictedNeeded = Math.max(0, parLevel - currentStock);
 
     return {
-
+      ingredient: item.name,
       currentStock,
-
+      predictedNeeded: Math.round(predictedNeeded * 100) / 100,
+      daysUntilStockout: Math.round(daysUntilStockout),
       recommendedOrder: predictedNeeded > 0 ? Math.ceil(predictedNeeded * 1.2) : 0, // 20% buffer
     };
+  });
 
   // Sort by urgency (lowest days until stockout first)
   predictions.sort((a, b) => a.daysUntilStockout - b.daysUntilStockout);
@@ -70,7 +85,9 @@ export async function predictInventoryNeeds(venueId: string): Promise<InventoryP
   const summary =
     urgentItems.length > 0
       ? `${urgentItems.length} items need ordering soon. Most urgent: ${urgentItems[0].ingredient} (${urgentItems[0].daysUntilStockout} days remaining).`
+      : "All inventory levels are adequate for the next week.";
 
+  return {
     predictions: predictions.slice(0, 15),
     summary,
   };
@@ -90,13 +107,24 @@ export async function analyzeCostPerDish(venueId: string): Promise<CostAnalysisR
 
   if (!menuItems || menuItems.length === 0) {
     return {
-
+      itemCosts: [],
+      totalMonthlyCost: 0,
+      highestCost: "N/A",
+      recommendations: ["No menu items available for cost analysis."],
     };
   }
 
   // Estimate costs based on category (would ideally use recipe data)
   const costEstimates: Record<string, number> = {
-
+    Coffee: 0.25,
+    Tea: 0.2,
+    Breakfast: 0.35,
+    Lunch: 0.4,
+    Dinner: 0.45,
+    Dessert: 0.3,
+    Drinks: 0.2,
+    Alcohol: 0.35,
+    default: 0.35,
   };
 
   // Get sales volume (last 30 days)
@@ -115,6 +143,8 @@ export async function analyzeCostPerDish(venueId: string): Promise<CostAnalysisR
     const items = order.items as Array<{ item_name: string; quantity: number }>;
     items?.forEach((item) => {
       salesVolume.set(item.item_name, (salesVolume.get(item.item_name) || 0) + item.quantity);
+    });
+  });
 
   let totalMonthlyCost = 0;
   const itemCosts = menuItems.map((item) => {
@@ -127,8 +157,13 @@ export async function analyzeCostPerDish(venueId: string): Promise<CostAnalysisR
     totalMonthlyCost += estimatedCost * volume;
 
     return {
-
+      itemName: item.name,
+      estimatedCost: Math.round(estimatedCost * 100) / 100,
+      sellingPrice: item.price,
+      profit: Math.round(profit * 100) / 100,
+      profitMargin: Math.round(profitMargin * 10) / 10,
     };
+  });
 
   itemCosts.sort((a, b) => b.profitMargin - a.profitMargin);
 
@@ -152,7 +187,7 @@ export async function analyzeCostPerDish(venueId: string): Promise<CostAnalysisR
 
   return {
     itemCosts,
-
+    totalMonthlyCost: Math.round(totalMonthlyCost * 100) / 100,
     highestCost,
     recommendations,
   };
@@ -163,15 +198,25 @@ export async function analyzeCostPerDish(venueId: string): Promise<CostAnalysisR
 // ============================================================================
 
 interface PromotionSuggestionResult {
-
+  suggestions: Array<{
+    type: string;
+    target: string;
+    description: string;
+    expectedImpact: string;
+    implementation: string;
   }>;
-
+  summary: string;
 }
 
 interface SeasonalIdeasResult {
-
+  ideas: Array<{
+    season: string;
+    items: string[];
+    reasoning: string;
+    targetPrice: string;
   }>;
-
+  currentSeason: string;
+  recommendations: string[];
 }
 
 /**
@@ -193,7 +238,8 @@ export async function suggestPromotions(venueId: string): Promise<PromotionSugge
 
   if (!orders || orders.length < 10) {
     return {
-
+      suggestions: [],
+      summary: "Not enough data for promotion suggestions. Need at least 10 orders.",
     };
   }
 
@@ -208,6 +254,7 @@ export async function suggestPromotions(venueId: string): Promise<PromotionSugge
 
     hourDemand.set(hour, (hourDemand.get(hour) || 0) + 1);
     dayDemand.set(day, (dayDemand.get(day) || 0) + 1);
+  });
 
   const suggestions: PromotionSuggestionResult["suggestions"] = [];
 
@@ -219,9 +266,12 @@ export async function suggestPromotions(venueId: string): Promise<PromotionSugge
 
   if (slowHours.length > 0) {
     suggestions.push({
-
+      type: "Happy Hour",
       target: `${slowHours[0]}:00-${slowHours[slowHours.length - 1]}:00`,
-
+      description: "Offer 15-20% discount during slow periods",
+      expectedImpact: "Increase revenue by 20-30% during these hours",
+      implementation: "Create 'Happy Hour' special menu items or discounts",
+    });
   }
 
   // Slow days
@@ -233,27 +283,34 @@ export async function suggestPromotions(venueId: string): Promise<PromotionSugge
 
   if (slowDays.length > 0) {
     suggestions.push({
-
+      type: "Weekly Special",
       target: slowDays.join(", "),
       description: `"${slowDays[0]} Special" - featured item at discounted price`,
-
+      expectedImpact: "Boost weekday traffic by 25-40%",
       implementation: `Promote on social media: "${slowDays[0]} Specials - Don't Miss Out!"`,
-
+    });
   }
 
   // Low average order value
   const avgOrderValue = orders.reduce((sum, o) => sum + o.total_amount, 0) / orders.length;
   if (avgOrderValue < 12) {
     suggestions.push({
-
+      type: "Combo Deal",
+      target: "All customers",
+      description: "Bundle popular items at slight discount to increase order value",
+      expectedImpact: "Increase average order value by 15-25%",
       implementation: "Create 2-3 combo meals (e.g., 'Breakfast Deal: Coffee + Pastry for £6')",
-
+    });
   }
 
   // Loyalty program
   suggestions.push({
-
+    type: "Loyalty Program",
+    target: "Repeat customers",
     description: "Buy 5 coffees, get 1 free (or similar)",
+    expectedImpact: "Increase repeat customer rate by 20-30%",
+    implementation: "Use digital loyalty cards or stamp cards",
+  });
 
   const summary = `${suggestions.length} promotion opportunities identified. Focus on slow periods to maximize impact.`;
 
@@ -278,52 +335,62 @@ export async function suggestSeasonalItems(): Promise<SeasonalIdeasResult> {
     currentSeason = "Spring";
     ideas = [
       {
-
+        season: "Spring",
+        items: [
+          "Strawberry Fields Salad",
           "Lemon & Herb Chicken",
           "Fresh Berry Smoothie",
           "Asparagus Risotto",
         ],
         reasoning: "Fresh produce in season, light flavors popular",
-
+        targetPrice: "£8-£14",
       },
     ];
   } else if (month >= 5 && month <= 7) {
     currentSeason = "Summer";
     ideas = [
       {
-
+        season: "Summer",
+        items: [
+          "Iced Coffee Specials",
           "Greek Salad",
           "BBQ Platter",
           "Watermelon Cooler",
           "Ice Cream Sundae",
         ],
-
+        reasoning: "Hot weather drives demand for cold drinks and light meals",
+        targetPrice: "£5-£12",
       },
     ];
   } else if (month >= 8 && month <= 10) {
     currentSeason = "Autumn/Fall";
     ideas = [
       {
-
+        season: "Autumn",
+        items: [
+          "Pumpkin Spice Latte",
           "Butternut Squash Soup",
           "Apple Cinnamon Muffin",
           "Harvest Salad",
         ],
-
+        reasoning: "Comfort foods and warm spices are popular",
+        targetPrice: "£4-£10",
       },
     ];
   } else {
     currentSeason = "Winter";
     ideas = [
       {
-
+        season: "Winter",
+        items: [
+          "Hot Chocolate Deluxe",
           "Winter Warmer Soup",
           "Gingerbread Latte",
           "Hearty Stew",
           "Mulled Wine",
         ],
         reasoning: "Warm, comforting items drive sales in cold weather",
-
+        targetPrice: "£5-£13",
       },
     ];
   }
@@ -347,20 +414,31 @@ export async function suggestSeasonalItems(): Promise<SeasonalIdeasResult> {
 // ============================================================================
 
 interface BulkUpdateResult {
-
+  success: boolean;
+  itemsUpdated: number;
+  itemsFailed: number;
+  summary: string;
 }
 
 interface AutoReportResult {
-
+  reportType: string;
+  period: string;
   data: Record<string, unknown>;
-
+  summary: string;
+  downloadLink?: string;
 }
 
 /**
  * Perform bulk menu updates
  */
 export async function bulkUpdateMenu(
-
+  venueId: string,
+  operation: "price_increase" | "price_decrease" | "toggle_availability",
+  params: {
+    category?: string;
+    percentage?: number;
+    amount?: number;
+    itemIds?: string[];
   }
 ): Promise<BulkUpdateResult> {
   const supabase = await createClient();
@@ -383,7 +461,10 @@ export async function bulkUpdateMenu(
 
   if (!items || items.length === 0) {
     return {
-
+      success: false,
+      itemsUpdated: 0,
+      itemsFailed: 0,
+      summary: "No items found matching criteria.",
     };
   }
 
@@ -402,11 +483,12 @@ export async function bulkUpdateMenu(
     if (operation === "price_increase") {
       const increase = params.percentage
         ? item.price * (params.percentage / 100)
-
+        : params.amount || 0;
+      updateData.price = Math.round((item.price + increase) * 100) / 100;
     } else if (operation === "price_decrease") {
       const decrease = params.percentage
         ? item.price * (params.percentage / 100)
-
+        : params.amount || 0;
       updateData.price = Math.max(0.5, Math.round((item.price - decrease) * 100) / 100);
     } else if (operation === "toggle_availability") {
       updateData.is_available = !item.is_available;
@@ -424,7 +506,7 @@ export async function bulkUpdateMenu(
   const summary = `Successfully updated ${itemsUpdated} items${itemsFailed > 0 ? `, ${itemsFailed} failed` : ""}.`;
 
   return {
-
+    success: itemsUpdated > 0,
     itemsUpdated,
     itemsFailed,
     summary,
@@ -435,7 +517,8 @@ export async function bulkUpdateMenu(
  * Generate automated performance reports
  */
 export async function generateReport(
-
+  venueId: string,
+  reportType: "weekly" | "monthly" | "custom",
   startDate?: string,
   endDate?: string
 ): Promise<AutoReportResult> {
@@ -468,7 +551,7 @@ export async function generateReport(
       reportType,
       period: `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`,
       data: {},
-
+      summary: "No orders in this period.",
     };
   }
 
@@ -481,6 +564,8 @@ export async function generateReport(
     const items = order.items as Array<{ item_name: string; quantity: number }>;
     items?.forEach((item) => {
       itemCounts.set(item.item_name, (itemCounts.get(item.item_name) || 0) + item.quantity);
+    });
+  });
 
   const topItems = Array.from(itemCounts.entries())
     .sort((a, b) => b[1] - a[1])
@@ -491,7 +576,9 @@ export async function generateReport(
   const symbol = currency === "GBP" ? "£" : "$";
 
   const data = {
-
+    totalOrders: orders.length,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    avgOrderValue: Math.round(avgOrderValue * 100) / 100,
     topItems,
     currency,
   };

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors } from "@/lib/api/standard-response";
@@ -24,7 +25,14 @@ export const GET = withUnifiedAuth(
       // STEP 6: Business logic
       // Return user profile data (excluding sensitive information)
       const profile = {
-
+        id: user.id,
+        email: user.email,
+        email_confirmed_at: user.email_confirmed_at,
+        last_sign_in_at: user.last_sign_in_at,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        user_metadata: user.user_metadata,
+        app_metadata: user.app_metadata,
       };
 
       // STEP 7: Return success response
@@ -33,8 +41,6 @@ export const GET = withUnifiedAuth(
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      
 
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
@@ -51,7 +57,7 @@ export const GET = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );
 
@@ -80,15 +86,17 @@ export const PUT = withUnifiedAuth(
 
       // STEP 7: Return success response
       return success({
-
+        message: "Profile update endpoint",
+        user: {
+          id: user.id,
+          email: user.email,
+          user_metadata: user.user_metadata,
         },
-
+      });
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      
 
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
@@ -105,6 +113,6 @@ export const PUT = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

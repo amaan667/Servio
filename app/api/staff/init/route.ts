@@ -8,7 +8,7 @@ import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standa
 export const runtime = "nodejs";
 
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -39,14 +39,12 @@ export const POST = withUnifiedAuth(
 
       const { error } = await admin.rpc("exec_sql", { sql });
       if (error) {
-        
+
         return apiErrors.database(
           "Failed to initialize staff table",
           isDevelopment() ? error.message : undefined
         );
       }
-
-      
 
       // STEP 3: Return success response
       return success({ ok: true });
@@ -64,6 +62,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

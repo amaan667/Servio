@@ -13,7 +13,7 @@ export class EnhancedErrorTracker {
    * Capture exception with rich context
    */
   static captureException(
-
+    error: Error,
     context?: {
       user?: { id: string; email?: string; username?: string };
       venue?: { id: string; name?: string };
@@ -43,14 +43,14 @@ export class EnhancedErrorTracker {
       if (context?.tags) {
         Object.entries(context.tags).forEach(([key, value]) => {
           scope.setTag(key, value);
-
+        });
       }
 
       // Set extra data
       if (context?.extra) {
         Object.entries(context.extra).forEach(([key, value]) => {
           scope.setExtra(key, value);
-
+        });
       }
 
       // Set severity level
@@ -59,14 +59,15 @@ export class EnhancedErrorTracker {
       }
 
       Sentry.captureException(error);
-
+    });
   }
 
   /**
    * Capture message with context
    */
   static captureMessage(
-
+    message: string,
+    level: Sentry.SeverityLevel = "info",
     context?: {
       tags?: Record<string, string>;
       extra?: Record<string, unknown>;
@@ -76,18 +77,18 @@ export class EnhancedErrorTracker {
       if (context?.tags) {
         Object.entries(context.tags).forEach(([key, value]) => {
           scope.setTag(key, value);
-
+        });
       }
 
       if (context?.extra) {
         Object.entries(context.extra).forEach(([key, value]) => {
           scope.setExtra(key, value);
-
+        });
       }
 
       scope.setLevel(level);
       Sentry.captureMessage(message);
-
+    });
   }
 
   /**
@@ -106,22 +107,26 @@ export class EnhancedErrorTracker {
     }
     interface SentryWithTransaction {
       startTransaction(context: {
-
+        name: string;
+        op: string;
         data?: Record<string, unknown>;
       }): SentryTransaction;
     }
     return (Sentry as unknown as SentryWithTransaction).startTransaction({
       name,
-
+      op: operation,
       data,
-
+    });
   }
 
   /**
    * Track API request performance
    */
   static async trackAPIRequest<T>(
-
+    route: string,
+    method: string,
+    handler: () => Promise<T>
+  ): Promise<T> {
     const transaction = this.startTransaction(`${method} ${route}`, "http.server");
 
     try {
@@ -131,10 +136,12 @@ export class EnhancedErrorTracker {
     } catch (_error) {
       transaction.setStatus("internal_error");
       this.captureException(_error as Error, {
-
+        tags: {
+          route,
           method,
         },
-
+        level: "error",
+      });
       throw _error;
     } finally {
       transaction.finish();
@@ -145,7 +152,13 @@ export class EnhancedErrorTracker {
    * Track database query performance
    */
   static async trackDatabaseQuery<T>(
-
+    operation: string,
+    table: string,
+    handler: () => Promise<T>
+  ): Promise<T> {
+    interface SentrySpan {
+      setStatus(status: string): void;
+      finish(): void;
     }
     interface SentryTransaction {
       startChild(context: { op: string; description: string }): SentrySpan | undefined;
@@ -156,8 +169,9 @@ export class EnhancedErrorTracker {
     const scope = Sentry.getCurrentScope() as unknown as ScopeWithTransaction;
     const transaction = scope?.getTransaction?.();
     const span = transaction?.startChild({
-
+      op: "db.query",
       description: `${operation} ${table}`,
+    });
 
     try {
       const result = await handler();
@@ -186,7 +200,9 @@ export class EnhancedErrorTracker {
    * Add breadcrumb for debugging
    */
   static addBreadcrumb(
-
+    message: string,
+    category: string,
+    level: Sentry.SeverityLevel = "info",
     data?: Record<string, unknown>
   ) {
     Sentry.addBreadcrumb({
@@ -194,7 +210,7 @@ export class EnhancedErrorTracker {
       category,
       level,
       data,
-
+    });
   }
 }
 
@@ -209,9 +225,15 @@ export function TrackErrors(target: unknown, propertyKey: string, descriptor: Pr
       return await originalMethod.apply(this, args);
     } catch (_error) {
       EnhancedErrorTracker.captureException(_error as Error, {
-
+        tags: {
+          method: propertyKey,
+          class: ((target &&
+            typeof target === "object" &&
+            "constructor" in target &&
+            target.constructor?.name) ||
+            "Unknown") as string,
         },
-
+      });
       throw _error;
     }
   };

@@ -1,15 +1,34 @@
 const FONT_MAP: { [key: string]: string } = {
-
+  inter: "Inter",
+  roboto: "Roboto",
+  opensans: "Open Sans",
+  poppins: "Poppins",
+  lato: "Lato",
+  montserrat: "Montserrat",
+  nunito: "Nunito",
   "source-sans": "Source Sans Pro",
-
+  playfair: "Playfair Display",
+  merriweather: "Merriweather",
+  crimson: "Crimson Text",
   "libre-baskerville": "Libre Baskerville",
   "dancing-script": "Dancing Script",
-
+  pacifico: "Pacifico",
+  lobster: "Lobster",
   "bebas-neue": "Bebas Neue",
-
+  oswald: "Oswald",
+  raleway: "Raleway",
+  ubuntu: "Ubuntu",
   "fira-sans": "Fira Sans",
   "work-sans": "Work Sans",
-
+  quicksand: "Quicksand",
+  rubik: "Rubik",
+  comfortaa: "Comfortaa",
+  cabin: "Cabin",
+  dosis: "Dosis",
+  exo: "Exo",
+  fjalla: "Fjalla One",
+  anton: "Anton",
+  barlow: "Barlow",
 };
 
 export const loadFont = (fontFamily: string) => {

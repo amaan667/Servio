@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
@@ -15,7 +16,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-
+          error: "Too many requests",
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -29,7 +30,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!finalVenueId || !table_number) {
       return NextResponse.json(
         {
-
+          success: false,
+          error: "venue_id and table_number are required",
         },
         { status: 400 }
       );
@@ -40,7 +42,9 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       env("NEXT_PUBLIC_SUPABASE_URL")!,
       env("SUPABASE_SERVICE_ROLE_KEY")!,
       {
-
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
           },
           set(_name: string, _value: string, _options: unknown) {
             /* Empty */
@@ -67,7 +71,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     if (!venue) {
       return NextResponse.json(
         {
-
+          success: false,
+          error: "Venue not found",
         },
         { status: 404 }
       );
@@ -85,12 +90,15 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Check tier limit
     const limitCheck = await checkLimit(venue.owner_user_id, "maxTables", tableCount);
     if (!limitCheck.allowed) {
-      
+
       return NextResponse.json(
         {
-
+          success: false,
           error: `Table limit reached. You have ${tableCount}/${limitCheck.limit} tables. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more tables.`,
-
+          limitReached: true,
+          currentCount: tableCount,
+          limit: limitCheck.limit,
+          tier: limitCheck.currentTier,
         },
         { status: 403 }
       );
@@ -113,15 +121,21 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       const { data: newTable, error: tableError } = await supabase
         .from("tables")
         .insert({
-
+          venue_id: finalVenueId,
+          label: table_label || table_number.toString(),
+          seat_count: seat_count,
+          area: area,
+          is_active: true,
+        })
         .select()
         .single();
 
       if (tableError) {
-        
+
         return NextResponse.json(
           {
-
+            success: false,
+            error: "Failed to create table",
           },
           { status: 500 }
         );
@@ -140,23 +154,35 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Only create session if one doesn't already exist
     if (!existingSession) {
       const { error: sessionError } = await supabase.from("table_sessions").insert({
+        venue_id: finalVenueId,
+        table_id: table.id,
+        status: "FREE",
+        opened_at: new Date().toISOString(),
+        closed_at: null,
+      });
 
       if (sessionError) {
-        
+
         // Don't fail the request if session creation fails, table is still created
       }
     }
 
     return NextResponse.json({
-
+      success: true,
+      data: {
+        table_id: table.id,
+        table_label: table.label,
+        was_created: true,
       },
-
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        success: false,
+        error: "Internal server error",
       },
       { status: 500 }
     );
   }
+});

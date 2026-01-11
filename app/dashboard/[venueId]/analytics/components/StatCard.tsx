@@ -2,7 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
-
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  iconColor: string;
+  iconBgColor: string;
 }
 
 export function StatCard({ title, value, icon: Icon, iconColor, iconBgColor }: StatCardProps) {

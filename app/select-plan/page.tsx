@@ -164,9 +164,14 @@ export default function SelectPlanPage() {
 
   // Use shared pricing configuration
   const pricingPlans = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
-
+    name: tierData.name,
+    price: tierData.price,
+    period: "month",
+    tier: tierKey,
+    description: tierData.description,
+    features: tierData.features,
     notIncluded: [] as string[], // Can be customized if needed
-
+    popular: tierData.popular || false,
   }));
 
   const handleSelectPlan = async (tier: string) => {
@@ -189,12 +194,14 @@ export default function SelectPlanPage() {
         if (organizationId) {
           // Existing user - create checkout session with organization ID
           const response = await fetch("/api/stripe/create-checkout-session", {
-
+            method: "POST",
             headers: { "Content-Type": "application/json" },
-
+            body: JSON.stringify({
+              tier,
               organizationId,
-
+              isSignup: false,
             }),
+          });
 
           const data = await response.json();
 
@@ -217,10 +224,14 @@ export default function SelectPlanPage() {
 
       // Create Stripe checkout session
       const response = await fetch("/api/stripe/create-checkout-session", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          tier,
+          email: pendingEmail || "",
+          isSignup: true,
         }),
+      });
 
       const data = await response.json();
 
@@ -275,7 +286,7 @@ export default function SelectPlanPage() {
               "w-full font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-servio-purple",
               plan.popular || isDowngradeCTA
                 ? "bg-purple-600 text-white border-2 border-purple-600 hover:bg-purple-700 hover:text-white"
-
+                : "border-2 border-purple-600 text-purple-600 hover:bg-purple-50 bg-white",
               "disabled:cursor-not-allowed disabled:bg-gray-300 disabled:border-gray-300 disabled:text-white"
             );
 

@@ -17,7 +17,13 @@ import { Trash2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DeleteAccountCardProps {
-
+  showDeleteDialog: boolean;
+  setShowDeleteDialog: (show: boolean) => void;
+  deleteConfirmation: string;
+  setDeleteConfirmation: (confirmation: string) => void;
+  loading: boolean;
+  error: string | null;
+  onDeleteAccount: () => void;
 }
 
 export function DeleteAccountCard({

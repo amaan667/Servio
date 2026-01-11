@@ -9,7 +9,8 @@ import { Palette } from "lucide-react";
 import { DesignSettings } from "../types";
 
 interface ThemeSettingsProps {
-
+  designSettings: DesignSettings;
+  setDesignSettings: (settings: DesignSettings) => void;
 }
 
 export function ThemeSettings({ designSettings, setDesignSettings }: ThemeSettingsProps) {
@@ -27,7 +28,9 @@ export function ThemeSettings({ designSettings, setDesignSettings }: ThemeSettin
       ) {
         setDesignSettings({
           ...designSettings,
-
+          primary_color: designSettings.detected_primary_color,
+          secondary_color: designSettings.detected_secondary_color,
+        });
       }
     }
   }, [
@@ -64,9 +67,15 @@ export function ThemeSettings({ designSettings, setDesignSettings }: ThemeSettin
               onCheckedChange={(checked) => {
                 setDesignSettings({
                   ...designSettings,
-
+                  auto_theme_enabled: checked,
                   // Always sync colors when toggle is enabled
-
+                  primary_color: checked
+                    ? designSettings.detected_primary_color || designSettings.primary_color
+                    : designSettings.primary_color,
+                  secondary_color: checked
+                    ? designSettings.detected_secondary_color || designSettings.secondary_color
+                    : designSettings.secondary_color,
+                });
               }}
             />
           </div>
@@ -83,7 +92,9 @@ export function ThemeSettings({ designSettings, setDesignSettings }: ThemeSettin
                 onChange={(e) =>
                   setDesignSettings({
                     ...designSettings,
-
+                    primary_color: e.target.value,
+                    auto_theme_enabled: false,
+                  })
                 }
                 className="w-12 h-10 rounded border border-gray-300"
                 disabled={designSettings.auto_theme_enabled}
@@ -93,7 +104,9 @@ export function ThemeSettings({ designSettings, setDesignSettings }: ThemeSettin
                 onChange={(e) =>
                   setDesignSettings({
                     ...designSettings,
-
+                    primary_color: e.target.value,
+                    auto_theme_enabled: false,
+                  })
                 }
                 placeholder="#8b5cf6"
                 className="flex-1"
@@ -116,7 +129,9 @@ export function ThemeSettings({ designSettings, setDesignSettings }: ThemeSettin
                 onChange={(e) =>
                   setDesignSettings({
                     ...designSettings,
-
+                    secondary_color: e.target.value,
+                    auto_theme_enabled: false,
+                  })
                 }
                 className="w-12 h-10 rounded border border-gray-300"
                 disabled={designSettings.auto_theme_enabled}
@@ -126,7 +141,9 @@ export function ThemeSettings({ designSettings, setDesignSettings }: ThemeSettin
                 onChange={(e) =>
                   setDesignSettings({
                     ...designSettings,
-
+                    secondary_color: e.target.value,
+                    auto_theme_enabled: false,
+                  })
                 }
                 placeholder="#f3f4f6"
                 className="flex-1"

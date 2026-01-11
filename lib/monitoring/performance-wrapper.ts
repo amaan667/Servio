@@ -4,7 +4,10 @@
  */
 
 interface PerformanceMetrics {
-
+  operationName: string;
+  duration: number;
+  success: boolean;
+  timestamp: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -16,7 +19,8 @@ class PerformanceMonitor {
    * Wrap an async function with performance monitoring
    */
   async measure<T>(
-
+    operationName: string,
+    fn: () => Promise<T>,
     metadata?: Record<string, unknown>
   ): Promise<T> {
     const startTime = performance.now();
@@ -39,6 +43,7 @@ class PerformanceMonitor {
         success,
         timestamp,
         metadata,
+      });
 
       // Log slow operations (>1s)
       if (duration > 1000) {
@@ -63,7 +68,10 @@ class PerformanceMonitor {
    * Get performance statistics for an operation
    */
   getStats(operationName: string): {
-
+    count: number;
+    avgDuration: number;
+    successRate: number;
+    p95Duration: number;
   } | null {
     const operationMetrics = this.metrics.filter((m) => m.operationName === operationName);
 
@@ -75,9 +83,10 @@ class PerformanceMonitor {
     const successCount = operationMetrics.filter((m) => m.success).length;
 
     return {
-
+      count: operationMetrics.length,
       avgDuration: durations.reduce((a, b) => a + b, 0) / durations.length,
-
+      successRate: (successCount / operationMetrics.length) * 100,
+      p95Duration: durations[Math.floor(durations.length * 0.95)] || 0,
     };
   }
 
@@ -92,6 +101,7 @@ class PerformanceMonitor {
 
     operations.forEach((op) => {
       stats[op] = this.getStats(op);
+    });
 
     return stats;
   }

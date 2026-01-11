@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
@@ -21,17 +22,22 @@ const venueIdSchema = z.string().refine(
 
 // Validation schemas
 const createQuestionSchema = z.object({
-
+  venue_id: venueIdSchema,
   prompt: z.string().min(1).max(500), // Frontend uses 'prompt', map to 'question_text' for DB
   type: z.enum(["stars", "multiple_choice", "paragraph"]), // Frontend uses 'type', map to 'question_type' for DB
-
+  is_active: z.boolean().default(true),
+  sort_index: z.number().int().nonnegative().optional(),
   choices: z.array(z.string()).optional(), // Frontend uses 'choices', map to 'options' for DB
+});
 
 const updateQuestionSchema = createQuestionSchema.partial().extend({
-
+  id: z.string().uuid(),
   venue_id: venueIdSchema.optional(), // Allow venue_id in updates
+});
 
 const deleteQuestionSchema = z.object({
+  id: z.string().uuid(),
+});
 
 // GET - List questions for venue
 export const GET = withUnifiedAuth(
@@ -47,23 +53,25 @@ export const GET = withUnifiedAuth(
       const venueId = context.venueId;
 
       const paginationSchema = z.object({
+        limit: z.coerce.number().int().min(1).max(500).default(200),
+        offset: z.coerce.number().int().min(0).default(0),
+      });
 
       let limit = 200;
       let offset = 0;
 
       try {
         const pagination = validateQuery(paginationSchema, {
-
+          limit: req.nextUrl.searchParams.get("limit"),
+          offset: req.nextUrl.searchParams.get("offset"),
+        });
         limit = pagination.limit;
         offset = pagination.offset;
       } catch (error) {
         if (isZodError(error)) {
-          .errors,
 
           // Use defaults if validation fails
-        } else {
-
-        }
+        } else { /* Else case handled */ }
       }
 
       if (!venueId) {
@@ -100,7 +108,6 @@ export const GET = withUnifiedAuth(
         (error.message?.toLowerCase().includes("column") ||
           error.message?.toLowerCase().includes("could not find"))
       ) {
-        
 
         const resultWithoutDisplayOrder = await supabase
           .from("feedback_questions")
@@ -114,7 +121,7 @@ export const GET = withUnifiedAuth(
       }
 
       if (error) {
-        
+
         return apiErrors.database(
           "Failed to fetch questions",
           isDevelopment() ? error.message : undefined
@@ -130,7 +137,18 @@ export const GET = withUnifiedAuth(
       const transformedQuestions = (questions || [])
         .map(
           (q: {
-
+            id: string;
+            question_text?: string;
+            question?: string;
+            text?: string;
+            prompt?: string;
+            question_type: string;
+            options?: string[] | null;
+            is_active: boolean;
+            display_order?: number;
+            created_at: string;
+            updated_at: string;
+            venue_id: string;
           }) => {
             // Try all possible column names for the question text
             const prompt = q.question_text || q.question || q.text || q.prompt || "";
@@ -142,13 +160,15 @@ export const GET = withUnifiedAuth(
             }
 
             return {
-
+              id: q.id,
               prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
               type: q.question_type, // Map 'question_type' to 'type' for frontend
               choices: q.options || [], // Map 'options' to 'choices' for frontend
-
+              is_active: q.is_active,
               sort_index: q.display_order ?? 0, // Map 'display_order' to 'sort_index' for frontend, default to 0 if missing
-
+              created_at: q.created_at,
+              updated_at: q.updated_at,
+              venue_id: q.venue_id,
             };
           }
         )
@@ -156,14 +176,16 @@ export const GET = withUnifiedAuth(
 
       // STEP 5: Return success response
       return success({
-
+        questions: transformedQuestions,
         totalCount,
         activeCount,
-
+        pagination: {
+          limit,
           offset,
-
+          returned: transformedQuestions.length,
+          hasMore: transformedQuestions.length === limit,
         },
-
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -174,13 +196,11 @@ export const GET = withUnifiedAuth(
     }
   },
   {
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
-        if (!venueId) {
-          ),
-
-        }
+        if (!venueId) { /* Condition handled */ }
         return venueId;
       } catch (error) {
 
@@ -201,13 +221,10 @@ export const POST = withUnifiedAuth(
     const logMessage = `${logPrefix} ===== ADD QUESTION CLICKED =====`;
 
     // Log to both logger and stdout for Railway
-    
+
     if (typeof process !== "undefined" && process.stdout) {
       process.stdout.write(`${new Date().toISOString()} ${logMessage}\n`);
     }
-
-    .toISOString(),
-      requestId,
 
     if (typeof process !== "undefined" && process.stdout) {
       process.stdout.write(
@@ -217,7 +234,7 @@ export const POST = withUnifiedAuth(
 
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
-      
+
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
           `${new Date().toISOString()} ${logPrefix} Step 1: Checking rate limit\n`
@@ -227,20 +244,19 @@ export const POST = withUnifiedAuth(
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
         const rateLimitMsg = `${logPrefix} Rate limit exceeded`;
-        
+
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(`${new Date().toISOString()} ${rateLimitMsg}\n`);
         }
         return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
-      
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${new Date().toISOString()} ${logPrefix} Rate limit check passed\n`);
       }
 
       // STEP 2: Get venueId from context (already verified)
-      
+
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
           `${new Date().toISOString()} ${logPrefix} Step 2: Getting venueId from context\n`
@@ -249,8 +265,6 @@ export const POST = withUnifiedAuth(
 
       const venueId = context.venueId;
 
-      
-
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
           `${new Date().toISOString()} ${logPrefix} Context venueId: ${venueId || "MISSING"}, UserId: ${context.user?.id || "MISSING"}\n`
@@ -258,18 +272,17 @@ export const POST = withUnifiedAuth(
       }
 
       if (!venueId) {
-        
+
         return apiErrors.badRequest("venueId is required");
       }
 
       // Normalize venueId - database stores with venue- prefix
       // Check if it already has the prefix to avoid double-prefixing
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-      
 
       // STEP 3: Validate input
       // withUnifiedAuth reconstructs the body, so we can read it normally
-      
+
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
           `${new Date().toISOString()} ${logPrefix} Step 3: Parsing request body\n`
@@ -285,9 +298,7 @@ export const POST = withUnifiedAuth(
             process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
           }
           throw new Error("Invalid JSON in request body");
-
-         ? rawBody.choices.length : 0,
-          rawBodyKeys: Object.keys(rawBody || {}),
+        });
 
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(
@@ -295,7 +306,6 @@ export const POST = withUnifiedAuth(
           );
         }
 
-        
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(
             `${new Date().toISOString()} ${logPrefix} Validating body against schema\n`
@@ -303,7 +313,6 @@ export const POST = withUnifiedAuth(
         }
 
         body = await validateBody(createQuestionSchema, rawBody);
-        
 
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(
@@ -326,25 +335,23 @@ export const POST = withUnifiedAuth(
       }
 
       // Verify venue_id matches context (normalize both for comparison)
-      
+
       const bodyVenueId = body.venue_id.startsWith("venue-")
         ? body.venue_id
         : `venue-${body.venue_id}`;
-      
 
       if (bodyVenueId !== normalizedVenueId) {
-        
+
         return apiErrors.forbidden("Venue ID mismatch");
       }
 
       // STEP 4: Business logic
-      
+
       const supabase = createAdminClient();
-      
 
       // Get current max display_order for this venue
       // Handle case where display_order column might not exist
-      
+
       let nextDisplayOrder = body.sort_index ?? 0;
       let displayOrderColumnExists = false;
 
@@ -364,25 +371,21 @@ export const POST = withUnifiedAuth(
             sortIndexError.message?.toLowerCase().includes("could not find"));
 
         if (isDisplayOrderColumnError) {
-          
+
           displayOrderColumnExists = false;
-        } else {
-          
-        }
+        } else { /* Else case handled */ }
       } else {
         // Column exists, calculate next display order
         displayOrderColumnExists = true;
         nextDisplayOrder =
           existingQuestions?.display_order !== undefined
             ? existingQuestions.display_order + 1
-
+            : (body.sort_index ?? 0);
       }
-
-      
 
       // STEP 4b: Discover actual schema by querying an existing row
       // This will tell us what columns actually exist
-      
+
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
           `${new Date().toISOString()} ${logPrefix} Step 4b: Discovering schema\n`
@@ -397,15 +400,29 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (sampleError && !sampleError.message?.toLowerCase().includes("no rows")) {
-        
+        // Sample error logged silently
       }
 
       // Determine actual column names from sample or use defaults
       const actualColumns = {
-
+        questionText: sampleQuestion
+          ? Object.keys(sampleQuestion).find(
+              (k) => k === "question" || k === "question_text" || k === "text" || k === "prompt"
+            ) || "question"
+          : "question",
+        questionType: sampleQuestion
+          ? Object.keys(sampleQuestion).find((k) => k === "question_type" || k === "type") ||
+            "question_type"
+          : "question_type",
+        hasOptions: sampleQuestion ? "options" in sampleQuestion : false,
+        hasDisplayOrder: sampleQuestion
+          ? "display_order" in sampleQuestion || "sort_index" in sampleQuestion
+          : false,
+        displayOrderColumn: sampleQuestion
+          ? Object.keys(sampleQuestion).find((k) => k === "display_order" || k === "sort_index") ||
+            "display_order"
+          : "display_order",
       };
-
-      
 
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
@@ -415,10 +432,10 @@ export const POST = withUnifiedAuth(
 
       // Prepare insert data using discovered column names
       const insertDataBase: Record<string, unknown> = {
-
+        venue_id: normalizedVenueId,
         [actualColumns.questionText]: body.prompt,
         [actualColumns.questionType]: body.type,
-
+        is_active: body.is_active ?? true,
       };
 
       // Only include display_order if the column exists (from schema discovery or previous check)
@@ -441,16 +458,11 @@ export const POST = withUnifiedAuth(
         insertData.options = body.choices;
       }
 
-      
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
           `${new Date().toISOString()} ${logPrefix} Step 4b: Inserting question into database\n`
         );
       }
-
-      ?.substring(0, 50) + "...",
-
-        },
 
       // Try insert with options first, if it fails due to missing column, retry without it
       let question;
@@ -467,7 +479,7 @@ export const POST = withUnifiedAuth(
 
       // Log error details for debugging
       if (error) {
-        
+
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(
             `${new Date().toISOString()} ${logPrefix} Initial insert error: ${error.message}\n`
@@ -492,7 +504,7 @@ export const POST = withUnifiedAuth(
 
         if (isOptionsColumnError || isDisplayOrderColumnError) {
           const retryMsg = `${logPrefix} Column(s) not found (options: ${isOptionsColumnError}, display_order: ${isDisplayOrderColumnError}), retrying insert without missing columns`;
-          
+
           if (typeof process !== "undefined" && process.stdout) {
             process.stdout.write(`${new Date().toISOString()} ${retryMsg}\n`);
           }
@@ -505,7 +517,6 @@ export const POST = withUnifiedAuth(
             delete insertDataRetry.display_order;
           }
 
-          
           if (typeof process !== "undefined" && process.stdout) {
             process.stdout.write(
               `${new Date().toISOString()} ${logPrefix} Retrying insert without missing columns\n`
@@ -522,14 +533,14 @@ export const POST = withUnifiedAuth(
           error = retryResult.error;
 
           if (error) {
-            
+
             if (typeof process !== "undefined" && process.stdout) {
               process.stdout.write(
                 `${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message || "Unknown error"}\n`
               );
             }
           } else {
-            
+
             if (typeof process !== "undefined" && process.stdout) {
               process.stdout.write(
                 `${new Date().toISOString()} ${logPrefix} Retry insert succeeded without missing columns\n`
@@ -538,7 +549,7 @@ export const POST = withUnifiedAuth(
           }
         } else {
           // Unknown column error - try removing all optional columns
-          
+
           if (typeof process !== "undefined" && process.stdout) {
             process.stdout.write(
               `${new Date().toISOString()} ${logPrefix} Unknown column error, retrying with minimal columns\n`
@@ -546,7 +557,10 @@ export const POST = withUnifiedAuth(
           }
 
           const minimalInsertData: Record<string, unknown> = {
-
+            venue_id: insertDataBase.venue_id as string,
+            question_text: insertDataBase.question_text as string,
+            question_type: insertDataBase.question_type as string,
+            is_active: insertDataBase.is_active as boolean,
           };
 
           const retryResult = await supabase
@@ -562,7 +576,6 @@ export const POST = withUnifiedAuth(
 
       if (error) {
         const errorMsg = `${logPrefix} ERROR: Database insert failed - ${error.message}`;
-        
 
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
@@ -576,7 +589,6 @@ export const POST = withUnifiedAuth(
 
       if (!question) {
         const errorMsg = `${logPrefix} ERROR: Question insert returned no data`;
-        
 
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
@@ -586,14 +598,12 @@ export const POST = withUnifiedAuth(
       }
 
       const successMessage = `${logPrefix} ✅ Question created successfully - ID: ${question.id}, Duration: ${Date.now() - startTime}ms`;
-      ?.substring(0, 50) + "...",
 
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${new Date().toISOString()} ${successMessage}\n`);
       }
 
       // STEP 5: Transform question to match frontend expectations
-      
 
       // Extract prompt from all possible column names
       const prompt =
@@ -611,19 +621,18 @@ export const POST = withUnifiedAuth(
       }
 
       const transformedQuestion = {
-
+        id: question.id,
         prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
-
+        is_active: question.is_active,
         sort_index: (question as { display_order?: number }).display_order ?? 0, // Map 'display_order' to 'sort_index', default to 0 if missing
-
+        created_at: question.created_at,
+        updated_at: question.updated_at,
+        venue_id: question.venue_id,
       };
 
-      
-
       // STEP 6: Return success response
-       - startTime,
 
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(
@@ -633,7 +642,6 @@ export const POST = withUnifiedAuth(
 
       const response = success({ question: transformedQuestion });
       const finalSuccessMsg = `${logPrefix} ===== SUCCESS - Question created ===== ID: ${transformedQuestion.id}, Duration: ${Date.now() - startTime}ms`;
-       - startTime,
 
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${new Date().toISOString()} ${finalSuccessMsg}\n`);
@@ -646,7 +654,6 @@ export const POST = withUnifiedAuth(
       const duration = Date.now() - startTime;
 
       const errorMsg = `${logPrefix} ===== UNEXPECTED ERROR ===== ${errorMessage}`;
-      
 
       if (typeof process !== "undefined" && process.stdout) {
         process.stdout.write(`${new Date().toISOString()} ${errorMsg}\n`);
@@ -658,12 +665,10 @@ export const POST = withUnifiedAuth(
       }
 
       if (isZodError(error)) {
-        .errors,
 
         return handleZodError(error);
       }
 
-      
       return apiErrors.internal(
         "Request processing failed",
         isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
@@ -671,13 +676,11 @@ export const POST = withUnifiedAuth(
     }
   },
   {
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
-        if (!venueId) {
-          ),
-
-        }
+        if (!venueId) { /* Condition handled */ }
         return venueId;
       } catch (error) {
 
@@ -721,7 +724,7 @@ export const PATCH = withUnifiedAuth(
         .single();
 
       if (checkError || !existingQuestion) {
-        
+
         return apiErrors.notFound("Question not found or access denied");
       }
 
@@ -767,12 +770,6 @@ export const PATCH = withUnifiedAuth(
         const isDisplayOrderColumnError = errorMsg.includes("display_order");
 
         if (isOptionsColumnError || isDisplayOrderColumnError) {
-           not found, retrying update without missing columns",
-            {
-              isOptionsColumnError,
-              isDisplayOrderColumnError,
-            }
-          );
 
           const updateDataRetry = { ...updateData };
           if (isOptionsColumnError && "options" in updateDataRetry) {
@@ -796,14 +793,12 @@ export const PATCH = withUnifiedAuth(
       }
 
       if (error || !question) {
-        
+
         return apiErrors.database(
           "Failed to update question",
           isDevelopment() ? error?.message : undefined
         );
       }
-
-      
 
       // STEP 6: Transform question to match frontend expectations
       // Extract prompt from all possible column names
@@ -821,13 +816,15 @@ export const PATCH = withUnifiedAuth(
       }
 
       const transformedQuestion = {
-
+        id: question.id,
         prompt: prompt.trim(), // Ensure prompt is trimmed and never empty
         type: question.question_type, // Map 'question_type' to 'type'
         choices: question.options || [], // Map 'options' to 'choices'
-
+        is_active: question.is_active,
         sort_index: (question as { display_order?: number }).display_order ?? 0, // Map 'display_order' to 'sort_index', default to 0 if missing
-
+        created_at: question.created_at,
+        updated_at: question.updated_at,
+        venue_id: question.venue_id,
       };
 
       // STEP 7: Return success response
@@ -842,13 +839,11 @@ export const PATCH = withUnifiedAuth(
     }
   },
   {
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
-        if (!venueId) {
-          ),
-
-        }
+        if (!venueId) { /* Condition handled */ }
         return venueId;
       } catch (error) {
 
@@ -895,6 +890,8 @@ export const DELETE = withUnifiedAuth(
       }
 
       const query = validateQuery(deleteQuestionSchema, {
+        id: deleteId,
+      });
 
       // STEP 4: Security - Verify question belongs to venue
       const supabase = createAdminClient();
@@ -906,7 +903,7 @@ export const DELETE = withUnifiedAuth(
         .single();
 
       if (checkError || !existingQuestion) {
-        
+
         return apiErrors.notFound("Question not found or access denied");
       }
 
@@ -918,14 +915,12 @@ export const DELETE = withUnifiedAuth(
         .eq("venue_id", normalizedVenueId);
 
       if (error) {
-        
+
         return apiErrors.database(
           "Failed to delete question",
           isDevelopment() ? error.message : undefined
         );
       }
-
-      
 
       // STEP 6: Return success response
       return success({ deleted: true });
@@ -939,7 +934,8 @@ export const DELETE = withUnifiedAuth(
     }
   },
   {
-
+    extractVenueId: async (req) => {
+      try {
         // For DELETE requests, check both query params and body
         const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId");
@@ -953,14 +949,11 @@ export const DELETE = withUnifiedAuth(
 
           } catch {
             // Body parsing failed, continue with query param only
-            
+
           }
         }
 
-        if (!venueId) {
-          ),
-
-        }
+        if (!venueId) { /* Condition handled */ }
         return venueId;
       } catch (error) {
 

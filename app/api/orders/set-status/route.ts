@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+
 import { validateOrderCompletion } from "@/lib/orders/payment-validation";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { success, apiErrors } from "@/lib/api/standard-response";
@@ -31,7 +32,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (fetchError) {
-        
+
         return apiErrors.internal("Internal server error");
       }
 
@@ -39,9 +40,10 @@ export const POST = withUnifiedAuth(
       if (status === "COMPLETED") {
         const validation = await validateOrderCompletion(adminSupabase, orderId);
         if (!validation.isValid) {
-          
-          return apiErrors.badRequest(validation.error || "Cannot complete unpaid order", {
 
+          return apiErrors.badRequest(validation.error || "Cannot complete unpaid order", {
+            payment_status: validation.paymentStatus,
+          });
         }
       }
 
@@ -53,7 +55,7 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", context.venueId);
 
       if (error) {
-        
+
         return apiErrors.internal(error.message || "Internal server error");
       }
 
@@ -63,23 +65,30 @@ export const POST = withUnifiedAuth(
         if (order && (order.table_id || order.table_number)) {
           // Use centralized table cleanup function
           const cleanupResult = await cleanupTableOnOrderCompletion({
+            venueId: order.venue_id,
+            tableId: order.table_id,
+            tableNumber: order.table_number,
+            orderId: orderId,
+          });
 
-          if (!cleanupResult.success) {
-            
-          }
+          if (!cleanupResult.success) { /* Condition handled */ }
         }
       }
 
       return success({});
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-      
+
       return apiErrors.internal(errorMessage);
     }
   },
   {
     // Extract venueId from order record
-
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.clone().json();
+        const orderId = body?.orderId;
+        if (orderId) {
           const { createAdminClient } = await import("@/lib/supabase");
           const adminSupabase = createAdminClient();
           const { data: order } = await adminSupabase

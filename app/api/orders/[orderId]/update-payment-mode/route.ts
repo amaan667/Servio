@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -24,8 +25,6 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
     const body = await _request.json();
     const { new_payment_mode, venue_id } = body;
 
-    
-
     // Validate new payment mode
     if (!new_payment_mode || !["pay_at_till", "pay_later", "online"].includes(new_payment_mode)) {
       return NextResponse.json(
@@ -45,13 +44,13 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
       .single();
 
     if (fetchError || !order) {
-      
+
       return apiErrors.notFound("Order not found");
     }
 
     // Validate order state - can only change payment mode if unpaid
     if (order.payment_status === "PAID") {
-      
+
       return NextResponse.json(
         { error: "Cannot change payment mode for already paid orders" },
         { status: 400 }
@@ -60,7 +59,7 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
 
     // Validate order is not completed
     if (order.order_status === "COMPLETED") {
-      
+
       return NextResponse.json(
         { error: "Cannot change payment mode for completed orders" },
         { status: 400 }
@@ -71,23 +70,27 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
     const { data: updatedOrder, error: updateError } = await admin
       .from("orders")
       .update({
-
+        payment_mode: new_payment_mode,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", orderId)
       .eq("venue_id", venue_id)
       .select("*")
       .single();
 
     if (updateError) {
-      
+
       return apiErrors.internal("Failed to update payment mode");
     }
 
-    
-
     return NextResponse.json({
-
+      ok: true,
+      order: updatedOrder,
+      message: "Payment mode updated successfully",
+      changed_from: order.payment_mode,
+      changed_to: new_payment_mode,
+    });
   } catch (_error) {
-     },
 
     return apiErrors.internal("Internal server error");
   }

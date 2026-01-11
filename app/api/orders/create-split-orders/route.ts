@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { getStripeClient } from "@/lib/stripe-client";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import type Stripe from "stripe";
@@ -8,11 +9,22 @@ import { apiErrors } from "@/lib/api/standard-response";
 export const runtime = "nodejs";
 
 interface SplitOrderRequest {
-
+  venueId: string;
+  tableNumber: number;
+  customerName: string;
+  customerPhone: string;
+  splits: Array<{
+    name: string;
+    items: Array<{
+      id: string | null;
+      name: string;
+      price: number;
+      quantity: number;
+      specialInstructions?: string | null;
       modifiers?: Record<string, string[]> | null;
       modifierPrice?: number;
     }>;
-
+    total: number;
   }>;
   source?: string;
 }
@@ -55,12 +67,15 @@ export async function POST(req: NextRequest) {
       const { data: newTable, error: tableError } = await supabase
         .from("tables")
         .insert({
-
+          venue_id: venueId,
+          label: tableNumber.toString(),
+          is_active: true,
+        })
         .select("id")
         .single();
 
       if (tableError || !newTable) {
-        
+
         return apiErrors.internal("Failed to create table");
       }
       tableId = newTable.id;
@@ -79,10 +94,30 @@ export async function POST(req: NextRequest) {
 
       // Create order for this split
       const orderData = {
-
+        venue_id: venueId,
+        table_id: tableId,
+        table_number: tableNumber,
+        customer_name: splitCustomerName,
+        customer_phone: customerPhone,
+        total_amount: split.total,
+        order_status: "PLACED",
+        payment_status: "UNPAID",
+        payment_mode: "online",
+        source: source,
+        items: split.items.map((item) => ({
+          menu_item_id: item.id,
+          item_name: item.name,
+          quantity: item.quantity,
+          price: item.price + (item.modifierPrice || 0),
+          special_instructions: item.specialInstructions || null,
+          modifiers: item.modifiers || null,
         })),
         notes: `Split bill - Part ${i + 1} of ${splits.length} (${split.name})`,
-
+        metadata: {
+          split_group_id: groupId,
+          split_number: i + 1,
+          split_total: splits.length,
+          split_name: split.name,
         },
       };
 
@@ -93,7 +128,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (orderError || !order) {
-        
+
         return apiErrors.internal("Failed to create order");
       }
 
@@ -107,16 +142,32 @@ export async function POST(req: NextRequest) {
       const amountInPence = Math.round(split.total * 100);
 
       const sessionParams: Stripe.Checkout.SessionCreateParams = {
-
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: "gbp",
+              product_data: {
                 name: `Split Bill - ${split.name}`,
                 description: `Table ${tableNumber} - ${split.items.length} item(s)`,
               },
-
+              unit_amount: amountInPence,
             },
-
+            quantity: 1,
           },
         ],
-
+        mode: "payment" as const,
+        metadata: {
+          orderId: order.id,
+          venueId: venueId,
+          tableNumber: tableNumber.toString(),
+          customerName: splitCustomerName,
+          customerPhone: customerPhone,
+          source: source,
+          splitGroupId: groupId,
+          splitNumber: (i + 1).toString(),
+          splitTotal: splits.length.toString(),
+          splitName: split.name,
         },
         success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${order.id}&splitGroupId=${groupId}`,
         cancel_url: `${base}/payment/cancel?orderId=${order.id}&venueId=${venueId}&tableNumber=${tableNumber}`,
@@ -124,22 +175,27 @@ export async function POST(req: NextRequest) {
 
       const stripe = getStripeClient();
       const session = await withStripeRetry(() => stripe.checkout.sessions.create(sessionParams), {
+        maxRetries: 3,
+      });
 
       checkoutSessions.push({
-
+        orderId: order.id,
+        sessionId: session.id,
+        url: session.url,
+        splitName: split.name,
+        amount: split.total,
+      });
     }
 
-    
-
     return NextResponse.json({
-
+      success: true,
       groupId,
       orders: createdOrders.map((o) => ({ id: o.id, customer_name: o.customer_name })),
       checkoutSessions,
-
+    });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

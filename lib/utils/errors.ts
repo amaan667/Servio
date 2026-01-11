@@ -3,7 +3,10 @@
  */
 
 export interface ErrorDetails {
-
+  message: string;
+  stack?: string;
+  name?: string;
+  code?: string;
 }
 
 /**
@@ -17,7 +20,9 @@ export function getErrorDetails(error: unknown): ErrorDetails {
   if (error instanceof Error) {
     const err = error as ErrorWithCode;
     return {
-
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
       ...(err.code && { code: err.code }),
     };
   }
@@ -29,7 +34,7 @@ export function getErrorDetails(error: unknown): ErrorDetails {
   if (error && typeof error === "object") {
     const errorObj = error as Record<string, unknown>;
     const result: ErrorDetails = {
-
+      message: String(errorObj.message) || "Unknown error",
     };
 
     if (errorObj.stack) result.stack = String(errorObj.stack);

@@ -30,7 +30,12 @@ import { Order } from "@/types/order";
 import { Users } from "lucide-react";
 
 interface OrderCardProps {
-
+  order: OrderForCard;
+  variant?: "table" | "counter" | "auto";
+  venueId?: string;
+  showActions?: boolean;
+  onActionComplete?: () => void;
+  className?: string;
 }
 
 export function OrderCard({
@@ -101,19 +106,22 @@ export function OrderCard({
     try {
       setCheckingTickets(true);
       const response = await fetch("/api/kds/tickets/check-bumped", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        credentials: "include",
+        body: JSON.stringify({
+          order_id: order.id,
+          venue_id: venueId,
         }),
-
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
           const allBumped = data.data?.all_bumped ?? false;
-          
+
           setAllTicketsBumped(allBumped);
         } else {
-          
+
           // If API fails, default to false (not ready) to prevent premature "Mark Served"
           setAllTicketsBumped(false);
         }
@@ -126,7 +134,7 @@ export function OrderCard({
         } catch {
           errorData = errorText;
         }
-        
+
         // If API fails, default to false (not ready) to prevent premature "Mark Served"
         setAllTicketsBumped(false);
       }
@@ -206,7 +214,9 @@ export function OrderCard({
       .on(
         "postgres_changes",
         {
-
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
           filter: `id=eq.${order.id}`,
         },
         (payload) => {
@@ -214,7 +224,7 @@ export function OrderCard({
           const updatedOrder = payload.new as
             | { payment_status?: string; order_status?: string }
             | undefined;
-          
+
           // Trigger refresh to get updated order data
           onActionComplete?.();
         }
@@ -222,15 +232,13 @@ export function OrderCard({
       .on(
         "postgres_changes",
         {
-
+          event: "UPDATE",
+          schema: "public",
+          table: "kds_tickets",
           filter: `order_id=eq.${order.id}`,
         },
-        (payload) => {
+        (_payload) => {
           // When KDS ticket status changes, immediately check if all are bumped
-          // Log the update for debugging
-          ?.id,
-            newStatus: (payload.new as { status?: string })?.status,
-
           // Trigger immediate ticket check
           triggerTicketCheck();
         }
@@ -238,13 +246,13 @@ export function OrderCard({
       .on(
         "postgres_changes",
         {
-
+          event: "DELETE",
+          schema: "public",
+          table: "kds_tickets",
           filter: `order_id=eq.${order.id}`,
         },
-        (payload) => {
+        (_payload) => {
           // When KDS ticket is deleted, check if all are now bumped/removed
-          ?.id,
-
           // Trigger immediate ticket check (if no tickets remain, all_bumped should be true)
           triggerTicketCheck();
         }
@@ -283,10 +291,12 @@ export function OrderCard({
           designSettings?.detected_primary_color || designSettings?.primary_color || "#8b5cf6";
 
         setVenueInfo({
-
+          name: venue?.venue_name,
+          email: venue?.email,
+          address: venue?.address,
           logoUrl,
           primaryColor,
-
+        });
       } catch {
         // Silently fail - venue info is optional
       }
@@ -329,14 +339,25 @@ export function OrderCard({
     };
 
     return {
-
+      id: order.id,
+      venue_id: venueId || "",
+      table_number: order.table_number || undefined,
+      customer_name: order.customer?.name || order.customer_name || undefined,
+      customer_phone: order.customer?.phone || order.customer_phone || undefined,
       customer_email: undefined, // Not available in OrderForCard
-
+      items:
+        order.items?.map((item) => ({
+          menu_item_id: item.menu_item_id || "",
           item_name: (item as { item_name?: string }).item_name || "Item",
-
+          quantity: item.quantity,
+          price: item.price,
           special_instructions: (item as { specialInstructions?: string }).specialInstructions,
         })) || [],
-
+      total_amount: order.total_amount,
+      order_status: order.order_status.toUpperCase() as Order["order_status"],
+      payment_status: normalizePaymentStatus(order.payment.status),
+      payment_method: normalizePaymentMethod(order.payment.mode),
+      created_at: order.placed_at,
     };
   };
 
@@ -352,13 +373,17 @@ export function OrderCard({
         label = "Table Order";
       }
       return {
-
+        icon: <MapPin className="h-4 w-4" />,
         label,
-
+        badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+        type: "Table Order",
       };
     } else {
       return {
-
+        icon: <Hash className="h-4 w-4" />,
+        label: order.counter_label || "Counter A",
+        badgeColor: "bg-orange-50 text-orange-700 border-orange-200",
+        type: "Counter Order",
       };
     }
   };
@@ -372,10 +397,14 @@ export function OrderCard({
     try {
       setIsProcessing(true);
       const response = await fetch("/api/orders/delete", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        credentials: "include",
+        body: JSON.stringify({
+          orderId: order.id,
+          venue_id: venueId,
         }),
+      });
 
       if (!response.ok) throw new Error("Failed to delete order");
       onActionComplete?.();
@@ -400,9 +429,10 @@ export function OrderCard({
       if (nextStatus === "SERVED") {
         // Use server endpoint for serving to ensure related side-effects
         const response = await fetch("/api/orders/serve", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: order.id }),
+        });
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -413,9 +443,10 @@ export function OrderCard({
       } else if (nextStatus === "COMPLETED") {
         // Use server endpoint for completing to clear tables
         const response = await fetch("/api/orders/complete", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: order.id }),
+        });
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -429,7 +460,9 @@ export function OrderCard({
         const { error } = await supabase
           .from("orders")
           .update({
-
+            order_status: nextStatus,
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", order.id)
           .eq("venue_id", venueId);
         if (error) {
@@ -822,7 +855,9 @@ export function OrderCard({
             venueId={venueId ?? ""}
             items={
               order.items?.map((item: Record<string, unknown>) => ({
-
+                item_name: (item.item_name as string) || (item.name as string) || "Item",
+                quantity: (item.quantity as number) || (item.qty as number) || 1,
+                price: (item.price as number) || (item.unit_price as number) || 0,
               })) || []
             }
             onSuccess={async () => {

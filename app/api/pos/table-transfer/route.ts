@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,6 +12,12 @@ export const runtime = "nodejs";
 
 const tableTransferSchema = z.object({
   action: z.enum(["transfer_orders", "merge_tables", "split_table"]),
+  source_table_id: z.string().uuid("Invalid source table ID"),
+  target_table_id: z.string().uuid("Invalid target table ID"),
+  order_ids: z.array(z.string().uuid()).optional(),
+  merge_sessions: z.boolean().default(false),
+  venue_id: z.string().uuid().optional(),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -50,7 +57,7 @@ export const POST = withUnifiedAuth(
             .eq("table_id", body.source_table_id);
 
           if (transferError) {
-            
+
             return apiErrors.database(
               "Failed to transfer orders",
               isDevelopment() ? transferError.message : undefined
@@ -58,7 +65,10 @@ export const POST = withUnifiedAuth(
           }
 
           result = {
-
+            action: "transferred",
+            transferred_orders: body.order_ids.length,
+            from_table: body.source_table_id,
+            to_table: body.target_table_id,
           };
           break;
 
@@ -72,7 +82,7 @@ export const POST = withUnifiedAuth(
             .eq("is_active", true);
 
           if (sourceError) {
-            
+
             return apiErrors.database(
               "Failed to fetch source orders",
               isDevelopment() ? sourceError.message : undefined
@@ -89,7 +99,7 @@ export const POST = withUnifiedAuth(
               .eq("venue_id", venue_id);
 
             if (mergeError) {
-              
+
               return apiErrors.database(
                 "Failed to merge orders",
                 isDevelopment() ? mergeError.message : undefined
@@ -102,18 +112,21 @@ export const POST = withUnifiedAuth(
             const { error: sessionError } = await supabase
               .from("table_sessions")
               .update({
-
+                closed_at: new Date().toISOString(),
+                status: "CLOSED",
+              })
               .eq("venue_id", venue_id)
               .eq("table_id", body.source_table_id)
               .eq("closed_at", null);
 
-            if (sessionError) {
-              
-            }
+            if (sessionError) { /* Condition handled */ }
           }
 
           result = {
-
+            action: "merged",
+            merged_orders: sourceOrders?.length || 0,
+            from_table: body.source_table_id,
+            to_table: body.target_table_id,
           };
           break;
 
@@ -132,7 +145,7 @@ export const POST = withUnifiedAuth(
             .eq("table_id", body.source_table_id);
 
           if (splitError) {
-            
+
             return apiErrors.database(
               "Failed to split orders",
               isDevelopment() ? splitError.message : undefined
@@ -140,13 +153,16 @@ export const POST = withUnifiedAuth(
           }
 
           result = {
-
+            action: "split",
+            split_orders: body.order_ids.length,
+            remaining_at_source: body.source_table_id,
+            moved_to_target: body.target_table_id,
           };
           break;
 
+        default:
+          return apiErrors.badRequest("Invalid action");
       }
-
-      
 
       // STEP 4: Return success response
       return success(result);
@@ -161,7 +177,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

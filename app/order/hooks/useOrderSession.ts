@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { retrySupabaseQuery } from "@/lib/supabase-retry";
+
 import { CustomerInfo, OrderParams } from "../types";
 
 export function useOrderSession(orderParams: OrderParams) {
@@ -9,7 +10,9 @@ export function useOrderSession(orderParams: OrderParams) {
   const searchParams = useSearchParams();
   const [session, setSession] = useState<unknown>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-
+    name: "",
+    phone: "",
+  });
   const [showCheckout, setShowCheckout] = useState(false);
 
   // Prevent infinite API spam with ref-based tracking
@@ -22,16 +25,23 @@ export function useOrderSession(orderParams: OrderParams) {
   };
 
   useEffect(() => {
-    
 
     // Log order access
     fetch("/api/log-order-access", {
-
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-
+      body: JSON.stringify({
+        venueSlug: orderParams.venueSlug,
+        tableNumber: orderParams.tableNumber,
+        counterNumber: orderParams.counterNumber,
+        orderType: orderParams.orderType,
+        orderLocation: orderParams.orderLocation,
+        isDemo: orderParams.isDemo,
+        url: window.location.href,
       }),
     }).catch(() => {
       /* Empty */
+    });
 
     checkForExistingOrder();
   }, [orderParams, searchParams]);
@@ -44,8 +54,6 @@ export function useOrderSession(orderParams: OrderParams) {
         const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
-
-          
 
           const { data: orderInDb, error: orderError } = await retrySupabaseQuery(
             async () => {
@@ -69,11 +77,7 @@ export function useOrderSession(orderParams: OrderParams) {
             { maxRetries: 5, delayMs: 500, logContext: "Check Existing Order" }
           );
 
-          if (orderError) {
-
-          }
-
-          
+          if (orderError) { /* Condition handled */ }
 
           if (orderInDb) {
             // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
@@ -92,11 +96,21 @@ export function useOrderSession(orderParams: OrderParams) {
               orderInDb.payment_status === "UNPAID";
 
             if (isPayLater || isPayAtTill) {
-              
 
               // Redirect to payment page where customer can choose payment method
               const checkoutData = {
-
+                venueId: orderData.venueId,
+                venueName: "Restaurant",
+                tableNumber: orderData.tableNumber,
+                customerName: orderInDb.customer_name || orderData.customerName,
+                customerPhone: orderInDb.customer_phone || orderData.customerPhone,
+                customerEmail: orderInDb.customer_email || orderData.customerEmail,
+                cart: orderData.cart || [],
+                total: orderInDb.total_amount || orderData.total,
+                orderId: orderData.orderId,
+                orderNumber: orderData.orderNumber,
+                sessionId: sessionParam,
+                isDemo: orderParams.isDemo,
               };
 
               localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
@@ -104,9 +118,18 @@ export function useOrderSession(orderParams: OrderParams) {
               return;
             }
 
-            
             const checkoutData = {
-
+              venueId: orderData.venueId,
+              venueName: "Restaurant",
+              tableNumber: orderData.tableNumber,
+              customerName: orderData.customerName,
+              customerPhone: orderData.customerPhone,
+              cart: orderData.cart || [],
+              total: orderData.total,
+              orderId: orderData.orderId,
+              orderNumber: orderData.orderNumber,
+              sessionId: sessionParam,
+              isDemo: orderParams.isDemo,
             };
 
             localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
@@ -146,9 +169,7 @@ export function useOrderSession(orderParams: OrderParams) {
             { maxRetries: 5, delayMs: 500, logContext: "Check Session Order" }
           );
 
-          if (sessionOrderError) {
-
-          }
+          if (sessionOrderError) { /* Condition handled */ }
 
           if (sessionOrderInDb) {
             // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
@@ -167,11 +188,21 @@ export function useOrderSession(orderParams: OrderParams) {
               sessionOrderInDb.payment_status === "UNPAID";
 
             if (isPayLater || isPayAtTill) {
-              
 
               // Redirect to payment page where customer can choose payment method
               const checkoutData = {
-
+                venueId: orderData.venueId,
+                venueName: "Restaurant",
+                tableNumber: orderData.tableNumber,
+                customerName: sessionOrderInDb.customer_name || orderData.customerName,
+                customerPhone: sessionOrderInDb.customer_phone || orderData.customerPhone,
+                customerEmail: sessionOrderInDb.customer_email || orderData.customerEmail,
+                cart: orderData.cart || [],
+                total: sessionOrderInDb.total_amount || orderData.total,
+                orderId: orderData.orderId,
+                orderNumber: orderData.orderNumber,
+                sessionId: sessionParam,
+                isDemo: orderParams.isDemo,
               };
 
               localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
@@ -193,7 +224,7 @@ export function useOrderSession(orderParams: OrderParams) {
 
               if (tableOrders && tableOrders.length > 1) {
                 // Multiple unpaid orders - redirect to table payment screen
-                
+
                 window.location.href = `/payment/table?venue=${orderParams.venueSlug}&table=${orderData.tableNumber}`;
                 return;
               }
@@ -204,7 +235,17 @@ export function useOrderSession(orderParams: OrderParams) {
 
             // Single order or fallback - use existing payment flow
             const checkoutData = {
-
+              venueId: orderData.venueId,
+              venueName: "Restaurant",
+              tableNumber: orderData.tableNumber,
+              customerName: orderData.customerName,
+              customerPhone: orderData.customerPhone,
+              cart: orderData.cart || [],
+              total: orderData.total,
+              orderId: orderData.orderId,
+              orderNumber: orderData.orderNumber,
+              sessionId: storedSession,
+              isDemo: orderParams.isDemo,
             };
 
             localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
@@ -237,7 +278,7 @@ export function useOrderSession(orderParams: OrderParams) {
             .lte("created_at", todayEnd.toISOString());
 
           if (unpaidTableOrders && unpaidTableOrders.length > 0) {
-            
+
             // Redirect to table payment screen
             window.location.href = `/payment/table?venue=${orderParams.venueSlug}&table=${orderParams.tableNumber}`;
             return;
@@ -269,19 +310,17 @@ export function useOrderSession(orderParams: OrderParams) {
         const timeSinceLastCheck = now - lastCheckTimeRef.current;
 
         if (isCheckingRef.current) {
-          
+
           return;
         }
 
         if (timeSinceLastCheck < COOLDOWN_MS) {
-          
+
           return;
         }
 
         isCheckingRef.current = true;
         lastCheckTimeRef.current = now;
-
-        
 
         // Use API endpoint instead of direct Supabase query
         // This uses service role and bypasses RLS (customers don't need auth)
@@ -290,15 +329,13 @@ export function useOrderSession(orderParams: OrderParams) {
         );
 
         if (!response.ok) {
-          
+
           isCheckingRef.current = false;
           return;
         }
 
         const result = await response.json();
         const activeOrders = result.ok ? result.orders : null;
-
-        
 
         if (activeOrders && activeOrders.length > 0) {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;
@@ -308,7 +345,15 @@ export function useOrderSession(orderParams: OrderParams) {
           const sessionSessionKey = sessionId ? `servio-session-${sessionId}` : null;
           const sessionSessionData = sessionSessionKey
             ? localStorage.getItem(sessionSessionKey)
+            : null;
 
+          const sessionData = tableSessionData || sessionSessionData;
+
+          if (sessionData) {
+            try {
+              const session = JSON.parse(sessionData);
+
+              if (session.paymentStatus === "unpaid" || session.paymentStatus === "till") {
                 localStorage.setItem("servio-unpaid-order", JSON.stringify(session));
                 router.push(
                   `/order-summary?${orderParams.isCounterOrder ? "counter" : "table"}=${orderParams.orderLocation}&session=${session.orderId}`
@@ -319,7 +364,9 @@ export function useOrderSession(orderParams: OrderParams) {
 
               setShowCheckout(true);
               setCustomerInfo({
-
+                name: session.customerName,
+                phone: session.customerPhone,
+              });
             } catch (_error) {
               // Error silently handled
             }
@@ -347,7 +394,7 @@ export function useOrderSession(orderParams: OrderParams) {
       if (supabase?.auth?.onAuthStateChange) {
         const result = supabase.auth.onAuthStateChange((_event: unknown, session: unknown) => {
           setSession(session);
-
+        });
         return () => {
           try {
             const subscription = (

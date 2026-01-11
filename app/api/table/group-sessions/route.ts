@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -36,28 +37,32 @@ export const GET = withUnifiedAuth(
 
         if (error) {
           if (error.message.includes("does not exist")) {
-            
-            return success({
 
+            return success({
+              groupSessions: [],
+              count: 0,
+              message: "Table not created yet - returning empty data",
+            });
           }
-          
+
           return apiErrors.database(
             "Failed to fetch group sessions",
             isDevelopment() ? error.message : undefined
           );
         }
 
-        
-
         // STEP 4: Return success response
         return success({
-
+          groupSessions: groupSessions || [],
+          count: groupSessions?.length || 0,
+        });
       } catch (tableError) {
 
-          venueId,
-
         return success({
-
+          groupSessions: [],
+          count: 0,
+          message: "Table not available - returning empty data",
+        });
       }
     } catch (error) {
 
@@ -70,7 +75,8 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         return searchParams.get("venueId") || searchParams.get("venue_id");
       } catch {

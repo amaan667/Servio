@@ -6,15 +6,35 @@
 import crypto from "crypto";
 
 interface Webhook {
-
+  id: string;
+  organization_id: string;
+  name: string;
+  url: string;
+  events: string[];
+  secret: string;
+  is_active: boolean;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface WebhookEvent {
-
+  id: string;
+  webhook_id: string;
+  event_type: string;
+  _payload: unknown;
+  status: "pending" | "delivered" | "failed";
+  attempts: number;
+  last_attempt: string;
+  created_at: string;
 }
 
 interface WebhookDelivery {
-
+  webhook_id: string;
+  event_type: string;
+  payload: unknown;
+  signature: string;
+  timestamp: string;
 }
 
 class WebhookService {
@@ -25,11 +45,22 @@ class WebhookService {
    * Create new webhook
    */
   async createWebhook(data: {
-
+    organization_id: string;
+    name: string;
+    url: string;
+    events: string[];
   }): Promise<Webhook> {
     const webhook: Webhook = {
       id: `webhook_${Date.now()}`,
-
+      organization_id: data.organization_id,
+      name: data.name,
+      url: data.url,
+      events: data.events,
+      secret: this.generateSecret(),
+      is_active: true,
+      retry_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     this.webhooks.set(webhook.id, webhook);
@@ -53,18 +84,29 @@ class WebhookService {
    * Deliver webhook to endpoint
    */
   private async deliverWebhook(
-
+    webhook: Webhook,
+    eventType: string,
+    _payload: unknown
+  ): Promise<void> {
+    const delivery: WebhookDelivery = {
+      webhook_id: webhook.id,
+      event_type: eventType,
+      payload: _payload,
       signature: this.generateSignature(_payload, webhook.secret),
-
+      timestamp: new Date().toISOString(),
     };
 
     try {
       const response = await fetch(webhook.url, {
-
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
           "X-Webhook-Signature": delivery.signature,
           "X-Webhook-Event": eventType,
           "X-Webhook-Timestamp": delivery.timestamp,
         },
+        body: JSON.stringify(delivery),
+      });
 
       if (response.ok) {
         // Webhook delivered successfully
@@ -99,9 +141,13 @@ class WebhookService {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const event: WebhookEvent = {
       id: `event_${Date.now()}`,
-
+      webhook_id: webhookId,
+      event_type: "webhook_failure",
       _payload: { error: errorMessage },
-
+      status: "failed",
+      attempts: 1,
+      last_attempt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
 
     this.events.set(event.id, event);
@@ -144,9 +190,9 @@ class WebhookService {
     if (!webhook) return false;
 
     const testPayload = {
-
+      event: "webhook.test",
       data: { message: "This is a test webhook" },
-
+      timestamp: new Date().toISOString(),
     };
 
     try {

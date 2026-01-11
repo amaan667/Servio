@@ -3,7 +3,9 @@
 import { useRef, useState, ReactNode } from "react";
 
 interface VirtualListProps<T> {
-
+  items: T[];
+  itemHeight: number;
+  containerHeight: number;
   renderItem: (item: T, index: number) => ReactNode;
   overscan?: number;
   className?: string;
@@ -43,7 +45,9 @@ export function VirtualList<T>({
       <div style={{ height: totalHeight, position: "relative" }}>
         <div
           style={{
-
+            position: "absolute",
+            top: startIndex * itemHeight,
+            width: "100%",
           }}
         >
           {visibleItems.map((item, i) => renderItem(item, startIndex + i))}

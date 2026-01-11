@@ -19,7 +19,7 @@ export type ChartConfig = {
 };
 
 type ChartContextProps = {
-
+  config: ChartConfig;
 };
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
@@ -37,7 +37,8 @@ function useChart() {
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-
+    config: ChartConfig;
+    children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>["children"];
   }
 >(({ id, className, children, config, ...props }, ref) => {
   const uniqueId = React.useId();
@@ -59,7 +60,7 @@ const ChartContainer = React.forwardRef<
       </div>
     </ChartContext.Provider>
   );
-
+});
 ChartContainer.displayName = "Chart";
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
@@ -72,14 +73,15 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   return (
     <style
       dangerouslySetInnerHTML={{
-
+        __html: Object.entries(THEMES)
+          .map(
             ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
     return color ? `  --color-${key}: ${color};` : null;
-
+  })
   .join("\n")}
 }
 `
@@ -134,7 +136,10 @@ const ChartTooltipContent = React.forwardRef<
       const value =
         !labelKey && typeof label === "string"
           ? config[label as keyof typeof config]?.label || label
+          : itemConfig?.label;
 
+      if (labelFormatter) {
+        return (
           <div className={cn("font-medium", labelClassName)}>{labelFormatter(value, payload)}</div>
         );
       }
@@ -275,7 +280,7 @@ const ChartLegendContent = React.forwardRef<
               <div
                 className="h-2 w-2 shrink-0 rounded-[2px]"
                 style={{
-
+                  backgroundColor: item.color,
                 }}
               />
             )}
@@ -285,7 +290,7 @@ const ChartLegendContent = React.forwardRef<
       })}
     </div>
   );
-
+});
 ChartLegendContent.displayName = "ChartLegend";
 
 // Helper to extract item config from a payload.
@@ -297,7 +302,12 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
   const payloadPayload =
     "payload" in payload && typeof payload.payload === "object" && payload.payload !== null
       ? payload.payload
+      : undefined;
 
+  let configLabelKey: string = key;
+
+  if (key in payload && typeof payload[key as keyof typeof payload] === "string") {
+    configLabelKey = payload[key as keyof typeof payload] as string;
   } else if (
     payloadPayload &&
     key in payloadPayload &&

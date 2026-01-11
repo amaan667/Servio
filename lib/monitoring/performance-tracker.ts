@@ -4,7 +4,8 @@
  */
 
 interface PerformanceMetric {
-
+  operation: string;
+  startTime: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -22,20 +23,21 @@ class PerformanceTracker {
       operation,
       startTime,
       metadata,
+    });
 
     return {
+      end: () => {
+        const metric = this.metrics.get(id);
+        if (!metric) return;
 
-          }ms`,
-            ...metric.metadata,
+        const duration = performance.now() - metric.startTime;
+        this.metrics.delete(id);
 
-        }
+        // Log slow operations (> 1 second)
+        if (duration > 1000) { /* Condition handled */ }
 
         // Log in development for all operations
-        if (process.env.NODE_ENV === "development") {
-          }ms`,
-            ...metric.metadata,
-
-        }
+        if (process.env.NODE_ENV === "development") { /* Condition handled */ }
       },
     };
   }
@@ -59,7 +61,8 @@ class PerformanceTracker {
    * Track an asynchronous operation
    */
   async trackAsync<T>(
-
+    operation: string,
+    fn: () => Promise<T>,
     metadata?: Record<string, unknown>
   ): Promise<T> {
     const tracker = this.start(operation, metadata);

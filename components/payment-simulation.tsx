@@ -9,13 +9,18 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, Lock, CheckCircle, Clock, AlertCircle } from "lucide-react";
 
 interface PaymentSimulationProps {
-
+  amount: number;
+  onPaymentComplete: () => void;
 }
 
 export default function PaymentSimulation({ amount, onPaymentComplete }: PaymentSimulationProps) {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "digital-wallet" | null>(null);
   const [cardDetails, setCardDetails] = useState({
-
+    number: "",
+    expiry: "",
+    cvv: "",
+    name: "",
+  });
   const [paymentStatus, setPaymentStatus] = useState<
     "pending" | "processing" | "success" | "failed"
   >("pending");
@@ -49,17 +54,31 @@ export default function PaymentSimulation({ amount, onPaymentComplete }: Payment
     switch (paymentStatus) {
       case "processing":
         return {
-
+          icon: Clock,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          text: "Processing payment...",
         };
       case "success":
         return {
-
+          icon: CheckCircle,
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+          text: "Payment successful!",
         };
       case "failed":
         return {
-
+          icon: AlertCircle,
+          color: "text-red-600",
+          bgColor: "bg-red-50",
+          text: "Payment failed. Please try again.",
         };
-
+      default:
+        return {
+          icon: Clock,
+          color: "text-gray-900",
+          bgColor: "bg-gray-50",
+          text: "Select payment method",
         };
     }
   };

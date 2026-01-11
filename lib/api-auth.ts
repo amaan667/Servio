@@ -9,7 +9,10 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthResult {
-
+  success: boolean;
+  user?: User;
+  supabase?: SupabaseClient;
+  error?: string;
 }
 
 /**
@@ -36,7 +39,8 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
 
     if (!token) {
       return {
-
+        success: false,
+        error: "No authorization token provided",
       };
     }
 
@@ -45,7 +49,8 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-
+        global: {
+          headers: {
             Authorization: `Bearer ${token}`,
           },
         },
@@ -55,23 +60,25 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
     // Verify token and get user
     const {
       data: { user },
-
+      error: userError,
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
       return {
-
+        success: false,
+        error: "Invalid or expired token",
       };
     }
 
     return {
-
+      success: true,
       user,
       supabase,
     };
   } catch (_error) {
     return {
-
+      success: false,
+      error: "Authentication failed",
     };
   }
 }
@@ -80,7 +87,9 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
  * Verify user has access to a venue (owner or staff)
  */
 export async function verifyVenueAccess(
-
+  supabase: SupabaseClient,
+  userId: string,
+  venueId: string
 ): Promise<{ hasAccess: boolean; role?: string }> {
   // Check if owner
   const { data: venueAccess } = await supabase

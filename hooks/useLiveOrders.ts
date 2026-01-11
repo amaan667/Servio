@@ -2,9 +2,28 @@ import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 export type Order = {
-
+  id: string;
+  venue_id: string;
+  table_number: number;
+  table_id?: string | null;
+  table_label?: string | null;
+  customer_name: string;
+  customer_phone?: string;
+  customer_email?: string;
+  order_status: string;
+  payment_status?: string;
+  payment_method?: string;
+  total_amount: number;
+  items: Array<{
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
   }>;
-
+  created_at: string;
+  updated_at: string;
+  source?: string;
 };
 
 const LIVE_STATUSES = [
@@ -17,7 +36,12 @@ const LIVE_STATUSES = [
 ] as const;
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
-
+  PLACED: "Placed",
+  ACCEPTED: "Accepted",
+  IN_PREP: "In Prep",
+  READY: "Ready",
+  SERVED: "Served",
+  COMPLETED: "Completed",
 };
 
 // Optional: add a 4s safety timeout (never spin forever)
@@ -88,11 +112,14 @@ export function useLiveOrders(venueId: string) {
           ORDER_STATUS_LABELS[orderStatus as keyof typeof ORDER_STATUS_LABELS] || orderStatus;
         return {
           ...orderRecord,
-
+          table_label:
+            tables?.label ||
+            (orderRecord.source === "counter"
               ? `Counter ${orderRecord.table_number}`
               : `Table ${orderRecord.table_number}`),
-
+          status_label: statusLabel,
         } as unknown as Order;
+      });
 
       setData(transformedOrders);
     } catch (err) {
@@ -123,6 +150,6 @@ export function useLiveOrders(venueId: string) {
     isLoading,
     isError,
     error,
-
+    refetch: fetchOrders,
   };
 }

@@ -47,12 +47,14 @@ export async function getServerSession(): Promise<{ user: User | null; session: 
       data: { session },
     } = await supabase.auth.getSession();
     return {
-
+      user: session?.user || null,
+      session: session || null,
     };
   } catch {
     // Silently handle all auth errors
     return {
-
+      user: null,
+      session: null,
     };
   }
 }
@@ -68,7 +70,23 @@ export async function requireServerAuth() {
 
   if (!user) {
     return {
-
+      user: null,
+      getErrorComponent: async () => {
+        const Link = (await import("next/link")).default;
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="max-w-md w-full p-6 bg-card rounded-lg shadow-lg">
+              <h2 className="text-2xl font-bold text-destructive mb-4">Authentication Required</h2>
+              <p className="text-muted-foreground mb-4">Please sign in to access this page.</p>
+              <Link
+                href="/sign-in"
+                className="block w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 transition text-center"
+              >
+                Sign In
+              </Link>
+            </div>
+          </div>
+        );
       },
     };
   }

@@ -5,11 +5,19 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { MenuStyle, getMenuStyleClasses } from "@/lib/menu-style-extractor";
 
 export interface MenuItem {
-
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  category: string;
+  is_available: boolean;
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface MenuPreviewProps {
-
+  venueId: string;
+  menuItems: MenuItem[];
+  categoryOrder: string[] | null;
 }
 
 export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewProps) {
@@ -31,9 +39,36 @@ export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewPr
           const primaryColor =
             data.auto_theme_enabled && data.detected_primary_color
               ? data.detected_primary_color
+              : data.primary_color || "#8b5cf6";
+          const secondaryColor =
+            data.auto_theme_enabled && data.detected_secondary_color
+              ? data.detected_secondary_color
+              : data.secondary_color || "#f3f4f6";
 
+          const style: MenuStyle = {
+            primary_color: primaryColor,
+            secondary_color: secondaryColor,
+            accent_color: primaryColor,
+            background_color: "#ffffff",
+            text_color: "#1f2937",
+            font_family: data.font_family || "inter",
+            font_size: (data.font_size as "small" | "medium" | "large") || "medium",
+            heading_font_size:
+              data.font_size === "small" ? 20 : data.font_size === "large" ? 28 : 24,
+            body_font_size: data.font_size === "small" ? 14 : data.font_size === "large" ? 18 : 16,
+            layout: "single-column",
+            alignment: "left",
+            spacing: "normal",
+            logo_url: data.logo_url || undefined,
             logo_size_numeric: data.logo_size_numeric || 200, // Use numeric size
-
+            custom_heading: data.custom_heading || undefined,
+            venue_name: data.venue_name || undefined,
+            show_descriptions: data.show_descriptions ?? true,
+            show_prices: data.show_prices ?? true,
+            show_images: false,
+            detected_primary_color: data.detected_primary_color || data.primary_color,
+            detected_secondary_color: data.detected_secondary_color || data.secondary_color,
+            detected_layout: "single-column",
           };
           setMenuStyle(style);
         }
@@ -89,14 +124,14 @@ export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewPr
             className="object-contain"
             style={{
               height: `${menuStyle.logo_size_numeric || 200}px`,
-
+              maxWidth: "100%",
             }}
           />
           {menuStyle.custom_heading && (
             <p
               className="mt-4 text-center font-medium"
               style={{
-
+                color: menuStyle.text_color,
                 fontSize: `${menuStyle.body_font_size}px`,
               }}
             >
@@ -112,7 +147,7 @@ export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewPr
             className="font-bold"
             style={{
               fontSize: `${menuStyle.heading_font_size + 8}px`,
-
+              color: menuStyle.primary_color,
             }}
           >
             {menuStyle.venue_name}
@@ -182,7 +217,8 @@ function DefaultMenuPreview({
   menuItems,
   categoryOrder,
 }: {
-
+  menuItems: MenuItem[];
+  categoryOrder: string[] | null;
 }) {
   const groupedItems = menuItems.reduce(
     (acc, item) => {

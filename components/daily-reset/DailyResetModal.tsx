@@ -13,7 +13,11 @@ import {
 import { AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
 
 interface DailyResetModalProps {
-
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  isResetting: boolean;
+  venueName?: string;
 }
 
 export function DailyResetModal({

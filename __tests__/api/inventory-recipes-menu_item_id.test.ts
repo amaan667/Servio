@@ -56,7 +56,7 @@ describe("Inventory Recipes Menu_item_id API", () => {
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {});
+    it("should validate request parameters", async () => { /* Intentionally empty */ });
   });
 
   describe("POST inventory/recipes/[menu_item_id]", () => {
@@ -70,7 +70,7 @@ describe("Inventory Recipes Menu_item_id API", () => {
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {});
+    it("should validate request parameters", async () => { /* Intentionally empty */ });
   });
 
   describe("DELETE inventory/recipes/[menu_item_id]", () => {
@@ -84,6 +84,6 @@ describe("Inventory Recipes Menu_item_id API", () => {
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => {});
+    it("should validate request parameters", async () => { /* Intentionally empty */ });
   });
 });

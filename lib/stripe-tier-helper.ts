@@ -17,21 +17,31 @@ export type SubscriptionTier = "starter" | "pro" | "enterprise";
  * 4. Default to starter
  */
 export async function getTierFromStripeSubscription(
+  subscription: Stripe.Subscription,
+  stripe: Stripe
+): Promise<SubscriptionTier> {
+  try {
+    const priceId = subscription.items.data[0]?.price.id;
 
+    if (!priceId) {
+
+      return "starter";
     }
 
     // Fetch full price details with product
     const price = await stripe.prices.retrieve(priceId, {
+      expand: ["product"],
+    });
 
     // 1. Check price metadata first - use raw value from Stripe
     if (price.metadata?.tier) {
       const tier = price.metadata.tier.toLowerCase().trim() as SubscriptionTier;
-      
+
       // Validate it's a valid tier
       if (["starter", "pro", "enterprise"].includes(tier)) {
         return tier;
       }
-      
+
     }
 
     // 2. Check product metadata - use raw value from Stripe
@@ -40,23 +50,23 @@ export async function getTierFromStripeSubscription(
     // Type guard: Check if product is not deleted and has metadata
     if (product && !product.deleted && "metadata" in product && product.metadata?.tier) {
       const tier = product.metadata.tier.toLowerCase().trim() as SubscriptionTier;
-      
+
       // Validate it's a valid tier
       if (["starter", "pro", "enterprise"].includes(tier)) {
         return tier;
       }
-      
+
     }
 
     // 3. Parse from product name
     if (product && !product.deleted && "name" in product && product.name) {
       const tier = parseTierFromName(product.name);
-      
+
       return tier;
     }
 
     // 4. Default
-    
+
     return "starter";
   } catch (error) {
 

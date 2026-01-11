@@ -19,7 +19,13 @@ import { Order } from "@/types/order";
 import { useToast } from "@/hooks/use-toast";
 
 interface ReceiptPageClientProps {
-
+  order: Order;
+  venueName: string;
+  venueEmail?: string;
+  venueAddress?: string;
+  receiptLogoUrl?: string;
+  receiptFooterText?: string;
+  showVAT?: boolean;
 }
 
 export function ReceiptPageClient({
@@ -61,12 +67,14 @@ export function ReceiptPageClient({
       setError(null);
 
       const response = await fetch("/api/receipts/send-email", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          orderId: order.id,
           email,
-
+          venueId: order.venue_id,
         }),
+      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -75,13 +83,18 @@ export function ReceiptPageClient({
 
       setEmailSent(true);
       toast({
-
+        title: "Receipt sent",
+        description: "Receipt has been sent to your email",
+      });
       setTimeout(() => setEmailSent(false), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to send email";
       setError(message);
       toast({
-
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setSendingEmail(false);
     }
@@ -98,12 +111,14 @@ export function ReceiptPageClient({
       setError(null);
 
       const response = await fetch("/api/receipts/send-sms", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          orderId: order.id,
           phone,
-
+          venueId: order.venue_id,
         }),
+      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -112,13 +127,18 @@ export function ReceiptPageClient({
 
       setSmsSent(true);
       toast({
-
+        title: "Receipt sent",
+        description: "Receipt has been sent via SMS",
+      });
       setTimeout(() => setSmsSent(false), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to send SMS";
       setError(message);
       toast({
-
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setSendingSMS(false);
     }
@@ -127,6 +147,8 @@ export function ReceiptPageClient({
   const handleDownloadPDF = async () => {
     try {
       const response = await fetch(`/api/receipts/pdf/${order.id}`, {
+        method: "GET",
+      });
 
       if (!response.ok) {
         throw new Error("Failed to generate PDF");
@@ -143,12 +165,17 @@ export function ReceiptPageClient({
       document.body.removeChild(a);
 
       toast({
-
+        title: "Download started",
+        description: "Receipt PDF is downloading",
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to download PDF";
       setError(message);
       toast({
-
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -164,21 +191,28 @@ export function ReceiptPageClient({
           title: `Receipt for Order #${getShortOrderNumber(order.id)}`,
           text: `Receipt for Order #${getShortOrderNumber(order.id)} from ${venueName}`,
           url,
-
+        });
         toast({
-
+          title: "Shared",
+          description: "Receipt link shared",
+        });
       } catch (err) {
         // User cancelled or error
         if (err instanceof Error && err.name !== "AbortError") {
           toast({
-
+            title: "Error",
+            description: "Failed to share receipt",
+            variant: "destructive",
+          });
         }
       }
     } else {
       // Fallback: copy to clipboard
       await navigator.clipboard.writeText(url);
       toast({
-
+        title: "Link copied",
+        description: "Receipt link copied to clipboard",
+      });
     }
   };
 

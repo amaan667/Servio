@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -37,7 +38,7 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", context.venueId);
 
       if (clearSessionsError) {
-        
+
         return apiErrors.database(
           "Failed to clear table sessions",
           isDevelopment() ? clearSessionsError.message : undefined
@@ -51,18 +52,17 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", context.venueId);
 
       if (clearGroupSessionsError) {
-        
+
         return apiErrors.database(
           "Failed to clear group sessions",
           isDevelopment() ? clearGroupSessionsError.message : undefined
         );
       }
 
-      
-
       // STEP 4: Return success response
       return success({
-
+        message: "All table sessions and group sessions cleared successfully",
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -74,7 +74,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||

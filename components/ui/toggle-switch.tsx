@@ -6,7 +6,13 @@ import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ToggleSwitchProps {
-
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
+  className?: string;
+  showLabels?: boolean;
+  onLabel?: string;
+  offLabel?: string;
 }
 
 const ToggleSwitch = React.forwardRef<

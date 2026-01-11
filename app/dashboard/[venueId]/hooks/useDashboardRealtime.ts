@@ -1,21 +1,22 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
+
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface RealtimePayload {
-
+  eventType: "INSERT" | "UPDATE" | "DELETE";
   new?: Record<string, unknown>;
   old?: Record<string, unknown>;
 }
 
 interface UseDashboardRealtimeProps {
-
+  venueId: string;
   todayWindow: { startUtcISO: string; endUtcISO: string } | null | undefined;
-
+  refreshCounts: () => Promise<void>;
   loadStats: (venueId: string, window: { startUtcISO: string; endUtcISO: string }) => Promise<void>;
   updateRevenueIncrementally: (order: { order_status: string; total_amount?: number }) => void;
-
+  venue: unknown;
 }
 
 export function useDashboardRealtime({
@@ -48,9 +49,7 @@ export function useDashboardRealtime({
       if (!isMountedRef.current) return;
       try {
         await refreshCountsRef.current();
-      } catch (_error) {
-        
-      }
+      } catch (_error) { /* Error handled silently */ }
     }, 300); // 300ms debounce
   }, []); // No dependencies - uses ref
 
@@ -59,9 +58,7 @@ export function useDashboardRealtime({
     if (!isMountedRef.current) return;
     try {
       await refreshCountsRef.current();
-    } catch (_error) {
-      
-    }
+    } catch (_error) { /* Error handled silently */ }
   }, []); // No dependencies - uses ref
 
   // Store loadStats in a ref to avoid recreating callbacks
@@ -83,7 +80,10 @@ export function useDashboardRealtime({
     const venueIdForStats =
       venue && typeof venue === "object" && "venue_id" in venue
         ? (venue as { venue_id?: string }).venue_id
+        : venueId;
 
+    if (venueIdForStats && todayWindow) {
+      try {
         await loadStatsRef.current(venueIdForStats, todayWindow);
       } catch (_error) {
         // Error handled silently
@@ -101,7 +101,9 @@ export function useDashboardRealtime({
     const venueId_check =
       venue && typeof venue === "object" && "venue_id" in venue
         ? (venue as { venue_id?: string }).venue_id
-
+        : venueId;
+    if (!venueId_check) {
+      return;
     }
 
     const supabase = supabaseBrowser();
@@ -118,7 +120,7 @@ export function useDashboardRealtime({
           channel.subscribe();
         }
       }
-
+    });
     authSubscriptionRef.current = authSubscription;
 
     const setupChannel = () => {
@@ -129,7 +131,9 @@ export function useDashboardRealtime({
         .on(
           "postgres_changes",
           {
-
+            event: "*",
+            schema: "public",
+            table: "orders",
             filter: `venue_id=eq.${venueId}`,
           },
           async (payload: RealtimePayload) => {
@@ -146,7 +150,9 @@ export function useDashboardRealtime({
 
             if (payload.eventType === "INSERT" && payload.new) {
               const order = payload.new as {
-
+                order_status: string;
+                total_amount?: number;
+                created_at?: string;
               };
               const orderCreatedAt = payload.new?.created_at as string | undefined;
               // Only incrementally update if order is from today's window
@@ -164,7 +170,7 @@ export function useDashboardRealtime({
                 window.dispatchEvent(
                   new CustomEvent("revenueChanged", {
                     detail: { venueId, amount: order.total_amount },
-
+                  })
                 );
               }
             }
@@ -173,7 +179,9 @@ export function useDashboardRealtime({
         .on(
           "postgres_changes",
           {
-
+            event: "*",
+            schema: "public",
+            table: "tables",
             filter: `venue_id=eq.${venueId}`,
           },
           async (_payload: RealtimePayload) => {
@@ -196,7 +204,7 @@ export function useDashboardRealtime({
                 window.dispatchEvent(
                   new CustomEvent("tablesChanged", {
                     detail: { venueId, count },
-
+                  })
                 );
               }
             } catch (_error) {
@@ -207,7 +215,9 @@ export function useDashboardRealtime({
         .on(
           "postgres_changes",
           {
-
+            event: "*",
+            schema: "public",
+            table: "table_sessions",
             filter: `venue_id=eq.${venueId}`,
           },
           async (_payload: RealtimePayload) => {
@@ -218,7 +228,9 @@ export function useDashboardRealtime({
         .on(
           "postgres_changes",
           {
-
+            event: "*",
+            schema: "public",
+            table: "menu_items",
             filter: `venue_id=eq.${venueId}`,
           },
           async (_payload: unknown) => {
@@ -234,7 +246,7 @@ export function useDashboardRealtime({
                 window.dispatchEvent(
                   new CustomEvent("menuItemsChanged", {
                     detail: { venueId: normalizedVenueId, count },
-
+                  })
                 );
               }
             } catch (_error) {
@@ -246,7 +258,7 @@ export function useDashboardRealtime({
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            
+
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);
@@ -272,6 +284,7 @@ export function useDashboardRealtime({
               }
             }, 3000);
           }
+        });
 
       return channel;
     };

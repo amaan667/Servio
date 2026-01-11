@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
@@ -11,6 +12,7 @@ export const runtime = "nodejs";
 const checkBumpedSchema = z.object({
   order_id: z.string().min(1, "Order ID is required"),
   venue_id: z.string().min(1, "Venue ID is required").optional(),
+});
 
 // POST - Check if all KDS tickets for an order are bumped
 // This endpoint can be called without auth (for OrderCard component)
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
     let body;
     try {
       const requestBody = await req.json();
-      
+
       body = await validateBody(checkBumpedSchema, requestBody);
     } catch (validationError) {
 
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
       .eq("venue_id", venueId);
 
     if (fetchError) {
-      
+
       return apiErrors.database(
         "Failed to check ticket status",
         isDevelopment() ? fetchError.message : undefined
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     // If no tickets exist, consider it as "all bumped" (order might not have KDS tickets)
     if (!tickets || tickets.length === 0) {
-      
+
       return success({ all_bumped: true, ticket_count: 0 });
     }
 
@@ -88,11 +90,12 @@ export async function POST(req: NextRequest) {
     const allBumped = tickets.every((t) => t.status === "bumped");
     const bumpedCount = tickets.filter((t) => t.status === "bumped").length;
 
-    
-
     // STEP 5: Return success response
     return success({
-
+      all_bumped: allBumped,
+      ticket_count: tickets.length,
+      bumped_count: bumpedCount,
+    });
   } catch (error) {
 
     if (isZodError(error)) {

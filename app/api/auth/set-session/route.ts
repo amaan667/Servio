@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 /**
@@ -21,18 +22,17 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.auth.setSession({
       access_token,
       refresh_token,
+    });
 
     if (error) {
-      
+
       return apiErrors.badRequest(error.message);
     }
 
     if (!data.session) {
-      
+
       return apiErrors.internal("Failed to set session");
     }
-
-    
 
     // The cookies are automatically set by the Supabase SSR client via setSession
     // Don't manually override them - let Supabase handle the chunking properly
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

@@ -6,14 +6,22 @@ import { Plus, Minus, Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface MenuItem {
-
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  category: string;
+  is_available: boolean;
+  image_url?: string;
+  [key: string]: unknown;
 }
 
 interface VerticalMenuDisplayProps {
-
+  menuItems: MenuItem[];
+  categoryOrder: string[] | null;
   onAddToCart: (item: Record<string, unknown>) => void;
   cart: Array<{ id: string; quantity: number }>;
-
+  onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
 }
 
@@ -22,7 +30,7 @@ export function VerticalMenuDisplay({
   categoryOrder,
   onAddToCart,
   cart,
-
+  onRemoveFromCart: _onRemoveFromCart,
   onUpdateQuantity,
 }: VerticalMenuDisplayProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -30,6 +38,7 @@ export function VerticalMenuDisplay({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({
     /* Empty */
+  });
 
   // Group items by category
   const groupedItems = menuItems.reduce(
@@ -67,7 +76,20 @@ export function VerticalMenuDisplay({
           /* Empty */
         } as Record<string, MenuItem[]>
       )
+    : groupedItems;
 
+  // Scroll to category
+  const scrollToCategory = (category: string) => {
+    const element = categoryRefs.current[category];
+    if (element) {
+      const offset = 120; // Account for sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
       setSelectedCategory(category);
       setSidebarOpen(false);
     }
@@ -138,7 +160,7 @@ export function VerticalMenuDisplay({
                   ${
                     selectedCategory === category
                       ? "bg-black text-white"
-
+                      : "text-gray-700 hover:bg-gray-100"
                   }
                 `}
               >

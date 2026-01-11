@@ -5,7 +5,12 @@ import { ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface OptimizedImageProps {
-
+  src: string;
+  alt: string;
+  className?: string;
+  aspectRatio?: "square" | "video" | "portrait" | "auto";
+  fallback?: React.ReactNode;
+  objectFit?: "cover" | "contain" | "fill";
 }
 
 /**
@@ -36,11 +41,16 @@ export function OptimizedImage({
   }, [src]);
 
   const aspectRatioClasses = {
-
+    square: "aspect-square",
+    video: "aspect-video",
+    portrait: "aspect-[3/4]",
+    auto: "",
   };
 
   const objectFitClasses = {
-
+    cover: "object-cover",
+    contain: "object-contain",
+    fill: "object-fill",
   };
 
   return (

@@ -4,10 +4,14 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
+
 import { trackOrderError } from "@/lib/monitoring/error-tracking";
 
 export interface TransactionResult<T> {
-
+  success: boolean;
+  data?: T;
+  error?: string;
+  rollback?: () => Promise<void>;
 }
 
 /**
@@ -15,7 +19,7 @@ export interface TransactionResult<T> {
  * Note: Supabase doesn't support true transactions, so we use best-effort rollback
  */
 export async function createOrderWithKDSTickets<T>(
-
+  supabase: SupabaseClient,
   orderData: Record<string, unknown>,
   createKDSTicketsFn: (supabase: SupabaseClient, order: T) => Promise<void>
 ): Promise<TransactionResult<T>> {
@@ -31,9 +35,10 @@ export async function createOrderWithKDSTickets<T>(
       .single();
 
     if (orderError || !insertedOrder) {
-      
-      return {
 
+      return {
+        success: false,
+        error: orderError?.message || "Failed to create order",
       };
     }
 
@@ -44,36 +49,42 @@ export async function createOrderWithKDSTickets<T>(
     try {
       await createKDSTicketsFn(supabase, createdOrder);
     } catch (kdsError) {
-      
 
       // Track but don't fail - KDS tickets are non-critical
       trackOrderError(kdsError, {
+        orderId: createdOrderId,
+        action: "kds_ticket_creation",
+      });
 
       // Continue - order is created successfully even if KDS fails
     }
 
     return {
+      success: true,
+      data: createdOrder,
+      rollback: async () => {
+        if (createdOrderId) {
 
           await supabase.from("orders").delete().eq("id", createdOrderId);
         }
       },
     };
   } catch (error) {
-    
 
     trackOrderError(error, {
+      action: "order_creation_transaction",
+    });
 
     // Attempt rollback if order was created
     if (createdOrderId) {
       try {
         await supabase.from("orders").delete().eq("id", createdOrderId);
-      } catch (rollbackError) {
-        
-      }
+      } catch (rollbackError) { /* Error handled silently */ }
     }
 
     return {
-
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -82,7 +93,8 @@ export async function createOrderWithKDSTickets<T>(
  * Validate order data before creation
  */
 export function validateOrderData(orderData: Record<string, unknown>): {
-
+  isValid: boolean;
+  error?: string;
 } {
   // Required fields
   if (!orderData.venue_id || typeof orderData.venue_id !== "string") {

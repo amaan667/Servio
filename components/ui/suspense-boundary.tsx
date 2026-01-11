@@ -14,7 +14,11 @@ import { LoadingState } from "./loading-state";
 import { LOADING_MESSAGES } from "@/lib/constants/loading-messages";
 
 interface SuspenseBoundaryProps {
-
+  children: ReactNode;
+  fallback?: ReactNode;
+  message?: string;
+  variant?: "spinner" | "skeleton";
+  skeletonCount?: number;
 }
 
 /**

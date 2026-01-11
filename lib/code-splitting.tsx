@@ -1,4 +1,3 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
 
 /**
  * Code Splitting Utilities
@@ -55,9 +54,6 @@ export function lazyWithRetry<P extends object>(
         return await importFn();
       } catch (_error) {
         lastError = _error as Error;
-
-          errorToContext(_error)
-        );
 
         // Wait before retrying
         await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));

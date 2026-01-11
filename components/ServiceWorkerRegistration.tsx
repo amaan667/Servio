@@ -6,7 +6,7 @@ import { WifiOff, Wifi, RefreshCw } from "lucide-react";
 import { getOfflineQueue } from "@/lib/offline-queue";
 
 interface ServiceWorkerRegistrationProps {
-
+  children: React.ReactNode;
 }
 
 export default function ServiceWorkerRegistration({ children }: ServiceWorkerRegistrationProps) {
@@ -60,10 +60,12 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         setIsOnline(connectionState.isOnline);
         unsubscribeConnectionRef.current = connectionMonitor.subscribe((state) => {
           setIsOnline(state.isOnline);
-
+        });
+      })
       .catch(() => {
         // Fallback to navigator.onLine if ConnectionMonitor fails
         setIsOnline(navigator.onLine);
+      });
 
     updateQueueStatus();
 
@@ -78,14 +80,13 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           registration
             .unregister()
             .then((success) => {
-              if (success) {
-                
-              }
-
-            .catch((error) => {
-
+              if (success) { /* Condition handled */ }
+            })
+            .catch((_error) => {
+              // Service worker registration error handled silently
+            });
         }
-
+      });
     }
 
     return () => {

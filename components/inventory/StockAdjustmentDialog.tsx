@@ -16,7 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { StockLevel } from "@/types/inventory";
 
 interface StockAdjustmentDialogProps {
-
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  ingredient: StockLevel;
+  onSuccess: () => void;
 }
 
 export function StockAdjustmentDialog({
@@ -38,11 +41,15 @@ export function StockAdjustmentDialog({
       if (isNaN(deltaValue)) return;
 
       const response = await fetch("/api/inventory/stock/adjust", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          ingredient_id: ingredient.ingredient_id,
+          delta: deltaValue,
+          reason: deltaValue >= 0 ? "receive" : "adjust",
           note,
         }),
+      });
 
       if (response.ok) {
         onSuccess();

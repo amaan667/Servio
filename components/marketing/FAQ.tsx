@@ -11,7 +11,9 @@ import { motion, useReducedMotion } from "framer-motion";
  * To edit FAQ content, modify the `faqItems` array below
  */
 interface FAQItem {
-
+  id: string;
+  question: string;
+  answer: string;
 }
 
 /**
@@ -21,18 +23,28 @@ interface FAQItem {
  */
 const faqItems: FAQItem[] = [
   {
-
+    id: "hardware",
+    question: "Do I need new hardware to use Servio?",
+    answer:
+      "**No.** Customers use their own phones. You print the QR codes; staff manage orders from unknown device with a browser.",
   },
   {
-
+    id: "free-trial",
+    question: "Can I try Servio for free?",
+    answer:
+      "Yes — **14-day free trial** with full access. No credit card required. Cancel anytime.",
   },
   {
-
+    id: "how-it-works",
+    question: "How do customers place orders?",
     answer:
       "They scan the QR, browse your digital menu, and pay from their phone — no app needed. Orders appear instantly in your dashboard.",
   },
   {
-
+    id: "availability",
+    question: "Is Servio available outside the UK?",
+    answer:
+      "We're UK-first today (GBP + Stripe). **Expanding soon.** Join the waitlist and we'll notify you when Servio launches in your region.",
   },
 ];
 
@@ -91,7 +103,7 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
       }
 
       return newSet;
-
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, id: string) => {
@@ -162,7 +174,11 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
                 }`}
                 style={{
                   // Respect prefers-reduced-motion
-
+                  transitionDuration:
+                    typeof window !== "undefined" &&
+                    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                      ? "0ms"
+                      : "200ms",
                 }}
               >
                 <div className="px-5 pt-3 pb-4 text-gray-900 leading-relaxed">
@@ -222,7 +238,12 @@ export function FAQ({ className = "", onToggle, onCTAClick }: FAQProps) {
 export const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
-
+  mainEntity: faqItems.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer
         .replace(/\*\*/g, "") // Remove markdown bold markers
         .trim(),
     },

@@ -23,8 +23,9 @@ export function useAccountDeletion(user: User) {
       // Use the API route for account deletion
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.post("/api/delete-account", {
-
+        userId: user.id,
         venueId: null, // Delete all venues for the user
+      });
 
       const data = await response.json();
 
@@ -39,9 +40,11 @@ export function useAccountDeletion(user: User) {
       // Sign out and clear storage
       try {
         await fetch("/api/auth/signout", {
-
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-
+        });
       } catch (_error) {
         // Error silently handled
       }
@@ -54,6 +57,9 @@ export function useAccountDeletion(user: User) {
       }
 
       toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted.",
+      });
 
       // Redirect to home page
       router.push("/");
@@ -61,7 +67,10 @@ export function useAccountDeletion(user: User) {
       const errorMessage = _err instanceof Error ? _err.message : "Failed to delete account";
       setError(errorMessage);
       toast({
-
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

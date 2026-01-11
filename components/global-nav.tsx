@@ -108,7 +108,7 @@ export default function GlobalNav() {
                         href={
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
-
+                            : "/"
                         }
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
@@ -156,7 +156,10 @@ export default function GlobalNav() {
                         const href =
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}`
+                            : "/";
 
+                        // Track navigation attempt
+                        const startTime = Date.now();
                         const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
                         // Log navigation start
@@ -176,7 +179,7 @@ export default function GlobalNav() {
                         href={
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
-
+                            : "/"
                         }
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
@@ -224,7 +227,10 @@ export default function GlobalNav() {
                         const href =
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}`
+                            : "/";
 
+                        // Track navigation attempt
+                        const startTime = Date.now();
                         const navigationId = `nav-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
                         // Monitor if navigation actually happens
@@ -308,7 +314,7 @@ export default function GlobalNav() {
                               ) {
                                 (
                                   window as {
-
+                                    Sentry: {
                                       captureMessage: (msg: string, level?: string) => void;
                                     };
                                   }
@@ -330,7 +336,7 @@ export default function GlobalNav() {
                         href={
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
-
+                            : "/"
                         }
                         className="flex items-center px-4 py-3 text-base font-medium text-foreground dark:text-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-200"
                       >
@@ -428,7 +434,7 @@ export default function GlobalNav() {
                         href={
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
-
+                            : "/"
                         }
                         className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
@@ -494,7 +500,7 @@ export default function GlobalNav() {
                         href={
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
-
+                            : "/"
                         }
                         className="flex items-center px-4 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}
@@ -622,7 +628,7 @@ export default function GlobalNav() {
                         href={
                           venueId || primaryVenueId
                             ? `/dashboard/${venueId || primaryVenueId}/settings`
-
+                            : "/"
                         }
                         className="flex items-center px-4 py-3 text-base font-medium !text-gray-900 dark:!text-gray-100 hover:!text-servio-purple hover:bg-servio-purple/5 rounded-xl transition-all duration-200 min-h-[48px]"
                         onClick={() => setMobileMenuOpen(false)}

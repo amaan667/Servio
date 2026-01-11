@@ -3,36 +3,68 @@ import { AIPreviewDiff, AIExecutionResult, AIAssistantError } from "@/types/ai-a
 import { NavigationGoToPageParams } from "@/types/ai-assistant";
 
 export async function executeDiscountsCreate(
-
+  _params: unknown,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  const typedParams = _params as {
+    name: string;
+    scope: string;
+    amountPct: number;
+    startsAt: string;
+    endsAt?: string;
+    scopeId?: string;
   };
   const supabase = await createClient();
 
   if (preview) {
     return {
-
+      toolName: "discounts.create",
+      before: [],
+      after: [
+        {
+          name: typedParams.name,
+          scope: typedParams.scope,
           discount: `${typedParams.amountPct}%`,
-
+          startsAt: typedParams.startsAt,
+          endsAt: typedParams.endsAt || "No end date",
         },
       ],
-
+      impact: {
+        itemsAffected: 1,
         description: `Discount "${typedParams.name}" (${typedParams.amountPct}% off) will be created`,
       },
     };
   }
 
   const { error } = await supabase.from("discounts").insert({
+    venue_id: venueId,
+    name: typedParams.name,
+    scope: typedParams.scope,
+    scope_id: typedParams.scopeId,
+    amount_pct: typedParams.amountPct,
+    starts_at: typedParams.startsAt,
+    ends_at: typedParams.endsAt,
+    created_by: userId,
+  });
 
   if (error) throw new AIAssistantError("Failed to create discount", "EXECUTION_FAILED", { error });
 
   return {
-
+    success: true,
+    toolName: "discounts.create",
     result: { discountName: typedParams.name },
-
+    auditId: "",
   };
 }
 
 export async function executeKDSGetOverdue(
-
+  _params: unknown,
+  venueId: string,
+  _userId: string,
+  _preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
   const typedParams = _params as { station?: string; thresholdMinutes: number };
   const supabase = await createClient();
 
@@ -57,24 +89,39 @@ export async function executeKDSGetOverdue(
     }) || [];
 
   return {
-
+    success: true,
+    toolName: "kds.get_overdue",
     result: { overdueCount: overdueTickets.length, tickets: overdueTickets },
-
+    auditId: "",
   };
 }
 
 export async function executeKDSSuggestOptimization(
-
+  _params: unknown,
+  _venueId: string,
+  _userId: string,
+  _preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  return {
+    success: true,
+    toolName: "kds.suggest_optimization",
+    result: {
+      suggestions: [
+        "Consider adding a prep station for high-volume items",
         "Grill station shows 15min avg wait - add more capacity during peak",
         "Route cold items to dedicated station to reduce congestion",
       ],
     },
-
+    auditId: "",
   };
 }
 
 export async function executeNavigationGoToPage(
-
+  params: NavigationGoToPageParams,
+  venueId: string,
+  _userId: string,
+  _preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
   const { page, itemId, itemName, action, table, counter, bulkPrefix, bulkCount, bulkType } = params;
 
   const routeMap: Record<string, string> = {
@@ -144,7 +191,12 @@ export async function executeNavigationGoToPage(
       : `Will navigate to the ${page} page`;
 
     return {
-
+      toolName: "navigation.go_to_page",
+      before: [],
+      after: [],
+      impact: {
+        itemsAffected: 1,
+        estimatedRevenue: 0,
         description,
       },
     };
@@ -155,12 +207,17 @@ export async function executeNavigationGoToPage(
     : `Navigating to ${page} page`;
 
   return {
-
+    success: true,
+    toolName: "navigation.go_to_page",
+    result: {
+      action: "navigate",
+      route: targetRoute,
+      page: page,
       itemId,
       itemName,
-
+      actionType: action,
       message,
     },
-
+    auditId: "",
   };
 }

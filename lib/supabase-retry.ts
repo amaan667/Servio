@@ -12,7 +12,8 @@ interface RetryOptions {
 
 export async function retrySupabaseQuery<T>(
   queryFn: () => Promise<{ data: T | null; error: unknown }>,
-
+  options: RetryOptions = {
+    /* Empty */
   }
 ): Promise<{ data: T | null; error: unknown }> {
   const { maxRetries = 5, delayMs = 500, backoffMultiplier = 1.5, logContext = "Query" } = options;
@@ -22,17 +23,13 @@ export async function retrySupabaseQuery<T>(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      if (attempt > 0) {
-        
-      }
+      if (attempt > 0) { /* Condition handled */ }
 
       const result = await queryFn();
 
       // If successful or has data, return immediately
       if (!result.error || result.data) {
-        if (attempt > 0) {
-          
-        }
+        if (attempt > 0) { /* Condition handled */ }
         return result;
       }
 
@@ -41,18 +38,29 @@ export async function retrySupabaseQuery<T>(
       const errorCode =
         result.error && typeof result.error === "object" && "code" in result.error
           ? (result.error as { code: string }).code
+          : undefined;
+      const isRetryable =
+        errorMessage.includes("503") ||
+        errorMessage.includes("Service Unavailable") ||
+        errorMessage.includes("network") ||
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("ECONNRESET") ||
+        errorMessage.includes("ETIMEDOUT") ||
+        errorMessage.includes("ECONNREFUSED") ||
+        errorCode === "503";
 
+      if (!isRetryable || attempt === maxRetries) {
+
+        return result;
       }
 
       lastError = result.error;
-      
 
       // Wait before retrying
       await new Promise((resolve) => setTimeout(resolve, currentDelay));
       currentDelay = Math.floor(currentDelay * backoffMultiplier);
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : String(_error);
-      
 
       lastError = _error;
 

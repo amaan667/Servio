@@ -11,6 +11,15 @@ function sendToAnalytics(metric: Metric) {
   if (typeof window === "undefined") return;
 
   const body = JSON.stringify({
+    name: metric.name,
+    value: metric.value,
+    rating: metric.rating,
+    delta: metric.delta,
+    id: metric.id,
+    navigationType: metric.navigationType,
+    url: window.location.href,
+    timestamp: Date.now(),
+  });
 
   // Use `navigator.sendBeacon()` if available, falling back to `fetch()`
   if (navigator.sendBeacon) {
@@ -18,11 +27,12 @@ function sendToAnalytics(metric: Metric) {
   } else {
     fetch(vitalsUrl, {
       body,
-
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-
-    }).catch((error) => {
-
+      keepalive: true,
+    }).catch((_error) => {
+      // Vitals sending error handled silently
+    });
   }
 }
 

@@ -8,7 +8,8 @@
 import { useState, useCallback } from "react";
 
 export interface CsvDownloadOptions {
-
+  filename: string;
+  csv: string;
 }
 
 /**
@@ -28,7 +29,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
   try {
     // Validate inputs
     if (!filename || !csv) {
-      
+
       return;
     }
 
@@ -37,6 +38,8 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
 
     // Create blob with CSV content and UTF-8 encoding
     const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
 
     // Create temporary URL for the blob
     const url = URL.createObjectURL(blob);
@@ -55,7 +58,6 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
     // Clean up the URL object
     URL.revokeObjectURL(url);
   } catch (_error) {
-    
 
     // Fallback: try to open in new window (may not work in all browsers)
     try {
@@ -64,9 +66,7 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
       window.open(url, "_blank");
       // Note: We don't revoke this URL immediately as the new window might need it
       // It will be garbage collected when the window closes
-    } catch (fallbackError) {
-      
-    }
+    } catch (fallbackError) { /* Error handled silently */ }
   }
 }
 
@@ -106,7 +106,7 @@ export function useCsvDownload() {
   }, []);
 
   return {
-
+    downloadCSV: download,
     isDownloading,
   };
 }

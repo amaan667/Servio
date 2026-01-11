@@ -2,7 +2,10 @@ import { TableCardNew } from "@/components/table-management/TableCardNew";
 import { TableGridItem } from "@/hooks/useTableReservations";
 
 interface TableGridSectionProps {
-
+  tables: TableGridItem[];
+  searchQuery: string;
+  venueId: string;
+  onTableActionComplete: () => void;
 }
 
 export function TableGridSection({
@@ -20,6 +23,7 @@ export function TableGridSection({
       table.session_status?.toLowerCase().includes(query) ||
       table.reservation_status?.toLowerCase().includes(query)
     );
+  });
 
   return (
     <section className="mt-6">

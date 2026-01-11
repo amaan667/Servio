@@ -14,7 +14,7 @@ export class MenuRepo {
    * Get menu items by venue
    */
   static async listByVenue(
-
+    venueId: string,
     options?: {
       category?: string;
       available?: boolean;

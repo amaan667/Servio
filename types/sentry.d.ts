@@ -3,7 +3,8 @@
 declare global {
   interface Window {
     Sentry?: {
-
+      captureException: (
+        error: Error,
         options?: {
           contexts?: Record<string, unknown>;
           tags?: Record<string, string>;

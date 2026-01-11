@@ -4,7 +4,9 @@
  */
 
 interface PerformanceMetric {
-
+  name: string;
+  value: number;
+  timestamp: number;
   tags?: Record<string, string>;
 }
 
@@ -18,8 +20,10 @@ class PerformanceMonitor {
   recordTiming(name: string, duration: number, tags?: Record<string, string>): void {
     this.metrics.push({
       name,
-
+      value: duration,
+      timestamp: Date.now(),
       tags,
+    });
 
     // Keep only recent metrics
     if (this.metrics.length > this.maxMetrics) {
@@ -27,9 +31,7 @@ class PerformanceMonitor {
     }
 
     // Log slow operations
-    if (duration > 1000) {
-      
-    }
+    if (duration > 1000) { /* Condition handled */ }
   }
 
   /**
@@ -54,7 +56,9 @@ class PerformanceMonitor {
     const p99Index = Math.floor(values.length * 0.99);
 
     return {
-
+      p50: values[p50Index] || 0,
+      p95: values[p95Index] || 0,
+      p99: values[p99Index] || 0,
     };
   }
 
@@ -75,7 +79,9 @@ class PerformanceMonitor {
       const percentiles = this.getPercentiles(name);
 
       summary[name] = {
-
+        count: metrics.length,
+        avg: Math.round(avg),
+        p95: percentiles?.p95 || 0,
       };
     }
 
@@ -147,7 +153,7 @@ export function measurePerformance(operationName: string) {
  * Memoize function results (in-memory caching)
  */
 export function memoize<T extends (...args: unknown[]) => unknown>(
-
+  fn: T,
   ttl = 5 * 60 * 1000 // 5 minutes default
 ): T {
   const cache = new Map<string, { value: unknown; expires: number }>();
@@ -162,6 +168,9 @@ export function memoize<T extends (...args: unknown[]) => unknown>(
 
     const result = fn(...args);
     cache.set(key, {
+      value: result,
+      expires: Date.now() + ttl,
+    });
 
     return result;
   }) as T;
@@ -204,9 +213,7 @@ export async function reportPerformanceMetrics(): Promise<void> {
 
   // Check for performance degradation
   for (const [operation, stats] of Object.entries(summary)) {
-    if (stats.p95 > 2000) {
-      
-    }
+    if (stats.p95 > 2000) { /* Condition handled */ }
   }
 }
 

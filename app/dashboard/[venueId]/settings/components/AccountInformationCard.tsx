@@ -5,7 +5,7 @@ import { User, Mail } from "lucide-react";
 import { User as UserType } from "../hooks/useVenueSettings";
 
 interface AccountInformationCardProps {
-
+  user: UserType;
 }
 
 export function AccountInformationCard({ user }: AccountInformationCardProps) {

@@ -16,7 +16,11 @@ import {
 } from "@/lib/tier-restrictions";
 
 export interface AccessCheckResult {
-
+  allowed: boolean;
+  reason?: string;
+  currentTier?: string;
+  requiredTier?: string;
+  userRole?: UserRole;
 }
 
 /**
@@ -26,14 +30,16 @@ export interface AccessCheckResult {
  * IMPORTANT: Staff accounts should not change subscription tier. Only `userRole` affects access.
  */
 export function checkAccessByTier(
-
+  userRole: UserRole,
+  tier: string,
+  feature: string,
   tierFeature?: keyof TierLimits["features"]
 ): AccessCheckResult {
   // First check role permissions
   const hasRoleAccess = checkRoleAccess(userRole, feature);
   if (!hasRoleAccess) {
     return {
-
+      allowed: false,
       reason: `Your role (${userRole}) does not have permission to access this feature`,
       userRole,
     };
@@ -51,19 +57,23 @@ export function checkAccessByTier(
 
     if (!allowed) {
       return {
-
+        allowed: false,
+        reason: "This feature requires a higher tier",
+        currentTier: limits,
+        requiredTier: "enterprise",
         userRole,
       };
     }
     return {
-
+      allowed: true,
+      currentTier: limits,
       userRole,
     };
   }
 
   // Role check passed, no tier restriction
   return {
-
+    allowed: true,
     userRole,
   };
 }
@@ -72,14 +82,16 @@ export function checkAccessByTier(
  * Check if user has access to a feature considering both role and tier
  */
 export async function checkAccess(
-
+  userId: string,
+  userRole: UserRole,
+  feature: string,
   tierFeature?: keyof TierLimits["features"]
 ): Promise<AccessCheckResult> {
   // First check role permissions
   const hasRoleAccess = checkRoleAccess(userRole, feature);
   if (!hasRoleAccess) {
     return {
-
+      allowed: false,
       reason: `Your role (${userRole}) does not have permission to access this feature`,
       userRole,
     };
@@ -90,21 +102,23 @@ export async function checkAccess(
     const tierCheck = await checkFeatureAccess(userId, tierFeature);
     if (!tierCheck.allowed) {
       return {
-
+        allowed: false,
         reason: `This feature requires ${tierCheck.requiredTier} tier. Your current tier is ${tierCheck.currentTier}`,
-
+        currentTier: tierCheck.currentTier,
+        requiredTier: tierCheck.requiredTier,
         userRole,
       };
     }
     return {
-
+      allowed: true,
+      currentTier: tierCheck.currentTier,
       userRole,
     };
   }
 
   // Role check passed, no tier restriction
   return {
-
+    allowed: true,
     userRole,
   };
 }
@@ -113,7 +127,8 @@ export async function checkAccess(
  * Check analytics access with tier differentiation
  */
 export async function checkAnalyticsAccess(
-
+  userId: string,
+  userRole: UserRole,
   requireAdvanced = false,
   requireExports = false
 ): Promise<AccessCheckResult> {
@@ -121,7 +136,7 @@ export async function checkAnalyticsAccess(
   const hasRoleAccess = checkRoleAccess(userRole, "analytics");
   if (!hasRoleAccess) {
     return {
-
+      allowed: false,
       reason: `Your role (${userRole}) does not have permission to view analytics`,
       userRole,
     };
@@ -137,7 +152,10 @@ export async function checkAnalyticsAccess(
     const hasExports = await hasAnalyticsExports(userId);
     if (!hasExports) {
       return {
-
+        allowed: false,
+        reason: "Analytics exports require Pro tier or higher",
+        currentTier: tier,
+        requiredTier: "pro",
         userRole,
       };
     }
@@ -148,14 +166,18 @@ export async function checkAnalyticsAccess(
     const hasAdvanced = await hasAdvancedAnalytics(userId);
     if (!hasAdvanced) {
       return {
-
+        allowed: false,
+        reason: "Advanced analytics features require Pro tier or higher",
+        currentTier: tier,
+        requiredTier: "pro",
         userRole,
       };
     }
   }
 
   return {
-
+    allowed: true,
+    currentTier: tier,
     userRole,
   };
 }
@@ -167,7 +189,8 @@ export async function checkAnalyticsAccess(
  * IMPORTANT: Staff accounts should not change subscription tier. Only `userRole` affects access.
  */
 export function checkAnalyticsAccessByTier(
-
+  userRole: UserRole,
+  tier: string,
   requireAdvanced = false,
   requireExports = false
 ): AccessCheckResult {
@@ -175,7 +198,7 @@ export function checkAnalyticsAccessByTier(
   const hasRoleAccess = checkRoleAccess(userRole, "analytics");
   if (!hasRoleAccess) {
     return {
-
+      allowed: false,
       reason: `Your role (${userRole}) does not have permission to view analytics`,
       userRole,
     };
@@ -190,7 +213,10 @@ export function checkAnalyticsAccessByTier(
     // Pro and Enterprise both have exports (Pro = CSV, Enterprise = CSV + financial)
     if (limits.features.analytics !== "advanced+exports") {
       return {
-
+        allowed: false,
+        reason: "Analytics exports require Pro tier or higher",
+        currentTier: tierKey,
+        requiredTier: "pro",
         userRole,
       };
     }
@@ -199,14 +225,18 @@ export function checkAnalyticsAccessByTier(
   if (requireAdvanced) {
     if (limits.features.analytics === "basic") {
       return {
-
+        allowed: false,
+        reason: "Advanced analytics features require Pro tier or higher",
+        currentTier: tierKey,
+        requiredTier: "pro",
         userRole,
       };
     }
   }
 
   return {
-
+    allowed: true,
+    currentTier: tierKey,
     userRole,
   };
 }
@@ -215,7 +245,9 @@ export function checkAnalyticsAccessByTier(
  * Require access - throws error if access denied
  */
 export async function requireAccess(
-
+  userId: string,
+  userRole: UserRole,
+  feature: string,
   tierFeature?: keyof TierLimits["features"]
 ): Promise<void> {
   const check = await checkAccess(userId, userRole, feature, tierFeature);

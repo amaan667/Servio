@@ -38,7 +38,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                   name.includes(process.env.NEXT_PUBLIC_SW_CACHE_VERSION || "v-current")
               )
               .forEach((name) => caches.delete(name));
-
+          });
         }
 
         const url = new URL(window.location.href);

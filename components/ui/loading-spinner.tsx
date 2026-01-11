@@ -23,11 +23,17 @@ interface LoadingSpinnerProps {
 }
 
 const sizeMap: Record<LoadingSpinnerSize, string> = {
-
+  sm: "h-4 w-4",
+  md: "h-6 w-6",
+  lg: "h-8 w-8",
+  xl: "h-12 w-12",
 };
 
 const colorMap: Record<LoadingSpinnerColor, string> = {
-
+  purple: "text-purple-600",
+  gray: "text-gray-600",
+  white: "text-white",
+  green: "text-green-600",
 };
 
 /**

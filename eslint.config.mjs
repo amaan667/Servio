@@ -7,12 +7,14 @@ import unusedImports from "eslint-plugin-unused-imports";
 
 export default [
   {
-
+    linterOptions: {
+      reportUnusedDisableDirectives: "error",
     },
   },
   // Ignore build artifacts and dependencies
   {
-
+    ignores: [
+      ".next/**",
       "node_modules/**",
       "out/**",
       "build/**",
@@ -30,17 +32,21 @@ export default [
   ...tseslint.configs.recommended,
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-
+    languageOptions: {
       globals: {...globals.browser, ...globals.node},
     },
-
+    settings: {
+      react: {
+        version: "detect",
       },
     },
-
+    plugins: {
+      react,
       "react-hooks": reactHooks,
       "unused-imports": unusedImports,
     },
-
+    rules: {
+      ...react.configs.recommended.rules,
       // React
       "react/react-in-jsx-scope": "off",
       "react/no-unescaped-entities": "off", // Too strict for production content
@@ -87,17 +93,20 @@ export default [
   },
   // Temporarily allow console warnings in client/UI code while server code is strict
   {
-
+    files: [
       "app/**/*.{js,ts,jsx,tsx}",
       "components/**/*.{js,ts,jsx,tsx}",
       "hooks/**/*.{js,ts,jsx,tsx}",
     ],
-
+    ignores: ["app/api/**/*"],
+    rules: {
+      // Don’t emit warnings in lint output; client console is stripped in prod builds.
+      "no-console": "off",
     },
   },
   // Allow console usage in operational tooling and diagnostic endpoints
   {
-
+    files: [
       "scripts/**/*.{js,ts}",
       "__tests__/**/*.{js,ts,tsx}",
       "app/api/log-*/**/*",
@@ -109,7 +118,8 @@ export default [
       "lib/error-suppression.ts",
       "lib/logger/production-logger.ts",
     ],
-
+    rules: {
+      "no-console": "off",
       "@typescript-eslint/no-require-imports": "off",
     },
   },

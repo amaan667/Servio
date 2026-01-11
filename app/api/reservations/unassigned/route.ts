@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -33,14 +34,12 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("start_at", { ascending: true });
 
     if (fetchError) {
-      
+
       return apiErrors.database(
         "Failed to fetch unassigned reservations",
         isDevelopment() ? fetchError.message : undefined
       );
     }
-
-    
 
     // STEP 4: Return success response
     return success({ reservations: reservations || [] });
@@ -52,3 +51,4 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

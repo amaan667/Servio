@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -24,8 +25,6 @@ export async function POST(_request: NextRequest, context: OrderParams = {}) {
     const body = await _request.json();
     const { payment_method, venue_id } = body;
 
-    
-
     // Validate payment method
     if (!payment_method || !["till", "card", "cash"].includes(payment_method)) {
       return NextResponse.json(
@@ -45,18 +44,18 @@ export async function POST(_request: NextRequest, context: OrderParams = {}) {
       .single();
 
     if (fetchError || !order) {
-      
+
       return apiErrors.notFound("Order not found");
     }
 
     // Validate order state
     if (order.payment_status === "PAID") {
-      
+
       return apiErrors.badRequest("Order has already been paid");
     }
 
     if (order.payment_mode !== "pay_at_till") {
-      
+
       return NextResponse.json(
         { error: "This endpoint is only for 'pay_at_till' orders" },
         { status: 400 }
@@ -67,23 +66,26 @@ export async function POST(_request: NextRequest, context: OrderParams = {}) {
     const { data: updatedOrder, error: updateError } = await admin
       .from("orders")
       .update({
-
+        payment_status: "PAID",
+        payment_method: payment_method,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", orderId)
       .eq("venue_id", venue_id)
       .select("*")
       .single();
 
     if (updateError) {
-      
+
       return apiErrors.internal("Failed to mark payment as collected");
     }
 
-    
-
     return NextResponse.json({
-
+      ok: true,
+      order: updatedOrder,
+      message: "Payment collected successfully",
+    });
   } catch (_error) {
-     },
 
     return apiErrors.internal("Internal server error");
   }

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { validateBody, submitFeedbackSchema } from "@/lib/api/validation-schemas";
@@ -54,7 +55,7 @@ export const POST = withUnifiedAuth(
           .single();
 
         if (orderError || !order) {
-          
+
           return apiErrors.notFound("Order not found or access denied");
         }
       }
@@ -63,7 +64,13 @@ export const POST = withUnifiedAuth(
       const supabase = await createClient();
 
       const responsesToInsert = body.answers.map((answer) => ({
-
+        venue_id: venueId,
+        question_id: answer.question_id,
+        order_id: body.order_id || null,
+        answer_type: answer.answer_type,
+        answer_stars: answer.answer_stars || null,
+        answer_choice: answer.answer_choice || null,
+        answer_text: answer.answer_text || null,
       }));
 
       const { data: insertedResponses, error: insertError } = await supabase
@@ -72,15 +79,15 @@ export const POST = withUnifiedAuth(
         .select();
 
       if (insertError || !insertedResponses) {
-        
+
         return apiErrors.database("Failed to save feedback responses", insertError);
       }
 
       // STEP 6: Return success response
-      
 
       return success({
-
+        responses: insertedResponses,
+      });
     } catch (error) {
 
       // Handle validation errors
@@ -94,7 +101,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body for withUnifiedAuth
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

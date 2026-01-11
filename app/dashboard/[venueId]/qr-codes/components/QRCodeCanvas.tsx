@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 
 interface QRCodeCanvasProps {
-
+  url: string;
+  size: number;
 }
 
 export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
@@ -14,9 +15,10 @@ export function QRCodeCanvas({ url, size }: QRCodeCanvasProps) {
       try {
         const QRCode = await import("qrcode");
         const dataUrl = await QRCode.toDataURL(url, {
-
+          width: size,
+          margin: 2,
           color: { dark: "#000000", light: "#ffffff" },
-
+        });
         setQrDataUrl(dataUrl);
       } catch (_error) {
         // Error handled silently

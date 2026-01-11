@@ -15,7 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Building2, User } from "lucide-react";
 
 interface StatusBannerProps {
-
+  isOnline: boolean;
+  isOffline: boolean;
+  trialDaysLeft?: number;
+  venueName?: string;
+  userRole?: string;
+  onVenueChange?: (venueId: string) => void;
+  onRoleChange?: () => void;
 }
 
 export function StatusBanner({
@@ -24,7 +30,7 @@ export function StatusBanner({
   trialDaysLeft,
   venueName,
   userRole,
-
+  onVenueChange: _onVenueChange,
   onRoleChange,
 }: StatusBannerProps) {
   const getStatusColor = () => {

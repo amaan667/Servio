@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase";
@@ -10,8 +11,10 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const updateResetTimeSchema = z.object({
-
+  venueId: z.string().uuid("Invalid venue ID").optional(),
+  venue_id: z.string().uuid("Invalid venue ID").optional(),
   resetTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -37,22 +40,24 @@ export const POST = withUnifiedAuth(
       const { error: updateError } = await supabase
         .from("venues")
         .update({
-
+          daily_reset_time: body.resetTime,
+          updated_at: new Date().toISOString(),
+        })
         .eq("venue_id", venueId);
 
       if (updateError) {
-        
+
         return apiErrors.database(
           "Failed to update reset time",
           isDevelopment() ? updateError.message : undefined
         );
       }
 
-      
-
       // STEP 4: Return success response
       return success({
-
+        message: "Reset time updated successfully",
+        resetTime: body.resetTime,
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -64,7 +69,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||

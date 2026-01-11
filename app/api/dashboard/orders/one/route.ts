@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { NextRequest } from "next/server";
 
@@ -61,7 +62,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     const { data, error } = await q;
     if (error) {
-      
+
       return apiErrors.database(error.message);
     }
 
@@ -100,11 +101,12 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     // }
 
     return success({
-
+      orders: transformedOrders || [],
       meta: { scope, zone: "Europe/London", count: transformedOrders?.length ?? 0 },
-
+    });
   } catch (_e) {
     const errorMessage = _e instanceof Error ? _e.message : "Unknown error";
-    
+
     return apiErrors.internal(errorMessage);
   }
+});

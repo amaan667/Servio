@@ -1,4 +1,3 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/supabase";
@@ -11,7 +10,7 @@ export async function getAuthUser() {
   const { user, error } = await getAuthenticatedUser();
 
   if (error) {
-    );
+
     return null;
   }
 
@@ -47,19 +46,18 @@ export async function getAuthUserForAPI() {
     const { user, error } = await getAuthenticatedUser();
 
     if (error) {
-      
+
       return { user: null, error };
     }
 
     if (!user) {
-      
+
       return { user: null, error: "No session" };
     }
 
-    
     return { user, error: null };
   } catch (err) {
-    );
+
     return { user: null, error: "Authentication failed" };
   }
 }

@@ -17,23 +17,21 @@ import {
 
 interface TodayAtAGlanceProps {
   ordersByHour: Array<{ hour: string; orders: number }>;
-
+  tableUtilization: number;
   revenueByCategory: Array<{ name: string; value: number; color: string }>;
   loading?: boolean;
 }
 
 export function TodayAtAGlance({
   ordersByHour,
-
+  tableUtilization: _tableUtilization,
   revenueByCategory,
-  loading = false,
+  loading: _loading = false,
 }: TodayAtAGlanceProps) {
   const COLORS = ["#5B21B6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
 
   // Lightweight debug hook for development / diagnostics
-  if (process.env.NODE_ENV !== "production") {
-    
-  }
+  if (process.env.NODE_ENV !== "production") { /* Condition handled */ }
 
   // Never show loading state - render immediately with data
   const isLoading = false;

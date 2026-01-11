@@ -5,13 +5,16 @@ import { useEffect, useState } from "react";
 export default function EnvCheckPage() {
   const [clientVars, setClientVars] = useState<Record<string, string>>({
     /* Empty */
+  });
 
   useEffect(() => {
     // Check environment variables available to the browser
     setClientVars({
-
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "❌ MISSING",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...`
-
+        : "❌ MISSING",
+    });
   }, []);
 
   return (

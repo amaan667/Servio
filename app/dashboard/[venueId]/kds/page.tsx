@@ -51,9 +51,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
         .eq("venue_id", venueId)
         .order("created_at", { ascending: false });
 
-      if (ordersError) {
-        // Error querying orders for backfill
-      } else if (allOrders && allOrders.length > 0) {
+      if (ordersError) { /* Condition handled */ } else if (allOrders && allOrders.length > 0) {
 
         // Step 2: Get all existing ticket order IDs for this venue
         const { data: existingTicketOrders } = await supabase
@@ -69,26 +67,38 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
         const ordersWithoutTickets = allOrders.filter((order) => !existingOrderIds.has(order.id));
 
         if (ordersWithoutTickets.length > 0) {
+
           // Create tickets for each order
           let successCount = 0;
           let failCount = 0;
 
           for (const order of ordersWithoutTickets) {
             if (!order || !Array.isArray(order.items) || order.items.length === 0) {
+
               continue;
             }
 
             try {
               await createKDSTicketsWithAI(supabase, {
-
+                id: order.id,
+                venue_id: order.venue_id,
+                items: order.items,
+                customer_name: order.customer_name,
+                table_number: order.table_number,
+                table_id: order.table_id,
+              });
               successCount++;
+
             } catch (error) {
               failCount++;
+
             }
           }
-        }
-      }
+
+        } else { /* Else case handled */ }
+      } else { /* Else case handled */ }
     } catch (backfillError) {
+
       // Continue - backfill is non-critical, client-side will handle it
     }
 
@@ -117,11 +127,10 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       .neq("status", "bumped")
       .order("created_at", { ascending: true });
 
-    if (ticketsError) {
-      // Error fetching tickets
-    } else if (tickets) {
+    if (ticketsError) { /* Condition handled */ } else if (tickets) {
       initialTickets = tickets;
-    }
+
+    } else { /* Else case handled */ }
   } catch {
     // Continue without initial data - client will load it
   }

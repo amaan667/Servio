@@ -64,15 +64,19 @@ export default function ResetPasswordPage() {
         if (code) {
           try {
             const response = await fetch("/api/auth/verify-reset-code", {
-
+              method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ code }),
+            });
 
             const data = await response.json();
 
             if (response.ok && data.session) {
               // Set the session using the tokens from server
               const { error: sessionError } = await supabase.auth.setSession({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+              });
 
               if (!sessionError) {
                 setHasValidSession(true);
@@ -98,7 +102,7 @@ export default function ResetPasswordPage() {
             window.history.replaceState(null, "", window.location.pathname);
             subscription?.unsubscribe();
           }
-
+        });
         subscription = authData.subscription;
 
         // Give Supabase time to process the URL automatically (detectSessionInUrl: true)
@@ -190,6 +194,8 @@ export default function ResetPasswordPage() {
     try {
       const supabase = supabaseBrowser();
       const { error: updateError } = await supabase.auth.updateUser({
+        password: password.trim(),
+      });
 
       if (updateError) {
         setError(updateError.message || "Failed to reset password. Please try again.");

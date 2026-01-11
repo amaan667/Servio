@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -35,14 +36,17 @@ export const POST = withUnifiedAuth(
         title: title || `${type} submission`,
         description,
         email,
+        user_agent: userAgent,
+        created_at: timestamp || new Date().toISOString(),
+        status: "pending",
+      });
 
       if (error) {
-        
+
         // Don't fail if database insert fails - log it
       }
 
       // Log to console for immediate visibility during pilot
-      
 
       // STEP 7: Return success response
       return success({});
@@ -50,8 +54,6 @@ export const POST = withUnifiedAuth(
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      
 
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
@@ -68,6 +70,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

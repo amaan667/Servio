@@ -66,7 +66,9 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       const mappedItems = demoMenuItems.map((item, idx) => ({
         ...item,
         id: `demo-${idx}`,
-
+        is_available: true,
+        price: typeof item.price === "number" ? item.price : Number(item.price) || 0,
+        image: item.image || undefined,
       }));
       setMenuItems(mappedItems);
       setVenueName("Demo Café");
@@ -130,7 +132,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       const normalized = (payload.menuItems || []).map((mi: MenuItem) => ({
         ...mi,
-
+        venue_name: payloadVenueName,
       }));
 
       setMenuItems(normalized);

@@ -1,13 +1,21 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import type { IngredientUnit } from "@/types/inventory";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
 interface CSVRow {
-
+  name: string;
+  sku?: string;
+  unit: IngredientUnit | string;
+  cost_per_unit: number | string;
+  on_hand: number | string;
+  par_level: number | string;
+  reorder_level: number | string;
+  supplier?: string;
 }
 
 export const runtime = "nodejs";
@@ -75,6 +83,7 @@ export const POST = withUnifiedAuth(
           } else if (header.includes("supplier")) {
             row.supplier = value;
           }
+        });
 
         if (
           row.name &&
@@ -85,7 +94,14 @@ export const POST = withUnifiedAuth(
           row.reorder_level
         ) {
           rows.push({
-
+            name: row.name,
+            unit: row.unit,
+            cost_per_unit: row.cost_per_unit,
+            on_hand: row.on_hand,
+            par_level: row.par_level,
+            reorder_level: row.reorder_level,
+            sku: row.sku,
+            supplier: row.supplier,
           } as CSVRow);
         }
       }
@@ -97,7 +113,7 @@ export const POST = withUnifiedAuth(
       // Get current user - use getUser() for secure authentication
       const {
         data: { user: currentUser },
-
+        error: authError,
       } = await supabase.auth.getUser();
 
       if (authError || !currentUser) {
@@ -116,7 +132,13 @@ export const POST = withUnifiedAuth(
             .upsert(
               {
                 venue_id,
-
+                name: row.name,
+                sku: row.sku,
+                unit: row.unit,
+                cost_per_unit: row.cost_per_unit,
+                par_level: row.par_level,
+                reorder_level: row.reorder_level,
+                supplier: row.supplier,
               },
               {
                 onConflict: "venue_id,name",
@@ -146,28 +168,34 @@ export const POST = withUnifiedAuth(
 
             if (delta !== 0) {
               await supabase.from("stock_ledgers").insert({
-
+                ingredient_id: ingredient.id,
                 venue_id,
                 delta,
-
+                reason: "receive",
+                ref_type: "manual",
+                note: "Imported from CSV",
+                created_by: currentUser?.id,
+              });
             }
           }
 
           imported.push(ingredient.name);
         } catch (err: unknown) {
           errors.push({
-
+            row: row.name,
+            error: err instanceof Error ? err.message : "Unknown error",
+          });
         }
       }
 
-      
-
       // STEP 4: Return success response
       return success({
-
+        success: true,
+        imported_count: imported.length,
+        error_count: errors.length,
         imported,
         errors,
-
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -179,7 +207,12 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from formData
-
+    extractVenueId: async (req) => {
+      try {
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
+        const formData = await clonedReq.formData();
+        return (formData.get("venue_id") as string) || null;
       } catch {
         return null;
       }

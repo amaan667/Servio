@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { clearAuthStorage } from "@/lib/supabase";
 
 interface ErrorBoundaryState {
-
+  hasError: boolean;
+  error?: Error;
+  errorInfo?: React.ErrorInfo;
 }
 
 interface ErrorBoundaryProps {
-
+  children: React.ReactNode;
 }
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {

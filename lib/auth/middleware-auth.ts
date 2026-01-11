@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 
 export async function getUserFromMiddleware(): Promise<{
   user: { id: string; email: string } | null;
-
+  error: string | null;
 }> {
   try {
     const headersList = await headers();
@@ -17,13 +17,16 @@ export async function getUserFromMiddleware(): Promise<{
     }
 
     return {
-
+      user: {
+        id: userId,
+        email: userEmail || "",
       },
-
+      error: null,
     };
   } catch (err) {
     return {
-
+      user: null,
+      error: err instanceof Error ? err.message : "Auth failed",
     };
   }
 }

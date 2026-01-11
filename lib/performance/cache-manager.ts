@@ -1,10 +1,17 @@
 // Advanced client-side cache manager with LRU eviction
 interface CacheEntry<T> {
-
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+  size: number;
+  hits: number;
 }
 
 interface CacheStats {
-
+  hits: number;
+  misses: number;
+  evictions: number;
+  size: number;
 }
 
 export class CacheManager<T = unknown> {
@@ -12,7 +19,10 @@ export class CacheManager<T = unknown> {
   private maxSize: number;
   private maxAge: number;
   private stats: CacheStats = {
-
+    hits: 0,
+    misses: 0,
+    evictions: 0,
+    size: 0,
   };
 
   constructor(maxSize = 100, maxAge = 5 * 60 * 1000) {
@@ -32,9 +42,11 @@ export class CacheManager<T = unknown> {
 
     this.cache.set(key, {
       data,
-
+      timestamp: now,
       expiresAt,
       size,
+      hits: 0,
+    });
 
     this.stats.size += size;
   }
@@ -72,7 +84,10 @@ export class CacheManager<T = unknown> {
   clear(): void {
     this.cache.clear();
     this.stats = {
-
+      hits: 0,
+      misses: 0,
+      evictions: 0,
+      size: 0,
     };
   }
 

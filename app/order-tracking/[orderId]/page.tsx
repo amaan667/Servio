@@ -9,44 +9,97 @@ import { Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 
 interface OrderItem {
-
+  menu_item_id: string;
+  quantity: number;
+  price: number;
+  item_name: string;
+  specialInstructions?: string;
 }
 
 interface Order {
-
+  id: string;
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  order_status: string;
+  payment_status: string;
+  total_amount: number;
+  notes?: string;
+  items: OrderItem[];
+  created_at: string;
+  updated_at: string;
+  source?: "qr" | "counter";
 }
 
 const ORDER_STATUSES = [
   {
-
+    key: "PLACED",
+    label: "Order Placed",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Order has been placed.",
   },
   {
-
+    key: "ACCEPTED",
+    label: "Order Accepted",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Your order has been accepted by the kitchen.",
   },
   {
-
+    key: "IN_PREP",
+    label: "In Preparation",
+    icon: RefreshCw,
+    color: "bg-orange-100 text-orange-800",
+    description: "Your order is being prepared in the kitchen.",
   },
   {
-
+    key: "READY",
+    label: "Ready for Pickup / Serving",
+    icon: CheckCircle,
+    color: "bg-blue-100 text-blue-800",
+    description: "Your order is ready for pickup / serving.",
   },
   {
-
+    key: "SERVING",
+    label: "Being Served",
+    icon: CheckCircle,
+    color: "bg-purple-100 text-purple-800",
+    description: "Your order has been served. Enjoy your meal!",
   },
   {
-
+    key: "COMPLETED",
+    label: "Completed",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Thank you for your order!",
   },
 ];
 
 // Statuses that should be greyed out (only show if triggered)
 const GREYED_OUT_STATUSES = [
   {
-
+    key: "CANCELLED",
+    label: "Order Cancelled",
+    icon: XCircle,
+    color: "bg-red-100 text-red-800",
+    description: "Your order has been cancelled",
   },
   {
-
+    key: "REFUNDED",
+    label: "Order Refunded",
+    icon: XCircle,
+    color: "bg-red-100 text-red-800",
+    description: "Your order has been refunded",
   },
   {
-
+    key: "EXPIRED",
+    label: "Order Expired",
+    icon: XCircle,
+    color: "bg-gray-100 text-gray-800",
+    description: "Your order has expired",
   },
 ];
 
@@ -99,11 +152,13 @@ export default function OrderTrackingPage() {
         .on(
           "postgres_changes",
           {
-
+            event: "*",
+            schema: "public",
+            table: "orders",
             filter: `id=eq.${orderId}`,
           },
           (payload: {
-
+            eventType: string;
             new?: Record<string, unknown>;
             old?: Record<string, unknown>;
           }) => {
@@ -114,6 +169,7 @@ export default function OrderTrackingPage() {
 
                 const updatedOrder = { ...prevOrder, ...payload.new };
                 return updatedOrder;
+              });
 
               setLastUpdate(new Date());
             } else if (payload.eventType === "DELETE") {
@@ -127,6 +183,7 @@ export default function OrderTrackingPage() {
           } else if (status === "CHANNEL_ERROR") {
             // Empty block
           }
+        });
 
       return () => {
         supabaseClient.removeChannel(channel);
@@ -136,6 +193,7 @@ export default function OrderTrackingPage() {
     let cleanup: (() => void) | undefined;
     setupChannel().then((fn) => {
       cleanup = fn;
+    });
 
     return () => {
       cleanup?.();
@@ -146,9 +204,11 @@ export default function OrderTrackingPage() {
     return (
       ORDER_STATUSES.find((s) => s.key === status) ||
       GREYED_OUT_STATUSES.find((s) => s.key === status) || {
-
+        key: status,
         label: status.replace("_", " "),
-
+        icon: Clock,
+        color: "bg-gray-100 text-gray-800",
+        description: "Order status update",
       }
     );
   };
@@ -175,13 +235,16 @@ export default function OrderTrackingPage() {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-GB", {
-
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString("en-GB", {
-
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   // Generate short order number
@@ -301,7 +364,9 @@ export default function OrderTrackingPage() {
                       className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                         isGreyedOut
                           ? "bg-red-500 text-white"
-
+                          : isCompleted
+                            ? "bg-servio-purple text-white"
+                            : "bg-gray-200 text-gray-700"
                       }`}
                     >
                       {isGreyedOut ? (
@@ -319,7 +384,9 @@ export default function OrderTrackingPage() {
                           className={`text-sm font-medium ${
                             isGreyedOut
                               ? "text-red-600"
-
+                              : isCurrent
+                                ? "text-servio-purple"
+                                : "text-gray-900"
                           }`}
                         >
                           {status.label}

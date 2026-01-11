@@ -42,8 +42,9 @@ async function main() {
   const header = `-- Migration: ${filename}\n-- Created: ${new Date().toISOString()}\n\n`;
   await writeFile(fullPath, header, { encoding: "utf8", flag: "wx" });
 
-  }
+}
 
 main().catch((err) => {
-  );
+
   process.exit(1);
+});

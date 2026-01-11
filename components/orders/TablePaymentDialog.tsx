@@ -16,13 +16,27 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 interface Order {
-
+  id: string;
+  customer_name?: string;
+  customer_phone?: string;
+  total_amount: number;
+  payment_mode?: string;
+  payment_status: string;
+  order_status: string;
+  items: Array<{
+    item_name: string;
+    quantity: number;
+    price: number;
   }>;
-
+  created_at: string;
 }
 
 interface TablePaymentDialogProps {
-
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tableNumber: number | string;
+  venueId: string;
+  onSuccess: () => void;
 }
 
 export function TablePaymentDialog({
@@ -122,10 +136,14 @@ export function TablePaymentDialog({
       }
 
       const response = await fetch("/api/orders/pay-multiple", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          order_ids: unpaidOrderIds,
+          payment_method: selectedMethod,
+          venue_id: venueId,
         }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -226,7 +244,8 @@ export function TablePaymentDialog({
                         <p className="text-xs text-gray-500 mt-1">
                           {order.items?.length || 0} item(s) •{" "}
                           {new Date(order.created_at).toLocaleTimeString("en-GB", {
-
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </p>
                       </div>
@@ -257,7 +276,7 @@ export function TablePaymentDialog({
                       "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
                       selectedMethod === "cash"
                         ? "border-purple-600 bg-purple-50"
-
+                        : "border-gray-200 hover:border-gray-300"
                     )}
                   >
                     <Banknote
@@ -282,7 +301,7 @@ export function TablePaymentDialog({
                       "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
                       selectedMethod === "card"
                         ? "border-purple-600 bg-purple-50"
-
+                        : "border-gray-200 hover:border-gray-300"
                     )}
                   >
                     <CreditCard

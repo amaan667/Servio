@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
@@ -10,8 +11,10 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const sendSmsSchema = z.object({
-
+  orderId: z.string().uuid(),
   phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+  venueId: z.string().uuid().optional(),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -73,13 +76,15 @@ export const POST = withUnifiedAuth(
       // SMS integration: Currently using Resend API for email-to-SMS gateways
       // For direct SMS, integrate with Twilio, AWS SNS, or similar service
       // For now, we'll log it and mark as sent
-      
 
       // Update order with receipt sent info
       await supabase
         .from("orders")
         .update({
-
+          receipt_sent_at: new Date().toISOString(),
+          receipt_channel: "sms",
+          receipt_phone: body.phone,
+        })
         .eq("id", body.orderId);
 
       // In a real implementation, you would send the SMS here using Twilio or similar
@@ -91,11 +96,11 @@ export const POST = withUnifiedAuth(
       //   from: env('TWILIO_PHONE_NUMBER')
       // });
 
-      
-
       // STEP 4: Return success response
       return success({
-
+        message: "Receipt SMS sent successfully",
+        note: "SMS sending is currently logged. Integrate with Twilio or similar service for production.",
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -107,7 +112,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||

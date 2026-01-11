@@ -1,7 +1,7 @@
 import AuthProvider from "@/app/auth/AuthProvider";
 
 interface LayoutWithAuthProps {
-
+  children: React.ReactNode;
 }
 
 export default function LayoutWithAuth({ children }: LayoutWithAuthProps) {

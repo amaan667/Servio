@@ -57,7 +57,9 @@ export function LoadingState({
 
   const containerClass = fullScreen
     ? "min-h-screen flex items-center justify-center"
+    : "flex items-center justify-center py-12";
 
+  return (
     <div className={cn(containerClass, className)} role="status" aria-live="polite">
       <div className="text-center">
         <LoadingSpinner size={size} className="mx-auto mb-4" />

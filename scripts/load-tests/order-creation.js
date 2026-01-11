@@ -22,13 +22,13 @@ const orderCreationTrend = new Trend("order_creation_duration");
 
 // Test configuration
 export const options = {
-
+  stages: [
     { duration: "1m", target: 10 }, // Ramp up to 10 users
     { duration: "2m", target: 50 }, // Ramp up to 50 users
     { duration: "5m", target: 50 }, // Stay at 50 users
     { duration: "1m", target: 0 }, // Ramp down
   ],
-
+  thresholds: {
     http_req_duration: ["p(95)<500", "p(99)<1000"], // 95% < 500ms, 99% < 1s
     http_req_failed: ["rate<0.01"], // Error rate < 1%
     order_creation_success: ["rate>0.95"], // 95% success rate
@@ -49,13 +49,17 @@ const menuItems = [
 export default function () {
   // Create order
   const orderPayload = JSON.stringify({
-
+    venueId: VENUE_ID,
+    items: menuItems,
     customerName: `Load Test Customer ${__VU}-${__ITER}`,
-
+    customerPhone: "+441234567890",
     customerEmail: `loadtest-${__VU}-${__ITER}@example.com`,
+    paymentMethod: "PAY_LATER",
+  });
 
   const params = {
-
+    headers: {
+      "Content-Type": "application/json",
       Cookie: `sb-access-token=${AUTH_TOKEN}`,
     },
     tags: { name: "CreateOrder" },
@@ -76,6 +80,7 @@ export default function () {
       }
     },
     "response time < 500ms": (r) => r.timings.duration < 500,
+  });
 
   orderCreationRate.add(success);
   orderCreationTrend.add(duration);

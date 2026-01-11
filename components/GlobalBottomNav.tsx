@@ -6,6 +6,7 @@ import { Home, Clock, ShoppingBag, QrCode, LayoutDashboard } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
+
 import { getCachedCounts, setCachedCounts } from "@/lib/cache/count-cache";
 
 interface GlobalBottomNavProps {
@@ -18,7 +19,9 @@ interface GlobalBottomNavProps {
 }
 
 interface NavItem {
-
+  id: string;
+  label: string;
+  href: string;
   icon: React.ComponentType<{ className?: string }>;
   isActive?: boolean;
 }
@@ -39,7 +42,7 @@ export default function GlobalBottomNav({
       }
     }
     return counts.live_orders || 0;
-
+  });
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = useIsMobile();
@@ -92,7 +95,7 @@ export default function GlobalBottomNav({
 
           lastScrollY = currentScrollY;
           ticking = false;
-
+        });
         ticking = true;
       }
     };
@@ -115,7 +118,9 @@ export default function GlobalBottomNav({
       .on(
         "postgres_changes",
         {
-
+          event: "*",
+          schema: "public",
+          table: "orders",
           filter: `venue_id=eq.${venueId}`,
         },
         async (payload) => {
@@ -129,7 +134,10 @@ export default function GlobalBottomNav({
             try {
               const { data, error } = await supabase
                 .rpc("dashboard_counts", {
-
+                  p_venue_id: venueId,
+                  p_tz: "Europe/London",
+                  p_live_window_mins: 30,
+                })
                 .single();
 
               if (!isSubscribed || !isMountedRef.current) return;
@@ -149,7 +157,8 @@ export default function GlobalBottomNav({
                 if (cached) {
                   setCachedCounts(venueId, {
                     ...cached,
-
+                    live_count: liveCount || 0,
+                  });
                 } else if (data) {
                   // Cache the full result if we don't have cached data
                   setCachedCounts(
@@ -201,38 +210,40 @@ export default function GlobalBottomNav({
 
   const navItems: NavItem[] = [
     {
-
+      id: "home",
+      label: showDashboardForHome ? "Dashboard" : "Home",
       href: showDashboardForHome ? (currentVenueId ? `/dashboard/${currentVenueId}` : "/") : "/",
-
+      icon: showDashboardForHome ? LayoutDashboard : Home,
       isActive: isOnHomePage || (isOnDashboard && pathname === `/dashboard/${currentVenueId}`),
     },
     {
-
+      id: "live-orders",
+      label: "Live Orders",
       href: currentVenueId ? `/dashboard/${currentVenueId}/live-orders` : "/",
-
+      icon: Clock,
       isActive: pathname === `/dashboard/${currentVenueId}/live-orders`,
     },
     {
-
+      id: "menu",
+      label: "Menu",
       href: currentVenueId ? `/dashboard/${currentVenueId}/menu-management` : "/",
-
+      icon: ShoppingBag,
       isActive: pathname === `/dashboard/${currentVenueId}/menu-management`,
     },
     {
-
+      id: "qr-codes",
+      label: "QR Codes",
       href: currentVenueId ? `/dashboard/${currentVenueId}/qr-codes` : "/",
-
+      icon: QrCode,
       isActive: pathname === `/dashboard/${currentVenueId}/qr-codes`,
     },
   ];
 
   const handleNavigation = useCallback(
-    (href: string, itemId: string, itemLabel: string) => {
-      .toISOString(),
-
+    (href: string) => {
       router.push(href);
     },
-    [router, pathname, currentVenueId]
+    [router]
   );
 
   const activeItem = navItems.find((item) => item.isActive);
@@ -255,11 +266,11 @@ export default function GlobalBottomNav({
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleNavigation(item.href, item.id, item.label)}
+              onClick={() => handleNavigation(item.href)}
               className={`flex flex-col items-center justify-center gap-2 py-2 px-1 transition-all duration-200 rounded-lg active:scale-95 ${
                 item.isActive
                   ? "border-2 border-purple-500 shadow-[0_0_16px_rgba(124,58,237,0.5)]"
-
+                  : "border border-gray-200"
               }`}
               style={{ minHeight: "72px", backgroundColor: "#ffffff" }}
             >
@@ -270,7 +281,14 @@ export default function GlobalBottomNav({
               />
               <p
                 style={{
-
+                  fontSize: "11px",
+                  lineHeight: "1.2",
+                  fontWeight: 500,
+                  color: item.isActive ? "#7c3aed" : "#a855f7",
+                  margin: 0,
+                  padding: 0,
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {item.id === "live-orders" ? `Orders` : item.label}

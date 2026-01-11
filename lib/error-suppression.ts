@@ -52,7 +52,7 @@ export function initErrorSuppression() {
       }
       // Let other errors through
       originalConsoleError("Unhandled Promise Rejection:", reason);
-
+    });
   }
 }
 

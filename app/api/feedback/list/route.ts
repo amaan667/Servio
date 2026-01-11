@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
@@ -16,7 +17,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -40,7 +41,8 @@ export const POST = withUnifiedAuth(
       if (!venueId) {
         return NextResponse.json(
           {
-
+            ok: false,
+            error: "venue_id is required",
           },
           { status: 400 }
         );
@@ -69,10 +71,12 @@ export const POST = withUnifiedAuth(
         .range(offset, offset + limit - 1);
 
       if (error) {
-        
+
         return NextResponse.json(
           {
-
+            ok: false,
+            error: "Failed to fetch feedback",
+            message: isDevelopment() ? error.message : "Database query failed",
           },
           { status: 500 }
         );
@@ -80,32 +84,44 @@ export const POST = withUnifiedAuth(
 
       // Transform the data to match the expected format
       interface FeedbackRow {
-
+        id: string;
+        created_at: string;
+        rating: number;
+        comment: string | null;
+        order_id: string;
         orders: { venue_id: string };
       }
       const transformedFeedback =
         (feedback as unknown as FeedbackRow[])?.map((f) => ({
-
+          id: f.id,
+          created_at: f.created_at,
+          rating: f.rating,
+          comment: f.comment,
+          order_id: f.order_id,
         })) || [];
 
       // STEP 7: Return success response
       return NextResponse.json({
-
+        ok: true,
+        feedback: transformedFeedback,
+        pagination: {
+          limit,
           offset,
-
+          returned: transformedFeedback.length,
+          hasMore: transformedFeedback.length === limit,
         },
-
+      });
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      
-
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-
+            ok: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -113,7 +129,9 @@ export const POST = withUnifiedAuth(
 
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "Internal Server Error",
+          message: isDevelopment() ? errorMessage : "Request processing failed",
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
@@ -122,7 +140,10 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
       } catch {
         return null;
       }

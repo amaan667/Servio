@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
+
 import { getErrorDetails } from "@/lib/utils/errors";
 import { ok, fail, serverError, handleZodError, ApiResponse } from "./response-helpers";
 
@@ -12,7 +13,17 @@ import { ok, fail, serverError, handleZodError, ApiResponse } from "./response-h
  * Handler function type
  */
 export type ApiHandler<TRequest = unknown, TResponse = unknown> = (
+  req: NextRequest,
+  body: TRequest
+) => Promise<TResponse>;
 
+/**
+ * Wrapper options
+ */
+export interface HandlerOptions {
+  requireAuth?: boolean;
+  logRequest?: boolean;
+  logResponse?: boolean;
 }
 
 /**
@@ -20,7 +31,8 @@ export type ApiHandler<TRequest = unknown, TResponse = unknown> = (
  */
 export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
   handler: ApiHandler<TRequest, TResponse>,
-
+  options: HandlerOptions = {
+    /* Empty */
   }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return async (req: NextRequest): Promise<NextResponse<ApiResponse<TResponse>>> => {
@@ -28,9 +40,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
 
     try {
       // Log request if enabled
-      if (options.logRequest) {
-
-      }
+      if (options.logRequest) { /* Condition handled */ }
 
       // Parse request body
       let body: TRequest;
@@ -48,7 +58,7 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
       // Log response if enabled
       if (options.logResponse) {
         const duration = Date.now() - startTime;
-        
+
       }
 
       // Return success response
@@ -97,7 +107,9 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
  * Create a GET handler wrapper
  */
 export function createGetHandler<TResponse = unknown>(
-
+  handler: (req: NextRequest) => Promise<TResponse>,
+  options: HandlerOptions = {
+    /* Empty */
   }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(async (req) => handler(req), options);
@@ -108,7 +120,8 @@ export function createGetHandler<TResponse = unknown>(
  */
 export function createPostHandler<TRequest = unknown, TResponse = unknown>(
   handler: ApiHandler<TRequest, TResponse>,
-
+  options: HandlerOptions = {
+    /* Empty */
   }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(handler, options);
@@ -119,7 +132,8 @@ export function createPostHandler<TRequest = unknown, TResponse = unknown>(
  */
 export function createPutHandler<TRequest = unknown, TResponse = unknown>(
   handler: ApiHandler<TRequest, TResponse>,
-
+  options: HandlerOptions = {
+    /* Empty */
   }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(handler, options);
@@ -129,7 +143,9 @@ export function createPutHandler<TRequest = unknown, TResponse = unknown>(
  * Create a DELETE handler wrapper
  */
 export function createDeleteHandler<TResponse = unknown>(
-
+  handler: (req: NextRequest) => Promise<TResponse>,
+  options: HandlerOptions = {
+    /* Empty */
   }
 ): (req: NextRequest) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return withErrorHandling(async (req) => handler(req), options);

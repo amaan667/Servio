@@ -3,7 +3,11 @@
 import { useAuth } from "@/app/auth/AuthProvider";
 
 interface ProtectedRouteProps {
-
+  children: React.ReactNode;
+  redirectTo?: string; // Kept for API compatibility but not used
+  fallback?: React.ReactNode;
+  requireAuth?: boolean;
+  unauthorizedComponent?: React.ReactNode;
 }
 
 export function ProtectedRoute({

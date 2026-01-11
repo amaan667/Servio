@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { generateReceiptPDF, generateReceiptHTMLForPrint } from "@/lib/pdf/generateReceiptPDF";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -7,7 +8,7 @@ import { isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function GET(
-
+  req: NextRequest,
   routeContext: { params: Promise<{ orderId: string }> }
 ) {
   const handler = withUnifiedAuth(
@@ -18,7 +19,7 @@ export async function GET(
         if (!rateLimitResult.success) {
           return NextResponse.json(
             {
-
+              error: "Too many requests",
               message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
             },
             { status: 429 }
@@ -52,7 +53,7 @@ export async function GET(
           .single();
 
         if (orderError || !order) {
-          
+
           return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
         }
 
@@ -92,14 +93,28 @@ export async function GET(
           venueEmail,
           logoUrl,
           primaryColor,
-
+          orderId: order.id,
+          orderNumber: orderId.slice(-6).toUpperCase(),
+          tableNumber: order.table_number,
+          customerName: order.customer_name || undefined,
+          items: (order.items || []).map(
+            (item: {
+              item_name?: string;
+              quantity?: number;
+              price?: number;
+              special_instructions?: string;
             }) => ({
-
+              item_name: item.item_name || "Item",
+              quantity: item.quantity || 1,
+              price: item.price || 0,
+              special_instructions: item.special_instructions,
+            })
           ),
           subtotal,
           vatAmount,
           totalAmount,
-
+          paymentMethod: order.payment_method || undefined,
+          createdAt: order.created_at,
         };
 
         // Generate PDF or HTML based on request
@@ -107,10 +122,11 @@ export async function GET(
           // Return HTML for browser printing
           const html = generateReceiptHTMLForPrint(receiptData);
           return new NextResponse(html, {
-
+            headers: {
+              "Content-Type": "text/html",
               "Content-Disposition": `inline; filename="receipt-${receiptData.orderNumber}.html"`,
             },
-
+          });
         }
 
         // Try to generate actual PDF
@@ -118,34 +134,34 @@ export async function GET(
           const pdfBuffer = await generateReceiptPDF(receiptData);
 
           return new NextResponse(pdfBuffer as unknown as BodyInit, {
-
+            headers: {
+              "Content-Type": "application/pdf",
               "Content-Disposition": `attachment; filename="receipt-${receiptData.orderNumber}.pdf"`,
               "Cache-Control": "private, max-age=3600",
             },
-
+          });
         } catch (pdfError) {
           // Fallback to HTML if PDF generation fails
-          
 
           const html = generateReceiptHTMLForPrint(receiptData);
           return new NextResponse(html, {
-
+            headers: {
+              "Content-Type": "text/html",
               "Content-Disposition": `attachment; filename="receipt-${receiptData.orderNumber}.html"`,
               "X-PDF-Generation": "failed",
             },
-
+          });
         }
       } catch (_error) {
         const errorMessage =
           _error instanceof Error ? _error.message : "An unexpected error occurred";
         const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-        
-
         if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
           return NextResponse.json(
             {
-
+              error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+              message: errorMessage,
             },
             { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
           );
@@ -153,7 +169,8 @@ export async function GET(
 
         return NextResponse.json(
           {
-
+            error: "Internal Server Error",
+            message: isDevelopment() ? errorMessage : "Request processing failed",
             ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
           },
           { status: 500 }
@@ -162,7 +179,14 @@ export async function GET(
     },
     {
       // Extract venueId from order lookup
-
+      extractVenueId: async (req) => {
+        try {
+          // Get orderId from URL path
+          const url = new URL(req.url);
+          const pathParts = url.pathname.split("/");
+          const orderIdIndex = pathParts.indexOf("pdf");
+          if (orderIdIndex !== -1 && pathParts[orderIdIndex + 1]) {
+            const orderId = pathParts[orderIdIndex + 1];
             const { createAdminClient } = await import("@/lib/supabase");
             const admin = createAdminClient();
             const { data: order } = await admin

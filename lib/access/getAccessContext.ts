@@ -6,6 +6,7 @@
 import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+
 import { type AccessContext, type Tier, type FeatureKey, hasFeatureAccess } from "@/lib/tier-limits";
 import { env } from "@/lib/env";
 
@@ -24,7 +25,9 @@ export const getAccessContext = cache(
         env("NEXT_PUBLIC_SUPABASE_URL")!,
         env("NEXT_PUBLIC_SUPABASE_ANON_KEY")!,
         {
-
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
             },
             set() {
               // Read-only for access context - don't set cookies
@@ -39,16 +42,16 @@ export const getAccessContext = cache(
       // Get authenticated user - Supabase's built-in method should work reliably
       const {
         data: { user },
-
+        error: authError,
       } = await supabase.auth.getUser();
 
       if (authError) {
-        
+
         return null;
       }
 
       if (!user) {
-        
+
         return null;
       }
 
@@ -57,16 +60,20 @@ export const getAccessContext = cache(
         ? venueId.startsWith("venue-")
           ? venueId
           : `venue-${venueId}`
+        : null;
 
+      // Call RPC function using the authenticated Supabase client
       const { data, error: rpcError } = await supabase.rpc("get_access_context", {
+        p_venue_id: normalizedVenueId,
+      });
 
       if (rpcError) {
-        
+
         return null;
       }
 
       if (!data) {
-        
+
         return null;
       }
 
@@ -74,7 +81,7 @@ export const getAccessContext = cache(
       const context = data as AccessContext;
 
       if (!context.user_id || !context.role) {
-        
+
         return null;
       }
 
@@ -82,10 +89,10 @@ export const getAccessContext = cache(
       const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
 
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        
+
         return {
           ...context,
-
+          tier: "starter" as Tier,
         };
       }
 
@@ -94,8 +101,6 @@ export const getAccessContext = cache(
         tier,
       };
     } catch (error) {
-
-        venueId,
 
       return null;
     }
@@ -108,7 +113,8 @@ export const getAccessContext = cache(
 export async function getAccessContextWithFeatures(
   venueId?: string | null
 ): Promise<{
-
+  context: AccessContext | null;
+  hasFeatureAccess: (feature: FeatureKey) => boolean;
 } | null> {
   const context = await getAccessContext(venueId);
   if (!context) return null;

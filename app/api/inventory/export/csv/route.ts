@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -28,7 +29,9 @@ export const GET = withUnifiedAuth(
       // Staff accounts should not downgrade the venue's plan.
       if (context.tier !== "enterprise") {
         return apiErrors.forbidden("CSV exports require Enterprise tier", {
-
+          currentTier: context.tier,
+          requiredTier: "enterprise",
+        });
       }
 
       // STEP 4: Business logic - Fetch ingredients
@@ -41,7 +44,7 @@ export const GET = withUnifiedAuth(
         .order("name", { ascending: true });
 
       if (error) {
-        
+
         return apiErrors.database(
           "Failed to fetch inventory data",
           isDevelopment() ? error.message : undefined
@@ -78,14 +81,13 @@ export const GET = withUnifiedAuth(
 
       const csv = csvRows.join("\n");
 
-      
-
       // STEP 6: Return CSV response
       return new NextResponse(csv, {
-
+        headers: {
+          "Content-Type": "text/csv",
           "Content-Disposition": `attachment; filename="inventory-${venueId}-${new Date().toISOString().split("T")[0]}.csv"`,
         },
-
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -97,7 +99,8 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query params
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         return searchParams.get("venue_id") || searchParams.get("venueId");
       } catch {

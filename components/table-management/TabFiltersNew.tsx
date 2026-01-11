@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge";
 type FilterType = "ALL" | "FREE" | "OCCUPIED" | "RESERVED";
 
 interface TabFiltersNewProps {
-
+  value: FilterType;
+  onChange: (value: FilterType) => void;
+  counts: {
+    all: number;
+    free: number;
+    occupied: number;
+    reserved: number;
   };
 }
 

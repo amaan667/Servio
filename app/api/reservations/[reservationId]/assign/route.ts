@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -10,8 +11,12 @@ import { validateBody, validateParams } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const assignReservationSchema = z.object({
+  tableId: z.string().uuid("Invalid table ID"),
+});
 
 const reservationIdParamSchema = z.object({
+  reservationId: z.string().uuid("Invalid reservation ID"),
+});
 
 // POST /api/reservations/[reservationId]/assign - Assign reservation to table
 type ReservationParams = { params?: { reservationId?: string } };
@@ -43,23 +48,25 @@ export async function POST(req: NextRequest, context: ReservationParams = {}) {
           .single();
 
         if (reservationError || !reservation) {
-          
+
           return apiErrors.notFound("Reservation not found");
         }
 
         // Call the database function to assign reservation
         const { error } = await supabase.rpc("api_assign_reservation", {
+          p_reservation_id: validatedParams.reservationId,
+          p_table_id: body.tableId,
+        });
 
         if (error) {
-          
+
           return apiErrors.badRequest(error.message || "Failed to assign reservation");
         }
 
-        
-
         // STEP 4: Return success response
         return success({
-
+          message: "Reservation assigned successfully",
+        });
       } catch (error) {
 
         if (isZodError(error)) {
@@ -96,5 +103,5 @@ export async function POST(req: NextRequest, context: ReservationParams = {}) {
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-
+  });
 }

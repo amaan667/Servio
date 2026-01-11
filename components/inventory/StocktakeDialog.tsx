@@ -16,7 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { StockLevel } from "@/types/inventory";
 
 interface StocktakeDialogProps {
-
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  ingredient: StockLevel;
+  onSuccess: () => void;
 }
 
 export function StocktakeDialog({
@@ -38,11 +41,14 @@ export function StocktakeDialog({
       if (isNaN(count)) return;
 
       const response = await fetch("/api/inventory/stock/stocktake", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          ingredient_id: ingredient.ingredient_id,
+          actual_count: count,
           note,
         }),
+      });
 
       if (response.ok) {
         onSuccess();

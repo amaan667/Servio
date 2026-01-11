@@ -17,7 +17,9 @@ export function useCountsRealtime(venueId: string, tz: string, onOrderChange?: (
       .on(
         "postgres_changes",
         {
-
+          event: "*",
+          schema: "public",
+          table: "orders",
           filter: `venue_id=eq.${venueId}`,
         },
         () => {

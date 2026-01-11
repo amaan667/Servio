@@ -1,3 +1,4 @@
+
 /**
  * Serverless-friendly PDF to image conversion
  * Uses pdf2pic which works in Railway/serverless environments
@@ -8,6 +9,13 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
     const { fromBuffer } = await import("pdf2pic");
 
     const converter = fromBuffer(pdfBuffer, {
+      density: 150,
+      saveFilename: "menu",
+      savePath: "/tmp",
+      format: "png",
+      width: 1200,
+      height: 1800,
+    });
 
     const imageBuffers: string[] = [];
 
@@ -26,10 +34,9 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
 
     return imageBuffers;
   } catch (_error) {
-    
 
     // Fallback: Return empty array and let Vision work with PDF directly
-    
+
     return [];
   }
 }

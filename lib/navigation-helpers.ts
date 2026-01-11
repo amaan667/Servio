@@ -6,14 +6,22 @@ import { UserRole, canAccess } from "@/lib/permissions";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
 export interface NavigationItem {
-
+  label: string;
+  href: string;
+  feature: string;
+  tierFeature?: keyof typeof TIER_LIMITS.starter.features;
+  requiredTier?: "starter" | "pro" | "enterprise";
 }
 
 /**
  * Check if user can access a navigation item based on role and tier
  */
 export async function canAccessNavigationItem(
-
+  tier: string,
+  userRole: UserRole,
+  item: NavigationItem
+): Promise<boolean> {
+  // First check role permission
   const hasRoleAccess = canAccess(userRole, item.feature);
   if (!hasRoleAccess) {
     return false;
@@ -45,7 +53,13 @@ export async function canAccessNavigationItem(
  * Filter navigation items based on role and tier
  */
 export async function filterNavigationItems(
+  tier: string,
+  userRole: UserRole,
+  items: NavigationItem[]
+): Promise<NavigationItem[]> {
+  const filtered: NavigationItem[] = [];
 
+  for (const item of items) {
     const canAccess = await canAccessNavigationItem(tier, userRole, item);
     if (canAccess) {
       filtered.push(item);

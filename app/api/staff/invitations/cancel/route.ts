@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -10,6 +11,10 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const cancelInvitationSchema = z.object({
+  id: z.string().uuid("Invalid invitation ID"),
+  venue_id: z.string().uuid("Invalid venue ID").optional(),
+  venueId: z.string().uuid("Invalid venue ID").optional(),
+});
 
 // POST /api/staff/invitations/cancel - Cancel an invitation
 export const POST = withUnifiedAuth(
@@ -50,7 +55,7 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (!venueAccess && !staffAccess) {
-        
+
         return apiErrors.forbidden("Insufficient permissions");
       }
 
@@ -62,9 +67,17 @@ export const POST = withUnifiedAuth(
         const errorCode =
           tableError && typeof tableError === "object" && "code" in tableError
             ? String(tableError.code)
+            : undefined;
 
+        if (
+          errorCode === "PGRST116" ||
+          errorMessage?.includes('relation "staff_invitations" does not exist')
+        ) {
+          return apiErrors.serviceUnavailable(
+            "Staff invitation system not set up. Please run the database migration first."
+          );
         } else {
-          
+
           return apiErrors.database("Database error. Please try again.");
         }
       }
@@ -78,7 +91,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (fetchInvitationError) {
-        
+
         return apiErrors.notFound("Invitation not found");
       }
 
@@ -91,22 +104,23 @@ export const POST = withUnifiedAuth(
       const { error: updateError } = await supabase
         .from("staff_invitations")
         .update({
-
+          status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", body.id);
 
       if (updateError) {
-        
+
         return apiErrors.database(
           "Failed to cancel invitation",
           isDevelopment() ? updateError.message : undefined
         );
       }
 
-      
-
       // STEP 4: Return success response
       return success({
-
+        message: "Invitation cancelled successfully",
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -118,7 +132,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

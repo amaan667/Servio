@@ -17,20 +17,24 @@ class RedisCache {
     try {
       if (process.env.REDIS_URL) {
         this.redis = new Redis(process.env.REDIS_URL, {
+          maxRetriesPerRequest: 3,
+          lazyConnect: true,
+        });
 
         this.redis.on("connect", () => {
           this.isConnected = true;
+        });
 
-        this.redis.on("error", (error) => {
+        this.redis.on("error", (_error) => {
           this.isConnected = false;
+          // Redis connection error handled silently
+        });
 
         await this.redis.connect();
       } else {
         // Block handled
       }
-    } catch (_error) {
-      
-    }
+    } catch (_error) { /* Error handled silently */ }
   }
 
   /**
@@ -48,7 +52,7 @@ class RedisCache {
       }
       return null;
     } catch (_error) {
-      
+
       return null;
     }
   }
@@ -57,7 +61,10 @@ class RedisCache {
    * Set value in cache
    */
   async set(
-
+    key: string,
+    value: unknown,
+    options: CacheOptions = {
+      /* Empty */
     }
   ): Promise<boolean> {
     if (!this.redis || !this.isConnected) {
@@ -77,6 +84,7 @@ class RedisCache {
         options.tags.forEach((tag) => {
           pipeline.sadd(`tag:${tag}`, key);
           pipeline.expire(`tag:${tag}`, ttl);
+        });
 
         await pipeline.exec();
       } else {
@@ -85,7 +93,7 @@ class RedisCache {
 
       return true;
     } catch (_error) {
-      
+
       return false;
     }
   }
@@ -102,7 +110,7 @@ class RedisCache {
       await this.redis.del(key);
       return true;
     } catch (_error) {
-      
+
       return false;
     }
   }
@@ -129,7 +137,7 @@ class RedisCache {
       await pipeline.exec();
       return true;
     } catch (_error) {
-      
+
       return false;
     }
   }
@@ -146,7 +154,7 @@ class RedisCache {
       await this.redis.flushdb();
       return true;
     } catch (_error) {
-      
+
       return false;
     }
   }
@@ -155,11 +163,19 @@ class RedisCache {
    * Get cache statistics
    */
   async getStats(): Promise<{
-
+    connected: boolean;
+    memory: string;
+    keys: number;
+    hits: number;
+    misses: number;
   }> {
     if (!this.redis || !this.isConnected) {
       return {
-
+        connected: false,
+        memory: "0B",
+        keys: 0,
+        hits: 0,
+        misses: 0,
       };
     }
 
@@ -168,15 +184,20 @@ class RedisCache {
       const keys = await this.redis.dbsize();
 
       return {
-
+        connected: true,
+        memory: this.parseMemoryInfo(info),
         keys,
         hits: 0, // Would need to track these separately
-
+        misses: 0,
       };
     } catch (_error) {
-      
-      return {
 
+      return {
+        connected: false,
+        memory: "0B",
+        keys: 0,
+        hits: 0,
+        misses: 0,
       };
     }
   }
@@ -238,7 +259,8 @@ export const cacheUtils = {
   /**
    * Generate cache key for orders
    */
-
+  ordersKey: (
+    venueId: string,
     filters: Record<string, unknown> = {
       /* Empty */
     }
@@ -257,7 +279,7 @@ export const cacheUtils = {
   /**
    * Cache tags for invalidation
    */
-
+  tags: {
     venue: (venueId: string) => `venue:${venueId}`,
     user: (userId: string) => `user:${userId}`,
     orders: (venueId: string) => `orders:${venueId}`,

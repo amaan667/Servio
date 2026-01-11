@@ -27,12 +27,10 @@ export async function getUserSafe() {
     const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
 
-     => c.name).join(", "),
-
     const hasAuthCookie = await hasServerAuthCookie();
 
     if (!hasAuthCookie) {
-      
+
       return null;
     }
 
@@ -43,16 +41,14 @@ export async function getUserSafe() {
     const { data, error } = await supabase.auth.getUser();
 
     if (error) {
-      
+
       return null;
     }
 
     if (!data.user) {
-      
+
       return null;
     }
-
-    
 
     return data.user;
   } catch (err) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     try {
       supabase = await createServerSupabase();
     } catch (dbError) {
-      
+
       return apiErrors.serviceUnavailable(
         "Database connection error. Please try again in a moment."
       );
@@ -27,11 +28,11 @@ export async function POST(request: NextRequest) {
       const result = await supabase.auth.signInWithPassword({
         email,
         password,
-
+      });
       data = result.data;
       signInError = result.error;
     } catch (fetchError) {
-      
+
       const errorMsg =
         fetchError instanceof Error ? fetchError.message : "Network connection failed";
       if (errorMsg.includes("timeout") || errorMsg.includes("ETIMEDOUT")) {
@@ -43,16 +44,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (signInError) {
-      
+
       return apiErrors.unauthorized(signInError.message);
     }
 
     if (!data.session) {
-      
+
       return apiErrors.internal("Failed to create session");
     }
-
-    
 
     // Check if user has a venue - get FIRST (oldest)
     // Add timeout protection for mobile networks (especially Safari)
@@ -69,12 +68,8 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       hasOrganization = !!(orgs && orgs.length > 0);
-      if (hasOrganization) {
-        
-      }
-    } catch (orgError) {
-      
-    }
+      if (hasOrganization) { /* Condition handled */ }
+    } catch (orgError) { /* Error handled silently */ }
 
     // Now try to get venues with timeout protection
     try {
@@ -92,33 +87,32 @@ export async function POST(request: NextRequest) {
       venues = (venueQuery as { data: unknown; error: unknown }).data;
       venueError = (venueQuery as { data: unknown; error: unknown }).error;
     } catch (timeoutError) {
-      
 
       // If user has organization, they must have venues - use generic dashboard
       if (hasOrganization) {
-        
+
         const response = NextResponse.json({
-
+          success: true,
+          user: {
+            id: data.session.user.id,
+            email: data.session.user.email,
           },
-
+          redirectTo: "/dashboard",
           hasVenues: true, // Signal to client that venues exist
-
+          session: {
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            expires_at: data.session.expires_at,
+            expires_in: data.session.expires_in,
           },
-
+        });
         return response;
       }
     }
 
-     ? venues.length : 0,
-
-        ? venues.map((v) => ({ id: v.venue_id, created: v.created_at }))
-
     // Check if user has pending signup data (incomplete signup flow)
     const pendingSignup = data.session.user.user_metadata?.pending_signup;
     const hasPendingSignup = !!pendingSignup;
-
-     && venues.length > 0,
-      hasPendingSignup,
 
     // Create response with cookies set manually
     let redirectTo: string;
@@ -134,15 +128,21 @@ export async function POST(request: NextRequest) {
       redirectTo = "/";
     }
 
-     && venues[0] ? venues[0].venue_id : null,
-
     const response = NextResponse.json({
-
+      success: true,
+      user: {
+        id: data.session.user.id,
+        email: data.session.user.email,
       },
       redirectTo,
       // Return session tokens so client can set them in browser storage
-
+      session: {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+        expires_in: data.session.expires_in,
       },
+    });
 
     // Supabase SSR handles cookies automatically
 
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-    
+
     return apiErrors.internal("An unexpected error occurred");
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getStripeClient } from "@/lib/stripe-client";
 import { getAuthUserForAPI } from "@/lib/auth/server";
+
 import { withStripeRetry } from "@/lib/stripe-retry";
 import type Stripe from "stripe";
 import { success, apiErrors } from "@/lib/api/standard-response";
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     const { orderId } = await context.params;
     const body = await req.json().catch(() => {
       return {};
-
+    });
     const { amount, reason } = body as { amount?: number; reason?: string };
 
     if (!orderId) {
@@ -63,7 +64,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     // Check if order was paid via Stripe
     if (!order.stripe_payment_intent_id && !order.stripe_session_id) {
       return apiErrors.badRequest("Order was not paid via Stripe. Cannot process refund.", {
-
+        payment_method: order.payment_method,
+      });
     }
 
     // Check if order is already refunded
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         );
         paymentIntentId = session.payment_intent as string | null;
       } catch (sessionError) {
-        
+
         return apiErrors.internal("Failed to retrieve payment information");
       }
     }
@@ -103,7 +105,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     // Create refund via Stripe
     try {
       const refundParams: Stripe.RefundCreateParams = {
-
+        payment_intent: paymentIntentId,
+        reason: reason ? (reason as Stripe.RefundCreateParams["reason"]) : undefined,
       };
 
       if (refundAmount) {
@@ -111,6 +114,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
       }
 
       const refund = await withStripeRetry(() => stripe.refunds.create(refundParams), {
+        maxRetries: 3,
+      });
 
       // Update order payment status
       const isPartialRefund = refundAmount && refundAmount < orderAmount;
@@ -119,23 +124,36 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
       const { error: updateError } = await supabase
         .from("orders")
         .update({
-
+          payment_status: newPaymentStatus,
+          refund_amount: refundAmount ? refundAmount / 100 : order.total_amount,
+          refund_id: refund.id,
+          refund_reason: reason || null,
+          refunded_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", orderId);
 
       if (updateError) {
-        
+
         // Refund was successful in Stripe, but DB update failed
         // This is a critical issue - log it but don't fail the request
         return success({
-
+          warning: "Refund processed but order update failed",
+          refund_id: refund.id,
+          error: updateError.message,
+        });
       }
 
       return success({
-
+        refund: {
+          id: refund.id,
+          amount: refund.amount / 100,
+          status: refund.status,
+          payment_status: newPaymentStatus,
         },
-
+        order_id: orderId,
+      });
     } catch (stripeError) {
-      
 
       if (stripeError instanceof Error && stripeError.message.includes("already been refunded")) {
         // Order was already refunded in Stripe but not in our DB
@@ -143,7 +161,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         await supabase
           .from("orders")
           .update({
-
+            payment_status: "REFUNDED",
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", orderId);
 
         return apiErrors.badRequest("Order was already refunded in Stripe");
@@ -154,7 +174,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

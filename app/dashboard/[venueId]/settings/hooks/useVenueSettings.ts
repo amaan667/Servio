@@ -15,23 +15,40 @@ export const DAYS_OF_WEEK = [
 ] as const;
 
 export interface Venue {
-
+  venue_id: string;
+  venue_name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  timezone?: string;
+  venue_type?: string;
+  service_type?: string;
+  operating_hours?: OperatingHours;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface User {
-
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    hasPasswordSet?: boolean;
   };
   app_metadata?: {
     provider?: string;
     providers?: string[];
   };
   identities?: Array<{
-
+    provider: string;
+    id: string;
   }>;
 }
 
 export interface DayHours {
-
+  open: string;
+  close: string;
+  closed: boolean;
 }
 
 export interface OperatingHours {
@@ -140,7 +157,23 @@ export function useVenueSettings(venue: Venue) {
       const { error } = await createClient()
         .from("venues")
         .update({
-
+          venue_name: venueName,
+          email: venueEmail || null,
+          phone: venuePhone || null,
+          address: venueAddress || null,
+          timezone: timezone,
+          venue_type: venueType,
+          service_type: serviceType,
+          operating_hours: Object.keys(operatingHours).length > 0 ? operatingHours : null,
+          latitude: latitude || null,
+          longitude: longitude || null,
+          auto_email_receipts: autoEmailReceipts,
+          show_vat_breakdown: showVATBreakdown,
+          allow_email_input: allowEmailInput,
+          receipt_logo_url: receiptLogoUrl || null,
+          receipt_footer_text: receiptFooterText || null,
+          updated_at: new Date().toISOString(),
+        })
         .eq("venue_id", venue.venue_id);
 
       if (error) {
@@ -151,6 +184,10 @@ export function useVenueSettings(venue: Venue) {
       setHasUnsavedChanges(false);
 
       toast({
+        title: "Success",
+        description: "✅ Venue settings updated successfully!",
+        duration: 3000,
+      });
 
       setTimeout(() => {
         router.refresh();
@@ -158,14 +195,22 @@ export function useVenueSettings(venue: Venue) {
     } catch (_err) {
       setError(_err instanceof Error ? _err.message : "Failed to update venue settings");
       toast({
-
+        title: "Error",
+        description: _err instanceof Error ? _err.message : "Failed to update venue settings",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const updateDayHours = (
-
+    day: string,
+    field: "open" | "close" | "closed",
+    value: string | boolean
+  ) => {
+    setOperatingHours((prev) => ({
+      ...prev,
       [day]: {
         ...prev[day as keyof OperatingHours],
         [field]: value,

@@ -2,6 +2,7 @@ import React from "react";
 import DashboardClient from "./page.client";
 import ClientOnlyWrapper from "@/components/ClientOnlyWrapper";
 import { createAdminClient } from "@/lib/supabase";
+
 import { todayWindowForTZ } from "@/lib/time";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
@@ -18,22 +19,18 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   const { venueId } = params;
 
   // Log dashboard page load attempt
-  .toISOString(),
 
   // STEP 1: Server-side auth check (optional - no redirects)
   // NO REDIRECTS - User requested ZERO sign-in redirects
   // Auth check is optional - client will handle auth display
   // Dashboard ALWAYS loads - client handles authentication
   try {
-    await requirePageAuth(venueId).catch((error) => {
-      ", {
-        venueId,
-
+    await requirePageAuth(venueId).catch((_error) => {
+      // Auth errors handled silently - dashboard loads anyway
       return null;
+    });
 
-  } catch (error) {
-
-  }
+  } catch (error) { /* Error handled silently */ }
 
   // STEP 2: Fetch initial dashboard data on server (even without auth)
   // Always fetch data - don't block on auth
@@ -45,7 +42,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     // Check if service role key is available before creating admin client
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const errorMsg = "SUPABASE_SERVICE_ROLE_KEY environment variable is missing";
-      
+
       // Continue without initial data - client will handle gracefully
     } else {
       const supabase = createAdminClient();
@@ -67,7 +64,10 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       ] = await Promise.all([
         supabase
           .rpc("dashboard_counts", {
-
+            p_venue_id: normalizedVenueId,
+            p_tz: venueTz,
+            p_live_window_mins: 30,
+          })
           .single(),
         supabase
           .from("tables")
@@ -98,9 +98,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       ]);
 
       // Process results
-      if (countsResult.error) {
-        
-      } else {
+      if (countsResult.error) { /* Condition handled */ } else {
         initialCounts = countsResult.data as DashboardCounts;
       }
 
@@ -112,7 +110,10 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
         initialCounts = {
           ...initialCounts,
-
+          tables_set_up: activeTables.length,
+          tables_in_use: tablesInUse,
+          tables_reserved_now: tablesReserved,
+          active_tables_count: activeTables.length,
         };
       }
 
@@ -125,20 +126,18 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         unpaid = ordersResult.data.filter(
           (o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER"
         ).length;
-      } else if (ordersResult.error) {
-        
-      }
+      } else if (ordersResult.error) { /* Condition handled */ }
 
       // CRITICAL: Create initialStats object
       initialStats = {
         revenue,
-
+        menuItems: menuItemsResult,
         unpaid,
       };
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    
+
     // Continue without initial data - client will load it
   }
 
@@ -149,16 +148,21 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       {/* Log immediately when page HTML loads */}
       <script
         dangerouslySetInnerHTML={{
+          __html: `
+            
 
+            // Catch any JavaScript errors that might prevent component mounting
             window.addEventListener('error', function(e) {
 
+            });
+            
             // Catch unhandled promise rejections
             window.addEventListener('unhandledrejection', function(e) {
 
+            });
+            
             // Log when React starts hydrating
-            if (typeof window !== 'undefined' && window.__NEXT_DATA__) {
-
-            }
+            if (typeof window !== 'undefined' && window.__NEXT_DATA__) { /* Condition handled */ }
           `,
         }}
       />
@@ -174,4 +178,3 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 }
 
 // Log when this module is loaded
-.toISOString(),

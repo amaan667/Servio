@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -10,9 +11,10 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const updatePaymentSchema = z.object({
-
+  order_id: z.string().uuid("Invalid order ID"),
   payment_status: z.enum(["PAID", "UNPAID", "REFUNDED"]),
   payment_mode: z.enum(["online", "pay_later", "pay_at_till"]).optional(),
+});
 
 /**
  * Update payment status for an order
@@ -52,15 +54,18 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (checkError || !orderCheck) {
-      
+
       return apiErrors.notFound("Order not found");
     }
 
     // Update order payment status
     const updateData: {
-
+      payment_status: string;
+      payment_mode?: string;
+      updated_at: string;
     } = {
-
+      payment_status: body.payment_status,
+      updated_at: new Date().toISOString(),
     };
 
     if (body.payment_mode) {
@@ -78,14 +83,12 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (updateError || !updatedOrder) {
-      
+
       return apiErrors.database(
         "Failed to update payment status",
         isDevelopment() ? updateError?.message : undefined
       );
     }
-
-    
 
     // STEP 5: Return success response
     return success({ order: updatedOrder });
@@ -97,6 +100,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});
 
 /**
  * Get payment information for orders
@@ -162,11 +166,9 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: orders, error } = await query;
 
     if (error) {
-      
+
       return apiErrors.database(error.message || "Internal server error");
     }
-
-    
 
     return success({ orders: orders || [] });
   } catch (error) {
@@ -177,3 +179,4 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

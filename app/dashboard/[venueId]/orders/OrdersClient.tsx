@@ -10,14 +10,49 @@ import { OrderCard } from "@/components/orders/OrderCard";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 
 type OrdersClientProps = {
-
+  venueId: string;
+  initialOrders?: Order[];
+  initialStats?: {
+    todayOrders: number;
+    revenue: number;
   };
 };
 
 interface Order {
-
+  id: string;
+  venue_id: string;
+  table_number: number | null;
+  table_id?: string | null;
+  session_id?: string | null;
+  customer_name: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  items: Array<{
+    menu_item_id: string;
+    item_name: string;
+    quantity: number;
+    price: number;
+    specialInstructions?: string;
   }>;
-
+  total_amount: number;
+  created_at: string;
+  updated_at?: string;
+  order_status:
+    | "PLACED"
+    | "ACCEPTED"
+    | "IN_PREP"
+    | "READY"
+    | "OUT_FOR_DELIVERY"
+    | "SERVING"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "REFUNDED"
+    | "EXPIRED";
+  payment_status?: string;
+  payment_method?: string;
+  notes?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   table_label?: string;
   counter_label?: string;
@@ -31,14 +66,14 @@ interface GroupedHistoryOrders {
 const OrdersClient: React.FC<OrdersClientProps> = ({
   venueId,
   initialOrders = [],
-
+  initialStats: _initialStats,
 }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
   const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<GroupedHistoryOrders>({
     /* Empty */
-
+  });
   const [loading, setLoading] = useState(!initialOrders.length);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
@@ -74,7 +109,8 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
       // Get today's time window
       const todayWindowData = todayWindowForTZ(venueTz);
       const todayWindow = {
-
+        startUtcISO: todayWindowData.startUtcISO || new Date().toISOString(),
+        endUtcISO: todayWindowData.endUtcISO || new Date().toISOString(),
       };
       setTodayWindow(todayWindow);
 
@@ -110,6 +146,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
         const todayStart = new Date(todayWindow.startUtcISO);
         const todayEnd = new Date(todayWindow.endUtcISO);
         return orderDate >= todayStart && orderDate < todayEnd;
+      });
 
       const historyOrders = allOrdersData.filter(
         (order: Order) => new Date(order.created_at) < new Date(todayWindow.startUtcISO)
@@ -130,7 +167,10 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
       const grouped = historyOrders.reduce(
         (acc: GroupedHistoryOrders, order) => {
           const date = new Date(order.created_at).toLocaleDateString("en-GB", {
-
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
           if (!acc[date]) {
             acc[date] = [];
           }
@@ -182,7 +222,9 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
       .on(
         "postgres_changes",
         {
-
+          event: "*",
+          schema: "public",
+          table: "orders",
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
@@ -235,13 +277,22 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
           <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
             {[
               {
-
+                key: "live",
+                label: "Live Orders",
+                hint: "Last 30 min",
+                count: tabCounts?.live_count || 0,
               },
               {
-
+                key: "all",
+                label: "Today's Orders",
+                hint: "Today's orders",
+                count: tabCounts?.earlier_today_count || 0,
               },
               {
-
+                key: "history",
+                label: "History",
+                hint: "Previous days",
+                count: tabCounts?.history_count || 0,
               },
             ].map((tab) => (
               <button
@@ -252,7 +303,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                   ${
                     activeTab === tab.key
                       ? "bg-servio-purple text-white border-servio-purple shadow-[0_0_12px_rgba(124,58,237,0.4)] hover:bg-white hover:text-servio-purple"
-
+                      : "bg-servio-purple text-white border-servio-purple hover:bg-white hover:text-servio-purple hover:border-servio-purple"
                   }
                 `}
               >
@@ -264,7 +315,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
                     ${
                       activeTab === tab.key
                         ? "bg-white text-servio-purple"
-
+                        : "bg-servio-purple text-white group-hover:bg-white group-hover:text-servio-purple"
                     }
                   `}
                   >

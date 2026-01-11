@@ -5,7 +5,10 @@ import { RefreshCw, CheckCircle } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/useGestures";
 
 interface PullToRefreshProps {
-
+  onRefresh: () => Promise<void>;
+  children: React.ReactNode;
+  threshold?: number;
+  className?: string;
 }
 
 export default function PullToRefresh({
@@ -34,6 +37,7 @@ export default function PullToRefresh({
     } finally {
       setIsRefreshing(false);
     }
+  });
 
   const rotation = progress * 360;
   const scale = Math.min(1 + progress * 0.2, 1.2);
@@ -49,7 +53,7 @@ export default function PullToRefresh({
         style={{
           height: `${Math.min(progress * threshold, threshold)}px`,
           backgroundColor: "rgba(255, 255, 255, 0.95)",
-
+          backdropFilter: "blur(10px)",
           borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
         }}
       >
@@ -58,7 +62,7 @@ export default function PullToRefresh({
             className="relative"
             style={{
               transform: `scale(${scale})`,
-
+              transition: "transform 0.2s ease-out",
             }}
           >
             {isRefreshing ? (
@@ -70,7 +74,7 @@ export default function PullToRefresh({
                 className="h-6 w-6 text-purple-600 transition-transform duration-200"
                 style={{
                   transform: `rotate(${rotation}deg)`,
-
+                  transformOrigin: "center",
                 }}
               />
             )}
@@ -94,9 +98,9 @@ export default function PullToRefresh({
       <div
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-purple-600 z-50 transition-all duration-200"
         style={{
-
+          opacity: progress > 0 ? 1 : 0,
           transform: `scaleX(${progress})`,
-
+          transformOrigin: "left",
         }}
       />
 

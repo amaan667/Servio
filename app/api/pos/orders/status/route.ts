@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function PATCH(req: NextRequest) {
@@ -42,13 +43,13 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateError) {
-      
+
       return apiErrors.internal("Internal server error");
     }
 
     return NextResponse.json({ order: updatedOrder });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

@@ -1,4 +1,5 @@
 import SettingsClientPage from "./page.client";
+
 import { createAdminClient } from "@/lib/supabase";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
@@ -46,7 +47,11 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
 
   // Fetch organization for display (billing info, etc.) - but tier comes from RPC
   let organization: {
-
+    id: string;
+    subscription_tier?: string;
+    stripe_customer_id?: string;
+    subscription_status?: string;
+    trial_ends_at?: string;
   } | null = null;
 
   if (firstVenueResult.data?.organization_id) {
@@ -66,8 +71,6 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   const userRole = userRoleResult.data;
   const allVenues = allVenuesResult.data || [];
 
-  
-
   const isOwner = !!venue;
   const isManager = userRole?.role === "manager";
 
@@ -84,7 +87,6 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
 
   // Venue access already verified by requirePageAuth, so finalVenue should exist
   if (!finalVenue) {
-    
 
     // Check if user has a role for this venue (venue might exist in roles but not venues table)
     const { data: userRole } = await supabase
@@ -95,7 +97,6 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
       .maybeSingle();
 
     if (userRole && (userRole.role === "owner" || userRole.role === "manager")) {
-      
 
       // First get/create organization
       let userOrg = organization;
@@ -104,31 +105,44 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
       const { data: fallbackVenue, error: createError } = await supabase
         .from("venues")
         .insert({
-
+          venue_id: venueId,
           venue_name: `${auth?.user?.email?.split('@')[0] || 'User'}'s Venue`,
+          business_type: 'Restaurant',
+          owner_user_id: auth?.user?.id ?? "",
+          organization_id: userOrg?.id || null,
+          is_active: true,
+          timezone: 'Europe/London',
+          currency: 'GBP',
+          daily_reset_time: '06:00:00'
+        })
+        .select()
+        .single();
 
-      } else {
-        
+      if (createError) { /* Condition handled */ } else {
+
         finalVenue = fallbackVenue;
       }
     }
 
     // If we still don't have a venue, show error
     if (!finalVenue) {
-      
+
       return <SettingsClientPage venueId={venueId} />;
     }
   }
 
   const initialData = {
-
+    user: {
+      id: auth?.user?.id ?? "",
+      email: auth?.user?.email ?? undefined,
       user_metadata: {},
     },
-
+    venue: finalVenue,
+    venues: allVenues,
     organization,
     isOwner,
     isManager,
-
+    userRole: userRole?.role || (isOwner ? "owner" : "staff"),
   };
 
   return <SettingsClientPage venueId={venueId} initialData={initialData} />;

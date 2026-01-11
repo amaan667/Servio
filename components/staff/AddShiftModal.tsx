@@ -14,9 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "lucide-react";
 
 interface AddShiftModalProps {
-
+  isOpen: boolean;
+  onClose: () => void;
+  staffMember: {
+    id: string;
+    name: string;
   } | null;
-
+  venueId: string;
+  onShiftAdded?: () => void;
 }
 
 export function AddShiftModal({
@@ -47,10 +52,15 @@ export function AddShiftModal({
       const endTimestamp = `${date}T${endTime}:00`;
 
       const res = await fetch("/api/staff/shifts/add", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          venue_id: venueId,
+          staff_id: staffMember.id,
+          start_time: startTimestamp,
+          end_time: endTimestamp,
         }),
+      });
 
       const data = await res.json();
 

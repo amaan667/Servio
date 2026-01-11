@@ -5,7 +5,6 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
 
     // Log web vitals for monitoring
-    
 
     // In production, you might send this to a monitoring service like:
     // - Vercel Analytics

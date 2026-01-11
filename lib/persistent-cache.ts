@@ -41,7 +41,8 @@ export class PersistentCache {
     try {
       const cacheData = {
         data,
-
+        expiresAt: ttl ? Date.now() + ttl : null,
+        cachedAt: Date.now(),
       };
 
       sessionStorage.setItem(this.prefix + key, JSON.stringify(cacheData));
@@ -75,7 +76,7 @@ export class PersistentCache {
         if (key.startsWith(this.prefix)) {
           sessionStorage.removeItem(key);
         }
-
+      });
     } catch (_error) {
       // Error handled silently
     }
@@ -95,7 +96,7 @@ export class PersistentCache {
           const value = sessionStorage.getItem(key);
           size += key.length + (value?.length || 0);
         }
-
+      });
       return size;
     } catch {
       return 0;

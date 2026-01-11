@@ -15,7 +15,11 @@ interface OrderItem {
 }
 
 interface Order {
-
+  id: string;
+  venue_id: string;
+  table_number?: number | null;
+  table_id?: string | null;
+  items?: OrderItem[];
 }
 
 /**
@@ -30,7 +34,9 @@ export { createKDSTicketsWithAI as createKDSTickets } from "@/lib/orders/kds-tic
  * Validate table exists or create it
  */
 export async function ensureTableExists(
-
+  supabase: SupabaseClient,
+  venueId: string,
+  tableNumber: number
 ): Promise<{ tableId: string | null; autoCreated: boolean }> {
   // Check if table exists
   const { data: existingTable } = await supabase
@@ -48,14 +54,18 @@ export async function ensureTableExists(
   const { data: newTable, error: createError } = await supabase
     .from("tables")
     .insert({
-
+      venue_id: venueId,
+      table_number: tableNumber,
       label: `Table ${tableNumber}`,
-
+      capacity: 4,
+      is_active: true,
+      status: "available" as Database["public"]["Tables"]["tables"]["Insert"]["status"],
+    })
     .select("id")
     .single();
 
   if (createError || !newTable) {
-    
+
     return { tableId: null, autoCreated: false };
   }
 
@@ -66,7 +76,10 @@ export async function ensureTableExists(
  * Check for duplicate orders (within last 5 minutes)
  */
 export async function findDuplicateOrder(
-
+  supabase: SupabaseClient,
+  venueId: string,
+  customerPhone: string,
+  totalAmount: number
 ): Promise<Record<string, unknown> | null> {
   try {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -82,13 +95,13 @@ export async function findDuplicateOrder(
       .limit(1);
 
     if (error) {
-      
+
       return null;
     }
 
     return data && data.length > 0 ? (data[0] as Record<string, unknown>) : null;
   } catch (_error) {
-    
+
     return null;
   }
 }

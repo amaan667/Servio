@@ -207,12 +207,6 @@ describe("Test Coverage Summary", () => {
     const totalTests =
       testCases.readOnly.length + testCases.actions.length + testCases.edgeCases.length;
 
-    console.log("\n📊 AI Assistant Test Coverage:");
-    console.log(`  Read-Only Queries: ${testCases.readOnly.length}`);
-    console.log(`  Action Queries: ${testCases.actions.length}`);
-    console.log(`  Edge Cases: ${testCases.edgeCases.length}`);
-    console.log(`  Total Test Cases: ${totalTests}`);
-
     // Verify we have comprehensive coverage
     expect(testCases.readOnly.length).toBeGreaterThanOrEqual(30);
     expect(testCases.actions.length).toBeGreaterThanOrEqual(30);
@@ -241,7 +235,6 @@ describe("Test Coverage Summary", () => {
       "tables",
     ];
 
-    console.log("\n✅ Feature Coverage:");
     features.forEach((feature) => console.log(`  - ${feature}`));
 
     expect(features.length).toBeGreaterThan(15);

@@ -3,7 +3,9 @@
 import { Button } from "@/components/ui/button";
 
 interface BulkCompleteButtonProps {
-
+  count: number;
+  isCompleting: boolean;
+  onClick: () => void;
 }
 
 export function BulkCompleteButton({ count, isCompleting, onClick }: BulkCompleteButtonProps) {

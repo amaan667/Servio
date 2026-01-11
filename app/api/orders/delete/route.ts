@@ -21,14 +21,14 @@ export async function POST(req: Request) {
       .eq("venue_id", venue_id);
 
     if (error) {
-      
+
       return apiErrors.database(error.message);
     }
 
     return success({});
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-    
+
     return apiErrors.internal(errorMessage);
   }
 }

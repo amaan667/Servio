@@ -1,13 +1,22 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useState, useEffect } from "react";
 
 export interface GroupSession {
-
+  id: string;
+  venue_id: string;
+  table_number: number;
+  total_group_size: number;
+  current_group_size: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface UseGroupSessionsReturn {
-
+  groupSessions: GroupSession[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
 }
 
 export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
@@ -40,7 +49,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
         throw new Error(data.error || "Failed to fetch group sessions");
       }
     } catch (_err) {
-      );
+
       setError(_err instanceof Error ? _err.message : "Unknown error");
       setGroupSessions([]);
     } finally {
@@ -66,6 +75,6 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
     groupSessions,
     loading,
     error,
-
+    refetch: fetchGroupSessions,
   };
 }

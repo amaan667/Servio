@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { getTableState, getMergeScenario } from "@/lib/table-states";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -15,7 +16,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -82,7 +83,8 @@ export const POST = withUnifiedAuth(
       if (!mergeScenario.allowed) {
         return NextResponse.json(
           {
-
+            error: mergeScenario.description,
+            scenario: mergeScenario.type,
           },
           { status: 400 }
         );
@@ -92,7 +94,10 @@ export const POST = withUnifiedAuth(
       if (mergeScenario.requiresConfirmation && !confirmed) {
         return NextResponse.json(
           {
-
+            error: "Confirmation required for this merge operation",
+            requires_confirmation: true,
+            warning: mergeScenario.warning,
+            scenario: mergeScenario.type,
           },
           { status: 400 }
         );
@@ -126,14 +131,16 @@ export const POST = withUnifiedAuth(
         case "RESERVED_RESERVED":
           result = await mergeReservedTables(supabase, sourceTable, targetTable);
           break;
-
+        default:
+          return apiErrors.badRequest("Unsupported merge scenario");
       }
 
       if (result.error) {
-        
+
         return NextResponse.json(
           {
-
+            error: "Merge operation failed",
+            message: isDevelopment() ? result.error : "Failed to merge tables",
           },
           { status: 500 }
         );
@@ -141,18 +148,21 @@ export const POST = withUnifiedAuth(
 
       // STEP 7: Return success response
       return NextResponse.json({
-
+        success: true,
+        data: result.data,
+        scenario: mergeScenario.type,
+        description: mergeScenario.description,
+      });
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      
-
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -160,7 +170,8 @@ export const POST = withUnifiedAuth(
 
       return NextResponse.json(
         {
-
+          error: "Internal Server Error",
+          message: isDevelopment() ? errorMessage : "Request processing failed",
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
@@ -169,7 +180,10 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
       } catch {
         return null;
       }
@@ -181,7 +195,7 @@ export const POST = withUnifiedAuth(
  * Merge two free tables
  */
 async function mergeFreeTables(
-
+  supabase: SupabaseClient,
   sourceTable: { id: string; label: string; seat_count: number; venue_id: string },
   targetTable: { id: string; label: string; seat_count: number }
 ) {
@@ -193,7 +207,10 @@ async function mergeFreeTables(
     const { error: sourceError } = await supabase
       .from("tables")
       .update({
-
+        label: combinedLabel,
+        seat_count: sourceTable.seat_count + targetTable.seat_count,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", sourceTable.id);
 
     if (sourceError) {
@@ -204,7 +221,9 @@ async function mergeFreeTables(
     const { error: targetError } = await supabase
       .from("tables")
       .update({
-
+        merged_with_table_id: sourceTable.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", targetTable.id);
 
     if (targetError) {
@@ -213,19 +232,25 @@ async function mergeFreeTables(
 
     // Create a new FREE session for the combined table
     const { error: sessionError } = await supabase.from("table_sessions").insert({
+      table_id: sourceTable.id,
+      venue_id: sourceTable.venue_id,
+      status: "FREE",
+      opened_at: new Date().toISOString(),
+    });
 
     if (sessionError) {
       return { error: "Failed to create combined session" };
     }
 
     return {
-
+      data: {
         merged_tables: [sourceTable.id, targetTable.id],
-
+        combined_label: combinedLabel,
+        total_seats: sourceTable.seat_count + targetTable.seat_count,
       },
     };
   } catch (_error) {
-    
+
     return { error: "Failed to merge free tables" };
   }
 }
@@ -234,10 +259,16 @@ async function mergeFreeTables(
  * Expand occupied table with free table
  */
 async function expandOccupiedTable(
-
+  supabase: SupabaseClient,
   sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
   targetTable: { id: string; seat_count: number; venue_id: string; label: string },
+  sourceIsFree: boolean
+) {
+  try {
+    const freeTable = sourceIsFree ? sourceTable : targetTable;
+    const occupiedTable = sourceIsFree ? targetTable : sourceTable;
 
+    // Get the occupied table's session
     const { data: occupiedSession, error: sessionError } = await supabase
       .from("table_sessions")
       .select("*")
@@ -254,7 +285,10 @@ async function expandOccupiedTable(
     const { error: labelError } = await supabase
       .from("tables")
       .update({
-
+        label: newLabel,
+        seat_count: occupiedTable.seat_count + freeTable.seat_count,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", occupiedTable.id);
 
     if (labelError) {
@@ -265,7 +299,9 @@ async function expandOccupiedTable(
     const { error: mergeError } = await supabase
       .from("tables")
       .update({
-
+        merged_with_table_id: occupiedTable.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", freeTable.id);
 
     if (mergeError) {
@@ -273,11 +309,16 @@ async function expandOccupiedTable(
     }
 
     return {
-
+      data: {
+        expanded_table: occupiedTable.id,
+        merged_table: freeTable.id,
+        combined_label: newLabel,
+        total_seats: occupiedTable.seat_count + freeTable.seat_count,
+        session_id: occupiedSession.id,
       },
     };
   } catch (_error) {
-    
+
     return { error: "Failed to expand occupied table" };
   }
 }
@@ -286,15 +327,24 @@ async function expandOccupiedTable(
  * Expand reserved table with free table
  */
 async function expandReservedTable(
-
+  supabase: SupabaseClient,
   sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
   targetTable: { id: string; seat_count: number; venue_id: string; label: string },
+  sourceIsFree: boolean
+) {
+  try {
+    const freeTable = sourceIsFree ? sourceTable : targetTable;
+    const reservedTable = sourceIsFree ? targetTable : sourceTable;
 
+    // Update reserved table label to include the free table
     const newLabel = `${reservedTable.label} + ${freeTable.label}`;
     const { error: labelError } = await supabase
       .from("tables")
       .update({
-
+        label: newLabel,
+        seat_count: reservedTable.seat_count + freeTable.seat_count,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", reservedTable.id);
 
     if (labelError) {
@@ -305,7 +355,9 @@ async function expandReservedTable(
     const { error: mergeError } = await supabase
       .from("tables")
       .update({
-
+        merged_with_table_id: reservedTable.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", freeTable.id);
 
     if (mergeError) {
@@ -313,11 +365,15 @@ async function expandReservedTable(
     }
 
     return {
-
+      data: {
+        expanded_table: reservedTable.id,
+        merged_table: freeTable.id,
+        combined_label: newLabel,
+        total_seats: reservedTable.seat_count + freeTable.seat_count,
       },
     };
   } catch (_error) {
-    
+
     return { error: "Failed to expand reserved table" };
   }
 }
@@ -326,7 +382,7 @@ async function expandReservedTable(
  * Merge two occupied tables (risky operation)
  */
 async function mergeOccupiedTables(
-
+  supabase: SupabaseClient,
   sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
   targetTable: { id: string; seat_count: number; venue_id: string; label: string }
 ) {
@@ -343,7 +399,11 @@ async function mergeOccupiedTables(
     }
 
     interface SessionRow {
-
+      table_id: string;
+      id: string;
+      total_amount?: number;
+      order_id?: string;
+      [key: string]: unknown;
     }
     const sourceSession = (sessions as unknown as SessionRow[]).find(
       (s) => s.table_id === sourceTable.id
@@ -367,7 +427,9 @@ async function mergeOccupiedTables(
     const { error: primaryError } = await supabase
       .from("table_sessions")
       .update({
-
+        total_amount: combinedTotal,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", primarySession.id);
 
     if (primaryError) {
@@ -378,7 +440,9 @@ async function mergeOccupiedTables(
     const { error: closeError } = await supabase
       .from("table_sessions")
       .update({
-
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", secondarySession.id);
 
     if (closeError) {
@@ -391,7 +455,10 @@ async function mergeOccupiedTables(
     const { error: sourceLabelError } = await supabase
       .from("tables")
       .update({
-
+        label: combinedLabel,
+        seat_count: sourceTable.seat_count + targetTable.seat_count,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", sourceTable.id);
 
     if (sourceLabelError) {
@@ -401,7 +468,9 @@ async function mergeOccupiedTables(
     const { error: targetMergeError } = await supabase
       .from("tables")
       .update({
-
+        merged_with_table_id: sourceTable.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", targetTable.id);
 
     if (targetMergeError) {
@@ -409,11 +478,17 @@ async function mergeOccupiedTables(
     }
 
     return {
-
+      data: {
+        primary_table: sourceTable.id,
+        secondary_table: targetTable.id,
+        primary_session: primarySession.id,
+        combined_total: combinedTotal,
+        combined_label: combinedLabel,
+        total_seats: sourceTable.seat_count + targetTable.seat_count,
       },
     };
   } catch (_error) {
-    
+
     return { error: "Failed to merge occupied tables" };
   }
 }
@@ -422,7 +497,7 @@ async function mergeOccupiedTables(
  * Merge two reserved tables (same reservation only)
  */
 async function mergeReservedTables(
-
+  supabase: SupabaseClient,
   sourceTable: { id: string; seat_count: number; venue_id: string; label: string },
   targetTable: { id: string; seat_count: number; venue_id: string; label: string }
 ) {
@@ -433,7 +508,10 @@ async function mergeReservedTables(
     const { error: sourceLabelError } = await supabase
       .from("tables")
       .update({
-
+        label: combinedLabel,
+        seat_count: sourceTable.seat_count + targetTable.seat_count,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", sourceTable.id);
 
     if (sourceLabelError) {
@@ -443,7 +521,9 @@ async function mergeReservedTables(
     const { error: targetMergeError } = await supabase
       .from("tables")
       .update({
-
+        merged_with_table_id: sourceTable.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", targetTable.id);
 
     if (targetMergeError) {
@@ -451,11 +531,15 @@ async function mergeReservedTables(
     }
 
     return {
-
+      data: {
+        primary_table: sourceTable.id,
+        secondary_table: targetTable.id,
+        combined_label: combinedLabel,
+        total_seats: sourceTable.seat_count + targetTable.seat_count,
       },
     };
   } catch (_error) {
-    
+
     return { error: "Failed to merge reserved tables" };
   }
 }

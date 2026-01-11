@@ -8,7 +8,8 @@ export async function POST(_request: NextRequest) {
     if (!venueId || !categoryName) {
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "venueId and categoryName are required",
         },
         { status: 400 }
       );
@@ -24,10 +25,10 @@ export async function POST(_request: NextRequest) {
       .eq("category", categoryName);
 
     if (menuItemsError) {
-      
+
       return NextResponse.json(
         {
-
+          ok: false,
           error: `Failed to fetch menu items: ${menuItemsError.message}`,
         },
         { status: 500 }
@@ -45,10 +46,10 @@ export async function POST(_request: NextRequest) {
         .eq("category", categoryName);
 
       if (deleteError) {
-        
+
         return NextResponse.json(
           {
-
+            ok: false,
             error: `Failed to delete menu items: ${deleteError.message}`,
           },
           { status: 500 }
@@ -67,9 +68,7 @@ export async function POST(_request: NextRequest) {
             const itemIds = itemsToDelete.map((item) => item.id);
             const { error } = await supabase.from(table).delete().in("menu_item_id", itemIds);
 
-            if (error) {
-              
-            }
+            if (error) { /* Condition handled */ }
           }
         } else if (table === "options") {
           // Options table might have venue_id, delete by category
@@ -79,24 +78,23 @@ export async function POST(_request: NextRequest) {
             .eq("venue_id", venueId)
             .eq("category", categoryName);
 
-          if (error) {
-            
-          }
+          if (error) { /* Condition handled */ }
         }
-      } catch (_error) {
-        
-      }
+      } catch (_error) { /* Error handled silently */ }
     }
 
     return NextResponse.json({
-
+      ok: true,
       message: `Category "${categoryName}" and its items deleted successfully`,
-
+      deletedItemsCount: itemsToDelete.length,
+      deletedItems: itemsToDelete.map((item) => item.name),
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        ok: false,
+        error: "Internal server error",
       },
       { status: 500 }
     );

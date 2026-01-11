@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -32,11 +33,9 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (fetchError || !currentOrder) {
-        
+
         return apiErrors.notFound("Order not found");
       }
-
-      
 
       // If kitchen_status is not BUMPED (including NULL), check if all tickets are bumped
       const kitchenStatusUpper = (currentOrder.kitchen_status || "").toUpperCase();
@@ -48,38 +47,33 @@ export const POST = withUnifiedAuth(
           .eq("order_id", orderId)
           .eq("venue_id", venueId);
 
-        if (ticketsError) {
-          
-        }
+        if (ticketsError) { /* Condition handled */ }
 
         // If no tickets exist, consider it as all bumped (order might not have KDS tickets)
         const allBumped =
           !tickets || tickets.length === 0 || tickets.every((t) => t.status === "bumped");
-
-         => t.status === "bumped").length || 0,
-          allBumped,
 
         if (allBumped) {
           // Set kitchen_status to BUMPED first
           const { data: bumpResult, error: bumpError } = await admin.rpc(
             "orders_set_kitchen_bumped",
             {
-
+              p_order_id: orderId,
+              p_venue_id: venueId,
             }
           );
 
           if (bumpError) {
-            
+
             return apiErrors.badRequest(
               `Failed to set kitchen status: ${bumpError.message || "Unknown error"}`
             );
           }
 
-          
         } else {
           // Not all tickets are bumped yet
           const notBumpedCount = tickets?.filter((t) => t.status !== "bumped").length || 0;
-          
+
           return apiErrors.badRequest(
             `Cannot mark order as served: ${notBumpedCount} item(s) still need to be bumped in the kitchen`
           );
@@ -95,13 +89,13 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (verifyError || !verifyOrder) {
-        
+
         return apiErrors.notFound("Order not found");
       }
 
       // Check completion_status
       if (verifyOrder.completion_status?.toUpperCase() !== "OPEN") {
-        
+
         return apiErrors.badRequest(
           `Order cannot be served: order is ${verifyOrder.completion_status || "not open"}`
         );
@@ -109,15 +103,17 @@ export const POST = withUnifiedAuth(
 
       // Check if already served
       if (verifyOrder.service_status?.toUpperCase() === "SERVED") {
-        
+
         // Return success since it's already in the desired state
         return NextResponse.json({
-
+          success: true,
+          message: "Order is already marked as served",
+        });
       }
 
       // Verify kitchen_status is BUMPED
       if (verifyOrder.kitchen_status?.toUpperCase() !== "BUMPED") {
-        
+
         return apiErrors.badRequest(
           "Order kitchen status is not BUMPED. Please ensure all items are bumped in the kitchen first."
         );
@@ -125,9 +121,12 @@ export const POST = withUnifiedAuth(
 
       // Canonical transition: SERVE (requires kitchen_status=BUMPED, enforced in RPC)
       const { data, error } = await admin.rpc("orders_set_served", {
+        p_order_id: orderId,
+        p_venue_id: venueId,
+      });
 
       if (error) {
-        
+
         // Return the actual error message from the RPC
         const errorMsg = error.message || "Failed to mark order as served";
         return apiErrors.badRequest(errorMsg);
@@ -135,7 +134,7 @@ export const POST = withUnifiedAuth(
 
       // Verify the update actually happened
       if (!data || (Array.isArray(data) && data.length === 0)) {
-        
+
         return apiErrors.badRequest("Failed to update order status - no data returned");
       }
 
@@ -151,14 +150,21 @@ export const POST = withUnifiedAuth(
       }
 
       return NextResponse.json({
-
+        success: true,
+        order: Array.isArray(data) ? data[0] : data,
+      });
     } catch (_error) {
 
       return apiErrors.internal("Internal server error", isDevelopment() ? _error : undefined);
     }
   },
   {
-
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.clone().json();
+        const orderId = body?.orderId;
+        if (!orderId) return null;
+        const admin = createAdminClient();
         const { data: order } = await admin
           .from("orders")
           .select("venue_id")

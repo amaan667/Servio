@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
@@ -9,6 +10,8 @@ const supportSubmissionSchema = z.object({
   type: z.enum(["feature", "bug"]),
   subject: z.string().min(1, "Subject is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
+  steps: z.string().optional(),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -83,7 +86,7 @@ export const POST = withUnifiedAuth(
                   <div class="value" style="white-space: pre-wrap;">${steps}</div>
                 </div>
                 `
-
+                    : ""
                 }
                 <div class="field">
                   <span class="label">Submitted:</span>
@@ -115,20 +118,26 @@ Submitted: ${new Date().toLocaleString("en-GB", { dateStyle: "full", timeStyle: 
 
       // STEP 4: Send email
       const emailSent = await sendEmail({
+        to: "enquiries@servio.uk",
+        subject: emailSubject,
+        html: emailHtml,
+        text: emailText,
+      });
 
       if (!emailSent) {
-        
+
         return apiErrors.internal("Failed to send support request. Please try again.");
       }
 
-      
-
       // STEP 5: Return success
       return success({
-
+        message: isFeatureRequest
+          ? "Feature request submitted successfully"
+          : "Bug report submitted successfully",
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      
+
       return apiErrors.internal("Failed to submit support request");
     }
   },

@@ -7,7 +7,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EnhancedStatCardProps {
-
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  iconColor: string;
+  iconBgColor: string;
+  isCurrency?: boolean;
+  trend?: {
+    value: number;
+    label: string;
   };
   subtitle?: string; // Simple subtitle without percentage
   tooltip?: string;
@@ -18,7 +26,7 @@ interface EnhancedStatCardProps {
 export function EnhancedStatCard({
   title,
   value,
-
+  icon: Icon,
   iconColor,
   iconBgColor,
   isCurrency = false,
@@ -64,7 +72,7 @@ export function EnhancedStatCard({
               className={`flex items-center gap-1 text-xs font-medium ${
                 trend.value >= 0
                   ? "text-green-600 dark:text-green-400"
-
+                  : "text-red-600 dark:text-red-400"
               }`}
             >
               {trend.value >= 0 ? (

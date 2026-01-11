@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -16,7 +17,7 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
         if (!rateLimitResult.success) {
           return NextResponse.json(
             {
-
+              error: "Too many requests",
               message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
             },
             { status: 429 }
@@ -30,7 +31,8 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
         if (!reservationId) {
           return NextResponse.json(
             {
-
+              ok: false,
+              error: "reservationId is required",
             },
             { status: 400 }
           );
@@ -39,7 +41,7 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
         if (!customerName || !startAt || !endAt || !partySize) {
           return NextResponse.json(
             {
-
+              ok: false,
               error: "customerName, startAt, endAt, and partySize are required",
             },
             { status: 400 }
@@ -60,7 +62,8 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
         if (reservationError || !reservation) {
           return NextResponse.json(
             {
-
+              ok: false,
+              error: "Reservation not found",
             },
             { status: 404 }
           );
@@ -70,29 +73,39 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
         const { data: updatedReservation, error: updateError } = await supabase
           .from("reservations")
           .update({
-
+            customer_name: customerName,
+            start_at: startAt,
+            end_at: endAt,
+            party_size: partySize,
+            customer_phone: customerPhone || null,
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", reservationId)
           .eq("venue_id", authContext.venueId)
           .select()
           .single();
 
         if (updateError) {
-          
+
           return NextResponse.json(
             {
-
+              ok: false,
+              error: "Failed to modify reservation",
             },
             { status: 500 }
           );
         }
 
         return NextResponse.json({
-
+          ok: true,
+          reservation: updatedReservation,
+        });
       } catch (_error) {
-        
+
         return NextResponse.json(
           {
-
+            ok: false,
+            error: _error instanceof Error ? _error.message : "Internal server _error",
           },
           { status: 500 }
         );
@@ -125,5 +138,5 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-
+  });
 }

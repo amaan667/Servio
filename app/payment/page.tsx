@@ -39,9 +39,6 @@ export default function PaymentPage() {
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "unknown";
     const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
-    .toISOString(),
-      isMobile,
-
   }, []); // Only run on mount
 
   // Payment state effects handled by component logic
@@ -53,10 +50,8 @@ export default function PaymentPage() {
 
     // Comprehensive logging for mobile payment method selection
 
-    
-
     if (!paymentState.checkoutData) {
-      
+
       return;
     }
 
@@ -90,13 +85,13 @@ export default function PaymentPage() {
       );
     } catch (unhandledError) {
 
-        timestamp,
-        action,
-
       const errorMessage =
         unhandledError instanceof Error
           ? unhandledError.message
+          : "An unexpected error occurred. Please try again.";
 
+      paymentState.setError(errorMessage);
+      paymentState.setIsProcessing(false);
     }
   };
 

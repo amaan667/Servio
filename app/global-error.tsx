@@ -12,7 +12,14 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
     <html>
       <body
         style={{
-
+          padding: 24,
+          fontFamily: "system-ui",
+          margin: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          backgroundColor: "#f9fafb",
         }}
       >
         <div style={{ textAlign: "center", maxWidth: "400px" }}>
@@ -23,7 +30,13 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
           <button
             onClick={() => window.location.reload()}
             style={{
-
+              backgroundColor: "#8b5cf6",
+              color: "white",
+              border: "none",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
             }}
           >
             Refresh Page

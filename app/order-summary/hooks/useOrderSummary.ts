@@ -1,10 +1,28 @@
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export interface PendingOrderData {
-
+  venueId: string;
+  venueName: string;
+  tableNumber: number;
+  counterNumber?: string;
+  orderType?: string;
+  orderLocation?: string;
+  cart: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    specialInstructions?: string;
   }>;
-
+  total: number;
+  customerName: string;
+  customerPhone: string;
+  orderId?: string;
+  isDemo?: boolean;
+  paymentMethod?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL";
+  paymentMode?: "online" | "offline" | "deferred";
 }
 
 export function useOrderSummary() {
@@ -23,7 +41,7 @@ export function useOrderSummary() {
         setOrderData(data);
       } catch (_error) {
         // Don't redirect - let the parent component handle it
-        
+
       }
     }
     // Don't redirect if no data - the page will show "No order data found" message
@@ -45,10 +63,22 @@ export function useOrderSummary() {
 
       try {
         const response = await fetch("/api/orders/create-demo", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-
+          body: JSON.stringify({
+            venueId: orderData.venueId,
+            venueName: orderData.venueName,
+            tableNumber: orderData.tableNumber,
+            counterNumber: orderData.counterNumber,
+            orderType: orderData.orderType,
+            orderLocation: orderData.orderLocation,
+            cart: orderData.cart,
+            total: orderData.total,
+            customerName: orderData.customerName,
+            customerPhone: orderData.customerPhone,
+            orderId: demoOrderId,
           }),
+        });
 
         const result = await response.json();
 
@@ -77,10 +107,21 @@ export function useOrderSummary() {
 
     try {
       const response = await fetch("/api/orders/create", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          venueId: orderData.venueId,
+          venueName: orderData.venueName,
+          tableNumber: orderData.tableNumber,
+          counterNumber: orderData.counterNumber,
+          orderType: orderData.orderType,
+          orderLocation: orderData.orderLocation,
+          cart: orderData.cart,
+          total: orderData.total,
+          customerName: orderData.customerName,
+          customerPhone: orderData.customerPhone,
         }),
+      });
 
       const result = await response.json();
 

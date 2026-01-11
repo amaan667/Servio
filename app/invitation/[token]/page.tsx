@@ -17,6 +17,8 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
 
   try {
     const { data: invitationData, error } = await supabase.rpc("get_invitation_by_token", {
+      p_token: token,
+    });
 
     if (error || !invitationData || invitationData.length === 0) {
       redirect("/invitation/invalid");

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -38,7 +39,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("order_status", ["COMPLETED", "CANCELLED"]);
 
     if (ordersError) {
-      
+
       return apiErrors.database(
         "Failed to fetch completed orders",
         isDevelopment() ? ordersError.message : undefined
@@ -47,7 +48,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (!completedOrders || completedOrders.length === 0) {
       return success({
-
+        message: "No completed orders found",
+        cleared: 0,
+        orderIds: [],
+      });
     }
 
     const orderIds = completedOrders.map((o) => o.id);
@@ -55,36 +59,37 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     if (tableIds.length === 0) {
       return success({
-
+        message: "No tables to clear",
+        cleared: 0,
         orderIds,
-
+      });
     }
 
     // Close table sessions for these tables
     const { data: clearedSessions, error: clearError } = await supabase
       .from("table_sessions")
       .update({
-
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .in("table_id", tableIds)
       .eq("venue_id", venueId)
       .is("closed_at", null)
       .select();
 
     if (clearError) {
-      
+
       return apiErrors.database(
         "Failed to clear table sessions",
         isDevelopment() ? clearError.message : undefined
       );
     }
 
-    
-
     return success({
       message: `Cleared ${clearedSessions?.length || 0} table sessions`,
-
+      cleared: clearedSessions?.length || 0,
       orderIds,
-
+    });
   } catch (error) {
 
     if (isZodError(error)) {
@@ -93,3 +98,4 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

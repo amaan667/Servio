@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import { getStripeClient } from "@/lib/stripe-client";
 import { withStripeRetry } from "@/lib/stripe-retry";
 import { env } from "@/lib/env";
@@ -18,8 +19,6 @@ export async function POST(req: Request) {
     const { orderIds, amount, customerEmail, customerName, venueName, tableNumber } =
       await req.json();
 
-    
-
     if (!amount || amount <= 0) {
       return apiErrors.badRequest("Invalid amount");
     }
@@ -33,32 +32,38 @@ export async function POST(req: Request) {
     const session = await withStripeRetry(
       () =>
         stripe.checkout.sessions.create({
-
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "gbp",
+                product_data: {
                   name: `Table ${tableNumber || ""} - ${orderIds.length} order(s)`,
                   description: `${venueName || "Restaurant"} - Pay all unpaid orders`,
                 },
                 unit_amount: Math.round(amount * 100), // Convert to pence
               },
-
+              quantity: 1,
             },
           ],
-
+          mode: "payment",
           success_url: `${env("NEXT_PUBLIC_SITE_URL")}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${env("NEXT_PUBLIC_SITE_URL")}/payment/cancel`,
-
+          customer_email: customerEmail,
+          metadata: {
             orderIds: orderIds.join(","), // Comma-separated list of order IDs
-
+            tableNumber: tableNumber?.toString() || "",
+            paymentType: "table_payment",
           },
         }),
       { maxRetries: 3 }
     );
 
-    
-
     return NextResponse.json({
-
+      url: session.url,
+      sessionId: session.id,
+    });
   } catch (_error) {
-    
 
     return apiErrors.internal("Failed to create checkout session");
   }

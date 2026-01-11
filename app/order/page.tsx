@@ -68,17 +68,20 @@ export default function CustomerOrderPage() {
       counterNumber,
       orderType,
       isDemo,
-
+      url: typeof window !== "undefined" ? window.location.href : "unknown",
+      userAgent: typeof window !== "undefined" ? navigator.userAgent : "unknown",
+      timestamp: new Date().toISOString(),
     };
 
     // Log to server (will appear in Railway logs)
     fetch("/api/log-qr-scan", {
-
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-
+      body: JSON.stringify(logData),
     }).catch(() => {
       // Silently handle - error logging failed
       // Error is already handled server-side
+    });
 
     // Also log client-side for development
   }, [venueSlug, tableNumber, counterNumber, orderType, isDemo]);
@@ -90,7 +93,7 @@ export default function CustomerOrderPage() {
     isDemo,
     isCounterOrder,
     orderLocation,
-
+    orderType: orderType as "counter" | "table",
   };
 
   // Use custom hooks
@@ -154,7 +157,8 @@ export default function CustomerOrderPage() {
       orderType,
       isCounterOrder,
       isDemo,
-
+      isDemoFallback: false,
+    });
   };
 
   // Show error if no venue or table parameter - no automatic redirect

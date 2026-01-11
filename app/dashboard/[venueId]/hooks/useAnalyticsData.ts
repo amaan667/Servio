@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
+
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -11,7 +12,9 @@ interface AnalyticsData {
   ordersByHour: Array<{ hour: string; orders: number }>;
   revenueByCategory: Array<{ name: string; value: number; color: string }>;
   topSellingItems: Array<{ name: string; price: number; count: number }>;
-
+  yesterdayComparison: {
+    orders: number;
+    revenue: number;
   };
 }
 
@@ -112,7 +115,7 @@ function getItemRevenue(item: UnknownRecord): number | null {
 }
 
 export function buildRevenueByCategory(params: {
-
+  orders: UnknownRecord[];
   menuItems: Array<{ id: string; category_id: string | null }>;
   categories: Array<{ id: string; name: string }>;
 }): Array<{ name: string; value: number; color: string }> {
@@ -121,6 +124,7 @@ export function buildRevenueByCategory(params: {
     const name = c.name.trim();
     if (!name) return;
     categoryNameById.set(c.id, name);
+  });
 
   // Only allow categories that exist in menu_categories. We never emit "Other"/"Uncategorized".
   const menuItemIdToCategoryName = new Map<string, string>();
@@ -129,6 +133,7 @@ export function buildRevenueByCategory(params: {
     const categoryName = categoryNameById.get(mi.category_id);
     if (!categoryName) return;
     menuItemIdToCategoryName.set(mi.id, categoryName);
+  });
 
   const categoryRevenue = new Map<string, number>();
 
@@ -152,6 +157,8 @@ export function buildRevenueByCategory(params: {
       const categoryName = menuItemIdToCategoryName.get(menuItemId);
       if (!categoryName) return;
       categoryRevenue.set(categoryName, (categoryRevenue.get(categoryName) || 0) + revenue);
+    });
+  });
 
   const sorted = Array.from(categoryRevenue.entries())
     .map(([name, value]) => ({ name, value }))
@@ -160,7 +167,7 @@ export function buildRevenueByCategory(params: {
 
   return sorted.map((entry, index) => ({
     ...entry,
-
+    color: COLORS[index % COLORS.length],
   }));
 }
 
@@ -202,7 +209,7 @@ export function useAnalyticsData(venueId: string) {
         .order("created_at", { ascending: true });
 
       if (ordersError) {
-        
+
         throw ordersError;
       }
 
@@ -227,6 +234,7 @@ export function useAnalyticsData(venueId: string) {
         if (hourlyOrders[hour] !== undefined) {
           hourlyOrders[hour]++;
         }
+      });
 
       const ordersByHour = Object.entries(hourlyOrders).map(([hour, orders]) => ({
         hour: `${hour}:00`,
@@ -239,26 +247,32 @@ export function useAnalyticsData(venueId: string) {
         .select("id, category_id")
         .eq("venue_id", venueId);
 
-      if (menuItemsError) {
-        
-      }
+      if (menuItemsError) { /* Condition handled */ }
 
       const { data: menuCategories, error: categoriesError } = await supabase
         .from("menu_categories")
         .select("id, name")
         .eq("venue_id", venueId);
 
-      if (categoriesError) {
-        
-      }
+      if (categoriesError) { /* Condition handled */ }
 
       const revenueByCategory = buildRevenueByCategory({
-
+        orders: (todayOrders || []) as UnknownRecord[],
+        menuItems:
+          (menuItems || [])
+            .map((mi: UnknownRecord) => ({
+              id: normalizeId(mi.id) || "",
+              category_id: normalizeId(mi.category_id),
             }))
             .filter((mi) => mi.id.length > 0) || [],
-
+        categories:
+          (menuCategories || [])
+            .map((c: UnknownRecord) => ({
+              id: normalizeId(c.id) || "",
+              name: typeof c.name === "string" ? c.name : "Other",
             }))
             .filter((c) => c.id.length > 0) || [],
+      });
 
       // Get top selling items - count by QUANTITY added to cart (not number of orders)
       const itemCounts: { [key: string]: { name: string; price: number; count: number } } = {
@@ -277,8 +291,9 @@ export function useAnalyticsData(venueId: string) {
             }
             // Add the quantity (e.g., if someone orders 5x, add 5 to the count)
             itemCounts[name].count += quantity;
-
+          });
         }
+      });
 
       const topSellingItems = Object.values(itemCounts)
         .sort((a, b) => b.count - a.count)
@@ -294,8 +309,11 @@ export function useAnalyticsData(venueId: string) {
         ordersByHour,
         revenueByCategory,
         topSellingItems,
-
+        yesterdayComparison: {
+          orders: yesterdayOrdersCount,
+          revenue: yesterdayRevenue,
         },
+      });
 
       // Cache the analytics data
       if (typeof window !== "undefined") {
@@ -305,14 +323,16 @@ export function useAnalyticsData(venueId: string) {
             ordersByHour,
             revenueByCategory,
             topSellingItems,
-
+            yesterdayComparison: {
+              orders: yesterdayOrdersCount,
+              revenue: yesterdayRevenue,
             },
-
+          })
         );
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch analytics";
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -362,7 +382,7 @@ export function useAnalyticsData(venueId: string) {
           channel.subscribe();
         }
       }
-
+    });
     authSubscriptionRef.current = authSubscription;
 
     const setupChannel = () => {
@@ -373,7 +393,9 @@ export function useAnalyticsData(venueId: string) {
         .on(
           "postgres_changes",
           {
-
+            event: "*",
+            schema: "public",
+            table: "orders",
             filter: `venue_id=eq.${venueId}`,
           },
           (payload) => {
@@ -423,9 +445,9 @@ export function useAnalyticsData(venueId: string) {
         .subscribe((status: string) => {
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
-            
+
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            
+
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);
@@ -451,6 +473,7 @@ export function useAnalyticsData(venueId: string) {
               }
             }, 3000);
           }
+        });
 
       return channel;
     };

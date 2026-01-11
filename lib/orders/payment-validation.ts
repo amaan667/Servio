@@ -6,14 +6,20 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
 export interface PaymentValidationResult {
-
+  isValid: boolean;
+  error?: string;
+  paymentStatus?: string;
+  orderStatus?: string;
 }
 
 /**
  * Validate that an order can be completed (must be PAID)
  */
 export async function validateOrderCompletion(
-
+  supabase: SupabaseClient,
+  orderId: string
+): Promise<PaymentValidationResult> {
+  try {
     const { data: order, error } = await supabase
       .from("orders")
       .select("payment_status, order_status")
@@ -21,9 +27,10 @@ export async function validateOrderCompletion(
       .single();
 
     if (error || !order) {
-      
-      return {
 
+      return {
+        isValid: false,
+        error: "Order not found",
       };
     }
 
@@ -33,7 +40,7 @@ export async function validateOrderCompletion(
     // CRITICAL: Order must be PAID before completion
     if (paymentStatus !== "PAID") {
       return {
-
+        isValid: false,
         error: `Cannot complete order: payment status is ${paymentStatus}. Order must be PAID before completion.`,
         paymentStatus,
         orderStatus,
@@ -44,7 +51,7 @@ export async function validateOrderCompletion(
     const completableStatuses = ["SERVED", "READY", "SERVING"];
     if (!completableStatuses.includes(orderStatus)) {
       return {
-
+        isValid: false,
         error: `Cannot complete order: current status is ${orderStatus}. Order must be SERVED, READY, or SERVING before completion.`,
         paymentStatus,
         orderStatus,
@@ -52,14 +59,15 @@ export async function validateOrderCompletion(
     }
 
     return {
-
+      isValid: true,
       paymentStatus,
       orderStatus,
     };
   } catch (error) {
-    
-    return {
 
+    return {
+      isValid: false,
+      error: "Failed to validate order payment status",
     };
   }
 }
@@ -68,7 +76,9 @@ export async function validateOrderCompletion(
  * Validate multiple orders can be completed (all must be PAID)
  */
 export async function validateBulkOrderCompletion(
-
+  supabase: SupabaseClient,
+  orderIds: string[],
+  venueId: string
 ): Promise<PaymentValidationResult & { unpaidOrderIds?: string[] }> {
   try {
     const { data: orders, error } = await supabase
@@ -78,15 +88,17 @@ export async function validateBulkOrderCompletion(
       .eq("venue_id", venueId);
 
     if (error) {
-      
-      return {
 
+      return {
+        isValid: false,
+        error: "Failed to fetch orders for validation",
       };
     }
 
     if (!orders || orders.length === 0) {
       return {
-
+        isValid: false,
+        error: "No orders found",
       };
     }
 
@@ -97,9 +109,9 @@ export async function validateBulkOrderCompletion(
 
     if (unpaidOrders.length > 0) {
       return {
-
+        isValid: false,
         error: `Cannot complete ${unpaidOrders.length} unpaid order(s). All orders must be PAID before completion.`,
-
+        unpaidOrderIds: unpaidOrders.map((o) => o.id),
       };
     }
 
@@ -110,21 +122,21 @@ export async function validateBulkOrderCompletion(
     );
 
     if (nonCompletableOrders.length > 0) {
-       => o.id),
 
       // Return valid but with warning - caller can filter
       return {
-
+        isValid: true,
       };
     }
 
     return {
-
+      isValid: true,
     };
   } catch (error) {
-    
-    return {
 
+    return {
+      isValid: false,
+      error: "Failed to validate orders payment status",
     };
   }
 }

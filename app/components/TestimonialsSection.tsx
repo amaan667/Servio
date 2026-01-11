@@ -6,21 +6,26 @@ export function TestimonialsSection() {
     {
       quote:
         "Servio transformed our cafe completely. Orders are faster, more accurate, and our customers love the convenience. Revenue is up 30%!",
-
+      author: "Sarah Mitchell",
       role: "Owner, Corner Cafe",
-
+      initials: "SM",
+      color: "purple",
     },
     {
       quote:
         "The setup was incredibly easy. Within an hour, we had QR codes on all our tables. The real-time order management is a game-changer.",
-
+      author: "Mike Rodriguez",
       role: "Manager, Pizza Palace",
-
+      initials: "MR",
+      color: "blue",
     },
     {
-
+      quote:
+        "Our staff can focus on food quality instead of taking orders. Customer satisfaction has improved dramatically since we started using Servio.",
+      author: "Lisa Chen",
       role: "Chef, Bistro 42",
-
+      initials: "LC",
+      color: "green",
     },
   ];
 
@@ -35,7 +40,9 @@ export function TestimonialsSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => {
             const colorClasses = {
-
+              purple: "bg-purple-100 text-purple-600",
+              blue: "bg-blue-100 text-blue-600",
+              green: "bg-green-100 text-green-600",
             };
 
             return (

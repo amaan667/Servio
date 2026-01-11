@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache, cacheTTL } from "@/lib/cache";
+
 import { apiErrors } from "@/lib/api/standard-response";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -47,7 +48,7 @@ export async function GET(_request: NextRequest) {
       .maybeSingle();
 
     if (uploadError) {
-      
+
       return apiErrors.internal("Failed to fetch category order");
     }
 
@@ -59,7 +60,7 @@ export async function GET(_request: NextRequest) {
       .limit(limit);
 
     if (menuError) {
-      
+
       return apiErrors.internal("Failed to fetch menu items");
     }
 
@@ -78,7 +79,9 @@ export async function GET(_request: NextRequest) {
     }
 
     const response = {
-
+      categories: orderedCategories,
+      originalCategories: uploadData?.category_order || [],
+      hasStoredOrder: !!uploadData?.category_order,
     };
 
     // Cache the response for 10 minutes
@@ -86,7 +89,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }
@@ -119,7 +122,7 @@ export async function PUT(_request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-      
+
       return apiErrors.internal("Failed to fetch existing upload");
     }
 
@@ -128,29 +131,37 @@ export async function PUT(_request: NextRequest) {
       const { error: updateError } = await supabase
         .from("menu_uploads")
         .update({
-
+          category_order: categories,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", existingUpload.id);
 
       if (updateError) {
-        
+
         return apiErrors.internal("Failed to update category order");
       }
     } else {
       // Create new menu upload record if none exists
       const { error: insertError } = await supabase.from("menu_uploads").insert({
+        venue_id: finalVenueId,
+        category_order: categories,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
       if (insertError) {
-        
+
         return apiErrors.internal("Failed to create category order");
       }
     }
 
     return NextResponse.json({
-
+      success: true,
+      message: "Category order updated successfully",
       categories,
-
+    });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }
@@ -175,7 +186,7 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-      
+
       return apiErrors.internal("Failed to fetch category order");
     }
 
@@ -196,11 +207,13 @@ export async function POST(_request: NextRequest) {
       const { error: updateError } = await supabase
         .from("menu_uploads")
         .update({
-
+          category_order: newCategories,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", existingUpload.id);
 
       if (updateError) {
-        
+
         return apiErrors.internal("Failed to update category order");
       }
     } else {
@@ -208,9 +221,13 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json({
-
+      success: true,
+      message: "Category added successfully",
+      category: categoryName,
+      categories: newCategories,
+    });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

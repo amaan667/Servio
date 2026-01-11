@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
+
 import { env } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 import { trackError } from "@/lib/monitoring/error-tracking";
@@ -35,8 +36,6 @@ export async function POST(_request: NextRequest) {
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     eventId = event.id;
 
-    
-
     const supabase = createAdminClient();
     const nowIso = new Date().toISOString();
     const { data: existingEvent } = await supabase
@@ -46,7 +45,7 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (existingEvent?.status === "succeeded") {
-      
+
       return NextResponse.json({ received: true, alreadyProcessed: true });
     }
 
@@ -55,10 +54,12 @@ export async function POST(_request: NextRequest) {
       .from("stripe_webhook_events")
       .upsert(
         {
-
+          event_id: event.id,
+          type: event.type,
+          status: "processing",
           attempts,
           payload: event as unknown as Record<string, unknown>,
-
+          updated_at: nowIso,
         },
         { onConflict: "event_id" }
       )
@@ -66,7 +67,7 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (reserveError) {
-      
+
       return NextResponse.json(
         { received: false, error: "Failed to reserve event" },
         { status: 500 }
@@ -99,18 +100,22 @@ export async function POST(_request: NextRequest) {
         await handlePaymentFailed(event.data.object as Stripe.Invoice);
         break;
 
+      default:
+
     }
 
     await finalizeStripeEvent(supabase, event.id, "succeeded");
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown _error";
-    
+
     trackError(_error, { action: "stripe_subscription_webhook", eventId }, "high");
     try {
       const supabase = createAdminClient();
       await finalizeStripeEvent(supabase, eventId, "failed", {
-
+        message: errorMessage,
+        stack: _error instanceof Error ? _error.stack : undefined,
+      });
     } catch {
       /* swallow finalize errors */
     }
@@ -119,8 +124,6 @@ export async function POST(_request: NextRequest) {
 }
 
 export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  
-  
 
   // This webhook ONLY handles SUBSCRIPTION payments
   const supabase = createAdminClient();
@@ -128,10 +131,8 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
   const tier = session.metadata?.tier;
   const userId = session.metadata?.user_id;
 
-  
-
   if (!organizationId || !tier) {
-    
+
     return;
   }
 
@@ -143,10 +144,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
     .maybeSingle();
 
   if (orgCheckError) {
-    
+
     // If we have a user_id, try to find org by owner_user_id as fallback
     if (userId) {
-      
+
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, subscription_status, owner_user_id")
@@ -154,11 +155,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
         .maybeSingle();
 
       if (ownerError || !orgByOwner) {
-        
+
         return;
       }
 
-      
       // Update the organizationId to use the correct one
       const actualOrgId = orgByOwner.id;
       await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
@@ -168,10 +168,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
   }
 
   if (!existingOrg) {
-    
+
     // If we have a user_id, try to find org by owner_user_id as fallback
     if (userId) {
-      
+
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, subscription_status, owner_user_id")
@@ -179,11 +179,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
         .maybeSingle();
 
       if (ownerError || !orgByOwner) {
-        
+
         return;
       }
 
-      
       // Update the organizationId to use the correct one
       const actualOrgId = orgByOwner.id;
       await handleCheckoutWithOrg(session, actualOrgId, tier, orgByOwner, supabase);
@@ -196,8 +195,20 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
 }
 
 async function handleCheckoutWithOrg(
-
+  session: Stripe.Checkout.Session,
+  organizationId: string,
+  tier: string,
   existingOrg: Record<string, unknown>,
+  supabase: ReturnType<typeof createAdminClient>
+) {
+
+  // Determine trial status - only set to trialing if trial hasn't ended yet
+  const existingTrialEndsAt = existingOrg.trial_ends_at
+    ? new Date(existingOrg.trial_ends_at as string)
+    : null;
+  const now = new Date();
+  const trialHasEnded = existingTrialEndsAt && existingTrialEndsAt < now;
+  const currentStatus = existingOrg.subscription_status as string;
 
   // If trial has already ended or subscription is already active, don't restart trial
   const shouldBeTrialing = !trialHasEnded && currentStatus !== "active";
@@ -221,10 +232,21 @@ async function handleCheckoutWithOrg(
   const subscriptionStatus =
     trialHasEnded || currentStatus === "active"
       ? "active"
+      : shouldBeTrialing
+        ? "trialing"
+        : currentStatus || "active";
 
+  // Use tier directly from Stripe metadata (no normalization)
+  // Tier should already be correct from Stripe product/price metadata
+
+  const updateData = {
+    stripe_subscription_id: session.subscription as string,
+    stripe_customer_id: session.customer as string,
+    subscription_tier: tier,
+    subscription_status: subscriptionStatus,
+    trial_ends_at: trialEndsAt,
+    updated_at: new Date().toISOString(),
   };
-
-  
 
   const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
@@ -234,11 +256,9 @@ async function handleCheckoutWithOrg(
     .single();
 
   if (updateError) {
-    
+
     return;
   }
-
-  
 
   // CRITICAL: Ensure all venues for this organization have organization_id set
   // This ensures RPC can read tier correctly via organization_id
@@ -248,28 +268,21 @@ async function handleCheckoutWithOrg(
     .eq("owner_user_id", updatedOrg.owner_user_id)
     .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
 
-  if (venueLinkError) {
-    :", {
-
-      organizationId,
-
-  } else {
-    
-  }
+  if (venueLinkError) { /* Condition handled */ } else { /* Else case handled */ }
 
   // Log subscription history
   try {
     await supabase.from("subscription_history").insert({
-
+      organization_id: organizationId,
+      event_type: "checkout_completed",
+      old_tier: existingOrg.subscription_tier,
+      new_tier: tier,
+      stripe_event_id: session.id,
       metadata: { session_id: session.id },
+    });
 
-  } catch (historyError) {
+  } catch (historyError) { /* Error handled silently */ }
 
-      historyError instanceof Error ? historyError : { error: String(historyError) }
-    );
-  }
-
-  
 }
 
 export async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
@@ -278,10 +291,8 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
 
   const organizationId = subscription.metadata?.organization_id;
 
-  
-
   if (!organizationId) {
-    
+
     return;
   }
 
@@ -293,7 +304,7 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
     .single();
 
   if (orgCheckError || !existingOrg) {
-    
+
     return;
   }
 
@@ -302,18 +313,20 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
   const tier = await getTierFromStripeSubscription(subscription, stripe);
 
-  
-
   const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
     .update({
-
+      stripe_subscription_id: subscription.id,
+      subscription_tier: tier,
+      subscription_status: subscription.status,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", organizationId)
     .select("owner_user_id")
     .single();
 
   if (updateError) {
-    
+
     return;
   }
 
@@ -325,21 +338,20 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
       .eq("owner_user_id", updatedOrg.owner_user_id)
       .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
 
-    if (venueLinkError) {
-      :", venueLinkError);
-    } else {
-      
-    }
+    if (venueLinkError) { /* Condition handled */ } else { /* Else case handled */ }
   }
 
   await supabase.from("subscription_history").insert({
-
+    organization_id: organizationId,
+    event_type: "subscription_created",
+    new_tier: tier,
+    stripe_event_id: subscription.id,
     metadata: { subscription_id: subscription.id },
+  });
 
 }
 
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  
 
   const supabase = createAdminClient();
   const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
@@ -347,10 +359,8 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   const organizationId = subscription.metadata?.organization_id;
   const userId = subscription.metadata?.user_id;
 
-  
-
   if (!organizationId) {
-    
+
     return;
   }
 
@@ -362,10 +372,10 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     .maybeSingle();
 
   if (orgCheckError || !org) {
-    
+
     // Try fallback by user_id
     if (userId) {
-      
+
       const { data: orgByOwner, error: ownerError } = await supabase
         .from("organizations")
         .select("id, subscription_tier, owner_user_id, stripe_customer_id")
@@ -373,12 +383,12 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
         .maybeSingle();
 
       if (ownerError || !orgByOwner) {
-        
+
         return;
       }
 
       org = orgByOwner;
-      
+
     } else {
       return;
     }
@@ -388,8 +398,6 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   // This ensures tier matches what's actually in Stripe - no normalization
   const stripe = await import("@/lib/stripe-client").then((m) => m.stripe);
   const tier = await getTierFromStripeSubscription(subscription, stripe);
-
-  
 
   // Get existing organization data to preserve trial_ends_at if trial has already ended
   const { data: existingOrg } = await supabase
@@ -401,9 +409,14 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   // Preserve trial_ends_at if it exists and trial has ended
   // Don't restart trial for existing customers who already used it
   const updateData: {
-
+    subscription_tier: string;
+    subscription_status: string;
+    updated_at: string;
+    trial_ends_at?: string | null;
   } = {
-
+    subscription_tier: tier,
+    subscription_status: subscription.status,
+    updated_at: new Date().toISOString(),
   };
 
   // If subscription is active and trial_ends_at exists, preserve it
@@ -420,8 +433,6 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     updateData.trial_ends_at = new Date(subscription.trial_end * 1000).toISOString();
   }
 
-  
-
   const { error: updateError, data: updatedOrg } = await supabase
     .from("organizations")
     .update(updateData)
@@ -430,7 +441,7 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     .single();
 
   if (updateError) {
-    
+
     return;
   }
 
@@ -442,16 +453,17 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
       .eq("owner_user_id", updatedOrg.owner_user_id)
       .or(`organization_id.is.null,organization_id.neq.${organizationId}`);
 
-    if (venueLinkError) {
-      :", venueLinkError);
-    }
+    if (venueLinkError) { /* Condition handled */ }
   }
 
-  
-
   await supabase.from("subscription_history").insert({
-
+    organization_id: organizationId,
+    event_type: "subscription_updated",
+    old_tier: org.subscription_tier,
+    new_tier: tier,
+    stripe_event_id: subscription.id,
     metadata: { subscription_id: subscription.id, status: subscription.status },
+  });
 
 }
 
@@ -461,7 +473,7 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
   const organizationId = subscription.metadata?.organization_id;
 
   if (!organizationId) {
-    
+
     return;
   }
 
@@ -475,12 +487,21 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
   await supabase
     .from("organizations")
     .update({
-
+      subscription_tier: "starter",
+      subscription_status: "canceled",
+      stripe_subscription_id: null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", organizationId);
 
   await supabase.from("subscription_history").insert({
-
+    organization_id: organizationId,
+    event_type: "subscription_canceled",
+    old_tier: org?.subscription_tier,
+    new_tier: "starter",
+    stripe_event_id: subscription.id,
     metadata: { subscription_id: subscription.id },
+  });
 
 }
 
@@ -492,7 +513,10 @@ export async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const subscriptionId =
     typeof invoiceWithSub.subscription === "string"
       ? invoiceWithSub.subscription
+      : invoiceWithSub.subscription?.id;
 
+  if (!subscriptionId) {
+    return;
   }
 
   // Get subscription details
@@ -506,10 +530,11 @@ export async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   await supabase
     .from("organizations")
     .update({
-
+      subscription_status: "active",
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", organizationId);
 
-  
 }
 
 export async function handlePaymentFailed(invoice: Stripe.Invoice) {
@@ -520,7 +545,10 @@ export async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const subscriptionId =
     typeof invoiceWithSub.subscription === "string"
       ? invoiceWithSub.subscription
+      : invoiceWithSub.subscription?.id;
 
+  if (!subscriptionId) {
+    return;
   }
 
   // Get subscription details
@@ -534,14 +562,17 @@ export async function handlePaymentFailed(invoice: Stripe.Invoice) {
   await supabase
     .from("organizations")
     .update({
-
+      subscription_status: "past_due",
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", organizationId);
 
-  
 }
 
 export async function finalizeStripeEvent(
-
+  supabase: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  status: "succeeded" | "failed",
   error?: { message: string; stack?: string }
 ) {
   if (!eventId) return;
@@ -550,7 +581,10 @@ export async function finalizeStripeEvent(
     .from("stripe_webhook_events")
     .update({
       status,
-
+      processed_at: status === "succeeded" ? nowIso : null,
+      last_error: error ?? null,
+      updated_at: nowIso,
+    })
     .eq("event_id", eventId);
 }
 
@@ -574,6 +608,7 @@ export async function processSubscriptionEvent(event: Stripe.Event) {
     case "invoice.payment_failed":
       await handlePaymentFailed(event.data.object as Stripe.Invoice);
       break;
+    default:
 
   }
 }

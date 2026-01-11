@@ -9,23 +9,36 @@ import { Input } from "@/components/ui/input";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 
 interface MenuItem {
-
+  id: string;
+  venue_id?: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  category: string;
+  image_url?: string | null;
+  is_available: boolean;
+  created_at?: string;
+  venue_name?: string;
   options?: Array<{ label: string; values: string[] }>;
 }
 
 // Type-safe menu item interface for hotspot system
 
 interface EnhancedPDFMenuDisplayProps {
-
+  venueId: string;
+  pdfImages?: string[];
+  menuItems: MenuItem[];
+  categoryOrder: string[] | null;
+  onAddToCart: (item: MenuItem) => void;
   cart: Array<{ id: string; quantity: number }>;
-
+  onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   isOrdering?: boolean;
 }
 
 export function EnhancedPDFMenuDisplay({
   venueId,
-
+  pdfImages: pdfImagesProp,
   menuItems,
   categoryOrder,
   onAddToCart,
@@ -65,7 +78,8 @@ export function EnhancedPDFMenuDisplay({
     (Array.isArray(pdfImagesProp) && pdfImagesProp.length > 0) ||
       (hasCachedImages && cachedImages.length > 0)
       ? "pdf"
-
+      : "list"
+  );
   const [hasPdfImages, setHasPdfImages] = useState(
     (Array.isArray(pdfImagesProp) && pdfImagesProp.length > 0) || hasPdfImagesInCache()
   );
@@ -80,6 +94,7 @@ export function EnhancedPDFMenuDisplay({
   const containerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({
     /* Empty */
+  });
 
   // Preload images for instant display
   useEffect(() => {
@@ -87,7 +102,7 @@ export function EnhancedPDFMenuDisplay({
       pdfImages.forEach((imageUrl) => {
         const img = new Image();
         img.src = imageUrl;
-
+      });
     }
   }, [pdfImages]);
 
@@ -150,7 +165,7 @@ export function EnhancedPDFMenuDisplay({
           images.forEach((imageUrl: string) => {
             const img = new Image();
             img.src = imageUrl;
-
+          });
         } else {
           setViewMode("list");
           setHasPdfImages(false);
@@ -235,7 +250,9 @@ export function EnhancedPDFMenuDisplay({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && zoomLevel > 1) {
       setImagePosition({
-
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
     }
   };
 
@@ -248,14 +265,18 @@ export function EnhancedPDFMenuDisplay({
     if (e.touches.length === 1 && zoomLevel > 1) {
       setIsDragging(true);
       setDragStart({
-
+        x: e.touches[0].clientX - imagePosition.x,
+        y: e.touches[0].clientY - imagePosition.y,
+      });
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (isDragging && e.touches.length === 1 && zoomLevel > 1) {
       setImagePosition({
-
+        x: e.touches[0].clientX - dragStart.x,
+        y: e.touches[0].clientY - dragStart.y,
+      });
     }
   };
 
@@ -292,7 +313,14 @@ export function EnhancedPDFMenuDisplay({
 
   const categories = categoryOrder
     ? categoryOrder.filter((cat) => groupedItems[cat]?.length > 0)
+    : Object.keys(groupedItems).sort();
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   // If no PDF images and no menu items, show empty state
@@ -327,7 +355,7 @@ export function EnhancedPDFMenuDisplay({
                 className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedCategory === null
                     ? "bg-servio-purple !text-white border-2 border-servio-purple shadow-lg [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
-
+                    : "bg-servio-purple !text-white border-2 border-servio-purple [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
                 }`}
               >
                 All
@@ -339,7 +367,7 @@ export function EnhancedPDFMenuDisplay({
                   className={`shrink-0 min-w-fit px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedCategory === category
                       ? "bg-servio-purple !text-white border-2 border-servio-purple shadow-lg [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
-
+                      : "bg-servio-purple !text-white border-2 border-servio-purple [&>*]:!text-white hover:bg-white hover:!text-servio-purple hover:[&>*]:!text-servio-purple"
                   }`}
                 >
                   <span className="truncate max-w-[120px] px-1">{category}</span>
@@ -367,7 +395,7 @@ export function EnhancedPDFMenuDisplay({
             className={
               viewMode === "pdf"
                 ? "bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
-
+                : "bg-white text-servio-purple hover:bg-servio-purple hover:text-white border-2 border-servio-purple"
             }
           >
             <Grid
@@ -377,7 +405,7 @@ export function EnhancedPDFMenuDisplay({
               className={
                 viewMode === "pdf"
                   ? "text-white group-hover:text-servio-purple"
-
+                  : "text-servio-purple group-hover:text-white font-semibold"
               }
             >
               Visual Menu
@@ -390,7 +418,7 @@ export function EnhancedPDFMenuDisplay({
             className={
               viewMode === "list"
                 ? "bg-servio-purple text-white hover:bg-white hover:text-servio-purple border-2 border-servio-purple"
-
+                : "bg-white text-servio-purple hover:bg-servio-purple hover:text-white border-2 border-servio-purple"
             }
           >
             <List
@@ -400,7 +428,7 @@ export function EnhancedPDFMenuDisplay({
               className={
                 viewMode === "list"
                   ? "text-white group-hover:text-servio-purple"
-
+                  : "text-servio-purple group-hover:text-white font-semibold"
               }
             >
               List View
@@ -459,7 +487,8 @@ export function EnhancedPDFMenuDisplay({
                     className="relative w-full flex items-center justify-center"
                     style={{
                       transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-
+                      transformOrigin: "center center",
+                      transition: isDragging ? "none" : "transform 0.1s ease-out",
                     }}
                   >
                     <img

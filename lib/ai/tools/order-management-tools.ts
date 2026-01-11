@@ -4,32 +4,67 @@
 import { createAdminClient } from "@/lib/supabase";
 
 interface OrderStatusUpdateResult {
-
+  success: boolean;
+  orderId: string;
+  oldStatus: string;
+  newStatus: string;
+  message: string;
 }
 
 interface KitchenOrdersResult {
-
+  orders: Array<{
+    id: string;
+    customerName: string;
+    tableNumber?: number;
+    items: string[];
+    status: string;
+    timeSinceOrder: number;
   }>;
-
+  count: number;
+  summary: string;
 }
 
 interface OverdueOrdersResult {
-
+  orders: Array<{
+    id: string;
+    customerName: string;
+    tableNumber?: number;
+    status: string;
+    minutesOverdue: number;
+    items: string[];
   }>;
-
+  count: number;
+  summary: string;
 }
 
 interface PendingOrdersResult {
-
+  orders: Array<{
+    id: string;
+    customerName: string;
+    tableNumber?: number;
+    counterLabel?: string;
+    totalAmount: number;
+    status: string;
+    createdAt: string;
   }>;
-
+  count: number;
+  totalValue: number;
+  summary: string;
 }
 
 /**
  * Update order status
  */
 export async function updateOrderStatus(
+  venueId: string,
+  orderId: string,
+  newStatus: string
+): Promise<OrderStatusUpdateResult> {
+  const supabase = createAdminClient();
 
+  // Valid statuses
+  const validStatuses = [
+    "PLACED",
     "ACCEPTED",
     "IN_PREP",
     "READY",
@@ -51,7 +86,7 @@ export async function updateOrderStatus(
     .single();
 
   if (fetchError || !currentOrder) {
-    
+
     throw new Error(`Order ${orderId} not found`);
   }
 
@@ -59,7 +94,8 @@ export async function updateOrderStatus(
 
   // Update the order
   const updateData: Record<string, unknown> = {
-
+    order_status: newStatus.toUpperCase(),
+    updated_at: new Date().toISOString(),
   };
 
   // Add timestamps for specific status changes
@@ -78,15 +114,15 @@ export async function updateOrderStatus(
     .eq("venue_id", venueId);
 
   if (updateError) {
-    
+
     throw new Error(`Failed to update order: ${updateError.message}`);
   }
 
   return {
-
+    success: true,
     orderId,
     oldStatus,
-
+    newStatus: newStatus.toUpperCase(),
     message: `Order ${orderId} updated from ${oldStatus} to ${newStatus.toUpperCase()}`,
   };
 }
@@ -97,8 +133,6 @@ export async function updateOrderStatus(
 export async function getKitchenOrders(venueId: string): Promise<KitchenOrdersResult> {
   const supabase = createAdminClient();
 
-  
-
   const { data: orders, error } = await supabase
     .from("orders")
     .select("id, customer_name, table_number, counter_label, items, order_status, created_at")
@@ -107,7 +141,7 @@ export async function getKitchenOrders(venueId: string): Promise<KitchenOrdersRe
     .order("created_at", { ascending: true });
 
   if (error) {
-    
+
     throw new Error(`Failed to fetch kitchen orders: ${error.message}`);
   }
 
@@ -120,15 +154,22 @@ export async function getKitchenOrders(venueId: string): Promise<KitchenOrdersRe
       );
 
       return {
-
+        id: order.id,
+        customerName: order.customer_name,
+        tableNumber: order.table_number || undefined,
+        items: itemNames,
+        status: order.order_status,
         timeSinceOrder,
       };
     }) || [];
 
   return {
-
+    orders: kitchenOrders,
+    count: kitchenOrders.length,
+    summary:
+      kitchenOrders.length > 0
         ? `${kitchenOrders.length} orders currently in kitchen. Oldest order: ${kitchenOrders[0]?.timeSinceOrder} minutes ago.`
-
+        : "No orders currently in kitchen. All caught up!",
   };
 }
 
@@ -136,6 +177,12 @@ export async function getKitchenOrders(venueId: string): Promise<KitchenOrdersRe
  * Get overdue orders (taking longer than expected)
  */
 export async function getOverdueOrders(
+  venueId: string,
+  thresholdMinutes: number = 20
+): Promise<OverdueOrdersResult> {
+  const supabase = createAdminClient();
+
+  const thresholdTime = new Date(Date.now() - thresholdMinutes * 60000).toISOString();
 
   const { data: orders, error } = await supabase
     .from("orders")
@@ -146,7 +193,7 @@ export async function getOverdueOrders(
     .order("created_at", { ascending: true });
 
   if (error) {
-    
+
     throw new Error(`Failed to fetch overdue orders: ${error.message}`);
   }
 
@@ -159,14 +206,20 @@ export async function getOverdueOrders(
       );
 
       return {
-
+        id: order.id,
+        customerName: order.customer_name,
+        tableNumber: order.table_number || undefined,
+        status: order.order_status,
         minutesOverdue,
-
+        items: itemNames,
       };
     }) || [];
 
   return {
-
+    orders: overdueOrders,
+    count: overdueOrders.length,
+    summary:
+      overdueOrders.length > 0
         ? `⚠️ ${overdueOrders.length} overdue orders! Oldest: ${overdueOrders[0]?.minutesOverdue} minutes. Action needed!`
         : `✅ No overdue orders. All orders being processed within ${thresholdMinutes} minutes.`,
   };
@@ -178,8 +231,6 @@ export async function getOverdueOrders(
 export async function getPendingOrders(venueId: string): Promise<PendingOrdersResult> {
   const supabase = createAdminClient();
 
-  
-
   const { data: orders, error } = await supabase
     .from("orders")
     .select(
@@ -190,23 +241,31 @@ export async function getPendingOrders(venueId: string): Promise<PendingOrdersRe
     .order("created_at", { ascending: false });
 
   if (error) {
-    
+
     throw new Error(`Failed to fetch pending orders: ${error.message}`);
   }
 
   const pendingOrders =
     orders?.map((order) => ({
-
+      id: order.id,
+      customerName: order.customer_name,
+      tableNumber: order.table_number || undefined,
+      counterLabel: order.counter_label || undefined,
+      totalAmount: order.total_amount,
+      status: order.order_status,
+      createdAt: order.created_at,
     })) || [];
 
   const totalValue = pendingOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 
   return {
-
+    orders: pendingOrders,
+    count: pendingOrders.length,
     totalValue,
-
+    summary:
+      pendingOrders.length > 0
         ? `${pendingOrders.length} pending orders worth £${totalValue.toFixed(2)} total.`
-
+        : "No pending orders. Ready for new customers!",
   };
 }
 
@@ -214,7 +273,10 @@ export async function getPendingOrders(venueId: string): Promise<PendingOrdersRe
  * Get today's order total and count
  */
 export async function getTodayOrderStats(venueId: string): Promise<{
-
+  count: number;
+  totalRevenue: number;
+  avgOrderValue: number;
+  message: string;
 }> {
   const supabase = createAdminClient();
 
@@ -229,7 +291,7 @@ export async function getTodayOrderStats(venueId: string): Promise<{
     .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
   if (error) {
-    
+
     throw new Error(`Failed to fetch orders: ${error.message}`);
   }
 

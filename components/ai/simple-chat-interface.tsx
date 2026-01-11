@@ -8,11 +8,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRouter } from "next/navigation";
 
 interface Message {
-
+  role: "user" | "assistant";
+  content: string;
 }
 
 interface SimpleChatInterfaceProps {
-
+  isOpen: boolean;
+  onClose: () => void;
+  venueId: string;
+  currentPage?: string;
 }
 
 export function SimpleChatInterface({
@@ -38,9 +42,11 @@ export function SimpleChatInterface({
     if (!userMessage || loading) return;
 
     // DETAILED LOGGING - START
-                        
-    const newUserMessage: Message = {
+    console.group("🤖 [AI ASSISTANT] User Command");
 
+    const newUserMessage: Message = {
+      role: "user",
+      content: userMessage,
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
@@ -49,74 +55,84 @@ export function SimpleChatInterface({
     setError(null);
 
     const requestPayload = {
-
+      message: userMessage,
       venueId,
       currentPage,
-
+      conversationHistory: messages,
     };
 
-            .toISOString());
-
     try {
-            const fetchStartTime = Date.now();
+
+      const fetchStartTime = Date.now();
 
       const response = await fetch("/api/ai/simple-chat", {
-
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        credentials: "include",
+        body: JSON.stringify(requestPayload),
+      });
 
       const fetchDuration = Date.now() - fetchStartTime;
-                  ));
-            
+
       if (!response.ok) {
-                let errorData;
+
+        let errorData;
         try {
           const responseText = await response.text();
-          :", responseText);
+
           errorData = JSON.parse(responseText);
-          :", errorData);
-          
+
           // Log debug information if available
           if (errorData.debug) {
-                                                if (errorData.debug.stack) {
-                          }
+
+            if (errorData.debug.stack) { /* Condition handled */ }
           }
         } catch (parseError) {
-                    errorData = { error: "Unknown error", rawResponse: await response.text().catch(() => "Could not read response") };
+
+          errorData = { error: "Unknown error", rawResponse: await response.text().catch(() => "Could not read response") };
         }
-                throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
       }
 
-            const data = await response.json();
-                  
-      const assistantMessage: Message = {
+      const data = await response.json();
 
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.response || "I processed your request.",
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-      
+
       // Handle navigation if present
       if (data.navigation?.route) {
-                        setTimeout(() => {
-                    router.push(data.navigation.route);
+
+        setTimeout(() => {
+
+          router.push(data.navigation.route);
           onClose();
         }, 500);
-      } else {
-              }
+      } else { /* Else case handled */ }
 
-                } catch (err) {
-                  );
-                  
+      console.groupEnd();
+    } catch (err) {
+
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
 
       const errorMsg: Message = {
-
+        role: "assistant",
         content: `Sorry, I encountered an error: ${errorMessage}`,
       };
       setMessages((prev) => [...prev, errorMsg]);
-                } finally {
+
+      console.groupEnd();
+    } finally {
       setLoading(false);
-          }
+
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

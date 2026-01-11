@@ -3,10 +3,15 @@ import { Order } from "../types";
 import { TERMINAL_STATUSES } from "../constants";
 
 export async function updateOrderStatus(
-
+  orderId: string,
+  orderStatus: Order["order_status"],
+  venueId: string,
   todayWindow: { startUtcISO: string; endUtcISO: string } | null,
   onUpdate: (orderId: string, status: Order["order_status"]) => void,
   onMoveToAllToday: (orderId: string, status: Order["order_status"]) => void,
+  onRemove: (orderId: string) => void
+) {
+  const supabase = createClient();
 
   const { data: orderData } = await supabase
     .from("orders")
@@ -18,7 +23,9 @@ export async function updateOrderStatus(
   const { error } = await supabase
     .from("orders")
     .update({
-
+      order_status: orderStatus,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", orderId)
     .eq("venue_id", venueId);
 
@@ -66,7 +73,10 @@ async function clearTableSession(orderData: unknown, venueId: string, orderId: s
     const orderInfo = orderData as OrderDataWithTable;
 
     interface ActiveOrder {
-
+      id: string;
+      order_status: string;
+      table_id?: string;
+      table_number?: number;
     }
 
     const { data: activeOrders } = await supabase
@@ -87,7 +97,10 @@ async function clearTableSession(orderData: unknown, venueId: string, orderId: s
 
     if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
       const sessionUpdateData = {
-
+        status: "FREE",
+        order_id: null,
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       let sessionQuery = supabase

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -8,6 +9,16 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 
 const createIngredientSchema = z.object({
+  venue_id: z.string().uuid().optional(),
+  name: z.string().min(1).max(100),
+  sku: z.string().max(50).optional(),
+  unit: z.string().min(1).max(20),
+  cost_per_unit: z.number().nonnegative().optional(),
+  par_level: z.number().nonnegative().optional(),
+  reorder_level: z.number().nonnegative().optional(),
+  supplier: z.string().max(100).optional(),
+  initial_stock: z.number().nonnegative().optional(),
+});
 
 // GET /api/inventory/ingredients?venue_id=xxx
 export const GET = withUnifiedAuth(
@@ -36,14 +47,12 @@ export const GET = withUnifiedAuth(
         .order("name", { ascending: true });
 
       if (error) {
-        
+
         return apiErrors.database(
           "Failed to fetch ingredients",
           isDevelopment() ? error.message : undefined
         );
       }
-
-      
 
       // STEP 4: Return success response
       return success(data || []);
@@ -58,7 +67,8 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query params
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         return searchParams.get("venue_id") || searchParams.get("venueId");
       } catch {
@@ -93,12 +103,20 @@ export const POST = withUnifiedAuth(
       const { data: ingredient, error: ingredientError } = await adminSupabase
         .from("ingredients")
         .insert({
-
+          venue_id: venueId,
+          name: body.name,
+          sku: body.sku,
+          unit: body.unit,
+          cost_per_unit: body.cost_per_unit,
+          par_level: body.par_level,
+          reorder_level: body.reorder_level,
+          supplier: body.supplier,
+        })
         .select()
         .single();
 
       if (ingredientError || !ingredient) {
-        
+
         return apiErrors.database(
           "Failed to create ingredient",
           isDevelopment() ? ingredientError?.message : undefined
@@ -112,14 +130,19 @@ export const POST = withUnifiedAuth(
         body.initial_stock > 0
       ) {
         const { error: movementError } = await adminSupabase.from("stock_ledgers").insert({
+          ingredient_id: ingredient.id,
+          venue_id: venueId,
+          delta: body.initial_stock,
+          reason: "receive",
+          ref_type: "manual",
+          note: "Initial stock",
+        });
 
         if (movementError) {
-          
+
           // Don't fail the request, just log the error
         }
       }
-
-      
 
       // STEP 4: Return success response
       return success(ingredient);
@@ -134,7 +157,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

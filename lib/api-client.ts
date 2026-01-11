@@ -14,7 +14,9 @@ export interface FetchOptions extends RequestInit {
  * Authenticated fetch - automatically includes auth token
  */
 export async function fetchWithAuth(
-
+  url: string,
+  options: FetchOptions = {
+    /* Empty */
   }
 ): Promise<Response> {
   const supabase = supabaseBrowser();
@@ -43,7 +45,7 @@ export async function fetchWithAuth(
       if (value !== undefined) {
         params.append(key, String(value));
       }
-
+    });
     const queryString = params.toString();
     if (queryString) {
       finalUrl += (url.includes("?") ? "&" : "?") + queryString;
@@ -55,7 +57,7 @@ export async function fetchWithAuth(
     ...options,
     headers,
     credentials: "include", // Essential: sends cookies for server-side auth
-
+  });
 }
 
 /**
@@ -67,19 +69,22 @@ export const apiClient = {
   post: (url: string, body?: unknown, options?: FetchOptions) =>
     fetchWithAuth(url, {
       ...options,
-
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
     }),
 
   patch: (url: string, body?: unknown, options?: FetchOptions) =>
     fetchWithAuth(url, {
       ...options,
-
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
     }),
 
   put: (url: string, body?: unknown, options?: FetchOptions) =>
     fetchWithAuth(url, {
       ...options,
-
+      method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
     }),
 
   delete: (url: string, options?: FetchOptions) =>

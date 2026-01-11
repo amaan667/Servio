@@ -11,7 +11,7 @@ export default async function HomePage() {
     const supabase = await createServerSupabaseReadOnly();
     const {
       data: { user: authUser },
-
+      error: userError,
     } = await supabase.auth.getUser();
 
     if (!userError && authUser) {
@@ -36,23 +36,25 @@ export default async function HomePage() {
             .eq("id", firstVenue.organization_id)
             .maybeSingle();
 
-          
-
           if (org?.subscription_tier) {
             // Normalize old tier names to new ones
             const tier = org.subscription_tier.toLowerCase();
             const normalizedTier =
               tier === "premium"
                 ? "enterprise"
+                : tier === "standard" || tier === "professional"
+                  ? "pro"
+                  : tier === "basic"
+                    ? "starter"
+                    : tier;
+            userPlan = normalizedTier as "starter" | "pro" | "enterprise";
 
-          } else {
-            
-          }
+          } else { /* Else case handled */ }
         }
       }
     }
   } catch (error) {
-    
+
     // If error, default to not signed in
     isSignedIn = false;
   }

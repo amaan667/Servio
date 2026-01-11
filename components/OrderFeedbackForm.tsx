@@ -12,7 +12,8 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import type { FeedbackQuestion, FeedbackAnswer } from "@/types/feedback";
 
 interface OrderFeedbackFormProps {
-
+  venueId: string;
+  orderId?: string;
 }
 
 export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFormProps) {
@@ -24,25 +25,65 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   const [showForm, setShowForm] = useState(false);
   const [answers, setAnswers] = useState<{ [key: string]: unknown }>({
     /* Empty */
-
+  });
   const { toast } = useToast();
 
   // Generic feedback questions to show if owner hasn't created unknown
   const genericQuestions: FeedbackQuestion[] = [
     {
-
+      id: "generic-food-quality",
+      venue_id: venueId,
+      prompt: "How would you rate the food quality?",
+      type: "stars",
+      choices: null,
+      is_active: true,
+      sort_index: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-service",
+      venue_id: venueId,
+      prompt: "How would you rate the service?",
+      type: "stars",
+      choices: null,
+      is_active: true,
+      sort_index: 2,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-value",
+      venue_id: venueId,
+      prompt: "How would you rate the value for money?",
+      type: "stars",
+      choices: null,
+      is_active: true,
+      sort_index: 3,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-overall",
+      venue_id: venueId,
+      prompt: "How would you rate your overall experience?",
+      type: "stars",
+      choices: null,
+      is_active: true,
+      sort_index: 4,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-comments",
+      venue_id: venueId,
+      prompt: "Any additional comments or suggestions?",
+      type: "paragraph",
+      choices: null,
+      is_active: true,
+      sort_index: 5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
   ];
 
@@ -105,7 +146,9 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       .on(
         "postgres_changes",
         {
-
+          event: "*",
+          schema: "public",
+          table: "feedback_questions",
           filter: `venue_id=eq.${normalizedVenueId}`,
         },
         (_payload: unknown) => {
@@ -114,6 +157,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       )
       .subscribe((_status: unknown) => {
         /* Empty */
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -135,19 +179,29 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           switch (question.type) {
             case "stars":
               return {
-
+                question_id: question.id,
+                type: "stars" as const,
+                answer_stars: typeof answer === "number" ? answer : 0,
+                order_id: orderId,
               };
             case "multiple_choice":
               return {
-
+                question_id: question.id,
+                type: "multiple_choice" as const,
+                answer_choice: typeof answer === "string" ? answer : "",
+                order_id: orderId,
               };
             case "paragraph":
               return {
-
+                question_id: question.id,
+                type: "paragraph" as const,
+                answer_text: typeof answer === "string" ? answer : "",
+                order_id: orderId,
               };
-
+            default:
+              throw new Error("Invalid question type");
           }
-
+        })
         .filter((answer) => {
           // Filter out empty answers
           switch (answer.type) {
@@ -157,21 +211,30 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
               return typeof answer.answer_choice === "string" && answer.answer_choice.trim() !== "";
             case "paragraph":
               return typeof answer.answer_text === "string" && answer.answer_text.trim() !== "";
-
+            default:
+              return false;
           }
+        });
 
       if (feedbackAnswers.length === 0) {
         toast({
-
+          title: "No Feedback",
+          description: "Please answer at least one question",
+          variant: "destructive",
+        });
         return;
       }
 
       // Try to submit to the main feedback API first
       let response = await fetch("/api/feedback-responses", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          venue_id: venueId,
+          order_id: orderId,
+          answers: feedbackAnswers,
         }),
+      });
 
       // If main API fails and we have generic questions, try to submit to a fallback
       if (!response.ok && questions.some((q) => q.id.startsWith("generic"))) {
@@ -182,28 +245,38 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
       if (response.ok) {
         toast({
-
+          title: "Thank You!",
+          description: "Your feedback has been submitted successfully",
+        });
         setShowForm(false);
         setAnswers({
           /* Empty */
-
+        });
       } else {
         const error = await response.json();
         toast({
-
+          title: "Error",
+          description: error.error || "Failed to submit feedback",
+          variant: "destructive",
+        });
       }
     } catch (_error) {
       // If we have generic questions and the main API fails, still show success
       if (questions.some((q) => q.id.startsWith("generic"))) {
         toast({
-
+          title: "Thank You!",
+          description: "Your feedback has been recorded",
+        });
         setShowForm(false);
         setAnswers({
           /* Empty */
-
+        });
       } else {
         toast({
-
+          title: "Error",
+          description: "Failed to submit feedback",
+          variant: "destructive",
+        });
       }
     } finally {
       setSubmitting(false);
@@ -214,7 +287,8 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
     value,
     onChange,
   }: {
-
+    value: number;
+    onChange: (rating: number) => void;
   }) => (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -277,7 +351,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                         value={
                           typeof answers[question.id] === "number"
                             ? (answers[question.id] as number)
-
+                            : 0
                         }
                         onChange={(rating: number) =>
                           setAnswers((prev) => ({ ...prev, [question.id]: rating }))
@@ -296,7 +370,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                       value={
                         typeof answers[question.id] === "string"
                           ? (answers[question.id] as string)
-
+                          : ""
                       }
                       onValueChange={(value: string) =>
                         setAnswers((prev) => ({ ...prev, [question.id]: value }))
@@ -319,7 +393,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                         value={
                           typeof answers[question.id] === "string"
                             ? (answers[question.id] as string)
-
+                            : ""
                         }
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                           setAnswers((prev) => ({ ...prev, [question.id]: e.target.value }))
@@ -332,7 +406,8 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                         {
                           (typeof answers[question.id] === "string"
                             ? (answers[question.id] as string)
-
+                            : ""
+                          ).length
                         }
                         /600 characters
                       </p>
@@ -352,7 +427,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
                     setShowForm(false);
                     setAnswers({
                       /* Empty */
-
+                    });
                   }}
                   disabled={submitting}
                 >

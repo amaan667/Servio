@@ -1,6 +1,7 @@
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { NextRequest } from "next/server";
 
@@ -102,7 +103,7 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context, routePara
     .select("*")
     .maybeSingle();
   if (error) {
-    
+
     return apiErrors.database(error.message);
   }
 
@@ -110,9 +111,11 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context, routePara
   if (order_status === "COMPLETED" && data) {
     try {
       await supa.rpc("deduct_stock_for_order", {
-
+        p_order_id: id,
+        p_venue_id: data.venue_id,
+      });
     } catch (inventoryError) {
-      
+
       // Don't fail the order completion if inventory deduction fails
     }
   }
@@ -123,16 +126,19 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context, routePara
     if (order && order.table_number) {
       // Use centralized table cleanup function
       const cleanupResult = await cleanupTableOnOrderCompletion({
+        venueId: order.venue_id,
+        tableNumber: order.table_number,
+        orderId: id,
+      });
 
-      if (!cleanupResult.success) {
-        
-      } else {
+      if (!cleanupResult.success) { /* Condition handled */ } else {
         // Cleanup successful
       }
     }
   }
 
   return success({ order: data });
+});
 
 /**
  * Delete order
@@ -155,13 +161,14 @@ export const DELETE = withUnifiedAuth(async (_req: NextRequest, context, routePa
       .eq("venue_id", context.venueId); // Explicit venue check (RLS also enforces this)
 
     if (error) {
-      
+
       return apiErrors.database(error.message);
     }
 
     return success({});
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-    
+
     return apiErrors.internal(errorMessage);
   }
+});

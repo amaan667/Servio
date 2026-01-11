@@ -10,7 +10,9 @@ const WINDOW_MS = 60_000; // 1 minute
 const MAX_REQUESTS = 60; // 60 requests per minute
 
 export interface RateLimitResult {
-
+  ok: boolean;
+  remaining?: number;
+  reset?: number;
 }
 
 export function rateLimit(key: Key, now = Date.now()): RateLimitResult {
@@ -20,21 +22,27 @@ export function rateLimit(key: Key, now = Date.now()): RateLimitResult {
   if (!h || now - h.ts > WINDOW_MS) {
     hits.set(key, { count: 1, ts: now });
     return {
-
+      ok: true,
+      remaining: MAX_REQUESTS - 1,
+      reset: now + WINDOW_MS,
     };
   }
 
   // Check limit
   if (h.count >= MAX_REQUESTS) {
     return {
-
+      ok: false,
+      remaining: 0,
+      reset: h.ts + WINDOW_MS,
     };
   }
 
   // Increment
   h.count++;
   return {
-
+    ok: true,
+    remaining: MAX_REQUESTS - h.count,
+    reset: h.ts + WINDOW_MS,
   };
 }
 

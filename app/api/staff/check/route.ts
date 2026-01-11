@@ -8,7 +8,7 @@ import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standa
 export const runtime = "nodejs";
 
 export const GET = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -29,8 +29,6 @@ export const GET = withUnifiedAuth(
         return success({ exists: false, message: "Staff table does not exist" });
       }
 
-      
-
       // STEP 3: Return success response
       return success({ exists: true, message: "Staff table exists" });
     } catch (error) {
@@ -44,6 +42,6 @@ export const GET = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

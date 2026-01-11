@@ -2,13 +2,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 
 interface DashboardStatCardProps {
-
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  iconColor: string;
+  iconBgColor: string;
+  description?: string;
 }
 
 export function DashboardStatCard({
   title,
   value,
-
+  icon: Icon,
   iconColor,
   iconBgColor,
   description,

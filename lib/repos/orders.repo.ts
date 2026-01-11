@@ -17,7 +17,7 @@ export class OrdersRepo {
    * Get orders by venue
    */
   static async listByVenue(
-
+    venueId: string,
     options?: {
       status?: string;
       limit?: number;

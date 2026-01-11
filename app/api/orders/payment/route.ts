@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { isDevelopment } from "@/lib/env";
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
-      
+
       return apiErrors.notFound("Order not found");
     }
 
@@ -41,15 +42,12 @@ export async function POST(req: NextRequest) {
       .eq("venue_id", venue_id)
       .single();
 
-    if (currentOrderError) {
-      
-    }
-
-    
+    if (currentOrderError) { /* Condition handled */ }
 
     // Update payment status - allow for any order status (staff may need to mark completed orders as paid)
     const updateData: Record<string, unknown> = {
-
+      payment_status: payment_status || "PAID",
+      updated_at: new Date().toISOString(),
     };
 
     // Determine payment_method and payment_mode
@@ -59,7 +57,12 @@ export async function POST(req: NextRequest) {
     // Normalize provided payment_method
     const normalizedProvidedMethod = payment_method
       ? payment_method.toUpperCase().replace(/[^A-Z_]/g, "")
+      : null;
 
+    // Handle "till" or "PAY_AT_TILL" variations
+    if (normalizedProvidedMethod === "TILL" || normalizedProvidedMethod === "PAY_AT_TILL") {
+      finalPaymentMethod = "PAY_AT_TILL";
+      finalPaymentMode = "offline";
     } else if (normalizedProvidedMethod) {
       // Use provided method
       finalPaymentMethod = normalizedProvidedMethod;
@@ -78,7 +81,7 @@ export async function POST(req: NextRequest) {
         finalPaymentMode = "offline";
       } else {
         // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
-        
+
         finalPaymentMethod = "PAY_AT_TILL";
         finalPaymentMode = "offline";
       }
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
         finalPaymentMode = "offline";
       } else {
         // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
-        
+
         finalPaymentMethod = "PAY_AT_TILL";
         finalPaymentMode = "offline";
       }
@@ -114,8 +117,6 @@ export async function POST(req: NextRequest) {
     updateData.payment_method = finalPaymentMethod;
     updateData.payment_mode = finalPaymentMode;
 
-    
-
     // Update payment status - no restrictions on order_status or completion_status
     // This allows staff to mark any order as paid, even if it's from a previous day or already completed
     const { data: updatedOrder, error: updateError } = await supabase
@@ -127,7 +128,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError) {
-      
 
       // Provide more specific error message
       if (updateError.code === "PGRST116") {
@@ -146,16 +146,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (!updatedOrder) {
-      
+
       return apiErrors.internal("Payment update succeeded but order data not returned");
     }
-
-    
 
     return success({ order: updatedOrder });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

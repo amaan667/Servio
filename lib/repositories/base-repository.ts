@@ -4,6 +4,7 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
+
 import { EnhancedErrorTracker } from "@/lib/monitoring/sentry-enhanced";
 
 export interface QueryOptions {
@@ -14,7 +15,11 @@ export interface QueryOptions {
 }
 
 export interface PaginationResult<T> {
-
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 /**
@@ -42,12 +47,12 @@ export abstract class BaseRepository<T> {
 
       if (error) {
         if (error.code === "PGRST116") return null; // Not found
-        
+
         throw error;
       }
 
       return data as T;
-
+    });
   }
 
   /**
@@ -64,13 +69,14 @@ export abstract class BaseRepository<T> {
           if (value !== undefined) {
             query = query.eq(key, value);
           }
-
+        });
       }
 
       // Apply ordering
       if (options?.orderBy) {
         query = query.order(options.orderBy.column, {
-
+          ascending: options.orderBy.ascending ?? false,
+        });
       }
 
       // Apply pagination
@@ -84,12 +90,12 @@ export abstract class BaseRepository<T> {
       const { data, error } = await query;
 
       if (error) {
-        
+
         throw error;
       }
 
       return (data as T[]) || [];
-
+    });
   }
 
   /**
@@ -97,7 +103,8 @@ export abstract class BaseRepository<T> {
    */
   async findPaginated(
     criteria?: Partial<T>,
-
+    page: number = 1,
+    limit: number = 20,
     options?: QueryOptions
   ): Promise<PaginationResult<T>> {
     return EnhancedErrorTracker.trackDatabaseQuery("SELECT", this.tableName, async () => {
@@ -113,12 +120,12 @@ export abstract class BaseRepository<T> {
           if (value !== undefined) {
             countQuery = countQuery.eq(key, value);
           }
-
+        });
       }
       const { count, error: countError } = await countQuery;
 
       if (countError) {
-        
+
         throw countError;
       }
 
@@ -127,15 +134,16 @@ export abstract class BaseRepository<T> {
         ...options,
         limit,
         offset,
+      });
 
       return {
         data,
-
+        total: count || 0,
         page,
         limit,
-
+        totalPages: Math.ceil((count || 0) / limit),
       };
-
+    });
   }
 
   /**
@@ -150,12 +158,12 @@ export abstract class BaseRepository<T> {
         .single();
 
       if (error) {
-        
+
         throw error;
       }
 
       return created as T;
-
+    });
   }
 
   /**
@@ -169,12 +177,12 @@ export abstract class BaseRepository<T> {
         .select();
 
       if (error) {
-        
+
         throw error;
       }
 
       return (data as T[]) || [];
-
+    });
   }
 
   /**
@@ -191,12 +199,12 @@ export abstract class BaseRepository<T> {
 
       if (error) {
         if (error.code === "PGRST116") return null; // Not found
-        
+
         throw error;
       }
 
       return updated as T;
-
+    });
   }
 
   /**
@@ -210,16 +218,17 @@ export abstract class BaseRepository<T> {
         if (value !== undefined) {
           query = query.eq(key, value);
         }
+      });
 
       const { data: updated, error } = await query.select();
 
       if (error) {
-        
+
         throw error;
       }
 
       return (updated as T[]) || [];
-
+    });
   }
 
   /**
@@ -230,12 +239,12 @@ export abstract class BaseRepository<T> {
       const { error } = await this.supabase.from(this.tableName).delete().eq("id", id);
 
       if (error) {
-        
+
         throw error;
       }
 
       return true;
-
+    });
   }
 
   /**
@@ -249,16 +258,17 @@ export abstract class BaseRepository<T> {
         if (value !== undefined) {
           query = query.eq(key, value);
         }
+      });
 
       const { data, error } = await query.select();
 
       if (error) {
-        
+
         throw error;
       }
 
       return (data as T[])?.length || 0;
-
+    });
   }
 
   /**
@@ -273,18 +283,18 @@ export abstract class BaseRepository<T> {
           if (value !== undefined) {
             query = query.eq(key, value);
           }
-
+        });
       }
 
       const { count, error } = await query;
 
       if (error) {
-        
+
         throw error;
       }
 
       return count || 0;
-
+    });
   }
 
   /**

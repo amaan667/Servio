@@ -1,6 +1,27 @@
+
 export interface PerformanceMetrics {
   // Core Web Vitals
+  lcp: number; // Largest Contentful Paint
+  fid: number; // First Input Delay
+  cls: number; // Cumulative Layout Shift
+  fcp: number; // First Contentful Paint
+  ttfb: number; // Time to First Byte
 
+  // Custom metrics
+  pageLoadTime: number;
+  apiResponseTime: number;
+  databaseQueryTime: number;
+  cacheHitRate: number;
+
+  // Business metrics
+  userEngagement: number;
+  conversionRate: number;
+  bounceRate: number;
+
+  // System metrics
+  memoryUsage: number;
+  cpuUsage: number;
+  errorRate: number;
 }
 
 export class PerformanceMonitor {
@@ -28,7 +49,7 @@ export class PerformanceMonitor {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
         this.recordMetric("lcp", lastEntry.startTime);
-
+      });
       lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
       this.observers.push(lcpObserver);
 
@@ -40,7 +61,8 @@ export class PerformanceMonitor {
           if (typedEntry.processingStart !== undefined) {
             this.recordMetric("fid", typedEntry.processingStart - entry.startTime);
           }
-
+        });
+      });
       fidObserver.observe({ entryTypes: ["first-input"] });
       this.observers.push(fidObserver);
 
@@ -56,9 +78,9 @@ export class PerformanceMonitor {
           if (typedEntry.hadRecentInput === false && typedEntry.value !== undefined) {
             clsValue += typedEntry.value;
           }
-
+        });
         this.recordMetric("cls", clsValue);
-
+      });
       clsObserver.observe({ entryTypes: ["layout-shift"] });
       this.observers.push(clsObserver);
     }
@@ -71,7 +93,7 @@ export class PerformanceMonitor {
         if (fcpEntry) {
           this.recordMetric("fcp", fcpEntry.startTime);
         }
-
+      });
       fcpObserver.observe({ entryTypes: ["paint"] });
       this.observers.push(fcpObserver);
     }
@@ -90,6 +112,7 @@ export class PerformanceMonitor {
         this.recordMetric("pageLoadTime", navigation.loadEventEnd - navigation.fetchStart);
         this.recordMetric("ttfb", navigation.responseStart - navigation.fetchStart);
       }
+    });
 
     // API response time monitoring
     const originalFetch = window.fetch;
@@ -127,10 +150,11 @@ export class PerformanceMonitor {
     // Error rate monitoring
     window.addEventListener("error", () => {
       this.recordMetric("errorRate", 1);
+    });
 
     window.addEventListener("unhandledrejection", () => {
       this.recordMetric("errorRate", 1);
-
+    });
   }
 
   /**
@@ -186,16 +210,20 @@ export class PerformanceMonitor {
    * Get performance summary
    */
   static getPerformanceSummary(): {
-
+    average: Partial<PerformanceMetrics>;
+    current: Partial<PerformanceMetrics>;
     trends: Record<string, number>;
   } {
     if (this.metrics.length === 0) {
       return {
-
+        average: {
+          /* Empty */
         },
-
+        current: {
+          /* Empty */
         },
-
+        trends: {
+          /* Empty */
         },
       };
     }
@@ -217,6 +245,7 @@ export class PerformanceMonitor {
         average[key as keyof PerformanceMetrics] =
           values.reduce((sum, val) => sum + val, 0) / values.length;
       }
+    });
 
     // Calculate trends (comparing last 10% with first 10%)
     const recentCount = Math.max(1, Math.floor(this.metrics.length * 0.1));
@@ -236,6 +265,7 @@ export class PerformanceMonitor {
         const earlyAvg = earlyValues.reduce((sum, val) => sum + val, 0) / earlyValues.length;
         trends[key] = earlyAvg > 0 ? ((recentAvg - earlyAvg) / earlyAvg) * 100 : 0;
       }
+    });
 
     return { average, current, trends };
   }
@@ -247,23 +277,29 @@ export class PerformanceMonitor {
     try {
       // Send to internal analytics endpoint
       await fetch("/api/analytics/metrics", {
-
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-
+        body: JSON.stringify({
+          metric: name,
           value,
-
+          timestamp: new Date().toISOString(),
+          url: window.location.href,
+          userAgent: navigator.userAgent,
         }),
-
-    } catch (_error) {
-      
-    }
+      });
+    } catch (_error) { /* Error handled silently */ }
   }
 
   /**
    * Get Core Web Vitals score
    */
   static getWebVitalsScore(): {
-
+    lcp: "good" | "needs-improvement" | "poor";
+    fid: "good" | "needs-improvement" | "poor";
+    cls: "good" | "needs-improvement" | "poor";
+    fcp: "good" | "needs-improvement" | "poor";
   } {
     const latest = this.metrics[this.metrics.length - 1];
     if (!latest) return { lcp: "good", fid: "good", cls: "good", fcp: "good" };

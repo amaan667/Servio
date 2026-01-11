@@ -33,7 +33,9 @@ export default function StaffClient({
   initialStaff,
   initialCounts,
 }: {
-
+  venueId: string;
+  initialStaff?: StaffRow[];
+  initialCounts?: unknown;
 }) {
   // Component mount logging (development only, removed in production)
   useEffect(() => {

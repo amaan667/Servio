@@ -6,7 +6,7 @@ export default async function VenueDashboardLayout({
   children,
   params,
 }: {
-
+  children: React.ReactNode;
   params: { venueId: string };
 }) {
   const { venueId } = params;

@@ -4,11 +4,22 @@
  */
 
 export interface PricingTier {
-
+  name: string;
+  price: string;
+  priceNumeric: number; // For calculations/comparisons
+  description: string;
+  features: string[];
+  popular?: boolean;
 }
 
 export const PRICING_TIERS: Record<string, PricingTier> = {
-
+  starter: {
+    name: "Starter",
+    price: "£99",
+    priceNumeric: 99,
+    description: "Perfect for small cafes and restaurants",
+    features: [
+      "QR code ordering system",
       "Up to 5 staff accounts",
       "Table management (up to 25 tables)",
       "Customer feedback & reviews",
@@ -17,9 +28,15 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
       "Email support",
       "KDS available as add-on",
     ],
-
+    popular: false,
   },
-
+  pro: {
+    name: "Pro",
+    price: "£249",
+    priceNumeric: 249,
+    description: "Ideal for growing businesses",
+    features: [
+      "QR code ordering system",
       "Up to 15 staff accounts",
       "Advanced KDS (multi-station)",
       "Table management (up to 100 tables)",
@@ -31,9 +48,15 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
       "Full branding + custom subdomain",
       "Priority email & live chat",
     ],
-
+    popular: true,
   },
-
+  enterprise: {
+    name: "Enterprise",
+    price: "£499+",
+    priceNumeric: 499,
+    description: "For established restaurants & chains",
+    features: [
+      "QR code ordering system",
       "Unlimited staff accounts",
       "Enterprise KDS (multi-venue)",
       "Unlimited tables",
@@ -46,7 +69,7 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
       "API access, webhooks & POS/accounting integrations",
       "24/7 phone support, SLA & account manager",
     ],
-
+    popular: false,
   },
 };
 

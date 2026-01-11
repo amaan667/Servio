@@ -8,7 +8,8 @@ export async function POST(_request: NextRequest) {
     if (!venueId) {
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "venueId is required",
         },
         { status: 400 }
       );
@@ -26,10 +27,10 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (uploadError) {
-      
+
       return NextResponse.json(
         {
-
+          ok: false,
           error: `Failed to fetch original categories: ${uploadError.message}`,
         },
         { status: 500 }
@@ -39,7 +40,8 @@ export async function POST(_request: NextRequest) {
     if (!uploadData?.category_order || !Array.isArray(uploadData.category_order)) {
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "No original categories found from PDF upload",
         },
         { status: 404 }
       );
@@ -54,10 +56,10 @@ export async function POST(_request: NextRequest) {
       .eq("venue_id", venueId);
 
     if (menuItemsError) {
-      
+
       return NextResponse.json(
         {
-
+          ok: false,
           error: `Failed to fetch menu items: ${menuItemsError.message}`,
         },
         { status: 500 }
@@ -84,6 +86,7 @@ export async function POST(_request: NextRequest) {
       if (matchingCurrentCat) {
         categoryMapping[origCat] = matchingCurrentCat;
       }
+    });
 
     // Delete menu items that belong to manually added categories
     if (manuallyAddedCategories.length > 0) {
@@ -94,10 +97,10 @@ export async function POST(_request: NextRequest) {
         .in("category", manuallyAddedCategories);
 
       if (deleteError) {
-        
+
         return NextResponse.json(
           {
-
+            ok: false,
             error: `Failed to delete items from manual categories: ${deleteError.message}`,
           },
           { status: 500 }
@@ -114,24 +117,33 @@ export async function POST(_request: NextRequest) {
     const { error: updateError } = await supabase
       .from("menu_uploads")
       .update({
-
+        category_order: resetCategoryOrder,
+        updated_at: new Date().toISOString(),
+      })
       .eq("venue_id", venueId)
       .order("created_at", { ascending: false })
       .limit(1);
 
     if (updateError) {
-      
+
       // Don't fail the entire operation for this
-      
+
     }
 
     return NextResponse.json({
-
+      ok: true,
+      message: "Categories reset to original PDF order successfully (translations preserved)",
+      originalCategories: resetCategoryOrder,
+      removedCategories: manuallyAddedCategories,
+      removedItemsCount:
+        menuItems?.filter((item) => manuallyAddedCategories.includes(item.category)).length || 0,
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        ok: false,
+        error: "Internal server error",
       },
       { status: 500 }
     );

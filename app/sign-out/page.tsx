@@ -13,8 +13,9 @@ export default function SignOutPage() {
       try {
         // Call server-side sign out
         const response = await fetch("/api/auth/signout", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
+        });
 
         if (!response.ok) {
           // Empty block

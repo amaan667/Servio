@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -51,7 +52,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      
+
       return apiErrors.database(
         "Failed to fetch POS orders",
         isDevelopment() ? fetchError.message : undefined
@@ -67,11 +68,13 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       }) => {
         const tablesArray = Array.isArray(order.tables)
           ? order.tables
-
+          : order.tables
+            ? [order.tables]
+            : [];
         const tableLabel = tablesArray[0]?.label || `Table ${order.table_number || ""}`;
         return {
           ...order,
-
+          table_label: tableLabel,
         };
       }
     );
@@ -80,8 +83,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // STEP 6: Cache the response for 1 minute
     await cache.set(cacheKey, response, { ttl: 60 });
-
-    
 
     // STEP 7: Return success response
     return success(response);
@@ -93,3 +94,4 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

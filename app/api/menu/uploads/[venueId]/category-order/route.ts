@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ venueId: string }> }) {
@@ -22,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
       .maybeSingle();
 
     if (error) {
-      
+
       return apiErrors.internal("Failed to fetch category order");
     }
 
@@ -36,9 +37,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
     }
 
     return NextResponse.json({
-
+      categories: categories || null,
+    });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

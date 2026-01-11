@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { createAdminClient } from "@/lib/supabase";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
@@ -8,7 +9,7 @@ import { apiErrors } from "@/lib/api/standard-response";
 export const runtime = "nodejs";
 
 export async function POST(
-
+  req: NextRequest,
   routeContext: { params: Promise<{ tableId: string }> }
 ) {
   const handler = withUnifiedAuth(
@@ -19,7 +20,7 @@ export async function POST(
         if (!rateLimitResult.success) {
           return NextResponse.json(
             {
-
+              error: "Too many requests",
               message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
             },
             { status: 429 }
@@ -49,7 +50,7 @@ export async function POST(
           .single();
 
         if (fetchError || !currentTable) {
-          
+
           return NextResponse.json({ error: "Table not found or access denied" }, { status: 404 });
         }
 
@@ -58,17 +59,19 @@ export async function POST(
           .from("tables")
           .update({
             qr_version: ((currentTable as { qr_version?: number }).qr_version || 1) + 1,
-
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", tableId)
           .eq("venue_id", venueId) // Security: ensure venue matches
           .select()
           .single();
 
         if (error) {
-          
+
           return NextResponse.json(
             {
-
+              error: "Failed to reissue QR",
+              message: isDevelopment() ? error.message : "Database update failed",
             },
             { status: 500 }
           );
@@ -81,12 +84,11 @@ export async function POST(
           _error instanceof Error ? _error.message : "An unexpected error occurred";
         const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-        
-
         if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
           return NextResponse.json(
             {
-
+              error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+              message: errorMessage,
             },
             { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
           );
@@ -94,7 +96,8 @@ export async function POST(
 
         return NextResponse.json(
           {
-
+            error: "Internal Server Error",
+            message: isDevelopment() ? errorMessage : "Request processing failed",
             ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
           },
           { status: 500 }
@@ -103,7 +106,14 @@ export async function POST(
     },
     {
       // Extract venueId from table lookup
-
+      extractVenueId: async (req) => {
+        try {
+          // Get tableId from URL path
+          const url = new URL(req.url);
+          const pathParts = url.pathname.split("/");
+          const tableIdIndex = pathParts.indexOf("tables");
+          if (tableIdIndex !== -1 && pathParts[tableIdIndex + 1]) {
+            const tableId = pathParts[tableIdIndex + 1];
             const { createAdminClient } = await import("@/lib/supabase");
             const admin = createAdminClient();
             const { data: table } = await admin

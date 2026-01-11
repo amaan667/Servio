@@ -7,7 +7,10 @@ import { relative } from "path";
 import { glob } from "glob";
 
 interface RouteUsage {
-
+  route: string;
+  file: string;
+  used: boolean;
+  references: string[];
 }
 
 const routes: RouteUsage[] = [];
@@ -15,7 +18,9 @@ const routes: RouteUsage[] = [];
 // Get all route files
 async function getAllRoutes(): Promise<string[]> {
   const routeFiles = await glob("app/api/**/route.ts", {
-
+    cwd: process.cwd(),
+    absolute: false,
+  });
   return routeFiles;
 }
 
@@ -37,8 +42,9 @@ async function findRouteUsage(routePath: string): Promise<string[]> {
 
   // Search in TypeScript/TSX files
   const files = await glob("**/*.{ts,tsx,js,jsx}", {
-
+    cwd: process.cwd(),
     ignore: ["node_modules/**", ".next/**", "__tests__/**", "coverage/**"],
+  });
 
   for (const file of files) {
     try {
@@ -59,19 +65,19 @@ async function findRouteUsage(routePath: string): Promise<string[]> {
 
 // Main execution
 async function main() {
-  
 
   const routeFiles = await getAllRoutes();
-  
 
   for (const routeFile of routeFiles) {
     const routePath = getRoutePath(routeFile);
     const references = await findRouteUsage(routePath);
 
     routes.push({
-
+      route: routePath,
+      file: routeFile,
+      used: references.length > 0,
       references,
-
+    });
   }
 
   // Categorize routes
@@ -83,25 +89,14 @@ async function main() {
     (r) => r.used && r.references.some((ref) => !ref.includes("__tests__"))
   );
 
-  
-  
-  
-  
-  
-
   if (unused.length > 0) {
-     ===\n");
-    unused.forEach((r) => {
 
+    unused.forEach((r) => { /* Intentionally empty */ });
   }
 
   if (testOnly.length > 0) {
-     ===\n");
-    testOnly.forEach((r) => {
-      
-      
-      }`);
 
+    testOnly.forEach((r) => { /* Intentionally empty */ });
   }
 
   // Check for duplicates
@@ -112,15 +107,17 @@ async function main() {
       routePaths.set(normalized, []);
     }
     routePaths.get(normalized)!.push(r.file);
+  });
 
   const duplicates = Array.from(routePaths.entries()).filter(([, files]) => files.length > 1);
   if (duplicates.length > 0) {
-    
-    duplicates.forEach(([route, files]) => {
-      
-      files.forEach((file) => );
 
+    duplicates.forEach(([route, files]) => {
+
+      files.forEach((file) => logger.warn(`   - ${file}`));
+
+    });
   }
 }
 
-main().catch((error) => );
+main().catch((error) => logger.error("Route audit failed", error));

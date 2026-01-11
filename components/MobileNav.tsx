@@ -23,12 +23,19 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MobileNavProps {
-
+  venueId: string;
+  venueName?: string;
+  counts?: {
+    live_orders?: number;
+    total_orders?: number;
+    notifications?: number;
   };
 }
 
 interface NavItem {
-
+  id: string;
+  label: string;
+  href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
   description?: string;
@@ -73,65 +80,85 @@ export default function MobileNav({
 
   const navItems: NavItem[] = [
     {
-
+      id: "dashboard",
+      label: "Dashboard",
       href: `/dashboard/${venueId}`,
-
+      icon: Home,
+      description: "Overview and quick stats",
       isActive: pathname === `/dashboard/${venueId}` || pathname === `/dashboard/${venueId}/`,
     },
     {
-
+      id: "orders",
+      label: "Live Orders",
       href: `/dashboard/${venueId}/live-orders`,
-
+      icon: Clock,
+      badge: counts.live_orders,
+      description: "Monitor incoming orders",
       isActive: pathname === `/dashboard/${venueId}/live-orders`,
     },
     {
-
+      id: "menu",
+      label: "Menu Builder",
       href: `/dashboard/${venueId}/menu-management`,
-
+      icon: ShoppingBag,
       description: "Design, manage, and customize menu",
       isActive: pathname === `/dashboard/${venueId}/menu-management`,
     },
     {
-
+      id: "qr",
+      label: "QR Codes",
       href: `/dashboard/${venueId}/qr-codes`,
-
+      icon: QrCode,
+      description: "Generate table QR codes",
       isActive: pathname === `/dashboard/${venueId}/qr-codes`,
     },
     {
-
+      id: "tables",
+      label: "Tables",
       href: `/dashboard/${venueId}/tables`,
-
+      icon: Table,
+      description: "Table management",
       isActive: pathname === `/dashboard/${venueId}/tables`,
     },
     {
-
+      id: "analytics",
+      label: "Analytics",
       href: `/dashboard/${venueId}/analytics`,
-
+      icon: BarChart,
+      description: "Business insights",
       isActive: pathname === `/dashboard/${venueId}/analytics`,
     },
     {
-
+      id: "staff",
+      label: "Staff",
       href: `/dashboard/${venueId}/staff`,
-
+      icon: Users,
+      description: "Staff management",
       isActive: pathname === `/dashboard/${venueId}/staff`,
     },
     {
-
+      id: "feedback",
+      label: "Feedback",
       href: `/dashboard/${venueId}/feedback`,
-
+      icon: MessageSquare,
+      badge: counts.notifications,
+      description: "Customer feedback",
       isActive: pathname === `/dashboard/${venueId}/feedback`,
     },
     {
-
+      id: "payments",
+      label: "Payments",
       href: `/dashboard/${venueId}/payments`,
-
+      icon: Receipt,
       description: "Manage payments, split bills, and view receipts",
       isActive: pathname === `/dashboard/${venueId}/payments`,
     },
     {
-
+      id: "settings",
+      label: "Settings",
       href: `/dashboard/${venueId}/settings`,
-
+      icon: Settings,
+      description: "Venue settings",
       isActive: pathname === `/dashboard/${venueId}/settings`,
     },
   ];
@@ -185,7 +212,10 @@ export default function MobileNav({
                   item.isActive ? "text-purple-700" : "text-purple-600"
                 }`}
                 style={{
-
+                  lineHeight: "1.2",
+                  fontSize: "10px",
+                  color: item.isActive ? "#6d28d9" : "#7c3aed",
+                  fontWeight: item.isActive ? 700 : 600,
                 }}
               >
                 {item.label}
@@ -227,7 +257,7 @@ export default function MobileNav({
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
                           item.isActive
                             ? "bg-purple-100 text-purple-800 border-2 border-purple-300"
-
+                            : "hover:bg-gray-50 text-gray-900 font-bold"
                         }`}
                       >
                         <div className="flex items-center space-x-4">

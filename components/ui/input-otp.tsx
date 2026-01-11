@@ -55,7 +55,7 @@ const InputOTPSlot = React.forwardRef<
       )}
     </div>
   );
-
+});
 InputOTPSlot.displayName = "InputOTPSlot";
 
 const InputOTPSeparator = React.forwardRef<

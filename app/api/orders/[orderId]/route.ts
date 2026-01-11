@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -23,24 +24,21 @@ export async function GET(_req: Request, context: OrderParams = {}) {
       .eq("id", orderId)
       .single();
 
-     : "N/A" },
-
     if (orderError) {
-      
-      
+
       return NextResponse.json(
         {
-
+          error: "Order not found",
         },
         { status: 404 }
       );
     }
 
     if (!order) {
-      
+
       return NextResponse.json(
         {
-
+          error: "Order not found",
         },
         { status: 404 }
       );
@@ -52,19 +50,17 @@ export async function GET(_req: Request, context: OrderParams = {}) {
     // Ensure items array exists (fallback to empty array if null)
     const transformedOrder = {
       ...order,
-
+      items: order.items || [],
     };
 
-     ? transformedOrder.items.length : 0
-    );
-
     return NextResponse.json({
-
+      order: transformedOrder,
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        error: "Internal server error",
       },
       { status: 500 }
     );

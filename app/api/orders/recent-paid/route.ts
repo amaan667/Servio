@@ -33,10 +33,11 @@ export async function GET(_req: Request) {
       .maybeSingle();
 
     if (orderError) {
-      
+
       return NextResponse.json(
         {
-
+          error: "Failed to fetch recent order",
+          details: orderError.message,
         },
         { status: 500 }
       );
@@ -45,30 +46,30 @@ export async function GET(_req: Request) {
     if (!recentOrder) {
       return NextResponse.json(
         {
-
+          error: "No recent paid orders found",
         },
         { status: 404 }
       );
     }
 
-    
-
     // Transform the order to include items array
     const transformedOrder = {
       ...recentOrder,
-
+      items: recentOrder.order_items || [],
     };
 
     // Remove the order_items property since we have items now
     delete transformedOrder.order_items;
 
     return NextResponse.json({
-
+      order: transformedOrder,
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        error: "Internal server error",
+        details: _error instanceof Error ? _error.message : "Unknown _error",
       },
       { status: 500 }
     );

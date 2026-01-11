@@ -4,10 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-
+  title: "Privacy Policy",
   description:
     "Learn how Servio collects, uses, and protects your personal information. UK GDPR compliant privacy policy for our POS and ordering platform.",
-
+  openGraph: {
+    title: "Privacy Policy | Servio",
+    description: "Learn how Servio protects your data and complies with UK GDPR regulations.",
   },
 };
 
@@ -27,7 +29,9 @@ export default function PrivacyPolicyPage() {
           <p className="text-gray-600 mb-8">
             Last updated:{" "}
             {new Date().toLocaleDateString("en-GB", {
-
+              day: "numeric",
+              month: "long",
+              year: "numeric",
             })}
           </p>
 

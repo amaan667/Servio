@@ -13,22 +13,21 @@ export const runtime = "nodejs";
  */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
-    
 
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        
+
         return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       const body = await req.json().catch(() => ({}));
-      
+
       const { name, role } = body || {};
 
       if (!name) {
-        
+
         return apiErrors.badRequest("name is required");
       }
 
@@ -63,23 +62,24 @@ export const POST = withUnifiedAuth(
       // IMPORTANT: Tier limits are based on the venue owner's subscription
       const limitCheck = await checkLimit(venue.owner_user_id, "maxStaff", staffCount);
       if (!limitCheck.allowed) {
-        
+
         return apiErrors.forbidden(
           `Staff limit reached. You have ${staffCount}/${limitCheck.limit} staff members. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more staff.`,
           {
-
+            limitReached: true,
+            currentCount: staffCount,
+            limit: limitCheck.limit,
+            tier: limitCheck.currentTier,
           }
         );
       }
 
-      
-
       const insertData = {
-
+        venue_id: normalizedVenueId,
         name,
-
+        role: role || "Server",
+        active: true,
       };
-      
 
       // Use service role client to avoid RLS write failures.
       // Access is enforced by withUnifiedAuth (venue access + role requirements).
@@ -88,24 +88,21 @@ export const POST = withUnifiedAuth(
       const { data, error } = await supabase.from("staff").insert([insertData]).select("*");
       const queryTime = Date.now() - queryStart;
 
-      
-
       if (error) {
-        
+
         return apiErrors.badRequest(error.message || "Failed to add staff member");
       }
 
       if (!data || data.length === 0) {
-        
+
         return apiErrors.internal("Failed to create staff member - no data returned");
       }
 
-      
       return success(data[0]);
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       const errorStack = e instanceof Error ? e.stack : undefined;
-      
+
       return apiErrors.internal(errorMessage);
     }
   },

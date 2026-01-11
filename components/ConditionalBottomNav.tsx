@@ -11,6 +11,10 @@ export default function ConditionalBottomNav() {
   const pathname = usePathname();
   const [venueId, setVenueId] = useState<string | null>(null);
   const [counts, setCounts] = useState({
+    live_orders: 0,
+    total_orders: 0,
+    notifications: 0,
+  });
 
   // Don't show bottom nav on customer-facing pages, auth pages, or home page
   const isCustomerOrderPage = pathname?.startsWith("/order");
@@ -53,7 +57,10 @@ export default function ConditionalBottomNav() {
         const cached = getCachedCounts(venueIdFromPath);
         if (cached && isCacheFresh(venueIdFromPath)) {
           setCounts({
-
+            live_orders: cached.live_count || 0,
+            total_orders: cached.today_orders_count || 0,
+            notifications: 0,
+          });
         }
       }
 
@@ -61,7 +68,10 @@ export default function ConditionalBottomNav() {
         const supabase = createClient();
         const { data, error } = await supabase
           .rpc("dashboard_counts", {
-
+            p_venue_id: venueIdFromPath,
+            p_tz: "Europe/London",
+            p_live_window_mins: 30,
+          })
           .single();
 
         if (!isMounted) return;
@@ -70,7 +80,7 @@ export default function ConditionalBottomNav() {
           const countsData = {
             live_orders: ((data as Record<string, unknown>).live_count as number) || 0,
             total_orders: ((data as Record<string, unknown>).today_orders_count as number) || 0,
-
+            notifications: 0,
           };
           setCounts(countsData);
 
@@ -100,7 +110,10 @@ export default function ConditionalBottomNav() {
         const cached = getCachedCounts(venueIdFromPath);
         if (cached) {
           setCounts({
-
+            live_orders: cached.live_count || 0,
+            total_orders: cached.today_orders_count || 0,
+            notifications: 0,
+          });
         }
       }
     };
@@ -126,7 +139,9 @@ export default function ConditionalBottomNav() {
       .on(
         "postgres_changes",
         {
-
+          event: "*",
+          schema: "public",
+          table: "orders",
           filter: `venue_id=eq.${venueIdFromPath}`,
         },
         (payload) => {

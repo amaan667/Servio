@@ -4,23 +4,39 @@
 import { createAdminClient } from "@/lib/supabase";
 
 interface MenuItemsWithoutImagesResult {
-
+  items: Array<{
+    id: string;
+    name: string;
+    category: string;
+    price: number;
   }>;
-
+  count: number;
+  summary: string;
 }
 
 interface MenuTranslationResult {
-
+  success: boolean;
+  itemsTranslated: number;
+  targetLanguage: string;
+  message: string;
+  jobId?: string;
 }
 
 interface ImageUploadResult {
-
+  success: boolean;
+  itemId: string;
+  itemName: string;
+  imageUrl: string;
+  message: string;
 }
 
 /**
  * Query menu items that don't have images
  */
 export async function getMenuItemsWithoutImages(
+  venueId: string
+): Promise<MenuItemsWithoutImagesResult> {
+  const supabase = createAdminClient();
 
   const { data: items, error } = await supabase
     .from("menu_items")
@@ -32,13 +48,16 @@ export async function getMenuItemsWithoutImages(
     .order("name", { ascending: true });
 
   if (error) {
-    
+
     throw new Error(`Failed to fetch menu items: ${error.message}`);
   }
 
   const itemsWithoutImages =
     items?.map((item) => ({
-
+      id: item.id,
+      name: item.name,
+      category: item.category || "Uncategorized",
+      price: item.price,
     })) || [];
 
   // Group by category for summary
@@ -55,9 +74,12 @@ export async function getMenuItemsWithoutImages(
     .join(", ");
 
   return {
-
+    items: itemsWithoutImages,
+    count: itemsWithoutImages.length,
+    summary:
+      itemsWithoutImages.length > 0
         ? `Found ${itemsWithoutImages.length} items without images: ${categorySummary}. Consider adding images to improve menu appeal.`
-
+        : "All menu items have images! Great job!",
   };
 }
 
@@ -66,7 +88,13 @@ export async function getMenuItemsWithoutImages(
  * Note: This prepares the data but actual image upload would need to be handled by the frontend
  */
 export async function updateMenuItemImage(
+  venueId: string,
+  itemName: string,
+  imageUrl: string
+): Promise<ImageUploadResult> {
+  const supabase = createAdminClient();
 
+  // Find the menu item
   const { data: item, error: fetchError } = await supabase
     .from("menu_items")
     .select("id, name")
@@ -75,7 +103,7 @@ export async function updateMenuItemImage(
     .maybeSingle();
 
   if (fetchError) {
-    
+
     throw new Error(`Failed to fetch menu item: ${fetchError.message}`);
   }
 
@@ -87,16 +115,20 @@ export async function updateMenuItemImage(
   const { error: updateError } = await supabase
     .from("menu_items")
     .update({
-
+      image_url: imageUrl,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", item.id);
 
   if (updateError) {
-    
+
     throw new Error(`Failed to update image: ${updateError.message}`);
   }
 
   return {
-
+    success: true,
+    itemId: item.id,
+    itemName: item.name,
     imageUrl,
     message: `Successfully added image to "${item.name}". Image URL: ${imageUrl}`,
   };
@@ -107,12 +139,11 @@ export async function updateMenuItemImage(
  * Uses chunking to prevent timeout for large menus
  */
 export async function translateMenuItems(
-
+  venueId: string,
+  targetLanguage: string,
   categories?: string[]
 ): Promise<MenuTranslationResult> {
   const supabase = createAdminClient();
-
-  
 
   // Get items to translate
   let query = supabase
@@ -128,15 +159,16 @@ export async function translateMenuItems(
   const { data: items, error: fetchError } = await query;
 
   if (fetchError) {
-    
+
     throw new Error(`Failed to fetch menu items: ${fetchError.message}`);
   }
 
   if (!items || items.length === 0) {
     return {
-
+      success: false,
+      itemsTranslated: 0,
       targetLanguage,
-
+      message: "No menu items found to translate.",
     };
   }
 
@@ -146,7 +178,15 @@ export async function translateMenuItems(
 
   // Map targetLanguage to language codes
   const langMap: Record<string, string> = {
-
+    spanish: "es",
+    english: "en",
+    french: "fr",
+    german: "de",
+    italian: "it",
+    portuguese: "pt",
+    arabic: "ar",
+    chinese: "zh",
+    japanese: "ja",
   };
 
   const langCode = langMap[targetLanguage.toLowerCase()] || targetLanguage;
@@ -154,7 +194,8 @@ export async function translateMenuItems(
   // Execute translation with proper timeout handling
   const result = await executeMenuTranslate(
     {
-
+      targetLanguage: langCode as "es" | "ar" | "fr" | "de" | "it" | "pt" | "zh" | "ja",
+      includeDescriptions: true,
     },
     venueId,
     "",
@@ -163,16 +204,18 @@ export async function translateMenuItems(
 
   if ("success" in result && result.success) {
     return {
-
+      success: true,
+      itemsTranslated: items.length,
       targetLanguage,
       message: `Successfully translated menu to ${targetLanguage}. All ${items.length} items have been updated.`,
     };
   }
 
   return {
-
+    success: false,
+    itemsTranslated: 0,
     targetLanguage,
-
+    message: "Translation failed. Please try again.",
   };
 }
 
@@ -184,13 +227,18 @@ async function translateText(text: string, targetLanguage: string): Promise<stri
   // Simplified mock translation
   // In production, integrate with Google Translate API, DeepL, or OpenAI
   const languageMap: Record<string, string> = {
-
+    spanish: "es",
+    french: "fr",
+    german: "de",
+    italian: "it",
+    portuguese: "pt",
+    chinese: "zh",
+    japanese: "ja",
   };
 
   const langCode = languageMap[targetLanguage.toLowerCase()] || targetLanguage;
 
   // Mock translation - in production, call actual API
-  
 
   // For now, just return with a language prefix to show it "worked"
   return `[${langCode.toUpperCase()}] ${text}`;
@@ -200,27 +248,34 @@ async function translateText(text: string, targetLanguage: string): Promise<stri
  * Bulk update menu item availability
  */
 export async function bulkUpdateAvailability(
-
+  venueId: string,
+  itemIds: string[],
+  available: boolean
+): Promise<{
+  success: boolean;
+  updatedCount: number;
+  message: string;
 }> {
   const supabase = createAdminClient();
-
-  
 
   const { data, error } = await supabase
     .from("menu_items")
     .update({
-
+      is_available: available,
+      updated_at: new Date().toISOString(),
+    })
     .in("id", itemIds)
     .eq("venue_id", venueId)
     .select("id");
 
   if (error) {
-    
+
     throw new Error(`Failed to update availability: ${error.message}`);
   }
 
   return {
-
+    success: true,
+    updatedCount: data?.length || 0,
     message: `Successfully ${available ? "enabled" : "disabled"} ${data?.length || 0} menu items.`,
   };
 }

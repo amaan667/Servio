@@ -43,14 +43,12 @@ export const GET = withUnifiedAuth(
         .order("created_at", { ascending: false });
 
       if (error) {
-        
+
         return apiErrors.database(
           "Failed to fetch staff",
           isDevelopment() ? error.message : undefined
         );
       }
-
-      
 
       // STEP 4: Return success response
       return success({ staff: staff || [] });
@@ -65,7 +63,8 @@ export const GET = withUnifiedAuth(
   },
   {
     // Extract venueId from query
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         return searchParams.get("venueId") || searchParams.get("venue_id");
       } catch {

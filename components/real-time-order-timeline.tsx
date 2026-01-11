@@ -8,74 +8,151 @@ import { Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface OrderItem {
-
+  menu_item_id: string;
+  quantity: number;
+  price: number;
+  item_name: string;
+  specialInstructions?: string;
 }
 
 interface Order {
-
+  id: string;
+  venue_id: string;
+  table_number: number;
+  counter_number?: number;
+  order_type?: "table" | "counter";
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  order_status: string;
+  payment_status: string;
+  total_amount: number;
+  notes?: string;
+  items: OrderItem[];
+  created_at: string;
+  updated_at: string;
+  source?: "qr" | "counter";
 }
 
 // Table order timeline (includes serving step)
 const TABLE_ORDER_STATUSES = [
   {
-
+    key: "PLACED",
+    label: "Order Placed",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Order has been placed.",
   },
   {
-
+    key: "ACCEPTED",
+    label: "Order Accepted",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Your order has been accepted by the kitchen.",
   },
   {
-
+    key: "IN_PREP",
+    label: "In Preparation",
+    icon: RefreshCw,
+    color: "bg-orange-100 text-orange-800",
+    description: "Your order is being prepared in the kitchen.",
   },
   {
-
+    key: "READY",
+    label: "Ready for Pickup / Serving",
+    icon: CheckCircle,
+    color: "bg-blue-100 text-blue-800",
+    description: "Your order is ready for pickup / serving.",
   },
   {
-
+    key: "SERVING",
+    label: "Being Served",
+    icon: CheckCircle,
+    color: "bg-purple-100 text-purple-800",
+    description: "Your order has been served. Enjoy your meal!",
   },
   {
-
+    key: "COMPLETED",
+    label: "Completed",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Thank you for your order!",
   },
 ];
 
 // Counter order timeline (no serving step - goes directly from ready to completed)
 const COUNTER_ORDER_STATUSES = [
   {
-
+    key: "PLACED",
+    label: "Order Placed",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Order has been placed.",
   },
   {
-
+    key: "ACCEPTED",
+    label: "Order Accepted",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Your order has been accepted by the kitchen.",
   },
   {
-
+    key: "IN_PREP",
+    label: "In Preparation",
+    icon: RefreshCw,
+    color: "bg-orange-100 text-orange-800",
+    description: "Your order is being prepared in the kitchen.",
   },
   {
-
+    key: "READY",
+    label: "Ready for Pickup",
+    icon: CheckCircle,
+    color: "bg-blue-100 text-blue-800",
+    description: "Your order is ready for pickup at the counter.",
   },
   {
-
+    key: "COMPLETED",
+    label: "Completed",
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    description: "Thank you for your order!",
   },
 ];
 
 // Statuses that should be greyed out (only show if triggered)
 const GREYED_OUT_STATUSES = [
   {
-
+    key: "CANCELLED",
+    label: "Order Cancelled",
+    icon: XCircle,
+    color: "bg-red-100 text-red-800",
+    description: "Your order has been cancelled",
   },
   {
-
+    key: "REFUNDED",
+    label: "Order Refunded",
+    icon: XCircle,
+    color: "bg-red-100 text-red-800",
+    description: "Your order has been refunded",
   },
   {
-
+    key: "EXPIRED",
+    label: "Order Expired",
+    icon: XCircle,
+    color: "bg-gray-100 text-gray-800",
+    description: "Your order has expired",
   },
 ];
 
 interface RealTimeOrderTimelineProps {
-
+  orderId: string;
+  venueId?: string;
+  className?: string;
 }
 
 export function RealTimeOrderTimeline({
   orderId,
-
+  venueId: _venueId,
   className,
 }: RealTimeOrderTimelineProps) {
   const [order, setOrder] = useState<Order | null>(null);
@@ -124,11 +201,13 @@ export function RealTimeOrderTimeline({
       .on(
         "postgres_changes",
         {
-
+          event: "*",
+          schema: "public",
+          table: "orders",
           filter: `id=eq.${orderId}`,
         },
         (payload: {
-
+          eventType: string;
           new?: Record<string, unknown>;
           old?: Record<string, unknown>;
         }) => {
@@ -139,6 +218,7 @@ export function RealTimeOrderTimeline({
 
               const updatedOrder = { ...prevOrder, ...payload.new };
               return updatedOrder;
+            });
 
             setLastUpdate(new Date());
           } else if (payload.eventType === "DELETE") {
@@ -152,6 +232,7 @@ export function RealTimeOrderTimeline({
         } else if (status === "CHANNEL_ERROR") {
           // Empty block
         }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -163,9 +244,11 @@ export function RealTimeOrderTimeline({
     return (
       statusArray.find((s) => s.key === status) ||
       GREYED_OUT_STATUSES.find((s) => s.key === status) || {
-
+        key: status,
         label: status.replace("_", " "),
-
+        icon: Clock,
+        color: "bg-gray-100 text-gray-800",
+        description: "Order status update",
       }
     );
   };
@@ -269,7 +352,9 @@ export function RealTimeOrderTimeline({
                       className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                         isGreyedOut
                           ? "bg-red-500 text-white"
-
+                          : isCompleted
+                            ? "bg-green-500 text-white"
+                            : "bg-gray-200 text-gray-700"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -282,7 +367,9 @@ export function RealTimeOrderTimeline({
                           className={`text-sm font-medium ${
                             isGreyedOut
                               ? "text-red-600"
-
+                              : isCompleted
+                                ? "text-green-600"
+                                : "text-gray-900"
                           }`}
                         >
                           {status.label}

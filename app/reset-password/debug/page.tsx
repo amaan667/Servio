@@ -9,7 +9,11 @@ export default function ResetPasswordDebugPage() {
 
   const captureDebugInfo = () => {
     const info = {
-
+      fullUrl: window.location.href,
+      hash: window.location.hash,
+      search: window.location.search,
+      pathname: window.location.pathname,
+      origin: window.location.origin,
       hashParams: {} as Record<string, string>,
       queryParams: {} as Record<string, string>,
     };
@@ -19,7 +23,7 @@ export default function ResetPasswordDebugPage() {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       hashParams.forEach((value, key) => {
         info.hashParams[key] = value.substring(0, 50) + (value.length > 50 ? "..." : "");
-
+      });
     }
 
     // Parse query params
@@ -27,7 +31,7 @@ export default function ResetPasswordDebugPage() {
       const queryParams = new URLSearchParams(window.location.search);
       queryParams.forEach((value, key) => {
         info.queryParams[key] = value.substring(0, 50) + (value.length > 50 ? "..." : "");
-
+      });
     }
 
     setDebugInfo(info);

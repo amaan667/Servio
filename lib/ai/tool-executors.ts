@@ -104,7 +104,18 @@ import {
  * Delegates to specialized executor modules based on tool name
  */
 export async function executeTool(
-
+  toolName: ToolName,
+  _params: unknown,
+  venueId: string,
+  userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  try {
+    switch (toolName) {
+      // Menu tools
+      case "menu.update_prices":
+        return executeMenuUpdatePrices(
+          _params as Parameters<typeof executeMenuUpdatePrices>[0],
           venueId,
           userId,
           preview
@@ -433,9 +444,9 @@ export async function executeTool(
     // Wrap other errors in AIAssistantError for consistent handling
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new AIAssistantError(`Tool execution failed: ${errorMessage}`, "EXECUTION_FAILED", {
-
+      originalError: errorMessage,
       toolName,
-
+    });
   }
 }
 

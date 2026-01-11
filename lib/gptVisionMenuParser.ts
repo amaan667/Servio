@@ -2,11 +2,25 @@ import { getOpenAI } from "./openai";
 import fs from "fs";
 
 export interface ExtractedMenuItem {
-
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  allergens?: string[];
+  dietary?: string[];
+  spiceLevel?: string | null;
 }
 
 export async function extractMenuFromImage(
+  imagePathOrDataUrl: string
+): Promise<ExtractedMenuItem[]> {
+  const openai = getOpenAI();
 
+  // Handle both file paths and data URLs
+  let imageUrl: string;
+  if (imagePathOrDataUrl.startsWith("data:")) {
+    // Already a data URL
+    imageUrl = imagePathOrDataUrl;
   } else if (imagePathOrDataUrl.startsWith("http")) {
     // HTTP URL
     imageUrl = imagePathOrDataUrl;
@@ -84,15 +98,25 @@ OTHER RULES:
   `;
 
   const response = await openai.chat.completions.create({
-
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "user",
+        content: [
           { type: "text", text: prompt },
           {
-
+            type: "image_url",
+            image_url: {
+              url: imageUrl,
+              detail: "high",
             },
           },
         ],
       },
     ],
+    max_tokens: 4000,
+    temperature: 0.2,
+  });
 
   const text = response.choices[0]?.message?.content;
   try {
@@ -112,25 +136,25 @@ OTHER RULES:
 
     const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      
+
       return [];
     }
     const json = JSON.parse(jsonMatch[0]);
 
     if (!Array.isArray(json)) {
-      
+
       return [];
     }
 
     // Log categories for debugging
     const categories = Array.from(new Set(json.map((item) => item.category).filter(Boolean)));
-    
 
     // Log detailed breakdown by category
     const categoryBreakdown: Record<string, number> = {};
     json.forEach((item) => {
       const cat = item.category || "Uncategorized";
       categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+    });
 
     // Log sample items from each category
     const samplesByCategory: Record<string, ExtractedMenuItem[]> = {};
@@ -141,59 +165,36 @@ OTHER RULES:
       }
       if (samplesByCategory[cat].length < 3) {
         samplesByCategory[cat].push({
-
+          name: item.name,
+          price: item.price,
+          hasDescription: !!item.description,
         } as ExtractedMenuItem);
       }
+    });
 
     // Log any items with potential issues
     const itemsWithoutName = json.filter((item) => !item.name);
     const itemsWithoutPrice = json.filter((item) => !item.price && item.price !== 0);
     const itemsWithoutCategory = json.filter((item) => !item.category);
 
-    if (itemsWithoutName.length > 0) {
-      
-    }
-    if (itemsWithoutPrice.length > 0) {
-      .map((i) => i.name),
-
-    }
-    if (itemsWithoutCategory.length > 0) {
-      .map((i) => i.name),
-
-    }
+    if (itemsWithoutName.length > 0) { /* Condition handled */ }
+    if (itemsWithoutPrice.length > 0) { /* Condition handled */ }
+    if (itemsWithoutCategory.length > 0) { /* Condition handled */ }
 
     // Log allergen and dietary information extraction
     const itemsWithAllergens = json.filter((item) => item.allergens && item.allergens.length > 0);
     const itemsWithDietary = json.filter((item) => item.dietary && item.dietary.length > 0);
     const itemsWithSpiceLevel = json.filter((item) => item.spiceLevel);
 
-    if (itemsWithAllergens.length > 0) {
-      .map((i) => ({
+    if (itemsWithAllergens.length > 0) { /* Condition handled */ }
 
-        })),
+    if (itemsWithDietary.length > 0) { /* Condition handled */ }
 
-    }
-
-    if (itemsWithDietary.length > 0) {
-      .map((i) => ({
-
-        })),
-
-    }
-
-    if (itemsWithSpiceLevel.length > 0) {
-      .map((i) => ({
-
-        })),
-
-    }
-
-     => i.name && i.price && i.category).length,
+    if (itemsWithSpiceLevel.length > 0) { /* Condition handled */ }
 
     return json as ExtractedMenuItem[];
   } catch (_err) {
-    
-    
+
     return [];
   }
 }

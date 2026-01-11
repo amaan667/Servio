@@ -3,7 +3,9 @@ import { DateTime } from "luxon";
 export type AmPm = "AM" | "PM";
 
 export function to24h(
-
+  hour12: number,
+  minute: number,
+  ampm: AmPm
 ): { hour: number; minute: number } {
   let h = hour12 % 12;
   if (ampm === "PM") h += 12;
@@ -20,7 +22,14 @@ export function buildIsoFromLocal(dateYYYYMMDD: string, hour24: number, minute: 
 }
 
 export function isOvernight(
-
+  startHour: number,
+  startMinute: number,
+  endHour: number,
+  endMinute: number
+): boolean {
+  const start = startHour * 60 + startMinute;
+  const end = endHour * 60 + endMinute;
+  return end <= start; // same time or before means cross midnight
 }
 
 export function addDaysISO(dateYYYYMMDD: string, days: number): string {
@@ -40,7 +49,10 @@ export function todayWindowForTZ(tz?: string) {
 
   return {
     zone,
-
+    startUtcISO: start.toUTC().toISO(),
+    endUtcISO: end.toUTC().toISO(),
+    startLocalISO: start.toISO(),
+    endLocalISO: end.toISO(),
   };
 }
 

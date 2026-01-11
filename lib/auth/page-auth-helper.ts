@@ -10,6 +10,7 @@
 // redirect import removed - NO REDIRECTS
 import { createServerSupabase } from "@/lib/supabase";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
+
 import { cache } from "react";
 import { getAccessContext } from "@/lib/access/getAccessContext";
 import type { UserRole } from "@/lib/permissions";
@@ -33,7 +34,10 @@ export type FeatureKey =
 
 export interface PageAuthContext {
   user: { id: string; email?: string | null };
-
+  venueId: string;
+  role: UserRole;
+  tier: Tier;
+  hasFeatureAccess: (feature: FeatureKey) => boolean;
 }
 
 export interface RequirePageAuthOptions {
@@ -79,7 +83,7 @@ const getBasePageAuth = cache(
     if (!accessContext) {
       // Server-side auth failed - client-side will handle authentication
       // With Supabase's official SSR client, this should be very rare
-      
+
       return null;
     }
 
@@ -87,7 +91,7 @@ const getBasePageAuth = cache(
     const hasFeatureAccess = (feature: FeatureKey): boolean => {
       const tierLimits = TIER_LIMITS[accessContext.tier];
       if (!tierLimits) {
-        
+
         return false;
       }
 
@@ -98,7 +102,7 @@ const getBasePageAuth = cache(
       // For KDS tier (basic/advanced/enterprise), return true if not false (check before boolean check)
       if (feature === "kds" || featureKey === "kds") {
         const hasAccess = featureValue !== false;
-        
+
         return hasAccess;
       }
       // For boolean features, return the value directly
@@ -118,7 +122,9 @@ const getBasePageAuth = cache(
     // All good → return base context
     return {
       user: { id: accessContext.user_id, email: user?.email || null },
-
+      venueId: accessContext.venue_id || "",
+      role: accessContext.role,
+      tier: accessContext.tier,
       hasFeatureAccess,
     };
   }
@@ -180,7 +186,9 @@ export async function getOptionalPageAuth(venueId?: string): Promise<PageAuthCon
 
     return {
       user: { id: accessContext.user_id, email: user?.email || null },
-
+      venueId: accessContext.venue_id || "",
+      role: accessContext.role,
+      tier: accessContext.tier,
       hasFeatureAccess,
     };
   } catch {

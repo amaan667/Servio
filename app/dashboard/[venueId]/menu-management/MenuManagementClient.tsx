@@ -64,7 +64,12 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
-
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    available: true,
+  });
   const [isClearing, setIsClearing] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("manage");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("pdf");
@@ -76,10 +81,10 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
     useMenuItems(venueId);
 
   // Log component state changes
-  useEffect(() => {}, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);
+  useEffect(() => { /* Intentionally empty */ }, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);
 
   // Log tab changes
-  useEffect(() => {}, [activeTab, venueId, menuItems.length]);
+  useEffect(() => { /* Intentionally empty */ }, [activeTab, venueId, menuItems.length]);
   const { designSettings, setDesignSettings, isSavingDesign, saveDesignSettings } =
     useDesignSettings(venueId);
   const { handleItemDragEnd, handleCategoryDragEnd } = useDragAndDrop(
@@ -143,7 +148,10 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
 
     if (!venueId) {
       toast({
-
+        title: "Error",
+        description: "Venue not found",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -159,7 +167,14 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       }
 
       const itemData = {
-
+        venue_id: venueId,
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        price: parseFloat(formData.price),
+        category: formData.category.trim(),
+        is_available: formData.available,
+        position: editingItem ? editingItem.position : position,
+        created_at: new Date().toISOString(),
       };
 
       let result;
@@ -174,11 +189,17 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       }
 
       toast({
-
+        title: editingItem ? "Menu item updated" : "Menu item added",
         description: `"${formData.name}" has been ${editingItem ? "updated" : "added"} successfully.`,
+      });
 
       setFormData({
-
+        name: "",
+        description: "",
+        price: "",
+        category: "",
+        available: true,
+      });
       setIsAddModalOpen(false);
       setEditingItem(null);
 
@@ -194,19 +215,22 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
           window.dispatchEvent(
             new CustomEvent("menuItemsChanged", {
               detail: { venueId, count: newCount },
-
+            })
           );
           // Also dispatch menuChanged for backward compatibility
           window.dispatchEvent(
             new CustomEvent("menuChanged", {
               detail: { venueId, action: editingItem ? "updated" : "created", itemCount: newCount },
-
+            })
           );
         }
       }, 100);
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: _error instanceof Error ? _error.message : "Failed to save menu item",
+        variant: "destructive",
+      });
     }
   };
 
@@ -224,8 +248,9 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       }
 
       toast({
-
+        title: "Menu item deleted",
         description: `"${item.name}" has been deleted successfully.`,
+      });
 
       await loadMenuItems();
 
@@ -239,19 +264,22 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
           window.dispatchEvent(
             new CustomEvent("menuItemsChanged", {
               detail: { venueId, count: newCount },
-
+            })
           );
           // Also dispatch menuChanged for backward compatibility
           window.dispatchEvent(
             new CustomEvent("menuChanged", {
               detail: { venueId, action: "deleted", itemCount: newCount },
-
+            })
           );
         }
       }, 100);
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: _error instanceof Error ? _error.message : "Failed to delete menu item",
+        variant: "destructive",
+      });
     }
   };
 
@@ -292,6 +320,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
           categoriesInOrder.push(item.category);
           seen.add(item.category);
         }
+      });
 
     return categoriesInOrder;
   };
@@ -315,8 +344,12 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       const requestBody = { venue_id: venueId };
 
       const response = await fetch("/api/menu/clear", {
-
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -330,8 +363,9 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
 
       if (result.ok) {
         toast({
-
+          title: "Menu cleared",
           description: `All menu items, categories, and options have been cleared successfully.`,
+        });
 
         await loadMenuItems();
 
@@ -344,7 +378,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
           window.dispatchEvent(
             new CustomEvent("menuChanged", {
               detail: { venueId, action: "cleared" },
-
+            })
           );
         }
 
@@ -357,7 +391,10 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: _error instanceof Error ? _error.message : "Failed to clear menu",
+        variant: "destructive",
+      });
     } finally {
       setIsClearing(false);
     }
@@ -402,7 +439,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                   window.dispatchEvent(
                     new CustomEvent("menuChanged", {
                       detail: { venueId, action: "uploaded" },
-
+                    })
                   );
                 }
 
@@ -757,14 +794,14 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                       className="object-contain"
                       style={{
                         height: `${designSettings.logo_size_numeric || 200}px`,
-
+                        maxWidth: "100%",
                       }}
                     />
                     {designSettings.custom_heading && (
                       <p
                         className="mt-4 text-center font-medium"
                         style={{
-
+                          color: designSettings.primary_color,
                           fontSize: `${designSettings.font_size_numeric || 16}px`,
                         }}
                       >
@@ -780,7 +817,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                       className="font-bold"
                       style={{
                         fontSize: `${(designSettings.font_size_numeric || 16) + 12}px`,
-
+                        color: designSettings.primary_color,
                       }}
                     >
                       {designSettings.venue_name}
@@ -803,12 +840,17 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                           if (orderA >= 0) return -1;
                           if (orderB >= 0) return 1;
                           return 0;
+                        })
+                      : categories.sort();
 
+                    return sortedCats.map((category) => (
                       <div key={category} className="space-y-4">
                         <h2
                           className="text-2xl font-bold border-b-2 pb-2"
                           style={{
-
+                            color: designSettings.primary_color,
+                            borderColor: designSettings.secondary_color,
+                            fontFamily: designSettings.font_family,
                           }}
                         >
                           {category}
@@ -826,7 +868,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                                   <h3
                                     className="font-semibold"
                                     style={{
-
+                                      fontFamily: designSettings.font_family,
                                       fontSize: `${designSettings.font_size_numeric || 16}px`,
                                     }}
                                   >
@@ -837,7 +879,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                                       className="text-gray-600 mt-1 italic"
                                       style={{
                                         fontSize: `${(designSettings.font_size_numeric || 16) - 2}px`,
-
+                                        fontFamily: designSettings.font_family,
                                       }}
                                     >
                                       {item.description}
@@ -848,7 +890,8 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
                                   <span
                                     className="text-lg font-semibold ml-4"
                                     style={{
-
+                                      color: designSettings.primary_color,
+                                      fontFamily: designSettings.font_family,
                                     }}
                                   >
                                     £{item.price.toFixed(2)}

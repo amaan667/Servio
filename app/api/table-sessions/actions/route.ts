@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
@@ -130,6 +131,8 @@ export const POST = withUnifiedAuth(
           }
           return await handleCancelReservation(supabase, table_id, reservation_id);
 
+        default:
+          return apiErrors.badRequest("Invalid action");
       }
     } catch (error) {
 
@@ -142,7 +145,10 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body - use cloned request to avoid consuming the stream
-
+    extractVenueId: async (req) => {
+      try {
+        // Clone the request so we don't consume the original body
+        const clonedReq = req.clone();
         const body = await clonedReq.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

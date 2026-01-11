@@ -2,6 +2,7 @@
 // Gathers and summarizes data for LLM planning
 
 import { createClient } from "@/lib/supabase";
+
 import {
   MenuSummary,
   InventorySummary,
@@ -18,7 +19,8 @@ const CACHE_TTL = 60; // 1 minute
 // ============================================================================
 
 export async function getAssistantContext(
-
+  venueId: string,
+  userId: string,
   providedUserRole?: string
 ): Promise<AIAssistantContext> {
   const supabase = await createClient();
@@ -40,7 +42,7 @@ export async function getAssistantContext(
       }
     } catch (_error) {
       // Table doesn't exist or other error - use default
-      
+
     }
   }
 
@@ -55,7 +57,8 @@ export async function getAssistantContext(
 
   // Ensure features is always defined with defaults
   const features = {
-
+    kdsEnabled: venueData?.kds_enabled || false,
+    inventoryEnabled: venueData?.inventory_enabled || false,
     analyticsEnabled: true, // Always enabled
   };
 
@@ -63,7 +66,13 @@ export async function getAssistantContext(
     venueId,
     userId,
     userRole,
-
+    venueTier: venueData?.tier || "starter",
+    timezone: venueData?.timezone || "UTC",
+    venueName: venueData?.venue_name || "Unknown Venue",
+    address: venueData?.address || null,
+    phone: venueData?.phone || null,
+    email: venueData?.email || null,
+    operatingHours: venueData?.operating_hours || null,
     features,
   };
 }
@@ -90,11 +99,14 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
 
   if (!items || items.length === 0) {
     return {
-
+      totalItems: 0,
+      categories: [],
+      topSellers: [],
       allItems: [], // Added: required by MenuSummary interface
-
+      avgPrice: 0,
       priceRange: { min: 0, max: 0 },
-
+      itemsWithImages: 0,
+      itemsWithoutImages: 0,
     };
   }
 
@@ -123,7 +135,11 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
   >();
 
   interface OrderWithItems {
-
+    items: Array<{
+      menu_item_id: string;
+      item_name: string;
+      quantity: number;
+      price: number;
     }>;
   }
 
@@ -135,15 +151,28 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
       if (!menuItem) return;
 
       const existing = salesMap.get(item.menu_item_id) || {
-
+        sales: 0,
+        revenue: 0,
+        name: menuItem.name as string,
+        price: menuItem.price as number,
       };
       salesMap.set(item.menu_item_id, {
+        sales: existing.sales + item.quantity,
+        revenue: existing.revenue + item.quantity * item.price,
+        name: menuItem.name as string,
+        price: menuItem.price as number,
+      });
+    });
+  });
 
   // Get top sellers
   const topSellers = Array.from(salesMap.entries())
     .map(([id, data]) => ({
       id,
-
+      name: data.name,
+      price: data.price,
+      sales7d: data.sales,
+      revenue7d: data.revenue,
     }))
     .sort((a, b) => b.revenue7d - a.revenue7d)
     .slice(0, 10);
@@ -154,16 +183,20 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     const category = item.category as string | undefined;
     if (category) {
       const existing = categoryMap.get(category) || {
-
+        name: category,
+        count: 0,
       };
       categoryMap.set(category, {
         ...existing,
-
+        count: existing.count + 1,
+      });
     }
+  });
 
   const categories = Array.from(categoryMap.values()).map((cat) => ({
     id: cat.name, // Use category name as ID since there's no separate categories table
-
+    name: cat.name,
+    itemCount: cat.count,
   }));
 
   // Calculate price stats
@@ -175,9 +208,11 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
   // Create list of all items for AI to reference
   // For large menus (>100 items), limit to top sellers + recent items to avoid context window issues
   const allItems = items.map((item: Record<string, unknown>) => ({
-
+    id: item.id as string,
+    name: item.name as string,
+    price: item.price as number,
     categoryId: (item.category as string) || "", // Use category name as ID since there's no separate categories table
-
+    categoryName: (item.category as string) || "Uncategorized",
   }));
 
   // If menu is very large (>200 items), optimize for context window
@@ -187,6 +222,7 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     const itemsWithoutImages = allItems.filter((item) => {
       const menuItem = items.find((i) => i.id === item.id);
       return !menuItem?.image_url || (menuItem.image_url as string).trim() === "";
+    });
 
     // Get sample from each category (max 10 per category)
     const categorySamples = new Map<string, typeof allItems>();
@@ -199,6 +235,7 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
       if (samples.length < 10) {
         samples.push(item);
       }
+    });
 
     // Combine: top sellers + items without images + category samples
     const combined = new Map<string, (typeof allItems)[0]>();
@@ -208,27 +245,30 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     topSellers.forEach((seller) => {
       const item = allItems.find((i) => i.id === seller.id);
       if (item) combined.set(item.id, item);
+    });
 
     // Add items without images
     itemsWithoutImages.forEach((item) => {
       combined.set(item.id, item);
+    });
 
     // Add category samples
     categorySamples.forEach((samples) => {
       samples.forEach((item) => {
         combined.set(item.id, item);
+      });
+    });
 
     optimizedItems = Array.from(combined.values());
 
-    
   }
 
   const summary: MenuSummary = {
-
+    totalItems: items.length,
     categories,
     topSellers,
     allItems: optimizedItems, // Optimized list for context window (top sellers + items without images + category samples)
-
+    avgPrice: Number(avgPrice.toFixed(2)),
     priceRange: { min: minPrice, max: maxPrice },
     itemsWithImages,
     itemsWithoutImages,
@@ -245,7 +285,7 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
 // ============================================================================
 
 export async function getInventorySummary(
-
+  venueId: string,
   useCache = true
 ): Promise<InventorySummary> {
   const supabase = await createClient();
@@ -265,7 +305,11 @@ export async function getInventorySummary(
 
   if (!ingredients || ingredients.length === 0) {
     return {
-
+      totalIngredients: 0,
+      lowStock: [],
+      outOfStock: [],
+      totalValue: 0,
+      reorderNeeded: false,
     };
   }
 
@@ -273,7 +317,11 @@ export async function getInventorySummary(
   const lowStock = ingredients
     .filter((i) => i.on_hand <= i.reorder_level && i.on_hand > 0)
     .map((i) => ({
-
+      id: i.id,
+      name: i.name,
+      onHand: i.on_hand,
+      reorderLevel: i.reorder_level,
+      unit: i.unit,
     }));
 
   // Find out of stock items
@@ -283,10 +331,11 @@ export async function getInventorySummary(
   const totalValue = ingredients.reduce((sum, i) => sum + i.on_hand * i.cost_per_unit, 0);
 
   const summary: InventorySummary = {
-
+    totalIngredients: ingredients.length,
     lowStock,
     outOfStock,
-
+    totalValue: Number(totalValue.toFixed(2)),
+    reorderNeeded: lowStock.length > 0,
   };
 
   await cacheContext(venueId, "inventory_summary", summary as unknown as Record<string, unknown>);
@@ -333,7 +382,12 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
     .in("status", ["pending", "in_progress"]);
 
   interface KDSTicket {
-
+    id: string;
+    order_id: string;
+    station_name: string;
+    status: string;
+    started_at: string | null;
+    completed_at: string | null;
     items: Array<{ name: string }>;
   }
 
@@ -347,13 +401,17 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
         const startedAt = new Date(t.started_at);
         const minutesElapsed = (now.getTime() - startedAt.getTime()) / 1000 / 60;
         return minutesElapsed > 10;
-
+      })
       .map((ticket: unknown) => {
         const t = ticket as KDSTicket;
         const startedAt = new Date(t.started_at!);
         const minutesOverdue = (now.getTime() - startedAt.getTime()) / 1000 / 60 - 10;
         return {
-
+          id: t.id,
+          orderId: t.order_id,
+          station: t.station_name,
+          items: t.items.map((i) => i.name),
+          minutesOverdue: Math.round(minutesOverdue),
         };
       }) || [];
 
@@ -381,14 +439,20 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
     const prepTime = (completedAt.getTime() - startedAt.getTime()) / 1000 / 60;
 
     const existing = stationStats.get(t.station_name) || {
-
+      totalTime: 0,
+      count: 0,
     };
     stationStats.set(t.station_name, {
+      totalTime: existing.totalTime + prepTime,
+      count: existing.count + 1,
+    });
+  });
 
   const bottlenecks = Array.from(stationStats.entries())
     .map(([station, stats]) => ({
       station,
-
+      avgWaitTime: Number((stats.totalTime / stats.count).toFixed(1)),
+      ticketCount: stats.count,
     }))
     .sort((a, b) => b.avgWaitTime - a.avgWaitTime)
     .slice(0, 5);
@@ -399,7 +463,7 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
   const avgPrepTime = totalTickets > 0 ? Number((totalPrepTime / totalTickets).toFixed(1)) : 0;
 
   const summary: OrdersSummary = {
-
+    liveOrders: liveOrders?.length || 0,
     overdueTickets,
     avgPrepTime,
     bottlenecks,
@@ -415,7 +479,7 @@ export async function getOrdersSummary(venueId: string, useCache = true): Promis
 // ============================================================================
 
 export async function getAnalyticsSummary(
-
+  venueId: string,
   useCache = true
 ): Promise<AnalyticsSummary> {
   const supabase = await createClient();
@@ -464,7 +528,17 @@ export async function getAnalyticsSummary(
     .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
   interface OrderWithDetails {
-
+    id: string;
+    total_amount: number;
+    created_at: string;
+    payment_method?: string;
+    table_number?: number;
+    order_type?: string;
+    items: Array<{
+      item_name?: string;
+      quantity?: number;
+      price?: number;
+      category?: string;
     }>;
   }
 
@@ -507,7 +581,16 @@ export async function getAnalyticsSummary(
     previous7DaysMetrics.revenue > 0
       ? ((last7DaysMetrics.revenue - previous7DaysMetrics.revenue) / previous7DaysMetrics.revenue) *
         100
+      : 0;
+  const ordersGrowth =
+    previous7DaysMetrics.orders > 0
+      ? ((last7DaysMetrics.orders - previous7DaysMetrics.orders) / previous7DaysMetrics.orders) *
+        100
+      : 0;
 
+  // ========== ITEM PERFORMANCE ==========
+  const itemStats = new Map<
+    string,
     { name: string; count: number; revenue: number; category?: string }
   >();
 
@@ -523,6 +606,12 @@ export async function getAnalyticsSummary(
       const existing = itemStats.get(name) || { name, count: 0, revenue: 0, category };
       itemStats.set(name, {
         name,
+        count: existing.count + quantity,
+        revenue: existing.revenue + revenue,
+        category: category || existing.category,
+      });
+    });
+  });
 
   const topItemsByCount = Array.from(itemStats.values())
     .sort((a, b) => b.count - a.count)
@@ -532,7 +621,9 @@ export async function getAnalyticsSummary(
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10)
     .map((item) => ({
-
+      name: item.name,
+      revenue: Number(item.revenue.toFixed(2)),
+      count: item.count,
     }));
 
   // Never ordered items
@@ -563,17 +654,22 @@ export async function getAnalyticsSummary(
       const revenue = quantity * price;
 
       const existing = categoryStats.get(category) || {
-
+        revenue: 0,
+        orders: new Set<string>(),
+        itemCount: 0,
       };
       existing.revenue += revenue;
       existing.orders.add(order.id);
       categoryStats.set(category, existing);
+    });
+  });
 
   // Count items per category from menu
   const categoryItemCounts = new Map<string, number>();
   (menuItems || []).forEach((item) => {
     const category = item.category || "Uncategorized";
     categoryItemCounts.set(category, (categoryItemCounts.get(category) || 0) + 1);
+  });
 
   const categoryPerformance: Record<
     string,
@@ -581,8 +677,11 @@ export async function getAnalyticsSummary(
   > = {};
   categoryStats.forEach((stats, category) => {
     categoryPerformance[category] = {
-
+      revenue: Number(stats.revenue.toFixed(2)),
+      orders: stats.orders.size,
+      itemCount: categoryItemCounts.get(category) || 0,
     };
+  });
 
   // ========== TIME ANALYSIS ==========
   // By day of week
@@ -595,12 +694,17 @@ export async function getAnalyticsSummary(
     existing.revenue += order.total_amount || 0;
     existing.orders += 1;
     dayStats.set(day, existing);
+  });
 
   const byDayOfWeek = Array.from({ length: 7 }, (_, i) => {
     const stats = dayStats.get(i) || { revenue: 0, orders: 0 };
     return {
-
+      day: dayNames[i],
+      revenue: Number(stats.revenue.toFixed(2)),
+      orders: stats.orders,
+      avgOrderValue: stats.orders > 0 ? Number((stats.revenue / stats.orders).toFixed(2)) : 0,
     };
+  });
 
   // Find busiest day
   const busiestDayIndex = byDayOfWeek.reduce(
@@ -618,13 +722,16 @@ export async function getAnalyticsSummary(
     existing.revenue += order.total_amount || 0;
     existing.orders += 1;
     hourStats.set(hour, existing);
+  });
 
   const byHour = Array.from({ length: 24 }, (_, hour) => {
     const stats = hourStats.get(hour) || { revenue: 0, orders: 0 };
     return {
       hour,
-
+      revenue: Number(stats.revenue.toFixed(2)),
+      orders: stats.orders,
     };
+  });
 
   // Peak hours (top 5)
   const peakHours = Array.from(hourStats.entries())
@@ -641,12 +748,15 @@ export async function getAnalyticsSummary(
     existing.count += 1;
     existing.revenue += order.total_amount || 0;
     paymentStats.set(method, existing);
+  });
 
   const paymentMethods: Record<string, { count: number; revenue: number }> = {};
   paymentStats.forEach((stats, method) => {
     paymentMethods[method] = {
-
+      count: stats.count,
+      revenue: Number(stats.revenue.toFixed(2)),
     };
+  });
 
   // ========== ORDER PATTERNS ==========
   let totalItemsInOrders = 0;
@@ -662,6 +772,7 @@ export async function getAnalyticsSummary(
     } else {
       dineInCount += 1;
     }
+  });
 
   const avgItemsPerOrder =
     last30DaysOrders.length > 0 ? totalItemsInOrders / last30DaysOrders.length : 0;
@@ -702,6 +813,7 @@ export async function getAnalyticsSummary(
         }
 
         tableStats.set(tableNumber, existing);
+      });
 
       const avgTurnoverTime =
         sessionsWithEndTime > 0 ? totalTurnoverTime / sessionsWithEndTime / 60000 : 0; // in minutes
@@ -711,53 +823,76 @@ export async function getAnalyticsSummary(
         .slice(0, 10)
         .map(([tableNumber, stats]) => ({
           tableNumber,
-
+          revenue: Number(stats.revenue.toFixed(2)),
+          sessions: stats.sessions,
         }));
 
       tableMetrics = {
-
+        avgTurnoverTime: Number(avgTurnoverTime.toFixed(2)),
+        totalSessions: tableSessions.length,
         revenueByTable,
       };
     }
   } catch (tableError) {
     // Table sessions table might not exist or have errors - this is okay
-    
+
     tableMetrics = undefined;
   }
 
   // ========== BUILD SUMMARY ==========
   const summary: AnalyticsSummary = {
-
+    today: {
+      revenue: Number(todayMetrics.revenue.toFixed(2)),
+      orders: todayMetrics.orders,
+      avgOrderValue: Number(todayMetrics.avgOrderValue.toFixed(2)),
     },
-
+    last7Days: {
+      revenue: Number(last7DaysMetrics.revenue.toFixed(2)),
+      orders: last7DaysMetrics.orders,
+      avgOrderValue: Number(last7DaysMetrics.avgOrderValue.toFixed(2)),
     },
-
+    last30Days: {
+      revenue: Number(last30DaysMetrics.revenue.toFixed(2)),
+      orders: last30DaysMetrics.orders,
+      avgOrderValue: Number(last30DaysMetrics.avgOrderValue.toFixed(2)),
     },
-
+    thisWeek: {
+      revenue: Number(thisWeekMetrics.revenue.toFixed(2)),
+      orders: thisWeekMetrics.orders,
+      avgOrderValue: Number(thisWeekMetrics.avgOrderValue.toFixed(2)),
     },
-
+    thisMonth: {
+      revenue: Number(thisMonthMetrics.revenue.toFixed(2)),
+      orders: thisMonthMetrics.orders,
+      avgOrderValue: Number(thisMonthMetrics.avgOrderValue.toFixed(2)),
     },
-
+    trending: {
       topItems: topItemsByCount.slice(0, 5).map((item) => ({
-
+        name: item.name,
+        count: item.count,
+        revenue: Number(item.revenue.toFixed(2)),
       })),
       categoryPerformance,
     },
-
+    growth: {
+      revenueGrowth: Number(revenueGrowth.toFixed(2)),
+      ordersGrowth: Number(ordersGrowth.toFixed(2)),
     },
-
+    timeAnalysis: {
+      byDayOfWeek,
       byHour,
       peakHours,
       busiestDay,
     },
     paymentMethods,
-
+    orderPatterns: {
+      avgItemsPerOrder: Number(avgItemsPerOrder.toFixed(2)),
       takeawayVsDineIn: { takeaway: takeawayCount, dineIn: dineInCount },
     },
-
+    itemPerformance: {
       neverOrdered: neverOrdered.slice(0, 20),
       rarelyOrdered,
-
+      topByRevenue: topItemsByRevenue,
     },
     ...(tableMetrics && { tableMetrics }),
   };
@@ -792,7 +927,8 @@ async function getCachedContext(venueId: string, contextType: string): Promise<u
 }
 
 async function cacheContext(
-
+  venueId: string,
+  contextType: string,
   contextData: Record<string, unknown>
 ): Promise<void> {
   const supabase = await createClient();
@@ -802,7 +938,10 @@ async function cacheContext(
 
   await supabase.from("ai_context_cache").upsert(
     {
-
+      venue_id: venueId,
+      context_type: contextType,
+      context_data: contextData,
+      expires_at: expiresAt.toISOString(),
     },
     { onConflict: "venue_id,context_type" }
   );
@@ -818,12 +957,16 @@ interface Features {
 }
 
 interface AllSummaries {
-
+  menu: MenuSummary;
+  analytics: AnalyticsSummary;
+  inventory?: InventorySummary;
+  orders?: OrdersSummary;
 }
 
 export async function getAllSummaries(venueId: string, features: Features): Promise<AllSummaries> {
   const summaries: AllSummaries = {
-
+    menu: await getMenuSummary(venueId),
+    analytics: await getAnalyticsSummary(venueId),
   };
 
   if (features.inventoryEnabled) {

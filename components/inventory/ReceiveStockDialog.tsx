@@ -16,7 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { StockLevel } from "@/types/inventory";
 
 interface ReceiveStockDialogProps {
-
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  ingredient: StockLevel;
+  onSuccess: () => void;
 }
 
 export function ReceiveStockDialog({
@@ -47,20 +50,28 @@ export function ReceiveStockDialog({
       // Update ingredient cost and supplier if changed
       if (costValue !== ingredient.cost_per_unit || supplier !== ingredient.supplier) {
         await fetch(`/api/inventory/ingredients/${ingredient.ingredient_id}`, {
-
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
-
+          body: JSON.stringify({
+            cost_per_unit: costValue,
+            supplier: supplier,
           }),
-
+        });
       }
 
       // Record the stock receipt
       const response = await fetch("/api/inventory/stock/adjust", {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          ingredient_id: ingredient.ingredient_id,
+          delta: quantityValue,
+          reason: "receive",
+          note:
+            note ||
             `Received ${quantityValue} ${ingredient.unit} from ${supplier || "supplier"} @ $${costValue}/unit`,
         }),
+      });
 
       if (response.ok) {
         onSuccess();

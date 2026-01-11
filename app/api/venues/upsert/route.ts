@@ -1,6 +1,7 @@
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
@@ -52,11 +53,14 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       // Check tier limit
       const limitCheck = await checkLimit(user.id, "maxVenues", venueCount);
       if (!limitCheck.allowed) {
-        
+
         return apiErrors.forbidden(
           `Location limit reached. You have ${venueCount}/${limitCheck.limit} location${venueCount !== 1 ? "s" : ""}. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more locations.`,
           {
-
+            limitReached: true,
+            currentCount: venueCount,
+            limit: limitCheck.limit,
+            tier: limitCheck.currentTier,
           }
         );
       }
@@ -77,25 +81,35 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       organizationId = userOrg.id;
     } else {
       // Create organization if it doesn't exist (shouldn't happen, but safety net)
-      
+
       const { data: newOrg, error: orgError } = await admin
         .from("organizations")
         .insert({
-
+          owner_user_id: user.id,
+          subscription_tier: "starter",
+          subscription_status: "trialing",
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        })
         .select("id")
         .single();
 
       if (orgError || !newOrg) {
-        
+
         return apiErrors.database("Failed to create organization");
       }
       organizationId = newOrg.id;
     }
 
     const venueData = {
-
+      venue_id: finalVenueId,
+      venue_name: name,
+      business_type: business_type.toLowerCase(),
+      address: address || null,
+      phone: phone || null,
+      email: email || null,
+      owner_user_id: user.id,
       organization_id: organizationId, // CRITICAL: Always set organization_id
-
+      updated_at: new Date().toISOString(),
     };
 
     if (existingVenue) {
@@ -111,7 +125,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       await cache.invalidate(`venue:${finalVenueId}`);
 
       if (error) {
-        
+
         return apiErrors.database(error.message);
       }
       return success({ venue: data });
@@ -119,18 +133,19 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       // Create new venue - always with organization_id
       const newVenueData = {
         ...venueData,
-
+        created_at: new Date().toISOString(),
       };
       const { data, error } = await admin.from("venues").insert(newVenueData).select().single();
 
       if (error) {
-        
+
         return apiErrors.database(error.message);
       }
       return success({ venue: data });
     }
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-    
+
     return apiErrors.internal(errorMessage);
   }
+});

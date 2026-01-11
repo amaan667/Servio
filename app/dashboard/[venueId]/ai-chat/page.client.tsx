@@ -5,7 +5,10 @@ import type { UserRole } from "@/lib/permissions";
 import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 
 interface AIChatClientPageProps {
-
+  venueId: string;
+  tier: string;
+  role: string;
+  hasAccess: boolean;
 }
 
 export default function AIChatClientPage({

@@ -1,5 +1,5 @@
 export const detectColorsFromImage = (
-
+  imageUrl: string
 ): Promise<{ primary: string; secondary: string }> => {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || typeof window.Image === "undefined") {
@@ -68,5 +68,5 @@ export const detectColorsFromImage = (
     };
 
     img.src = imageUrl;
-
+  });
 };

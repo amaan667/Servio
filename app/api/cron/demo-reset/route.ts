@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { env, isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     const expectedSecret = env("CRON_SECRET") || "demo-reset-secret";
 
     if (authHeader !== `Bearer ${expectedSecret}`) {
-      
+
       return apiErrors.unauthorized("Unauthorized");
     }
 
@@ -54,25 +55,27 @@ export async function GET(req: NextRequest) {
 
     const sessionsDeleted = deletedSessions?.length || 0;
 
-    .toISOString(),
-
     // STEP 7: Return success response
     return NextResponse.json({
-
+      success: true,
       ordersDeleted,
       sessionsDeleted,
-
+      timestamp: new Date().toISOString(),
+      errors: {
+        orders: ordersError?.message || null,
+        sessions: sessionsError?.message || null,
       },
-
+    });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-    
-
     return NextResponse.json(
       {
-
+        success: false,
+        error: "Failed to run demo reset cron",
+        details: errorMessage,
+        message: isDevelopment() ? errorMessage : "Request processing failed",
         ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }

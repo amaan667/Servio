@@ -29,7 +29,8 @@ export default function QRCodeClient({
   venueId,
   venueName,
 }: {
-
+  venueId: string;
+  venueName: string;
 }) {
   const searchParams = useSearchParams();
   const [qrType, setQrType] = useState<"table" | "counter">("table");
@@ -52,11 +53,15 @@ export default function QRCodeClient({
     // Create a unique key for this set of parameters
     const paramKey = tableParam
       ? `table:${tableParam}`
-
+      : counterParam
         ? `counter:${counterParam}`
-
+        : bulkPrefixParam && bulkCountParam
           ? `bulk:${bulkPrefixParam}:${bulkCountParam}:${bulkTypeParam || "table"}`
+          : null;
 
+    // Skip if we've already processed these exact parameters
+    if (!paramKey || hasProcessedParams.current === paramKey) {
+      return;
     }
 
     // Mark as processed FIRST to prevent duplicate calls
@@ -144,7 +149,9 @@ export default function QRCodeClient({
   // Copy all URLs as JSON
   const copyAllAsJSON = () => {
     const urls = qrManagement.generatedQRs.map((qr) => ({
-
+      name: qr.name,
+      type: qr.type,
+      url: qr.url,
     }));
     navigator.clipboard.writeText(JSON.stringify(urls, null, 2));
     alert("All URLs copied as JSON!");
@@ -158,6 +165,10 @@ export default function QRCodeClient({
 
       const qrCodes = qrManagement.generatedQRs;
       const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const margin = 10;
@@ -200,8 +211,10 @@ export default function QRCodeClient({
 
           // Generate QR code image
           const dataUrl = await QRCode.toDataURL(qr.url, {
-
+            width: 300,
+            margin: 2,
             color: { dark: "#000000", light: "#ffffff" },
+          });
 
           // Add QR code image
           pdf.addImage(dataUrl, "PNG", x, y, qrSize, qrSize);
@@ -243,6 +256,9 @@ export default function QRCodeClient({
         pageQRs.map(async (qr) => {
           const QRCode = await import("qrcode");
           const dataUrl = await QRCode.toDataURL(qr.url, {
+            width: 300,
+            margin: 2,
+          });
 
           return `
             <div style="width: 48%; display: inline-block; padding: 15px; text-align: center; vertical-align: top; margin: 1%;">
@@ -251,7 +267,7 @@ export default function QRCodeClient({
               <p style="margin-top: 8px; font-size: 12px; color: #666;">${venueName}</p>
             </div>
           `;
-
+        })
       );
 
       pages.push(`

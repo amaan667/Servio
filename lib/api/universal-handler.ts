@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { ZodSchema, ZodError } from "zod";
+
 import { ok, fail, serverError, handleZodError, ApiResponse } from "./response-helpers";
 import {
   getAuthenticatedUser,
@@ -34,7 +35,8 @@ export interface HandlerOptions {
 }
 
 export type HandlerContext<TBody = unknown> = {
-
+  req: NextRequest;
+  body: TBody;
   user?: { id: string; email?: string };
   venue?: AuthorizedContext["venue"];
   venueId?: string;
@@ -42,7 +44,10 @@ export type HandlerContext<TBody = unknown> = {
 };
 
 export type UniversalHandler<TBody = unknown, TResponse = unknown> = (
+  context: HandlerContext<TBody>
+) => Promise<TResponse>;
 
+/**
  * Create a universal API handler with validation, auth, and error handling
  */
 export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
@@ -50,7 +55,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
   options: HandlerOptions = {}
 ) {
   return async (
-
+    req: NextRequest,
     context?: { params?: Record<string, string> }
   ): Promise<NextResponse<ApiResponse<TResponse>>> => {
     const startTime = Date.now();
@@ -78,7 +83,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
           body = options.schema.parse(body) as TBody;
         } catch (error) {
           if (error instanceof ZodError) {
-            
+
             return handleZodError(error) as NextResponse<ApiResponse<TResponse>>;
           }
           throw error;
@@ -86,18 +91,14 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
       }
 
       // Log request if enabled
-      if (options.logRequest) {
-        .length > 0,
-          ...(options.requireAuth && { requiresAuth: true }),
-
-      }
+      if (options.logRequest) { /* Condition handled */ }
 
       // Handle authentication
       let user: { id: string; email?: string } | undefined;
       if (options.requireAuth || options.requireVenueAccess) {
         const authResult = await getAuthenticatedUser();
         if (!authResult.user) {
-          
+
           return fail("Unauthorized", 401) as NextResponse<ApiResponse<TResponse>>;
         }
         user = authResult.user;
@@ -128,16 +129,19 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
 
         const access = await verifyVenueAccess(venueId, user.id);
         if (!access) {
-          
+
           return fail("Forbidden - access denied to this venue", 403) as NextResponse<
             ApiResponse<TResponse>
           >;
         }
 
         venueContext = {
-
+          venue: access.venue,
+          user: access.user,
+          role: access.role,
           venueId,
-
+          tier: access.tier,
+          venue_ids: access.venue_ids,
         };
       }
 
@@ -146,7 +150,9 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
         req,
         body,
         user,
-
+        venue: venueContext?.venue,
+        venueId: venueContext?.venueId,
+        params: context?.params,
       };
 
       const result = await handler(handlerContext);
@@ -159,7 +165,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
       // Log response if enabled
       if (options.logResponse) {
         const duration = Date.now() - startTime;
-        
+
       }
 
       return ok(result) as NextResponse<ApiResponse<TResponse>>;
@@ -175,7 +181,6 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
       }
 
       // Log error
-      
 
       // Handle Zod validation errors
       if (error instanceof ZodError) {
@@ -203,7 +208,7 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
       return serverError(errorMessage, {
         requestId,
         ...(process.env.NODE_ENV === "development" && {
-
+          stack: error instanceof Error ? error.stack : undefined,
         }),
       }) as NextResponse<ApiResponse<TResponse>>;
     }
@@ -214,16 +219,16 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
  * Convenience function for GET handlers
  */
 export function createGetHandler<TResponse = unknown>(
-
+  handler: (context: HandlerContext) => Promise<TResponse>,
   options?: HandlerOptions
 ): (
-
+  req: NextRequest,
   context?: { params?: Record<string, string> }
 ) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return createUniversalHandler(async (context) => {
     return handler(context);
   }, options) as (
-
+    req: NextRequest,
     context?: { params?: Record<string, string> }
   ) => Promise<NextResponse<ApiResponse<TResponse>>>;
 }
@@ -235,11 +240,11 @@ export function createPostHandler<TBody = unknown, TResponse = unknown>(
   handler: UniversalHandler<TBody, TResponse>,
   options?: HandlerOptions
 ): (
-
+  req: NextRequest,
   context?: { params?: Record<string, string> }
 ) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return createUniversalHandler(handler, options) as (
-
+    req: NextRequest,
     context?: { params?: Record<string, string> }
   ) => Promise<NextResponse<ApiResponse<TResponse>>>;
 }
@@ -251,11 +256,11 @@ export function createPutHandler<TBody = unknown, TResponse = unknown>(
   handler: UniversalHandler<TBody, TResponse>,
   options?: HandlerOptions
 ): (
-
+  req: NextRequest,
   context?: { params?: Record<string, string> }
 ) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return createUniversalHandler(handler, options) as (
-
+    req: NextRequest,
     context?: { params?: Record<string, string> }
   ) => Promise<NextResponse<ApiResponse<TResponse>>>;
 }
@@ -264,16 +269,16 @@ export function createPutHandler<TBody = unknown, TResponse = unknown>(
  * Convenience function for DELETE handlers
  */
 export function createDeleteHandler<TResponse = unknown>(
-
+  handler: (context: HandlerContext) => Promise<TResponse>,
   options?: HandlerOptions
 ): (
-
+  req: NextRequest,
   context?: { params?: Record<string, string> }
 ) => Promise<NextResponse<ApiResponse<TResponse>>> {
   return createUniversalHandler(async (context) => {
     return handler(context);
   }, options) as (
-
+    req: NextRequest,
     context?: { params?: Record<string, string> }
   ) => Promise<NextResponse<ApiResponse<TResponse>>>;
 }

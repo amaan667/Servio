@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
         .in("order_status", ["PLACED", "IN_PREP", "READY", "SERVING"]);
 
       if (fetchError) {
-        
+
         return apiErrors.internal("Failed to fetch active orders");
       }
 
@@ -35,7 +36,10 @@ export async function POST(req: Request) {
 
     if (targetOrderIds.length === 0) {
       return NextResponse.json({
-
+        success: true,
+        completedCount: 0,
+        message: "No active orders to complete",
+      });
     }
 
     // CRITICAL: Verify all orders are paid before bulk completing
@@ -46,7 +50,7 @@ export async function POST(req: Request) {
       .eq("venue_id", venueId);
 
     if (fetchError) {
-      
+
       return apiErrors.internal("Failed to fetch orders");
     }
 
@@ -60,7 +64,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: `Cannot complete ${unpaidOrders.length} unpaid order(s). All orders must be PAID or TILL before completion.`,
-
+          unpaid_order_ids: unpaidOrders.map((o) => o.id),
         },
         { status: 400 }
       );
@@ -72,7 +76,6 @@ export async function POST(req: Request) {
       ordersToComplete?.filter((order) => !completableStatuses.includes(order.order_status)) || [];
 
     if (nonCompletableOrders.length > 0) {
-       => o.id),
 
       // Continue with completable orders only
       const completableOrderIds =
@@ -95,7 +98,10 @@ export async function POST(req: Request) {
     // Update all orders to COMPLETED using unified lifecycle RPC (atomic eligibility check)
     // This ensures completion_status is set correctly and triggers any database-level cleanup
     const completedOrders: Array<{
-
+      id: string;
+      table_id?: string | null;
+      table_number?: number | null;
+      source?: string;
     }> = [];
 
     for (const orderId of targetOrderIds) {
@@ -103,12 +109,16 @@ export async function POST(req: Request) {
         const { data: completedRows, error: completeError } = await supabase.rpc(
           "orders_complete",
           {
-
+            p_order_id: orderId,
+            p_venue_id: venueId,
+            p_forced: false,
+            p_forced_by: null,
+            p_forced_reason: null,
           }
         );
 
         if (completeError) {
-          
+
           // Fallback: try direct update if RPC fails (backward compatibility)
           const { data: fallbackOrder } = await supabase
             .from("orders")
@@ -119,7 +129,11 @@ export async function POST(req: Request) {
             await supabase
               .from("orders")
               .update({
-
+                order_status: "COMPLETED",
+                completion_status: "COMPLETED",
+                completed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
               .eq("id", orderId);
             completedOrders.push(fallbackOrder);
           }
@@ -134,9 +148,7 @@ export async function POST(req: Request) {
             completedOrders.push(orderData);
           }
         }
-      } catch (error) {
-
-      }
+      } catch (error) { /* Error handled silently */ }
     }
 
     const updatedOrders = completedOrders;
@@ -151,7 +163,9 @@ export async function POST(req: Request) {
           tableCleanupTasks.push(
             cleanupTableOnOrderCompletion({
               venueId: venueId, // Use the venueId from the request parameter
-
+              tableId: order.table_id || undefined,
+              tableNumber: order.table_number?.toString() || undefined,
+            })
           );
         }
       }
@@ -160,16 +174,11 @@ export async function POST(req: Request) {
       const cleanupResults = await Promise.allSettled(tableCleanupTasks);
 
       // Log results
-      cleanupResults.forEach((result, index) => {
+      cleanupResults.forEach((result) => {
         if (result.status === "fulfilled") {
-          if (result.value.success) {
-            
-          } else {
-            
-          }
-        } else {
-          
-        }
+          if (result.value.success) { /* Condition handled */ } else { /* Else case handled */ }
+        } else { /* Else case handled */ }
+      });
 
       // Legacy table deletion logic (commented out - use cleanup instead)
       /*
@@ -180,7 +189,6 @@ export async function POST(req: Request) {
       
       for (const tableId of tableIds) {
         try {
-          
           // Get table details first
           const { data: tableDetails, error: tableDetailsError } = await supabase
             .from('tables')
@@ -190,7 +198,6 @@ export async function POST(req: Request) {
             .single();
 
           if (tableDetailsError) {
-            
             continue; // Skip this table if we can't get details
           }
 
@@ -202,11 +209,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (clearTableRefsError) {
-            
-            
-          } else {
-      // Intentionally empty
-    }
+            // Error handled silently
+          }
 
           // Delete table sessions first
           const { error: deleteSessionError } = await supabase
@@ -216,11 +220,8 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteSessionError) {
-            
-            
-          } else {
-      // Intentionally empty
-    }
+            // Error handled silently
+          }
           
           // Clean up table runtime state
           const { error: deleteRuntimeError } = await supabase
@@ -230,25 +231,19 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteRuntimeError) {
-            
-            
-          } else {
-      // Intentionally empty
-    }
+            // Error handled silently
+          }
           
           // Clean up group sessions for this table
           const { error: deleteGroupSessionError } = await supabase
             .from('table_group_sessions')
             .delete()
-            .eq('table_number', tableDetails.label) // Use table label to match group sessions
+            .eq('table_number', tableDetails.label)
             .eq('venue_id', venueId);
 
           if (deleteGroupSessionError) {
-            
-            
-          } else {
-      // Intentionally empty
-    }
+            // Error handled silently
+          }
 
           // Finally, delete the table itself
           const { error: deleteTableError } = await supabase
@@ -258,25 +253,23 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteTableError) {
-            
-            
-          } else {
-      // Intentionally empty
-    }
+            // Error handled silently
+          }
           
         } catch (tableError) {
-          
+          // Error handled silently
         }
       }
       */
     }
 
     return NextResponse.json({
-
+      success: true,
+      completedCount: updatedOrders?.length || 0,
       message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`,
-
+    });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

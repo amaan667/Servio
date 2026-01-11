@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase";
+
 import {
   MenuUpdatePricesParams,
   MenuToggleAvailabilityParams,
@@ -11,10 +12,17 @@ import {
 } from "@/types/ai-assistant";
 
 export async function executeMenuUpdatePrices(
-
+  params: MenuUpdatePricesParams,
+  venueId: string,
+  _userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  let supabase;
+  try {
+    supabase = createAdminClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     throw new AIAssistantError(
       "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
       "EXECUTION_FAILED",
@@ -36,9 +44,10 @@ export async function executeMenuUpdatePrices(
     );
 
   if (fetchError) {
-    
-    throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", {
 
+    throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", {
+      error: fetchError,
+    });
   }
 
   if (!currentItems || currentItems.length === 0) {
@@ -76,7 +85,10 @@ export async function executeMenuUpdatePrices(
         `Price change of ${changePercent.toFixed(1)}% for "${current.name}" exceeds limit of ${maxChangePercent}%`,
         "GUARDRAIL_VIOLATION",
         {
-
+          itemId: item.id,
+          itemName: current.name,
+          currentPrice: current.price,
+          newPrice: item.newPrice,
         }
       );
     }
@@ -87,17 +99,22 @@ export async function executeMenuUpdatePrices(
     const after = currentItems.map((i) => {
       const update = params.items.find((u) => u.id === i.id);
       return {
-
+        id: i.id,
+        name: i.name,
+        price: update ? update.newPrice : i.price,
       };
+    });
 
     const oldRevenue = before.reduce((sum, i) => sum + i.price, 0);
     const newRevenue = after.reduce((sum, i) => sum + i.price, 0);
 
     return {
-
+      toolName: "menu.update_prices",
       before,
       after,
-
+      impact: {
+        itemsAffected: params.items.length,
+        estimatedRevenue: newRevenue - oldRevenue,
         description: `${params.items.length} items will be updated. Estimated revenue impact: ${(((newRevenue - oldRevenue) / oldRevenue) * 100).toFixed(1)}%`,
       },
     };
@@ -113,16 +130,18 @@ export async function executeMenuUpdatePrices(
     const { data, error } = await supabase
       .from("menu_items")
       .update({
-
+        price: item.newPrice,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", item.id)
       .eq("venue_id", venueId)
       .select("id, name, price");
 
     if (error) {
-      
+
       failedUpdates.push({ id: item.id, name: itemName, error: error.message });
     } else if (!data || data.length === 0) {
-      
+
       failedUpdates.push({ id: item.id, name: itemName, error: "Item not found or access denied" });
     } else {
       updatedCount++;
@@ -138,18 +157,28 @@ export async function executeMenuUpdatePrices(
   }
 
   return {
-
+    success: true,
+    toolName: "menu.update_prices",
+    result: {
+      updatedCount,
       message: `Successfully updated ${updatedCount} item${updatedCount !== 1 ? "s" : ""}`,
     },
-
+    auditId: "",
   };
 }
 
 export async function executeMenuToggleAvailability(
-
+  params: MenuToggleAvailabilityParams,
+  venueId: string,
+  _userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  let supabase;
+  try {
+    supabase = createAdminClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     throw new AIAssistantError(
       "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
       "EXECUTION_FAILED",
@@ -169,9 +198,11 @@ export async function executeMenuToggleAvailability(
 
   if (preview) {
     return {
-
+      toolName: "menu.toggle_availability",
+      before: items,
       after: items.map((i) => ({ ...i, available: params.available })),
-
+      impact: {
+        itemsAffected: items.length,
         description: `${items.length} items will be ${params.available ? "shown" : "hidden"}${params.reason ? `: ${params.reason}` : ""}`,
       },
     };
@@ -187,17 +218,25 @@ export async function executeMenuToggleAvailability(
   }
 
   return {
-
+    success: true,
+    toolName: "menu.toggle_availability",
     result: { updatedCount: params.itemIds.length },
-
+    auditId: "",
   };
 }
 
 export async function executeMenuCreateItem(
-
+  params: MenuCreateItemParams,
+  venueId: string,
+  _userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  let supabase;
+  try {
+    supabase = createAdminClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     throw new AIAssistantError(
       "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
       "EXECUTION_FAILED",
@@ -224,7 +263,7 @@ export async function executeMenuCreateItem(
       .eq("venue_id", venueId);
     
     if (categoryError) {
-      
+
       throw new AIAssistantError(
         `Failed to lookup category: ${categoryError.message}`,
         "EXECUTION_FAILED",
@@ -241,7 +280,7 @@ export async function executeMenuCreateItem(
     
     if (category) {
       categoryId = category.id;
-      
+
     } else {
       const availableCategories = categories?.map((c) => c.name).join(", ") || "none";
       throw new AIAssistantError(
@@ -271,10 +310,21 @@ export async function executeMenuCreateItem(
 
   if (preview) {
     return {
-
+      toolName: "menu.create_item",
+      before: [],
+      after: [
+        {
+          id: "new-item",
+          name: params.name,
+          price: params.price,
+          description: params.description,
+          categoryId: categoryId,
+          available: params.available,
         },
       ],
-
+      impact: {
+        itemsAffected: 1,
+        estimatedRevenue: 0,
         description: `Will create a new menu item: ${params.name} for £${params.price.toFixed(2)}`,
       },
     };
@@ -283,7 +333,16 @@ export async function executeMenuCreateItem(
   const { data: newItem, error } = await supabase
     .from("menu_items")
     .insert({
-
+      venue_id: venueId,
+      name: params.name,
+      description: params.description,
+      price: params.price,
+      category_id: categoryId,
+      available: params.available ?? true,
+      image_url: params.imageUrl,
+      allergens: params.allergens ?? [],
+      created_by: _userId,
+    })
     .select("id, name, price")
     .single();
 
@@ -296,19 +355,29 @@ export async function executeMenuCreateItem(
   }
 
   return {
-
+    success: true,
+    toolName: "menu.create_item",
+    result: {
+      ...newItem,
       message: `Created menu item: ${newItem.name}`,
       navigateTo: `/dashboard/${venueId}/menu-management?itemId=${newItem.id}&itemName=${encodeURIComponent(newItem.name)}&action=created`,
     },
-
+    auditId: "",
   };
 }
 
 export async function executeMenuDeleteItem(
-
+  params: MenuDeleteItemParams,
+  venueId: string,
+  _userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  let supabase;
+  try {
+    supabase = createAdminClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     throw new AIAssistantError(
       "Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY. Please contact support.",
       "EXECUTION_FAILED",
@@ -333,7 +402,12 @@ export async function executeMenuDeleteItem(
 
   if (preview) {
     return {
-
+      toolName: "menu.delete_item",
+      before: [currentItem],
+      after: [],
+      impact: {
+        itemsAffected: 1,
+        estimatedRevenue: -currentItem.price,
         description: `Will delete menu item: ${currentItem.name} (${params.reason || "No reason provided"})`,
       },
     };
@@ -350,14 +424,19 @@ export async function executeMenuDeleteItem(
   }
 
   return {
-
+    success: true,
+    toolName: "menu.delete_item",
+    result: {
+      deletedItem: currentItem,
+      reason: params.reason,
       categoryId,
       categoryName,
       message: `Deleted ${currentItem.name} from menu`,
-
+      navigateTo:
+        categoryId && categoryName
           ? `/dashboard/${venueId}/menu-management?categoryId=${categoryId}&categoryName=${encodeURIComponent(categoryName)}&action=deleted`
           : `/dashboard/${venueId}/menu-management?action=deleted`,
     },
-
+    auditId: "",
   };
 }

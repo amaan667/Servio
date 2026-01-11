@@ -4,14 +4,18 @@ import { useState, memo } from "react";
 import { UtensilsCrossed, ImageOff } from "lucide-react";
 
 interface MenuItemImageProps {
-
+  src: string;
+  alt: string;
+  className?: string;
+  fallbackIcon?: React.ReactNode;
+  showLoadingState?: boolean;
 }
 
 const MenuItemImage = memo(function MenuItemImage({
   src,
   alt,
   className = "rounded-lg border border-gray-200",
-
+  fallbackIcon: _fallbackIcon = <UtensilsCrossed className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700" />,
   showLoadingState = true,
 }: MenuItemImageProps) {
   const [hasError, setHasError] = useState(false);
@@ -67,10 +71,13 @@ const MenuItemImage = memo(function MenuItemImage({
         onError={handleImageError}
         loading="lazy"
         style={{
-
+          transition: "opacity 0.2s ease-in-out",
+          opacity: isLoading ? 0 : 1,
+          objectPosition: "center",
         }}
       />
     </div>
   );
+});
 
 export default MenuItemImage;

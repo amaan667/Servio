@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
@@ -36,8 +37,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const normalizedVenueId = context.venueId;
     logContext = { requestId, venueId: normalizedVenueId, menuUrl, userId: context.user.id };
 
-    .toISOString(),
-
     if (!menuUrl) {
       return NextResponse.json({ ok: false, error: "menuUrl required" }, { status: 400 });
     }
@@ -56,13 +55,11 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .limit(1)
       .single();
 
-    
-
     if (uploadError || !uploadData?.pdf_images) {
-      
+
       return NextResponse.json(
         {
-
+          ok: false,
           error: "No PDF found. Please upload a PDF first, or clear menu and upload both together.",
         },
         { status: 400 }
@@ -70,7 +67,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     const pdfImages = uploadData.pdf_images as string[];
-    
 
     // Step 3: Clear existing menu for clean re-extraction
 
@@ -79,22 +75,20 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .delete()
       .eq("venue_id", normalizedVenueId);
 
-    
-
     if (deleteItemsError) {
-      
+
       throw new Error(`Failed to clear menu: ${deleteItemsError.message}`);
     }
 
     // Step 5: Run THE ONE TRUE HYBRID EXTRACTION SYSTEM
-    
 
     const { extractMenuHybrid } = await import("@/lib/hybridMenuExtractor");
 
-    
-
     const extractionResult = await extractMenuHybrid({
       pdfImages,
+      websiteUrl: menuUrl,
+      venueId: normalizedVenueId,
+    });
 
     // Step 7: Insert items into database
 
@@ -111,31 +105,38 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       else if (item.spiceLevel === "hot") spiceLevelInt = 3;
 
       menuItems.push({
-
+        id: itemId,
+        venue_id: normalizedVenueId,
+        name: item.name,
+        description: item.description || "",
+        price: item.price || 0,
+        category: item.category || "Menu Items",
+        image_url: item.image_url || null,
+        allergens: item.allergens || [],
+        dietary: item.dietary || [],
+        spice_level: spiceLevelInt,
+        is_available: true,
+        position: i,
+        created_at: new Date().toISOString(),
         // NOTE: page_index removed - not in database schema
-
+      });
     }
 
     // Insert menu items
     if (menuItems.length > 0) {
-      
 
       const { data: insertedData, error: insertError } = await supabase
         .from("menu_items")
         .insert(menuItems)
         .select();
 
-      
-
       if (insertError) {
-        
+
         throw new Error(`Failed to insert menu items: ${insertError.message}`);
       }
     }
 
     const duration = Date.now() - startTime;
-
-    .toFixed(2)}s`,
 
     // Revalidate all pages that display menu data
     try {
@@ -143,25 +144,25 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       revalidatePath(`/dashboard/${normalizedVenueId}`, "page");
       revalidatePath(`/dashboard/${normalizedVenueId}/menu-management`, "page");
       revalidatePath(`/menu/${normalizedVenueId}`, "page");
-      
-    } catch (revalidateError) {
-      ", {
 
-    }
+    } catch (revalidateError) { /* Error handled silently */ }
 
     return NextResponse.json({
-
+      ok: true,
+      message: "Menu enhanced with URL data successfully",
+      mode: extractionResult.mode,
+      items: menuItems.length,
       duration: `${duration}ms`,
-
+    });
   } catch (error) {
     const duration = Date.now() - startTime;
 
-      duration: `${duration}ms`,
-
     return NextResponse.json(
       {
-
+        ok: false,
+        error: error instanceof Error ? error.message : "Menu enhancement failed",
       },
       { status: 500 }
     );
   }
+});

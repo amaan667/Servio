@@ -11,23 +11,36 @@ import { TrendingUp, TrendingDown, Minus, Brain, Target, Zap } from "lucide-reac
 import { analytics } from "@/lib/analytics";
 
 interface KPI {
-
+  name: string;
+  value: number;
+  trend: "up" | "down" | "stable";
+  change: number;
 }
 
 interface Insight {
-
+  id: string;
+  title: string;
+  description: string;
+  recommendation: string;
+  impact: "high" | "medium" | "low";
+  confidence: number;
 }
 
 interface Forecasts {
-
+  revenue: number[];
+  orders: number[];
+  customers: number[];
 }
 
 interface BusinessIntelligence {
-
+  kpis: KPI[];
+  insights: Insight[];
+  forecasts: Forecasts;
+  recommendations: string[];
 }
 
 interface AdvancedAnalyticsProps {
-
+  venueId: string;
 }
 
 export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId }) => {
@@ -96,7 +109,9 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
                     className={`text-sm font-medium ${
                       kpi.trend === "up"
                         ? "text-green-600"
-
+                        : kpi.trend === "down"
+                          ? "text-red-600"
+                          : "text-gray-600"
                     }`}
                   >
                     {kpi.change > 0 ? "+" : ""}
@@ -132,7 +147,9 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ venueId })
                         variant={
                           insight.impact === "high"
                             ? "destructive"
-
+                            : insight.impact === "medium"
+                              ? "default"
+                              : "secondary"
                         }
                       >
                         {insight.impact} impact

@@ -7,13 +7,18 @@ import { NextRequest } from "next/server";
 import { createHash, randomBytes } from "crypto";
 
 interface RateLimitConfig {
-
+  windowMs: number;
+  maxRequests: number;
 }
 
 interface AuditLogEntry {
-
+  action: string;
+  userId?: string;
+  venueId?: string;
+  ipAddress: string;
+  userAgent: string;
   metadata?: Record<string, unknown>;
-
+  timestamp: string;
 }
 
 class SecurityService {
@@ -24,7 +29,7 @@ class SecurityService {
    * Rate limiting implementation
    */
   async checkRateLimit(
-
+    identifier: string,
     config: RateLimitConfig = { windowMs: 60000, maxRequests: 100 }
   ): Promise<boolean> {
     const now = Date.now();
@@ -34,7 +39,9 @@ class SecurityService {
     if (!stored || now > stored.resetTime) {
       // Reset or create new entry
       this.rateLimitStore.set(key, {
-
+        count: 1,
+        resetTime: now + config.windowMs,
+      });
       return true;
     }
 
@@ -76,7 +83,7 @@ class SecurityService {
    * Input sanitization
    */
   sanitizeInput(
-
+    input: unknown
   ): string | number | boolean | null | Record<string, unknown> | unknown[] {
     if (typeof input === "string") {
       return input
@@ -136,7 +143,7 @@ class SecurityService {
     }
 
     return {
-
+      isValid: errors.length === 0,
       errors,
     };
   }
@@ -147,7 +154,7 @@ class SecurityService {
   async logAudit(entry: Omit<AuditLogEntry, "timestamp">) {
     const auditEntry: AuditLogEntry = {
       ...entry,
-
+      timestamp: new Date().toISOString(),
     };
 
     // Future: Store audit logs in database for compliance tracking
@@ -205,11 +212,13 @@ export async function rateLimitMiddleware(_request: NextRequest, config?: RateLi
 
   if (!isAllowed) {
     return new Response("Too Many Requests", {
-
+      status: 429,
+      headers: {
+        "Retry-After": "60",
         "X-RateLimit-Limit": config?.maxRequests.toString() || "100",
         "X-RateLimit-Remaining": "0",
       },
-
+    });
   }
 
   return null;

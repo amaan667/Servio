@@ -6,18 +6,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
 interface ErrorBoundaryProps {
-
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+  onReset?: () => void;
 }
 
 interface ErrorBoundaryState {
-
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
 }
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
-
+      hasError: false,
+      error: null,
+      errorInfo: null,
     };
   }
 
@@ -27,25 +33,31 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error to console and logging service
-    .toISOString(),
 
     // Send to Sentry if available
     if (typeof window !== "undefined") {
       import("@sentry/nextjs").then((Sentry) => {
         Sentry.captureException(error, {
-
+          contexts: {
+            react: {
+              componentStack: errorInfo.componentStack,
             },
           },
-
+        });
+      });
     }
 
     this.setState({
       errorInfo,
-
+    });
   }
 
   handleReset = () => {
     this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
 
     if (this.props.onReset) {
       this.props.onReset();

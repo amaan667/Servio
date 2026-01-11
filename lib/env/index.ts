@@ -14,33 +14,56 @@ import { z } from "zod";
 // Comprehensive environment variable schema
 const envSchema = z.object({
   // Supabase (Required for runtime, but optional for graceful degradation)
-
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url("Invalid Supabase URL").optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "Supabase anon key is required").optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Supabase service role key is required").optional(),
 
   // Database
+  DATABASE_URL: z.string().url("Invalid database URL").optional(),
 
   // App URLs (Required)
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NEXT_PUBLIC_APP_URL: z.string().url("Invalid app URL").optional(),
+  NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+  APP_URL: z.string().url().optional(),
 
   // Stripe (Optional)
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  STRIPE_CUSTOMER_WEBHOOK_SECRET: z.string().min(1).optional(),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
 
   // Redis (Optional)
+  REDIS_URL: z.string().url().optional(),
+  REDIS_HOST: z.string().optional(),
+  REDIS_PORT: z.string().optional(),
+  REDIS_PASSWORD: z.string().optional(),
 
   // AI Services (Optional)
+  OPENAI_API_KEY: z.string().min(1).optional(),
 
   // Cron Jobs (Optional)
+  CRON_SECRET: z.string().min(1).optional(),
 
   // Monitoring (Optional)
+  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
 
   // Railway (Optional)
+  RAILWAY_PUBLIC_DOMAIN: z.string().url().optional(),
 
   // Logging (Optional)
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
 
   // Resend (Optional)
+  RESEND_API_KEY: z.string().min(1).optional(),
 
   // Stripe Price IDs (Optional)
+  STRIPE_BASIC_PRICE_ID: z.string().optional(),
+  STRIPE_STANDARD_PRICE_ID: z.string().optional(),
+  STRIPE_PREMIUM_PRICE_ID: z.string().optional(),
+});
 
 export type Env = z.infer<typeof envSchema>;
 
@@ -70,7 +93,35 @@ function validateEnv(): Env {
     if (isBuildTime) {
       // Return mock values for build time
       validatedEnv = {
-
+        NODE_ENV: (process.env.NODE_ENV as "development" | "production" | "test") || "production",
+        NEXT_PUBLIC_SUPABASE_URL:
+          process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock.supabase.co",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key",
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "mock-service-key",
+        NEXT_PUBLIC_APP_URL:
+          process.env.NEXT_PUBLIC_APP_URL || "https://servio-production.up.railway.app",
+        DATABASE_URL: process.env.DATABASE_URL,
+        NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+        NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+        APP_URL: process.env.APP_URL,
+        STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+        STRIPE_CUSTOMER_WEBHOOK_SECRET: process.env.STRIPE_CUSTOMER_WEBHOOK_SECRET,
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+        REDIS_URL: process.env.REDIS_URL,
+        REDIS_HOST: process.env.REDIS_HOST,
+        REDIS_PORT: process.env.REDIS_PORT,
+        REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+        CRON_SECRET: process.env.CRON_SECRET,
+        SENTRY_DSN: process.env.SENTRY_DSN,
+        SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+        RAILWAY_PUBLIC_DOMAIN: process.env.RAILWAY_PUBLIC_DOMAIN,
+        LOG_LEVEL: process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error" | undefined,
+        RESEND_API_KEY: process.env.RESEND_API_KEY,
+        STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
+        STRIPE_STANDARD_PRICE_ID: process.env.STRIPE_STANDARD_PRICE_ID,
+        STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
       } as Env;
       return validatedEnv!;
     }
@@ -86,9 +137,7 @@ function validateEnv(): Env {
         .map((e) => e.path.join("."))
         .join(", ");
 
-      if (missing) {
-        
-      }
+      if (missing) { /* Condition handled */ }
 
       // FAIL FAST: In production, throw on missing required environment variables
       // This prevents misconfigured deployments from starting

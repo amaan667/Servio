@@ -49,14 +49,17 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/api/health" || !protectedPaths.some((path) => pathname.startsWith(path))) {
     // Pass the request with STRIPPED headers
     return NextResponse.next({
-
+      request: {
+        headers: request.headers,
       },
-
+    });
   }
 
   let response = NextResponse.next({
-
+    request: {
+      headers: request.headers,
     },
+  });
 
   // If Supabase env is misconfigured:
   // - FAIL CLOSED for protected API routes (security)
@@ -64,33 +67,38 @@ export async function middleware(request: NextRequest) {
   let supabase: ReturnType<typeof createServerClient> | null = null;
   try {
     supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
           request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
-
+            request: {
+              headers: request.headers,
             },
-
+          });
           response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
           request.cookies.set({ name, value: "", ...options });
           response = NextResponse.next({
-
+            request: {
+              headers: request.headers,
             },
-
+          });
           response.cookies.set({ name, value: "", ...options });
         },
       },
-
+    });
   } catch (error) {
 
     // Pilot hardening: never allow protected API routes to proceed without auth infrastructure.
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         {
-
+          error: "Auth temporarily unavailable",
+          code: "AUTH_UNAVAILABLE",
         },
         { status: 503 }
       );
@@ -104,7 +112,7 @@ export async function middleware(request: NextRequest) {
   // getUser() authenticates the data by contacting the Supabase Auth server
   const {
     data: { user },
-
+    error: _authError,
   } = await supabase.auth.getUser();
 
   // If getUser() fails, treat as unauthenticated
@@ -117,7 +125,8 @@ export async function middleware(request: NextRequest) {
     if (!session) {
       return NextResponse.json(
         {
-
+          error: "Unauthorized",
+          code: "UNAUTHORIZED",
         },
         { status: 401 }
       );
@@ -132,15 +141,15 @@ export async function middleware(request: NextRequest) {
     }
 
     return NextResponse.next({
-
+      request: {
+        headers: requestHeaders,
       },
-
+    });
   }
 
   // For dashboard pages, NO REDIRECTS - User requested ZERO sign-in redirects
   // Allow dashboard to load even without session - client-side will handle auth
   if (pathname.startsWith("/dashboard")) {
-    .toISOString(),
 
     // Don't redirect - let dashboard component handle auth client-side
   }
@@ -149,7 +158,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-
+  matcher: [
+    "/dashboard/:path*",
     "/api/:path*", // Run on ALL API routes to ensure header stripping
   ],
   // Explicitly exclude health check from middleware

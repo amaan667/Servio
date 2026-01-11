@@ -7,18 +7,33 @@ export type BrandingTier = "logo+color" | "full+subdomain" | "white-label";
 export type SupportLevel = "email" | "priority" | "24/7";
 
 export interface TierLimits {
-
+  maxTables: number;
+  maxMenuItems: number;
+  maxStaff: number;
+  maxVenues: number;
+  features: {
+    kds: KDSTier | false; // "basic" | "advanced" | "enterprise" | false
+    inventory: boolean;
+    analytics: AnalyticsTier; // "basic" | "advanced" | "advanced+exports"
+    customerFeedback: boolean;
+    loyaltyTracking: boolean;
+    branding: BrandingTier; // "logo+color" | "full+subdomain" | "white-label"
+    apiAccess: boolean;
+    aiAssistant: boolean;
+    multiVenue: boolean;
+    customIntegrations: boolean;
+    supportLevel: SupportLevel; // "email" | "priority" | "24/7"
   };
 }
 
 // Tier limits based on pricing page: Starter (£99), Pro (£249), Enterprise (£499+)
 export const TIER_LIMITS: Record<string, TierLimits> = {
-
+  starter: {
     maxTables: 25, // Up to 25 tables
-
+    maxMenuItems: 50,
     maxStaff: 5, // Up to 5 staff accounts
     maxVenues: 1, // 1 location
-
+    features: {
       kds: false, // KDS not included - available as add-on
       inventory: false, // Not included
       analytics: "basic", // Basic dashboard & daily reports
@@ -26,16 +41,18 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       loyaltyTracking: false, // Not included
       branding: "logo+color", // Logo + colour theme
       apiAccess: false, // Not included
-
+      aiAssistant: false,
+      multiVenue: false,
+      customIntegrations: false,
       supportLevel: "email", // Email support
     },
   },
-
+  pro: {
     maxTables: 100, // Up to 100 tables
-
+    maxMenuItems: 200,
     maxStaff: 15, // Up to 15 staff accounts
     maxVenues: 3, // Up to 3 locations
-
+    features: {
       kds: "advanced", // Advanced KDS (multi-station)
       inventory: true, // Inventory & stock management
       analytics: "advanced+exports", // Advanced analytics + CSV exports
@@ -45,16 +62,16 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       apiAccess: false, // Available as add-on (light API)
       aiAssistant: false, // AI Assistant is Enterprise only (Pro has AI insights in analytics, not full AI Assistant)
       multiVenue: true, // Up to 3 locations
-
+      customIntegrations: false,
       supportLevel: "priority", // Priority email & live chat
     },
   },
-
+  enterprise: {
     maxTables: -1, // Unlimited tables
     maxMenuItems: -1, // Unlimited
     maxStaff: -1, // Unlimited staff accounts
     maxVenues: -1, // Unlimited locations
-
+    features: {
       kds: "enterprise", // Enterprise KDS (multi-venue)
       inventory: true, // Advanced inventory + supplier ordering
       analytics: "advanced+exports", // Enterprise analytics suite & financial exports
@@ -62,9 +79,9 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       loyaltyTracking: true, // Included
       branding: "white-label", // Full white-label + custom domains
       apiAccess: true, // API access, webhooks & POS/accounting integrations
-
+      aiAssistant: true,
       multiVenue: true, // Unlimited locations
-
+      customIntegrations: true,
       supportLevel: "24/7", // 24/7 phone support, SLA & account manager
     },
   },
@@ -80,7 +97,7 @@ export async function getUserTier(userId: string): Promise<string> {
   const accessContext = await getAccessContext(null); // null venueId = user-only context
 
   if (!accessContext || accessContext.user_id !== userId) {
-    
+
     return "starter";
   }
 
@@ -88,14 +105,15 @@ export async function getUserTier(userId: string): Promise<string> {
 }
 
 export async function checkFeatureAccess(
-
+  userId: string,
+  feature: keyof TierLimits["features"]
 ): Promise<{ allowed: boolean; currentTier: string; requiredTier?: string }> {
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
 
   // Safety check: if tier doesn't exist in TIER_LIMITS, default to starter
   if (!limits) {
-    
+
     const defaultLimits = TIER_LIMITS.starter;
 
     // Special handling for analytics tier
@@ -283,14 +301,18 @@ export async function getMaxKDSStations(userId: string): Promise<number> {
  * Check station creation limit based on KDS tier
  */
 export async function checkKDSStationLimit(
-
+  userId: string,
+  currentStationCount: number
 ): Promise<{ allowed: boolean; limit: number; currentTier: string; kdsTier: KDSTier | false }> {
   const kdsTier = await getKDSTier(userId);
   const tier = await getUserTier(userId);
 
   if (!kdsTier) {
     return {
-
+      allowed: false,
+      limit: 0,
+      currentTier: tier,
+      kdsTier: false,
     };
   }
 
@@ -298,13 +320,17 @@ export async function checkKDSStationLimit(
 
   if (maxStations === -1) {
     return {
-
+      allowed: true,
+      limit: -1,
+      currentTier: tier,
       kdsTier,
     };
   }
 
   return {
-
+    allowed: currentStationCount < maxStations,
+    limit: maxStations,
+    currentTier: tier,
     kdsTier,
   };
 }
@@ -328,14 +354,16 @@ export async function getBrandingTier(userId: string): Promise<BrandingTier> {
 }
 
 export async function checkLimit(
-
+  userId: string,
+  limitType: "maxTables" | "maxMenuItems" | "maxStaff" | "maxVenues",
+  currentCount: number
 ): Promise<{ allowed: boolean; limit: number; currentTier: string }> {
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
 
   // Safety check: if tier doesn't exist, default to starter
   if (!limits) {
-    
+
     const defaultLimits = TIER_LIMITS.starter;
     const limit = defaultLimits[limitType];
 
@@ -345,9 +373,9 @@ export async function checkLimit(
     }
 
     return {
-
+      allowed: currentCount < limit,
       limit,
-
+      currentTier: "starter",
     };
   }
 
@@ -359,15 +387,17 @@ export async function checkLimit(
   }
 
   return {
-
+    allowed: currentCount < limit,
     limit,
-
+    currentTier: tier,
   };
 }
 
 // Middleware helper for API routes
 export async function requireFeature(
-
+  userId: string,
+  feature: keyof TierLimits["features"]
+): Promise<void> {
   const access = await checkFeatureAccess(userId, feature);
 
   if (!access.allowed) {

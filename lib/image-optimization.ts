@@ -66,7 +66,7 @@ export function preloadImage(src: string): Promise<void> {
     img.onload = () => resolve();
     img.onerror = reject;
     img.src = src;
-
+  });
 }
 
 /**
@@ -89,10 +89,12 @@ export function setupLazyLoading(selector: string = "img[data-src]") {
           imageObserver.unobserve(img);
         }
       }
+    });
+  });
 
   document.querySelectorAll(selector).forEach((img) => {
     imageObserver.observe(img);
-
+  });
 }
 
 /**
@@ -104,12 +106,14 @@ export function getImageDimensions(url: string): Promise<{ width: number; height
 
     img.onload = () => {
       resolve({
-
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      });
     };
 
     img.onerror = reject;
     img.src = url;
-
+  });
 }
 
 /**

@@ -66,9 +66,10 @@ export default function CheckoutSuccessPage() {
         const updateOrganization = async (retryCount = 0) => {
           try {
             const response = await fetch("/api/test/update-plan", {
-
+              method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ tier: tierParam }),
+            });
 
             await response.json();
 
@@ -101,7 +102,8 @@ export default function CheckoutSuccessPage() {
         return "Pro Plan";
       case "enterprise":
         return "Enterprise Plan";
-
+      default:
+        return "Your Plan";
     }
   };
 
@@ -113,7 +115,8 @@ export default function CheckoutSuccessPage() {
         return "£249";
       case "enterprise":
         return "£449";
-
+      default:
+        return "£0";
     }
   };
 

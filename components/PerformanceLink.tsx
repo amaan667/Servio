@@ -5,7 +5,11 @@ import Link from "next/link";
 import { usePrefetch } from "@/hooks/usePrefetch";
 
 interface PerformanceLinkProps {
-
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+  prefetch?: boolean;
+  [key: string]: unknown;
 }
 
 /**
@@ -28,5 +32,6 @@ export const PerformanceLink = React.memo(function PerformanceLink({
       {children}
     </Link>
   );
+});
 
 export default PerformanceLink;

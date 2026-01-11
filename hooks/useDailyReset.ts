@@ -1,9 +1,18 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useState } from "react";
 
 interface DailyResetResult {
-
+  success: boolean;
+  message: string;
+  resetDate?: string;
+  alreadyReset?: boolean;
+  summary?: {
+    venueId: string;
+    venueName: string;
+    completedOrders: number;
+    canceledReservations: number;
+    deletedTables: number;
+    timestamp: string;
   };
 }
 
@@ -39,12 +48,8 @@ export function useDailyReset(venueId: string) {
             // toast.success(`Daily reset completed: ${completedOrders} orders completed, ${deletedTables} tables deleted`);
           }
         }
-      } else {
-        
-      }
-    } catch (_error) {
-      );
-    } finally {
+      } else { /* Else case handled */ }
+    } catch (_error) { /* Error handled silently */ } finally {
       setIsChecking(false);
     }
   };

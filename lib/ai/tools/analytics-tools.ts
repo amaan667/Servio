@@ -4,30 +4,60 @@
 import { createClient } from "@/lib/supabase";
 
 interface MenuPerformanceResult {
-
+  topPerformers: Array<{
+    name: string;
+    revenue: number;
+    orders: number;
+    avgPrice: number;
+    profitMargin?: number;
   }>;
-
+  underPerformers: Array<{
+    name: string;
+    revenue: number;
+    orders: number;
+    lastOrdered?: string;
   }>;
-
+  recommendations: string[];
 }
 
 interface PriceOptimizationResult {
-
+  suggestions: Array<{
+    item: string;
+    currentPrice: number;
+    suggestedPrice: number;
+    reasoning: string;
+    potentialRevenueIncrease: number;
   }>;
-
+  summary: string;
 }
 
 interface RevenueForecastResult {
-
+  forecast: {
+    nextWeek: number;
+    nextMonth: number;
+    confidence: string;
   };
-
+  trends: string[];
+  recommendations: string[];
 }
 
 /**
  * Analyze menu item performance to identify winners and losers
  */
 export async function analyzeMenuPerformance(
+  venueId: string,
+  timeRange: "week" | "month" | "quarter" = "month"
+): Promise<MenuPerformanceResult> {
+  const supabase = await createClient();
 
+  // Calculate date range
+  const endDate = new Date();
+  const startDate = new Date();
+  if (timeRange === "week") startDate.setDate(startDate.getDate() - 7);
+  else if (timeRange === "month") startDate.setMonth(startDate.getMonth() - 1);
+  else startDate.setMonth(startDate.getMonth() - 3);
+
+  // Get all orders in timeframe
   const { data: orders } = await supabase
     .from("orders")
     .select("items, total_amount, created_at")
@@ -40,19 +70,32 @@ export async function analyzeMenuPerformance(
 
   orders?.forEach((order) => {
     const items = order.items as Array<{
-
+      item_name: string;
+      quantity: number;
+      price: number;
     }>;
     items?.forEach((item) => {
       const existing = itemStats.get(item.item_name) || {
-
+        revenue: 0,
+        orders: 0,
+        lastOrdered: new Date(order.created_at),
       };
       itemStats.set(item.item_name, {
+        revenue: existing.revenue + item.price * item.quantity,
+        orders: existing.orders + item.quantity,
+        lastOrdered: new Date(order.created_at),
+      });
+    });
+  });
 
   // Sort by revenue
   const sorted = Array.from(itemStats.entries())
     .map(([name, stats]) => ({
       name,
-
+      revenue: stats.revenue,
+      orders: stats.orders,
+      avgPrice: stats.revenue / stats.orders,
+      lastOrdered: stats.lastOrdered,
     }))
     .sort((a, b) => b.revenue - a.revenue);
 
@@ -61,7 +104,10 @@ export async function analyzeMenuPerformance(
     .slice(-10)
     .filter((item) => item.orders < 5)
     .map((item) => ({
-
+      name: item.name,
+      revenue: item.revenue,
+      orders: item.orders,
+      lastOrdered: item.lastOrdered.toISOString().split("T")[0],
     }));
 
   // Generate recommendations
@@ -114,6 +160,8 @@ export async function suggestPriceOptimization(venueId: string): Promise<PriceOp
     const items = order.items as Array<{ item_name: string; quantity: number }>;
     items?.forEach((item) => {
       demandMap.set(item.item_name, (demandMap.get(item.item_name) || 0) + item.quantity);
+    });
+  });
 
   const suggestions: PriceOptimizationResult["suggestions"] = [];
 
@@ -125,23 +173,25 @@ export async function suggestPriceOptimization(venueId: string): Promise<PriceOp
     if (demand > 30) {
       const increase = Math.round(currentPrice * 0.075 * 100) / 100; // 7.5% increase
       suggestions.push({
-
+        item: item.name,
         currentPrice,
-
+        suggestedPrice: currentPrice + increase,
         reasoning: `High demand (${demand} orders/month). Market can support higher price.`,
-
+        potentialRevenueIncrease: increase * demand,
+      });
     }
     // Low demand (<5 orders/month) = consider discount or removal
     else if (demand < 5 && demand > 0) {
       const decrease = Math.round(currentPrice * 0.15 * 100) / 100; // 15% decrease
       suggestions.push({
-
+        item: item.name,
         currentPrice,
-
+        suggestedPrice: currentPrice - decrease,
         reasoning: `Low demand (${demand} orders/month). Price reduction may boost sales.`,
         potentialRevenueIncrease: decrease * 10, // Estimate 10 additional sales
-
+      });
     }
+  });
 
   // Sort by potential revenue impact
   suggestions.sort((a, b) => b.potentialRevenueIncrease - a.potentialRevenueIncrease);
@@ -173,9 +223,13 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
 
   if (!orders || orders.length < 7) {
     return {
-
+      forecast: {
+        nextWeek: 0,
+        nextMonth: 0,
+        confidence: "low",
       },
-
+      trends: ["Not enough historical data for accurate forecast (need at least 7 days)"],
+      recommendations: ["Continue collecting data for better forecasting"],
     };
   }
 
@@ -187,6 +241,7 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
     const orderDate = new Date(order.created_at);
     const weekNumber = Math.floor((Date.now() - orderDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
     weeksMap.set(weekNumber, (weeksMap.get(weekNumber) || 0) + order.total_amount);
+  });
 
   // Convert to array (most recent first)
   for (let i = 0; i < 12; i++) {
@@ -222,6 +277,7 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
     const day = new Date(order.created_at).getDay();
     if (!dayRevenue.has(day)) dayRevenue.set(day, []);
     dayRevenue.get(day)!.push(order.total_amount);
+  });
 
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const dayAvgs = Array.from(dayRevenue.entries())
@@ -260,7 +316,10 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
   const currencySymbol = currency === "GBP" ? "£" : currency === "EUR" ? "€" : "$";
 
   return {
-
+    forecast: {
+      nextWeek: Math.round(nextWeekForecast * 100) / 100,
+      nextMonth: Math.round(nextMonthForecast * 100) / 100,
+      confidence: weeklyRevenue.length >= 8 ? "high" : "medium",
     },
     trends,
     recommendations,
@@ -271,9 +330,14 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
  * Calculate profit margins for menu items
  */
 export async function calculateItemMargins(venueId: string): Promise<{
-
+  items: Array<{
+    name: string;
+    price: number;
+    estimatedCost: number;
+    margin: number;
+    marginPercent: number;
   }>;
-
+  summary: string;
 }> {
   const supabase = await createClient();
 
@@ -286,7 +350,14 @@ export async function calculateItemMargins(venueId: string): Promise<{
   // Estimate costs based on category (rough approximation)
   const costEstimates: Record<string, number> = {
     Coffee: 0.3, // 30% of price
-
+    Tea: 0.25,
+    Breakfast: 0.35,
+    Lunch: 0.4,
+    Dinner: 0.4,
+    Dessert: 0.35,
+    Drinks: 0.25,
+    Alcohol: 0.4,
+    default: 0.35,
   };
 
   const items =
@@ -297,7 +368,8 @@ export async function calculateItemMargins(venueId: string): Promise<{
       const marginPercent = (margin / item.price) * 100;
 
       return {
-
+        name: item.name,
+        price: item.price,
         estimatedCost,
         margin,
         marginPercent,

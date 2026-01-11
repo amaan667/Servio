@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 
 interface DemoBannerProps {
-
+  isDemo: boolean;
+  onResetCart: () => void;
 }
 
 export function DemoBanner({ isDemo, onResetCart }: DemoBannerProps) {

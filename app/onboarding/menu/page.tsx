@@ -50,8 +50,9 @@ export default function OnboardingMenuPage() {
         if (pendingSignup) {
           // Ensure venue is created
           const response = await fetch("/api/signup/complete-onboarding", {
-
+            method: "POST",
             headers: { "Content-Type": "application/json" },
+          });
 
           const data = await response.json();
           if (response.ok && data.success && data.venueId) {
@@ -85,6 +86,9 @@ export default function OnboardingMenuPage() {
       formData.append("venueId", venueId);
 
       const response = await fetch("/api/menu/upload", {
+        method: "POST",
+        body: formData,
+      });
 
       const result = await response.json();
 
@@ -100,14 +104,19 @@ export default function OnboardingMenuPage() {
       );
 
       toast({
-
+        title: "Menu uploaded!",
         description: `Successfully extracted ${result.itemsCount || 0} items from your menu.`,
+      });
 
       // Move to next step
       router.push("/onboarding/tables");
     } catch (_error) {
       toast({
-
+        title: "Upload failed",
+        description:
+          _error instanceof Error ? _error.message : "Failed to upload menu. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setUploading(false);
     }
@@ -120,7 +129,10 @@ export default function OnboardingMenuPage() {
     const validItems = manualItems.filter((item) => item.name.trim() && item.price.trim());
     if (validItems.length === 0) {
       toast({
-
+        title: "No items to add",
+        description: "Please add at least one menu item.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -131,7 +143,13 @@ export default function OnboardingMenuPage() {
 
       // Insert items
       const itemsToInsert = validItems.map((item) => ({
-
+        venue_id: venueId,
+        name: item.name.trim(),
+        price: parseFloat(item.price),
+        category: item.category,
+        description: "",
+        is_available: true,
+        image_url: null,
       }));
 
       const { error } = await supabase.from("menu_items").insert(itemsToInsert);
@@ -143,14 +161,18 @@ export default function OnboardingMenuPage() {
       localStorage.setItem("onboarding_menu_complete", "true");
 
       toast({
-
+        title: "Menu items created!",
         description: `Added ${validItems.length} items to your menu.`,
+      });
 
       // Move to next step
       router.push("/onboarding/tables");
     } catch (_error) {
       toast({
-
+        title: "Failed to create items",
+        description: _error instanceof Error ? _error.message : "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setUploading(false);
     }

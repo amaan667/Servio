@@ -10,12 +10,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 interface PerformanceData {
-
+  apiRequests: {
+    total: number;
+    successful: number;
+    failed: number;
+    avgResponseTime: number;
   };
-
+  errors: {
+    count: number;
     recent: Array<{ message: string; timestamp: string }>;
   };
-
+  system: {
+    uptime: number;
+    memoryUsage: number;
+    activeConnections: number;
   };
 }
 
@@ -29,9 +37,7 @@ export function PerformanceDashboard() {
         const response = await fetch("/api/performance");
         const metrics = await response.json();
         setData(metrics.data);
-      } catch (error) {
-
-      } finally {
+      } catch (error) { /* Error handled silently */ } finally {
         setLoading(false);
       }
     };

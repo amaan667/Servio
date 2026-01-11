@@ -96,16 +96,20 @@ class ProductionLogger {
     if (level >= LogLevel.WARN && isProduction) {
       if (level === LogLevel.ERROR) {
         Sentry.captureException(new Error(message), {
-
+          tags: {
+            service: this.serviceName,
+            level: levelName,
           },
           extra: context as Record<string, unknown> | undefined,
-
+        });
       } else if (level === LogLevel.WARN) {
         Sentry.captureMessage(message, {
-
+          level: "warning",
+          tags: {
+            service: this.serviceName,
           },
           extra: context as Record<string, unknown> | undefined,
-
+        });
       }
     }
   }
@@ -132,7 +136,10 @@ class ProductionLogger {
   }
 
   apiResponse(
-
+    method: string,
+    path: string,
+    status: number,
+    duration: number,
     context?: FlexibleLogContext
   ) {
     this.info(`API Response: ${method} ${path} ${status} (${duration}ms)`, context);

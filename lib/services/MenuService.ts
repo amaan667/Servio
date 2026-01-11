@@ -7,11 +7,25 @@ import { BaseService } from "./BaseService";
 import { createSupabaseClient } from "@/lib/supabase";
 
 export interface MenuItem {
-
+  id: string;
+  venue_id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  category: string;
+  image_url?: string | null;
+  is_available: boolean;
+  position?: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MenuCategory {
-
+  id: string;
+  venue_id: string;
+  name: string;
+  position?: number | null;
+  description?: string | null;
 }
 
 export class MenuService extends BaseService {
@@ -19,7 +33,7 @@ export class MenuService extends BaseService {
    * Get menu items with caching
    */
   async getMenuItems(
-
+    venueId: string,
     options?: { includeUnavailable?: boolean; category?: string }
   ): Promise<MenuItem[]> {
     const cacheKey = this.getCacheKey("menu:items", venueId, JSON.stringify(options));
@@ -79,7 +93,7 @@ export class MenuService extends BaseService {
    * Create menu item
    */
   async createMenuItem(
-
+    venueId: string,
     itemData: Omit<MenuItem, "id" | "venue_id" | "created_at" | "updated_at">
   ): Promise<MenuItem> {
     const supabase = await createSupabaseClient();
@@ -87,7 +101,8 @@ export class MenuService extends BaseService {
       .from("menu_items")
       .insert({
         ...itemData,
-
+        venue_id: venueId,
+      })
       .select()
       .single();
 
@@ -103,7 +118,8 @@ export class MenuService extends BaseService {
    * Update menu item
    */
   async updateMenuItem(
-
+    itemId: string,
+    venueId: string,
     updates: Partial<Omit<MenuItem, "id" | "venue_id" | "created_at">>
   ): Promise<MenuItem> {
     const supabase = await createSupabaseClient();
@@ -144,7 +160,10 @@ export class MenuService extends BaseService {
    * Toggle item availability
    */
   async toggleAvailability(
-
+    itemId: string,
+    venueId: string,
+    isAvailable: boolean
+  ): Promise<MenuItem> {
     return this.updateMenuItem(itemId, venueId, { is_available: isAvailable });
   }
 
@@ -159,7 +178,7 @@ export class MenuService extends BaseService {
    * Bulk update prices
    */
   async bulkUpdatePrices(
-
+    venueId: string,
     updates: Array<{ id: string; price: number }>
   ): Promise<void> {
     const supabase = await createSupabaseClient();

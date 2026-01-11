@@ -3,7 +3,15 @@
 import { OrderForEntityKind } from "@/lib/orders/entity-types";
 
 export interface OrderForCard extends OrderForEntityKind {
-
+  id: string;
+  short_id: string;
+  placed_at: string; // ISO string
+  order_status: "placed" | "preparing" | "ready" | "served" | "completed" | "cancelled";
+  total_amount: number;
+  currency: string; // "GBP"
+  payment: {
+    mode: "online" | "pay_at_till" | "pay_later";
+    status: "paid" | "unpaid" | "failed" | "refunded";
     method?: string; // Payment method: PAY_NOW, PAY_LATER, PAY_AT_TILL
   };
   table_number?: number | null;
@@ -17,14 +25,42 @@ export interface OrderForCard extends OrderForEntityKind {
   payment_method?: string; // Raw payment_method from database
   items_preview?: string; // precomputed "2x Burger, 1x Fries"
   items?: Array<{
-
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
   }>;
 }
 
 // Legacy order type mapping for backward compatibility
 export interface LegacyOrder {
-
+  id: string;
+  venue_id: string;
+  table_number: number | null;
+  table_id?: string | null;
+  session_id?: string | null;
+  source?: "qr" | "counter";
+  customer_name: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  order_status: string;
+  total_amount: number;
+  notes?: string;
+  payment_method?: string;
+  payment_status?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
+  items: Array<{
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
   }>;
-
+  created_at: string;
+  updated_at?: string;
+  table_label?: string;
+  counter_label?: string;
   table?: { is_configured: boolean } | null;
 }

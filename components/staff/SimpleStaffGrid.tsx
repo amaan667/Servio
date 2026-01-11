@@ -6,15 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type LegacyShift = {
-
+  id: string;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
+  area?: string;
+  staff_name: string;
+  staff_role: string;
 };
 
 type StaffMember = {
-
+  id: string;
+  name: string;
+  role: string;
+  active: boolean;
+  created_at: string;
 };
 
 interface SimpleStaffGridProps {
-
+  staff: StaffMember[];
+  venueId: string;
+  onStaffAdded?: () => void;
   onStaffToggle?: (staffId: string, currentActive: boolean) => Promise<void>;
 }
 
@@ -61,7 +73,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
         const shiftStart = new Date(shift.start_time);
         const shiftEnd = new Date(shift.end_time);
         return shiftEnd >= dayStart && shiftStart <= dayEnd;
-
+      });
     }
 
     if (calendarView === "week") {
@@ -78,7 +90,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
         const shiftStart = new Date(shift.start_time);
         const shiftEnd = new Date(shift.end_time);
         return shiftEnd >= weekStart && shiftStart <= weekEnd;
-
+      });
     }
 
     // Month view
@@ -90,7 +102,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
       const shiftStart = new Date(shift.start_time);
       const shiftEnd = new Date(shift.end_time);
       return shiftEnd >= startOfMonth && shiftStart <= endOfMonth;
-
+    });
   }, [shifts, calendarView, currentDate, currentMonth]);
 
   // Group shifts by date for grid display
@@ -118,6 +130,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
         }
         grouped[endDateString].push(shift);
       }
+    });
 
     return grouped;
   }, [visibleShifts]);
@@ -186,7 +199,10 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
   const getDisplayTitle = () => {
     if (calendarView === "today") {
       return currentDate.toLocaleDateString("en-US", {
-
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
     }
 
     if (calendarView === "week") {
@@ -204,7 +220,10 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
 
   const formatTime = (timeString: string) => {
     return new Date(timeString).toLocaleTimeString("en-US", {
-
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   const isShiftActive = (shift: LegacyShift) => {
@@ -262,7 +281,8 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
               style={
                 calendarView !== "month"
                   ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }
-
+                  : {
+                      /* Empty */
                     }
               }
             >
@@ -273,7 +293,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
                       <div className="text-sm font-medium text-gray-900">{dayName}</div>
                     </div>
                   ))
-
+                : // Today/Week view header
                   displayDates.map((date, index) => (
                     <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
                       <div className="text-sm font-medium text-gray-900">
@@ -290,7 +310,8 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
               style={
                 calendarView !== "month"
                   ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }
-
+                  : {
+                      /* Empty */
                     }
               }
             >
@@ -369,7 +390,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
                               </div>
                             </div>
                           );
-
+                        })
                       )}
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@supabase/supabase-js";
+
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -15,8 +16,6 @@ export async function GET(req: Request) {
     const venueId = searchParams.get("venueId");
     const tableNumber = searchParams.get("tableNumber");
 
-    .toISOString(),
-
     if (!venueId || !tableNumber) {
       return apiErrors.badRequest("venueId and tableNumber are required");
     }
@@ -26,12 +25,12 @@ export async function GET(req: Request) {
       env("NEXT_PUBLIC_SUPABASE_URL")!,
       env("SUPABASE_SERVICE_ROLE_KEY")!,
       {
-
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
         },
       }
     );
-
-    
 
     const { data: activeOrders, error } = await supabase
       .from("orders")
@@ -42,14 +41,13 @@ export async function GET(req: Request) {
       .in("payment_status", ["UNPAID", "IN_PROGRESS"]);
 
     if (error) {
-      
+
       return apiErrors.database(error.message);
     }
 
-    
-
     return success({
-
+      orders: activeOrders || [],
+    });
   } catch (_error) {
 
     return apiErrors.internal("Internal server error");

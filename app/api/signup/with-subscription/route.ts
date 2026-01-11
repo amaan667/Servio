@@ -5,12 +5,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 
 const PRICE_IDS = {
-
+  starter: env("STRIPE_BASIC_PRICE_ID") || "price_basic",
+  pro: env("STRIPE_STANDARD_PRICE_ID") || "price_standard",
+  enterprise: env("STRIPE_PREMIUM_PRICE_ID") || "price_premium",
 };
 
 export async function POST(req: NextRequest) {
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-
+          error: "Too many requests",
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         { status: 429 }
@@ -102,8 +105,6 @@ export async function POST(req: NextRequest) {
         const venueName = venue?.venue_name || "a venue";
         const roleName = staffRoles.role.charAt(0).toUpperCase() + staffRoles.role.slice(1);
 
-        
-
         return NextResponse.json(
           {
             error: `You are already a ${roleName} at ${venueName}. Please sign in to your existing account. If you need to create an owner account, please use a different email address.`,
@@ -116,7 +117,8 @@ export async function POST(req: NextRequest) {
       if (ownerVenues) {
         return NextResponse.json(
           {
-
+            error:
+              "An account with this email already exists. Please sign in to your existing account.",
           },
           { status: 409 }
         );
@@ -128,21 +130,25 @@ export async function POST(req: NextRequest) {
       email,
       password,
       email_confirm: false, // Require email verification
-
+      user_metadata: {
+        full_name: fullName,
         // Store signup data temporarily - will be used to create org/venue after onboarding
-
+        pending_signup: {
+          venueName,
           venueType,
           serviceType,
           tier,
           stripeSessionId,
         },
       },
+    });
 
     if (authError || !authData.user) {
-      
+
       return NextResponse.json(
         {
-
+          error: authError?.message || "Failed to create account",
+          message: isDevelopment() ? authError?.message : "Account creation failed",
         },
         { status: 400 }
       );
@@ -161,46 +167,57 @@ export async function POST(req: NextRequest) {
         // Fallback: create new customer
         customer = await stripe.customers.create({
           email,
-
+          name: fullName,
+          metadata: {
+            user_id: userId,
+            venue_name: venueName,
             pending_setup: "true", // Mark as pending until onboarding completes
           },
-
+        });
       }
     } else {
       // Create new customer
       customer = await stripe.customers.create({
         email,
-
+        name: fullName,
+        metadata: {
+          user_id: userId,
+          venue_name: venueName,
+          pending_setup: "true",
         },
-
+      });
     }
 
     // Store Stripe customer ID in user metadata for later use
     await supabase.auth.admin.updateUserById(userId, {
-
+      user_metadata: {
+        full_name: fullName,
+        pending_signup: {
+          venueName,
           venueType,
           serviceType,
           tier,
           stripeSessionId,
-
+          stripeCustomerId: customer.id,
         },
       },
+    });
 
     // STEP 6: Return success response
     return NextResponse.json({
-
+      success: true,
       userId,
-
+      message: "Account created successfully! Please complete onboarding to finish setup.",
+    });
   } catch (_error) {
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-    
-
     if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
       return NextResponse.json(
         {
-
+          error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+          message: errorMessage,
         },
         { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
       );
@@ -208,7 +225,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       {
-
+        error: "Signup failed",
+        details: errorMessage,
+        message: isDevelopment() ? errorMessage : "Request processing failed",
         ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
       },
       { status: 500 }

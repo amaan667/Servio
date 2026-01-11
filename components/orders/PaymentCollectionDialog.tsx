@@ -13,9 +13,19 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Banknote, CreditCard, Receipt } from "lucide-react";
 
 interface PaymentCollectionDialogProps {
-
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  totalAmount: number;
+  venueId: string;
+  items: Array<{
+    item_name: string;
+    quantity: number;
+    price: number;
   }>;
-
+  onSuccess: () => void;
 }
 
 export function PaymentCollectionDialog({
@@ -44,10 +54,13 @@ export function PaymentCollectionDialog({
 
     try {
       const response = await fetch(`/api/orders/${orderId}/collect-payment`, {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          payment_method: selectedMethod,
+          venue_id: venueId,
         }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -117,7 +130,7 @@ export function PaymentCollectionDialog({
                 className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
                   selectedMethod === "cash"
                     ? "border-purple-600 bg-purple-50"
-
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <Banknote
@@ -139,7 +152,7 @@ export function PaymentCollectionDialog({
                 className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
                   selectedMethod === "card"
                     ? "border-purple-600 bg-purple-50"
-
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <CreditCard

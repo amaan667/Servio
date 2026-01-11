@@ -1,4 +1,3 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useEffect } from "react";
 
@@ -18,7 +17,7 @@ export function usePerformanceMonitor(componentName: string) {
 
       if (renderTime > 16) {
         // More than one frame (16ms at 60fps)
-        }ms to render`);
+
       }
     };
   }, [componentName]);
@@ -27,7 +26,7 @@ export function usePerformanceMonitor(componentName: string) {
 /**
  * Hook for measuring API call performance
  */
-export function useApiPerformanceMonitor(apiName: string) {
+export function useApiPerformanceMonitor(_apiName: string) {
   const measureApiCall = <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => {
     return async (...args: Parameters<T>) => {
       if (process.env.NODE_ENV !== "development") {
@@ -42,16 +41,14 @@ export function useApiPerformanceMonitor(apiName: string) {
 
         if (duration > 1000) {
           // More than 1 second
-          }ms`);
+
         }
 
         return result;
       } catch (_error) {
         const endTime = performance.now();
         const duration = endTime - startTime;
-        }ms:`,
-          errorToContext(_error)
-        );
+
         throw _error;
       }
     };

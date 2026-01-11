@@ -16,7 +16,7 @@ export default function ApiDocsPage() {
       .then((data) => setSpec(data))
       .catch(() => {
         // Failed to load API docs - component will show loading state
-
+      });
   }, []);
 
   if (!spec) {

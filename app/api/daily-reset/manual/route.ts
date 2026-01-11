@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -36,7 +37,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (venueError) {
-        
+
         return apiErrors.database(
           "Failed to fetch venue",
           isDevelopment() ? venueError.message : undefined
@@ -57,7 +58,7 @@ export const POST = withUnifiedAuth(
         .limit(1);
 
       if (recentOrdersError) {
-        
+
         // Continue with reset if we can't check
       }
 
@@ -69,7 +70,7 @@ export const POST = withUnifiedAuth(
         .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
       if (activeOrdersError) {
-        
+
         return apiErrors.internal("Failed to fetch active orders");
       }
 
@@ -77,12 +78,14 @@ export const POST = withUnifiedAuth(
         const { error: completeOrdersError } = await supabase
           .from("orders")
           .update({
-
+            order_status: "COMPLETED",
+            updated_at: new Date().toISOString(),
+          })
           .eq("venue_id", finalVenueId)
           .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
         if (completeOrdersError) {
-          
+
           return apiErrors.internal("Failed to complete active orders");
         }
       }
@@ -95,7 +98,7 @@ export const POST = withUnifiedAuth(
         .eq("status", "BOOKED");
 
       if (activeReservationsError) {
-        
+
         return apiErrors.internal("Failed to fetch active reservations");
       }
 
@@ -103,12 +106,14 @@ export const POST = withUnifiedAuth(
         const { error: cancelReservationsError } = await supabase
           .from("reservations")
           .update({
-
+            status: "CANCELLED",
+            updated_at: new Date().toISOString(),
+          })
           .eq("venue_id", finalVenueId)
           .eq("status", "BOOKED");
 
         if (cancelReservationsError) {
-          
+
           return apiErrors.internal("Failed to cancel active reservations");
         }
       }
@@ -120,7 +125,7 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", finalVenueId);
 
       if (tablesError) {
-        
+
         return apiErrors.internal("Failed to fetch tables");
       }
 
@@ -132,7 +137,7 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", finalVenueId);
 
         if (deleteSessionsError) {
-          
+
           // Don't fail for this, continue
         }
 
@@ -143,7 +148,7 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", finalVenueId);
 
         if (deleteTablesError) {
-          
+
           return apiErrors.internal("Failed to delete tables");
         }
       }
@@ -155,9 +160,9 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", finalVenueId);
 
       if (clearRuntimeError) {
-        
+
         // Don't fail the entire operation for this
-        
+
       }
 
       // Step 5: Record the manual reset in the log (but don't prevent future resets)
@@ -166,7 +171,12 @@ export const POST = withUnifiedAuth(
 
       const { error: logError } = await supabase.from("daily_reset_log").upsert(
         {
-
+          venue_id: finalVenueId,
+          reset_date: todayString,
+          reset_timestamp: new Date().toISOString(),
+          completed_orders: activeOrders?.length || 0,
+          canceled_reservations: activeReservations?.length || 0,
+          reset_tables: tables?.length || 0,
         },
         {
           onConflict: "venue_id,reset_date",
@@ -174,27 +184,33 @@ export const POST = withUnifiedAuth(
       );
 
       if (logError) {
-        
+
         // Don't fail the operation for this
-        
+
       }
 
       // STEP 7: Return success response
       return success({
-
+        success: true,
+        message: "Manual daily reset completed successfully",
+        summary: {
+          venueId: finalVenueId,
+          venueName: venue.venue_name,
+          completedOrders: activeOrders?.length || 0,
+          canceledReservations: activeReservations?.length || 0,
+          deletedTables: tables?.length || 0,
+          timestamp: new Date().toISOString(),
         },
-
+      });
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      
-
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return errorMessage.includes("Unauthorized")
           ? apiErrors.unauthorized(errorMessage)
-
+          : apiErrors.forbidden(errorMessage);
       }
 
       return apiErrors.internal(
@@ -205,7 +221,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body or query
-
+    extractVenueId: async (req) => {
+      try {
         const { searchParams } = new URL(req.url);
         let venueId = searchParams.get("venueId") || searchParams.get("venue_id");
         if (!venueId) {

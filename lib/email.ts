@@ -1,12 +1,21 @@
+
 // Email sending utilities for Servio
 // This is a basic implementation that can be enhanced with proper email service integration
 
 interface EmailTemplate {
-
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
 }
 
 interface InvitationEmailData {
-
+  email: string;
+  venueName: string;
+  role: string;
+  invitedBy: string;
+  invitationLink: string;
+  expiresAt: string;
 }
 
 // Generate invitation email HTML
@@ -117,7 +126,7 @@ If you didn't expect this invitation, you can safely ignore this email.
   `;
 
   return {
-
+    to: email,
     subject: `You're invited to join the team at ${venueName}`,
     html,
     text,
@@ -127,10 +136,8 @@ If you didn't expect this invitation, you can safely ignore this email.
 // Send email using multiple fallback methods
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
-    .toISOString(),
 
     // Method 1: Try Resend (if API key is available)
-    
 
     if (process.env.RESEND_API_KEY) {
       try {
@@ -138,30 +145,24 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         const resend = new Resend(process.env.RESEND_API_KEY);
 
         const emailPayload = {
-
+          from: "Team Invitations <invite@servio.uk>",
+          to: template.to,
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
         };
-
-        
 
         const result = await resend.emails.send(emailPayload);
 
-        
-
         if (result.data) {
-          
+
           return true;
         } else if (result.error) {
           const err = result.error as { statusCode?: number; message?: string; name?: string };
-          
-        } else {
-          
-        }
-      } catch (resendError) {
 
-      }
-    } else {
-      
-    }
+        } else { /* Else case handled */ }
+      } catch (resendError) { /* Error handled silently */ }
+    } else { /* Else case handled */ }
 
     // Method 2: Try SendGrid (if API key is available)
     if (process.env.SENDGRID_API_KEY) {
@@ -170,11 +171,15 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
 
         await sgMail.default.send({
+          to: template.to,
+          from: "noreply@servio.app",
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+        });
 
         return true;
-      } catch (sendgridError) {
-        
-      }
+      } catch (sendgridError) { /* Error handled silently */ }
     }
 
     // Method 3: Try SMTP (if credentials are available)
@@ -183,15 +188,25 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         const nodemailer = await import("nodemailer");
 
         const transporter = nodemailer.default.createTransport({
-
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || "587"),
+          secure: process.env.SMTP_PORT === "465",
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
           },
+        });
 
         await transporter.sendMail({
+          from: process.env.SMTP_USER,
+          to: template.to,
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+        });
 
         return true;
-      } catch (smtpError) {
-        
-      }
+      } catch (smtpError) { /* Error handled silently */ }
     }
 
     // Method 4: Try EmailJS (for development without domain)
@@ -203,22 +218,18 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
       try {
         // For now, we'll simulate success and log the details
         // In a real implementation, you'd use EmailJS API
-        "/)?.[1] || "Not found",
 
         return true; // Simulate success for development
-      } catch (emailjsError) {
-        
-      }
+      } catch (emailjsError) { /* Error handled silently */ }
     }
 
     // Fallback: Log to console (for development/testing)
-     + "...",
 
     // In development, we'll return true so the invitation flow continues
     // In production, you should configure an email service
     return process.env.NODE_ENV === "development";
   } catch (_error) {
-    
+
     return false;
   }
 }

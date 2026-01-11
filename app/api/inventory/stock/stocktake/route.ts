@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -10,6 +11,11 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const stocktakeSchema = z.object({
+  ingredient_id: z.string().uuid("Invalid ingredient ID"),
+  actual_count: z.number().nonnegative("Actual count must be non-negative"),
+  note: z.string().max(500).optional(),
+  venue_id: z.string().uuid("Invalid venue ID").optional(),
+});
 
 // POST /api/inventory/stock/stocktake
 export const POST = withUnifiedAuth(
@@ -41,7 +47,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (stockError && stockError.code !== "PGRST116") {
-        
+
         return apiErrors.database(
           "Failed to fetch current stock level",
           isDevelopment() ? stockError.message : undefined
@@ -59,7 +65,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (ingredientError || !ingredient) {
-        
+
         return apiErrors.notFound("Ingredient not found");
       }
 
@@ -71,29 +77,32 @@ export const POST = withUnifiedAuth(
       const { data: ledgerEntry, error: ledgerError } = await adminSupabase
         .from("stock_ledgers")
         .insert({
-
+          ingredient_id: body.ingredient_id,
+          venue_id: venueId,
           delta,
-
+          reason: "stocktake",
+          ref_type: "manual",
           note: body.note || `Stocktake: ${currentStock} → ${body.actual_count}`,
-
+          created_by: context.user.id,
+        })
         .select()
         .single();
 
       if (ledgerError || !ledgerEntry) {
-        
+
         return apiErrors.database(
           "Failed to create stocktake entry",
           isDevelopment() ? ledgerError?.message : undefined
         );
       }
 
-      
-
       // STEP 4: Return success response
       return success({
-
+        data: ledgerEntry,
+        previous_stock: currentStock,
+        new_stock: body.actual_count,
         delta,
-
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -105,7 +114,8 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
         const body = await req.json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||

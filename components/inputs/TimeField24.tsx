@@ -10,7 +10,10 @@ export function TimeField24({
   disabled,
   className,
 }: {
-
+  value: TimeValue24;
+  onChange: (v: TimeValue24) => void;
+  disabled?: boolean;
+  className?: string;
 }) {
   const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []); // 0..23
   const minutes = useMemo(() => Array.from({ length: 12 }, (_, i) => i * 5), []); // 0,5,..55

@@ -3,7 +3,11 @@
 import Link from "next/link";
 
 interface TierRestrictionBannerProps {
-
+  currentTier: string;
+  requiredTier: string;
+  featureName: string;
+  venueId: string;
+  reason?: string;
 }
 
 export function TierRestrictionBanner({
@@ -14,7 +18,9 @@ export function TierRestrictionBanner({
   reason,
 }: TierRestrictionBannerProps) {
   const tierNames: Record<string, string> = {
-
+    starter: "Starter",
+    pro: "Pro",
+    enterprise: "Enterprise",
   };
 
   return (

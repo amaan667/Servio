@@ -4,7 +4,12 @@ import { Clock, Timer, History } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface OrderTabsProps {
-
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  counts: {
+    live: number;
+    earlier: number;
+    history: number;
   };
 }
 

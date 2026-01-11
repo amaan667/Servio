@@ -31,12 +31,14 @@ import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackType } from "@/types/feedback";
 
 interface QuestionsClientProps {
-
+  venueId: string;
+  venueName?: string;
+  mode?: "form-only" | "list-only" | "full" | "embedded";
 }
 
 export default function QuestionsClient({
   venueId,
-
+  venueName: _venueName,
   mode = "full",
 }: QuestionsClientProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
@@ -65,14 +67,19 @@ export default function QuestionsClient({
 
   // Form state
   const [formData, setFormData] = useState({
-
+    prompt: "",
+    type: "stars" as FeedbackType,
     choices: ["", ""],
+    is_active: true,
+  });
 
   const resetForm = () => {
     setFormData({
-
+      prompt: "",
+      type: "stars",
       choices: ["", ""],
-
+      is_active: true,
+    });
     setEditingId(null);
     setShowAddForm(false);
   };
@@ -90,6 +97,8 @@ export default function QuestionsClient({
 
       // Use API endpoint instead of direct Supabase query to get properly mapped data
       const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         // Try to get error details from response
@@ -125,7 +134,7 @@ export default function QuestionsClient({
             return false;
           }
           return true;
-
+        })
         .map((q: FeedbackQuestion) => ({
           ...q,
           type: (q.type || "stars") as FeedbackType, // Ensure type is always valid
@@ -133,7 +142,9 @@ export default function QuestionsClient({
           is_active: q.is_active ?? true, // Default to active
           sort_index: q.sort_index ?? 0, // Default sort_index
           choices: q.choices || [], // Ensure choices is an array
-
+          created_at: q.created_at || new Date().toISOString(),
+          updated_at: q.updated_at || new Date().toISOString(),
+          venue_id: q.venue_id || venueId,
         }));
 
       // Sort questions by sort_index and created_at to ensure proper order
@@ -150,7 +161,10 @@ export default function QuestionsClient({
       setTotalCount(data.data.totalCount || sortedQuestions.length);
     } catch (error) {
       toast({
-
+        title: "Error",
+        description: error instanceof Error ? error.message : "Couldn't load questions",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -168,13 +182,19 @@ export default function QuestionsClient({
 
     if (!venueId) {
       toast({
-
+        title: "Error",
+        description: "Venue ID is missing. Please refresh the page.",
+        variant: "destructive",
+      });
       return;
     }
 
     if (!formData.prompt.trim()) {
       toast({
-
+        title: "Error",
+        description: "Please enter a question prompt",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -183,7 +203,10 @@ export default function QuestionsClient({
       formData.choices.filter((c) => c.trim()).length < 2
     ) {
       toast({
-
+        title: "Error",
+        description: "Multiple choice questions need at least 2 options",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -194,13 +217,23 @@ export default function QuestionsClient({
 
       if (!venueId) {
         toast({
-
+          title: "Error",
+          description: "Venue ID is missing. Please refresh the page.",
+          variant: "destructive",
+        });
         setLoading(false);
         return;
       }
 
       const payload = {
-
+        venue_id: venueId,
+        prompt: formData.prompt.trim(),
+        type: formData.type,
+        choices:
+          formData.type === "multiple_choice"
+            ? formData.choices.filter((c) => c.trim())
+            : undefined,
+        is_active: formData.is_active,
       };
 
       // Add venueId to query string to help withUnifiedAuth extract it
@@ -208,8 +241,13 @@ export default function QuestionsClient({
       url.searchParams.set("venueId", venueId);
 
       const response = await fetch(url.toString(), {
-
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
 
       let responseData;
       try {
@@ -218,15 +256,19 @@ export default function QuestionsClient({
         // If JSON parsing fails, it's likely a server error
 
         toast({
-
+          title: "Error",
           description: `Server error (${response.status}). Please try again.`,
-
+          variant: "destructive",
+        });
         return;
       }
 
       // Check if response is successful and has the expected structure
       if (response.ok && responseData.success && responseData.data?.question) {
         toast({
+          title: "Success",
+          description: "Question added successfully",
+        });
 
         // Refresh questions list first to show the new question
         await fetchQuestions();
@@ -271,14 +313,23 @@ export default function QuestionsClient({
         }
 
         toast({
-
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       // Catch network errors or JSON parsing errors
       const errorMessage =
         error instanceof Error
           ? `Network error: ${error.message}`
+          : "Couldn't save question. Please check your connection and try again.";
 
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -287,7 +338,10 @@ export default function QuestionsClient({
   const handleUpdate = async (id: string) => {
     if (!formData.prompt.trim()) {
       toast({
-
+        title: "Error",
+        description: "Please enter a question prompt",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -296,7 +350,13 @@ export default function QuestionsClient({
     try {
       const payload = {
         id,
-
+        venue_id: venueId,
+        prompt: formData.prompt.trim(),
+        type: formData.type,
+        choices:
+          formData.type === "multiple_choice"
+            ? formData.choices.filter((c) => c.trim())
+            : undefined,
       };
 
       // Add venueId to query string to help withUnifiedAuth extract it
@@ -304,12 +364,17 @@ export default function QuestionsClient({
       url.searchParams.set("venueId", venueId);
 
       const response = await fetch(url.toString(), {
-
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
 
       if (response.ok) {
         toast({
-
+          title: "Success",
+          description: "Question updated successfully",
+        });
         resetForm();
         await fetchQuestions();
         setActiveTab("questions");
@@ -321,11 +386,17 @@ export default function QuestionsClient({
       } else {
         const error = await response.json();
         toast({
-
+          title: "Error",
+          description: error.error || "Couldn't update question",
+          variant: "destructive",
+        });
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: "Couldn't update question",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -334,20 +405,27 @@ export default function QuestionsClient({
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
       const response = await fetch("/api/feedback/questions", {
-
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-
+        credentials: "include",
         body: JSON.stringify({ id, venue_id: venueId, is_active: !isActive }),
+      });
 
       if (response.ok) {
         setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, is_active: !isActive } : q)));
       } else {
         toast({
-
+          title: "Error",
+          description: "Couldn't update question",
+          variant: "destructive",
+        });
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: "Couldn't update question",
+        variant: "destructive",
+      });
     }
   };
 
@@ -363,24 +441,29 @@ export default function QuestionsClient({
       url.searchParams.set("venueId", normalizedVenueId);
 
       const response = await fetch(url.toString(), {
-
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
-
+        credentials: "include",
         body: JSON.stringify({ id }),
+      });
 
       let responseData;
       try {
         responseData = await response.json();
       } catch (parseError) {
         toast({
-
+          title: "Error",
           description: `Server error (${response.status}). Please try again.`,
-
+          variant: "destructive",
+        });
         return;
       }
 
       if (response.ok && responseData.success) {
         toast({
+          title: "Success",
+          description: "Question deleted successfully",
+        });
 
         // Clear editing state if the deleted question was being edited
         if (editingId === id) {
@@ -402,11 +485,17 @@ export default function QuestionsClient({
           `Failed to delete question (${response.status})`;
 
         toast({
-
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       toast({
-
+        title: "Error",
+        description: error instanceof Error ? error.message : "Couldn't delete question",
+        variant: "destructive",
+      });
     }
   };
 
@@ -422,28 +511,41 @@ export default function QuestionsClient({
 
     try {
       const response = await fetch("/api/feedback/questions", {
-
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-
+        credentials: "include",
+        body: JSON.stringify({
+          id: currentQuestion.id,
+          venue_id: venueId,
+          sort_index: targetQuestion.sort_index,
         }),
+      });
 
       if (response.ok) {
         await fetchQuestions();
       } else {
         toast({
-
+          title: "Error",
+          description: "Couldn't reorder questions",
+          variant: "destructive",
+        });
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description: "Couldn't reorder questions",
+        variant: "destructive",
+      });
     }
   };
 
   const startEdit = (question: FeedbackQuestion) => {
     setFormData({
-
+      prompt: question.prompt,
+      type: question.type,
       choices: question.choices || ["", ""],
-
+      is_active: question.is_active,
+    });
     setEditingId(question.id);
     setShowAddForm(true);
     setActiveTab("create");
@@ -916,7 +1018,7 @@ export default function QuestionsClient({
                         e.preventDefault();
                         handleUpdate(editingId);
                       }
-
+                    : handleSubmit
                 }
                 className="space-y-4"
               >
@@ -1031,7 +1133,9 @@ export default function QuestionsClient({
         venueId={venueId}
         venueName={venueName}
         counts={{
-
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
         }}
       /> */}
     </div>

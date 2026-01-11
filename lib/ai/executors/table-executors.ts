@@ -14,9 +14,21 @@ import {
  */
 export async function executeTableGetAvailability(
   _params: Record<string, never>,
+  venueId: string,
+  _userId: string,
+  _preview: boolean
+): Promise<AIExecutionResult> {
+  const result = await getTableAvailability(venueId);
 
+  return {
+    success: true,
+    toolName: "tables.get_availability",
+    result: {
+      available: result.available,
+      occupied: result.occupied,
+      summary: result.summary,
     },
-
+    auditId: "",
   };
 }
 
@@ -25,9 +37,17 @@ export async function executeTableGetAvailability(
  */
 export async function executeTableCreate(
   params: { tableLabel: string; seats?: number },
-
+  venueId: string,
+  _userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  if (preview) {
+    return {
+      toolName: "tables.create",
+      before: [],
       after: [{ label: params.tableLabel, seats: params.seats || 4 }],
-
+      impact: {
+        itemsAffected: 1,
         description: `Will create ${params.tableLabel} with ${params.seats || 4} seats`,
       },
     };
@@ -36,9 +56,13 @@ export async function executeTableCreate(
   const result = await createTable(venueId, params.tableLabel, params.seats);
 
   return {
-
+    success: true,
+    toolName: "tables.create",
+    result: {
+      table: result.table,
+      message: result.message,
     },
-
+    auditId: "",
   };
 }
 
@@ -47,10 +71,17 @@ export async function executeTableCreate(
  */
 export async function executeTableMerge(
   params: { tableIds: string[]; mergedLabel?: string },
-
+  venueId: string,
+  _userId: string,
+  preview: boolean
+): Promise<AIPreviewDiff | AIExecutionResult> {
+  if (preview) {
+    return {
+      toolName: "tables.merge",
       before: params.tableIds.map((id) => ({ id })),
       after: [{ label: params.mergedLabel || "Merged Table" }],
-
+      impact: {
+        itemsAffected: params.tableIds.length,
         description: `Will merge ${params.tableIds.length} tables into one`,
       },
     };
@@ -59,9 +90,14 @@ export async function executeTableMerge(
   const result = await mergeTables(venueId, params.tableIds, params.mergedLabel);
 
   return {
-
+    success: true,
+    toolName: "tables.merge",
+    result: {
+      mergedTableId: result.mergedTableId,
+      originalTables: result.originalTables,
+      message: result.message,
     },
-
+    auditId: "",
   };
 }
 
@@ -70,9 +106,21 @@ export async function executeTableMerge(
  */
 export async function executeTableGetActiveOrders(
   _params: Record<string, never>,
+  venueId: string,
+  _userId: string,
+  _preview: boolean
+): Promise<AIExecutionResult> {
+  const result = await getTablesWithActiveOrders(venueId);
 
+  return {
+    success: true,
+    toolName: "tables.get_active_orders",
+    result: {
+      tables: result.tables,
+      count: result.count,
+      summary: result.summary,
     },
-
+    auditId: "",
   };
 }
 
@@ -81,8 +129,19 @@ export async function executeTableGetActiveOrders(
  */
 export async function executeTableGetRevenue(
   _params: Record<string, never>,
+  venueId: string,
+  _userId: string,
+  _preview: boolean
+): Promise<AIExecutionResult> {
+  const result = await getRevenueByTable(venueId);
 
+  return {
+    success: true,
+    toolName: "tables.get_revenue",
+    result: {
+      tables: result.tables,
+      summary: result.summary,
     },
-
+    auditId: "",
   };
 }

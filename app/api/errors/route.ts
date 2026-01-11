@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -7,15 +8,33 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 
 const errorDataSchema = z.object({
-
+  error: z
+    .object({
+      name: z.string(),
+      message: z.string(),
+      stack: z.string().optional(),
+    })
     .optional(),
-
+  message: z
+    .object({
+      text: z.string(),
+      level: z.string(),
+    })
     .optional(),
-
+  context: z.object({
+    userId: z.string().uuid().optional(),
+    venueId: z.string().uuid().optional(),
+    userRole: z.string().optional(),
+    url: z.string().url(),
+    timestamp: z.number(),
+    userAgent: z.string(),
+    sessionId: z.string(),
+    customData: z.record(z.unknown()).optional(),
   }),
+});
 
 export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -27,13 +46,7 @@ export const POST = withUnifiedAuth(
       const data = await validateBody(errorDataSchema, await req.json());
 
       // STEP 3: Business logic - Log error/message
-      if (data.error) {
-        .toISOString(),
-
-      } else if (data.message) {
-        }: ${data.message.text}`, {
-
-      }
+      if (data.error) { /* Condition handled */ } else if (data.message) { /* Condition handled */ }
 
       // Store in database or send to external service
       // For now, we'll just log it
@@ -53,12 +66,12 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required (errors can come from anywhere)
-
+    extractVenueId: async () => null,
   }
 );
 
 export const GET = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+  async (req: NextRequest, _context) => {
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -68,7 +81,9 @@ export const GET = withUnifiedAuth(
 
       // STEP 2: Return success response
       return success({
-
+        message: "Error tracking endpoint",
+        status: "active",
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -80,6 +95,6 @@ export const GET = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

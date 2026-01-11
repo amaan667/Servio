@@ -5,7 +5,16 @@ import { Switch } from "@/components/ui/switch";
 import { Receipt, Mail, FileText } from "lucide-react";
 
 interface ReceiptSettingsCardProps {
-
+  autoEmailReceipts: boolean;
+  setAutoEmailReceipts: (value: boolean) => void;
+  showVATBreakdown: boolean;
+  setShowVATBreakdown: (value: boolean) => void;
+  allowEmailInput: boolean;
+  setAllowEmailInput: (value: boolean) => void;
+  receiptLogoUrl?: string;
+  setReceiptLogoUrl: (url: string) => void;
+  receiptFooterText?: string;
+  setReceiptFooterText: (text: string) => void;
 }
 
 export function ReceiptSettingsCard({

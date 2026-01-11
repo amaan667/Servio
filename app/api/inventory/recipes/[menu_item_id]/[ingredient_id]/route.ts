@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 // DELETE /api/inventory/recipes/[menu_item_id]/[ingredient_id]
@@ -23,13 +24,13 @@ export async function DELETE(_request: NextRequest, context: RecipeParams = {}) 
       .eq("ingredient_id", ingredient_id);
 
     if (error) {
-      
+
       return apiErrors.internal(error.message || "Internal server error");
     }
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

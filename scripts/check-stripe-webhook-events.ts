@@ -5,7 +5,7 @@ const REQUIRED_MIGRATION = "20251210000100_add_stripe_webhook_events.sql";
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    
+
     process.exit(1);
   }
   return value;
@@ -25,16 +25,15 @@ async function assertMigrationApplied() {
     .maybeSingle();
 
   if (migrationsError) {
-    
+
     process.exit(1);
   }
 
   if (!migrations) {
-    
+
     process.exit(2);
   }
 
-  
 }
 
 async function assertTableExists() {
@@ -46,20 +45,19 @@ async function assertTableExists() {
   const { error } = await supabase.from("stripe_webhook_events").select("id").limit(1);
 
   if (error) {
-    
+
     process.exit(3);
   }
 
-  
 }
 
 async function main() {
   await assertMigrationApplied();
   await assertTableExists();
 
-  
 }
 
 main().catch((error) => {
-  
+
   process.exit(1);
+});

@@ -9,14 +9,17 @@ import { fail, ApiResponse } from "./response-helpers";
 
 export interface ValidationOptions {
   /** Zod schema for request body */
-
+  schema: ZodSchema;
+  /** Custom error message */
+  errorMessage?: string;
 }
 
 /**
  * Validate request body against Zod schema
  */
 export async function validateRequest<T>(
-
+  req: NextRequest,
+  schema: ZodSchema<T>
 ): Promise<{ success: true; data: T } | { success: false; response: NextResponse<ApiResponse> }> {
   try {
     let body: unknown;
@@ -39,16 +42,18 @@ export async function validateRequest<T>(
   } catch (error) {
     if (error instanceof ZodError) {
       return {
-
+        success: false,
         response: fail("Validation failed", 400, {
-
+          errors: error.errors.map((err) => ({
+            path: err.path.join("."),
+            message: err.message,
           })),
         }),
       };
     }
 
     return {
-
+      success: false,
       response: fail("Invalid request", 400),
     };
   }
@@ -58,7 +63,8 @@ export async function validateRequest<T>(
  * Validate query parameters
  */
 export function validateQuery<T>(
-
+  req: NextRequest,
+  schema: ZodSchema<T>
 ): { success: true; data: T } | { success: false; response: NextResponse<ApiResponse> } {
   try {
     const url = new URL(req.url);
@@ -66,22 +72,25 @@ export function validateQuery<T>(
 
     url.searchParams.forEach((value, key) => {
       params[key] = value;
+    });
 
     const data = schema.parse(params);
     return { success: true, data };
   } catch (error) {
     if (error instanceof ZodError) {
       return {
-
+        success: false,
         response: fail("Invalid query parameters", 400, {
-
+          errors: error.errors.map((err) => ({
+            path: err.path.join("."),
+            message: err.message,
           })),
         }),
       };
     }
 
     return {
-
+      success: false,
       response: fail("Invalid query parameters", 400),
     };
   }
@@ -92,7 +101,7 @@ export function validateQuery<T>(
  */
 export function validateParams<T>(
   params: Record<string, string | undefined>,
-
+  schema: ZodSchema<T>
 ): { success: true; data: T } | { success: false; response: NextResponse<ApiResponse> } {
   try {
     const data = schema.parse(params);
@@ -100,16 +109,18 @@ export function validateParams<T>(
   } catch (error) {
     if (error instanceof ZodError) {
       return {
-
+        success: false,
         response: fail("Invalid route parameters", 400, {
-
+          errors: error.errors.map((err) => ({
+            path: err.path.join("."),
+            message: err.message,
           })),
         }),
       };
     }
 
     return {
-
+      success: false,
       response: fail("Invalid route parameters", 400),
     };
   }

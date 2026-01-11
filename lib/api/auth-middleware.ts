@@ -18,7 +18,7 @@ export interface AuthMiddlewareOptions {
  * Apply authentication and rate limiting to a route handler
  */
 export async function applyAuthMiddleware(
-
+  req: NextRequest,
   options: AuthMiddlewareOptions = {}
 ): Promise<NextResponse | null> {
   // Skip for public routes
@@ -32,11 +32,13 @@ export async function applyAuthMiddleware(
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-
+          error: "Too many requests",
           message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
         },
         {
-
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": rateLimitResult.limit.toString(),
             "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
             "X-RateLimit-Reset": rateLimitResult.reset.toString(),
             "Retry-After": Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),

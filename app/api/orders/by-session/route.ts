@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
     }
 
     // First try to fetch order by Stripe session ID
-    
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .select(
@@ -66,20 +67,23 @@ export async function GET(req: Request) {
         // Transform the order to include items array
         const transformedOrder = {
           ...recentOrder,
-
+          items: recentOrder.order_items || [],
         };
         delete transformedOrder.order_items;
 
         return NextResponse.json({
-
+          order: transformedOrder,
+          fallback: true,
+          message: "Found recent paid order (session ID not yet set)",
+        });
       }
     }
 
     if (orderError) {
-      
+
       return NextResponse.json(
         {
-
+          error: "Order not found for this session ID",
         },
         { status: 404 }
       );
@@ -88,7 +92,7 @@ export async function GET(req: Request) {
     if (!order) {
       return NextResponse.json(
         {
-
+          error: "Order not found",
         },
         { status: 404 }
       );
@@ -97,19 +101,20 @@ export async function GET(req: Request) {
     // Transform the order to include items array
     const transformedOrder = {
       ...order,
-
+      items: order.order_items || [],
     };
 
     // Remove the order_items property since we have items now
     delete transformedOrder.order_items;
 
     return NextResponse.json({
-
+      order: transformedOrder,
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        error: "Internal server error",
       },
       { status: 500 }
     );

@@ -69,7 +69,7 @@ async function runSingleMigration(client: Client, filename: string): Promise<voi
       checksum,
     ]);
     await client.query("COMMIT;");
-    
+
   } catch (error) {
     await client.query("ROLLBACK;");
     throw error;
@@ -91,15 +91,14 @@ async function main(): Promise<void> {
       const pending = all.filter((f) => !applied.has(f));
 
       if (pending.length === 0) {
-        
+
         return;
       }
 
-      
       for (const filename of pending) {
         await runSingleMigration(client, filename);
       }
-      
+
     } finally {
       await releaseMigrationLock(client);
     }
@@ -111,3 +110,4 @@ async function main(): Promise<void> {
 main().catch((error) => {
 
   process.exit(1);
+});

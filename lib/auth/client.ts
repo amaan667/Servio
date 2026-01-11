@@ -1,4 +1,3 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { supabaseBrowser } from "@/lib/supabase";
 
@@ -17,13 +16,13 @@ export async function getAuthenticatedUser() {
     const user = session?.user;
 
     if (error) {
-      );
+
       return { user: null, error: error.message };
     }
 
     return { user, error: null };
   } catch (_error) {
-    );
+
     return { user: null, error: "Failed to get authenticated user" };
   }
 }
@@ -65,13 +64,13 @@ export async function signOut() {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      );
+
       return { success: false, error: error.message };
     }
 
     return { success: true, error: null };
   } catch (_error) {
-    );
+
     return { success: false, error: "Failed to sign out" };
   }
 }

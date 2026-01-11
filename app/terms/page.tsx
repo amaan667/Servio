@@ -4,10 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-
+  title: "Terms of Service",
   description:
     "Read Servio's terms of service, including subscription plans, refund policy, and acceptable use policy for our POS and ordering platform.",
-
+  openGraph: {
+    title: "Terms of Service | Servio",
+    description: "Terms and conditions for using Servio's POS and ordering platform.",
   },
 };
 
@@ -27,7 +29,9 @@ export default function TermsOfServicePage() {
           <p className="text-gray-600 mb-8">
             Last updated:{" "}
             {new Date().toLocaleDateString("en-GB", {
-
+              day: "numeric",
+              month: "long",
+              year: "numeric",
             })}
           </p>
 

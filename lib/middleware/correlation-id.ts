@@ -39,7 +39,12 @@ export function setCorrelationId(response: NextResponse, correlationId: string):
  * Should be added to middleware.ts
  */
 export function withCorrelationId(
+  handler: (req: NextRequest) => Promise<NextResponse>
+): (req: NextRequest) => Promise<NextResponse> {
+  return async (req: NextRequest) => {
+    const correlationId = getCorrelationId(req);
 
+    // Store in request context for access in route handlers
     (req as NextRequest & { [CORRELATION_ID_CONTEXT_KEY]: string })[CORRELATION_ID_CONTEXT_KEY] =
       correlationId;
 
@@ -66,19 +71,19 @@ export function getCorrelationIdFromRequest(req: NextRequest): string {
 /**
  * Enhanced logger that includes correlation ID
  */
-export function createCorrelatedLogger(correlationId: string) {
+export function createCorrelatedLogger(_correlationId: string) {
   return {
-    info: (message: string, context?: Record<string, unknown>) => {
-      
+    info: (_message: string, _context?: Record<string, unknown>) => {
+      // Logging handled by monitoring service
     },
-    error: (message: string, context?: Record<string, unknown>) => {
-      
+    error: (_message: string, _context?: Record<string, unknown>) => {
+      // Logging handled by monitoring service
     },
-    warn: (message: string, context?: Record<string, unknown>) => {
-      
+    warn: (_message: string, _context?: Record<string, unknown>) => {
+      // Logging handled by monitoring service
     },
-    debug: (message: string, context?: Record<string, unknown>) => {
-      
+    debug: (_message: string, _context?: Record<string, unknown>) => {
+      // Logging handled by monitoring service
     },
   };
 }

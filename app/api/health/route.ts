@@ -8,8 +8,10 @@ export async function GET() {
   // No edge runtime (needs build first), no dependencies
   // Force rebuild: changed response format
   return new NextResponse("ok", {
-
+    status: 200,
+    headers: {
+      "Content-Type": "text/plain",
       "X-Deploy-Time": new Date().toISOString(),
     },
-
+  });
 }

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await query;
 
     if (error) {
-      
+
       return apiErrors.database("Failed to find unpaid orders", error.message);
     }
 
@@ -64,7 +65,9 @@ export async function GET(req: NextRequest) {
     const unpaidOrder = orders && orders.length > 0 ? orders[0] : null;
 
     return success({
-
+      hasUnpaidOrder: !!unpaidOrder,
+      order: unpaidOrder,
+    });
   } catch (error) {
 
     return apiErrors.internal(

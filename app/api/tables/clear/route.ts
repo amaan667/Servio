@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors } from "@/lib/api/standard-response";
@@ -13,6 +14,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, _context) => {
 
     return success({ message: "All table sessions cleared" });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
+});

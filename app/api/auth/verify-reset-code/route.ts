@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function POST(request: NextRequest) {
@@ -16,32 +17,36 @@ export async function POST(request: NextRequest) {
     // Password reset codes from Supabase are PKCE codes that need to be exchanged
     // But they don't require a code verifier - Supabase handles it server-side
     // Try to exchange the code for a session
-     + "...",
 
     try {
       // Try exchangeCodeForSession - password reset codes might work without verifier
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (error) {
-        
 
         // If code exchange fails, try verifyOtp as fallback
-        
+
         const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: code,
+          type: "recovery",
+        });
 
         if (otpError || !otpData?.session) {
           return NextResponse.json(
             {
-
+              error: error?.message || otpError?.message || "Invalid or expired reset code",
             },
             { status: 400 }
           );
         }
 
         return NextResponse.json({
-
+          success: true,
+          session: {
+            access_token: otpData.session.access_token,
+            refresh_token: otpData.session.refresh_token,
           },
-
+        });
       }
 
       if (!data?.session) {
@@ -49,15 +54,18 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({
-
+        success: true,
+        session: {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
         },
-
+      });
     } catch (err) {
-      
+
       return apiErrors.internal("Failed to verify reset code");
     }
   } catch (error) {
-    
+
     return apiErrors.internal("Failed to verify reset code");
   }
 }

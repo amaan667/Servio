@@ -17,13 +17,13 @@ export function WebVitals() {
       } else {
         // Fallback to fetch with keepalive flag
         fetch("/api/analytics/vitals", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-
+          body: data,
           keepalive: true, // Prevents ERR_SOCKET_NOT_CONNECTED
         }).catch(() => {
           // Silently fail if analytics endpoint is down
-
+        });
       }
     };
 

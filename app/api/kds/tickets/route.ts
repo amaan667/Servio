@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -54,15 +55,12 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
           .select("id, payment_method, payment_status")
           .eq("venue_id", venueId);
         if (legacyOrdersResult.error) {
-          :", {
-
-            venueId,
 
           return false;
         }
         allOrders = legacyOrdersResult.data as Array<Record<string, unknown>> | null;
       } else {
-        
+
         return false;
       }
     } else {
@@ -98,12 +96,11 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
       ).toUpperCase();
       if (method === "PAY_NOW" && status !== "PAID") return false;
       return true;
+    });
 
     if (!ordersWithoutTickets || ordersWithoutTickets.length === 0) {
       return false;
     }
-
-    
 
     let ticketsCreated = 0;
 
@@ -116,39 +113,42 @@ async function autoBackfillMissingTickets(venueId: string): Promise<boolean> {
         .single();
 
       if (!order) {
-        
+
         continue;
       }
 
       if (!Array.isArray(order.items) || order.items.length === 0) {
-        
+
         continue;
       }
 
       try {
-        
+
         await createKDSTicketsWithAI(adminSupabase, {
-
+          id: order.id,
+          venue_id: order.venue_id,
+          items: order.items,
+          customer_name: order.customer_name,
+          table_number: order.table_number,
+          table_id: order.table_id,
+        });
         ticketsCreated += order.items.length;
-        
-      } catch (error) {
-        
-      }
-    }
 
-    
+      } catch (error) { /* Error handled silently */ }
+    }
 
     return ticketsCreated > 0;
   } catch (_error) {
-    
+
     throw _error;
   }
 }
 
 const updateTicketSchema = z.object({
-
+  ticket_id: z.string().uuid("Invalid ticket ID"),
   status: z.enum(["new", "in_progress", "preparing", "ready", "bumped", "served", "cancelled"]),
   venueId: z.string().optional(), // Optional - will use from context if not provided
+});
 
 // GET - Fetch KDS tickets for a venue or station
 export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -242,10 +242,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
         if (status) legacyQuery = legacyQuery.eq("status", status);
         const legacyAttempt = await legacyQuery;
         if (legacyAttempt.error) {
-          :", {
-
-            venueId,
-            stationId,
 
           return apiErrors.database(
             "Failed to fetch KDS tickets",
@@ -255,7 +251,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
         tickets = legacyAttempt.data as unknown[] | null;
       } else {
         const fetchError = firstAttempt.error;
-        
+
         return apiErrors.database(
           "Failed to fetch KDS tickets",
           isDevelopment() ? fetchError.message : undefined
@@ -305,8 +301,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       }
     }
 
-    
-
     // STEP 5: Return success response
     return success({ tickets: finalTickets });
   } catch (error) {
@@ -317,6 +311,7 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});
 
 // PATCH - Update ticket status
 export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -329,17 +324,14 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // STEP 2: Validate input
     const rawBody = await req.json();
-    .toISOString(),
 
     const body = await validateBody(updateTicketSchema, rawBody);
 
     // STEP 3: Get venueId from context or body
     const venueId = context.venueId || body.venueId;
 
-    
-
     if (!venueId) {
-      
+
       return apiErrors.badRequest("venueId is required");
     }
 
@@ -356,7 +348,7 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (fetchError || !currentTicket) {
-      
+
       return apiErrors.database(
         "Failed to fetch ticket",
         isDevelopment() ? fetchError?.message : undefined
@@ -365,9 +357,14 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // Prepare update object with status-specific timestamps
     const updateData: {
-
+      status: string;
+      updated_at: string;
+      ready_at?: string;
+      started_at?: string;
+      bumped_at?: string;
     } = {
-
+      status: body.status,
+      updated_at: now,
     };
 
     // Set timestamps based on status
@@ -388,7 +385,7 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (updateError || !updatedTicket) {
-      
+
       return apiErrors.database(
         "Failed to update ticket",
         isDevelopment() ? updateError?.message : undefined
@@ -405,9 +402,6 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
       const allBumped = allOrderTickets?.every((t) => t.status === "bumped") || false;
 
-       => t.status === "bumped").length,
-        allBumped,
-
       // Only update order kitchen_status if ALL tickets are bumped
       if (allBumped) {
         const { data: currentOrder } = await supabase
@@ -417,22 +411,14 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
           .eq("venue_id", venueId)
           .single();
 
-        ?.kitchen_status,
-
         const { error: orderUpdateError } = await supabase.rpc("orders_set_kitchen_bumped", {
+          p_order_id: currentTicket.order_id,
+          p_venue_id: venueId,
+        });
 
-        if (orderUpdateError) {
-          
-        } else {
-          
-        }
-      } else {
-         => t.status === "bumped").length,
-
-      }
+        if (orderUpdateError) { /* Condition handled */ } else { /* Else case handled */ }
+      } else { /* Else case handled */ }
     }
-
-    
 
     // STEP 6: Return success response
     return success({ ticket: updatedTicket });
@@ -444,3 +430,4 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

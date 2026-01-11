@@ -32,11 +32,19 @@ import { Plus, Trash2 } from "lucide-react";
 import type { IngredientUnit, StockLevel } from "@/types/inventory";
 
 interface RecipeDialogProps {
-
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  menuItemId: string;
+  menuItemName: string;
+  venueId: string;
 }
 
 interface RecipeRow {
-
+  ingredient_id: string;
+  ingredient_name?: string;
+  qty_per_item: number;
+  unit: IngredientUnit;
+  cost_per_unit?: number;
 }
 
 export function RecipeDialog({
@@ -81,9 +89,13 @@ export function RecipeDialog({
             | { name?: string; cost_per_unit?: number }
             | undefined;
           return {
-
+            ingredient_id: item.ingredient_id,
+            ingredient_name: ingredient?.name,
+            qty_per_item: item.qty_per_item,
+            unit: item.unit,
+            cost_per_unit: ingredient?.cost_per_unit,
           };
-
+        });
         setRecipe(mappedRecipe);
       }
     } catch (_error) {
@@ -100,7 +112,11 @@ export function RecipeDialog({
     setRecipe([
       ...recipe,
       {
-
+        ingredient_id: ingredient.ingredient_id,
+        ingredient_name: ingredient.name,
+        qty_per_item: parseFloat(newQuantity),
+        unit: ingredient.unit,
+        cost_per_unit: ingredient.cost_per_unit,
       },
     ]);
 
@@ -116,11 +132,16 @@ export function RecipeDialog({
     setLoading(true);
     try {
       const response = await fetch(`/api/inventory/recipes/${menuItemId}`, {
-
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-
+        body: JSON.stringify({
+          ingredients: recipe.map((r) => ({
+            ingredient_id: r.ingredient_id,
+            qty_per_item: r.qty_per_item,
+            unit: r.unit,
           })),
         }),
+      });
 
       if (response.ok) {
         onOpenChange(false);

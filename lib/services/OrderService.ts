@@ -7,11 +7,33 @@ import { BaseService } from "./BaseService";
 import { createSupabaseClient } from "@/lib/supabase";
 
 export interface OrderItem {
-
+  menu_item_id: string;
+  item_name: string;
+  quantity: number;
+  price: number;
+  specialInstructions?: string;
+  station?: string;
 }
 
 export interface Order {
-
+  id: string;
+  venue_id: string;
+  table_number?: number | null; // Only for table orders
+  table_id?: string | null;
+  session_id?: string | null;
+  fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
+  counter_label?: string | null; // For counter orders
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  items: OrderItem[];
+  total_amount: number;
+  order_status: string;
+  payment_status?: string | null;
+  payment_method?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OrderFilters {
@@ -124,7 +146,9 @@ export class OrderService extends BaseService {
    * This ensures atomicity: order + table (if needed) + table session
    */
   async createOrder(
-
+    venueId: string,
+    orderData: Omit<
+      Order,
       "id" | "venue_id" | "created_at" | "updated_at" | "order_status" | "payment_status"
     > & {
       table_number?: number | null;
@@ -148,10 +172,29 @@ export class OrderService extends BaseService {
     // Note: RPC function needs to be updated to accept p_fulfillment_type and p_counter_label
     // For now, we'll insert directly if RPC doesn't support new params
     const { data, error } = await supabase.rpc("create_order_with_session", {
-
+      p_venue_id: venueId,
+      p_table_number: fulfillmentType === "table" ? orderData.table_number ?? null : null,
+      p_fulfillment_type: fulfillmentType,
+      p_counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
+      p_customer_name: orderData.customer_name ?? "",
+      p_customer_phone: orderData.customer_phone ?? "",
+      p_customer_email: orderData.customer_email ?? null,
       p_items: orderData.items as unknown as Record<string, unknown>,
-
+      p_total_amount: orderData.total_amount,
+      p_notes: orderData.notes ?? null,
+      p_order_status: orderData.order_status ?? "PLACED",
+      p_payment_status: orderData.payment_status ?? "UNPAID",
+      p_payment_method: orderData.payment_method ?? "PAY_NOW",
+      p_payment_mode: (() => {
+        const method = orderData.payment_method ?? "PAY_NOW";
+        if (method === "PAY_NOW") return "online";
+        if (method === "PAY_AT_TILL") return "offline";
+        if (method === "PAY_LATER") return "deferred";
+        return "online";
       })(),
+      p_source: orderData.source ?? "qr",
+      p_seat_count: orderData.seat_count ?? 4,
+    });
 
     if (error) {
       throw new Error(`Order creation failed: ${error.message}`);
@@ -188,12 +231,14 @@ export class OrderService extends BaseService {
    * Update payment status
    */
   async updatePaymentStatus(
-
+    orderId: string,
+    venueId: string,
+    paymentStatus: string,
     paymentMethod?: string
   ): Promise<Order> {
     const supabase = await createSupabaseClient();
     const updates: { payment_status: string; payment_method?: string } = {
-
+      payment_status: paymentStatus,
     };
     if (paymentMethod) {
       updates.payment_method = paymentMethod;

@@ -22,21 +22,41 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import QuestionsClient from "@/app/dashboard/[venueId]/feedback/QuestionsClient";
 
 interface Feedback {
-
+  id: string;
+  venue_id: string;
+  order_id?: string;
+  customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
+  rating: number;
+  comment: string;
+  sentiment_score?: number;
+  sentiment_label?: "positive" | "negative" | "neutral";
+  category?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface FeedbackQuestion {
-
+  id: string;
+  prompt: string;
+  type: string;
+  is_active: boolean;
 }
 
 interface FeedbackStats {
-
+  totalFeedback: number;
+  averageRating: number;
+  positiveSentiment: number;
+  negativeSentiment: number;
+  neutralSentiment: number;
   topCategories: Array<{ category: string; count: number; avgRating: number }>;
   ratingDistribution: Array<{ rating: number; count: number; percentage: number }>;
 }
 
 interface FeedbackSystemProps {
-
+  venueId: string;
+  initialQuestions?: FeedbackQuestion[];
 }
 
 export function EnhancedFeedbackSystem({
@@ -54,13 +74,19 @@ export function EnhancedFeedbackSystem({
     return questions.length > 0 ? questions : initialQuestions;
   }, [questions, initialQuestions]);
   const [filters, setFilters] = useState({
-
+    rating: 0,
+    sentiment: "all",
+    category: "all",
+    dateRange: "30d",
+  });
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchQuestions = useCallback(async () => {
     try {
       const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
       const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         // Try to get error details from response
@@ -145,7 +171,7 @@ export function EnhancedFeedbackSystem({
             f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
             f.category?.toLowerCase().includes(searchQuery.toLowerCase())
           );
-
+        });
       }
 
       setFeedback(filteredFeedback);
@@ -190,11 +216,13 @@ export function EnhancedFeedbackSystem({
       }
       categoryStats[category].count++;
       categoryStats[category].totalRating += f.rating;
+    });
 
     const topCategories = Object.entries(categoryStats)
       .map(([category, stats]) => ({
         category,
-
+        count: stats.count,
+        avgRating: stats.totalRating / stats.count,
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
@@ -208,11 +236,12 @@ export function EnhancedFeedbackSystem({
     }
     feedbackData.forEach((f) => {
       ratingCounts[f.rating] = (ratingCounts[f.rating] || 0) + 1;
+    });
 
     const ratingDistribution = Object.entries(ratingCounts).map(([rating, count]) => ({
-
+      rating: parseInt(rating),
       count,
-
+      percentage: (count / totalFeedback) * 100,
     }));
 
     setStats({
@@ -223,7 +252,7 @@ export function EnhancedFeedbackSystem({
       neutralSentiment,
       topCategories,
       ratingDistribution,
-
+    });
   }, []);
 
   const getSentimentColor = (sentiment: string) => {
@@ -234,7 +263,8 @@ export function EnhancedFeedbackSystem({
         return "bg-red-100 text-red-800";
       case "neutral":
         return "bg-gray-100 text-gray-800";
-
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -246,7 +276,8 @@ export function EnhancedFeedbackSystem({
         return <ThumbsDown className="h-3 w-3" />;
       case "neutral":
         return <Heart className="h-3 w-3" />;
-
+      default:
+        return <Heart className="h-3 w-3" />;
     }
   };
 
@@ -540,7 +571,7 @@ export function EnhancedFeedbackSystem({
                                   className={`h-4 w-4 ${
                                     star <= item.rating
                                       ? "text-yellow-500 fill-current"
-
+                                      : "text-gray-900"
                                   }`}
                                 />
                               ))}

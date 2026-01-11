@@ -113,8 +113,9 @@ export default function OnboardingTestOrderPage() {
     if (!venueId) {
       try {
         const response = await fetch("/api/signup/complete-onboarding", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
+        });
 
         const data = await response.json();
         if (response.ok && data.success && data.venueId) {
@@ -140,8 +141,9 @@ export default function OnboardingTestOrderPage() {
     if (!venueId) {
       try {
         const response = await fetch("/api/signup/complete-onboarding", {
-
+          method: "POST",
           headers: { "Content-Type": "application/json" },
+        });
 
         const data = await response.json();
         if (response.ok && data.success && data.venueId) {

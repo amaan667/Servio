@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getJobStatus } from "@/lib/ai/job-processor";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export async function GET(request: NextRequest) {
@@ -14,8 +15,6 @@ export async function GET(request: NextRequest) {
       return apiErrors.badRequest("jobId is required");
     }
 
-    
-
     const status = await getJobStatus(jobId);
 
     if (!status) {
@@ -23,11 +22,20 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-
+      ok: true,
+      job: {
+        jobId: status.jobId,
+        status: status.status,
+        progress: status.progress,
+        total: status.total,
+        progressPercent: status.total > 0 ? Math.round((status.progress / status.total) * 100) : 0,
+        result: status.result,
+        error: status.error,
+        isComplete: status.status === "completed" || status.status === "failed",
       },
-
+    });
   } catch (error) {
-    
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to get job status" },
       { status: 500 }

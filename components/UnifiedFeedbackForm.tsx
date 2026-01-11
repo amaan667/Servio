@@ -11,13 +11,18 @@ import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackAnswer } from "@/types/feedback";
 
 interface UnifiedFeedbackFormProps {
-
+  venueId: string;
+  orderId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  onSubmit?: () => void;
 }
 
 export default function UnifiedFeedbackForm({
   venueId,
   orderId,
-
+  customerName: _customerName = "Customer",
+  customerPhone: _customerPhone,
   onSubmit,
 }: UnifiedFeedbackFormProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
@@ -26,32 +31,71 @@ export default function UnifiedFeedbackForm({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [answers, setAnswers] = useState<{ [key: string]: unknown }>({
     /* Empty */
-
+  });
   const { toast } = useToast();
 
   // Generic feedback questions (matching the screenshot layout)
   const genericQuestions: FeedbackQuestion[] = [
     {
-
+      id: "generic-overall-experience",
+      venue_id: venueId,
+      prompt: "How would you rate your overall experience?",
+      type: "stars",
+      choices: null,
+      is_active: true,
+      sort_index: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-food-quality",
+      venue_id: venueId,
+      prompt: "How was the food quality?",
+      type: "stars",
+      choices: null,
+      is_active: true,
+      sort_index: 2,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-service",
+      venue_id: venueId,
+      prompt: "How was the service?",
+      type: "stars",
+      choices: null,
+      is_active: true,
+      sort_index: 3,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-recommendation",
+      venue_id: venueId,
+      prompt: "Would you recommend us to others?",
+      type: "multiple_choice",
+      choices: [
         "Yes, definitely",
         "Yes, probably",
         "Maybe",
         "No, probably not",
         "No, definitely not",
       ],
-
+      is_active: true,
+      sort_index: 4,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-
+      id: "generic-comments",
+      venue_id: venueId,
+      prompt: "Any additional comments or suggestions?",
+      type: "paragraph",
+      choices: null,
+      is_active: true,
+      sort_index: 5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
   ];
 
@@ -108,19 +152,29 @@ export default function UnifiedFeedbackForm({
           switch (question.type) {
             case "stars":
               return {
-
+                question_id: question.id,
+                type: "stars" as const,
+                answer_stars: typeof answer === "number" ? answer : 0,
+                order_id: orderId,
               };
             case "multiple_choice":
               return {
-
+                question_id: question.id,
+                type: "multiple_choice" as const,
+                answer_choice: typeof answer === "string" ? answer : "",
+                order_id: orderId,
               };
             case "paragraph":
               return {
-
+                question_id: question.id,
+                type: "paragraph" as const,
+                answer_text: typeof answer === "string" ? answer : "",
+                order_id: orderId,
               };
-
+            default:
+              throw new Error("Invalid question type");
           }
-
+        })
         .filter((answer) => {
           // Filter out empty answers
           switch (answer.type) {
@@ -130,21 +184,32 @@ export default function UnifiedFeedbackForm({
               return typeof answer.answer_choice === "string" && answer.answer_choice.trim() !== "";
             case "paragraph":
               return typeof answer.answer_text === "string" && answer.answer_text.trim() !== "";
-
+            default:
+              return false;
           }
+        });
 
       if (feedbackAnswers.length === 0) {
         toast({
-
+          title: "No Feedback",
+          description: "Please answer at least one question",
+          variant: "destructive",
+        });
         return;
       }
 
       // Submit feedback
       const response = await fetch("/api/feedback-responses", {
-
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-
+        body: JSON.stringify({
+          venue_id: venueId,
+          order_id: orderId,
+          answers: feedbackAnswers,
         }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -153,13 +218,20 @@ export default function UnifiedFeedbackForm({
 
       setIsSubmitted(true);
       toast({
+        title: "Thank you!",
+        description: "Your feedback has been submitted successfully.",
+      });
 
       if (onSubmit) {
         onSubmit();
       }
     } catch (_error) {
       toast({
-
+        title: "Error",
+        description:
+          _error instanceof Error ? _error.message : "Failed to submit feedback. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +242,9 @@ export default function UnifiedFeedbackForm({
     onChange,
     label,
   }: {
-
+    value: number;
+    onChange: (rating: number) => void;
+    label: string;
   }) => (
     <div className="space-y-2">
       <Label className="text-sm font-medium text-gray-700">{label}</Label>
@@ -246,7 +320,7 @@ export default function UnifiedFeedbackForm({
                     value={
                       typeof answers[question.id] === "string"
                         ? (answers[question.id] as string)
-
+                        : ""
                     }
                     onValueChange={(value: string) => handleAnswerChange(question.id, value)}
                   >
@@ -272,7 +346,7 @@ export default function UnifiedFeedbackForm({
                     value={
                       typeof answers[question.id] === "string"
                         ? (answers[question.id] as string)
-
+                        : ""
                     }
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                       handleAnswerChange(question.id, e.target.value)
@@ -286,7 +360,8 @@ export default function UnifiedFeedbackForm({
                     {
                       (typeof answers[question.id] === "string"
                         ? (answers[question.id] as string)
-
+                        : ""
+                      ).length
                     }
                     /600 characters
                   </p>

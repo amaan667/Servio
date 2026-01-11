@@ -13,41 +13,64 @@ import {
 import { Users, Crown, Shield, UserCheck, ChefHat } from "lucide-react";
 
 interface Role {
-
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  icon: React.ReactNode;
+  color: string;
 }
 
 const ROLES: Role[] = [
   {
-
+    id: "owner",
+    name: "Owner",
+    description: "Full access to all features and settings",
+    permissions: [
+      "View all orders and analytics",
       "Manage menu and inventory",
       "Staff management and roles",
       "Venue settings and billing",
       "Kitchen display system",
       "Table management",
     ],
-
+    icon: <Crown className="h-5 w-5" />,
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
   },
   {
-
+    id: "manager",
+    name: "Manager",
+    description: "Manage daily operations and staff",
+    permissions: [
+      "View orders and analytics",
       "Manage menu items",
       "Staff scheduling",
       "Kitchen display system",
       "Table management",
     ],
-
+    icon: <Shield className="h-5 w-5" />,
+    color: "bg-blue-100 text-blue-800 border-blue-200",
   },
   {
-
+    id: "staff",
+    name: "Staff",
+    description: "Handle orders and basic operations",
+    permissions: [
+      "View live orders",
       "Update order status",
       "Kitchen display system",
       "Basic table management",
     ],
-
+    icon: <UserCheck className="h-5 w-5" />,
+    color: "bg-green-100 text-green-800 border-green-200",
   },
   {
-
+    id: "kitchen",
+    name: "Kitchen",
+    description: "Focus on food preparation and orders",
     permissions: ["View kitchen display", "Update order preparation status", "View menu items"],
-
+    icon: <ChefHat className="h-5 w-5" />,
+    color: "bg-orange-100 text-orange-800 border-orange-200",
   },
 ];
 

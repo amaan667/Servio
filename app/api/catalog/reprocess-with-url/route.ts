@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { extractMenuFromImage } from "@/lib/gptVisionMenuParser";
 import { v4 as uuidv4 } from "uuid";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
@@ -10,11 +11,22 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 interface ScrapedMenuItem {
-
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  image_url?: string | null;
 }
 
 interface PDFMenuItem {
-
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  page: number;
+  allergens?: string[];
+  dietary?: string[];
+  spiceLevel?: string | null;
 }
 
 /**
@@ -31,7 +43,7 @@ export const POST = withUnifiedAuth(
       if (!rateLimitResult.success) {
         return NextResponse.json(
           {
-
+            error: "Too many requests",
             message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
           },
           { status: 429 }
@@ -66,16 +78,20 @@ export const POST = withUnifiedAuth(
           env("NEXT_PUBLIC_APP_URL") ||
           (railwayDomain
             ? `https://${railwayDomain.replace(/^https?:\/\//, "")}`
+            : "http://localhost:3000");
 
+        // Create AbortController with 120s timeout (Playwright with scrolling can take 60-90s)
+        const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000);
 
         let scrapeResponse;
         try {
           scrapeResponse = await fetch(`${baseUrl}/api/scrape-menu`, {
-
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: menuUrl }),
-
+            signal: controller.signal,
+          });
           clearTimeout(timeoutId);
         } catch (fetchError) {
           clearTimeout(timeoutId);
@@ -88,19 +104,29 @@ export const POST = withUnifiedAuth(
         }
 
         const scrapeResult = (await scrapeResponse.json()) as {
-
+          ok: boolean;
+          items?: Array<{
+            name: string;
+            description?: string;
+            price?: number;
+            category?: string;
+            image?: string;
           }>;
           error?: string;
         };
         if (scrapeResult.ok && scrapeResult.items) {
           urlItems = scrapeResult.items.map((item) => ({
-
+            name: item.name,
+            description: item.description || "",
+            price: item.price || 0,
+            category: item.category || "Menu Items",
+            image_url: item.image || null,
           }));
         } else {
           throw new Error(scrapeResult.error || "Scraping returned no items");
         }
       } catch (_error) {
-        
+
         // Continue with PDF-only extraction
       }
 
@@ -125,6 +151,16 @@ export const POST = withUnifiedAuth(
         );
 
         menuItems.push({
+          id: itemId,
+          venue_id: venueId,
+          name: urlItem.name,
+          description: urlItem.description || pdfMatch?.description || "",
+          price: urlItem.price || pdfMatch?.price || 0,
+          category: urlItem.category || pdfMatch?.category || "Menu Items",
+          image_url: urlItem.image_url || null,
+          is_available: true,
+          created_at: new Date().toISOString(),
+        });
 
         combinedItems.set(urlItem.name.toLowerCase(), true);
       }
@@ -135,9 +171,12 @@ export const POST = withUnifiedAuth(
           const itemId = uuidv4();
 
           menuItems.push({
-
+            id: itemId,
+            venue_id: venueId,
             ...pdfItem,
-
+            is_available: true,
+            created_at: new Date().toISOString(),
+          });
         }
       }
 
@@ -155,20 +194,23 @@ export const POST = withUnifiedAuth(
       }
 
       return NextResponse.json({
-
+        ok: true,
+        result: {
+          items_created: menuItems.length,
+          categories_created: new Set(menuItems.map((i) => i.category)).size,
         },
-
+      });
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
 
-      
-
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(
           {
-
+            ok: false,
+            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
+            message: errorMessage,
           },
           { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
         );
@@ -176,7 +218,9 @@ export const POST = withUnifiedAuth(
 
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "Processing failed",
+          message: isDevelopment() ? errorMessage : "Failed to reprocess menu",
           ...(isDevelopment() && errorStack ? { stack: errorStack } : {}),
         },
         { status: 500 }
@@ -185,7 +229,10 @@ export const POST = withUnifiedAuth(
   },
   {
     // Extract venueId from body
-
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.json();
+        return body?.venue_id || body?.venueId || null;
       } catch {
         return null;
       }

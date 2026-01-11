@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -10,8 +11,10 @@ import { validateBody } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const createTableSessionSchema = z.object({
-
+  table_id: z.string().uuid("Invalid table ID"),
   customer_name: z.string().min(1, "Customer name is required").optional(),
+  party_size: z.number().int().positive("Party size must be positive").optional(),
+});
 
 // POST /api/table-sessions - Create a new table session
 export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
@@ -44,26 +47,30 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (tableError || !table) {
-      
+
       return apiErrors.notFound("Table not found");
     }
 
     const { data: session, error: createError } = await supabase
       .from("table_sessions")
       .insert({
-
+        table_id: body.table_id,
+        venue_id: venueId,
+        customer_name: body.customer_name || null,
+        party_size: body.party_size || null,
+        status: "ORDERING",
+        opened_at: new Date().toISOString(),
+      })
       .select()
       .single();
 
     if (createError || !session) {
-      
+
       return apiErrors.database(
         "Failed to create table session",
         isDevelopment() ? createError?.message : undefined
       );
     }
-
-    
 
     // STEP 5: Return success response
     return success({ session });
@@ -75,3 +82,4 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+});

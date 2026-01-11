@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
  * Used for "Pay Entire Table" functionality
  */
 export async function GET(
-
+  _request: NextRequest,
   { params }: { params: Promise<{ tableNumber: string }> }
 ) {
   try {
@@ -70,7 +71,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (error) {
-      
+
       return apiErrors.internal("Failed to fetch orders");
     }
 
@@ -79,18 +80,19 @@ export async function GET(
 
     // Group by payment mode
     const ordersByMode = {
-
+      pay_at_till: (orders || []).filter((o) => o.payment_mode === "pay_at_till"),
+      pay_later: (orders || []).filter((o) => o.payment_mode === "pay_later"),
+      online: (orders || []).filter((o) => o.payment_mode === "online" || !o.payment_mode),
     };
 
-    
-
     return NextResponse.json({
-
+      ok: true,
+      orders: orders || [],
       totalAmount,
-
+      orderCount: orders?.length || 0,
+      byPaymentMode: ordersByMode,
+    });
   } catch (_error) {
-
-      },
 
     return apiErrors.internal("Internal server error");
   }

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
@@ -53,7 +54,7 @@ export const POST = withUnifiedAuth(
       // Delete user from Auth
       const { error } = await supabase.auth.admin.deleteUser(userId);
       if (error) {
-        
+
         throw error;
       }
 
@@ -63,8 +64,6 @@ export const POST = withUnifiedAuth(
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      
 
       if (errorMessage.includes("Unauthorized")) {
         return apiErrors.unauthorized(errorMessage);
@@ -81,6 +80,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

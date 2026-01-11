@@ -2,6 +2,7 @@ import { apiErrors, success } from "@/lib/api/standard-response";
 import { createServerSupabase } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
       .select();
 
     if (error) {
-      
+
       return apiErrors.internal(error.message);
     }
 
@@ -112,9 +113,11 @@ export async function POST(req: Request) {
         try {
           // Call inventory deduction
           await supabase.rpc("deduct_stock_for_order", {
-
+            p_order_id: orderId,
+            p_venue_id: order.venue_id,
+          });
         } catch (inventoryError) {
-          
+
           // Don't fail the order completion if inventory deduction fails
         }
       }
@@ -126,10 +129,13 @@ export async function POST(req: Request) {
       if (order && (order.table_id || order.table_number)) {
         // Use centralized table cleanup function
         const cleanupResult = await cleanupTableOnOrderCompletion({
+          venueId: order.venue_id,
+          tableId: order.table_id,
+          tableNumber: order.table_number,
+          orderId: orderId,
+        });
 
-        if (!cleanupResult.success) {
-          
-        } else {
+        if (!cleanupResult.success) { /* Condition handled */ } else {
           // Block handled
         }
 
@@ -142,16 +148,21 @@ export async function POST(req: Request) {
             const baseUrl =
               env("NEXT_PUBLIC_SITE_URL") || "https://servio-production.up.railway.app";
             const completionResponse = await fetch(`${baseUrl}/api/reservations/check-completion`, {
-
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
               },
-
+              body: JSON.stringify({
+                venueId: order.venue_id,
+                tableId: order.table_id,
               }),
+            });
 
             if (completionResponse.ok) {
               await completionResponse.json();
             }
           } catch (completionError) {
-            
+
             // Don't fail the main request if completion check fails
           }
         }
@@ -160,7 +171,7 @@ export async function POST(req: Request) {
 
     return success({ order: data?.[0] });
   } catch (_error) {
-    
+
     return apiErrors.internal("Internal server error");
   }
 }

@@ -1,4 +1,3 @@
-import { errorToContext } from "@/lib/utils/error-to-context";
 
 import { useState, useEffect } from "react";
 import type { LowStockAlert } from "@/types/inventory";
@@ -16,14 +15,12 @@ export function useInventoryAlerts(venueId: string | null) {
         const { apiClient } = await import("@/lib/api-client");
         const response = await apiClient.get("/api/inventory/low-stock", {
           params: { venue_id: venueId },
-
+        });
         const result = await response.json();
         if (result.data) {
           setAlerts(result.data);
         }
-      } catch (_error) {
-        );
-      } finally {
+      } catch (_error) { /* Error handled silently */ } finally {
         setLoading(false);
       }
     };

@@ -8,7 +8,12 @@ import { Star, MessageSquare, Send, CheckCircle } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 
 interface CustomerFeedbackFormProps {
-
+  venueId: string;
+  orderId?: string;
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  onFeedbackSubmitted?: () => void;
 }
 
 const FEEDBACK_CATEGORIES = [
@@ -62,7 +67,8 @@ export function CustomerFeedbackForm({
         return "Very Good";
       case 5:
         return "Excellent";
-
+      default:
+        return "Rate your experience";
     }
   };
 
@@ -112,6 +118,17 @@ export function CustomerFeedbackForm({
       }
 
       const { error: insertError } = await supabase.from("feedback").insert({
+        venue_id: venueId,
+        order_id: orderId,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+        rating: rating,
+        comment: comment.trim(),
+        category: selectedCategory,
+        sentiment_score: sentimentScore,
+        sentiment_label: sentimentLabel,
+      });
 
       if (insertError) throw new Error(insertError.message);
 
@@ -185,7 +202,7 @@ export function CustomerFeedbackForm({
                   className={`h-8 w-8 transition-colors ${
                     star <= (hoveredRating || rating)
                       ? "text-yellow-500 fill-current"
-
+                      : "text-gray-700"
                   }`}
                 />
               </button>
@@ -210,7 +227,7 @@ export function CustomerFeedbackForm({
                 className={`p-2 text-sm border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   selectedCategory === category
                     ? "bg-blue-50 border-blue-500 text-blue-700"
-
+                    : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
                 }`}
               >
                 {category}

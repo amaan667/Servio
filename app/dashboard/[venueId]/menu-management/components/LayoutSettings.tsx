@@ -7,7 +7,8 @@ import { Layout } from "lucide-react";
 import { DesignSettings } from "../types";
 
 interface LayoutSettingsProps {
-
+  designSettings: DesignSettings;
+  setDesignSettings: (settings: DesignSettings) => void;
 }
 
 export function LayoutSettings({ designSettings, setDesignSettings }: LayoutSettingsProps) {
@@ -81,7 +82,14 @@ export function LayoutSettings({ designSettings, setDesignSettings }: LayoutSett
                 onChange={(e) =>
                   setDesignSettings({
                     ...designSettings,
-
+                    font_size_numeric: parseInt(e.target.value),
+                    font_size:
+                      parseInt(e.target.value) <= 12
+                        ? "small"
+                        : parseInt(e.target.value) <= 18
+                          ? "medium"
+                          : "large",
+                  })
                 }
                 className="flex-1"
               />

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -10,8 +11,13 @@ import { validateBody, validateParams } from "@/lib/api/validation-schemas";
 export const runtime = "nodejs";
 
 const seatTableSchema = z.object({
+  customerName: z.string().min(1).max(100).optional(),
+  partySize: z.number().int().positive().max(50).optional(),
+});
 
 const tableIdParamSchema = z.object({
+  tableId: z.string().uuid("Invalid table ID"),
+});
 
 // POST /api/tables/[tableId]/seat - Seat a party at a table
 type TableParams = { params?: { tableId?: string } };
@@ -55,30 +61,33 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
           .from("table_sessions")
           .upsert(
             {
-
+              table_id: validatedParams.tableId,
+              venue_id: table.venue_id,
+              customer_name: body.customerName || null,
+              party_size: body.partySize || null,
+              status: "OPEN",
+              opened_at: new Date().toISOString(),
             },
             {
-
+              onConflict: "table_id",
             }
           )
           .select()
           .single();
 
         if (sessionError) {
-          
+
           return apiErrors.database(
             "Failed to seat party",
             isDevelopment() ? sessionError.message : undefined
           );
         }
 
-        
-
         // STEP 4: Return success response
         return success({
           session,
           table,
-
+        });
       } catch (error) {
 
         if (isZodError(error)) {
@@ -115,5 +124,5 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-
+  });
 }

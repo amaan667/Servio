@@ -7,6 +7,7 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe-client";
+
 import { getTierFromStripeSubscription } from "@/lib/stripe-tier-helper";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -16,6 +17,8 @@ import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 
 const syncSubscriptionSchema = z.object({
+  organizationId: z.string().uuid("Invalid organization ID"),
+});
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -44,7 +47,7 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (orgError || !org) {
-        
+
         return apiErrors.notFound("Organization not found");
       }
 
@@ -60,17 +63,24 @@ export const POST = withUnifiedAuth(
 
       // Get active subscription from Stripe
       const subscriptions = await stripe.subscriptions.list({
+        customer: org.stripe_customer_id,
+        status: "active",
+        limit: 1,
+      });
 
       if (subscriptions.data.length === 0) {
         // No active subscription - set to starter/trialing
         const { error: updateError } = await supabase
           .from("organizations")
           .update({
-
+            subscription_tier: "starter",
+            subscription_status: "trialing",
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", organizationId);
 
         if (updateError) {
-          
+
           return apiErrors.database(
             "Failed to update organization",
             isDevelopment() ? updateError.message : undefined
@@ -78,7 +88,10 @@ export const POST = withUnifiedAuth(
         }
 
         return success({
-
+          message: "No active subscription found - set to starter/trialing",
+          tier: "starter",
+          status: "trialing",
+        });
       }
 
       const subscription = subscriptions.data[0];
@@ -89,24 +102,26 @@ export const POST = withUnifiedAuth(
       const { error: updateError } = await supabase
         .from("organizations")
         .update({
-
+          subscription_tier: tier,
+          subscription_status: subscription.status,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", organizationId);
 
       if (updateError) {
-        
+
         return apiErrors.database(
           "Failed to update organization",
           isDevelopment() ? updateError.message : undefined
         );
       }
 
-      
-
       // STEP 6: Return success response
       return success({
-
+        message: "Subscription synced successfully",
         tier,
-
+        status: subscription.status,
+      });
     } catch (error) {
 
       if (isZodError(error)) {
@@ -118,6 +133,6 @@ export const POST = withUnifiedAuth(
   },
   {
     // System route - no venue required
-
+    extractVenueId: async () => null,
   }
 );

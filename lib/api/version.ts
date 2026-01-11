@@ -36,7 +36,9 @@ export function isVersionedPath(path: string): boolean {
  * Add version headers to response
  */
 export function addVersionHeaders(
-
+  response: NextResponse,
+  version: string = API_VERSION
+): NextResponse {
   response.headers.set("API-Version", version);
   response.headers.set("X-API-Version", version);
   return response;

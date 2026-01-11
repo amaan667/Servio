@@ -9,7 +9,9 @@ export default function StaffClientPage({
   venueId,
   role,
 }: {
-
+  venueId: string;
+  tier: string;
+  role: string;
 }) {
   const { user } = useAuthRedirect();
   const userRole = role as UserRole;

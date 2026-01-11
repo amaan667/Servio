@@ -18,14 +18,14 @@ const dashboardLoadTrend = new Trend("dashboard_load_duration");
 
 // Test configuration
 export const options = {
-
+  stages: [
     { duration: "1m", target: 20 }, // Ramp up to 20 users
     { duration: "5m", target: 20 }, // Stay at 20 users
     { duration: "1m", target: 0 }, // Ramp down
   ],
-
+  thresholds: {
     http_req_duration: ["p(95)<500", "p(99)<1000"],
-
+    http_req_failed: ["rate<0.01"],
   },
 };
 
@@ -45,7 +45,7 @@ const endpoints = [
 export default function () {
   endpoints.forEach((endpoint) => {
     const params = {
-
+      headers: {
         Cookie: `sb-access-token=${AUTH_TOKEN}`,
       },
       tags: { name: endpoint.name },
@@ -66,11 +66,13 @@ export default function () {
         }
       },
       "response time < 500ms": (r) => r.timings.duration < 500,
+    });
 
     dashboardLoadTrend.add(success ? duration : 0);
 
     // Small delay between requests
     sleep(0.5);
+  });
 
   // Simulate user think time
   sleep(2);

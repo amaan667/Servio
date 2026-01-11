@@ -18,7 +18,8 @@ export interface RouteConfig {
  * Wrap an API route handler with production-ready features
  */
 export function withProductionFeatures<T = unknown>(
-
+  handler: (
+    req: NextRequest,
     context?: { userId: string; venueId?: string }
   ) => Promise<NextResponse<T>>,
   config: RouteConfig = {}
@@ -36,11 +37,13 @@ export function withProductionFeatures<T = unknown>(
         if (!rateLimitResult.success) {
           return NextResponse.json(
             {
-
+              error: "Too many requests",
               message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
             },
             {
-
+              status: 429,
+              headers: {
+                "X-RateLimit-Limit": rateLimitResult.limit.toString(),
                 "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
                 "X-RateLimit-Reset": rateLimitResult.reset.toString(),
                 "Retry-After": Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),

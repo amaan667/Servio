@@ -16,12 +16,18 @@ interface RetryOptions {
 }
 
 interface CircuitBreakerState {
-
+  state: "closed" | "open" | "half-open";
+  failureCount: number;
+  lastFailureTime: number;
+  successCount: number;
 }
 
 class CircuitBreaker {
   private state: CircuitBreakerState = {
-
+    state: "closed",
+    failureCount: 0,
+    lastFailureTime: 0,
+    successCount: 0,
   };
 
   private readonly failureThreshold = 5;
@@ -47,6 +53,8 @@ class CircuitBreaker {
       case "half-open":
         return this.state.successCount < this.halfOpenMaxAttempts;
 
+      default:
+        return false;
     }
   }
 
@@ -70,7 +78,7 @@ class CircuitBreaker {
 
     if (this.state.failureCount >= this.failureThreshold) {
       this.state.state = "open";
-      
+
     }
   }
 
@@ -83,10 +91,12 @@ class CircuitBreaker {
 const circuitBreaker = new CircuitBreaker();
 
 const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
-
+  maxRetries: 3,
   initialDelay: 1000, // 1 second
   maxDelay: 10000, // 10 seconds
-
+  backoffMultiplier: 2,
+  retryableErrors: [
+    "StripeConnectionError",
     "StripeAPIError",
     "rate_limit",
     "idempotency",
@@ -139,7 +149,7 @@ function calculateDelay(attempt: number, options: Required<RetryOptions>): numbe
  * @returns Promise with the result of the function
  */
 export async function withStripeRetry<T>(
-
+  fn: () => Promise<T>,
   options: RetryOptions = {}
 ): Promise<T> {
   const config = { ...DEFAULT_RETRY_OPTIONS, ...options };
@@ -159,9 +169,7 @@ export async function withStripeRetry<T>(
       // Record success in circuit breaker
       circuitBreaker.recordSuccess();
 
-      if (attempt > 0) {
-        
-      }
+      if (attempt > 0) { /* Condition handled */ }
 
       return result;
     } catch (error) {
@@ -196,10 +204,10 @@ export async function withStripeRetry<T>(
  * Get current circuit breaker state (for monitoring)
  */
 export function getCircuitBreakerState(): {
-
+  state: "closed" | "open" | "half-open";
 } {
   return {
-
+    state: circuitBreaker.getState(),
   };
 }
 
@@ -208,5 +216,5 @@ export function getCircuitBreakerState(): {
  */
 export function resetCircuitBreaker(): void {
   circuitBreaker.recordSuccess();
-  
+
 }

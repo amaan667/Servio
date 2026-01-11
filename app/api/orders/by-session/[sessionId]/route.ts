@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
@@ -13,7 +14,7 @@ export async function GET(_req: Request, context: SessionParams = {}) {
     const sessionId = context.params?.sessionId;
 
     if (!sessionId) {
-      
+
       return apiErrors.badRequest("Session ID is required");
     }
 
@@ -25,47 +26,46 @@ export async function GET(_req: Request, context: SessionParams = {}) {
       .eq("stripe_session_id", sessionId)
       .single();
 
-    
-
     if (orderError) {
-      
+
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "Order not found for this session",
         },
         { status: 404 }
       );
     }
 
     if (!order) {
-      
+
       return NextResponse.json(
         {
-
+          ok: false,
+          error: "Order not found for this session",
         },
         { status: 404 }
       );
     }
 
-     ? order.items.length : 0,
-
     // Items are already in the order object as JSONB
     // Ensure items array exists (fallback to empty array if null)
     const transformedOrder = {
       ...order,
-
+      items: order.items || [],
     };
 
-    
-    );
-
     return NextResponse.json({
-
+      ok: true,
+      orderId: order.id,
+      order: transformedOrder,
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        ok: false,
+        error: "Internal server error",
       },
       { status: 500 }
     );

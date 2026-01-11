@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 
 interface MobileCartButtonProps {
-
+  totalItems: number;
+  onClick: () => void;
 }
 
 export function MobileCartButton({ totalItems, onClick }: MobileCartButtonProps) {

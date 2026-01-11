@@ -15,7 +15,13 @@ import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 
 interface AnalyticsFiltersProps {
-
+  timePeriod: "7d" | "30d" | "3m" | "1y" | "custom";
+  onTimePeriodChange: (period: "7d" | "30d" | "3m" | "1y" | "custom") => void;
+  dateRange: DateRange | undefined;
+  onDateRangeChange: (range: DateRange | undefined) => void;
+  selectedCategory: string;
+  categories: string[];
+  onCategoryChange: (category: string) => void;
 }
 
 export function AnalyticsFilters({

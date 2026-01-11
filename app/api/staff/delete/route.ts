@@ -13,22 +13,21 @@ export const runtime = "nodejs";
  */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
-    
 
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        
+
         return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
       const body = await req.json().catch(() => ({}));
-      
+
       const { id } = body;
 
       if (!id) {
-        
+
         return apiErrors.badRequest("id required");
       }
 
@@ -36,7 +35,6 @@ export const POST = withUnifiedAuth(
       const normalizedVenueId = context.venueId.startsWith("venue-")
         ? context.venueId
         : `venue-${context.venueId}`;
-      
 
       // Use service role client to avoid RLS write failures.
       // Access is enforced by withUnifiedAuth (venue access + role requirements).
@@ -51,24 +49,21 @@ export const POST = withUnifiedAuth(
         .select("*");
       const deleteTime = Date.now() - deleteStart;
 
-      
-
       if (error) {
-        
+
         return apiErrors.badRequest(error.message);
       }
 
       if (!data || data.length === 0) {
-        ");
+
         return apiErrors.notFound("Staff member not found");
       }
 
-      
       return success({ success: true });
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       const errorStack = e instanceof Error ? e.stack : undefined;
-      
+
       return apiErrors.internal(errorMessage);
     }
   },

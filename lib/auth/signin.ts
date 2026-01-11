@@ -15,14 +15,10 @@ export async function signInWithGoogle() {
 
   const redirectTo = getAuthRedirectUrl("/auth/callback");
 
-  
-
-   + "...",
-
   // Test Supabase connection before OAuth
   try {
     const { data: testData, error: testError } = await sb.auth.getSession();
-    
+
   } catch (e) {
     // Error handled
   }
@@ -36,9 +32,15 @@ export async function signInWithGoogle() {
   }
 
   const { data, error } = await sb.auth.signInWithOAuth({
-
+    provider: "google",
+    options: {
+      redirectTo: redirectTo,
+      queryParams: {
+        prompt: "select_account",
+        access_type: "offline",
       },
     },
+  });
 
   if (error) {
     throw error;

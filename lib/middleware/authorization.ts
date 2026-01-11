@@ -7,22 +7,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
+
 import { getAccessContext } from "@/lib/access/getAccessContext";
 
 export interface Venue {
-
+  venue_id: string;
+  owner_user_id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  created_at: string;
+  updated_at: string;
+  [key: string]: unknown;
 }
 
 export interface User {
-
+  id: string;
+  email?: string;
+  [key: string]: unknown;
 }
 
 export interface VenueAccess {
-
+  venue: Venue;
+  user: User;
+  role: string;
+  tier: string;
+  venue_ids: string[];
 }
 
 export interface AuthorizedContext {
-
+  venue: Venue;
+  user: User;
+  role: string;
+  venueId: string;
+  tier: string;
+  venue_ids: string[];
 }
 
 /**
@@ -30,18 +50,27 @@ export interface AuthorizedContext {
  * Uses unified get_access_context RPC for single database call
  */
 export async function verifyVenueAccess(
+  venueId: string,
+  userId: string
+): Promise<VenueAccess | null> {
+  try {
+    // Use unified access context RPC - single database call for all access info
+    const accessContext = await getAccessContext(venueId);
 
+    if (!accessContext) {
+
+      return null;
     }
 
     // Verify the access context matches the requested user
     if (accessContext.user_id !== userId) {
-      
+
       return null;
     }
 
     // Verify venue access
     if (accessContext.venue_id !== venueId) {
-      
+
       return null;
     }
 
@@ -54,16 +83,16 @@ export async function verifyVenueAccess(
       .single();
 
     if (venueError || !venue) {
-      
+
       return null;
     }
-
-    
 
     return {
       venue,
       user: { id: userId },
-
+      role: accessContext.role,
+      tier: accessContext.tier,
+      venue_ids: accessContext.venue_ids,
     };
   } catch (error) {
 
@@ -77,7 +106,7 @@ export async function verifyVenueAccess(
  * but ensures the venue exists and is accessible
  */
 export async function verifyVenueExists(
-
+  venueId: string
 ): Promise<{ valid: boolean; venue?: Venue; error?: string }> {
   try {
     const supabase = await createSupabaseClient();
@@ -91,18 +120,18 @@ export async function verifyVenueExists(
       .maybeSingle();
 
     if (venueError) {
-      
+
       return { valid: false, error: venueError.message };
     }
 
     if (!venue) {
-      
+
       return { valid: false, error: "Venue not found" };
     }
 
     return { valid: true, venue };
   } catch (error) {
-    
+
     return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
@@ -112,7 +141,8 @@ export async function verifyVenueExists(
  * Ensures cross-venue access is prevented
  */
 export async function verifyOrderVenueAccess(
-
+  orderId: string,
+  venueId: string
 ): Promise<{ valid: boolean; error?: string }> {
   try {
     const supabase = await createSupabaseClient();
@@ -125,18 +155,18 @@ export async function verifyOrderVenueAccess(
       .maybeSingle();
 
     if (orderError) {
-      
+
       return { valid: false, error: orderError.message };
     }
 
     if (!order) {
-      
+
       return { valid: false, error: "Order not found or access denied" };
     }
 
     return { valid: true };
   } catch (error) {
-    
+
     return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
@@ -192,11 +222,15 @@ export function withAuthorization(
 
       // Call handler with authorized context
       return await handler(req, {
-
+        venue: access.venue,
+        user: access.user,
+        role: access.role,
         venueId,
-
+        tier: access.tier,
+        venue_ids: access.venue_ids,
+      });
     } catch (_error) {
-      
+
       return NextResponse.json(
         { error: "Internal Server Error", message: "Authorization failed" },
         { status: 500 }
@@ -237,11 +271,15 @@ export function withOptionalAuth(
 
       // Call handler with authorized context
       return await handler(req, {
-
+        venue: access.venue,
+        user: access.user,
+        role: access.role,
         venueId,
-
+        tier: access.tier,
+        venue_ids: access.venue_ids,
+      });
     } catch (_error) {
-      
+
       return await handler(req, null);
     }
   };

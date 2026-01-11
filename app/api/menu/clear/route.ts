@@ -35,10 +35,10 @@ export async function POST(_request: NextRequest) {
         .select("*");
 
       if (error) {
-        
+
         return NextResponse.json(
           {
-
+            ok: false,
             error: `Failed to clear ${operation.description}: ${error.message}`,
           },
           { status: 500 }
@@ -51,12 +51,16 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json({
-
+      ok: true,
+      message: "All catalog data cleared successfully",
+      deletedCount: totalDeleted,
+      details: results,
+    });
   } catch (_error) {
-    
+
     return NextResponse.json(
       {
-
+        ok: false,
         error: `Clear menu failed: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
       },
       { status: 500 }

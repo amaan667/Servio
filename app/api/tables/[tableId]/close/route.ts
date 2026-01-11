@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
@@ -11,6 +12,8 @@ import { handleCloseTable } from "@/app/api/table-sessions/handlers/table-action
 export const runtime = "nodejs";
 
 const tableIdParamSchema = z.object({
+  tableId: z.string().uuid("Invalid table ID"),
+});
 
 // POST /api/tables/[tableId]/close - Close a table
 type TableParams = { params?: { tableId?: string } };
@@ -41,14 +44,12 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
           .single();
 
         if (tableError || !table) {
-          
+
           return apiErrors.notFound("Table not found or access denied");
         }
 
         // Use the handler function
         const result = await handleCloseTable(supabase, validatedParams.tableId);
-
-        
 
         // STEP 4: Return success response
         return success(result);
@@ -88,5 +89,5 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
 
   return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
     params?: Promise<Record<string, string>>;
-
+  });
 }

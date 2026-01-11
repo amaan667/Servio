@@ -6,7 +6,10 @@
 import { NextRequest } from "next/server";
 
 export interface ApiMiddlewareContext {
-
+  startTime: number;
+  method: string;
+  url: string;
+  pathname: string;
 }
 
 /**
@@ -20,7 +23,9 @@ export function withApiLogging<T>(
     const url = new URL(req.url);
     const context: ApiMiddlewareContext = {
       startTime,
-
+      method: req.method,
+      url: req.url,
+      pathname: url.pathname,
     };
 
     // Log request
@@ -30,7 +35,6 @@ export function withApiLogging<T>(
       const duration = Date.now() - startTime;
 
       // Log successful response
-      
 
       return result;
     } catch (error) {
