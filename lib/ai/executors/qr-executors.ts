@@ -72,7 +72,7 @@ export async function executeQRGenerateTable(
  * Execute bulk QR code generation for tables
  */
 export async function executeQRGenerateBulk(
-  params: { startNumber: number; endNumber: number; prefix?: string; type?: "table" | "counter" },
+  params: { startNumber: number; endNumber: number; prefix: string | null; type: "table" | "counter" | null },
   venueId: string,
   _userId: string,
   preview: boolean

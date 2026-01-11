@@ -561,8 +561,8 @@ export const QRGenerateBulkSchema = z
   .object({
     startNumber: z.number().int().min(1),
     endNumber: z.number().int().min(1),
-    prefix: z.string().optional().describe("Prefix for QR code labels (e.g., 'Table', 'VIP', 'Counter'). Defaults to 'Table'"),
-    type: z.enum(["table", "counter"]).optional().describe("Type of QR codes to generate. Defaults to 'table'"),
+    prefix: z.string().nullable().default(null).describe("Prefix for QR code labels (e.g., 'Table', 'VIP', 'Counter'). Defaults to 'Table'"),
+    type: z.enum(["table", "counter"]).nullable().default(null).describe("Type of QR codes to generate. Defaults to 'table'"),
   })
   .strict();
 
