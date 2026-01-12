@@ -115,11 +115,8 @@ export const POST = withUnifiedAuth(
       // Check if we have warnings asking for clarification (should not execute tools)
       else if (plan.warnings && plan.warnings.length > 0 && plan.tools && plan.tools.length === 0) {
         // User needs to provide more information - don't execute anything
-
-        response = plan.reasoning || plan.warnings.join(". ");
-        if (plan.warnings.length > 0) {
-          response += `\n\n${plan.warnings.join("\n")}`;
-        }
+        // Only show the user-friendly warnings, not the internal reasoning
+        response = plan.warnings.join("\n\n");
       }
       // Execute tools if present
       else if (plan.tools && plan.tools.length > 0) {
