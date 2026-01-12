@@ -157,7 +157,7 @@ export const POST = withUnifiedAuth(
                 // Add navigation message if there are no other messages
                 if (messages.length === 0) {
                   messages.push(
-                    (resultData.message as string) || plan.reasoning || "Navigating..."
+                    (resultData.message as string) || "Navigating..."
                   );
                 }
               }
@@ -257,17 +257,16 @@ export const POST = withUnifiedAuth(
         if (messages.length > 0) {
           response = messages.join(". ");
         } else {
-          response = plan.reasoning || "Actions completed successfully";
+          response = "Actions completed successfully";
         }
 
         if (plan.warnings && plan.warnings.length > 0) {
           response += `\n\nNote: ${plan.warnings.join(", ")}`;
         }
       }
-      // Fallback
+      // Fallback - never show internal reasoning to users
       else {
-
-        response = plan.reasoning || "I'm not sure how to help with that. Could you clarify?";
+        response = "I'm not sure how to help with that. Could you clarify?";
       }
 
       // Returning response
