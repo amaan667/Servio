@@ -266,7 +266,7 @@ export const POST = withUnifiedAuth(
       }
       // Fallback - never show internal reasoning to users
       else {
-        response = "Hello! I'm here to help you with restaurant operations. I can assist with menu management, orders, inventory, QR codes, and more. What would you like to work on?";
+        response = "Hello! I'm here to help you with your hospitality business. I can assist with menu management, orders, inventory, QR codes, and more. What would you like to work on?";
       }
 
       // Returning response
