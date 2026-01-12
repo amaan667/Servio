@@ -217,6 +217,14 @@ NAVIGATION:
 - Take users to any page in the system
 - Find specific features and sections
 
+CONVERSATIONAL RESPONSES:
+- For greetings like "hi", "hello", "hey": Respond warmly with "Hello! How can I help you with your restaurant operations today?"
+- For "thank you", "thanks": Respond with "You're welcome! Is there anything else I can help you with?"
+- For "how are you", "how's it going": Respond conversationally about being ready to help
+- For general questions about yourself: Explain your role as an AI assistant for restaurant operations
+- Keep responses friendly and professional, but focus on business operations
+- If user is just chatting, gently steer conversation toward business tasks
+
 CONTEXT:
 - User Role: ${userRole}
 - Venue Tier: ${venueTier}
@@ -740,6 +748,45 @@ Respond with JSON only:
   }
 }
 
+// Check for conversational inputs that should return direct responses
+function checkConversationalInput(userPrompt: string): { isConversational: boolean; response?: string } {
+  const prompt = userPrompt.toLowerCase().trim();
+
+  // Greetings
+  if (prompt.match(/^(hi|hello|hey|good\s+(morning|afternoon|evening)|greetings?|howdy|yo)/)) {
+    return {
+      isConversational: true,
+      response: "Hello! How can I help you with your restaurant operations today?"
+    };
+  }
+
+  // Thanks
+  if (prompt.match(/^(thanks?|thank\s+you|thx|ty)/)) {
+    return {
+      isConversational: true,
+      response: "You're welcome! Is there anything else I can help you with?"
+    };
+  }
+
+  // How are you
+  if (prompt.match(/^(how\s+(are|r)\s+you|how'?s\s+it\s+going|what'?s\s+up)/)) {
+    return {
+      isConversational: true,
+      response: "I'm doing well, thank you! I'm here and ready to help you with your restaurant operations. What would you like to work on?"
+    };
+  }
+
+  // About yourself
+  if (prompt.match(/^(what\s+(are|r)\s+you|who\s+are\s+you|what\s+(do|can)\s+you\s+do)/)) {
+    return {
+      isConversational: true,
+      response: "I'm Servio Assistant, your AI helper for restaurant operations. I can help you manage menus, track orders, handle inventory, generate QR codes, manage staff, and analyze your business data. What would you like to work on?"
+    };
+  }
+
+  return { isConversational: false };
+}
+
 export async function planAssistantAction(
   userPrompt: string,
   context: AIAssistantContext,
@@ -750,6 +797,18 @@ export async function planAssistantAction(
     analytics?: AnalyticsSummary;
   }
 ): Promise<AIPlanResponse & { modelUsed?: string }> {
+  // Check for conversational inputs first
+  const conversational = checkConversationalInput(userPrompt);
+  if (conversational.isConversational) {
+    return {
+      intent: userPrompt,
+      tools: [],
+      reasoning: "Handled conversational input directly",
+      warnings: null,
+      directAnswer: conversational.response,
+    };
+  }
+
   // Try intelligent fast-path (LLM-based classification for read-only queries)
   const fastPath = await tryFastPath(userPrompt, dataSummaries);
   if (fastPath.canAnswer && fastPath.confidence >= 0.85) {
