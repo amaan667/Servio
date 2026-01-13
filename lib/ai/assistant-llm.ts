@@ -382,12 +382,21 @@ RULES:
 
 NATURAL LANGUAGE UNDERSTANDING:
 - Be flexible with user queries - understand context and intent
-- For simple questions that can be answered directly from data summaries:
-  * "how many categories are there" → provide direct answer from menu.categories count
-  * "how many menu items" → provide direct answer from menu.totalItems count
-  * "what categories do I have" → provide direct answer listing menu.categories
-  * "total revenue today" → provide direct answer from analytics data if available
-  * "how many orders today" → provide direct answer from orders data if available
+- CRITICAL: For questions that ask about data/information (not actions), you MUST provide a directAnswer
+- For simple questions that can be answered directly from data summaries, return EMPTY tools array [] and provide a directAnswer:
+  * "how many categories are there" → directAnswer: list from menu.categories count
+  * "how many menu items" → directAnswer: from menu.totalItems count
+  * "what categories do I have" → directAnswer: list all menu.categories with their item counts
+  * "total revenue today" → directAnswer: from analytics.today.revenue
+  * "how many orders today" → directAnswer: from analytics.today.orders
+  * "which items don't have images" → directAnswer: explain there are X items without images, suggest using menu.query_no_images or navigating to menu
+  * "how many items in coffee category" → directAnswer: find "Coffee" in menu.categories and return itemCount
+  * "top sellers" → directAnswer: list menu.topSellers with sales and revenue
+  * "peak hours" → directAnswer: from analytics.timeAnalysis.peakHours
+  * "busiest day" → directAnswer: from analytics.timeAnalysis.busiestDay
+  * "low stock items" → directAnswer: list inventory.lowStock items
+- IMPORTANT: If you can answer from the data summaries provided, DO NOT return tools. Return directAnswer instead.
+- directAnswer should be a helpful, conversational response that directly answers the question
 - For QR code generation requests (AUTO-DETECT AND GENERATE):
   * CRITICAL: If user mentions a table/counter name (e.g., "Table 5", "VIP 3", "Counter 1"), AUTO-GENERATE QR code
   * Patterns to detect:
@@ -479,9 +488,23 @@ NATURAL LANGUAGE UNDERSTANDING:
 OUTPUT FORMAT:
 Return a structured plan with:
 - intent: what the user wants (clear, natural language)
-- tools: ordered array of tool calls with exact params
+- tools: ordered array of tool calls with exact params (EMPTY [] for informational queries)
 - reasoning: why this plan is safe and appropriate
-- warnings: any caveats or considerations (null if none)`;
+- warnings: any caveats or considerations (null if none)
+- directAnswer: For informational queries that can be answered from data summaries, provide the answer here (null if tools are being executed)
+
+CRITICAL OUTPUT RULES:
+1. For ACTION requests (create, delete, update, generate, etc.) → use tools array, directAnswer should be null
+2. For INFORMATION requests (how many, what is, which items, show me, tell me, etc.) → use directAnswer, tools should be empty []
+3. NEVER return both empty tools AND null directAnswer - one must have a value
+4. If you can answer from the DATA SUMMARIES provided above, ALWAYS use directAnswer
+
+Examples of informational queries that should use directAnswer:
+- "How many items are in the coffee category?" → directAnswer with count from menu.categories
+- "Which items don't have images?" → directAnswer mentioning the count and suggesting how to see them
+- "What's my revenue today?" → directAnswer with value from analytics.today.revenue
+- "What are my categories?" → directAnswer listing all categories
+- "Show me my top sellers" → directAnswer listing topSellers from menu data`;
 }
 
 // ============================================================================
@@ -493,6 +516,326 @@ interface FastPathResult {
   canAnswer: boolean;
   answer?: string;
   confidence: number;
+}
+
+// ============================================================================
+// Direct Pattern Matching for Common Queries
+// ============================================================================
+
+interface DirectQueryResult {
+  matched: boolean;
+  answer?: string;
+}
+
+/**
+ * Try to answer common queries directly from data summaries
+ * This is faster and more reliable than LLM classification for well-known patterns
+ */
+function tryDirectPatternMatch(
+  userPrompt: string,
+  dataSummaries: {
+    menu?: MenuSummary;
+    inventory?: InventorySummary;
+    orders?: OrdersSummary;
+    analytics?: AnalyticsSummary;
+  }
+): DirectQueryResult {
+  const prompt = userPrompt.toLowerCase().trim();
+
+  // ========== MENU QUERIES ==========
+
+  // Items without images
+  if (
+    prompt.includes("without image") ||
+    prompt.includes("no image") ||
+    prompt.includes("don't have image") ||
+    prompt.includes("dont have image") ||
+    prompt.includes("missing image") ||
+    prompt.includes("need image") ||
+    (prompt.includes("which") && prompt.includes("image"))
+  ) {
+    if (dataSummaries.menu) {
+      const count = dataSummaries.menu.itemsWithoutImages;
+      if (count === 0) {
+        return { matched: true, answer: "All your menu items have images! 🎉" };
+      }
+      // We have the count but not the specific items - suggest using the tool or navigating
+      return {
+        matched: true,
+        answer: `You have ${count} menu item${count === 1 ? "" : "s"} without images. Navigate to Menu Management to see and add images to these items.`,
+      };
+    }
+  }
+
+  // Category count
+  if (
+    (prompt.includes("how many") && prompt.includes("categor")) ||
+    (prompt.includes("number of") && prompt.includes("categor"))
+  ) {
+    if (dataSummaries.menu) {
+      const count = dataSummaries.menu.categories.length;
+      return {
+        matched: true,
+        answer: `You have ${count} menu categor${count === 1 ? "y" : "ies"}: ${dataSummaries.menu.categories.map((c) => c.name).join(", ")}.`,
+      };
+    }
+  }
+
+  // Items in specific category
+  const categoryCountMatch = prompt.match(
+    /how many (?:items?|products?|dishes?|things?)?\s*(?:are |do i have |in |for )?\s*(?:in |the )?(?:the )?['""]?(\w+(?:\s+\w+)?)['""]?\s*(?:category|section)?/i
+  );
+  if (
+    categoryCountMatch ||
+    (prompt.includes("how many") &&
+      prompt.includes("in") &&
+      dataSummaries.menu?.categories.some((c) => prompt.includes(c.name.toLowerCase())))
+  ) {
+    if (dataSummaries.menu) {
+      // Try to find the category mentioned
+      const categories = dataSummaries.menu.categories;
+      for (const category of categories) {
+        if (prompt.includes(category.name.toLowerCase())) {
+          return {
+            matched: true,
+            answer: `The "${category.name}" category has ${category.itemCount} item${category.itemCount === 1 ? "" : "s"}.`,
+          };
+        }
+      }
+    }
+  }
+
+  // List categories
+  if (
+    prompt.includes("what categor") ||
+    prompt.includes("which categor") ||
+    prompt.includes("list categor") ||
+    prompt.includes("show categor") ||
+    (prompt.includes("my") && prompt.includes("categor"))
+  ) {
+    if (dataSummaries.menu) {
+      const cats = dataSummaries.menu.categories;
+      if (cats.length === 0) {
+        return { matched: true, answer: "You don't have any menu categories yet. Would you like to create one?" };
+      }
+      const catList = cats.map((c) => `• ${c.name} (${c.itemCount} items)`).join("\n");
+      return {
+        matched: true,
+        answer: `You have ${cats.length} menu categories:\n${catList}`,
+      };
+    }
+  }
+
+  // Total menu items
+  if (
+    (prompt.includes("how many") && (prompt.includes("menu item") || prompt.includes("item") || prompt.includes("product"))) ||
+    (prompt.includes("total") && prompt.includes("item"))
+  ) {
+    // Make sure we're not asking about a specific category
+    const isSpecificCategory = dataSummaries.menu?.categories.some((c) =>
+      prompt.includes(c.name.toLowerCase())
+    );
+    if (!isSpecificCategory && dataSummaries.menu) {
+      return {
+        matched: true,
+        answer: `You have ${dataSummaries.menu.totalItems} menu items across ${dataSummaries.menu.categories.length} categories.`,
+      };
+    }
+  }
+
+  // Top sellers
+  if (
+    prompt.includes("top seller") ||
+    prompt.includes("best seller") ||
+    prompt.includes("most popular") ||
+    prompt.includes("selling best")
+  ) {
+    if (dataSummaries.menu?.topSellers && dataSummaries.menu.topSellers.length > 0) {
+      const topItems = dataSummaries.menu.topSellers.slice(0, 5);
+      const itemList = topItems
+        .map((item, i) => `${i + 1}. ${item.name} - ${item.sales7d} sold (£${item.revenue7d.toFixed(2)})`)
+        .join("\n");
+      return {
+        matched: true,
+        answer: `Your top selling items (last 7 days):\n${itemList}`,
+      };
+    }
+  }
+
+  // Average price
+  if (prompt.includes("average price") || prompt.includes("avg price") || prompt.includes("mean price")) {
+    if (dataSummaries.menu) {
+      return {
+        matched: true,
+        answer: `Your average menu item price is £${dataSummaries.menu.avgPrice.toFixed(2)}. Prices range from £${dataSummaries.menu.priceRange.min.toFixed(2)} to £${dataSummaries.menu.priceRange.max.toFixed(2)}.`,
+      };
+    }
+  }
+
+  // ========== ANALYTICS QUERIES ==========
+
+  // Revenue today
+  if (
+    (prompt.includes("revenue") || prompt.includes("sales")) &&
+    (prompt.includes("today") || prompt.includes("today's"))
+  ) {
+    if (dataSummaries.analytics) {
+      const today = dataSummaries.analytics.today;
+      return {
+        matched: true,
+        answer: `Today's revenue is £${today.revenue.toFixed(2)} from ${today.orders} orders (avg £${today.avgOrderValue.toFixed(2)} per order).`,
+      };
+    }
+  }
+
+  // Orders today
+  if (
+    prompt.includes("order") &&
+    (prompt.includes("today") || prompt.includes("today's")) &&
+    (prompt.includes("how many") || prompt.includes("total") || prompt.includes("count"))
+  ) {
+    if (dataSummaries.analytics) {
+      return {
+        matched: true,
+        answer: `You've had ${dataSummaries.analytics.today.orders} orders today with total revenue of £${dataSummaries.analytics.today.revenue.toFixed(2)}.`,
+      };
+    }
+  }
+
+  // Revenue this week
+  if (
+    (prompt.includes("revenue") || prompt.includes("sales")) &&
+    (prompt.includes("this week") || prompt.includes("week"))
+  ) {
+    if (dataSummaries.analytics) {
+      const thisWeek = dataSummaries.analytics.thisWeek;
+      return {
+        matched: true,
+        answer: `This week's revenue is £${thisWeek.revenue.toFixed(2)} from ${thisWeek.orders} orders.`,
+      };
+    }
+  }
+
+  // Peak hours
+  if (prompt.includes("peak hour") || prompt.includes("busiest hour") || prompt.includes("busy time")) {
+    if (dataSummaries.analytics?.timeAnalysis.peakHours) {
+      const peaks = dataSummaries.analytics.timeAnalysis.peakHours.slice(0, 3);
+      const peakList = peaks.map((p) => `${p.hour}:00 (${p.orderCount} orders)`).join(", ");
+      return {
+        matched: true,
+        answer: `Your peak hours are: ${peakList}. ${dataSummaries.analytics.timeAnalysis.busiestDay} is your busiest day.`,
+      };
+    }
+  }
+
+  // Busiest day
+  if (prompt.includes("busiest day") || prompt.includes("best day")) {
+    if (dataSummaries.analytics?.timeAnalysis.busiestDay) {
+      return {
+        matched: true,
+        answer: `Your busiest day is ${dataSummaries.analytics.timeAnalysis.busiestDay}.`,
+      };
+    }
+  }
+
+  // Growth comparison
+  if (
+    prompt.includes("growth") ||
+    prompt.includes("compared to") ||
+    prompt.includes("vs last") ||
+    prompt.includes("versus last")
+  ) {
+    if (dataSummaries.analytics?.growth) {
+      const growth = dataSummaries.analytics.growth;
+      const revDir = growth.revenueGrowth >= 0 ? "up" : "down";
+      const ordDir = growth.ordersGrowth >= 0 ? "up" : "down";
+      return {
+        matched: true,
+        answer: `Compared to the previous week: Revenue is ${revDir} ${Math.abs(growth.revenueGrowth).toFixed(1)}% and orders are ${ordDir} ${Math.abs(growth.ordersGrowth).toFixed(1)}%.`,
+      };
+    }
+  }
+
+  // ========== INVENTORY QUERIES ==========
+
+  // Low stock
+  if (prompt.includes("low stock") || prompt.includes("running low") || prompt.includes("need to reorder")) {
+    if (dataSummaries.inventory) {
+      const lowStock = dataSummaries.inventory.lowStock;
+      if (lowStock.length === 0) {
+        return { matched: true, answer: "All inventory items are well-stocked! No items below reorder level." };
+      }
+      const itemList = lowStock
+        .slice(0, 5)
+        .map((i) => `• ${i.name}: ${i.onHand} ${i.unit} (reorder at ${i.reorderLevel})`)
+        .join("\n");
+      return {
+        matched: true,
+        answer: `You have ${lowStock.length} item${lowStock.length === 1 ? "" : "s"} running low:\n${itemList}${lowStock.length > 5 ? `\n...and ${lowStock.length - 5} more` : ""}`,
+      };
+    }
+  }
+
+  // Out of stock
+  if (prompt.includes("out of stock") || prompt.includes("no stock")) {
+    if (dataSummaries.inventory) {
+      const outOfStock = dataSummaries.inventory.outOfStock;
+      if (outOfStock.length === 0) {
+        return { matched: true, answer: "No items are out of stock! 🎉" };
+      }
+      return {
+        matched: true,
+        answer: `${outOfStock.length} item${outOfStock.length === 1 ? " is" : "s are"} out of stock: ${outOfStock.join(", ")}.`,
+      };
+    }
+  }
+
+  // ========== ORDERS QUERIES ==========
+
+  // Live orders
+  if (
+    prompt.includes("live order") ||
+    prompt.includes("active order") ||
+    prompt.includes("current order") ||
+    prompt.includes("pending order")
+  ) {
+    if (dataSummaries.orders) {
+      return {
+        matched: true,
+        answer: `You have ${dataSummaries.orders.liveOrders} live order${dataSummaries.orders.liveOrders === 1 ? "" : "s"} right now.`,
+      };
+    }
+  }
+
+  // Overdue tickets
+  if (prompt.includes("overdue") && (prompt.includes("ticket") || prompt.includes("order"))) {
+    if (dataSummaries.orders) {
+      const overdue = dataSummaries.orders.overdueTickets;
+      if (overdue.length === 0) {
+        return { matched: true, answer: "No overdue tickets! All orders are on track. 🎉" };
+      }
+      const ticketList = overdue
+        .slice(0, 3)
+        .map((t) => `• ${t.station}: ${t.items.join(", ")} (${t.minutesOverdue} min overdue)`)
+        .join("\n");
+      return {
+        matched: true,
+        answer: `You have ${overdue.length} overdue ticket${overdue.length === 1 ? "" : "s"}:\n${ticketList}`,
+      };
+    }
+  }
+
+  // Average prep time
+  if (prompt.includes("prep time") || prompt.includes("preparation time") || prompt.includes("cooking time")) {
+    if (dataSummaries.orders) {
+      return {
+        matched: true,
+        answer: `Average preparation time is ${dataSummaries.orders.avgPrepTime} minutes.`,
+      };
+    }
+  }
+
+  return { matched: false };
 }
 
 // Smart data formatter for natural language responses
@@ -654,7 +997,6 @@ async function tryFastPath(
     "make",
     "translate",
     "hide",
-    "show",
     "toggle",
     "send",
     "invite",
@@ -668,12 +1010,28 @@ async function tryFastPath(
     "upload",
   ];
 
+  // "show" is context-dependent - if followed by "me" or asking to display data, it's not an action
   const hasAction = actionWords.some((word) => prompt.includes(word));
-  if (hasAction) {
+  
+  // Check for "show" specifically - only treat as action if it's "show/hide" toggle context
+  const hasShowAction = prompt.includes("show") && 
+    (prompt.includes("hide") || prompt.includes("toggle") || prompt.includes("availability"));
+
+  if (hasAction || hasShowAction) {
     return { canAnswer: false, confidence: 1.0 };
   }
 
-  // Step 2: Build data structure summary
+  // Step 2: Try direct pattern matching for common queries (fast, no LLM call needed)
+  const directMatch = tryDirectPatternMatch(userPrompt, dataSummaries);
+  if (directMatch.matched && directMatch.answer) {
+    return {
+      canAnswer: true,
+      answer: directMatch.answer,
+      confidence: 1.0, // Direct pattern match is 100% confident
+    };
+  }
+
+  // Step 3: Build data structure summary for LLM classifier fallback
   const dataStructure: Record<string, string[]> = {};
 
   if (dataSummaries.menu) {
@@ -694,7 +1052,7 @@ async function tryFastPath(
     return { canAnswer: false, confidence: 1.0 };
   }
 
-  // Step 3: Use LLM classifier to determine if data can answer query
+  // Step 4: Use LLM classifier as fallback for complex queries
   try {
     const classificationPrompt = `User question: "${userPrompt}"
 

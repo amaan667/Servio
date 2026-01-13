@@ -264,9 +264,17 @@ export const POST = withUnifiedAuth(
           response += `\n\nNote: ${plan.warnings.join(", ")}`;
         }
       }
-      // Fallback - never show internal reasoning to users
+      // Fallback - try to provide a helpful response based on intent/reasoning
+      else if (plan.intent && plan.reasoning) {
+        // The AI understood the query but didn't execute tools - provide context
+        response = `I understood your request: "${plan.intent}". ${plan.reasoning}`;
+        if (plan.warnings && plan.warnings.length > 0) {
+          response += `\n\nNote: ${plan.warnings.join(", ")}`;
+        }
+      }
+      // Ultimate fallback - only show greeting for completely unhandled cases
       else {
-        response = "Hello! I'm here to help you with your hospitality business. I can assist with menu management, orders, inventory, QR codes, and more. What would you like to work on?";
+        response = "Hello! I'm here to help you with your hospitality business. I can assist with menu management, orders, inventory, QR codes, analytics, and more. Try asking me questions like 'How many menu items do I have?', 'What's my revenue today?', or 'Generate a QR code for Table 5'.";
       }
 
       // Returning response

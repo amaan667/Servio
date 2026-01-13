@@ -1205,6 +1205,11 @@ export const AssistantPlanSchema = z
       .array(z.string())
       .nullable()
       .describe("Any warnings or considerations for the user"),
+    directAnswer: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("For questions that can be answered directly from data summaries without executing tools, provide the answer here. Use this when the user asks informational questions like 'how many items', 'what is the revenue', 'which items don't have images', etc."),
   })
   .strict();
 
