@@ -583,12 +583,12 @@ function tryDirectPatternMatch(
 
   // Items in specific category
   const categoryCountMatch = prompt.match(
-    /how many (?:items?|products?|dishes?|things?)?\s*(?:are |do i have |in |for )?\s*(?:in |the )?(?:the )?['""]?(\w+(?:\s+\w+)?)['""]?\s*(?:category|section)?/i
+    /how many (?:items?|products?|dishes?|things?)?\s*(?:are |do i have |in |for |under )?\s*(?:in |under |the )?(?:the )?['""]?(\w+(?:\s+\w+)?)['""]?\s*(?:category|section)?/i
   );
   if (
     categoryCountMatch ||
     (prompt.includes("how many") &&
-      prompt.includes("in") &&
+      (prompt.includes("in") || prompt.includes("under") || prompt.includes("for")) &&
       dataSummaries.menu?.categories.some((c) => prompt.includes(c.name.toLowerCase())))
   ) {
     if (dataSummaries.menu) {
@@ -598,7 +598,7 @@ function tryDirectPatternMatch(
         if (prompt.includes(category.name.toLowerCase())) {
           return {
             matched: true,
-            answer: `The "${category.name}" category has ${category.itemCount} item${category.itemCount === 1 ? "" : "s"}.`,
+            answer: `The ${category.name} category has ${category.itemCount} item${category.itemCount === 1 ? "" : "s"}.`,
           };
         }
       }

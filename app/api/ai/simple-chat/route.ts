@@ -264,12 +264,19 @@ export const POST = withUnifiedAuth(
           response += `\n\nNote: ${plan.warnings.join(", ")}`;
         }
       }
-      // Fallback - try to provide a helpful response based on intent/reasoning
-      else if (plan.intent && plan.reasoning) {
-        // The AI understood the query but didn't execute tools - provide context
-        response = `I understood your request: "${plan.intent}". ${plan.reasoning}`;
-        if (plan.warnings && plan.warnings.length > 0) {
-          response += `\n\nNote: ${plan.warnings.join(", ")}`;
+      // Fallback - provide direct response if possible, never show reasoning
+      else if (plan.intent) {
+        // If there's a directAnswer in the plan, use it (should have been caught above, but check again)
+        if (plan.directAnswer) {
+          response = plan.directAnswer;
+        }
+        // If there are warnings, show them as they contain user-facing information
+        else if (plan.warnings && plan.warnings.length > 0) {
+          response = plan.warnings.join("\n\n");
+        }
+        // Otherwise, provide a helpful generic response without exposing reasoning
+        else {
+          response = "I'm sorry, I couldn't find the information you're looking for. Please try rephrasing your question or ask me something else.";
         }
       }
       // Ultimate fallback - only show greeting for completely unhandled cases
