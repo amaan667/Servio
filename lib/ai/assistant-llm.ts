@@ -835,6 +835,200 @@ function tryDirectPatternMatch(
     }
   }
 
+  // Kitchen bottlenecks
+  if (prompt.includes("bottleneck") || prompt.includes("slowest station") || prompt.includes("kitchen issue")) {
+    if (dataSummaries.orders?.bottlenecks && dataSummaries.orders.bottlenecks.length > 0) {
+      const bottlenecks = dataSummaries.orders.bottlenecks.slice(0, 3);
+      const bottleneckList = bottlenecks
+        .map((b) => `• ${b.station}: avg ${b.avgWaitTime} min (${b.ticketCount} tickets)`)
+        .join("\n");
+      return {
+        matched: true,
+        answer: `Kitchen bottlenecks (slowest stations):\n${bottleneckList}`,
+      };
+    }
+  }
+
+  // ========== ADDITIONAL ANALYTICS QUERIES ==========
+
+  // Average order value
+  if (prompt.includes("average order") || prompt.includes("avg order") || prompt.includes("order value")) {
+    if (dataSummaries.analytics) {
+      return {
+        matched: true,
+        answer: `Average order value: Today £${dataSummaries.analytics.today.avgOrderValue.toFixed(2)}, This week £${dataSummaries.analytics.thisWeek.avgOrderValue.toFixed(2)}, This month £${dataSummaries.analytics.thisMonth.avgOrderValue.toFixed(2)}.`,
+      };
+    }
+  }
+
+  // Payment methods
+  if (prompt.includes("payment method") || prompt.includes("how do customer") || prompt.includes("card vs cash")) {
+    if (dataSummaries.analytics?.paymentMethods) {
+      const methods = Object.entries(dataSummaries.analytics.paymentMethods)
+        .map(([method, data]) => `• ${method}: ${data.count} orders (£${data.revenue.toFixed(2)})`)
+        .join("\n");
+      return {
+        matched: true,
+        answer: `Payment methods breakdown:\n${methods}`,
+      };
+    }
+  }
+
+  // Poorly selling / never ordered items
+  if (
+    prompt.includes("poorly selling") ||
+    prompt.includes("not selling") ||
+    prompt.includes("never ordered") ||
+    prompt.includes("worst seller") ||
+    prompt.includes("slow seller")
+  ) {
+    if (dataSummaries.analytics?.itemPerformance) {
+      const neverOrdered = dataSummaries.analytics.itemPerformance.neverOrdered.slice(0, 5);
+      const rarelyOrdered = dataSummaries.analytics.itemPerformance.rarelyOrdered.slice(0, 5);
+      
+      let answer = "";
+      if (neverOrdered.length > 0) {
+        answer += `Never ordered (last 7 days): ${neverOrdered.join(", ")}`;
+      }
+      if (rarelyOrdered.length > 0) {
+        if (answer) answer += "\n\n";
+        answer += `Rarely ordered: ${rarelyOrdered.map((i) => `${i.name} (${i.count} orders)`).join(", ")}`;
+      }
+      if (!answer) {
+        answer = "All your menu items have been selling well! No underperformers detected.";
+      }
+      return { matched: true, answer };
+    }
+  }
+
+  // Monthly revenue
+  if (
+    (prompt.includes("revenue") || prompt.includes("sales")) &&
+    (prompt.includes("this month") || prompt.includes("month"))
+  ) {
+    if (dataSummaries.analytics) {
+      const thisMonth = dataSummaries.analytics.thisMonth;
+      return {
+        matched: true,
+        answer: `This month's revenue is £${thisMonth.revenue.toFixed(2)} from ${thisMonth.orders} orders (avg £${thisMonth.avgOrderValue.toFixed(2)} per order).`,
+      };
+    }
+  }
+
+  // Dine-in vs takeaway
+  if (
+    prompt.includes("dine in") ||
+    prompt.includes("dine-in") ||
+    prompt.includes("takeaway") ||
+    prompt.includes("take away") ||
+    prompt.includes("delivery")
+  ) {
+    if (dataSummaries.analytics?.orderPatterns) {
+      const patterns = dataSummaries.analytics.orderPatterns;
+      const total = patterns.takeawayVsDineIn.takeaway + patterns.takeawayVsDineIn.dineIn;
+      const takeawayPct = total > 0 ? ((patterns.takeawayVsDineIn.takeaway / total) * 100).toFixed(1) : 0;
+      const dineInPct = total > 0 ? ((patterns.takeawayVsDineIn.dineIn / total) * 100).toFixed(1) : 0;
+      return {
+        matched: true,
+        answer: `Order breakdown: ${patterns.takeawayVsDineIn.dineIn} dine-in (${dineInPct}%) vs ${patterns.takeawayVsDineIn.takeaway} takeaway (${takeawayPct}%). Average items per order: ${patterns.avgItemsPerOrder.toFixed(1)}.`,
+      };
+    }
+  }
+
+  // Table metrics / turnover
+  if (prompt.includes("table turnover") || prompt.includes("table metric") || prompt.includes("table performance")) {
+    if (dataSummaries.analytics?.tableMetrics) {
+      const metrics = dataSummaries.analytics.tableMetrics;
+      const topTables = metrics.revenueByTable.slice(0, 3)
+        .map((t) => `Table ${t.tableNumber}: £${t.revenue.toFixed(2)} (${t.sessions} sessions)`)
+        .join(", ");
+      return {
+        matched: true,
+        answer: `Table metrics: ${metrics.totalSessions} sessions total, avg turnover ${metrics.avgTurnoverTime.toFixed(0)} minutes. Top tables by revenue: ${topTables}.`,
+      };
+    }
+  }
+
+  // Category performance
+  if (prompt.includes("category performance") || prompt.includes("best category") || prompt.includes("top category")) {
+    if (dataSummaries.analytics?.trending?.categoryPerformance) {
+      const catPerf = Object.entries(dataSummaries.analytics.trending.categoryPerformance)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .slice(0, 5)
+        .map(([cat, data]) => `• ${cat}: £${data.revenue.toFixed(2)} (${data.orders} orders)`)
+        .join("\n");
+      return {
+        matched: true,
+        answer: `Category performance (by revenue):\n${catPerf}`,
+      };
+    }
+  }
+
+  // Summary / overview / how's business
+  if (
+    prompt.includes("summary") ||
+    prompt.includes("overview") ||
+    prompt.includes("how's business") ||
+    prompt.includes("how is business") ||
+    prompt.includes("business doing")
+  ) {
+    if (dataSummaries.analytics && dataSummaries.menu) {
+      const today = dataSummaries.analytics.today;
+      const growth = dataSummaries.analytics.growth;
+      const revTrend = growth.revenueGrowth >= 0 ? "📈" : "📉";
+      const menu = dataSummaries.menu;
+      
+      return {
+        matched: true,
+        answer: `📊 Business Overview:\n\n` +
+          `💰 Today: £${today.revenue.toFixed(2)} from ${today.orders} orders\n` +
+          `${revTrend} Week trend: Revenue ${growth.revenueGrowth >= 0 ? "+" : ""}${growth.revenueGrowth.toFixed(1)}%, Orders ${growth.ordersGrowth >= 0 ? "+" : ""}${growth.ordersGrowth.toFixed(1)}%\n` +
+          `🍽️ Menu: ${menu.totalItems} items across ${menu.categories.length} categories\n` +
+          `⏰ Busiest day: ${dataSummaries.analytics.timeAnalysis.busiestDay}\n` +
+          (dataSummaries.orders ? `📦 Live orders: ${dataSummaries.orders.liveOrders}` : ""),
+      };
+    }
+  }
+
+  // Help / what can you do
+  if (
+    prompt.includes("help") ||
+    prompt.includes("what can you do") ||
+    prompt.includes("what can you help") ||
+    prompt.includes("capabilities")
+  ) {
+    return {
+      matched: true,
+      answer: `I'm your Servio AI Assistant! Here's what I can help you with:\n\n` +
+        `📋 **Menu Management**\n` +
+        `• Create, update, or delete menu items\n` +
+        `• Update prices (e.g., "increase coffee prices by 10%")\n` +
+        `• Translate menus to 9 languages\n` +
+        `• Find items without images\n\n` +
+        `📊 **Analytics & Insights**\n` +
+        `• Revenue and order statistics\n` +
+        `• Top selling items and categories\n` +
+        `• Peak hours and busiest days\n` +
+        `• Business performance trends\n\n` +
+        `📱 **QR Codes**\n` +
+        `• Generate QR codes for tables (e.g., "Table 5")\n` +
+        `• Bulk generate QR codes (e.g., "tables 1-20")\n` +
+        `• Counter QR codes for takeaway\n\n` +
+        `📦 **Orders & Kitchen**\n` +
+        `• View pending and overdue orders\n` +
+        `• Update order statuses\n` +
+        `• Kitchen station performance\n\n` +
+        `📦 **Inventory**\n` +
+        `• Check stock levels and low stock alerts\n` +
+        `• Adjust inventory quantities\n` +
+        `• Generate purchase orders\n\n` +
+        `👥 **Staff & Tables**\n` +
+        `• List and invite staff members\n` +
+        `• View table availability and revenue\n\n` +
+        `Just ask me anything in natural language!`,
+    };
+  }
+
   return { matched: false };
 }
 
