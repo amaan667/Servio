@@ -2,39 +2,18 @@
 
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
-import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 
 interface AIChatClientPageProps {
   venueId: string;
   tier: string;
   role: string;
-  hasAccess: boolean;
 }
 
 export default function AIChatClientPage({
   venueId,
-  tier,
+  tier: _tier,
   role,
-  hasAccess,
 }: AIChatClientPageProps) {
-  // Show tier restriction if no access
-  if (!hasAccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-          <RoleBasedNavigation venueId={venueId} userRole={role as UserRole} userName="User" />
-          <TierRestrictionBanner
-            currentTier={tier}
-            requiredTier="enterprise"
-            featureName="AI Assistant"
-            venueId={venueId}
-            reason="AI Assistant requires Enterprise tier"
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">

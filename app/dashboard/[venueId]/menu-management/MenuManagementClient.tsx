@@ -715,7 +715,6 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
             setDesignSettings={setDesignSettings}
             onLogoUpload={handleLogoUpload}
             isUploadingLogo={isUploadingLogo}
-            venueId={venueId}
           />
 
           <div className="flex justify-between items-center">

@@ -15,11 +15,8 @@ export const metadata = {
 export default async function AnalyticsPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Server-side auth check - analytics is available to all tiers but with different levels
+  // Server-side auth check - NO REDIRECTS - Dashboard always loads
   const auth = await requirePageAuth(venueId).catch(() => null);
-
-  // All tiers have analytics, just different levels
-  const hasAnalyticsAccess = true;
 
   // Fetch analytics data on server
   const [ordersData, menuData, revenueData] = await Promise.all([
@@ -39,7 +36,6 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
       revenueData={revenueData}
       tier={tier}
       role={auth?.role ?? "viewer"}
-      hasAccess={hasAnalyticsAccess}
     />
   );
 }

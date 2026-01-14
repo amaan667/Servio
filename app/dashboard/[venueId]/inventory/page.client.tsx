@@ -5,20 +5,17 @@ import { supabaseBrowser } from "@/lib/supabase";
 import InventoryClient from "./InventoryClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
-import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 
 interface InventoryClientPageProps {
   venueId: string;
   tier: string;
   role: string;
-  hasAccess: boolean;
 }
 
 export default function InventoryClientPage({
   venueId,
-  tier,
+  tier: _tier,
   role,
-  hasAccess,
 }: InventoryClientPageProps) {
   const [venueName, setVenueName] = useState<string>("Your Venue");
 
@@ -38,24 +35,6 @@ export default function InventoryClientPage({
 
     fetchVenueName();
   }, [venueId]);
-
-  // Show tier restriction if no access
-  if (!hasAccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-          <RoleBasedNavigation venueId={venueId} userRole={role as UserRole} userName="User" />
-          <TierRestrictionBanner
-            currentTier={tier}
-            requiredTier="pro"
-            featureName="Inventory Management"
-            venueId={venueId}
-            reason="Inventory management requires Pro tier or higher"
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

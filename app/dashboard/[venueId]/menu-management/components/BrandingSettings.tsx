@@ -6,18 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Image, Upload } from "lucide-react";
 import { DesignSettings } from "../types";
-import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 
 interface BrandingSettingsProps {
   designSettings: DesignSettings;
   setDesignSettings: (settings: DesignSettings) => void;
   onLogoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isUploadingLogo: boolean;
-  venueId: string;
-  // Tier/access info passed from page (no client-side checks)
-  // Optional for now - will be passed from page in future
-  hasAccess?: boolean;
-  currentTier?: string;
 }
 
 export function BrandingSettings({
@@ -25,31 +19,7 @@ export function BrandingSettings({
   setDesignSettings,
   onLogoUpload,
   isUploadingLogo,
-  venueId,
-  hasAccess = true, // Default to true - page should pass this
-  currentTier = "starter", // Default - page should pass this
 }: BrandingSettingsProps) {
-  if (!hasAccess) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Image className="h-5 w-5" />
-            <span>Branding</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TierRestrictionBanner
-            currentTier={currentTier}
-            requiredTier="enterprise"
-            featureName="Custom Branding"
-            venueId={venueId}
-            reason="Custom branding (logo upload, colors, fonts) requires Enterprise tier"
-          />
-        </CardContent>
-      </Card>
-    );
-  }
   return (
     <Card>
       <CardHeader>

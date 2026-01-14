@@ -6,17 +6,11 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 export default async function KDSPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Server-side auth check - KDS is NOT included in Starter tier (available as add-on)
-  // NO REDIRECTS - Dashboard always loads
+  // Server-side auth check - NO REDIRECTS - Dashboard always loads
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-  // Check KDS access using the auth context's feature access helper
-  // This properly checks tier limits: Starter = false, Pro = "advanced", Enterprise = "enterprise"
-  const currentTier = auth?.tier ?? "starter";
-  const hasKDSAccess = auth?.hasFeatureAccess("kds") ?? false;
-  
-  
   // Determine KDS tier from tier limits - matches TIER_LIMITS configuration
+  const currentTier = auth?.tier ?? "starter";
   const kdsTier: "advanced" | "enterprise" | false =
     currentTier === "enterprise" ? "enterprise" : currentTier === "pro" ? "advanced" : false;
 
@@ -143,7 +137,6 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       tier={auth?.tier ?? "starter"}
       kdsTier={kdsTier}
       role={auth?.role ?? "viewer"}
-      hasAccess={hasKDSAccess}
     />
   );
 }

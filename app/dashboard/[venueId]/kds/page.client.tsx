@@ -3,7 +3,6 @@
 import KDSClient from "./KDSClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
-import { TierRestrictionBanner } from "@/components/TierRestrictionBanner";
 import { Badge } from "@/components/ui/badge";
 
 interface KDSClientPageProps {
@@ -13,7 +12,6 @@ interface KDSClientPageProps {
   tier: string;
   kdsTier: "advanced" | "enterprise" | false;
   role: string;
-  hasAccess: boolean;
 }
 
 export default function KDSClientPage({
@@ -23,37 +21,7 @@ export default function KDSClientPage({
   tier,
   kdsTier,
   role,
-  hasAccess,
 }: KDSClientPageProps) {
-
-  // KDS is NOT included in Starter tier - show restriction banner
-  if (!hasAccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-          <RoleBasedNavigation venueId={venueId} userRole={role as UserRole} userName="User" />
-
-          <div className="mb-8 mt-4">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Kitchen Display System
-            </h1>
-            <p className="text-lg text-foreground mt-2">
-              Manage kitchen prep stations and ticket flow
-            </p>
-          </div>
-
-          <TierRestrictionBanner
-            currentTier={tier}
-            requiredTier="pro"
-            featureName="Kitchen Display System (KDS)"
-            venueId={venueId}
-            reason="KDS is not included in Starter tier. Upgrade to Pro or Enterprise, or add KDS as an add-on to your Starter plan."
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">

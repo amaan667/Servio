@@ -8,7 +8,6 @@ interface FeedbackClientPageProps {
   venueId: string;
   tier: string;
   role: string;
-  hasAccess: boolean;
   initialQuestions?: Array<{
     id: string;
     prompt: string;
