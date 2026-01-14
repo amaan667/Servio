@@ -53,6 +53,22 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 
 /**
+ * Get MIME type from file extension
+ */
+function getMimeTypeFromExtension(filename: string): string {
+  const ext = filename.toLowerCase().split('.').pop();
+  const mimeTypes: Record<string, string> = {
+    'pdf': 'application/pdf',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'webp': 'image/webp',
+    'heic': 'image/heic'
+  };
+  return mimeTypes[ext || ''] || 'application/octet-stream';
+}
+
+/**
  * Intelligently merge existing database items with newly extracted items
  * Enhances existing items with better data and adds new items
  */
@@ -212,19 +228,30 @@ export const POST = withUnifiedAuth(
       // Create authenticated Supabase client
       const supabase = await createServerSupabase();
 
-      // Step 1: Convert PDF to images (if PDF provided)
+      // Step 1: Convert file to images (PDF or direct image)
       let pdfImages: string[] | undefined;
 
       if (file) {
-        const pdfBuffer = Buffer.from(await file.arrayBuffer());
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        const mimeType = file.type || getMimeTypeFromExtension(file.name);
 
         try {
-          const { convertPDFToImages } = await import("@/lib/pdf-to-images-serverless");
-          pdfImages = await convertPDFToImages(pdfBuffer);
+          if (mimeType === 'application/pdf') {
+            // Convert PDF to images
+            const { convertPDFToImages } = await import("@/lib/pdf-to-images-serverless");
+            pdfImages = await convertPDFToImages(fileBuffer);
+          } else if (mimeType.startsWith('image/')) {
+            // Convert image to base64 data URL for processing
+            const base64 = fileBuffer.toString('base64');
+            const dataUrl = `data:${mimeType};base64,${base64}`;
+            pdfImages = [dataUrl];
+          } else {
+            throw new Error(`Unsupported file type: ${mimeType}`);
+          }
 
         } catch (conversionError) {
-
-          throw new Error("PDF conversion failed. Please check file format.");
+          const fileType = mimeType === 'application/pdf' ? 'PDF' : 'image';
+          throw new Error(`${fileType} processing failed. Please check file format and try again.`);
         }
 
         // Store PDF images in database

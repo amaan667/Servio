@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { FileText, Upload, Info } from "lucide-react";
@@ -120,7 +119,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     if (!validTypes.includes(fileExtension)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload a .txt, .md, .json, or .pdf file",
+        description: "Please upload a .pdf, .png, .jpg, .jpeg, .webp, .heic, .txt, .md, or .json file",
         variant: "destructive",
       });
       return;
@@ -144,7 +143,11 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     setIsProcessing(true);
 
     try {
-      if (fileExtension === ".pdf") {
+      // Handle all visual formats (PDF, images) through catalog/replace for consistent OCR processing
+      const isVisualFormat = fileExtension === ".pdf" ||
+        [".png", ".jpg", ".jpeg", ".webp", ".heic"].includes(fileExtension);
+
+      if (isVisualFormat) {
         // Use catalog replace endpoint
         const formData = new FormData();
         formData.append("file", file);
@@ -496,36 +499,29 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           Upload Menu
         </CardTitle>
         <CardDescription className="text-gray-900">
-          Add your menu URL (if available), then upload your PDF. Both sources will be combined
-          using AI for perfect menu extraction.
+          Upload your menu by entering a website URL or uploading files (PDF, images, text).
+          All formats are supported with automatic processing.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Menu URL for Enhanced Matching */}
+        {/* Menu URL Input */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="menu-url-upload">Menu Website URL (Optional)</Label>
-            {menuUrl && menuUrl.trim() && (
-              <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                🎯 Hybrid Mode Ready
-              </Badge>
-            )}
-          </div>
+          <Label htmlFor="menu-url-upload">Menu Website URL (Optional)</Label>
           <Input
             id="menu-url-upload"
             type="url"
-            placeholder="https://yourmenu.co.uk/menu"
+            placeholder="https://your-restaurant.com/menu"
             value={menuUrl}
             onChange={(e) => setMenuUrl(e.target.value)}
             disabled={isProcessing}
           />
           <div className="flex items-center gap-2">
-            <p className="text-xs text-muted-foreground flex-1">
+            <p className="text-sm text-muted-foreground flex-1">
               {menuUrl && menuUrl.trim()
                 ? hasExistingUpload
-                  ? "🎯 Click 'Enhance with URL' to combine PDF with website data"
-                  : "🌐 Click 'Import from URL' to extract menu from website"
-                : "💡 Add URL for hybrid extraction (combines PDF + website data)"}
+                  ? "Click 'Enhance with URL' to combine uploaded file with website data"
+                  : "Click 'Import from URL' to extract menu from website"
+                : "Add a menu URL to combine with uploaded files for better results"}
             </p>
             {menuUrl && menuUrl.trim() && (
               <Button
@@ -564,8 +560,9 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           </div>
         )}
 
+        {/* File Upload */}
         <div className="space-y-2">
-          <Label>Upload PDF Menu</Label>
+          <Label>Upload Menu File</Label>
           {/* Drag and Drop Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
@@ -576,10 +573,10 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
             onDrop={handleDrop}
           >
             <FileText className="h-8 w-8 mx-auto mb-2 text-gray-900" />
-            <p className="text-sm text-gray-900 mb-2">Drag and drop your menu PDF here, or</p>
+            <p className="text-sm text-gray-900 mb-2">Drag and drop your menu file here, or</p>
             {menuUrl && (
               <p className="text-xs text-muted-foreground mb-2">
-                Will combine with URL data for best results
+                Will combine with URL data for enhanced results
               </p>
             )}
             <Button
@@ -588,26 +585,27 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
               disabled={isProcessing}
             >
               <FileText className="h-4 w-4 mr-2" />
-              {isProcessing ? "Processing..." : "Choose PDF"}
+              {isProcessing ? "Processing..." : "Choose File"}
             </Button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.txt,.md,.json"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.txt,.md,.json"
               onChange={handleFileUpload}
               className="hidden"
             />
           </div>
 
           <div className="text-sm text-gray-900">
-            Supported formats: PDF (max 10MB), TXT, MD, JSON (max 1MB)
+            Supported formats: PDF, Images (.png, .jpg, .jpeg, .webp, .heic), Text (.txt, .md, .json)
           </div>
         </div>
 
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription className="text-gray-900">
-            <p>For best results, ensure your PDF has clear, readable text and good contrast.</p>
+            <p>All menu formats are supported with automatic processing. PDFs are automatically converted to images for optimal OCR extraction.</p>
+            <p>Combine URL and file uploads for the best results with hybrid AI processing.</p>
           </AlertDescription>
         </Alert>
       </CardContent>
