@@ -329,10 +329,20 @@ export default function QRCodeClient({
                 <SelectItem value="counter">Counters (Pickup & Till Orders)</SelectItem>
               </SelectContent>
             </Select>
+            {qrType === "table" && (
+              <p className="text-xs text-blue-600 mt-2">
+                🍽️ Traditional table service. Customers sit at tables and servers deliver orders directly.
+              </p>
+            )}
             {qrType === "table_pickup" && (
               <p className="text-xs text-amber-600 mt-2">
                 📢 Customers will sit at tables but collect their food at the counter. They'll
                 receive "Order Ready" notifications.
+              </p>
+            )}
+            {qrType === "counter" && (
+              <p className="text-xs text-green-600 mt-2">
+                🏪 Quick service counter. Customers order and pay at the counter, then collect their orders when ready.
               </p>
             )}
           </div>
