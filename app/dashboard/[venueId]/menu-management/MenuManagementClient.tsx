@@ -57,7 +57,13 @@ import { loadFontForFamily } from "./utils/fontLoader";
 // Types
 import { MenuItem, ActiveTab, PreviewMode } from "./types";
 
-export default function MenuManagementClient({ venueId }: { venueId: string }) {
+export default function MenuManagementClient({
+  venueId,
+  initialMenuItems
+}: {
+  venueId: string;
+  initialMenuItems?: MenuItem[];
+}) {
   const searchParams = useSearchParams();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -78,7 +84,7 @@ export default function MenuManagementClient({ venueId }: { venueId: string }) {
   const router = useRouter();
 
   const { menuItems, loading, categoryOrder, setCategoryOrder, setMenuItems, loadMenuItems } =
-    useMenuItems(venueId);
+    useMenuItems(venueId, initialMenuItems);
 
   // Log component state changes
   useEffect(() => { /* Intentionally empty */ }, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);

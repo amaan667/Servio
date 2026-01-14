@@ -214,15 +214,15 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
           <div className="space-y-2">
             <Label>Item Image</Label>
             {imagePreview ? (
-              <div className="relative w-full max-h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="relative w-full h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                 <img
                   src={imagePreview}
                   alt={formData.name || "Menu item"}
-                  className="max-w-full max-h-80 object-contain"
+                  className="w-full h-full object-contain"
                 />
                 <button
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg z-10"
                   type="button"
                   aria-label="Remove image"
                 >

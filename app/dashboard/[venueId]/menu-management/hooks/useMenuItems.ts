@@ -4,9 +4,9 @@ import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { MenuItem } from "../types";
 
-export function useMenuItems(venueId: string) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(false); // Start with false to prevent showing 0 items
+export function useMenuItems(venueId: string, initialData?: MenuItem[]) {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialData || []);
+  const [loading, setLoading] = useState(!initialData); // Start with loading true only if no initial data
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const { toast } = useToast();
 

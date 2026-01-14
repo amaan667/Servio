@@ -210,7 +210,7 @@ export function useDashboardData(
     });
 
     // Always use initial data immediately to prevent showing 0 values
-    // But then always fetch fresh data to ensure we have the latest state
+    // Only fetch fresh data if we don't have valid server data
     if (initialCounts) {
       setCounts(initialCounts);
     }
@@ -219,12 +219,20 @@ export function useDashboardData(
     }
     setLoading(false);
 
-    // Always fetch fresh data on mount to ensure correct state
-    // This ensures the dashboard always shows current data, not stale cached data
-    const loadData = async () => {
-      await Promise.all([fetchCounts(true), fetchStats(true)]);
-    };
-    loadData();
+    // Only fetch fresh data if server data is missing or invalid
+    // This prevents flickering by avoiding unnecessary refetches
+    const shouldFetchFresh =
+      !initialCounts ||
+      !initialStats ||
+      initialStats.menuItems === undefined ||
+      initialStats.menuItems < 0;
+
+    if (shouldFetchFresh) {
+      const loadData = async () => {
+        await Promise.all([fetchCounts(true), fetchStats(true)]);
+      };
+      loadData();
+    }
   }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
 
   // Set up real-time subscriptions for live updates

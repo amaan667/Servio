@@ -6,14 +6,17 @@ import { useAuth } from "@/app/auth/AuthProvider";
 import MenuManagementClient from "./MenuManagementClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
+import { MenuItem } from "./types";
 
 export default function MenuManagementClientPage({
   venueId,
   role,
+  initialMenuItems,
 }: {
   venueId: string;
   tier: string;
   role: string;
+  initialMenuItems?: MenuItem[];
 }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -46,7 +49,7 @@ export default function MenuManagementClientPage({
           </p>
         </div>
 
-        <MenuManagementClient venueId={venueId} />
+        <MenuManagementClient venueId={venueId} initialMenuItems={initialMenuItems} />
       </div>
     </div>
   );
