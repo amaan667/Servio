@@ -214,11 +214,11 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
           <div className="space-y-2">
             <Label>Item Image</Label>
             {imagePreview ? (
-              <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
+              <div className="relative w-full max-h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                 <img
                   src={imagePreview}
                   alt={formData.name || "Menu item"}
-                  className="w-full h-full object-cover"
+                  className="max-w-full max-h-80 object-contain"
                 />
                 <button
                   onClick={handleRemoveImage}
@@ -230,7 +230,7 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
                 </button>
               </div>
             ) : (
-              <div className="w-full aspect-video bg-gray-100 rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-gray-300">
+              <div className="w-full h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-gray-300">
                 <ImageIcon className="h-12 w-12 text-gray-400 mb-2" />
                 <p className="text-sm text-gray-500">No image uploaded</p>
               </div>
