@@ -15,7 +15,7 @@ export interface Order {
   venue_id: string;
   table_number: number;
   counter_number?: number;
-  order_type?: "table" | "counter";
+  order_type?: "table" | "counter" | "table_pickup"; // table_pickup = sit at table but collect at counter
   order_location?: string;
   customer_name: string;
   customer_phone: string;
@@ -28,6 +28,7 @@ export interface Order {
   created_at: string;
   updated_at: string;
   source?: "qr" | "counter";
+  requires_collection?: boolean; // Alternative flag for collection requirement
 }
 
 export function useOrderDetails(orderId: string) {
@@ -149,14 +150,15 @@ export function useOrderDetails(orderId: string) {
             filter: `id=eq.${orderId}`,
           },
           (payload) => {
-            const newOrder = payload.new as Order;
+            const newOrderData = payload.new as Partial<Order>;
+            const newStatus = newOrderData.order_status;
 
-            // Check if order just became READY
-            if (
-              previousStatusRef.current &&
-              previousStatusRef.current !== "READY" &&
-              newOrder.order_status === "READY"
-            ) {
+            // Check if order just became READY (or needs collection notification)
+            const requiresCollectionNotification =
+              newStatus === "READY" &&
+              previousStatusRef.current !== "READY";
+
+            if (requiresCollectionNotification) {
               setJustBecameReady(true);
               playReadySound();
 
@@ -167,8 +169,20 @@ export function useOrderDetails(orderId: string) {
               });
             }
 
-            previousStatusRef.current = newOrder.order_status;
-            setOrder((prev) => (prev ? { ...prev, ...newOrder } : null));
+            if (newStatus) {
+              previousStatusRef.current = newStatus;
+            }
+
+            // Update order state - preserve items since realtime only sends flat order data
+            setOrder((prev) => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                ...newOrderData,
+                // Preserve items array since it's from a joined table
+                items: prev.items,
+              };
+            });
             setLastUpdate(new Date());
           }
         )

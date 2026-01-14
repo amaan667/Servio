@@ -33,5 +33,6 @@ export interface OrderParams {
   isDemo: boolean;
   isCounterOrder: boolean;
   orderLocation: string;
-  orderType: "counter" | "table";
+  orderType: "counter" | "table" | "table_pickup"; // table_pickup = sit at table, collect at counter
+  requiresCollection?: boolean; // Flag for collection notification
 }

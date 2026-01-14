@@ -25,7 +25,11 @@ import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useFeedbackManagement } from "./hooks/useFeedbackManagement";
 
 // Constants
-import { TABLE_ORDER_STATUSES, COUNTER_ORDER_STATUSES } from "./constants";
+import {
+  TABLE_ORDER_STATUSES,
+  COUNTER_ORDER_STATUSES,
+  TABLE_PICKUP_ORDER_STATUSES,
+} from "./constants";
 
 /**
  * Order Details Page
@@ -66,17 +70,30 @@ export default function OrderDetailsPage() {
     );
   }
 
-  const isTableOrder = order.order_type === "table" || (order.table_number && !order.source);
+  // Determine order type and whether it requires collection
+  const isTablePickup = order.order_type === "table_pickup" || order.requires_collection === true;
   const isCounterOrder = order.source === "counter" || order.order_type === "counter";
-  const orderStatuses = isTableOrder ? TABLE_ORDER_STATUSES : COUNTER_ORDER_STATUSES;
+  const isTableOrder =
+    !isTablePickup && !isCounterOrder && (order.order_type === "table" || order.table_number);
+
+  // Orders that require collection notification (counter orders AND table pickup orders)
+  const requiresCollection = isCounterOrder || isTablePickup;
+
+  // Select the appropriate status flow
+  const orderStatuses = isTablePickup
+    ? TABLE_PICKUP_ORDER_STATUSES
+    : isCounterOrder
+      ? COUNTER_ORDER_STATUSES
+      : TABLE_ORDER_STATUSES;
+
   const currentStatusIndex = orderStatuses.findIndex((s) => s.key === order.order_status);
   const isOrderReady = order.order_status === "READY";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* ORDER READY Alert Banner - Shows when order becomes ready */}
-        {(justBecameReady || isOrderReady) && isCounterOrder && (
+        {/* ORDER READY Alert Banner - Shows when order becomes ready for collection */}
+        {(justBecameReady || isOrderReady) && requiresCollection && (
           <div className="mb-6 animate-pulse">
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-2xl relative overflow-hidden">
               {/* Animated background pattern */}
@@ -207,11 +224,29 @@ export default function OrderDetailsPage() {
                 <p className="text-sm text-gray-600">Location</p>
                 <p className="font-medium">
                   {order.table_number
-                    ? `Table ${order.table_number}`
+                    ? isTablePickup
+                      ? `Table ${order.table_number} (Collection at counter)`
+                      : `Table ${order.table_number}`
                     : `Counter ${order.counter_number}`}
                 </p>
               </div>
             </div>
+
+            {/* Show collection notice for table pickup orders */}
+            {isTablePickup && (
+              <>
+                <Separator />
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800 font-medium">
+                    📢 Collection Required
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    When your order is ready, please collect it at the counter and return to your
+                    table.
+                  </p>
+                </div>
+              </>
+            )}
 
             <Separator />
 

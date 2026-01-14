@@ -12,7 +12,7 @@ interface QRCodeCardProps {
   size: number;
   onCopy: (url: string) => void;
   onDownload: (qr: GeneratedQR) => void;
-  onRemove: (name: string, type: "table" | "counter") => void;
+  onRemove: (name: string, type: "table" | "counter" | "table_pickup") => void;
 }
 
 export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCardProps) {
