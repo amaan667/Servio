@@ -95,6 +95,15 @@ export async function POST(req: Request) {
       updateData.completion_status = "COMPLETED"; // Cancelled orders are also "completed" in lifecycle
     }
 
+    // Get current order status before update (to check if transitioning to READY)
+    const { data: currentOrderData } = await supabase
+      .from("orders")
+      .select("order_status, source, customer_phone, customer_email")
+      .eq("id", orderId)
+      .single();
+
+    const previousStatus = currentOrderData?.order_status;
+
     const { data, error } = await supabase
       .from("orders")
       .update(updateData)
@@ -104,6 +113,64 @@ export async function POST(req: Request) {
     if (error) {
 
       return apiErrors.internal(error.message);
+    }
+
+    // Send "Order Ready" notification when order status changes to READY
+    // This is particularly useful for counter-service/collection orders
+    if (status === "READY" && previousStatus !== "READY") {
+      const order = data?.[0];
+      if (order) {
+        // Check if venue has counter pickup service and customer has contact info
+        const isCounterOrder = order.source === "counter" || order.order_type === "counter";
+        const hasContactInfo = order.customer_phone || order.customer_email;
+
+        if (hasContactInfo) {
+          // Get venue settings to check notification preferences
+          const { data: venueSettings } = await supabase
+            .from("venues")
+            .select("service_type, notify_customer_on_ready")
+            .eq("venue_id", order.venue_id)
+            .single();
+
+          // Only send notifications if enabled (default to true for counter service venues)
+          const shouldNotify =
+            venueSettings?.notify_customer_on_ready ??
+            (venueSettings?.service_type === "counter_pickup" ||
+              venueSettings?.service_type === "both" ||
+              isCounterOrder);
+
+          if (shouldNotify) {
+            try {
+              // Build notification channels based on available contact info
+              const notificationChannels: string[] = [];
+              if (order.customer_phone) notificationChannels.push("sms");
+              if (order.customer_email) notificationChannels.push("email");
+
+              // Fire and forget - don't wait for notification to complete
+              const baseUrl =
+                env("NEXT_PUBLIC_SITE_URL") || "https://servio-production.up.railway.app";
+
+              fetch(`${baseUrl}/api/orders/notify-ready`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  // Pass auth headers for internal call
+                  Cookie: req.headers.get("cookie") || "",
+                },
+                body: JSON.stringify({
+                  orderId,
+                  venueId: order.venue_id,
+                  notificationChannels,
+                }),
+              }).catch(() => {
+                // Notification failed silently - don't block status update
+              });
+            } catch {
+              // Don't fail the status update if notification setup fails
+            }
+          }
+        }
+      }
     }
 
     // Deduct inventory stock when order is completed

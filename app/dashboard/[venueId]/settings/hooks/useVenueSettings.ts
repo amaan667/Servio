@@ -26,6 +26,7 @@ export interface Venue {
   operating_hours?: OperatingHours;
   latitude?: number;
   longitude?: number;
+  notify_customer_on_ready?: boolean;
 }
 
 export interface User {
@@ -102,6 +103,14 @@ export function useVenueSettings(venue: Venue) {
     (venue as { receipt_footer_text?: string }).receipt_footer_text || ""
   );
 
+  // Notification settings state
+  // Default to true for counter pickup venues, false otherwise
+  const defaultNotifyOnReady =
+    venue.service_type === "counter_pickup" || venue.service_type === "both";
+  const [notifyCustomerOnReady, setNotifyCustomerOnReady] = useState(
+    venue.notify_customer_on_ready ?? defaultNotifyOnReady
+  );
+
   // Auto-detect timezone on mount
   useEffect(() => {
     if (!venue.timezone) {
@@ -115,6 +124,8 @@ export function useVenueSettings(venue: Venue) {
 
   // Track unsaved changes
   useEffect(() => {
+    const defaultNotify =
+      venue.service_type === "counter_pickup" || venue.service_type === "both";
     const changed =
       venueName !== venue.venue_name ||
       venueEmail !== (venue.email || "") ||
@@ -129,7 +140,8 @@ export function useVenueSettings(venue: Venue) {
         ((venue as { show_vat_breakdown?: boolean }).show_vat_breakdown ?? true) ||
       allowEmailInput !== ((venue as { allow_email_input?: boolean }).allow_email_input ?? true) ||
       receiptLogoUrl !== ((venue as { receipt_logo_url?: string }).receipt_logo_url || "") ||
-      receiptFooterText !== ((venue as { receipt_footer_text?: string }).receipt_footer_text || "");
+      receiptFooterText !== ((venue as { receipt_footer_text?: string }).receipt_footer_text || "") ||
+      notifyCustomerOnReady !== (venue.notify_customer_on_ready ?? defaultNotify);
 
     setHasUnsavedChanges(changed);
   }, [
@@ -146,6 +158,7 @@ export function useVenueSettings(venue: Venue) {
     allowEmailInput,
     receiptLogoUrl,
     receiptFooterText,
+    notifyCustomerOnReady,
   ]);
 
   const updateVenueSettings = async () => {
@@ -172,6 +185,7 @@ export function useVenueSettings(venue: Venue) {
           allow_email_input: allowEmailInput,
           receipt_logo_url: receiptLogoUrl || null,
           receipt_footer_text: receiptFooterText || null,
+          notify_customer_on_ready: notifyCustomerOnReady,
           updated_at: new Date().toISOString(),
         })
         .eq("venue_id", venue.venue_id);
@@ -253,6 +267,8 @@ export function useVenueSettings(venue: Venue) {
     setReceiptLogoUrl,
     receiptFooterText,
     setReceiptFooterText,
+    notifyCustomerOnReady,
+    setNotifyCustomerOnReady,
     updateVenueSettings,
     updateDayHours,
   };

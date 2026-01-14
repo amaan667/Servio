@@ -7,21 +7,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { Clock, XCircle, User, Hash, Star, Loader2 } from "lucide-react";
+import {
+  Clock,
+  XCircle,
+  User,
+  Hash,
+  Star,
+  Loader2,
+  Bell,
+  RefreshCw,
+  CheckCircle2,
+  X,
+} from "lucide-react";
 
 // Hooks
 import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useFeedbackManagement } from "./hooks/useFeedbackManagement";
 
 // Constants
-import { TABLE_ORDER_STATUSES, COUNTER_ORDER_STATUSES, GREYED_OUT_STATUSES } from "./constants";
+import { TABLE_ORDER_STATUSES, COUNTER_ORDER_STATUSES } from "./constants";
 
 /**
  * Order Details Page
  * Shows order status and allows feedback
- *
- * Refactored: Extracted hooks and constants for better organization
- * Original: 630 lines → Now: ~200 lines
+ * Now includes real-time updates and ORDER READY notifications for counter pickup
  */
 
 export default function OrderDetailsPage() {
@@ -29,7 +38,8 @@ export default function OrderDetailsPage() {
   const orderId = params.orderId as string;
   const [showFeedback, setShowFeedback] = useState(false);
 
-  const { order, loading, error } = useOrderDetails(orderId);
+  const { order, loading, error, justBecameReady, dismissReadyAlert, lastUpdate, refetch } =
+    useOrderDetails(orderId);
   const feedback = useFeedbackManagement(order?.venue_id || "");
 
   if (loading) {
@@ -56,18 +66,91 @@ export default function OrderDetailsPage() {
     );
   }
 
-  const isTableOrder = order.order_type === "table" || order.table_number;
+  const isTableOrder = order.order_type === "table" || (order.table_number && !order.source);
+  const isCounterOrder = order.source === "counter" || order.order_type === "counter";
   const orderStatuses = isTableOrder ? TABLE_ORDER_STATUSES : COUNTER_ORDER_STATUSES;
   const currentStatusIndex = orderStatuses.findIndex((s) => s.key === order.order_status);
-  const isCancelled = GREYED_OUT_STATUSES.some((s) => s.key === order.order_status);
+  const isOrderReady = order.order_status === "READY";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
+        {/* ORDER READY Alert Banner - Shows when order becomes ready */}
+        {(justBecameReady || isOrderReady) && isCounterOrder && (
+          <div className="mb-6 animate-pulse">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-2xl relative overflow-hidden">
+              {/* Animated background pattern */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.3),transparent_50%)]" />
+              </div>
+
+              <div className="relative z-10">
+                {justBecameReady && (
+                  <button
+                    onClick={dismissReadyAlert}
+                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-white/20 transition-colors"
+                    aria-label="Dismiss alert"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <div className="bg-white/20 rounded-full p-3">
+                    <Bell className="h-8 w-8 animate-bounce" />
+                  </div>
+                  <div className="bg-white/20 rounded-full p-3">
+                    <CheckCircle2 className="h-8 w-8" />
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-bold text-center mb-2">
+                  🎉 Your Order is Ready!
+                </h2>
+
+                <p className="text-xl text-center text-white/90 mb-4">
+                  Please collect your order at the counter
+                </p>
+
+                <div className="bg-white/20 rounded-xl p-4 text-center">
+                  <p className="text-sm text-white/80 mb-1">Order Number</p>
+                  <p className="text-4xl font-bold tracking-wider">
+                    #{order.id.slice(-6).toUpperCase()}
+                  </p>
+                </div>
+
+                <p className="text-center text-white/70 text-sm mt-4">
+                  Show this screen to collect your order
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Order #{order.id.slice(0, 8)}</h1>
-          <p className="text-gray-600 mt-2">{new Date(order.created_at).toLocaleString()}</p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Order #{order.id.slice(-6).toUpperCase()}
+            </h1>
+            <p className="text-gray-600 mt-2">{new Date(order.created_at).toLocaleString()}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Last updated: {lastUpdate.toLocaleTimeString()}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={refetch} className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
+
+        {/* Real-time update indicator */}
+        <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          Live updates enabled - this page updates automatically
         </div>
 
         {/* Order Status Timeline */}
