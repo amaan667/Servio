@@ -181,7 +181,16 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         if (!response.ok) {
           const errorText = await response.text();
 
-          throw new Error(`Catalog replacement failed: ${response.status} - ${errorText}`);
+          // Provide helpful error messages for common issues
+          if (response.status === 401) {
+            throw new Error("Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in.");
+          } else if (response.status === 403) {
+            throw new Error("Access denied. You don't have permission to upload menus for this venue.");
+          } else if (response.status === 429) {
+            throw new Error("Too many requests. Please wait a moment and try again.");
+          }
+
+          throw new Error(`Upload failed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
@@ -332,9 +341,24 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
 
-        throw new Error(errorData.error || `Processing failed: ${response.status}`);
+        // Provide helpful error messages for common issues
+        if (response.status === 401) {
+          throw new Error("Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in.");
+        } else if (response.status === 403) {
+          throw new Error("Access denied. You don't have permission to enhance menus for this venue.");
+        } else if (response.status === 429) {
+          throw new Error("Too many requests. Please wait a moment and try again.");
+        }
+
+        // Try to parse as JSON for better error messages
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || `Processing failed: ${response.status}`);
+        } catch {
+          throw new Error(`Processing failed: ${response.status} - ${errorText}`);
+        }
       }
 
       const result = await response.json();
@@ -420,8 +444,24 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "URL import failed");
+        const errorText = await response.text();
+
+        // Provide helpful error messages for common issues
+        if (response.status === 401) {
+          throw new Error("Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in.");
+        } else if (response.status === 403) {
+          throw new Error("Access denied. You don't have permission to import menus for this venue.");
+        } else if (response.status === 429) {
+          throw new Error("Too many requests. Please wait a moment and try again.");
+        }
+
+        // Try to parse as JSON for better error messages
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || "URL import failed");
+        } catch {
+          throw new Error(`Import failed: ${response.status} - ${errorText}`);
+        }
       }
 
       const result = await response.json();
