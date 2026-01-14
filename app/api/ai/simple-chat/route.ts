@@ -264,9 +264,24 @@ export const POST = withUnifiedAuth(
           response += `\n\nNote: ${plan.warnings.join(", ")}`;
         }
       }
-      // Fallback - never show internal reasoning to users
+      // Fallback - provide direct response if possible, never show reasoning
+      else if (plan.intent) {
+        // If there's a directAnswer in the plan, use it (should have been caught above, but check again)
+        if (plan.directAnswer) {
+          response = plan.directAnswer;
+        }
+        // If there are warnings, show them as they contain user-facing information
+        else if (plan.warnings && plan.warnings.length > 0) {
+          response = plan.warnings.join("\n\n");
+        }
+        // Otherwise, provide a helpful generic response without exposing reasoning
+        else {
+          response = "I'm sorry, I couldn't find the information you're looking for. Please try rephrasing your question or ask me something else.";
+        }
+      }
+      // Ultimate fallback - only show greeting for completely unhandled cases
       else {
-        response = "Hello! I'm here to help you with your hospitality business. I can assist with menu management, orders, inventory, QR codes, and more. What would you like to work on?";
+        response = "Hello! I'm here to help you with your hospitality business. I can assist with menu management, orders, inventory, QR codes, analytics, and more. Try asking me questions like 'How many menu items do I have?', 'What's my revenue today?', or 'Generate a QR code for Table 5'.";
       }
 
       // Returning response

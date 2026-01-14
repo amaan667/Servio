@@ -33,7 +33,7 @@ export default function QRCodeClient({
   venueName: string;
 }) {
   const searchParams = useSearchParams();
-  const [qrType, setQrType] = useState<"table" | "counter">("table");
+  const [qrType, setQrType] = useState<"table" | "counter" | "table_pickup">("table");
   const [singleName, setSingleName] = useState("");
   const [bulkCount, setBulkCount] = useState("10");
   const [bulkPrefix, setBulkPrefix] = useState("");
@@ -135,7 +135,7 @@ export default function QRCodeClient({
       return;
     }
 
-    const prefix = bulkPrefix.trim() || (qrType === "table" ? "Table" : "Counter");
+    const prefix = bulkPrefix.trim() || (qrType === "counter" ? "Counter" : "Table");
 
     for (let i = 1; i <= count; i++) {
       qrManagement.generateQRForName(`${prefix} ${i}`, qrType);
@@ -316,23 +316,35 @@ export default function QRCodeClient({
           {/* QR Code Type */}
           <div>
             <Label>QR Code Type</Label>
-            <Select value={qrType} onValueChange={(v) => setQrType(v as "table" | "counter")}>
+            <Select
+              value={qrType}
+              onValueChange={(v) => setQrType(v as "table" | "counter" | "table_pickup")}
+            >
               <SelectTrigger className="rounded-lg mt-1 border-2 border-servio-purple bg-white text-servio-purple focus:ring-2 focus:ring-servio-purple/40 focus:border-servio-purple/60 [&>span]:text-servio-purple [&_svg]:text-servio-purple">
                 <SelectValue className="text-servio-purple" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="table">Tables</SelectItem>
+                <SelectItem value="table">Tables (Full Service)</SelectItem>
+                <SelectItem value="table_pickup">Tables (Collection at Counter)</SelectItem>
                 <SelectItem value="counter">Counters (Pickup & Till Orders)</SelectItem>
               </SelectContent>
             </Select>
+            {qrType === "table_pickup" && (
+              <p className="text-xs text-amber-600 mt-2">
+                📢 Customers will sit at tables but collect their food at the counter. They'll
+                receive "Order Ready" notifications.
+              </p>
+            )}
           </div>
 
           {/* Single QR Code Generation */}
           <div>
-            <Label>Enter {qrType === "table" ? "Table" : "Counter"} Name</Label>
+            <Label>
+              Enter {qrType === "counter" ? "Counter" : "Table"} Name
+            </Label>
             <div className="flex gap-2 mt-1">
               <Input
-                placeholder={`e.g., ${qrType === "table" ? "Table 1" : "Counter 1"}`}
+                placeholder={`e.g., ${qrType === "counter" ? "Counter 1" : "Table 1"}`}
                 value={singleName}
                 onChange={(e) => setSingleName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleGenerateSingle()}
@@ -358,8 +370,9 @@ export default function QRCodeClient({
                 <DialogHeader>
                   <DialogTitle>Generate Multiple QR Codes</DialogTitle>
                   <DialogDescription>
-                    Generate QR codes for multiple {qrType === "table" ? "tables" : "counters"} at
+                    Generate QR codes for multiple {qrType === "counter" ? "counters" : "tables"} at
                     once
+                    {qrType === "table_pickup" && " (with collection at counter)"}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
@@ -378,14 +391,14 @@ export default function QRCodeClient({
                   <div>
                     <Label>Prefix (optional)</Label>
                     <Input
-                      placeholder={qrType === "table" ? "Table" : "Counter"}
+                      placeholder={qrType === "counter" ? "Counter" : "Table"}
                       value={bulkPrefix}
                       onChange={(e) => setBulkPrefix(e.target.value)}
                       className="rounded-lg mt-1"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Will generate: {bulkPrefix || (qrType === "table" ? "Table" : "Counter")} 1,{" "}
-                      {bulkPrefix || (qrType === "table" ? "Table" : "Counter")} 2, ...
+                      Will generate: {bulkPrefix || (qrType === "counter" ? "Counter" : "Table")} 1,{" "}
+                      {bulkPrefix || (qrType === "counter" ? "Counter" : "Table")} 2, ...
                     </p>
                   </div>
                   <Button variant="servio" onClick={handleGenerateBulk} className="w-full">
@@ -491,7 +504,7 @@ export default function QRCodeClient({
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No QR Codes Generated</h3>
             <p className="text-gray-600">
-              Enter a {qrType === "table" ? "table" : "counter"} name above and click Generate to
+              Enter a {qrType === "counter" ? "counter" : "table"} name above and click Generate to
               create a QR code
             </p>
           </CardContent>

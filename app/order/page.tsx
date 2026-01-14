@@ -30,10 +30,18 @@ export default function CustomerOrderPage() {
   const counterNumber = searchParams?.get("counter") || "";
   const isDemo = searchParams?.get("demo") === "1";
   const skipGroupSize = searchParams?.get("skipGroupSize") === "true";
+  // Check if this is a table with collection (customer collects at counter)
+  const requiresCollection = searchParams?.get("collection") === "true";
 
   const isCounterOrder = !!counterNumber;
   const orderLocation = isCounterOrder ? counterNumber : tableNumber;
-  const orderType = isCounterOrder ? "counter" : "table";
+
+  // Determine order type: counter, table, or table_pickup
+  const orderType = isCounterOrder
+    ? "counter"
+    : requiresCollection
+      ? "table_pickup"
+      : "table";
 
   // Fetch venue subscription tier
   useEffect(() => {
@@ -93,7 +101,8 @@ export default function CustomerOrderPage() {
     isDemo,
     isCounterOrder,
     orderLocation,
-    orderType: orderType as "counter" | "table",
+    orderType: orderType as "counter" | "table" | "table_pickup",
+    requiresCollection,
   };
 
   // Use custom hooks

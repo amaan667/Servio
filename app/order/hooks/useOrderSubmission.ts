@@ -8,7 +8,7 @@ interface OrderSubmissionParams {
   tableNumber: string;
   counterNumber: string;
   orderLocation: string;
-  orderType: "counter" | "table";
+  orderType: "counter" | "table" | "table_pickup";
   isCounterOrder: boolean;
   isDemo: boolean;
   isDemoFallback: boolean;
@@ -104,6 +104,9 @@ export function useOrderSubmission() {
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       localStorage.setItem("servio-current-session", sessionId);
 
+      // For table_pickup orders, we want to flag them as requiring collection
+      const requiresCollection = orderType === "table_pickup" || orderType === "counter";
+
       const checkoutData = {
         venueId: venueSlug,
         venueName: "Restaurant",
@@ -136,6 +139,7 @@ export function useOrderSubmission() {
         isDemo: isDemo,
         paymentMode: paymentMode,
         source: orderType === "counter" ? "counter" : "qr",
+        requires_collection: requiresCollection, // Flag for collection notification
       };
 
       // Comprehensive logging for order submission - send to server

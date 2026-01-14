@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 export interface GeneratedQR {
   name: string;
   url: string;
-  type: "table" | "counter";
+  type: "table" | "counter" | "table_pickup"; // table_pickup = table with counter collection
 }
 
 interface TableItem {
@@ -87,10 +87,17 @@ export function useQRCodeManagement(venueId: string) {
   };
 
   const generateQRForName = useCallback(
-    (name: string, type: "table" | "counter" = "table") => {
+    (name: string, type: "table" | "counter" | "table_pickup" = "table") => {
 
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const url = `${baseUrl}/order?venue=${venueId}&${type}=${encodeURIComponent(name)}`;
+
+      // For table_pickup, use table parameter but add collection=true
+      let url: string;
+      if (type === "table_pickup") {
+        url = `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(name)}&collection=true`;
+      } else {
+        url = `${baseUrl}/order?venue=${venueId}&${type}=${encodeURIComponent(name)}`;
+      }
 
       const newQR: GeneratedQR = {
         name,
@@ -109,9 +116,11 @@ export function useQRCodeManagement(venueId: string) {
         return [...prev, newQR];
       });
 
+      const typeLabel =
+        type === "table_pickup" ? "table with collection" : type === "counter" ? "counter" : "table";
       toast({
         title: "QR Code Generated",
-        description: `Created QR code for ${name}`,
+        description: `Created QR code for ${name} (${typeLabel})`,
       });
     },
     [venueId, toast]
@@ -143,7 +152,7 @@ export function useQRCodeManagement(venueId: string) {
     });
   };
 
-  const removeQR = (name: string, type: "table" | "counter") => {
+  const removeQR = (name: string, type: "table" | "counter" | "table_pickup") => {
     setGeneratedQRs((prev) => prev.filter((qr) => !(qr.name === name && qr.type === type)));
   };
 

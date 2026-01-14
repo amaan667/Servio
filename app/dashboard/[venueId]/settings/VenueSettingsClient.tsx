@@ -20,6 +20,7 @@ import { VenueSettingsCard } from "./components/VenueSettingsCard";
 import { OperatingHoursCard } from "./components/OperatingHoursCard";
 import { DeleteAccountCard } from "./components/DeleteAccountCard";
 import { ReceiptSettingsCard } from "./components/ReceiptSettingsCard";
+import { NotificationSettingsCard } from "./components/NotificationSettingsCard";
 
 interface VenueSettingsClientProps {
   user: User;
@@ -151,6 +152,12 @@ export default function VenueSettingsClient({
               setReceiptLogoUrl={venueSettings.setReceiptLogoUrl}
               receiptFooterText={venueSettings.receiptFooterText}
               setReceiptFooterText={venueSettings.setReceiptFooterText}
+            />
+
+            <NotificationSettingsCard
+              notifyCustomerOnReady={venueSettings.notifyCustomerOnReady}
+              setNotifyCustomerOnReady={venueSettings.setNotifyCustomerOnReady}
+              serviceType={venueSettings.serviceType}
             />
           </div>
         </div>

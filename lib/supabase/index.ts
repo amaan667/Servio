@@ -250,9 +250,11 @@ export function supabaseServer(cookies: {
 }) {
   return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
-      get: (name) => cookies.get(name),
-      set: (name, value, options) => cookies.set(name, value, options),
-      remove: (name, options) => cookies.set(name, "", { ...options, maxAge: 0 }),
+      get: (name: string) => cookies.get(name),
+      set: (name: string, value: string, options: CookieOptions) =>
+        cookies.set(name, value, options),
+      remove: (name: string, options: CookieOptions) =>
+        cookies.set(name, "", { ...options, maxAge: 0 }),
     },
     auth: {
       persistSession: false,
@@ -317,10 +319,12 @@ export async function createServerSupabase() {
 
         return allCookies;
       },
-      setAll(cookiesToSet) {
-
+      setAll(
+        cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>
+      ) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) => {
+          cookiesToSet.forEach(
+            ({ name, value, options }: { name: string; value: string; options: CookieOptions }) => {
 
             cookieStore.set(name, value, {
               ...options,
