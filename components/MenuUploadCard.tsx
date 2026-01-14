@@ -234,6 +234,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         const uploadResponse = await fetch("/api/menu/upload", {
           method: "POST",
           body: formData,
+          credentials: "include", // Ensure cookies are sent
         });
 
         const uploadResult = await uploadResponse.json();
@@ -247,6 +248,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ uploadId: uploadResult.upload_id }),
+          credentials: "include", // Ensure cookies are sent
         });
 
         const processResult = await processResponse.json();
@@ -326,6 +328,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           venueId: normalizedVenueId,
           menuUrl: menuUrl.trim(),
         }),
+        credentials: "include", // Ensure cookies are sent
       });
 
       if (!response.ok) {
@@ -413,6 +416,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       const response = await fetch("/api/catalog/replace", {
         method: "POST",
         body: formData,
+        credentials: "include", // Ensure cookies are sent
       });
 
       if (!response.ok) {
