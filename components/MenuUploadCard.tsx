@@ -164,6 +164,12 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
             title: "Hybrid extraction starting...",
             description: "Combining PDF structure with website images and data",
           });
+        } else {
+          // No URL provided - just do PDF extraction
+          toast({
+            title: "PDF extraction starting...",
+            description: "Processing PDF menu. Add URL later for hybrid enhancement.",
+          });
         }
 
         const response = await fetch(url.toString(), {
@@ -472,27 +478,25 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground flex-1">
               {menuUrl && menuUrl.trim()
-                ? "🎯 When you upload PDF, it will combine with URL data automatically (order doesn't matter)"
-                : "💡 Add URL before or after PDF - order doesn't matter for hybrid mode"}
+                ? hasExistingUpload
+                  ? "🎯 Click 'Enhance with URL' to combine PDF with website data"
+                  : "🌐 Click 'Import from URL' to extract menu from website"
+                : "💡 Add URL for hybrid extraction (combines PDF + website data)"}
             </p>
-            {hasExistingUpload && menuUrl && menuUrl.trim() && (
+            {menuUrl && menuUrl.trim() && (
               <Button
-                onClick={handleProcessWithUrl}
+                onClick={hasExistingUpload ? handleProcessWithUrl : handleUrlOnlyImport}
                 disabled={isProcessing}
                 size="sm"
-                variant="outline"
+                className={hasExistingUpload ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" : ""}
+                variant={hasExistingUpload ? "default" : "outline"}
               >
-                {isProcessing ? "Processing..." : "Enhance with URL"}
-              </Button>
-            )}
-            {menuUrl && menuUrl.trim() && !hasExistingUpload && (
-              <Button
-                onClick={handleUrlOnlyImport}
-                disabled={isProcessing}
-                size="sm"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                {isProcessing ? "Importing..." : "Import from URL"}
+                {isProcessing
+                  ? "Processing..."
+                  : hasExistingUpload
+                    ? "🎯 Enhance with URL (Hybrid)"
+                    : "🌐 Import from URL"
+                }
               </Button>
             )}
           </div>

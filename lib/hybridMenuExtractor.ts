@@ -190,27 +190,31 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 async function extractFromPDF(pdfImages: string[]): Promise<{ items: MenuItem[] }> {
   const items: MenuItem[] = [];
 
-  for (let i = 0; i < pdfImages.length; i++) {
-    const imageUrl = pdfImages[i];
-
+  // Process all pages in parallel for much faster extraction
+  const pagePromises = pdfImages.map(async (imageUrl, i) => {
     try {
       // Extract items from page
       const pageItems = await extractMenuFromImage(imageUrl);
 
       // Add page index to each item
-      pageItems.forEach((item) => {
-        items.push({
-          ...item,
-          page_index: i,
-          source: "pdf",
-        });
-      });
+      return pageItems.map((item) => ({
+        ...item,
+        page_index: i,
+        source: "pdf",
+      }));
     } catch (pageError) {
-
       // Continue with other pages instead of failing completely
-
+      return [];
     }
-  }
+  });
+
+  // Wait for all pages to complete
+  const pageResults = await Promise.all(pagePromises);
+
+  // Flatten results
+  pageResults.forEach((pageItems) => {
+    items.push(...pageItems);
+  });
 
   return { items };
 }
