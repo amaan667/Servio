@@ -2,12 +2,151 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiErrors } from "@/lib/api/standard-response";
 import { createServerSupabase } from "@/lib/supabase";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
+
+// Import MenuItem type from hybrid extractor for extracted items
+type ExtractedMenuItem = {
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  image_url?: string;
+  allergens?: string[];
+  dietary?: string[];
+  spiceLevel?: string | null;
+  page_index?: number;
+  source?: string;
+  has_web_enhancement?: boolean;
+  has_image?: boolean;
+  merge_source?: string;
+  name_normalized?: string;
+  _matchReason?: string;
+  _matchConfidence?: number;
+  _matchScore?: number;
+  _unmatched?: boolean;
+};
+
+// Type for menu items as stored in database (matches the hook interface)
+type DatabaseMenuItem = {
+  id: string;
+  venue_id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string;
+  image_url: string | null;
+  allergens: string[];
+  dietary: string[];
+  spice_level: number | null;
+  is_available: boolean;
+  position: number;
+  created_at: string;
+  // Additional properties used in merging logic
+  source?: string;
+  spiceLevel: string | null;
+  _matchConfidence?: number;
+};
 import { v4 as uuidv4 } from "uuid";
 
 import { revalidatePath } from "next/cache";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
+
+/**
+ * Intelligently merge existing database items with newly extracted items
+ * Enhances existing items with better data and adds new items
+ */
+async function mergeItemsIntelligently(
+  existingItems: DatabaseMenuItem[],
+  newItems: ExtractedMenuItem[],
+  venueId: string
+): Promise<DatabaseMenuItem[]> {
+  // Start with all existing items
+  const resultItems: DatabaseMenuItem[] = [...existingItems];
+  const processedExistingNames = new Set<string>();
+
+  // Import matching functions
+  const { findBestMatch } = await import("@/lib/hybridMenuExtractor");
+
+  for (const newItem of newItems) {
+    // Check if this new item matches any existing item
+    const existingFormatted = existingItems
+      .filter(item => !processedExistingNames.has(item.name))
+      .map(item => ({
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        image_url: item.image_url,
+        allergens: item.allergens || [],
+        dietary: item.dietary || [],
+        spiceLevel: item.spice_level === 1 ? "mild" : item.spice_level === 2 ? "medium" : item.spice_level === 3 ? "hot" : null,
+      }));
+
+    const matchResult = findBestMatch(newItem, existingFormatted as ExtractedMenuItem[]);
+
+    if (matchResult && matchResult.confidence >= 0.7) {
+      // Found a match - enhance the existing item with better data from new item
+      const existingIndex = resultItems.findIndex(item => item.name === matchResult.item.name);
+      if (existingIndex !== -1) {
+        const existingItem = resultItems[existingIndex];
+        processedExistingNames.add(existingItem.name);
+
+        // Intelligently merge - prefer better/more complete data
+        resultItems[existingIndex] = {
+          ...existingItem,
+          // Prefer new data if it's better/more complete
+          description: newItem.description && (!existingItem.description || existingItem.description.length < newItem.description.length)
+            ? newItem.description
+            : existingItem.description,
+          price: newItem.price !== undefined && newItem.price > 0 ? newItem.price : existingItem.price,
+          category: newItem.category && newItem.category !== "Menu Items" ? newItem.category : existingItem.category,
+          // Always prefer new images (they're usually better quality)
+          image_url: newItem.image_url || existingItem.image_url,
+          // Merge arrays intelligently
+          allergens: [...new Set([...(existingItem.allergens || []), ...(newItem.allergens || [])])],
+          dietary: [...new Set([...(existingItem.dietary || []), ...(newItem.dietary || [])])],
+          // Prefer spice level if new item has it
+          spice_level: newItem.spiceLevel === "mild" ? 1 : newItem.spiceLevel === "medium" ? 2 : newItem.spiceLevel === "hot" ? 3 : existingItem.spice_level,
+          spiceLevel: newItem.spiceLevel || existingItem.spiceLevel,
+          // Mark as enhanced
+          source: "enhanced_existing",
+          _matchConfidence: matchResult.confidence,
+        };
+      }
+    } else {
+      // No match found - add as new item
+      const newItemWithId: DatabaseMenuItem = {
+        id: uuidv4(),
+        venue_id: venueId,
+        name: newItem.name,
+        description: newItem.description || null,
+        price: newItem.price || 0,
+        category: newItem.category || "Menu Items",
+        image_url: newItem.image_url || null,
+        allergens: newItem.allergens || [],
+        dietary: newItem.dietary || [],
+        spice_level: newItem.spiceLevel === "mild" ? 1 : newItem.spiceLevel === "medium" ? 2 : newItem.spiceLevel === "hot" ? 3 : null,
+        is_available: true,
+        position: 0, // Will be sorted later
+        created_at: new Date().toISOString(),
+        source: "new_appended",
+        spiceLevel: newItem.spiceLevel || null,
+      };
+      resultItems.push(newItemWithId);
+    }
+  }
+
+  // Sort items by position/category for consistency
+  resultItems.sort((a, b) => {
+    const catA = a.category || "ZZZ";
+    const catB = b.category || "ZZZ";
+    if (catA !== catB) return catA.localeCompare(catB);
+    return (a.position || 0) - (b.position || 0);
+  });
+
+  return resultItems;
+}
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for processing
@@ -119,7 +258,7 @@ export const POST = withUnifiedAuth(
       }
 
       // Step 2.5: Post-process to fix "Menu Items" categorizations
-      const existingCategories = Array.from(
+      let existingCategories = Array.from(
         new Set(
           extractionResult.items
             .map((item) => item.category)
@@ -218,8 +357,9 @@ export const POST = withUnifiedAuth(
       if (recategorizedCount > 0) { /* Condition handled */ }
 
       // Step 3: Replace or Append mode
-      if (replaceMode) {
+      let existingItems: DatabaseMenuItem[] = [];
 
+      if (replaceMode) {
         // Delete all existing items
         const { error: deleteItemsError } = await supabase
           .from("menu_items")
@@ -227,51 +367,79 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", normalizedVenueId);
 
         if (deleteItemsError) {
-
           throw new Error(`Failed to delete old items: ${deleteItemsError.message}`);
         }
       } else {
-        // Append mode - keep existing items
+        // Append mode - fetch existing items to merge with new ones
+        const { data: existingData, error: fetchError } = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("venue_id", normalizedVenueId);
+
+        if (fetchError) {
+          throw new Error(`Failed to fetch existing items: ${fetchError.message}`);
+        }
+
+        existingItems = existingData || [];
+      }
+
+      // In append mode, also include existing categories from database for better categorization
+      if (!replaceMode && existingItems.length > 0) {
+        const dbCategories = Array.from(
+          new Set(
+            existingItems
+              .map((item) => item.category)
+              .filter((c): c is string => Boolean(c) && c !== "Menu Items")
+          )
+        );
+        existingCategories = Array.from(new Set([...existingCategories, ...dbCategories]));
       }
 
       // Step 4: Prepare items for database
-      const menuItems = [];
+      let finalItems;
 
-      for (let i = 0; i < extractionResult.items.length; i++) {
-        const item = extractionResult.items[i];
-        const itemId = uuidv4();
+      if (replaceMode) {
+        // Replace mode: just use extracted items
+        finalItems = extractionResult.items.map((item, i) => {
+          const itemId = uuidv4();
 
-        // Insert menu item
-        // Convert spice level string to integer for database
-        let spiceLevelInt = null;
-        if (item.spiceLevel === "mild") spiceLevelInt = 1;
-        else if (item.spiceLevel === "medium") spiceLevelInt = 2;
-        else if (item.spiceLevel === "hot") spiceLevelInt = 3;
+          // Convert spice level string to integer for database
+          let spiceLevelInt = null;
+          if (item.spiceLevel === "mild") spiceLevelInt = 1;
+          else if (item.spiceLevel === "medium") spiceLevelInt = 2;
+          else if (item.spiceLevel === "hot") spiceLevelInt = 3;
 
-        menuItems.push({
-          id: itemId,
-          venue_id: normalizedVenueId,
-          name: item.name,
-          description: item.description || "",
-          price: item.price || 0,
-          category: item.category || "Menu Items",
-          image_url: item.image_url || null,
-          allergens: item.allergens || [],
-          dietary: item.dietary || [],
-          spice_level: spiceLevelInt,
-          is_available: true,
-          position: i,
-          created_at: new Date().toISOString(),
+          return {
+            id: itemId,
+            venue_id: normalizedVenueId,
+            name: item.name,
+            description: item.description || "",
+            price: item.price || 0,
+            category: item.category || "Menu Items",
+            image_url: item.image_url || null,
+            allergens: item.allergens || [],
+            dietary: item.dietary || [],
+            spice_level: spiceLevelInt,
+            is_available: true,
+            position: i,
+            created_at: new Date().toISOString(),
+          };
         });
+      } else {
+        // Append mode: intelligently merge existing items with newly extracted items
+        finalItems = await mergeItemsIntelligently(existingItems, extractionResult.items, normalizedVenueId);
       }
 
       // Step 5: Insert into database
 
-      if (menuItems.length > 0) {
+      if (finalItems.length > 0) {
 
         const { data, error: insertItemsError } = await supabase
           .from("menu_items")
-          .insert(menuItems)
+          .upsert(finalItems, {
+            onConflict: "id",
+            ignoreDuplicates: false
+          })
           .select();
 
         if (insertItemsError) {
@@ -300,8 +468,8 @@ export const POST = withUnifiedAuth(
       // STEP 7: Return success response
       return NextResponse.json({
         ok: true,
-        message: "Menu imported successfully",
-        items: menuItems.length,
+        message: replaceMode ? "Menu replaced successfully" : "Menu items combined successfully",
+        items: finalItems.length,
         mode: extractionResult.mode,
         duration: `${duration}ms`,
       });

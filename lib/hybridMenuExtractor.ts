@@ -436,7 +436,7 @@ function calculateFlexibleMatch(name1: string, name2: string): number {
  * Simple but effective - 90%+ match rate with minimal memory
  * NOW WITH CONFIDENCE SCORES FOR ALL MATCHES
  */
-function findBestMatch(
+export function findBestMatch(
   pdfItem: MenuItem,
   webItems: MenuItem[]
 ): { item: MenuItem; score: number; reason: string; confidence: number } | null {
@@ -595,6 +595,95 @@ function normalizeName(name: string): string {
     .replace(/\btiramisu\b/g, "tiramisu"); // normalize spelling
 
   return normalized;
+}
+
+/**
+ * DEDUPLICATION: Remove duplicate items from merged results
+ * Keeps the first occurrence (prefer PDF items over URL items)
+ */
+export function deduplicateMergedItems(items: MenuItem[]): {
+  deduplicated: MenuItem[];
+  duplicatesRemoved: number;
+  duplicatePairs: Array<{ kept: string; removed: string; reason: string }>;
+} {
+
+  const kept: MenuItem[] = [];
+  const duplicatePairs: Array<{ kept: string; removed: string; reason: string }> = [];
+  let duplicatesRemoved = 0;
+
+  for (const item of items) {
+    // Check if this item is a duplicate of any kept item
+    let isDuplicate = false;
+
+    for (const keptItem of kept) {
+      // Use same matching logic as main merge
+      const matchResult = findBestMatchForDedupe(item, keptItem);
+
+      if (matchResult.isDuplicate) {
+        isDuplicate = true;
+        duplicatesRemoved++;
+        duplicatePairs.push({
+          kept: keptItem.name,
+          removed: item.name,
+          reason: matchResult.reason,
+        });
+
+        // Log first few duplicates
+        if (duplicatesRemoved <= 5) { /* Condition handled */ }
+        break;
+      }
+    }
+
+    if (!isDuplicate) {
+      kept.push(item);
+    }
+  }
+
+  if (duplicatesRemoved > 5) { /* Condition handled */ }
+
+  return {
+    deduplicated: kept,
+    duplicatesRemoved,
+    duplicatePairs,
+  };
+}
+
+/**
+ * Simplified matching for deduplication (faster, stricter)
+ */
+function findBestMatchForDedupe(
+  item1: MenuItem,
+  item2: MenuItem
+): { isDuplicate: boolean; reason: string } {
+  const name1 = normalizeName(item1.name);
+  const name2 = normalizeName(item2.name);
+
+  // Exact match
+  if (name1 === name2) {
+    return { isDuplicate: true, reason: "exact_match" };
+  }
+
+  // Very high similarity threshold for deduplication (more conservative)
+  const tokens1 = name1.split(" ").filter((t) => t.length > 1);
+  const tokens2 = name2.split(" ").filter((t) => t.length > 1);
+
+  if (tokens1.length > 0 && tokens2.length > 0) {
+    const matchedTokens = tokens1.filter((t) => tokens2.includes(t)).length;
+    const maxTokens = Math.max(tokens1.length, tokens2.length);
+    const tokenOverlap = matchedTokens / maxTokens;
+
+    // Price check (if both have prices and they match, more likely duplicate)
+    const priceMatch = item1.price && item2.price && Math.abs(item1.price - item2.price) <= 0.5;
+
+    // High threshold: 90% token overlap OR 80% overlap + price match
+    if (tokenOverlap >= 0.9) {
+      return { isDuplicate: true, reason: "high_token_overlap" };
+    } else if (tokenOverlap >= 0.8 && priceMatch) {
+      return { isDuplicate: true, reason: "token_overlap_price_match" };
+    }
+  }
+
+  return { isDuplicate: false, reason: "no_match" };
 }
 
 /**
@@ -930,135 +1019,3 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
   return dedupeResult.deduplicated;
 }
 
-/**
- * DEDUPLICATION: Remove duplicate items from merged results
- * Keeps the first occurrence (prefer PDF items over URL items)
- */
-function deduplicateMergedItems(items: MenuItem[]): {
-  deduplicated: MenuItem[];
-  duplicatesRemoved: number;
-  duplicatePairs: Array<{ kept: string; removed: string; reason: string }>;
-} {
-
-  const kept: MenuItem[] = [];
-  const duplicatePairs: Array<{ kept: string; removed: string; reason: string }> = [];
-  let duplicatesRemoved = 0;
-
-  for (const item of items) {
-    // Check if this item is a duplicate of any kept item
-    let isDuplicate = false;
-
-    for (const keptItem of kept) {
-      // Use same matching logic as main merge
-      const matchResult = findBestMatchForDedupe(item, keptItem);
-
-      if (matchResult.isDuplicate) {
-        isDuplicate = true;
-        duplicatesRemoved++;
-        duplicatePairs.push({
-          kept: keptItem.name,
-          removed: item.name,
-          reason: matchResult.reason,
-        });
-
-        // Log first few duplicates
-        if (duplicatesRemoved <= 5) { /* Condition handled */ }
-        break;
-      }
-    }
-
-    if (!isDuplicate) {
-      kept.push(item);
-    }
-  }
-
-  if (duplicatesRemoved > 5) { /* Condition handled */ }
-
-  return {
-    deduplicated: kept,
-    duplicatesRemoved,
-    duplicatePairs,
-  };
-}
-
-/**
- * Simplified matching for deduplication (faster, stricter)
- */
-function findBestMatchForDedupe(
-  item1: MenuItem,
-  item2: MenuItem
-): { isDuplicate: boolean; reason: string } {
-  const name1 = normalizeName(item1.name);
-  const name2 = normalizeName(item2.name);
-
-  // Exact match
-  if (name1 === name2) {
-    return { isDuplicate: true, reason: "exact_match" };
-  }
-
-  // Very high similarity threshold for deduplication (more conservative)
-  const tokens1 = name1.split(" ").filter((t) => t.length > 1);
-  const tokens2 = name2.split(" ").filter((t) => t.length > 1);
-
-  if (tokens1.length > 0 && tokens2.length > 0) {
-    const matchedTokens = tokens1.filter((t) => tokens2.includes(t)).length;
-    const maxTokens = Math.max(tokens1.length, tokens2.length);
-    const tokenOverlap = matchedTokens / maxTokens;
-
-    // Price check (if both have prices and they match, more likely duplicate)
-    const priceMatch = item1.price && item2.price && Math.abs(item1.price - item2.price) <= 0.5;
-
-    // High threshold: 90% token overlap OR 80% overlap + price match
-    if (tokenOverlap >= 0.9) {
-      return { isDuplicate: true, reason: "high_token_overlap" };
-    } else if (tokenOverlap >= 0.8 && priceMatch) {
-      return { isDuplicate: true, reason: "token_overlap_price_match" };
-    }
-  }
-
-  return { isDuplicate: false, reason: "no_match" };
-}
-
-/**
- * Calculate string similarity (kept for backwards compatibility)
- */
-function calculateSimilarity(str1: string, str2: string): number {
-  const longer = str1.length > str2.length ? str1 : str2;
-  const shorter = str1.length > str2.length ? str2 : str1;
-
-  if (longer.length === 0) return 1.0;
-
-  const editDistance = levenshteinDistance(longer, shorter);
-  return (longer.length - editDistance) / longer.length;
-}
-
-/**
- * Levenshtein distance
- */
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= str2.length; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= str1.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
-      }
-    }
-  }
-
-  return matrix[str2.length][str1.length];
-}

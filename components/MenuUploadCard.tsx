@@ -207,8 +207,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           // CRITICAL LOG: PDF upload success
 
           toast({
-            title: isReplacing ? "Menu replaced successfully" : "Menu items added successfully",
-            description: `${modeLabels[mode] || mode} • ${result.items || 0} items${result.mode === "hybrid" ? " • Images from URL added" : ""}`,
+            title: isReplacing ? "Menu replaced successfully" : "Menu items combined successfully",
+            description: `${modeLabels[mode] || mode} • ${result.items || 0} items${result.mode === "hybrid" ? " • Images from URL added" : ""}${!isReplacing ? " • Enhanced with better data" : ""}`,
           });
 
           // Save extracted style to database if available
