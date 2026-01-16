@@ -61,16 +61,18 @@ export default function AuthProvider({
     return null;
   };
 
+  const initialSessionState = getInitialSession();
+
   // Use initialSession directly - this is set on server, prevents flicker
   // IMPORTANT: Set state from initialSession immediately, no conditional checks
-  const [session, setSession] = useState<Session | null>(initialSession);
-  const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
+  const [session, setSession] = useState<Session | null>(initialSessionState);
+  const [user, setUser] = useState<User | null>(initialSessionState?.user ?? null);
   // Never show loading if we have initialSession - prevents flicker
   const [loading, setLoading] = useState(false);
 
   // Extract venue data from initial session and cache it immediately
   const getInitialVenueData = () => {
-    const sessionWithVenue = initialSession as ExtendedSession;
+    const sessionWithVenue = initialSessionState as ExtendedSession;
     if (sessionWithVenue?.primaryVenue) {
       return {
         primaryVenueId: sessionWithVenue.primaryVenue.venueId,
@@ -79,9 +81,9 @@ export default function AuthProvider({
     }
 
     // Fallback to cache
-    if (typeof window !== "undefined" && initialSession?.user?.id) {
-      const cachedRole = localStorage.getItem(`user_role_${initialSession.user.id}`);
-      const cachedVenueId = localStorage.getItem(`venue_id_${initialSession.user.id}`);
+    if (typeof window !== "undefined" && initialSessionState?.user?.id) {
+      const cachedRole = localStorage.getItem(`user_role_${initialSessionState.user.id}`);
+      const cachedVenueId = localStorage.getItem(`venue_id_${initialSessionState.user.id}`);
       if (cachedVenueId && cachedRole) {
         return { primaryVenueId: cachedVenueId, userRole: cachedRole };
       }
@@ -93,6 +95,59 @@ export default function AuthProvider({
   const initialVenueData = getInitialVenueData();
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(initialVenueData.primaryVenueId);
   const [userRole, setUserRole] = useState<string | null>(initialVenueData.userRole);
+
+  const cacheVenueData = (userId: string, venueId: string, role: string) => {
+    setPrimaryVenueId(venueId);
+    setUserRole(role);
+
+    if (typeof window !== "undefined" && userId) {
+      localStorage.setItem(`user_role_${userId}`, role);
+      localStorage.setItem(`venue_id_${userId}`, venueId);
+    }
+  };
+
+  const resolveVenueData = async (currentUser: User) => {
+    if (typeof window === "undefined") return;
+
+    const cachedRole = localStorage.getItem(`user_role_${currentUser.id}`);
+    const cachedVenueId = localStorage.getItem(`venue_id_${currentUser.id}`);
+    if (cachedVenueId && cachedRole) {
+      setPrimaryVenueId(cachedVenueId);
+      setUserRole(cachedRole);
+      return;
+    }
+
+    try {
+      const supabase = supabaseBrowser();
+
+      const { data: ownerVenue } = await supabase
+        .from("venues")
+        .select("venue_id")
+        .eq("owner_user_id", currentUser.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (ownerVenue?.venue_id) {
+        cacheVenueData(currentUser.id, ownerVenue.venue_id as string, "owner");
+        return;
+      }
+
+      const { data: staffVenue } = await supabase
+        .from("user_venue_roles")
+        .select("venue_id, role")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (staffVenue?.venue_id && staffVenue.role) {
+        cacheVenueData(currentUser.id, staffVenue.venue_id as string, staffVenue.role);
+      }
+    } catch {
+      // Silent fallback - navigation will still render without a venue
+    }
+  };
 
   useEffect(() => {
     // If we have initialSession from server, use it immediately and skip client fetch
@@ -108,14 +163,18 @@ export default function AuthProvider({
       // Set venue data from server session
       const sessionWithVenue = initialSession as ExtendedSession;
       if (sessionWithVenue.primaryVenue) {
-        setPrimaryVenueId(sessionWithVenue.primaryVenue.venueId);
-        setUserRole(sessionWithVenue.primaryVenue.role);
-
-        // Cache in localStorage for future visits
-        if (typeof window !== "undefined" && initialSession.user?.id) {
-          localStorage.setItem(`user_role_${initialSession.user.id}`, sessionWithVenue.primaryVenue.role);
-          localStorage.setItem(`venue_id_${initialSession.user.id}`, sessionWithVenue.primaryVenue.venueId);
+        if (initialSession.user?.id) {
+          cacheVenueData(
+            initialSession.user.id,
+            sessionWithVenue.primaryVenue.venueId,
+            sessionWithVenue.primaryVenue.role
+          );
+        } else {
+          setPrimaryVenueId(sessionWithVenue.primaryVenue.venueId);
+          setUserRole(sessionWithVenue.primaryVenue.role);
         }
+      } else if (initialSession.user) {
+        resolveVenueData(initialSession.user);
       }
 
       setLoading(false);
@@ -140,6 +199,9 @@ export default function AuthProvider({
                 if (typeof window !== "undefined" && newSession) {
                   localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
                 }
+                if ((newSession as Session | null)?.user) {
+                  resolveVenueData((newSession as Session).user);
+                }
                 setLoading(false);
                 break;
               case "SIGNED_OUT":
@@ -155,6 +217,9 @@ export default function AuthProvider({
                 setUser((newSession as { user?: User } | null)?.user ?? null);
                 if (typeof window !== "undefined" && newSession) {
                   localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                }
+                if ((newSession as Session | null)?.user && !primaryVenueId) {
+                  resolveVenueData((newSession as Session).user);
                 }
                 break;
               case "USER_UPDATED":
@@ -204,6 +269,9 @@ export default function AuthProvider({
 
           setSession(currentSession);
           setUser(currentSession?.user || null);
+          if (currentSession?.user) {
+            resolveVenueData(currentSession.user);
+          }
         } catch (error) {
           setSession(null);
           setUser(null);
@@ -227,6 +295,9 @@ export default function AuthProvider({
                 if (typeof window !== "undefined" && newSession) {
                   localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
                 }
+                if ((newSession as Session | null)?.user) {
+                  resolveVenueData((newSession as Session).user);
+                }
                 setLoading(false);
                 break;
               case "SIGNED_OUT":
@@ -244,6 +315,9 @@ export default function AuthProvider({
                 // Update stored session
                 if (typeof window !== "undefined" && newSession) {
                   localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                }
+                if ((newSession as Session | null)?.user && !primaryVenueId) {
+                  resolveVenueData((newSession as Session).user);
                 }
                 break;
               case "USER_UPDATED":
