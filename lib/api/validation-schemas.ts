@@ -67,6 +67,7 @@ export const createOrderSchema = z.object({
   customer_name: nonEmptyString.max(100),
   customer_phone: phone,
   customer_email: email.optional().nullable(),
+  qr_type: z.enum(["TABLE_FULL_SERVICE", "TABLE_COLLECTION", "COUNTER"]).optional(),
   table_number: z
     .union([z.string(), z.number()])
     .optional()
@@ -74,6 +75,8 @@ export const createOrderSchema = z.object({
     .transform((val) => (val !== null && val !== undefined ? String(val) : undefined)),
   items: z.array(orderItemSchema).min(1, "At least one item required"),
   total_amount: nonNegativeNumber,
+  payment_method: z.enum(["PAY_NOW", "PAY_LATER", "PAY_AT_TILL"]).optional(),
+  payment_status: z.enum(["UNPAID", "PAID"]).optional(),
   payment_mode: z
     .enum([
       "online",
@@ -89,6 +92,7 @@ export const createOrderSchema = z.object({
     .optional(),
   special_instructions: z.string().max(500).optional().nullable(),
   notes: z.string().optional().nullable(),
+  requires_collection: z.boolean().optional(),
 });
 
 export const updateOrderStatusSchema = z.object({

@@ -4,6 +4,10 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import {
+  deriveQrTypeFromOrder,
+  validatePaymentMethodForQrType,
+} from "@/lib/orders/qr-payment-validation";
 
 export const runtime = "nodejs";
 
@@ -34,10 +38,28 @@ export async function POST(req: NextRequest) {
     // Verify order belongs to venue (security check)
     const { data: orderCheck, error: checkError } = await supabase
       .from("orders")
-      .select("venue_id")
+      .select("venue_id, qr_type, fulfillment_type, source, requires_collection")
       .eq("id", order_id)
       .eq("venue_id", venue_id) // Security: ensure order belongs to venue
       .single();
+    const { data: venueSettings } = await supabase
+      .from("venues")
+      .select("allow_pay_at_till_for_table_collection")
+      .eq("venue_id", venue_id)
+      .maybeSingle();
+
+    const allowPayAtTillForTableCollection =
+      venueSettings?.allow_pay_at_till_for_table_collection === true;
+    const qrType = deriveQrTypeFromOrder(orderCheck || {});
+    const validation = validatePaymentMethodForQrType({
+      qrType,
+      paymentMethod: "PAY_AT_TILL",
+      allowPayAtTillForTableCollection,
+    });
+
+    if (!validation.ok) {
+      return apiErrors.badRequest(validation.error || "Payment method not allowed");
+    }
 
     if (checkError || !orderCheck) {
 

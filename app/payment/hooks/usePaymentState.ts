@@ -21,7 +21,9 @@ export interface CheckoutData {
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
-  orderType?: string;
+  orderType?: "counter" | "table" | "table_pickup";
+  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
+  requiresCollection?: boolean;
   isDemo?: boolean;
   isSplit?: boolean;
 }

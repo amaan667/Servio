@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
 import { apiErrors } from "@/lib/api/standard-response";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentStatus,
+  validateOrderStatusTransition,
+} from "@/lib/orders/qr-payment-validation";
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -21,9 +26,28 @@ export async function PATCH(req: NextRequest) {
     // Get the order
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("venue_id")
+      .select("venue_id, payment_status, order_status, qr_type, fulfillment_type, source, requires_collection")
       .eq("id", order_id)
       .single();
+    const qrType = deriveQrTypeFromOrder(order);
+    const normalizedPaymentStatus = normalizePaymentStatus(order.payment_status) || "UNPAID";
+    const transitionValidation = validateOrderStatusTransition({
+      qrType,
+      paymentStatus: normalizedPaymentStatus,
+      currentStatus: order.order_status || "",
+      nextStatus: order_status,
+    });
+
+    if (!transitionValidation.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: transitionValidation.error || "Order status transition not allowed",
+        },
+        { status: 400 }
+      );
+    }
+
 
     if (orderError) {
       return apiErrors.notFound("Order not found");

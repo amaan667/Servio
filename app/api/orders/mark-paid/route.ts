@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentMethod,
+  validatePaymentMethodForQrType,
+} from "@/lib/orders/qr-payment-validation";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -28,12 +33,14 @@ export const POST = withUnifiedAuth(
         return apiErrors.badRequest("Order ID is required");
       }
 
-      const supabase = await createClient();
+      const supabase = createAdminClient();
 
       // Verify order belongs to authenticated venue (withUnifiedAuth already verified venue access)
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .select("venue_id")
+        .select(
+          "venue_id, payment_status, payment_method, payment_mode, qr_type, fulfillment_type, source, requires_collection"
+        )
         .eq("id", orderId)
         .eq("venue_id", context.venueId) // Security: ensure order belongs to authenticated venue
         .single();
@@ -41,6 +48,54 @@ export const POST = withUnifiedAuth(
       if (orderError || !order) {
 
         return apiErrors.notFound("Order not found or access denied");
+      }
+
+      // Idempotent: if already paid, return success
+      if (String(order.payment_status || "").toUpperCase() === "PAID") {
+        return NextResponse.json({
+          success: true,
+          orderId,
+          payment_status: "PAID",
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      const { data: venueSettings } = await supabase
+        .from("venues")
+        .select("allow_pay_at_till_for_table_collection")
+        .eq("venue_id", context.venueId)
+        .maybeSingle();
+
+      const allowPayAtTillForTableCollection =
+        venueSettings?.allow_pay_at_till_for_table_collection === true;
+
+      const paymentMethod = normalizePaymentMethod(order.payment_method) || "PAY_AT_TILL";
+      const qrType = deriveQrTypeFromOrder(order);
+
+      const validation = validatePaymentMethodForQrType({
+        qrType,
+        paymentMethod,
+        allowPayAtTillForTableCollection,
+      });
+
+      if (!validation.ok) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: validation.error,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!["PAY_AT_TILL", "PAY_LATER"].includes(paymentMethod)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Only Pay at Till or Pay Later orders can be confirmed here.",
+          },
+          { status: 400 }
+        );
       }
 
       // Get the order details to find table_id (venue_id already fetched above)
@@ -60,6 +115,8 @@ export const POST = withUnifiedAuth(
         .from("orders")
         .update({
           payment_status: "PAID",
+          paid_at: new Date().toISOString(),
+          paid_by_user_id: context.user.id,
           updated_at: new Date().toISOString(),
         })
         .eq("id", orderId)
@@ -155,5 +212,6 @@ export const POST = withUnifiedAuth(
         return null;
       }
     },
+    requireRole: ["owner", "manager", "staff", "server", "kitchen"],
   }
 );

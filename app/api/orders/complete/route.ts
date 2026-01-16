@@ -8,6 +8,11 @@ import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentStatus,
+  validateOrderStatusTransition,
+} from "@/lib/orders/qr-payment-validation";
 
 export const runtime = "nodejs";
 
@@ -45,11 +50,25 @@ export const POST = withUnifiedAuth(
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .select(
-          "id, venue_id, order_status, payment_status, payment_method, kitchen_status, service_status, completion_status, table_id, table_number, source"
+          "id, venue_id, order_status, payment_status, payment_method, kitchen_status, service_status, completion_status, table_id, table_number, source, qr_type, fulfillment_type, requires_collection"
         )
         .eq("id", orderId)
         .eq("venue_id", venueId)
         .single();
+      const qrType = deriveQrTypeFromOrder(orderData || {});
+      const normalizedPaymentStatus = normalizePaymentStatus(orderData?.payment_status) || "UNPAID";
+      const transitionValidation = validateOrderStatusTransition({
+        qrType,
+        paymentStatus: normalizedPaymentStatus,
+        currentStatus: orderData?.order_status || "",
+        nextStatus: "COMPLETED",
+      });
+
+      if (!transitionValidation.ok) {
+        return apiErrors.badRequest(
+          transitionValidation.error || "Order status transition not allowed"
+        );
+      }
 
       if (orderError || !orderData) {
 
@@ -78,6 +97,15 @@ export const POST = withUnifiedAuth(
           isDevelopment() ? completeError.message : "Order not eligible for completion"
         );
       }
+
+      await supabase
+        .from("orders")
+        .update({
+          fulfillment_status: "COMPLETED",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId)
+        .eq("venue_id", venueId);
 
       // STEP 5: Clear table session if order has table
       if (orderData.table_id || orderData.table_number) {

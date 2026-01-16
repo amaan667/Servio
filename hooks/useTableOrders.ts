@@ -13,6 +13,9 @@ export interface TableOrder {
   payment_status: string;
   payment_mode?: string;
   payment_method?: string;
+  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
+  fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
+  requires_collection?: boolean;
   stripe_session_id?: string | null;
   total_amount: number;
   created_at: string;
@@ -53,6 +56,9 @@ export function useTableOrders(venueId: string) {
 					payment_status,
           payment_mode,
           payment_method,
+          qr_type,
+          fulfillment_type,
+          requires_collection,
           stripe_session_id,
 					total_amount,
 					created_at,

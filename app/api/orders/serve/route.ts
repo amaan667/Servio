@@ -6,6 +6,7 @@ import { apiErrors } from "@/lib/api/standard-response";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
+import { deriveQrTypeFromOrder, normalizePaymentStatus, validateOrderStatusTransition } from "@/lib/orders/qr-payment-validation";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -27,10 +28,26 @@ export const POST = withUnifiedAuth(
       // If not, check if all KDS tickets are bumped and update kitchen_status first
       const { data: currentOrder, error: fetchError } = await admin
         .from("orders")
-        .select("kitchen_status, completion_status, order_status")
+        .select("kitchen_status, completion_status, order_status, qr_type, fulfillment_type, source, requires_collection, payment_status")
         .eq("id", orderId)
         .eq("venue_id", venueId)
         .single();
+      const qrType = deriveQrTypeFromOrder(currentOrder || {});
+      const normalizedPaymentStatus =
+        normalizePaymentStatus(currentOrder?.payment_status) || "UNPAID";
+      const transitionValidation = validateOrderStatusTransition({
+        qrType,
+        paymentStatus: normalizedPaymentStatus,
+        currentStatus: currentOrder?.order_status || "",
+        nextStatus: "SERVED",
+      });
+
+      if (!transitionValidation.ok) {
+        return apiErrors.badRequest(
+          transitionValidation.error || "Order status transition not allowed"
+        );
+      }
+
 
       if (fetchError || !currentOrder) {
 
@@ -137,6 +154,15 @@ export const POST = withUnifiedAuth(
 
         return apiErrors.badRequest("Failed to update order status - no data returned");
       }
+
+      await admin
+        .from("orders")
+        .update({
+          fulfillment_status: "SERVED",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId)
+        .eq("venue_id", venueId);
 
       // Best-effort: update table_sessions status to SERVED for table UI
       try {

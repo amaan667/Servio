@@ -4,15 +4,17 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Receipt, User, QrCode, X, CreditCard, Split, CheckCircle } from "lucide-react";
+import { Receipt, User, QrCode, X, Split, CheckCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TableOrder } from "@/hooks/useTableOrders";
 import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
+import { deriveQrTypeFromOrder } from "@/lib/orders/qr-payment-validation";
 
 // Helper functions for order status flow
-const getNextOrderStatus = (currentStatus: string) => {
+const getNextOrderStatus = (currentStatus: string, qrType: string) => {
   // Normalize to uppercase for comparison
   const status = currentStatus.toUpperCase();
+  const isCollection = qrType === "TABLE_COLLECTION";
   switch (status) {
     case "PLACED":
     case "ACCEPTED":
@@ -21,7 +23,7 @@ const getNextOrderStatus = (currentStatus: string) => {
     case "PREPARING":
       return "READY";
     case "READY":
-      return "SERVED";
+      return isCollection ? "COMPLETED" : "SERVED";
     case "SERVING":
     case "SERVED":
       return "COMPLETED";
@@ -30,9 +32,10 @@ const getNextOrderStatus = (currentStatus: string) => {
   }
 };
 
-const getNextStatusLabel = (currentStatus: string) => {
+const getNextStatusLabel = (currentStatus: string, qrType: string) => {
   // Normalize to uppercase for comparison
   const status = currentStatus.toUpperCase();
+  const isCollection = qrType === "TABLE_COLLECTION";
   switch (status) {
     case "PLACED":
     case "ACCEPTED":
@@ -41,7 +44,7 @@ const getNextStatusLabel = (currentStatus: string) => {
     case "PREPARING":
       return "Mark Ready";
     case "READY":
-      return "Mark Served";
+      return isCollection ? "Mark Collected" : "Mark Served";
     case "SERVING":
     case "SERVED":
       return "Complete Order";
@@ -60,6 +63,12 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const qrType = deriveQrTypeFromOrder({
+    qr_type: order.qr_type,
+    fulfillment_type: order.fulfillment_type,
+    source: order.source,
+    requires_collection: order.requires_collection,
+  });
 
   const handleRemoveOrder = async () => {
     try {
@@ -130,35 +139,6 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
     return formatPrice(total);
   };
 
-  const handlePayment = async (paymentMethod: "till" | "card") => {
-    try {
-      setIsProcessingPayment(true);
-
-      const response = await fetch("/api/orders/payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          orderId: order.id,
-          venue_id: venueId,
-          payment_method: paymentMethod,
-          payment_status: "PAID",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to process payment");
-      }
-
-      onActionComplete?.();
-    } catch (_error) {
-      // Error silently handled
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
@@ -352,21 +332,16 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handlePayment("till")}
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.location.href = `/dashboard/${venueId}/payments?orderId=${order.id}`;
+                    }
+                  }}
                   disabled={isProcessingPayment}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  Till Payment
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handlePayment("card")}
-                  disabled={isProcessingPayment}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  Card Payment
+                  Take Payment
                 </Button>
                 {/* Only show split bill for pay-at-till orders */}
                 {(order.payment_mode === "pay_at_till" || order.payment_method === "TILL") && (
@@ -398,12 +373,12 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
               </div>
               <Button
                 size="sm"
-                onClick={() => handleStatusUpdate(getNextOrderStatus(order.order_status))}
+                onClick={() => handleStatusUpdate(getNextOrderStatus(order.order_status, qrType))}
                 disabled={isProcessingPayment}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                {getNextStatusLabel(order.order_status)}
+                {getNextStatusLabel(order.order_status, qrType)}
               </Button>
             </div>
           </div>

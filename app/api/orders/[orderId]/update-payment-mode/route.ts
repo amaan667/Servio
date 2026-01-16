@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
 import { apiErrors } from "@/lib/api/standard-response";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentMethod,
+  validatePaymentMethodForQrType,
+} from "@/lib/orders/qr-payment-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,11 +71,47 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
       );
     }
 
+    const { data: venueSettings } = await admin
+      .from("venues")
+      .select("allow_pay_at_till_for_table_collection")
+      .eq("venue_id", venue_id)
+      .maybeSingle();
+
+    const allowPayAtTillForTableCollection =
+      venueSettings?.allow_pay_at_till_for_table_collection === true;
+
+    const mappedPaymentMethod =
+      new_payment_mode === "online"
+        ? "PAY_NOW"
+        : new_payment_mode === "pay_later"
+          ? "PAY_LATER"
+          : "PAY_AT_TILL";
+
+    const normalizedPaymentMethod = normalizePaymentMethod(mappedPaymentMethod) || "PAY_NOW";
+    const qrType = deriveQrTypeFromOrder(order);
+
+    const validation = validatePaymentMethodForQrType({
+      qrType,
+      paymentMethod: normalizedPaymentMethod,
+      allowPayAtTillForTableCollection,
+    });
+
+    if (!validation.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: validation.error,
+        },
+        { status: 400 }
+      );
+    }
+
     // Update payment mode
     const { data: updatedOrder, error: updateError } = await admin
       .from("orders")
       .update({
         payment_mode: new_payment_mode,
+        payment_method: normalizedPaymentMethod,
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId)

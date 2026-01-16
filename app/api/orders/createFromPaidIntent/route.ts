@@ -7,6 +7,7 @@ import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 import { generateIdempotencyKey, withIdempotency, checkIdempotency } from "@/lib/db/idempotency";
 import { verifyVenueExists } from "@/lib/middleware/authorization";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { deriveQrTypeFromOrder, normalizeQrType } from "@/lib/orders/qr-payment-validation";
 import crypto from "crypto";
 import type StripeNamespace from "stripe";
 
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Extract order data from payment intent metadata
-    const { venue_id, table_number, customer_name, customer_phone, items_summary } =
+    const { venue_id, table_number, customer_name, customer_phone, items_summary, qr_type } =
       paymentIntent.metadata;
 
     if (!venue_id || !table_number || !customer_name) {
@@ -164,6 +165,13 @@ export async function POST(req: NextRequest) {
     const billingEmail =
       paymentIntentWithCharges.charges?.data?.[0]?.billing_details?.email ?? null;
 
+    const derivedQrType = deriveQrTypeFromOrder({
+      qr_type: normalizeQrType(qr_type),
+      fulfillment_type: "table",
+      source: "qr",
+      requires_collection: false,
+    });
+
     const orderData = {
       id: uuidv4(),
       venue_id,
@@ -173,10 +181,13 @@ export async function POST(req: NextRequest) {
       customer_email: billingEmail,
       total_amount: orderAmount,
       order_status: "PLACED", // Start as PLACED to show "waiting on kitchen"
+      fulfillment_status: "PREPARING",
+      qr_type: derivedQrType,
       payment_status: "PAID",
       payment_intent_id: paymentIntentId,
       payment_method: "PAY_NOW", // Standardized payment method for Stripe payments
       payment_mode: "online", // Required for payment_method consistency constraint
+      table_identifier: table_number ? `Table ${table_number}` : null,
       items: [
         // Create a summary item from the metadata
         {
@@ -227,6 +238,23 @@ export async function POST(req: NextRequest) {
         if (!order) {
 
           throw new Error("Failed to create order: OrderService returned null");
+        }
+
+        try {
+          const { createAdminClient } = await import("@/lib/supabase");
+          const adminClient = createAdminClient();
+          await adminClient
+            .from("orders")
+            .update({
+              qr_type: derivedQrType,
+              fulfillment_status: "PREPARING",
+              table_identifier: table_number ? `Table ${table_number}` : null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", order.id)
+            .eq("venue_id", venue_id);
+        } catch {
+          // Best-effort; do not block order creation
         }
 
         // Publish realtime event for live orders
@@ -303,10 +331,13 @@ async function createDemoOrder(cartId: string) {
       customer_phone: "+1234567890",
       total_amount: 2800, // £28.00 in pence
       order_status: "PLACED",
+      fulfillment_status: "PREPARING",
+      qr_type: "TABLE_FULL_SERVICE",
       payment_status: "PAID",
       payment_intent_id: `demo-${cartId}`,
       payment_method: "PAY_NOW", // Demo orders use PAY_NOW method
       payment_mode: "online", // Required for payment_method consistency constraint
+      table_identifier: "Table 1",
       items: [
         {
           menu_item_id: null,

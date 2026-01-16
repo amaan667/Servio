@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +21,8 @@ import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 // Hooks
 import { usePaymentState } from "./hooks/usePaymentState";
 import { usePaymentProcessing } from "./hooks/usePaymentProcessing";
+import { getAllowedPaymentMethods } from "@/lib/orders/qr-payment-validation";
+import type { QrType } from "@/types/order-flow";
 
 /**
  * Payment Page
@@ -33,17 +35,66 @@ import { usePaymentProcessing } from "./hooks/usePaymentProcessing";
 export default function PaymentPage() {
   const paymentState = usePaymentState();
   const { processPayment } = usePaymentProcessing();
+  const [allowPayAtTillForTableCollection, setAllowPayAtTillForTableCollection] =
+    useState(false);
 
   // Log page load and initial state
-  React.useEffect(() => {
+  useEffect(() => {
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "unknown";
     const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
   }, []); // Only run on mount
 
+  useEffect(() => {
+    if (!paymentState.checkoutData?.venueId) return;
+
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(
+          `/api/venue/${paymentState.checkoutData?.venueId}/payment-settings`
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        setAllowPayAtTillForTableCollection(
+          data?.allow_pay_at_till_for_table_collection === true
+        );
+      } catch {
+        setAllowPayAtTillForTableCollection(false);
+      }
+    };
+
+    fetchSettings();
+  }, [paymentState.checkoutData?.venueId]);
+
+  const qrType: QrType = (() => {
+    const explicit = paymentState.checkoutData?.qr_type;
+    if (explicit) return explicit;
+    if (paymentState.checkoutData?.orderType === "counter") return "COUNTER";
+    if (paymentState.checkoutData?.orderType === "table_pickup") return "TABLE_COLLECTION";
+    return "TABLE_FULL_SERVICE";
+  })();
+
+  const allowedPaymentMethods = getAllowedPaymentMethods({
+    qrType,
+    allowPayAtTillForTableCollection,
+  });
+
   // Payment state effects handled by component logic
 
   const handlePayment = async (action: "demo" | "stripe" | "till" | "later") => {
+    const methodMap = {
+      stripe: "PAY_NOW",
+      till: "PAY_AT_TILL",
+      later: "PAY_LATER",
+      demo: "PAY_NOW",
+    } as const;
+    const mappedMethod = methodMap[action];
+    if (mappedMethod && !allowedPaymentMethods.includes(mappedMethod)) {
+      paymentState.setError(
+        `Payment method ${mappedMethod.replace("_", " ")} is not available for this QR type.`
+      );
+      return;
+    }
     const timestamp = new Date().toISOString();
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "unknown";
     const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
@@ -237,74 +288,76 @@ export default function PaymentPage() {
               {/* Payment Method Buttons - All Same Style */}
               <div className="space-y-3">
                 {/* Stripe Payment */}
-                {!paymentState.isDemo && (
-                  <>
-                    <Button
-                      onClick={() => {
-                        handlePayment("stripe");
-                      }}
-                      disabled={paymentState.isProcessing}
-                      variant="default"
-                      className="w-full h-12 text-base"
-                    >
-                      {paymentState.isProcessing && paymentState.paymentAction === "stripe" ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-5 w-5 mr-2" />
-                          Pay Now
-                        </>
-                      )}
-                    </Button>
-                  </>
+                {!paymentState.isDemo && allowedPaymentMethods.includes("PAY_NOW") && (
+                  <Button
+                    onClick={() => {
+                      handlePayment("stripe");
+                    }}
+                    disabled={paymentState.isProcessing}
+                    variant="default"
+                    className="w-full h-12 text-base"
+                  >
+                    {paymentState.isProcessing && paymentState.paymentAction === "stripe" ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        Pay Now
+                      </>
+                    )}
+                  </Button>
                 )}
 
                 {/* Pay at Till */}
-                <Button
-                  variant="default"
-                  onClick={() => {
-                    handlePayment("till");
-                  }}
-                  disabled={paymentState.isProcessing}
-                  className="w-full h-12 text-base"
-                >
-                  {paymentState.isProcessing && paymentState.paymentAction === "till" ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Receipt className="h-5 w-5 mr-2" />
-                      Pay at Till
-                    </>
-                  )}
-                </Button>
+                {allowedPaymentMethods.includes("PAY_AT_TILL") && (
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      handlePayment("till");
+                    }}
+                    disabled={paymentState.isProcessing}
+                    className="w-full h-12 text-base"
+                  >
+                    {paymentState.isProcessing && paymentState.paymentAction === "till" ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Receipt className="h-5 w-5 mr-2" />
+                        Pay at Till
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 {/* Pay Later */}
-                <Button
-                  variant="default"
-                  onClick={() => {
-                    handlePayment("later");
-                  }}
-                  disabled={paymentState.isProcessing}
-                  className="w-full h-12 text-base"
-                >
-                  {paymentState.isProcessing && paymentState.paymentAction === "later" ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="h-5 w-5 mr-2" />
-                      Pay Later
-                    </>
-                  )}
-                </Button>
+                {allowedPaymentMethods.includes("PAY_LATER") && (
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      handlePayment("later");
+                    }}
+                    disabled={paymentState.isProcessing}
+                    className="w-full h-12 text-base"
+                  >
+                    {paymentState.isProcessing && paymentState.paymentAction === "later" ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-5 w-5 mr-2" />
+                        Pay Later
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

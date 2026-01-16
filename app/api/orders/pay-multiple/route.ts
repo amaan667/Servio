@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
 import { apiErrors } from "@/lib/api/standard-response";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentMethod,
+  validatePaymentMethodForQrType,
+} from "@/lib/orders/qr-payment-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +18,8 @@ export const dynamic = "force-dynamic";
  * Pay multiple orders at once (e.g., entire table)
  * Handles both till payment and card payment
  */
-export async function POST(req: NextRequest) {
+export const POST = withUnifiedAuth(
+  async (req: NextRequest, context) => {
   try {
     const body = await req.json();
     const { order_ids, payment_method, venue_id } = body;
@@ -51,7 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate all orders are unpaid
-    const alreadyPaid = orders.filter((o) => o.payment_status === "PAID");
+    const alreadyPaid = orders.filter((o) => String(o.payment_status || "").toUpperCase() === "PAID");
     if (alreadyPaid.length > 0) {
 
       return NextResponse.json(
@@ -70,12 +77,51 @@ export async function POST(req: NextRequest) {
       // Allow it but log warning
     }
 
+    const allowPayAtTillForTableCollection = await admin
+      .from("venues")
+      .select("allow_pay_at_till_for_table_collection")
+      .eq("venue_id", venue_id)
+      .maybeSingle()
+      .then((result) => result.data?.allow_pay_at_till_for_table_collection === true);
+
+    const normalizedPaymentMethod = normalizePaymentMethod(payment_method) || "PAY_AT_TILL";
+
+    const invalidOrders = orders.filter((order) => {
+      const qrType = deriveQrTypeFromOrder(order);
+      const validation = validatePaymentMethodForQrType({
+        qrType,
+        paymentMethod: normalizedPaymentMethod,
+        allowPayAtTillForTableCollection,
+      });
+      return !validation.ok;
+    });
+
+    if (invalidOrders.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "One or more orders do not allow this payment method.",
+          invalid_order_ids: invalidOrders.map((o) => o.id),
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!["PAY_AT_TILL", "PAY_LATER"].includes(normalizedPaymentMethod)) {
+      return NextResponse.json(
+        { error: "Only Pay at Till or Pay Later orders can be confirmed here" },
+        { status: 400 }
+      );
+    }
+
     // Update all orders to paid
     const { data: updatedOrders, error: updateError } = await admin
       .from("orders")
       .update({
         payment_status: "PAID",
-        payment_method: payment_method === "till" ? "till" : payment_method,
+        payment_method: normalizedPaymentMethod,
+        paid_at: new Date().toISOString(),
+        paid_by_user_id: context.user.id,
         updated_at: new Date().toISOString(),
       })
       .in("id", order_ids)
@@ -95,11 +141,15 @@ export async function POST(req: NextRequest) {
       orders: updatedOrders || [],
       totalAmount,
       orderCount: updatedOrders?.length || 0,
-      payment_method,
+      payment_method: normalizedPaymentMethod,
       message: `Successfully marked ${updatedOrders?.length || 0} order(s) as paid`,
     });
   } catch (_error) {
 
     return apiErrors.internal("Internal server error");
   }
-}
+  },
+  {
+    requireRole: ["owner", "manager", "staff", "server", "kitchen"],
+  }
+);

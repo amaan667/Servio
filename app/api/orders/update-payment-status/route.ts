@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 
 import { success, apiErrors } from "@/lib/api/standard-response";
+import { normalizePaymentMethod, normalizePaymentStatus } from "@/lib/orders/qr-payment-validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,14 +14,25 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
+    const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod);
+    const normalizedPaymentStatus = normalizePaymentStatus(paymentStatus);
+
+    if (normalizedPaymentStatus === "PAID" && normalizedPaymentMethod === "PAY_AT_TILL") {
+      return apiErrors.badRequest("Pay at Till confirmation must be done by staff.");
+    }
+
+    if (normalizedPaymentStatus === "PAID" && normalizedPaymentMethod === "PAY_LATER") {
+      return apiErrors.badRequest("Pay Later confirmation must be done by staff.");
+    }
+
     // Convert to uppercase for database consistency
     const updateData: Record<string, unknown> = {
-      payment_status: paymentStatus.toUpperCase(),
+      payment_status: (normalizedPaymentStatus || "UNPAID").toUpperCase(),
       updated_at: new Date().toISOString(),
     };
 
-    if (paymentMethod) {
-      updateData.payment_method = paymentMethod.toUpperCase();
+    if (normalizedPaymentMethod) {
+      updateData.payment_method = normalizedPaymentMethod;
     }
 
     const { data, error } = await supabase

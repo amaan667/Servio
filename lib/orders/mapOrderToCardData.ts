@@ -1,6 +1,7 @@
 // Data transformation utilities for the unified OrderCard component
 
 import { OrderForCard, LegacyOrder } from "@/types/orders";
+import { normalizeQrType } from "@/lib/orders/qr-payment-validation";
 
 /**
  * Transforms legacy order data to the new OrderForCard format
@@ -45,11 +46,7 @@ export function mapOrderToCardData(
 
     // Determine mode based on payment_method first, then fallback to payment_status
     let mode: OrderForCard["payment"]["mode"] = "online";
-    if (
-      paymentMethod.toUpperCase() === "PAY_AT_TILL" ||
-      paymentMethod === "till" ||
-      paymentStatus === "TILL"
-    ) {
+    if (paymentMethod.toUpperCase() === "PAY_AT_TILL" || paymentMethod === "till") {
       mode = "pay_at_till";
     } else if (paymentMethod.toUpperCase() === "PAY_LATER" || paymentStatus === "PAY_LATER") {
       mode = "pay_later";
@@ -61,7 +58,6 @@ export function mapOrderToCardData(
     let status: OrderForCard["payment"]["status"] = "unpaid";
     switch (paymentStatus) {
       case "PAID":
-      case "TILL": // TILL means paid at till
         status = "paid";
         break;
       case "REFUNDED":
@@ -164,6 +160,14 @@ export function mapOrderToCardData(
     short_id,
     placed_at: legacyOrder.created_at,
     order_status: normalizeOrderStatus(legacyOrder.order_status),
+    qr_type: normalizeQrType((legacyOrder as { qr_type?: string }).qr_type) || undefined,
+    fulfillment_type: (legacyOrder as { fulfillment_type?: string }).fulfillment_type as
+      | "table"
+      | "counter"
+      | "delivery"
+      | "pickup"
+      | undefined,
+    requires_collection: (legacyOrder as { requires_collection?: boolean }).requires_collection,
     total_amount: legacyOrder.total_amount,
     currency,
     payment: determinePaymentInfo(legacyOrder),

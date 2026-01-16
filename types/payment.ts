@@ -18,6 +18,9 @@ export interface CheckoutData {
   tableNumber?: number | string;
   counterNumber?: string; // Counter number for counter orders
   counterLabel?: string; // Counter label (e.g., "Counter 1", "Counter A")
+  orderType?: "counter" | "table" | "table_pickup";
+  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
+  requiresCollection?: boolean;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;

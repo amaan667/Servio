@@ -5,6 +5,11 @@ import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 import { validateOrderCompletion } from "@/lib/orders/payment-validation";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentStatus,
+  validateOrderStatusTransition,
+} from "@/lib/orders/qr-payment-validation";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -36,6 +41,22 @@ export const POST = withUnifiedAuth(
         return apiErrors.internal("Internal server error");
       }
 
+      const qrType = deriveQrTypeFromOrder(orderData || {});
+      const normalizedPaymentStatus =
+        normalizePaymentStatus(orderData?.payment_status) || "UNPAID";
+      const transitionValidation = validateOrderStatusTransition({
+        qrType,
+        paymentStatus: normalizedPaymentStatus,
+        currentStatus: orderData?.order_status || "",
+        nextStatus: status,
+      });
+
+      if (!transitionValidation.ok) {
+        return apiErrors.badRequest(
+          transitionValidation.error || "Order status transition not allowed"
+        );
+      }
+
       // CRITICAL: Validate payment before allowing COMPLETED status
       if (status === "COMPLETED") {
         const validation = await validateOrderCompletion(adminSupabase, orderId);
@@ -50,7 +71,19 @@ export const POST = withUnifiedAuth(
       // Update the order status
       const { error } = await adminSupabase
         .from("orders")
-        .update({ order_status: status })
+        .update({
+          order_status: status,
+          fulfillment_status:
+            status === "CANCELLED"
+              ? "CANCELLED"
+              : status === "COMPLETED"
+                ? "COMPLETED"
+                : status === "SERVED"
+                  ? "SERVED"
+                  : status === "READY"
+                    ? "READY"
+                    : "PREPARING",
+        })
         .eq("id", orderId)
         .eq("venue_id", context.venueId);
 

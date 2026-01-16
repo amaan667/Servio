@@ -5,29 +5,18 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Clock,
-  User,
-  Hash,
-  MapPin,
-  CreditCard,
-  CheckCircle,
-  X,
-  QrCode,
-  Receipt,
-} from "lucide-react";
+import { Clock, User, Hash, MapPin, CreditCard, CheckCircle, X, Receipt } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { OrderForCard } from "@/types/orders";
 import { deriveEntityKind, shouldShowUnpaidChip } from "@/lib/orders/entity-types";
+import { deriveQrTypeFromOrder } from "@/lib/orders/qr-payment-validation";
 import { OrderStatusChip, PaymentStatusChip } from "@/components/ui/chips";
 import { formatCurrency, formatOrderTime } from "@/lib/orders/mapOrderToCardData";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { PaymentCollectionDialog } from "./PaymentCollectionDialog";
-import { TablePaymentDialog } from "./TablePaymentDialog";
+// Payment confirmations are handled on the Payments page only
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order } from "@/types/order";
-import { Users } from "lucide-react";
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -48,10 +37,8 @@ export function OrderCard({
 }: OrderCardProps) {
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [showTablePaymentDialog, setShowTablePaymentDialog] = useState(false);
+  // Payments are confirmed on the Payments page only
   const [showReceipt, setShowReceipt] = useState(false);
-  const [tableUnpaidCount, setTableUnpaidCount] = useState<number | null>(null);
   const [allTicketsBumped, setAllTicketsBumped] = useState<boolean | null>(null);
   const [checkingTickets, setCheckingTickets] = useState(false);
   const [venueInfo, setVenueInfo] = useState<{
@@ -68,36 +55,6 @@ export function OrderCard({
 
   const isTableVariant = finalVariant === "table";
 
-  // Fetch table unpaid count for "Pay Entire Table" button
-  React.useEffect(() => {
-    if (!venueId || !order.table_number) return;
-
-    const fetchTableUnpaidCount = async () => {
-      try {
-        const supabase = createClient();
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
-
-        const { count } = await supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("venue_id", venueId)
-          .eq("table_number", order.table_number)
-          .eq("payment_status", "UNPAID")
-          .in("payment_method", ["PAY_LATER", "PAY_AT_TILL"])
-          .gte("created_at", todayStart.toISOString())
-          .lte("created_at", todayEnd.toISOString());
-
-        setTableUnpaidCount(count || 0);
-      } catch {
-        // Silently fail
-      }
-    };
-
-    fetchTableUnpaidCount();
-  }, [venueId, order.table_number]);
 
   // Helper function to check ticket status (used by real-time subscriptions and polling)
   const triggerTicketCheck = React.useCallback(async () => {
@@ -455,18 +412,15 @@ export function OrderCard({
 
         await response.json().catch(() => null);
       } else {
-        // Directly update status via Supabase for other transitions
-        const supabase = createClient();
-        const { error } = await supabase
-          .from("orders")
-          .update({
-            order_status: nextStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", order.id)
-          .eq("venue_id", venueId);
-        if (error) {
-          throw new Error(`Failed to update order status: ${error.message}`);
+        const response = await fetch("/api/orders/set-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id, status: nextStatus }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to update order status: ${response.status} - ${errorText}`);
         }
       }
 
@@ -491,66 +445,31 @@ export function OrderCard({
 
     // Check payment status - handle both nested payment object and flat payment_status
     const paymentStatus = (order.payment?.status || order.payment_status || "unpaid").toUpperCase();
-    const isPaid = paymentStatus === "PAID" || paymentStatus === "TILL";
+    const isPaid = paymentStatus === "PAID";
     const isCompleted = (order.order_status || "").toUpperCase() === "COMPLETED";
     // Normalize order status - handle both uppercase and lowercase, and "served" vs "serving"
     const rawStatus = (order.order_status || "").toString();
     const orderStatus = rawStatus.toUpperCase();
     const paymentMode = order.payment?.mode || order.payment_mode; // "online", "pay_at_till", "pay_later"
+    const qrType = deriveQrTypeFromOrder({
+      qr_type: order.qr_type,
+      fulfillment_type: order.fulfillment_type,
+      source: order.source,
+      requires_collection: (order as { requires_collection?: boolean }).requires_collection,
+    });
+    const isFullService = qrType === "TABLE_FULL_SERVICE";
+    const isCollection = qrType === "TABLE_COLLECTION";
+    const isCounter = qrType === "COUNTER";
+    const readyForPickupLabel = isCounter ? "Mark Picked Up" : "Mark Collected";
 
     // If already completed, no actions needed
     if (isCompleted) {
       return null;
     }
 
-    // Check if order can show "Mark Served" button
-    // Requirements:
-    // 1. Order status is PLACED, IN_PREP, PREPARING, or READY
-    // 2. Payment status is PAID or UNPAID
-    // 3. All KDS tickets are bumped (must be explicitly true, not null or false)
-    const canMarkServed =
-      ["PLACED", "IN_PREP", "PREPARING", "READY"].includes(orderStatus) &&
-      (paymentStatus === "PAID" || paymentStatus === "UNPAID") &&
-      allTicketsBumped === true; // Only show when explicitly all tickets are bumped
-
-    // If order is PLACED, IN_PREP, PREPARING, or READY, check if all tickets are bumped
-    if (["PLACED", "IN_PREP", "PREPARING", "READY"].includes(orderStatus)) {
-      if (canMarkServed) {
-        // All tickets bumped - can mark as served
-        return (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="text-sm text-green-600">
-                <span className="font-medium">✓ All items ready - Mark as Served</span>
-              </div>
-              <Button
-                size="sm"
-                onClick={() => handleStatusUpdate("SERVED")}
-                disabled={isProcessing}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Mark Served
-              </Button>
-            </div>
-          </div>
-        );
-      }
-      // Still waiting for KDS to bump tickets - show appropriate status message
+    if (["PLACED", "IN_PREP", "PREPARING"].includes(orderStatus)) {
       const isInPrep = orderStatus === "IN_PREP" || orderStatus === "PREPARING";
-      // If we've checked and tickets aren't all bumped, show preparing status
-      // If we haven't checked yet or checking, show checking message
-      let statusMessage = "Checking kitchen status...";
-      if (!checkingTickets) {
-        if (allTicketsBumped === false) {
-          // Tickets exist but not all bumped - show preparing
-          statusMessage = isInPrep ? "Preparing in kitchen" : "Waiting on kitchen";
-        } else if (allTicketsBumped === null) {
-          // Haven't checked yet or no tickets - show preparing
-          statusMessage = isInPrep ? "Preparing in kitchen" : "Waiting on kitchen";
-        }
-      }
-
+      const statusMessage = isInPrep ? "Preparing in kitchen" : "Waiting on kitchen";
       return (
         <div className="mt-4 pt-4 border-t-2 border-slate-200">
           <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
@@ -561,12 +480,94 @@ export function OrderCard({
       );
     }
 
+    if (orderStatus === "READY") {
+      if (isFullService) {
+        if (allTicketsBumped === true) {
+          return (
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="text-sm text-green-600">
+                  <span className="font-medium">✓ All items ready - Mark as Served</span>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleStatusUpdate("SERVED")}
+                  disabled={isProcessing}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Mark Served
+                </Button>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="mt-4 pt-4 border-t-2 border-slate-200">
+            <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+              <Clock className="h-5 w-5 text-blue-600 animate-pulse" />
+              <span className="text-base font-semibold text-blue-700">Waiting on kitchen</span>
+            </div>
+          </div>
+        );
+      }
+
+      if (isPaid) {
+        return (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="text-sm text-green-600">
+                <span className="font-medium">✓ Paid & Ready</span>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => handleStatusUpdate("COMPLETED")}
+                disabled={isProcessing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                {readyForPickupLabel}
+              </Button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          <div className="flex flex-col gap-3">
+            <div className="text-sm text-blue-600">
+              <span className="font-medium">Awaiting Payment</span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                size="sm"
+                variant="servio"
+                disabled={isProcessing}
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  if (!venueId) return;
+                  if (typeof window !== "undefined") {
+                    window.location.href = `/dashboard/${venueId}/payments?orderId=${order.id}`;
+                  }
+                }}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Take Payment
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // If order is SERVED, check payment status before allowing completion
     // Only show "Mark Completed" when:
     // 1. Order status is SERVED
     // 2. Payment status is PAID (for pay now - instant, for pay later - once Stripe goes through, for pay at till - when staff marks as paid)
     const isServed = orderStatus === "SERVED";
-    if (isServed) {
+    if (isServed && isFullService) {
       // CASE 1: Already paid - can mark completed immediately
       // Payment status PAID covers:
       // - Pay Now: Instant (already paid)
@@ -593,47 +594,29 @@ export function OrderCard({
         );
       }
 
-      // CASE 2: Pay at Till - staff must collect payment
-      if (paymentMode === "pay_at_till") {
-        const hasMultipleUnpaid = tableUnpaidCount !== null && tableUnpaidCount > 1;
+      // CASE 2: Awaiting payment
+      if (paymentMode === "pay_at_till" || paymentMode === "pay_later") {
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-orange-600">
-                  <span className="font-medium">Served - Unpaid</span>
-                  {hasMultipleUnpaid && (
-                    <span className="ml-2 text-xs">
-                      ({tableUnpaidCount} unpaid orders at table)
-                    </span>
-                  )}
-                </div>
-                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                  Unpaid - {formatCurrency(order.total_amount, order.currency)}
-                </Badge>
+              <div className="text-sm text-blue-600">
+                <span className="font-medium">Awaiting Payment</span>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
-                {hasMultipleUnpaid && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowTablePaymentDialog(true)}
-                    disabled={isProcessing}
-                    variant="outline"
-                    className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Pay Entire Table
-                  </Button>
-                )}
                 <Button
                   size="sm"
-                  onClick={() => setShowPaymentDialog(true)}
-                  disabled={isProcessing}
                   variant="servio"
+                  disabled={isProcessing}
                   className="w-full sm:w-auto"
+                  onClick={() => {
+                    if (!venueId) return;
+                    if (typeof window !== "undefined") {
+                      window.location.href = `/dashboard/${venueId}/payments?orderId=${order.id}`;
+                    }
+                  }}
                 >
                   <CreditCard className="h-4 w-4 mr-2" />
-                  Collect Payment at Till
+                  Take Payment
                 </Button>
               </div>
             </div>
@@ -641,51 +624,6 @@ export function OrderCard({
         );
       }
 
-      // CASE 3: Pay Later - customer must rescan QR and pay
-      if (paymentMode === "pay_later") {
-        return (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-blue-600">
-                  <span className="font-medium">Awaiting Payment (Pay Later)</span>
-                </div>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  Unpaid - {formatCurrency(order.total_amount, order.currency)}
-                </Badge>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-3 text-sm text-gray-700 space-y-2">
-                <p className="font-medium mb-1 flex items-center gap-2">
-                  <QrCode className="h-4 w-4" />
-                  Customer can rescan QR code to pay
-                </p>
-                <p className="text-xs text-gray-600">
-                  When the customer pays (via QR or staff), this order will automatically unlock
-                  completion.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-blue-100">
-                  <Button
-                    size="sm"
-                    variant="servio"
-                    disabled={isProcessing}
-                    className="w-full sm:w-auto"
-                    onClick={() => {
-                      if (!venueId) return;
-                      // Deep-link staff straight into consolidated payments view for this order
-                      if (typeof window !== "undefined") {
-                        window.location.href = `/dashboard/${venueId}/payments?orderId=${order.id}`;
-                      }
-                    }}
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Take Payment
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }
     }
 
     // Default: no actions
@@ -841,47 +779,6 @@ export function OrderCard({
         {/* Action Section */}
         {renderActions()}
       </CardContent>
-
-      {/* Payment Collection Dialog (for pay_at_till orders) */}
-      {venueId && (
-        <>
-          <PaymentCollectionDialog
-            open={showPaymentDialog}
-            onOpenChange={setShowPaymentDialog}
-            orderId={order.id}
-            orderNumber={order.short_id ?? ""}
-            customerName={order.customer_name ?? "Customer"}
-            totalAmount={order.total_amount ?? 0}
-            venueId={venueId ?? ""}
-            items={
-              order.items?.map((item: Record<string, unknown>) => ({
-                item_name: (item.item_name as string) || (item.name as string) || "Item",
-                quantity: (item.quantity as number) || (item.qty as number) || 1,
-                price: (item.price as number) || (item.unit_price as number) || 0,
-              })) || []
-            }
-            onSuccess={async () => {
-              setShowPaymentDialog(false);
-              // Refresh order data to get updated payment status
-              // This will trigger a re-render showing "Mark Completed" button
-              await onActionComplete?.();
-            }}
-          />
-          {/* Table Payment Dialog (for paying entire table) */}
-          {order.table_number && venueId && (
-            <TablePaymentDialog
-              open={showTablePaymentDialog}
-              onOpenChange={setShowTablePaymentDialog}
-              tableNumber={order.table_number}
-              venueId={venueId}
-              onSuccess={async () => {
-                setShowTablePaymentDialog(false);
-                await onActionComplete?.();
-              }}
-            />
-          )}
-        </>
-      )}
 
       {/* Receipt Modal */}
       {convertToOrder() && (

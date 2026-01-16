@@ -9,6 +9,12 @@ import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { validateBody, createOrderSchema } from "@/lib/api/validation-schemas";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentMethod,
+  normalizeQrType,
+  validatePaymentMethodForQrType,
+} from "@/lib/orders/qr-payment-validation";
 
 export const runtime = "nodejs";
 
@@ -141,6 +147,8 @@ type OrderPayload = {
   table_id?: string | null; // Add table_id field
   fulfillment_type?: "table" | "counter" | "delivery" | "pickup"; // New: proper fulfillment type
   counter_label?: string | null; // New: counter label for counter orders
+  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
+  fulfillment_status?: "NEW" | "PREPARING" | "READY" | "SERVED" | "COMPLETED" | "CANCELLED";
   customer_name: string;
   customer_phone: string; // Make required since database requires it
   items: OrderItem[];
@@ -155,9 +163,10 @@ type OrderPayload = {
     | "COMPLETED"
     | "CANCELLED"
     | "REFUNDED";
-  payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
+  payment_status?: "UNPAID" | "PAID" | "REFUNDED";
   payment_mode?: "online" | "deferred" | "offline";
   payment_method?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL" | string; // Standardized payment method values
+  requires_collection?: boolean;
   // NOTE: session_id is NOT a database column - it's only used for client-side tracking
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter/pickup orders (QR or till)
   stripe_session_id?: string | null;
@@ -330,7 +339,7 @@ export async function POST(req: NextRequest) {
     // This prevents orders from being created for non-existent or invalid venues
     const { data: venue, error: venueErr } = await supabase
       .from("venues")
-      .select("venue_id")
+      .select("venue_id, allow_pay_at_till_for_table_collection")
       .eq("venue_id", venueId)
       .maybeSingle();
 
@@ -495,12 +504,48 @@ export async function POST(req: NextRequest) {
     // For table orders, keep table_number as is
     const finalTableNumber = fulfillmentType === "counter" ? null : table_number;
 
+    const explicitQrType = normalizeQrType(
+      (validatedOrderBody as { qr_type?: string | null }).qr_type ?? null
+    );
+    const derivedQrType = deriveQrTypeFromOrder({
+      qr_type: explicitQrType,
+      fulfillment_type: fulfillmentType,
+      source: orderSource,
+      requires_collection: validatedOrderBody.requires_collection || false,
+    });
+
+    const normalizedPaymentMethod = normalizePaymentMethod(
+      (validatedOrderBody as { payment_method?: string | null }).payment_method ||
+        (body as { payment_method?: string | null }).payment_method
+    );
+    const paymentMethod = normalizedPaymentMethod || "PAY_NOW";
+    const allowPayAtTillForTableCollection =
+      venue?.allow_pay_at_till_for_table_collection === true;
+
+    const paymentValidation = validatePaymentMethodForQrType({
+      qrType: derivedQrType,
+      paymentMethod,
+      allowPayAtTillForTableCollection,
+    });
+
+    if (!paymentValidation.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: paymentValidation.error,
+        },
+        { status: 400 }
+      );
+    }
+
     const payload: OrderPayload = {
       venue_id: venueId,
       table_number: finalTableNumber, // Only set for table orders
       table_id: fulfillmentType === "table" ? tableId : null, // Only set for table orders
       fulfillment_type: fulfillmentType,
       counter_label: counterLabel,
+      qr_type: derivedQrType,
+      fulfillment_status: "PREPARING",
       customer_name: validatedOrderBody.customer_name.trim(),
       customer_phone: validatedOrderBody.customer_phone.trim(), // Required field, already validated
       items: safeItems,
@@ -521,20 +566,10 @@ export async function POST(req: NextRequest) {
           }
         ).order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
       payment_status:
-        (body as { payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED" }).payment_status ||
-        "UNPAID", // Use provided status or default to 'UNPAID'
+        (body as { payment_status?: "UNPAID" | "PAID" | "REFUNDED" }).payment_status || "UNPAID", // Use provided status or default to 'UNPAID'
       payment_mode: validatedOrderBody.payment_mode || "online", // New field for payment mode
-      payment_method: (() => {
-        const method = (body as { payment_method?: string }).payment_method;
-        // Map old values to standardized values
-        if (!method) return "PAY_NOW"; // Default fallback
-        const upperMethod = (method || "").toUpperCase();
-        if (upperMethod === "DEMO" || upperMethod === "STRIPE" || upperMethod === "PAY_NOW")
-          return "PAY_NOW";
-        if (upperMethod === "TILL" || upperMethod === "PAY_AT_TILL") return "PAY_AT_TILL";
-        if (upperMethod === "LATER" || upperMethod === "PAY_LATER") return "PAY_LATER";
-        return "PAY_NOW"; // Default fallback
-      })(),
+      payment_method: paymentMethod,
+      requires_collection: validatedOrderBody.requires_collection || false,
       // NOTE: session_id is NOT a database column - don't include in payload
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
       // NOTE: is_active is a generated column in the database, don't include it in insert
@@ -604,6 +639,12 @@ export async function POST(req: NextRequest) {
       order_status: payload.order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
       payment_status: payload.payment_status || "UNPAID",
       payment_method: payload.payment_method || "PAY_NOW", // Ensure payment_method is always set (required by constraint)
+      qr_type: payload.qr_type,
+      fulfillment_status: payload.fulfillment_status || "PREPARING",
+      requires_collection: payload.requires_collection || false,
+      table_identifier: payload.table_number ? `Table ${payload.table_number}` : null,
+      pickup_identifier: counterLabel || null,
+      counter_identifier: counterLabel || null,
       // Unified lifecycle defaults (canonical source of truth)
       kitchen_status: "PREPARING",
       service_status: "NOT_SERVED",
@@ -802,6 +843,7 @@ export async function POST(req: NextRequest) {
             .from("orders")
             .update({
               order_status: "IN_PREP",
+              fulfillment_status: "PREPARING",
               kitchen_status: "PREPARING",
               service_status: "NOT_SERVED",
               completion_status: "OPEN",

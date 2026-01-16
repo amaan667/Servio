@@ -73,6 +73,8 @@ export function usePaymentProcessing() {
           table_id: null;
           fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
           counter_label?: string | null;
+          qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
+          requires_collection?: boolean;
           items: OrderItemPayload[];
           total_amount: number;
           notes: string | null;
@@ -108,6 +110,8 @@ export function usePaymentProcessing() {
           table_id: null,
           fulfillment_type: fulfillmentType,
           counter_label: counterLabel,
+          qr_type: checkoutData.qr_type,
+          requires_collection: checkoutData.requiresCollection,
           items: checkoutData.cart.map((item) => {
             // Validate and fix menu_item_id - must be valid UUID or null
             let menuItemId: string | null = null;
@@ -518,6 +522,7 @@ export function usePaymentProcessing() {
             venueName: checkoutData.venueName || "Restaurant",
             ...(checkoutData.customerEmail && { customerEmail: checkoutData.customerEmail }),
             venueId: checkoutData.venueId,
+            qr_type: checkoutData.qr_type,
           };
 
           const response = await fetch("/api/checkout", {

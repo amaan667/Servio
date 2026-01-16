@@ -152,7 +152,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .select("*")
         .eq("venue_id", venueId)
         .eq("payment_status", "UNPAID")
-        .eq("payment_method", "PAY_AT_TILL")
+        .in("payment_method", ["PAY_AT_TILL", "PAY_LATER"])
         // Only include currently active orders awaiting payment.
         // This clears out old unpaid orders that were already completed or cancelled.
         .in("order_status", activeStatuses)
@@ -286,16 +286,13 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
   const handleMarkAsPaid = async (orderId: string) => {
     try {
       setIsProcessingPayment(orderId);
-      const response = await fetch("/api/orders/payment", {
+      const response = await fetch("/api/orders/mark-paid", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           orderId,
-          venue_id: venueId,
-          payment_method: "till",
-          payment_status: "PAID",
         }),
       });
 
@@ -463,7 +460,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 </>
               )}
             </Button>
-            {!isPayLater && (
+              {!isPayLater && (
               <Button
                 onClick={() => setSelectedOrderForSplit(order)}
                 variant="outline"
@@ -569,9 +566,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         {/* Tab Navigation */}
         <section className="mb-6 sm:mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="pay-at-till" className="flex items-center gap-2 relative">
-                <span className="flex-1 text-left">Unpaid Orders</span>
+                <span className="flex-1 text-left">Pay at Till</span>
                 <span
                   className={`
                     ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
@@ -582,7 +579,28 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     }
                   `}
                 >
-                  {unpaidOrders.length}
+                  {unpaidOrders.filter((order) => {
+                    const method = String(order.payment_method || "").toUpperCase();
+                    return method === "PAY_AT_TILL";
+                  }).length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="pay-later" className="flex items-center gap-2 relative">
+                <span className="flex-1 text-left">Pay Later</span>
+                <span
+                  className={`
+                    ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
+                    ${
+                      activeTab === "pay-later"
+                        ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
+                        : "bg-white/40 text-white border-white/30"
+                    }
+                  `}
+                >
+                  {unpaidOrders.filter((order) => {
+                    const method = String(order.payment_method || "").toUpperCase();
+                    return method === "PAY_LATER";
+                  }).length}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="today" className="flex items-center gap-2 relative">
@@ -619,17 +637,50 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
             {/* Payments - Pay at Till Orders */}
             <TabsContent value="pay-at-till" className="mt-6">
-              {unpaidOrders.length === 0 ? (
+              {unpaidOrders.filter((order) => {
+                const method = String(order.payment_method || "").toUpperCase();
+                return method === "PAY_AT_TILL";
+              }).length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Unpaid Orders</h3>
-                    <p className="text-gray-600">No unpaid Pay Later or Pay at Till orders found</p>
+                    <p className="text-gray-600">No unpaid Pay at Till orders found</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {unpaidOrders.map(renderUnpaidOrderCard)}
+                  {unpaidOrders
+                    .filter((order) => {
+                      const method = String(order.payment_method || "").toUpperCase();
+                      return method === "PAY_AT_TILL";
+                    })
+                    .map(renderUnpaidOrderCard)}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Payments - Pay Later Orders */}
+            <TabsContent value="pay-later" className="mt-6">
+              {unpaidOrders.filter((order) => {
+                const method = String(order.payment_method || "").toUpperCase();
+                return method === "PAY_LATER";
+              }).length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Unpaid Orders</h3>
+                    <p className="text-gray-600">No unpaid Pay Later orders found</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {unpaidOrders
+                    .filter((order) => {
+                      const method = String(order.payment_method || "").toUpperCase();
+                      return method === "PAY_LATER";
+                    })
+                    .map(renderUnpaidOrderCard)}
                 </div>
               )}
             </TabsContent>

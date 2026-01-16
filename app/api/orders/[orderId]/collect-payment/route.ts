@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
 import { apiErrors } from "@/lib/api/standard-response";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentMethod,
+  validatePaymentMethodForQrType,
+} from "@/lib/orders/qr-payment-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,10 +18,10 @@ export const dynamic = "force-dynamic";
  * Mark payment as collected for "pay_at_till" orders
  * Staff uses this after processing payment via card reader/cash register
  */
-type OrderParams = { params?: { orderId?: string } };
-
-export async function POST(_request: NextRequest, context: OrderParams = {}) {
-  const orderId = context.params?.orderId;
+export const POST = withUnifiedAuth(
+  async (_request: NextRequest, contextWithAuth, routeParams) => {
+  const params = routeParams?.params ? await routeParams.params : undefined;
+  const orderId = params?.orderId;
 
   if (!orderId) {
     return apiErrors.badRequest("Order ID is required");
@@ -38,7 +44,9 @@ export async function POST(_request: NextRequest, context: OrderParams = {}) {
     // Fetch the order
     const { data: order, error: fetchError } = await admin
       .from("orders")
-      .select("*")
+      .select(
+        "id, venue_id, payment_status, payment_method, payment_mode, qr_type, fulfillment_type, source, requires_collection"
+      )
       .eq("id", orderId)
       .eq("venue_id", venue_id)
       .single();
@@ -48,16 +56,45 @@ export async function POST(_request: NextRequest, context: OrderParams = {}) {
       return apiErrors.notFound("Order not found");
     }
 
-    // Validate order state
-    if (order.payment_status === "PAID") {
-
-      return apiErrors.badRequest("Order has already been paid");
+    // Idempotent: if already paid, return success
+    if (String(order.payment_status || "").toUpperCase() === "PAID") {
+      return NextResponse.json({
+        ok: true,
+        order,
+        message: "Order already marked as paid",
+      });
     }
 
-    if (order.payment_mode !== "pay_at_till") {
+    const { data: venueSettings } = await admin
+      .from("venues")
+      .select("allow_pay_at_till_for_table_collection")
+      .eq("venue_id", venue_id)
+      .maybeSingle();
 
+    const allowPayAtTillForTableCollection =
+      venueSettings?.allow_pay_at_till_for_table_collection === true;
+
+    const normalizedPaymentMethod = normalizePaymentMethod(payment_method) || "PAY_AT_TILL";
+    const qrType = deriveQrTypeFromOrder(order);
+    const validation = validatePaymentMethodForQrType({
+      qrType,
+      paymentMethod: normalizedPaymentMethod,
+      allowPayAtTillForTableCollection,
+    });
+
+    if (!validation.ok) {
       return NextResponse.json(
-        { error: "This endpoint is only for 'pay_at_till' orders" },
+        {
+          success: false,
+          error: validation.error,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!["PAY_AT_TILL", "PAY_LATER"].includes(normalizedPaymentMethod)) {
+      return NextResponse.json(
+        { error: "This endpoint is only for Pay at Till or Pay Later orders" },
         { status: 400 }
       );
     }
@@ -67,7 +104,9 @@ export async function POST(_request: NextRequest, context: OrderParams = {}) {
       .from("orders")
       .update({
         payment_status: "PAID",
-        payment_method: payment_method,
+        payment_method: normalizedPaymentMethod,
+        paid_at: new Date().toISOString(),
+        paid_by_user_id: contextWithAuth.user.id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId)
@@ -89,4 +128,24 @@ export async function POST(_request: NextRequest, context: OrderParams = {}) {
 
     return apiErrors.internal("Internal server error");
   }
-}
+  },
+  {
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.clone().json();
+        const orderId = body?.orderId;
+        if (!orderId) return null;
+        const admin = createAdminClient();
+        const { data: order } = await admin
+          .from("orders")
+          .select("venue_id")
+          .eq("id", orderId)
+          .single();
+        return (order?.venue_id as string | undefined) ?? null;
+      } catch {
+        return null;
+      }
+    },
+    requireRole: ["owner", "manager", "staff", "server", "kitchen"],
+  }
+);

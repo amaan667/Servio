@@ -1,8 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { isDevelopment } from "@/lib/env";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentMethod,
+  normalizePaymentStatus,
+  validatePaymentMethodForQrType,
+} from "@/lib/orders/qr-payment-validation";
 
 /**
  * Payment API Route - No authentication required for ordering UI
@@ -24,7 +30,9 @@ export async function POST(req: NextRequest) {
     // Allow updating payment status for any order (including completed ones) - staff may need to mark old orders as paid
     const { data: orderCheck, error: checkError } = await supabase
       .from("orders")
-      .select("venue_id, payment_status, order_status")
+      .select(
+        "venue_id, payment_status, order_status, payment_method, payment_mode, qr_type, fulfillment_type, source, requires_collection"
+      )
       .eq("id", orderId)
       .eq("venue_id", venue_id)
       .single();
@@ -34,91 +42,60 @@ export async function POST(req: NextRequest) {
       return apiErrors.notFound("Order not found");
     }
 
-    // Get current order to check existing payment_method and payment_mode
-    const { data: currentOrder, error: currentOrderError } = await supabase
-      .from("orders")
-      .select("payment_method, payment_mode")
-      .eq("id", orderId)
+    const { data: venueSettings } = await supabase
+      .from("venues")
+      .select("allow_pay_at_till_for_table_collection")
       .eq("venue_id", venue_id)
-      .single();
+      .maybeSingle();
 
-    if (currentOrderError) { /* Condition handled */ }
+    const allowPayAtTillForTableCollection =
+      venueSettings?.allow_pay_at_till_for_table_collection === true;
 
-    // Update payment status - allow for any order status (staff may need to mark completed orders as paid)
-    const updateData: Record<string, unknown> = {
-      payment_status: payment_status || "PAID",
-      updated_at: new Date().toISOString(),
-    };
+    const normalizedProvidedMethod = normalizePaymentMethod(payment_method);
+    const existingMethod = normalizePaymentMethod(orderCheck?.payment_method);
+    const finalPaymentMethod = normalizedProvidedMethod || existingMethod || "PAY_NOW";
 
-    // Determine payment_method and payment_mode
-    let finalPaymentMethod: string;
-    let finalPaymentMode: string;
+    const qrType = deriveQrTypeFromOrder(orderCheck || {});
+    const validation = validatePaymentMethodForQrType({
+      qrType,
+      paymentMethod: finalPaymentMethod,
+      allowPayAtTillForTableCollection,
+    });
 
-    // Normalize provided payment_method
-    const normalizedProvidedMethod = payment_method
-      ? payment_method.toUpperCase().replace(/[^A-Z_]/g, "")
-      : null;
-
-    // Handle "till" or "PAY_AT_TILL" variations
-    if (normalizedProvidedMethod === "TILL" || normalizedProvidedMethod === "PAY_AT_TILL") {
-      finalPaymentMethod = "PAY_AT_TILL";
-      finalPaymentMode = "offline";
-    } else if (normalizedProvidedMethod) {
-      // Use provided method
-      finalPaymentMethod = normalizedProvidedMethod;
-      // Set payment_mode based on payment_method
-      if (finalPaymentMethod === "PAY_NOW") {
-        finalPaymentMode = "online";
-      } else if (finalPaymentMethod === "PAY_LATER") {
-        // PAY_LATER can be online or deferred, prefer existing mode or default to online
-        const existingMode = currentOrder?.payment_mode?.toLowerCase();
-        if (existingMode === "online" || existingMode === "deferred") {
-          finalPaymentMode = existingMode;
-        } else {
-          finalPaymentMode = "online";
-        }
-      } else if (finalPaymentMethod === "PAY_AT_TILL") {
-        finalPaymentMode = "offline";
-      } else {
-        // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
-
-        finalPaymentMethod = "PAY_AT_TILL";
-        finalPaymentMode = "offline";
-      }
-    } else if (currentOrder?.payment_method) {
-      // Use existing payment_method if not provided
-      finalPaymentMethod = String(currentOrder.payment_method).toUpperCase();
-      // Set payment_mode based on existing payment_method
-      if (finalPaymentMethod === "PAY_NOW") {
-        finalPaymentMode = "online";
-      } else if (finalPaymentMethod === "PAY_LATER") {
-        // PAY_LATER can be online or deferred, prefer existing mode or default to online
-        const existingMode = currentOrder?.payment_mode?.toLowerCase();
-        if (existingMode === "online" || existingMode === "deferred") {
-          finalPaymentMode = existingMode;
-        } else {
-          finalPaymentMode = "online";
-        }
-      } else if (finalPaymentMethod === "PAY_AT_TILL") {
-        finalPaymentMode = "offline";
-      } else {
-        // Fallback: if payment_method doesn't match known values, default to PAY_AT_TILL
-
-        finalPaymentMethod = "PAY_AT_TILL";
-        finalPaymentMode = "offline";
-      }
-    } else {
-      // Default to PAY_AT_TILL if no payment method specified (staff marking as paid)
-      finalPaymentMethod = "PAY_AT_TILL";
-      finalPaymentMode = "offline";
+    if (!validation.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: validation.error,
+        },
+        { status: 400 }
+      );
     }
 
-    // Always set both to ensure constraint is satisfied
-    updateData.payment_method = finalPaymentMethod;
-    updateData.payment_mode = finalPaymentMode;
+    const normalizedStatus = normalizePaymentStatus(payment_status || null);
+    if (normalizedStatus === "PAID" && finalPaymentMethod !== "PAY_NOW") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Payment confirmation for Pay at Till and Pay Later is staff-only.",
+        },
+        { status: 400 }
+      );
+    }
 
-    // Update payment status - no restrictions on order_status or completion_status
-    // This allows staff to mark any order as paid, even if it's from a previous day or already completed
+    // Update payment status - public endpoint only supports UNPAID for deferred/till flows
+    const updateData: Record<string, unknown> = {
+      payment_status: normalizedStatus || "UNPAID",
+      updated_at: new Date().toISOString(),
+      payment_method: finalPaymentMethod,
+      payment_mode:
+        finalPaymentMethod === "PAY_NOW"
+          ? "online"
+          : finalPaymentMethod === "PAY_LATER"
+            ? "deferred"
+            : "offline",
+    };
+
     const { data: updatedOrder, error: updateError } = await supabase
       .from("orders")
       .update(updateData)

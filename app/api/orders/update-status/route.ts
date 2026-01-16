@@ -2,6 +2,11 @@ import { apiErrors, success } from "@/lib/api/standard-response";
 import { createServerSupabase } from "@/lib/supabase";
 import { getAuthUserForAPI } from "@/lib/auth/server";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentStatus,
+  validateOrderStatusTransition,
+} from "@/lib/orders/qr-payment-validation";
 
 import { env } from "@/lib/env";
 
@@ -55,39 +60,45 @@ export async function POST(req: Request) {
       return apiErrors.forbidden("Forbidden");
     }
 
-    // CRITICAL: Verify payment status before allowing COMPLETED
-    if (status === "COMPLETED") {
-      const { data: currentOrder } = await supabase
-        .from("orders")
-        .select("payment_status, order_status")
-        .eq("id", orderId)
-        .single();
+    const { data: currentOrder } = await supabase
+      .from("orders")
+      .select("payment_status, order_status, qr_type, fulfillment_type, source, requires_collection")
+      .eq("id", orderId)
+      .single();
 
-      if (!currentOrder) {
-        return apiErrors.notFound("Order not found");
-      }
+    if (!currentOrder) {
+      return apiErrors.notFound("Order not found");
+    }
 
-      const paidStatuses = ["PAID", "TILL"];
-      const currentPayment = (currentOrder.payment_status || "").toUpperCase();
-      if (!paidStatuses.includes(currentPayment)) {
-        return apiErrors.badRequest(
-          `Cannot complete order: payment status is ${currentOrder.payment_status}. Order must be PAID or TILL before completion.`,
-          { payment_status: currentOrder.payment_status }
-        );
-      }
+    const qrType = deriveQrTypeFromOrder(currentOrder);
+    const normalizedPaymentStatus = normalizePaymentStatus(currentOrder.payment_status) || "UNPAID";
+    const transitionValidation = validateOrderStatusTransition({
+      qrType,
+      paymentStatus: normalizedPaymentStatus,
+      currentStatus: currentOrder.order_status || "",
+      nextStatus: status,
+    });
 
-      // Also verify order is in a completable state
-      const completableStatuses = ["SERVED", "READY", "SERVING"];
-      if (!completableStatuses.includes(currentOrder.order_status)) {
-        return apiErrors.badRequest(
-          `Cannot complete order: current status is ${currentOrder.order_status}. Order must be SERVED, READY, or SERVING before completion.`,
-          { current_status: currentOrder.order_status }
-        );
-      }
+    if (!transitionValidation.ok) {
+      return apiErrors.badRequest(
+        transitionValidation.error || "Order status transition not allowed"
+      );
     }
 
     // Update order status, and also set completion_status if completing
-    const updateData: Record<string, unknown> = { order_status: status };
+    const updateData: Record<string, unknown> = {
+      order_status: status,
+      fulfillment_status:
+        status === "CANCELLED"
+          ? "CANCELLED"
+          : status === "COMPLETED"
+            ? "COMPLETED"
+            : status === "SERVED"
+              ? "SERVED"
+              : status === "READY"
+                ? "READY"
+                : "PREPARING",
+    };
     if (status === "COMPLETED") {
       updateData.completion_status = "COMPLETED";
       updateData.completed_at = new Date().toISOString();
@@ -207,10 +218,7 @@ export async function POST(req: Request) {
         }
 
         // If order is completed and paid, check if reservations should be auto-completed
-        if (
-          status === "COMPLETED" &&
-          ["PAID", "TILL"].includes((order.payment_status || "").toUpperCase())
-        ) {
+        if (status === "COMPLETED" && (order.payment_status || "").toUpperCase() === "PAID") {
           try {
             const baseUrl =
               env("NEXT_PUBLIC_SITE_URL") || "https://servio-production.up.railway.app";

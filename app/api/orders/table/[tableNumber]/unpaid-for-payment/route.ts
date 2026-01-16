@@ -63,7 +63,7 @@ export async function GET(
       .eq("venue_id", venueId)
       .eq("table_number", parsedTableNumber.data)
       .in("payment_status", ["UNPAID"])
-      .in("payment_mode", ["pay_later", "pay_at_till", "online"])
+      .eq("payment_method", "PAY_LATER")
       .gte("created_at", todayStart.toISOString())
       .lte("created_at", todayEnd.toISOString())
       .order("created_at", { ascending: true });
@@ -78,9 +78,9 @@ export async function GET(
 
     // Group by payment mode for display
     const ordersByMode = {
-      pay_later: (orders || []).filter((o) => o.payment_mode === "pay_later"),
-      pay_at_till: (orders || []).filter((o) => o.payment_mode === "pay_at_till"),
-      online: (orders || []).filter((o) => o.payment_mode === "online" || !o.payment_mode),
+      pay_later: orders || [],
+      pay_at_till: [],
+      online: [],
     };
 
     return NextResponse.json({

@@ -3,15 +3,26 @@ import { createAdminClient } from "@/lib/supabase";
 import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
 
 import { apiErrors } from "@/lib/api/standard-response";
+import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import {
+  deriveQrTypeFromOrder,
+  normalizePaymentStatus,
+  validateOrderStatusTransition,
+} from "@/lib/orders/qr-payment-validation";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export const POST = withUnifiedAuth(
+  async (req: Request, context) => {
   try {
     const { venueId, orderIds } = await req.json();
 
     if (!venueId) {
       return apiErrors.badRequest("Venue ID is required");
+    }
+
+    if (venueId !== context.venueId) {
+      return apiErrors.forbidden("Forbidden");
     }
 
     // Use admin client - no authentication required for Live Orders feature
@@ -45,7 +56,7 @@ export async function POST(req: Request) {
     // CRITICAL: Verify all orders are paid before bulk completing
     const { data: ordersToComplete, error: fetchError } = await supabase
       .from("orders")
-      .select("id, payment_status, order_status")
+      .select("id, payment_status, order_status, qr_type, fulfillment_type, source, requires_collection")
       .in("id", targetOrderIds)
       .eq("venue_id", venueId);
 
@@ -57,7 +68,7 @@ export async function POST(req: Request) {
     // Filter out unpaid orders
     const unpaidOrders =
       ordersToComplete?.filter(
-        (order) => !["PAID", "TILL"].includes((order.payment_status || "").toUpperCase())
+        (order) => (order.payment_status || "").toString().toUpperCase() !== "PAID"
       ) || [];
 
     if (unpaidOrders.length > 0) {
@@ -71,28 +82,27 @@ export async function POST(req: Request) {
     }
 
     // Filter to only completable statuses
-    const completableStatuses = ["SERVED", "READY", "SERVING"];
-    const nonCompletableOrders =
-      ordersToComplete?.filter((order) => !completableStatuses.includes(order.order_status)) || [];
+    const invalidTransitionOrders =
+      ordersToComplete?.filter((order) => {
+        const qrType = deriveQrTypeFromOrder(order);
+        const normalizedPaymentStatus = normalizePaymentStatus(order.payment_status) || "UNPAID";
+        const validation = validateOrderStatusTransition({
+          qrType,
+          paymentStatus: normalizedPaymentStatus,
+          currentStatus: order.order_status || "",
+          nextStatus: "COMPLETED",
+        });
+        return !validation.ok;
+      }) || [];
 
-    if (nonCompletableOrders.length > 0) {
-
-      // Continue with completable orders only
-      const completableOrderIds =
-        ordersToComplete
-          ?.filter((order) => completableStatuses.includes(order.order_status))
-          .map((o) => o.id) || [];
-
-      if (completableOrderIds.length === 0) {
-        return NextResponse.json(
-          {
-            error: "No orders in completable status (must be SERVED, READY, or SERVING)",
-          },
-          { status: 400 }
-        );
-      }
-
-      targetOrderIds = completableOrderIds;
+    if (invalidTransitionOrders.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Some orders are not eligible for completion.",
+          invalid_order_ids: invalidTransitionOrders.map((o) => o.id),
+        },
+        { status: 400 }
+      );
     }
 
     // Update all orders to COMPLETED using unified lifecycle RPC (atomic eligibility check)
@@ -272,4 +282,8 @@ export async function POST(req: Request) {
 
     return apiErrors.internal("Internal server error");
   }
-}
+  },
+  {
+    requireRole: ["owner", "manager", "staff", "server", "kitchen"],
+  }
+);

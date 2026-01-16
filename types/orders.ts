@@ -7,6 +7,9 @@ export interface OrderForCard extends OrderForEntityKind {
   short_id: string;
   placed_at: string; // ISO string
   order_status: "placed" | "preparing" | "ready" | "served" | "completed" | "cancelled";
+  fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
+  requires_collection?: boolean;
+  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
   total_amount: number;
   currency: string; // "GBP"
   payment: {
@@ -41,6 +44,9 @@ export interface LegacyOrder {
   table_id?: string | null;
   session_id?: string | null;
   source?: "qr" | "counter";
+  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
+  fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
+  requires_collection?: boolean;
   customer_name: string | null;
   customer_phone?: string | null;
   customer_email?: string | null;

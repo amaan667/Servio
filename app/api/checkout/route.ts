@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       venueName,
       customerEmail,
       venueId,
+      qr_type,
     } = body;
 
     // Use venueId from body (QR orders provide it directly)
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
         customerName: customerName || "Customer",
         customerPhone: customerPhone || "+1234567890",
         source: source || "qr",
+        qr_type: qr_type || "TABLE_FULL_SERVICE",
         items: JSON.stringify(items || []).substring(0, 200),
       },
       success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,

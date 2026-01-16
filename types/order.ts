@@ -14,7 +14,16 @@ export type OrderStatus =
 
 export type PaymentStatus = "PAID" | "UNPAID" | "REFUNDED" | "PARTIALLY_PAID";
 
-export type PaymentMethod = "demo" | "stripe" | "till" | "cash" | "card" | null;
+export type PaymentMethod =
+  | "PAY_NOW"
+  | "PAY_LATER"
+  | "PAY_AT_TILL"
+  | "demo"
+  | "stripe"
+  | "till"
+  | "cash"
+  | "card"
+  | null;
 
 export interface OrderItem {
   id?: string;
@@ -29,6 +38,8 @@ export interface OrderItem {
 export interface Order {
   id: string;
   venue_id: string;
+  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
+  fulfillment_status?: "NEW" | "PREPARING" | "READY" | "SERVED" | "COMPLETED" | "CANCELLED";
   table_number?: number | string;
   table_id?: string | null;
   customer_name?: string;

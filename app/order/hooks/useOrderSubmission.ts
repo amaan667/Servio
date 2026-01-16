@@ -106,6 +106,12 @@ export function useOrderSubmission() {
 
       // For table_pickup orders, we want to flag them as requiring collection
       const requiresCollection = orderType === "table_pickup" || orderType === "counter";
+      const qrType =
+        orderType === "counter"
+          ? "COUNTER"
+          : orderType === "table_pickup"
+            ? "TABLE_COLLECTION"
+            : "TABLE_FULL_SERVICE";
 
       const checkoutData = {
         venueId: venueSlug,
@@ -115,6 +121,7 @@ export function useOrderSubmission() {
         counterLabel: counterNumber ? `Counter ${counterNumber}` : null, // New: counter label
         orderType: orderType,
         orderLocation: orderLocation,
+        qr_type: qrType,
         customerName: customerInfo.name.trim(),
         customerPhone: customerInfo.phone.trim(),
         cart: cart.map((item) => ({
@@ -139,7 +146,7 @@ export function useOrderSubmission() {
         isDemo: isDemo,
         paymentMode: paymentMode,
         source: orderType === "counter" ? "counter" : "qr",
-        requires_collection: requiresCollection, // Flag for collection notification
+        requiresCollection, // Flag for collection notification
       };
 
       // Comprehensive logging for order submission - send to server

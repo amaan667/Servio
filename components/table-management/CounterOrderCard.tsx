@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, X, CreditCard, CheckCircle } from "lucide-react";
+import { User, X, CheckCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CounterOrder } from "@/hooks/useCounterOrders";
 import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
@@ -130,35 +130,6 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
     return formatPrice(total);
   };
 
-  const handlePayment = async (paymentMethod: "till" | "card") => {
-    try {
-      setIsProcessingPayment(true);
-
-      const response = await fetch("/api/orders/payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          orderId: order.id,
-          venue_id: venueId,
-          payment_method: paymentMethod,
-          payment_status: "PAID",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to process payment");
-      }
-
-      onActionComplete?.();
-    } catch (_error) {
-      // Error silently handled
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
@@ -319,21 +290,16 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handlePayment("till")}
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.location.href = `/dashboard/${venueId}/payments?orderId=${order.id}`;
+                    }
+                  }}
                   disabled={isProcessingPayment}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  Till Payment
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handlePayment("card")}
-                  disabled={isProcessingPayment}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  Card Payment
+                  Take Payment
                 </Button>
               </div>
             </div>

@@ -49,7 +49,7 @@ export function useOrderManagement(venueId: string) {
       .gte("created_at", liveOrdersCutoff)
       // Show both paid and unpaid orders so freshly placed orders always appear.
       // This avoids the "count shows 1 but list is empty" mismatch.
-      .in("payment_status", ["PAID", "UNPAID", "TILL"])
+      .in("payment_status", ["PAID", "UNPAID"])
       .order("created_at", { ascending: false }); // Sort by creation time, then we'll re-sort to put COMPLETED at bottom
 
     const { data: allData, error: allError } = await createClient()
@@ -58,7 +58,7 @@ export function useOrderManagement(venueId: string) {
       .eq("venue_id", venueId)
       .gte("created_at", window.startUtcISO)
       .lt("created_at", liveOrdersCutoff)
-      .in("payment_status", ["PAID", "UNPAID", "TILL"])
+      .in("payment_status", ["PAID", "UNPAID"])
       .order("created_at", { ascending: false });
 
     const { data: historyData, error: historyError } = await createClient()
@@ -66,7 +66,7 @@ export function useOrderManagement(venueId: string) {
       .select("*")
       .eq("venue_id", venueId)
       .lt("created_at", window.startUtcISO)
-      .in("payment_status", ["PAID", "UNPAID", "TILL"])
+      .in("payment_status", ["PAID", "UNPAID"])
       .order("created_at", { ascending: false })
       .limit(100);
 
