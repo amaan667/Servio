@@ -29,6 +29,11 @@ export async function PATCH(req: NextRequest) {
       .select("venue_id, payment_status, order_status, qr_type, fulfillment_type, source, requires_collection")
       .eq("id", order_id)
       .single();
+
+    if (orderError || !order) {
+      return apiErrors.notFound("Order not found");
+    }
+
     const qrType = deriveQrTypeFromOrder(order);
     const normalizedPaymentStatus = normalizePaymentStatus(order.payment_status) || "UNPAID";
     const transitionValidation = validateOrderStatusTransition({
@@ -46,11 +51,6 @@ export async function PATCH(req: NextRequest) {
         },
         { status: 400 }
       );
-    }
-
-
-    if (orderError) {
-      return apiErrors.notFound("Order not found");
     }
 
     // Update order status
