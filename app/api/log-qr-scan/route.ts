@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { getClientIdentifier, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { validateBody } from "@/lib/api/validation-schemas";
 import { z } from "zod";
 
@@ -17,7 +17,10 @@ const logSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const rateResult = await rateLimit(req, RATE_LIMITS.STRICT);
+    const rateResult = await rateLimit(req, {
+      ...RATE_LIMITS.MENU_PUBLIC,
+      identifier: `log-qr-scan:${getClientIdentifier(req)}`,
+    });
     if (!rateResult.success) {
       return NextResponse.json(
         {

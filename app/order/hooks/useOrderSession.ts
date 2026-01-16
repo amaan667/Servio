@@ -14,6 +14,7 @@ export function useOrderSession(orderParams: OrderParams) {
     phone: "",
   });
   const [showCheckout, setShowCheckout] = useState(false);
+  const lastLogKeyRef = useRef<string | null>(null);
 
   // Prevent infinite API spam with ref-based tracking
   const isCheckingRef = useRef(false);
@@ -25,26 +26,48 @@ export function useOrderSession(orderParams: OrderParams) {
   };
 
   useEffect(() => {
+    const paramsKey = searchParams?.toString() || "";
+    const logKey = [
+      orderParams.venueSlug,
+      orderParams.tableNumber,
+      orderParams.counterNumber,
+      orderParams.orderType,
+      orderParams.orderLocation,
+      orderParams.isDemo ? "demo" : "live",
+      paramsKey,
+    ].join("|");
 
-    // Log order access
-    fetch("/api/log-order-access", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        venueSlug: orderParams.venueSlug,
-        tableNumber: orderParams.tableNumber,
-        counterNumber: orderParams.counterNumber,
-        orderType: orderParams.orderType,
-        orderLocation: orderParams.orderLocation,
-        isDemo: orderParams.isDemo,
-        url: window.location.href,
-      }),
-    }).catch(() => {
-      /* Empty */
-    });
+    if (lastLogKeyRef.current !== logKey) {
+      lastLogKeyRef.current = logKey;
 
-    checkForExistingOrder();
-  }, [orderParams, searchParams]);
+      // Log order access (best-effort)
+      fetch("/api/log-order-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          venueSlug: orderParams.venueSlug,
+          tableNumber: orderParams.tableNumber,
+          counterNumber: orderParams.counterNumber,
+          orderType: orderParams.orderType,
+          orderLocation: orderParams.orderLocation,
+          isDemo: orderParams.isDemo,
+          url: window.location.href,
+        }),
+      }).catch(() => {
+        /* Empty */
+      });
+
+      checkForExistingOrder();
+    }
+  }, [
+    orderParams.venueSlug,
+    orderParams.tableNumber,
+    orderParams.counterNumber,
+    orderParams.orderType,
+    orderParams.orderLocation,
+    orderParams.isDemo,
+    searchParams,
+  ]);
 
   const checkForExistingOrder = async () => {
     try {

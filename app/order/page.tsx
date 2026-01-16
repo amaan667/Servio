@@ -43,31 +43,6 @@ export default function CustomerOrderPage() {
       ? "table_pickup"
       : "table";
 
-  // Fetch venue subscription tier
-  useEffect(() => {
-    const fetchTier = async () => {
-      if (isDemo) {
-        setSubscriptionTier("enterprise");
-        setLoadingTier(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/venue/${venueSlug}/tier`);
-        if (response.ok) {
-          const data = await response.json();
-          setSubscriptionTier(data.tier || "starter");
-        }
-      } catch {
-        setSubscriptionTier("starter");
-      } finally {
-        setLoadingTier(false);
-      }
-    };
-
-    fetchTier();
-  }, [venueSlug, isDemo]);
-
   // Log QR code scan to Railway server logs
   useEffect(() => {
     const logData = {
@@ -144,10 +119,6 @@ export default function CustomerOrderPage() {
   } = useGroupSession(venueSlug, tableNumber, isCounterOrder, skipGroupSize);
 
   const [showMobileCart, setShowMobileCart] = useState(false);
-  // Tier state - kept for future use
-  const [, setSubscriptionTier] = useState<"starter" | "pro" | "enterprise">("starter");
-  const [, setLoadingTier] = useState(true);
-
   // Log menu loading for debugging
   useEffect(() => {
     if (!loadingMenu) {
