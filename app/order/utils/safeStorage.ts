@@ -30,7 +30,12 @@ export function safeSetItem(
       const keysToRemove: string[] = [];
       for (let i = 0; i < storage.length; i++) {
         const k = storage.key(i);
-        if (k && (k.startsWith("menu_") || k.startsWith("categories_") || k.startsWith("venue_name_"))) {
+        if (k && (
+          k.startsWith("menu_") ||
+          k.startsWith("categories_") ||
+          k.startsWith("venue_name_") ||
+          k.startsWith("servio-")
+        )) {
           keysToRemove.push(k);
         }
       }

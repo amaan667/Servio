@@ -83,10 +83,13 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setPdfImages([]);
       setLoadingMenu(false);
 
-      // Cache demo menu (best-effort, quota may be exceeded on mobile)
+      // Cache demo menu (best-effort, quota may be exceeded on mobile/private browsing)
       if (typeof window !== "undefined") {
-        safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(mappedItems));
-        safeSetItem(sessionStorage, `venue_name_${venueSlug}`, "Demo Café");
+        const menuCached = safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(mappedItems));
+        const nameCached = safeSetItem(sessionStorage, `venue_name_${venueSlug}`, "Demo Café");
+        if (!menuCached || !nameCached) {
+          console.log("[STORAGE] Menu cache failed - quota exceeded (private browsing mode)");
+        }
       }
       return;
     }
@@ -149,13 +152,17 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setPdfImages(Array.isArray(payload.pdfImages) ? payload.pdfImages : []);
       setCategoryOrder(Array.isArray(payload.categoryOrder) ? payload.categoryOrder : null);
 
-      // Clear cache if no items to prevent stale data (best-effort, quota may be exceeded)
+      // Cache menu data (best-effort, quota may be exceeded on mobile/private browsing)
       if (typeof window !== "undefined") {
         if (itemCount > 0) {
-          safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
-          safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
-          if (Array.isArray(payload.categoryOrder)) {
-            safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
+          const menuCached = safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
+          const nameCached = safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
+          const categoriesCached = Array.isArray(payload.categoryOrder)
+            ? safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder))
+            : true;
+
+          if (!menuCached || !nameCached || !categoriesCached) {
+            console.log("[STORAGE] Menu cache failed - quota exceeded (private browsing mode)");
           }
         } else {
           // Clear cache when no items
@@ -179,7 +186,10 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
             if (Array.isArray(categoryOrderData.categories)) {
               setCategoryOrder(categoryOrderData.categories);
               if (typeof window !== "undefined" && itemCount > 0) {
-                safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(categoryOrderData.categories));
+                const categoriesCached = safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(categoryOrderData.categories));
+                if (!categoriesCached) {
+                  console.log("[STORAGE] Categories cache failed - quota exceeded (private browsing mode)");
+                }
               }
             }
           }

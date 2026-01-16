@@ -23,7 +23,12 @@ export function useOrderCart() {
   // Persist cart to localStorage whenever it changes (best-effort)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      safeSetItem(localStorage, CART_STORAGE_KEY, JSON.stringify(cart));
+      const success = safeSetItem(localStorage, CART_STORAGE_KEY, JSON.stringify(cart));
+      if (!success) {
+        // Storage quota exceeded - cart will be lost on page refresh
+        // This is acceptable for private browsing mode
+        console.log("[STORAGE] Cart storage failed - quota exceeded (private browsing mode)");
+      }
     }
   }, [cart, CART_STORAGE_KEY]);
 
@@ -40,8 +45,11 @@ export function useOrderCart() {
         safeRemoveItem(localStorage, lastKey);
       }
 
-      // Store the current key
-      safeSetItem(localStorage, "servio-last-cart-key", currentKey);
+      // Store the current key (best-effort)
+      const keyStored = safeSetItem(localStorage, "servio-last-cart-key", currentKey);
+      if (!keyStored) {
+        console.log("[STORAGE] Cart key storage failed - quota exceeded (private browsing mode)");
+      }
     }
   }, [venueSlug, tableNumber, CART_STORAGE_KEY]);
 
