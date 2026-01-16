@@ -1,36 +1,33 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { MenuItem } from "../types";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import { safeGetItem, safeSetItem, safeRemoveItem, safeParseJSON } from "../utils/safeStorage";
 
 export function useOrderMenu(venueSlug: string, isDemo: boolean) {
-  // Cache helper functions (with safe storage)
-  const getCachedMenu = () => {
-    if (typeof window === "undefined") return null;
+  // Track if we've already loaded to prevent duplicate fetches
+  const hasLoadedRef = useRef(false);
+
+  // Initialize state with cached values (only on first render)
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    if (typeof window === "undefined") return [];
     const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
-    return safeParseJSON<MenuItem[] | null>(cached, null);
-  };
-
-  const getCachedVenueName = () => {
-    if (typeof window === "undefined") return "";
-    return safeGetItem(sessionStorage, `venue_name_${venueSlug}`) || "";
-  };
-
-  const getCachedCategories = () => {
+    return safeParseJSON<MenuItem[]>(cached, []);
+  });
+  const [loadingMenu, setLoadingMenu] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+    return !cached;
+  });
+  const [menuError, setMenuError] = useState<string | null>(null);
+  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(() => {
     if (typeof window === "undefined") return null;
     const cached = safeGetItem(sessionStorage, `categories_${venueSlug}`);
     return safeParseJSON<string[] | null>(cached, null);
-  };
-
-  const cachedMenu = getCachedMenu();
-  const cachedCategories = getCachedCategories();
-  const cachedVenueName = getCachedVenueName();
-
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenu || []);
-  const [loadingMenu, setLoadingMenu] = useState(!cachedMenu); // No loading if we have cache
-  const [menuError, setMenuError] = useState<string | null>(null);
-  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(cachedCategories);
-  const [venueName, setVenueName] = useState<string>(cachedVenueName);
+  });
+  const [venueName, setVenueName] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return safeGetItem(sessionStorage, `venue_name_${venueSlug}`) || "";
+  });
   const [pdfImages, setPdfImages] = useState<string[]>([]);
 
   const normalizeVenueId = (id: string) => (id.startsWith("venue-") ? id : `venue-${id}`);
@@ -51,15 +48,25 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   };
 
   const loadMenuItems = useCallback(async () => {
-    // Skip fetch if we have cached data - instant load
-    if (cachedMenu && cachedMenu.length > 0) {
+    // Skip if already loaded or loading
+    if (hasLoadedRef.current) {
       return;
     }
 
-    // Don't show loading if we have cached data
-    if (!menuItems || menuItems.length === 0) {
-      setLoadingMenu(true);
+    // Check if we have cached data
+    if (typeof window !== "undefined") {
+      const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+      if (cached) {
+        const parsedCache = safeParseJSON<MenuItem[]>(cached, []);
+        if (parsedCache.length > 0) {
+          hasLoadedRef.current = true;
+          return;
+        }
+      }
     }
+
+    hasLoadedRef.current = true;
+    setLoadingMenu(true);
     setMenuError(null);
 
     // Check if this is demo mode
@@ -192,7 +199,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setMenuError(`Error loading menu: ${_err instanceof Error ? _err.message : "Unknown error"}`);
       setLoadingMenu(false);
     }
-  }, [venueSlug, isDemo, cachedMenu]);
+  }, [venueSlug, isDemo]);
 
   useEffect(() => {
     loadMenuItems();
