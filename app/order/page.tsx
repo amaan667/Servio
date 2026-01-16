@@ -197,6 +197,7 @@ export default function CustomerOrderPage() {
                 onRemoveFromCart={(itemId) => removeFromCart(itemId)}
                 onUpdateQuantity={(itemId, quantity) => updateQuantity(itemId, quantity)}
                 isOrdering={true}
+                onViewCart={() => setShowMobileCart(true)}
               />
             )}
           </div>

@@ -34,6 +34,7 @@ interface EnhancedPDFMenuDisplayProps {
   onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   isOrdering?: boolean;
+  onViewCart?: () => void;
 }
 
 export function EnhancedPDFMenuDisplay({
@@ -46,6 +47,7 @@ export function EnhancedPDFMenuDisplay({
   onRemoveFromCart,
   onUpdateQuantity,
   isOrdering = false,
+  onViewCart,
 }: EnhancedPDFMenuDisplayProps) {
   const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
@@ -677,8 +679,13 @@ export function EnhancedPDFMenuDisplay({
             </div>
             <Button
               onClick={() => {
-                // Scroll to cart or trigger cart view
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                // Open cart modal (same as top right cart icon)
+                if (onViewCart) {
+                  onViewCart();
+                } else {
+                  // Fallback to scrolling to top if no onViewCart provided
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
               }}
               className="bg-primary hover:bg-primary/90"
             >
