@@ -2,7 +2,7 @@
   "name": "servio-mvp",
   "version": "0.1.6",
   "private": true,
-  "_deploy_trigger": "2026-01-16-22-25",
+  "_deploy_trigger": "2026-01-16-22-30",
   "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=20.x",
