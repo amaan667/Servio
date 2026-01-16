@@ -3,17 +3,11 @@ import { createClient } from "@/lib/supabase";
 import { cache, cacheTTL } from "@/lib/cache";
 
 import { apiErrors } from "@/lib/api/standard-response";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { getClientIdentifier, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
 
 export async function GET(_request: NextRequest) {
   try {
-    // Public endpoint: enforce strict rate limiting to prevent scraping
-    const rateLimitResult = await rateLimit(_request, RATE_LIMITS.STRICT);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
-
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venueId");
     const limit = z.coerce
@@ -26,6 +20,16 @@ export async function GET(_request: NextRequest) {
 
     if (!venueId) {
       return apiErrors.badRequest("venueId is required");
+    }
+
+    // Public endpoint: rate limit by venue + client to avoid shared WiFi throttling
+    const identifier = `menu:${venueId}:${getClientIdentifier(_request)}`;
+    const rateLimitResult = await rateLimit(_request, {
+      ...RATE_LIMITS.MENU_PUBLIC,
+      identifier,
+    });
+    if (!rateLimitResult.success) {
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
     }
 
     // Try to get from cache first

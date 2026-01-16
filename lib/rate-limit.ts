@@ -83,7 +83,7 @@ setInterval(
 /**
  * Get client identifier from request
  */
-function getClientIdentifier(req: NextRequest): string {
+export function getClientIdentifier(req: NextRequest): string {
   // Try to get user ID from auth header/cookie first
   const authHeader = req.headers.get("authorization");
   if (authHeader) {
@@ -226,5 +226,6 @@ export const RATE_LIMITS = {
   PAYMENT: { limit: 20, window: 60 }, // 20 requests per minute
   ORDER_CREATE: { limit: 30, window: 60 }, // 30 requests per minute
   GENERAL: { limit: 100, window: 60 }, // 100 requests per minute
+  MENU_PUBLIC: { limit: 60, window: 60 }, // 60 requests per minute
   STRICT: { limit: 5, window: 60 }, // 5 requests per minute
 } as const;

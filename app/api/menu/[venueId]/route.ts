@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { cache, cacheKeys } from "@/lib/cache/index";
 
 import { success, apiErrors } from "@/lib/api/standard-response";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { getClientIdentifier, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { paginationSchema, validateQuery } from "@/lib/api/validation-schemas";
 import { z } from "zod";
 
@@ -18,12 +18,6 @@ export async function GET(
   });
 
   try {
-    // PUBLIC ENDPOINT: enforce strict rate limiting to protect venue menus from scraping
-    const rateLimitResult = await rateLimit(_request, RATE_LIMITS.STRICT);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
-
     const { searchParams } = new URL(_request.url);
     // IMPORTANT: URLSearchParams.get() returns null when missing.
     // Passing null into z.coerce.number() becomes 0, which fails min(1).
@@ -43,6 +37,16 @@ export async function GET(
 
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
     const venueId = rawVenueId.startsWith("venue-") ? rawVenueId : `venue-${rawVenueId}`;
+
+    // PUBLIC ENDPOINT: rate limit by venue + client to avoid shared WiFi throttling
+    const identifier = `menu:${venueId}:${getClientIdentifier(_request)}`;
+    const rateLimitResult = await rateLimit(_request, {
+      ...RATE_LIMITS.MENU_PUBLIC,
+      identifier,
+    });
+    if (!rateLimitResult.success) {
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+    }
 
     // Try to get from cache first
     const cacheKey = cacheKeys.menuItems(`${venueId}:l${limit}:o${offset}`);
