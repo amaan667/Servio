@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { CartItem, MenuItem } from "../types";
 import { useSearchParams } from "next/navigation";
+import { safeGetItem, safeSetItem, safeRemoveItem, safeParseJSON } from "../utils/safeStorage";
 
 export function useOrderCart() {
   const searchParams = useSearchParams();
@@ -15,18 +16,14 @@ export function useOrderCart() {
   // Initialize cart from localStorage (scoped to venue + table)
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+    const stored = safeGetItem(localStorage, CART_STORAGE_KEY);
+    return safeParseJSON<CartItem[]>(stored, []);
   });
 
-  // Persist cart to localStorage whenever it changes
+  // Persist cart to localStorage whenever it changes (best-effort)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      safeSetItem(localStorage, CART_STORAGE_KEY, JSON.stringify(cart));
     }
   }, [cart, CART_STORAGE_KEY]);
 
@@ -34,17 +31,17 @@ export function useOrderCart() {
   useEffect(() => {
     if (typeof window !== "undefined" && venueSlug && tableNumber) {
       // Check if this is a different venue/table than the last one
-      const lastKey = localStorage.getItem("servio-last-cart-key");
+      const lastKey = safeGetItem(localStorage, "servio-last-cart-key");
       const currentKey = CART_STORAGE_KEY;
 
       if (lastKey && lastKey !== currentKey) {
         // New QR code scanned - reset cart
         setCart([]);
-        localStorage.removeItem(lastKey);
+        safeRemoveItem(localStorage, lastKey);
       }
 
       // Store the current key
-      localStorage.setItem("servio-last-cart-key", currentKey);
+      safeSetItem(localStorage, "servio-last-cart-key", currentKey);
     }
   }, [venueSlug, tableNumber, CART_STORAGE_KEY]);
 
@@ -124,9 +121,9 @@ export function useOrderCart() {
   const resetCart = useCallback(() => {
     setCart([]);
     if (typeof window !== "undefined") {
-      localStorage.removeItem(CART_STORAGE_KEY);
+      safeRemoveItem(localStorage, CART_STORAGE_KEY);
     }
-  }, []);
+  }, [CART_STORAGE_KEY]);
 
   return {
     cart,

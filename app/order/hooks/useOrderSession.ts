@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { retrySupabaseQuery } from "@/lib/supabase-retry";
 
 import { CustomerInfo, OrderParams } from "../types";
+import { safeGetItem, safeSetItem, safeRemoveItem, safeParseJSON } from "../utils/safeStorage";
 
 export function useOrderSession(orderParams: OrderParams) {
   const router = useRouter();
@@ -74,9 +75,9 @@ export function useOrderSession(orderParams: OrderParams) {
       const sessionParam = searchParams?.get("session");
 
       if (sessionParam) {
-        const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
+        const storedOrderData = safeGetItem(localStorage, `servio-order-${sessionParam}`);
         if (storedOrderData) {
-          const orderData = JSON.parse(storedOrderData);
+          const orderData = safeParseJSON<Record<string, unknown>>(storedOrderData, {});
 
           const { data: orderInDb, error: orderError } = await retrySupabaseQuery(
             async () => {
@@ -136,7 +137,7 @@ export function useOrderSession(orderParams: OrderParams) {
                 isDemo: orderParams.isDemo,
               };
 
-              localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+              safeSetItem(localStorage, "servio-checkout-data", JSON.stringify(checkoutData));
               window.location.href = "/payment";
               return;
             }
@@ -155,20 +156,20 @@ export function useOrderSession(orderParams: OrderParams) {
               isDemo: orderParams.isDemo,
             };
 
-            localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+            safeSetItem(localStorage, "servio-checkout-data", JSON.stringify(checkoutData));
             window.location.href = "/payment";
             return;
           } else {
-            localStorage.removeItem(`servio-order-${sessionParam}`);
+            safeRemoveItem(localStorage, `servio-order-${sessionParam}`);
           }
         }
       }
 
-      const storedSession = localStorage.getItem("servio-current-session");
+      const storedSession = safeGetItem(localStorage, "servio-current-session");
       if (storedSession && !sessionParam) {
-        const storedOrderData = localStorage.getItem(`servio-order-${storedSession}`);
+        const storedOrderData = safeGetItem(localStorage, `servio-order-${storedSession}`);
         if (storedOrderData) {
-          const orderData = JSON.parse(storedOrderData);
+          const orderData = safeParseJSON<Record<string, unknown>>(storedOrderData, {});
 
           const { data: sessionOrderInDb, error: sessionOrderError } = await retrySupabaseQuery(
             async () => {
@@ -228,7 +229,7 @@ export function useOrderSession(orderParams: OrderParams) {
                 isDemo: orderParams.isDemo,
               };
 
-              localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+              safeSetItem(localStorage, "servio-checkout-data", JSON.stringify(checkoutData));
               window.location.href = "/payment";
               return;
             }
@@ -271,12 +272,12 @@ export function useOrderSession(orderParams: OrderParams) {
               isDemo: orderParams.isDemo,
             };
 
-            localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+            safeSetItem(localStorage, "servio-checkout-data", JSON.stringify(checkoutData));
             window.location.href = "/payment";
             return;
           } else {
-            localStorage.removeItem(`servio-order-${storedSession}`);
-            localStorage.removeItem("servio-current-session");
+            safeRemoveItem(localStorage, `servio-order-${storedSession}`);
+            safeRemoveItem(localStorage, "servio-current-session");
           }
         }
       }
@@ -362,22 +363,22 @@ export function useOrderSession(orderParams: OrderParams) {
 
         if (activeOrders && activeOrders.length > 0) {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;
-          const tableSessionData = localStorage.getItem(tableSessionKey);
+          const tableSessionData = safeGetItem(localStorage, tableSessionKey);
 
           const sessionId = searchParams?.get("sessionId");
           const sessionSessionKey = sessionId ? `servio-session-${sessionId}` : null;
           const sessionSessionData = sessionSessionKey
-            ? localStorage.getItem(sessionSessionKey)
+            ? safeGetItem(localStorage, sessionSessionKey)
             : null;
 
           const sessionData = tableSessionData || sessionSessionData;
 
           if (sessionData) {
             try {
-              const session = JSON.parse(sessionData);
+              const session = safeParseJSON<Record<string, unknown>>(sessionData, {});
 
               if (session.paymentStatus === "unpaid" || session.paymentStatus === "till") {
-                localStorage.setItem("servio-unpaid-order", JSON.stringify(session));
+                safeSetItem(localStorage, "servio-unpaid-order", JSON.stringify(session));
                 router.push(
                   `/order-summary?${orderParams.isCounterOrder ? "counter" : "table"}=${orderParams.orderLocation}&session=${session.orderId}`
                 );
@@ -387,8 +388,8 @@ export function useOrderSession(orderParams: OrderParams) {
 
               setShowCheckout(true);
               setCustomerInfo({
-                name: session.customerName,
-                phone: session.customerPhone,
+                name: (session.customerName as string) || "",
+                phone: (session.customerPhone as string) || "",
               });
             } catch (_error) {
               // Error silently handled
@@ -396,12 +397,12 @@ export function useOrderSession(orderParams: OrderParams) {
           }
         } else {
           const tableSessionKey = `servio-session-${orderParams.tableNumber}`;
-          localStorage.removeItem(tableSessionKey);
+          safeRemoveItem(localStorage, tableSessionKey);
 
           const sessionId = searchParams?.get("sessionId");
           if (sessionId) {
             const sessionSessionKey = `servio-session-${sessionId}`;
-            localStorage.removeItem(sessionSessionKey);
+            safeRemoveItem(localStorage, sessionSessionKey);
           }
         }
       } catch (_error) {

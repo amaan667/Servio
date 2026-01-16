@@ -1,24 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
 import { MenuItem } from "../types";
 import { demoMenuItems } from "@/data/demoMenuItems";
+import { safeGetItem, safeSetItem, safeRemoveItem, safeParseJSON } from "../utils/safeStorage";
 
 export function useOrderMenu(venueSlug: string, isDemo: boolean) {
-  // Cache helper functions
+  // Cache helper functions (with safe storage)
   const getCachedMenu = () => {
     if (typeof window === "undefined") return null;
-    const cached = sessionStorage.getItem(`menu_${venueSlug}`);
-    return cached ? JSON.parse(cached) : null;
+    const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+    return safeParseJSON<MenuItem[] | null>(cached, null);
   };
 
   const getCachedVenueName = () => {
     if (typeof window === "undefined") return "";
-    return sessionStorage.getItem(`venue_name_${venueSlug}`) || "";
+    return safeGetItem(sessionStorage, `venue_name_${venueSlug}`) || "";
   };
 
   const getCachedCategories = () => {
     if (typeof window === "undefined") return null;
-    const cached = sessionStorage.getItem(`categories_${venueSlug}`);
-    return cached ? JSON.parse(cached) : null;
+    const cached = safeGetItem(sessionStorage, `categories_${venueSlug}`);
+    return safeParseJSON<string[] | null>(cached, null);
   };
 
   const cachedMenu = getCachedMenu();
@@ -75,10 +76,10 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setPdfImages([]);
       setLoadingMenu(false);
 
-      // Cache demo menu
+      // Cache demo menu (best-effort, quota may be exceeded on mobile)
       if (typeof window !== "undefined") {
-        sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(mappedItems));
-        sessionStorage.setItem(`venue_name_${venueSlug}`, "Demo Café");
+        safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(mappedItems));
+        safeSetItem(sessionStorage, `venue_name_${venueSlug}`, "Demo Café");
       }
       return;
     }
@@ -141,22 +142,19 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setPdfImages(Array.isArray(payload.pdfImages) ? payload.pdfImages : []);
       setCategoryOrder(Array.isArray(payload.categoryOrder) ? payload.categoryOrder : null);
 
-      // Clear cache if no items to prevent stale data
+      // Clear cache if no items to prevent stale data (best-effort, quota may be exceeded)
       if (typeof window !== "undefined") {
         if (itemCount > 0) {
-          sessionStorage.setItem(`menu_${venueSlug}`, JSON.stringify(normalized));
-          sessionStorage.setItem(`venue_name_${venueSlug}`, venueNameValue);
+          safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
+          safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
           if (Array.isArray(payload.categoryOrder)) {
-            sessionStorage.setItem(
-              `categories_${venueSlug}`,
-              JSON.stringify(payload.categoryOrder)
-            );
+            safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
           }
         } else {
           // Clear cache when no items
-          sessionStorage.removeItem(`menu_${venueSlug}`);
-          sessionStorage.removeItem(`venue_name_${venueSlug}`);
-          sessionStorage.removeItem(`categories_${venueSlug}`);
+          safeRemoveItem(sessionStorage, `menu_${venueSlug}`);
+          safeRemoveItem(sessionStorage, `venue_name_${venueSlug}`);
+          safeRemoveItem(sessionStorage, `categories_${venueSlug}`);
         }
       }
 
@@ -174,10 +172,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
             if (Array.isArray(categoryOrderData.categories)) {
               setCategoryOrder(categoryOrderData.categories);
               if (typeof window !== "undefined" && itemCount > 0) {
-                sessionStorage.setItem(
-                  `categories_${venueSlug}`,
-                  JSON.stringify(categoryOrderData.categories)
-                );
+                safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(categoryOrderData.categories));
               }
             }
           }

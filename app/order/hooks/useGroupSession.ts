@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { safeGetItem, safeSetItem } from "../utils/safeStorage";
 
 export function useGroupSession(
   venueSlug: string,
@@ -18,7 +19,7 @@ export function useGroupSession(
     if (skipModal) {
       // Still load cached group size if available
       if (typeof window !== "undefined") {
-        const cached = sessionStorage.getItem(`group_size_${venueSlug}_${tableNumber}`);
+        const cached = safeGetItem(sessionStorage, `group_size_${venueSlug}_${tableNumber}`);
         if (cached) {
           setGroupSize(parseInt(cached));
         }
@@ -29,7 +30,7 @@ export function useGroupSession(
     // Check cache first for instant modal display
     const getCachedGroupSize = () => {
       if (typeof window === "undefined") return null;
-      const cached = sessionStorage.getItem(`group_size_${venueSlug}_${tableNumber}`);
+      const cached = safeGetItem(sessionStorage, `group_size_${venueSlug}_${tableNumber}`);
       return cached ? parseInt(cached) : null;
     };
 
@@ -52,12 +53,9 @@ export function useGroupSession(
           if (data.groupSessionId && data.groupSize) {
             setGroupSessionId(data.groupSessionId);
             setGroupSize(data.groupSize);
-            // Cache group size
+            // Cache group size (best-effort)
             if (typeof window !== "undefined") {
-              sessionStorage.setItem(
-                `group_size_${venueSlug}_${tableNumber}`,
-                String(data.groupSize)
-              );
+              safeSetItem(sessionStorage, `group_size_${venueSlug}_${tableNumber}`, String(data.groupSize));
             }
             // Don't show modal if session exists
             return;
@@ -85,9 +83,9 @@ export function useGroupSession(
     setGroupSize(selectedGroupSize);
     setShowGroupSizeModal(false);
 
-    // Cache immediately for instant load next time
+    // Cache immediately for instant load next time (best-effort)
     if (typeof window !== "undefined") {
-      sessionStorage.setItem(`group_size_${venueSlug}_${tableNumber}`, String(selectedGroupSize));
+      safeSetItem(sessionStorage, `group_size_${venueSlug}_${tableNumber}`, String(selectedGroupSize));
     }
 
     try {

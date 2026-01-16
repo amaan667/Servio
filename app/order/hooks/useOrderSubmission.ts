@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CartItem, CustomerInfo } from "../types";
+import { safeSetItem } from "../utils/safeStorage";
 
 interface OrderSubmissionParams {
   cart: CartItem[];
@@ -90,7 +91,7 @@ export function useOrderSubmission() {
           isDemo: true,
         };
 
-        localStorage.setItem("servio-pending-order", JSON.stringify(orderData));
+        safeSetItem(localStorage, "servio-pending-order", JSON.stringify(orderData));
         setIsSubmitting(false);
 
         if (typeof window !== "undefined") {
@@ -102,7 +103,7 @@ export function useOrderSubmission() {
       // For real orders
       // DON'T create order yet - just save to localStorage and go to payment
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem("servio-current-session", sessionId);
+      safeSetItem(localStorage, "servio-current-session", sessionId);
 
       // For table_pickup orders, we want to flag them as requiring collection
       const requiresCollection = orderType === "table_pickup" || orderType === "counter";
@@ -188,7 +189,7 @@ export function useOrderSubmission() {
 
       // Also log to browser console
 
-      localStorage.setItem("servio-checkout-data", JSON.stringify(checkoutData));
+      safeSetItem(localStorage, "servio-checkout-data", JSON.stringify(checkoutData));
 
       // Instant redirect to payment method selection page
       // Order will be created AFTER payment method is selected
