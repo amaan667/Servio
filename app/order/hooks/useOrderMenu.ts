@@ -152,24 +152,29 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setPdfImages(Array.isArray(payload.pdfImages) ? payload.pdfImages : []);
       setCategoryOrder(Array.isArray(payload.categoryOrder) ? payload.categoryOrder : null);
 
-      // Cache menu data (best-effort, quota may be exceeded on mobile/private browsing)
+      // Cache menu data only if storage is working (skip in private browsing)
       if (typeof window !== "undefined") {
-        if (itemCount > 0) {
-          const menuCached = safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
-          const nameCached = safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
-          const categoriesCached = Array.isArray(payload.categoryOrder)
-            ? safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder))
-            : true;
+        // Test storage availability first
+        const testKey = `__storage_test_${Date.now()}`;
+        const storageAvailable = safeSetItem(sessionStorage, testKey, "test");
+        safeRemoveItem(sessionStorage, testKey); // Clean up test
 
-          if (!menuCached || !nameCached || !categoriesCached) {
-            console.log("[STORAGE] Menu cache failed - quota exceeded (private browsing mode)");
+        if (storageAvailable) {
+          // Only cache if storage works
+          if (itemCount > 0) {
+            safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
+            safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
+            if (Array.isArray(payload.categoryOrder)) {
+              safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
+            }
+          } else {
+            // Clear cache when no items
+            safeRemoveItem(sessionStorage, `menu_${venueSlug}`);
+            safeRemoveItem(sessionStorage, `venue_name_${venueSlug}`);
+            safeRemoveItem(sessionStorage, `categories_${venueSlug}`);
           }
-        } else {
-          // Clear cache when no items
-          safeRemoveItem(sessionStorage, `menu_${venueSlug}`);
-          safeRemoveItem(sessionStorage, `venue_name_${venueSlug}`);
-          safeRemoveItem(sessionStorage, `categories_${venueSlug}`);
         }
+        // If storage fails, continue without caching - app still works
       }
 
       // Backward compatibility: if API didn't include categoryOrder, fetch it.

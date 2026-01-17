@@ -110,22 +110,30 @@ export function EnhancedPDFMenuDisplay({
   }, [pdfImages]);
 
   useEffect(() => {
-    // If parent provided images (from public API), use them and cache immediately.
+    // If parent provided images (from public API), use them and cache only if storage works
     if (Array.isArray(pdfImagesProp)) {
       if (pdfImagesProp.length > 0) {
         setPdfImages(pdfImagesProp);
         setHasPdfImages(true);
         setViewMode("pdf");
+        // Test storage before caching
         if (typeof window !== "undefined") {
-          safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
-          safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(pdfImagesProp));
+          const testKey = `__pdf_test_${Date.now()}`;
+          const canCache = safeSetItem(sessionStorage, testKey, "test");
+          safeRemoveItem(sessionStorage, testKey);
+
+          if (canCache) {
+            safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
+            safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(pdfImagesProp));
+          }
+          // Skip caching if storage fails - images still work from props
         }
       } else {
         setPdfImages([]);
         setHasPdfImages(false);
         setViewMode("list");
         if (typeof window !== "undefined") {
-          safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "false");
+          safeRemoveItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`);
           safeRemoveItem(sessionStorage, `pdf_images_${normalizedVenueId}`);
         }
       }
@@ -159,10 +167,16 @@ export function EnhancedPDFMenuDisplay({
           setPdfImages(images);
           setHasPdfImages(true);
           setViewMode("pdf");
-          // Cache PDF images for instant load next time
+          // Cache PDF images only if storage works
           if (typeof window !== "undefined") {
-            safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
-            safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(images));
+            const testKey = `__pdf_cache_test_${Date.now()}`;
+            const canCache = safeSetItem(sessionStorage, testKey, "test");
+            safeRemoveItem(sessionStorage, testKey);
+
+            if (canCache) {
+              safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
+              safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(images));
+            }
           }
           // Preload images
           images.forEach((imageUrl: string) => {
