@@ -25,6 +25,20 @@ import {
 import { useQRCodeManagement } from "./hooks/useQRCodeManagement";
 import { QRCodeCanvas } from "./components/QRCodeCanvas";
 
+// Format type for display
+const getTypeLabel = (type: string) => {
+  switch (type) {
+    case "table_pickup":
+      return "Table (Pickup)";
+    case "counter":
+      return "Counter";
+    case "table":
+      return "Table";
+    default:
+      return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+};
+
 export default function QRCodeClient({
   venueId,
   venueName,
@@ -460,7 +474,7 @@ export default function QRCodeClient({
                 className="shadow-lg rounded-xl print:shadow-none print:border print:border-black"
               >
                 <CardHeader>
-                  <CardTitle className="text-lg">{qr.name}</CardTitle>
+                  <CardTitle className="text-lg">{qr.name} ({getTypeLabel(qr.type)})</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* QR Code Canvas */}
