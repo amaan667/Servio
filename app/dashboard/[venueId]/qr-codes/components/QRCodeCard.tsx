@@ -56,10 +56,7 @@ export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCar
           <QRCodeCanvas url={displayUrl} size={size} />
           <div className="text-center">
             <p className="text-sm font-medium text-gray-900">
-              {displayName}
-            </p>
-            <p className="text-xs text-gray-500">
-              ({displayTypeLabel})
+              {displayName} ({displayTypeLabel})
             </p>
           </div>
         </div>
