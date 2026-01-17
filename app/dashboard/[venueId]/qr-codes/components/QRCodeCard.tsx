@@ -20,6 +20,22 @@ export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCar
   const displayType = String(qr.type || "item");
   const displayName = String(qr.name || "Unknown");
   const displayUrl = String(qr.url || "");
+
+  // Format type for display
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "table_pickup":
+        return "Table (Pickup)";
+      case "counter":
+        return "Counter";
+      case "table":
+        return "Table";
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+  };
+
+  const displayTypeLabel = getTypeLabel(displayType);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -31,8 +47,8 @@ export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCar
   return (
     <Card className="shadow-lg rounded-xl border-gray-200">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900 capitalize">
-          {displayType}: {displayName}
+        <CardTitle className="text-lg font-semibold text-gray-900">
+          {displayName} ({displayTypeLabel})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

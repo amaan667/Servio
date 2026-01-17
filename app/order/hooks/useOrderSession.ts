@@ -124,7 +124,7 @@ export function useOrderSession(orderParams: OrderParams) {
               // Redirect to payment page where customer can choose payment method
               const checkoutData = {
                 venueId: orderData.venueId,
-                venueName: "Restaurant",
+                venueName: orderParams.venueSlug || "Venue",
                 tableNumber: orderData.tableNumber,
                 customerName: orderInDb.customer_name || orderData.customerName,
                 customerPhone: orderInDb.customer_phone || orderData.customerPhone,
@@ -144,7 +144,7 @@ export function useOrderSession(orderParams: OrderParams) {
 
             const checkoutData = {
               venueId: orderData.venueId,
-              venueName: "Restaurant",
+              venueName: orderParams.venueSlug || "Venue",
               tableNumber: orderData.tableNumber,
               customerName: orderData.customerName,
               customerPhone: orderData.customerPhone,
@@ -216,7 +216,7 @@ export function useOrderSession(orderParams: OrderParams) {
               // Redirect to payment page where customer can choose payment method
               const checkoutData = {
                 venueId: orderData.venueId,
-                venueName: "Restaurant",
+                venueName: orderParams.venueSlug || "Venue",
                 tableNumber: orderData.tableNumber,
                 customerName: sessionOrderInDb.customer_name || orderData.customerName,
                 customerPhone: sessionOrderInDb.customer_phone || orderData.customerPhone,
@@ -260,7 +260,7 @@ export function useOrderSession(orderParams: OrderParams) {
             // Single order or fallback - use existing payment flow
             const checkoutData = {
               venueId: orderData.venueId,
-              venueName: "Restaurant",
+              venueName: orderParams.venueSlug || "Venue",
               tableNumber: orderData.tableNumber,
               customerName: orderData.customerName,
               customerPhone: orderData.customerPhone,

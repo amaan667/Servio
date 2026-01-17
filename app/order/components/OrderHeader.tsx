@@ -6,6 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Table, Receipt } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
+// Helper function to format location names intelligently
+function formatLocationName(name: string, type: "table" | "counter"): string {
+  if (!name) return `${type === "table" ? "Table" : "Counter"}`;
+
+  const lowerName = name.toLowerCase();
+  const typePrefix = type === "table" ? "table" : "counter";
+
+  // If name already starts with the type, don't add prefix
+  if (lowerName.startsWith(typePrefix) || lowerName.startsWith(`${typePrefix} `)) {
+    return name;
+  }
+
+  // Otherwise add the type prefix
+  return `${type === "table" ? "Table" : "Counter"} ${name}`;
+}
+
 interface OrderHeaderProps {
   venueName: string;
   isDemo: boolean;
@@ -73,7 +89,7 @@ export function OrderHeader({
                     <>
                       <Receipt className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
                       <span className="text-sm sm:text-base text-orange-600 dark:text-orange-400 font-medium">
-                        Counter {counterNumber}
+                        {formatLocationName(counterNumber, "counter")}
                       </span>
                       <Badge
                         variant="secondary"
@@ -86,7 +102,7 @@ export function OrderHeader({
                     <>
                       <Table className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                       <span className="text-sm sm:text-base text-blue-600 dark:text-blue-400 font-medium">
-                        Table {tableNumber}
+                        {formatLocationName(tableNumber, "table")}
                       </span>
                     </>
                   )}

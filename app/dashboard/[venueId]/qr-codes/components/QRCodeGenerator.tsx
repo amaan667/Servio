@@ -137,7 +137,7 @@ export function QRCodeGenerator({
 
                   return (
                     <SelectItem key={key} value={displayValue}>
-                      {displayValue}
+                      {displayValue} ({qrCodeType === "tables" ? "Table" : "Counter"})
                     </SelectItem>
                   );
                 })}

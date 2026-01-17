@@ -141,8 +141,8 @@ export default function CustomerOrderPage() {
     });
   };
 
-  // Show error if no venue or table parameter - no automatic redirect
-  if (!venueSlug || !tableNumber) {
+  // Show error if no venue or neither table nor counter parameter - no automatic redirect
+  if (!venueSlug || (!tableNumber && !counterNumber)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
