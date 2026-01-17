@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { safeRemoveItem } from "@/app/order/utils/safeStorage";
 import {
   Plus,
   Edit,
@@ -377,8 +378,8 @@ export default function MenuManagementClient({
 
         // Clear dashboard cache to force fresh count
         if (typeof window !== "undefined") {
-          sessionStorage.removeItem(`dashboard_stats_${venueId}`);
-          sessionStorage.removeItem(`dashboard_counts_${venueId}`);
+          safeRemoveItem(sessionStorage, `dashboard_stats_${venueId}`);
+          safeRemoveItem(sessionStorage, `dashboard_counts_${venueId}`);
 
           // Dispatch custom event to trigger dashboard refresh
           window.dispatchEvent(

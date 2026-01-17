@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabaseBrowser } from "@/lib/supabase";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "@/app/order/utils/safeStorage";
 
 interface ExtendedSession extends Session {
   primaryVenue?: {
@@ -49,7 +50,7 @@ export default function AuthProvider({
     // Check for stored session to prevent flicker
     if (typeof window !== "undefined") {
       try {
-        const stored = localStorage.getItem("sb-auth-session");
+        const stored = safeGetItem(localStorage, "sb-auth-session");
         if (stored) {
           const parsed = JSON.parse(stored);
           return parsed;
@@ -82,8 +83,8 @@ export default function AuthProvider({
 
     // Fallback to cache
     if (typeof window !== "undefined" && initialSessionState?.user?.id) {
-      const cachedRole = localStorage.getItem(`user_role_${initialSessionState.user.id}`);
-      const cachedVenueId = localStorage.getItem(`venue_id_${initialSessionState.user.id}`);
+      const cachedRole = safeGetItem(localStorage, `user_role_${initialSessionState.user.id}`);
+      const cachedVenueId = safeGetItem(localStorage, `venue_id_${initialSessionState.user.id}`);
       if (cachedVenueId && cachedRole) {
         return { primaryVenueId: cachedVenueId, userRole: cachedRole };
       }
@@ -101,16 +102,16 @@ export default function AuthProvider({
     setUserRole(role);
 
     if (typeof window !== "undefined" && userId) {
-      localStorage.setItem(`user_role_${userId}`, role);
-      localStorage.setItem(`venue_id_${userId}`, venueId);
+      safeSetItem(localStorage, `user_role_${userId}`, role);
+      safeSetItem(localStorage, `venue_id_${userId}`, venueId);
     }
   };
 
   const resolveVenueData = async (currentUser: User) => {
     if (typeof window === "undefined") return;
 
-    const cachedRole = localStorage.getItem(`user_role_${currentUser.id}`);
-    const cachedVenueId = localStorage.getItem(`venue_id_${currentUser.id}`);
+    const cachedRole = safeGetItem(localStorage, `user_role_${currentUser.id}`);
+    const cachedVenueId = safeGetItem(localStorage, `venue_id_${currentUser.id}`);
     if (cachedVenueId && cachedRole) {
       setPrimaryVenueId(cachedVenueId);
       setUserRole(cachedRole);
@@ -197,7 +198,7 @@ export default function AuthProvider({
                 setSession(newSession as Session | null);
                 setUser((newSession as { user?: User } | null)?.user ?? null);
                 if (typeof window !== "undefined" && newSession) {
-                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                  safeSetItem(localStorage, "sb-auth-session", JSON.stringify(newSession));
                 }
                 if ((newSession as Session | null)?.user) {
                   resolveVenueData((newSession as Session).user);
@@ -208,7 +209,7 @@ export default function AuthProvider({
                 setSession(null);
                 setUser(null);
                 if (typeof window !== "undefined") {
-                  localStorage.removeItem("sb-auth-session");
+                  safeRemoveItem(localStorage, "sb-auth-session");
                 }
                 setLoading(false);
                 break;
@@ -216,7 +217,7 @@ export default function AuthProvider({
                 setSession(newSession as Session | null);
                 setUser((newSession as { user?: User } | null)?.user ?? null);
                 if (typeof window !== "undefined" && newSession) {
-                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                  safeSetItem(localStorage, "sb-auth-session", JSON.stringify(newSession));
                 }
                 if ((newSession as Session | null)?.user && !primaryVenueId) {
                   resolveVenueData((newSession as Session).user);
@@ -293,7 +294,7 @@ export default function AuthProvider({
                 setUser((newSession as { user?: User } | null)?.user ?? null);
                 // Store session to prevent flicker on reload
                 if (typeof window !== "undefined" && newSession) {
-                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                  safeSetItem(localStorage, "sb-auth-session", JSON.stringify(newSession));
                 }
                 if ((newSession as Session | null)?.user) {
                   resolveVenueData((newSession as Session).user);
@@ -305,7 +306,7 @@ export default function AuthProvider({
                 setUser(null);
                 // Clear stored session
                 if (typeof window !== "undefined") {
-                  localStorage.removeItem("sb-auth-session");
+                  safeRemoveItem(localStorage, "sb-auth-session");
                 }
                 setLoading(false);
                 break;
@@ -314,7 +315,7 @@ export default function AuthProvider({
                 setUser((newSession as { user?: User } | null)?.user ?? null);
                 // Update stored session
                 if (typeof window !== "undefined" && newSession) {
-                  localStorage.setItem("sb-auth-session", JSON.stringify(newSession));
+                  safeSetItem(localStorage, "sb-auth-session", JSON.stringify(newSession));
                 }
                 if ((newSession as Session | null)?.user && !primaryVenueId) {
                   resolveVenueData((newSession as Session).user);
@@ -358,13 +359,13 @@ export default function AuthProvider({
       // Clear all cached user data from localStorage and sessionStorage
       if (typeof window !== "undefined") {
         if (session?.user?.id) {
-          localStorage.removeItem(`user_role_${session.user.id}`);
-          localStorage.removeItem(`venue_id_${session.user.id}`);
+          safeRemoveItem(localStorage, `user_role_${session.user.id}`);
+          safeRemoveItem(localStorage, `venue_id_${session.user.id}`);
         }
         const sessionKeys = Object.keys(sessionStorage);
         sessionKeys.forEach((key) => {
           if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
-            sessionStorage.removeItem(key);
+            safeRemoveItem(sessionStorage, key);
           }
         });
       }
@@ -378,7 +379,7 @@ export default function AuthProvider({
         const keys = Object.keys(sessionStorage);
         keys.forEach((key) => {
           if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
-            sessionStorage.removeItem(key);
+            safeRemoveItem(sessionStorage, key);
           }
         });
       }

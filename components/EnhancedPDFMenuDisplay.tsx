@@ -7,6 +7,7 @@ import { Plus, Minus, ShoppingCart, Search, List, Grid, ZoomIn, ZoomOut } from "
 import { ItemDetailsModal } from "@/components/ItemDetailsModal";
 import { Input } from "@/components/ui/input";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "@/app/order/utils/safeStorage";
 
 interface MenuItem {
   id: string;
@@ -54,14 +55,14 @@ export function EnhancedPDFMenuDisplay({
   // Check cache for PDF images existence to prevent flicker
   const hasPdfImagesInCache = () => {
     if (typeof window === "undefined") return false;
-    const cached = sessionStorage.getItem(`has_pdf_images_${normalizedVenueId}`);
+    const cached = safeGetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`);
     return cached === "true";
   };
 
   // Cache PDF images for instant load
   const getCachedPdfImages = () => {
     if (typeof window === "undefined") return [];
-    const cached = sessionStorage.getItem(`pdf_images_${normalizedVenueId}`);
+    const cached = safeGetItem(sessionStorage, `pdf_images_${normalizedVenueId}`);
     return cached ? JSON.parse(cached) : [];
   };
 
@@ -116,16 +117,16 @@ export function EnhancedPDFMenuDisplay({
         setHasPdfImages(true);
         setViewMode("pdf");
         if (typeof window !== "undefined") {
-          sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "true");
-          sessionStorage.setItem(`pdf_images_${normalizedVenueId}`, JSON.stringify(pdfImagesProp));
+          safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
+          safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(pdfImagesProp));
         }
       } else {
         setPdfImages([]);
         setHasPdfImages(false);
         setViewMode("list");
         if (typeof window !== "undefined") {
-          sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "false");
-          sessionStorage.removeItem(`pdf_images_${normalizedVenueId}`);
+          safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "false");
+          safeRemoveItem(sessionStorage, `pdf_images_${normalizedVenueId}`);
         }
       }
       setLoading(false);
@@ -160,8 +161,8 @@ export function EnhancedPDFMenuDisplay({
           setViewMode("pdf");
           // Cache PDF images for instant load next time
           if (typeof window !== "undefined") {
-            sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "true");
-            sessionStorage.setItem(`pdf_images_${normalizedVenueId}`, JSON.stringify(images));
+            safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
+            safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(images));
           }
           // Preload images
           images.forEach((imageUrl: string) => {
@@ -172,8 +173,8 @@ export function EnhancedPDFMenuDisplay({
           setViewMode("list");
           setHasPdfImages(false);
           if (typeof window !== "undefined") {
-            sessionStorage.setItem(`has_pdf_images_${normalizedVenueId}`, "false");
-            sessionStorage.removeItem(`pdf_images_${normalizedVenueId}`);
+            safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "false");
+            safeRemoveItem(sessionStorage, `pdf_images_${normalizedVenueId}`);
           }
         }
 

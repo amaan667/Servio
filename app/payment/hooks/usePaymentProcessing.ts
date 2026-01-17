@@ -3,6 +3,7 @@ import { toast } from "@/hooks/use-toast";
 import { PaymentAction } from "./usePaymentState";
 import { CheckoutData } from "@/types/payment";
 import { queueOrder, queueStatusUpdate } from "@/lib/offline-queue";
+import { safeRemoveItem, safeSetItem } from "@/app/order/utils/safeStorage";
 
 // Helper function to log to server (appears in Railway logs)
 // Uses fetch with fire-and-forget to not block the payment flow
@@ -471,7 +472,7 @@ export function usePaymentProcessing() {
         }
 
         // Clear cart after successful order (keep checkout-data for order summary page)
-        localStorage.removeItem("servio-order-cart");
+        safeRemoveItem(localStorage, "servio-order-cart");
 
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
@@ -559,8 +560,8 @@ export function usePaymentProcessing() {
             const checkoutUrl = result.url || result.data?.url;
 
             // Clear cart before redirect
-            localStorage.removeItem("servio-order-cart");
-            localStorage.removeItem("servio-checkout-data");
+            safeRemoveItem(localStorage, "servio-order-cart");
+            safeRemoveItem(localStorage, "servio-checkout-data");
 
             window.location.href = checkoutUrl;
             return; // Order created, webhook will mark as PAID after payment
@@ -613,8 +614,8 @@ export function usePaymentProcessing() {
         }
 
         // Clear cart
-        localStorage.removeItem("servio-order-cart");
-        localStorage.removeItem("servio-checkout-data");
+        safeRemoveItem(localStorage, "servio-order-cart");
+        safeRemoveItem(localStorage, "servio-checkout-data");
 
         // Redirect to order summary with orderId
         window.location.href = `/order-summary?orderId=${orderId}`;
@@ -631,8 +632,9 @@ export function usePaymentProcessing() {
 
         // Store session for QR re-scan logic
         const sessionId = checkoutData.sessionId || `session_${Date.now()}`;
-        localStorage.setItem("servio-current-session", sessionId);
-        localStorage.setItem(
+        safeSetItem(localStorage, "servio-current-session", sessionId);
+        safeSetItem(
+          localStorage,
           `servio-order-${sessionId}`,
           JSON.stringify({
             orderId,
@@ -643,8 +645,8 @@ export function usePaymentProcessing() {
         );
 
         // Clear cart
-        localStorage.removeItem("servio-order-cart");
-        localStorage.removeItem("servio-checkout-data");
+        safeRemoveItem(localStorage, "servio-order-cart");
+        safeRemoveItem(localStorage, "servio-checkout-data");
 
         // Redirect to order summary with orderId
         window.location.href = `/order-summary?orderId=${orderId}`;

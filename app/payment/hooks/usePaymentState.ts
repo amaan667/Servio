@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { safeGetItem } from "@/app/order/utils/safeStorage";
 
 export interface CheckoutData {
   venueId: string;
@@ -86,7 +87,7 @@ export function usePaymentState() {
   const isDemoFromUrl = searchParams?.get("demo") === "1";
 
   useEffect(() => {
-    const storedData = localStorage.getItem("servio-checkout-data");
+    const storedData = safeGetItem(localStorage, "servio-checkout-data");
 
     if (storedData) {
       try {
