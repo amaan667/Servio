@@ -29,7 +29,7 @@ import { QRCodeCanvas } from "./components/QRCodeCanvas";
 const getTypeLabel = (type: string) => {
   switch (type) {
     case "table_pickup":
-      return "Table (Pickup)";
+      return "Table, Pickup";
     case "counter":
       return "Counter";
     case "table":

@@ -25,7 +25,7 @@ export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCar
   const getTypeLabel = (type: string) => {
     switch (type) {
       case "table_pickup":
-        return "Table (Pickup)";
+        return "Table, Pickup";
       case "counter":
         return "Counter";
       case "table":
