@@ -181,8 +181,24 @@ export function useQRCodeManagement(venueId: string) {
         color: { dark: "#000000", light: "#ffffff" },
       });
 
+      // Format type for filename
+      const getTypeLabel = (type: string) => {
+        switch (type) {
+          case "table_pickup":
+            return "table-pickup";
+          case "counter":
+            return "counter";
+          case "table":
+            return "table";
+          default:
+            return type;
+        }
+      };
+
+      const filename = `qr-${qr.name.replace(/[^a-zA-Z0-9]/g, '-')}-${getTypeLabel(qr.type)}.png`;
+
       const link = document.createElement("a");
-      link.download = `qr-${qr.name}-${qr.type}.png`;
+      link.download = filename;
       link.href = dataUrl;
       link.click();
     } catch {

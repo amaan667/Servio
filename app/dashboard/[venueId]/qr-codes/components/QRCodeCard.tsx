@@ -52,8 +52,16 @@ export function QRCodeCard({ qr, size, onCopy, onDownload, onRemove }: QRCodeCar
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center space-y-2">
           <QRCodeCanvas url={displayUrl} size={size} />
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-900">
+              {displayName}
+            </p>
+            <p className="text-xs text-gray-500">
+              ({displayTypeLabel})
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-2">
