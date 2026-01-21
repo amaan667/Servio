@@ -236,7 +236,7 @@ export async function requireTierAtLeast(
       allowed,
       message: allowed
         ? undefined
-        : `This feature requires ${requiredTier} plan or higher. Current plan: ${entitlements.tier}`,
+        : `This feature requires ${requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1)} plan or higher. Current plan: ${entitlements.tier}`,
       currentTier: entitlements.tier,
     };
   } catch (error) {

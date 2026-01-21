@@ -7,6 +7,7 @@ import {
   normalizePaymentStatus,
   validateOrderStatusTransition,
 } from "@/lib/orders/qr-payment-validation";
+import { requireTierAtLeast } from "@/lib/entitlements/guards";
 
 import { env } from "@/lib/env";
 
@@ -68,6 +69,17 @@ export async function POST(req: Request) {
 
     if (!currentOrder) {
       return apiErrors.notFound("Order not found");
+    }
+
+    // Check tier entitlement for advanced service states (Pro feature)
+    const advancedServiceStates = ["IN_PREP", "READY", "SERVING", "SERVED"];
+    if (advancedServiceStates.includes(status)) {
+      const entitlementCheck = await requireTierAtLeast(orderCheck.venue_id, "pro");
+      if (!entitlementCheck.allowed) {
+        return apiErrors.forbidden(
+          "Advanced service states (Preparing → Ready → Served → Complete) require Pro plan or higher"
+        );
+      }
     }
 
     const qrType = deriveQrTypeFromOrder(currentOrder);

@@ -29,14 +29,14 @@ export interface TierLimits {
 // Tier limits based on pricing page: Starter (£99), Pro (£249), Enterprise (£499+)
 export const TIER_LIMITS: Record<string, TierLimits> = {
   starter: {
-    maxTables: 25, // Up to 25 tables
+    maxTables: 5, // Up to 5 tables
     maxMenuItems: 50,
-    maxStaff: 5, // Up to 5 staff accounts
+    maxStaff: 3, // Up to 3 staff accounts
     maxVenues: 1, // 1 location
     features: {
       kds: false, // KDS not included - available as add-on
       inventory: false, // Not included
-      analytics: "basic", // Basic dashboard & daily reports
+      analytics: "basic", // Basic analytics (sales + order volume)
       customerFeedback: true, // Included
       loyaltyTracking: false, // Not included
       branding: "logo+color", // Logo + colour theme
@@ -48,12 +48,12 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     },
   },
   pro: {
-    maxTables: 100, // Up to 100 tables
+    maxTables: 40, // Up to 40 tables
     maxMenuItems: 200,
     maxStaff: 15, // Up to 15 staff accounts
     maxVenues: 3, // Up to 3 locations
     features: {
-      kds: "advanced", // Advanced KDS (multi-station)
+      kds: "advanced", // Kitchen Display System (multi-station)
       inventory: true, // Inventory & stock management
       analytics: "advanced+exports", // Advanced analytics + CSV exports
       customerFeedback: true, // Included
@@ -63,7 +63,7 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       aiAssistant: false, // AI Assistant is Enterprise only (Pro has AI insights in analytics, not full AI Assistant)
       multiVenue: true, // Up to 3 locations
       customIntegrations: false,
-      supportLevel: "priority", // Priority email & live chat
+      supportLevel: "priority", // Priority email & live chat support
     },
   },
   enterprise: {
@@ -78,11 +78,11 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       customerFeedback: true, // Included
       loyaltyTracking: true, // Included
       branding: "white-label", // Full white-label + custom domains
-      apiAccess: true, // API access, webhooks & POS/accounting integrations
+      apiAccess: true, // API access + custom integrations
       aiAssistant: true,
       multiVenue: true, // Unlimited locations
       customIntegrations: true,
-      supportLevel: "24/7", // 24/7 phone support, SLA & account manager
+      supportLevel: "24/7", // SLA + account manager + priority support
     },
   },
 };

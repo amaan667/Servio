@@ -326,7 +326,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           }
         }
         // Handle Start Free Trial for non-logged in or new users
-        else if (ctaText === "Start Free Trial") {
+        else if (ctaText === "Start 14-day free trial") {
           router.push("/select-plan");
         }
       } catch {
@@ -356,7 +356,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
     // If not signed in, show default CTAs
     if (!isSignedIn) {
-      return planName === "Enterprise" ? "Contact Sales" : "Start Free Trial";
+      return planName === "Enterprise" ? "Contact Sales" : "Start 14-day free trial";
     }
 
     // User is signed in - check their plan
@@ -390,7 +390,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
     }
 
     // Fallback (shouldn't reach here but ensures we always return a string)
-    return planName === "Enterprise" ? "Contact Sales" : "Start Free Trial";
+    return planName === "Enterprise" ? "Contact Sales" : "Start 14-day free trial";
   };
 
   // Use shared PRICING_TIERS configuration
@@ -489,6 +489,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                         <span className="text-gray-900 ml-2 font-medium">/{plan.period}</span>
                       )}
                     </div>
+                    <p className="text-sm text-gray-600 mt-2">14-day free trial · No credit card required</p>
                     <CardDescription className="mt-4 text-gray-800 font-medium">
                       {plan.description}
                     </CardDescription>
