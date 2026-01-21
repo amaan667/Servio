@@ -5,7 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Receipt, Download, CheckCircle, Split, Clock, User, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Receipt, Download, CheckCircle, Split, Clock, User, MapPin, Undo2, TrendingDown, AlertTriangle } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
@@ -23,6 +28,248 @@ interface PaymentOrder extends Omit<Order, "table_number"> {
   table_number?: number | string | null;
   created_at: string;
   payment_mode?: string;
+}
+
+interface RefundOrder extends PaymentOrder {
+  refund_amount?: number;
+  refund_reason?: string;
+  refunded_at?: string;
+  refund_id?: string;
+}
+
+interface RefundStats {
+  totalRefunds: number;
+  totalRefundAmount: number;
+  refundRate: number;
+  commonReasons: { reason: string; count: number }[];
+}
+
+// Refund Dialog Component
+function RefundDialog({ onRefundProcessed }: { onRefundProcessed: () => void }) {
+  const supabase = createClient();
+  const [selectedOrder, setSelectedOrder] = useState<PaymentOrder | null>(null);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [orders, setOrders] = useState<PaymentOrder[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const refundReasons = [
+    "Customer request",
+    "Order error",
+    "Food quality",
+    "Wrong item",
+    "Late delivery",
+    "Double charge",
+    "System error",
+    "Other",
+  ];
+
+  const loadPaidOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("payment_status", "PAID")
+        .in("payment_method", ["PAY_NOW", "PAY_AT_TILL", "PAY_LATER"])
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (!error && data) {
+        setOrders(data as PaymentOrder[]);
+      }
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadPaidOrders();
+    }
+  }, [isOpen]);
+
+  const filteredOrders = orders.filter(order =>
+    order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const processRefund = async () => {
+    if (!selectedOrder) return;
+
+    setIsProcessing(true);
+    try {
+      const amount = refundAmount ? parseFloat(refundAmount) : undefined;
+      const reason = refundReason === "Other" ? customReason : refundReason;
+
+      const response = await fetch(`/api/orders/${selectedOrder.id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, reason }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to process refund");
+      }
+
+      onRefundProcessed();
+      setIsOpen(false);
+      setSelectedOrder(null);
+      setRefundAmount("");
+      setRefundReason("");
+      setCustomReason("");
+    } catch (error) {
+      console.error("Refund error:", error);
+      alert(error instanceof Error ? error.message : "Failed to process refund");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Process Refund</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Order Search */}
+          <div>
+            <Label htmlFor="search">Search Orders</Label>
+            <Input
+              id="search"
+              placeholder="Order number, customer name, or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Order Selection */}
+          <div>
+            <Label>Select Order to Refund</Label>
+            <div className="max-h-48 overflow-y-auto border rounded-md">
+              {filteredOrders.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">No orders found</div>
+              ) : (
+                filteredOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${
+                      selectedOrder?.id === order.id ? "bg-blue-50 border-blue-200" : ""
+                    }`}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">
+                          Order #{order.order_number || order.id.slice(-6).toUpperCase()}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {order.customer_name || "Customer"} • {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <p className="font-semibold">£{order.total_amount?.toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {selectedOrder && (
+            <>
+              {/* Refund Details */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Refund Details</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Order Total:</span>
+                    <span className="ml-2 font-medium">£{selectedOrder.total_amount?.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="ml-2 font-medium">{selectedOrder.payment_method}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Refund Amount */}
+              <div>
+                <Label htmlFor="amount">Refund Amount (leave empty for full refund)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder={`Max: £${selectedOrder.total_amount?.toFixed(2)}`}
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  max={selectedOrder.total_amount}
+                />
+              </div>
+
+              {/* Refund Reason */}
+              <div>
+                <Label htmlFor="reason">Refund Reason</Label>
+                <Select value={refundReason} onValueChange={setRefundReason}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a reason" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {refundReasons.map((reason) => (
+                      <SelectItem key={reason} value={reason}>
+                        {reason}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {refundReason === "Other" && (
+                <div>
+                  <Label htmlFor="custom-reason">Custom Reason</Label>
+                  <Textarea
+                    id="custom-reason"
+                    placeholder="Please specify the refund reason..."
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Process Button */}
+              <div className="flex justify-end space-x-3">
+                <Button variant="outline" onClick={() => setIsOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={processRefund}
+                  disabled={isProcessing || !refundReason || (refundReason === "Other" && !customReason)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Undo2 className="h-4 w-4 mr-2" />
+                      Process Refund
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 interface GroupedReceipts {
@@ -45,6 +292,17 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     primary_color?: string;
     show_vat_breakdown?: boolean;
   }>({});
+
+  // Refund state
+  const [refundedOrders, setRefundedOrders] = useState<RefundOrder[]>([]);
+  const [refundStats, setRefundStats] = useState<RefundStats>({
+    totalRefunds: 0,
+    totalRefundAmount: 0,
+    refundRate: 0,
+    commonReasons: [],
+  });
+  const [selectedRefundOrder, setSelectedRefundOrder] = useState<RefundOrder | null>(null);
+  const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const [activeTab, setActiveTab] = useState("pay-at-till");
 
   // Check URL params for split action / direct order focus
@@ -224,10 +482,141 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     }
   }, [venueId]);
 
+  const loadRefunds = useCallback(async () => {
+    if (!venueId) return;
+
+    try {
+      const supabase = createClient();
+
+      // Get today's window for refund rate calculation
+      const todayWindow = todayWindowForTZ("Europe/London");
+      const todayStart = todayWindow.startUtcISO ? new Date(todayWindow.startUtcISO) : new Date();
+      const todayEnd = todayWindow.endUtcISO ? new Date(todayWindow.endUtcISO) : new Date();
+
+      // Fetch refunded orders
+      const { data: refundsData, error: refundsError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .in("payment_status", ["REFUNDED", "PARTIALLY_REFUNDED"])
+        .order("refunded_at", { ascending: false, nullsFirst: false });
+
+      if (refundsError) {
+        console.error("Error fetching refunds:", refundsError);
+        return;
+      }
+
+      const refundedOrdersList = (refundsData || []) as RefundOrder[];
+      setRefundedOrders(refundedOrdersList);
+
+      // Calculate refund statistics
+      const totalRefunds = refundedOrdersList.length;
+      const totalRefundAmount = refundedOrdersList.reduce(
+        (sum, order) => sum + (order.refund_amount || order.total_amount || 0),
+        0
+      );
+
+      // Get total orders for refund rate calculation
+      const { data: allOrders, error: allOrdersError } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("venue_id", venueId)
+        .gte("created_at", todayStart.toISOString())
+        .lt("created_at", todayEnd.toISOString());
+
+      if (!allOrdersError && allOrders) {
+        const totalOrders = allOrders.length;
+        const todayRefunds = refundedOrdersList.filter(order => {
+          if (!order.refunded_at) return false;
+          const refundDate = new Date(order.refunded_at);
+          return refundDate >= todayStart && refundDate < todayEnd;
+        }).length;
+
+        const refundRate = totalOrders > 0 ? (todayRefunds / totalOrders) * 100 : 0;
+
+        // Calculate common refund reasons
+        const reasonCounts: { [key: string]: number } = {};
+        refundedOrdersList.forEach(order => {
+          const reason = order.refund_reason || "Not specified";
+          reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+        });
+
+        const commonReasons = Object.entries(reasonCounts)
+          .map(([reason, count]) => ({ reason, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        setRefundStats({
+          totalRefunds,
+          totalRefundAmount,
+          refundRate,
+          commonReasons,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading refunds:", error);
+    }
+  }, [venueId]);
+
+  // Predefined refund reasons
+  const refundReasons = [
+    "Customer request",
+    "Order error",
+    "Food quality",
+    "Wrong item",
+    "Late delivery",
+    "Double charge",
+    "System error",
+    "Other",
+  ];
+
+  const processRefund = async (orderId: string, amount?: number, reason?: string) => {
+    if (isProcessingRefund) return;
+
+    setIsProcessingRefund(true);
+    try {
+      const response = await fetch(`/api/orders/${orderId}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount,
+          reason: reason || "Not specified",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to process refund");
+      }
+
+      const result = await response.json();
+
+      // Refresh both payments and refunds data
+      await loadPayments();
+      await loadRefunds();
+
+      setSelectedRefundOrder(null);
+
+      return result;
+    } catch (error) {
+      console.error("Refund error:", error);
+      throw error;
+    } finally {
+      setIsProcessingRefund(false);
+    }
+  };
+
   // Always load payments on mount
   useEffect(() => {
     loadPayments();
   }, [loadPayments]);
+
+  // Load refunds when refunds tab is active
+  useEffect(() => {
+    if (activeTab === "refunds") {
+      loadRefunds();
+    }
+  }, [activeTab, loadRefunds]);
 
   // Set up real-time subscription for payment updates
   useEffect(() => {
@@ -566,7 +955,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         {/* Tab Navigation */}
         <section className="mb-6 sm:mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="pay-at-till" className="flex items-center gap-2 relative">
                 <span className="flex-1 text-left">Pay at Till</span>
                 <span
@@ -631,6 +1020,22 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                   `}
                 >
                   {historyReceipts.length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="refunds" className="flex items-center gap-2 relative">
+                <Undo2 className="h-4 w-4" />
+                <span className="flex-1 text-left">Refunds</span>
+                <span
+                  className={`
+                    ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
+                    ${
+                      activeTab === "refunds"
+                        ? "bg-white text-servio-purple border-servio-purple/20 shadow-sm"
+                        : "bg-white/40 text-white border-white/30"
+                    }
+                  `}
+                >
+                  {refundedOrders.length}
                 </span>
               </TabsTrigger>
             </TabsList>
@@ -729,6 +1134,133 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                 </div>
               )}
             </TabsContent>
+
+            {/* Refunds Section */}
+            <TabsContent value="refunds" className="mt-6">
+              {/* Refund Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Total Refunds</p>
+                        <p className="text-2xl font-bold text-gray-900">{refundStats.totalRefunds}</p>
+                      </div>
+                      <Undo2 className="h-8 w-8 text-red-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Refund Amount</p>
+                        <p className="text-2xl font-bold text-gray-900">£{refundStats.totalRefundAmount.toFixed(2)}</p>
+                      </div>
+                      <TrendingDown className="h-8 w-8 text-orange-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Today's Rate</p>
+                        <p className="text-2xl font-bold text-gray-900">{refundStats.refundRate.toFixed(1)}%</p>
+                      </div>
+                      <AlertTriangle className={`h-8 w-8 ${refundStats.refundRate > 5 ? 'text-red-500' : 'text-green-500'}`} />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">Top Reasons</p>
+                      <div className="space-y-1">
+                        {refundStats.commonReasons.slice(0, 2).map((reason, index) => (
+                          <p key={index} className="text-xs text-gray-700 truncate">
+                            {reason.reason} ({reason.count})
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Refund Orders List */}
+              {refundedOrders.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Undo2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Refunds</h3>
+                    <p className="text-gray-600">No refunded orders found</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {refundedOrders.map((order) => (
+                    <Card key={order.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              Order #{order.order_number || order.id.slice(-6).toUpperCase()}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {order.customer_name || "Customer"}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-red-600">
+                              -£{(order.refund_amount || order.total_amount || 0).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {order.refunded_at ? new Date(order.refunded_at).toLocaleDateString() : 'Unknown'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Reason:</span>
+                            <span className="text-gray-900">{order.refund_reason || "Not specified"}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Status:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              order.payment_status === 'REFUNDED'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-orange-100 text-orange-800'
+                            }`}>
+                              {order.payment_status}
+                            </span>
+                          </div>
+                          {order.refund_id && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">ID:</span>
+                              <span className="text-gray-900 font-mono text-xs">{order.refund_id.slice(-8)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => setSelectedRefundOrder(order)}
+                          >
+                            <Receipt className="h-4 w-4 mr-2" />
+                            View Receipt
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         </section>
       </div>
@@ -788,6 +1320,32 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
             setSelectedOrderForSplit(null);
             loadPayments();
           }}
+        />
+      )}
+
+      {/* Refund Dialog */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="fixed bottom-6 right-6 shadow-lg">
+            <Undo2 className="h-4 w-4 mr-2" />
+            Process Refund
+          </Button>
+        </DialogTrigger>
+        <RefundDialog onRefundProcessed={loadRefunds} />
+      </Dialog>
+
+      {/* Receipt Modal for Refunded Orders */}
+      {selectedRefundOrder && (
+        <ReceiptModal
+          order={selectedRefundOrder as Order}
+          venueEmail={venueInfo.email}
+          venueAddress={venueInfo.address}
+          logoUrl={venueInfo.logo_url}
+          primaryColor={venueInfo.primary_color}
+          isOpen={!!selectedRefundOrder}
+          onClose={() => setSelectedRefundOrder(null)}
+          showVAT={venueInfo.show_vat_breakdown ?? true}
+          isCustomerView={false}
         />
       )}
     </div>
