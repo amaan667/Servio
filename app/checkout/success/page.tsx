@@ -217,21 +217,36 @@ export default function CheckoutSuccessPage() {
                 setTimeout(async () => {
                   if (user) {
                     const supabase = supabaseBrowser();
+
+                    // Check if user has completed onboarding
+                    const userMetadata = user.user_metadata as Record<string, unknown> | null;
+                    const onboardingCompleted = userMetadata?.onboarding_completed === true;
+
+                    // Check if user has venues (existing user vs new signup)
                     const { data: venues, error } = await supabase
                       .from("venues")
-                      .select("venue_id")
+                      .select("venue_id, created_at")
                       .eq("owner_user_id", user.id)
                       .order("created_at", { ascending: true })
                       .limit(1);
 
                     if (!error && venues && venues.length > 0) {
                       const primaryVenue = venues[0];
-                      if (primaryVenue) {
-                        router.push(`/dashboard/${primaryVenue.venue_id}?upgrade=success`);
+
+                      // Check if venue was created recently (within last 5 minutes = new signup)
+                      const venueCreatedAt = new Date(primaryVenue.created_at);
+                      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                      const isNewSignup = venueCreatedAt > fiveMinutesAgo;
+
+                      if (isNewSignup && !onboardingCompleted) {
+                        // New user who just signed up - redirect to onboarding
+                        router.push("/onboarding/venue-setup");
                       } else {
-                        router.push("/");
+                        // Existing user or onboarding completed - go to dashboard
+                        router.push(`/dashboard/${primaryVenue.venue_id}?upgrade=success`);
                       }
                     } else {
+                      // No venues found - this shouldn't happen after successful signup
                       router.push("/");
                     }
                   } else {

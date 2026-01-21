@@ -146,6 +146,40 @@ const DashboardClient = React.memo(function DashboardClient({
     });
   }, [venueId, initialCounts, initialStats]);
 
+  // Check if user needs to complete onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (!venue || !user) return;
+
+      // Check if user has completed onboarding
+      const userMetadata = (user as { user_metadata?: Record<string, unknown> })?.user_metadata;
+      const onboardingCompleted = userMetadata?.onboarding_completed === true;
+
+      // Check onboarding progress
+      const progressResponse = await fetch("/api/onboarding/progress");
+      const progressData = await progressResponse.json();
+      const progress = progressData?.progress || {};
+      const completedSteps = progress.completed_steps || [];
+      const allStepsCompleted = completedSteps.length >= 4;
+
+      // If onboarding not completed and this is a new venue (created within last hour), redirect to onboarding
+      if (!onboardingCompleted && !allStepsCompleted) {
+        // Check if venue is new (created within last hour)
+        const venueData = venue as { created_at: string };
+        const venueCreatedAt = new Date(venueData.created_at);
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+        if (venueCreatedAt > oneHourAgo) {
+          // New venue, redirect to onboarding
+          router.push("/onboarding/venue-setup");
+          return;
+        }
+      }
+    };
+
+    checkOnboarding();
+  }, [venue, user, router]);
+
   // Hooks must be called unconditionally - can't be in try-catch
   const dashboardData = useDashboardData(venueId, venueTz, venue, initialCounts, initialStats);
 

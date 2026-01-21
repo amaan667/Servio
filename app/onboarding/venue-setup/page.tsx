@@ -308,7 +308,21 @@ export default function OnboardingVenueSetupPage() {
 
   return (
     <div>
-      <OnboardingProgress currentStep={1} />
+      <OnboardingProgress
+        currentStep={1}
+        allowSkip={false}
+        allowNavigation={true}
+        onStepChange={(step) => {
+          // Handle navigation to other steps
+          const routes = {
+            1: "/onboarding/venue-setup",
+            2: "/onboarding/menu",
+            3: "/onboarding/tables",
+            4: "/onboarding/test-order"
+          };
+          router.push(routes[step as keyof typeof routes]);
+        }}
+      />
 
       <Card className="border-2 border-purple-200">
         <CardHeader>

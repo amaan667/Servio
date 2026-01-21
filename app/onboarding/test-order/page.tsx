@@ -181,7 +181,20 @@ export default function OnboardingTestOrderPage() {
         />
       )}
 
-      <OnboardingProgress currentStep={4} />
+      <OnboardingProgress
+        currentStep={4}
+        allowSkip={true}
+        allowNavigation={true}
+        onStepChange={(step) => {
+          const routes = {
+            1: "/onboarding/venue-setup",
+            2: "/onboarding/menu",
+            3: "/onboarding/tables",
+            4: "/onboarding/test-order"
+          };
+          router.push(routes[step as keyof typeof routes]);
+        }}
+      />
 
       {!orderCompleted ? (
         <Card className="border-2 border-purple-200">
