@@ -231,7 +231,57 @@ export async function POST(_request: NextRequest) {
       categories: newCategories,
     });
   } catch (_error) {
+    return apiErrors.internal("Internal server error");
+  }
+}
 
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const venueId = searchParams.get("venueId");
+    const categoryName = searchParams.get("categoryName");
+
+    if (!venueId || !categoryName) {
+      return apiErrors.badRequest("venueId and categoryName are required");
+    }
+
+    const supabase = await createClient();
+
+    // 1. Delete all menu items in this category
+    const { error: deleteError } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("venue_id", venueId)
+      .eq("category", categoryName);
+
+    if (deleteError) throw deleteError;
+
+    // 2. Update category order in menu_uploads
+    const { data: uploadData } = await supabase
+      .from("menu_uploads")
+      .select("id, category_order")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (uploadData?.category_order) {
+      const newOrder = (uploadData.category_order as string[]).filter(c => c !== categoryName);
+      await supabase
+        .from("menu_uploads")
+        .update({ category_order: newOrder, updated_at: new Date().toISOString() })
+        .eq("id", uploadData.id);
+    }
+
+    // Invalidate cache
+    const cacheKey = `menu:categories:${venueId}`;
+    await cache.delete(cacheKey);
+
+    return NextResponse.json({
+      success: true,
+      message: `Category "${categoryName}" deleted successfully`,
+    });
+  } catch (_error) {
     return apiErrors.internal("Internal server error");
   }
 }

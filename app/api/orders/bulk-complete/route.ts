@@ -1,289 +1,50 @@
-import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
-import { cleanupTableOnOrderCompletion } from "@/lib/table-cleanup";
-
+import { createApiHandler } from "@/lib/api/production-handler";
+import { orderService } from "@/lib/services/OrderService";
 import { apiErrors } from "@/lib/api/standard-response";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import {
-  deriveQrTypeFromOrder,
-  normalizePaymentStatus,
-  validateOrderStatusTransition,
-} from "@/lib/orders/qr-payment-validation";
+import { z } from "zod";
 
-export const runtime = "nodejs";
+const bulkCompleteSchema = z.object({
+  venueId: z.string(),
+  orderIds: z.array(z.string()).optional(),
+});
 
-export const POST = withUnifiedAuth(
-  async (req: Request, context) => {
-  try {
-    const { venueId, orderIds } = await req.json();
-
-    if (!venueId) {
-      return apiErrors.badRequest("Venue ID is required");
-    }
-
-    if (venueId !== context.venueId) {
-      return apiErrors.forbidden("Forbidden");
-    }
-
-    // Use admin client - no authentication required for Live Orders feature
-    const supabase = createAdminClient();
-
-    // If no specific order IDs provided, get all active orders for the venue
-    let targetOrderIds = orderIds;
-    if (!targetOrderIds || targetOrderIds.length === 0) {
-      const { data: activeOrders, error: fetchError } = await supabase
-        .from("orders")
-        .select("id")
-        .eq("venue_id", venueId)
-        .in("order_status", ["PLACED", "IN_PREP", "READY", "SERVING"]);
-
-      if (fetchError) {
-
-        return apiErrors.internal("Failed to fetch active orders");
-      }
-
-      targetOrderIds = activeOrders?.map((order) => order.id) || [];
-    }
-
-    if (targetOrderIds.length === 0) {
-      return NextResponse.json({
-        success: true,
-        completedCount: 0,
-        message: "No active orders to complete",
+/**
+ * POST: Bulk complete orders
+ */
+export const POST = createApiHandler(
+  async (_req, context) => {
+    const { body, venueId } = context;
+    
+    // 1. Get IDs to complete
+    let orderIds = body.orderIds;
+    if (!orderIds || orderIds.length === 0) {
+      const activeOrders = await orderService.getOrders(venueId, {
+        status: "PLACED,IN_PREP,READY,SERVING",
       });
+      orderIds = activeOrders.map(o => o.id);
     }
 
-    // CRITICAL: Verify all orders are paid before bulk completing
-    const { data: ordersToComplete, error: fetchError } = await supabase
-      .from("orders")
-      .select("id, payment_status, order_status, qr_type, fulfillment_type, source, requires_collection")
-      .in("id", targetOrderIds)
-      .eq("venue_id", venueId);
-
-    if (fetchError) {
-
-      return apiErrors.internal("Failed to fetch orders");
+    if (!orderIds || orderIds.length === 0) {
+      return { 
+        completedCount: 0, 
+        message: "No active orders to complete" 
+      };
     }
 
-    // Filter out unpaid orders
-    const unpaidOrders =
-      ordersToComplete?.filter(
-        (order) => (order.payment_status || "").toString().toUpperCase() !== "PAID"
-      ) || [];
-
-    if (unpaidOrders.length > 0) {
-      return NextResponse.json(
-        {
-          error: `Cannot complete ${unpaidOrders.length} unpaid order(s). All orders must be PAID or TILL before completion.`,
-          unpaid_order_ids: unpaidOrders.map((o) => o.id),
-        },
-        { status: 400 }
-      );
+    // 2. Execute Bulk Completion
+    try {
+      const completedCount = await orderService.bulkCompleteOrders(orderIds, venueId);
+      return {
+        completedCount,
+        message: `Successfully completed ${completedCount} orders and cleaned up tables`,
+      };
+    } catch (error) {
+      return apiErrors.badRequest(error instanceof Error ? error.message : "Bulk completion failed");
     }
-
-    // Filter to only completable statuses
-    const invalidTransitionOrders =
-      ordersToComplete?.filter((order) => {
-        const qrType = deriveQrTypeFromOrder(order);
-        const normalizedPaymentStatus = normalizePaymentStatus(order.payment_status) || "UNPAID";
-        const validation = validateOrderStatusTransition({
-          qrType,
-          paymentStatus: normalizedPaymentStatus,
-          currentStatus: order.order_status || "",
-          nextStatus: "COMPLETED",
-        });
-        return !validation.ok;
-      }) || [];
-
-    if (invalidTransitionOrders.length > 0) {
-      return NextResponse.json(
-        {
-          error: "Some orders are not eligible for completion.",
-          invalid_order_ids: invalidTransitionOrders.map((o) => o.id),
-        },
-        { status: 400 }
-      );
-    }
-
-    // Update all orders to COMPLETED using unified lifecycle RPC (atomic eligibility check)
-    // This ensures completion_status is set correctly and triggers any database-level cleanup
-    const completedOrders: Array<{
-      id: string;
-      table_id?: string | null;
-      table_number?: number | null;
-      source?: string;
-    }> = [];
-
-    for (const orderId of targetOrderIds) {
-      try {
-        const { data: completedRows, error: completeError } = await supabase.rpc(
-          "orders_complete",
-          {
-            p_order_id: orderId,
-            p_venue_id: venueId,
-            p_forced: false,
-            p_forced_by: null,
-            p_forced_reason: null,
-          }
-        );
-
-        if (completeError) {
-
-          // Fallback: try direct update if RPC fails (backward compatibility)
-          const { data: fallbackOrder } = await supabase
-            .from("orders")
-            .select("id, table_id, table_number, source")
-            .eq("id", orderId)
-            .single();
-          if (fallbackOrder) {
-            await supabase
-              .from("orders")
-              .update({
-                order_status: "COMPLETED",
-                completion_status: "COMPLETED",
-                completed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", orderId);
-            completedOrders.push(fallbackOrder);
-          }
-        } else {
-          // Get order details for cleanup
-          const { data: orderData } = await supabase
-            .from("orders")
-            .select("id, table_id, table_number, source")
-            .eq("id", orderId)
-            .single();
-          if (orderData) {
-            completedOrders.push(orderData);
-          }
-        }
-      } catch (error) { /* Error handled silently */ }
-    }
-
-    const updatedOrders = completedOrders;
-
-    // Handle table cleanup for completed orders
-    if (updatedOrders && updatedOrders.length > 0) {
-      // Get all unique table identifiers from completed orders
-      const tableCleanupTasks = [];
-
-      for (const order of updatedOrders) {
-        if (order.table_id || order.table_number) {
-          tableCleanupTasks.push(
-            cleanupTableOnOrderCompletion({
-              venueId: venueId, // Use the venueId from the request parameter
-              tableId: order.table_id || undefined,
-              tableNumber: order.table_number?.toString() || undefined,
-            })
-          );
-        }
-      }
-
-      // Execute all cleanup tasks in parallel
-      const cleanupResults = await Promise.allSettled(tableCleanupTasks);
-
-      // Log results
-      cleanupResults.forEach((result) => {
-        if (result.status === "fulfilled") {
-          if (result.value.success) { /* Condition handled */ } else { /* Else case handled */ }
-        } else { /* Else case handled */ }
-      });
-
-      // Legacy table deletion logic (commented out - use cleanup instead)
-      /*
-      const tableIds = [...new Set(updatedOrders
-        .filter(order => order.table_id)
-        .map(order => order.table_id)
-      )];
-      
-      for (const tableId of tableIds) {
-        try {
-          // Get table details first
-          const { data: tableDetails, error: tableDetailsError } = await supabase
-            .from('tables')
-            .select('id, label, venue_id')
-            .eq('id', tableId)
-            .eq('venue_id', venueId)
-            .single();
-
-          if (tableDetailsError) {
-            continue; // Skip this table if we can't get details
-          }
-
-          // Clear table_id references in orders to avoid foreign key constraint issues
-          const { error: clearTableRefsError } = await supabase
-            .from('orders')
-            .update({ table_id: null })
-            .eq('table_id', tableId)
-            .eq('venue_id', venueId);
-
-          if (clearTableRefsError) {
-            // Error handled silently
-          }
-
-          // Delete table sessions first
-          const { error: deleteSessionError } = await supabase
-            .from('table_sessions')
-            .delete()
-            .eq('table_id', tableId)
-            .eq('venue_id', venueId);
-
-          if (deleteSessionError) {
-            // Error handled silently
-          }
-          
-          // Clean up table runtime state
-          const { error: deleteRuntimeError } = await supabase
-            .from('table_runtime_state')
-            .delete()
-            .eq('table_id', tableId)
-            .eq('venue_id', venueId);
-
-          if (deleteRuntimeError) {
-            // Error handled silently
-          }
-          
-          // Clean up group sessions for this table
-          const { error: deleteGroupSessionError } = await supabase
-            .from('table_group_sessions')
-            .delete()
-            .eq('table_number', tableDetails.label)
-            .eq('venue_id', venueId);
-
-          if (deleteGroupSessionError) {
-            // Error handled silently
-          }
-
-          // Finally, delete the table itself
-          const { error: deleteTableError } = await supabase
-            .from('tables')
-            .delete()
-            .eq('id', tableId)
-            .eq('venue_id', venueId);
-
-          if (deleteTableError) {
-            // Error handled silently
-          }
-          
-        } catch (tableError) {
-          // Error handled silently
-        }
-      }
-      */
-    }
-
-    return NextResponse.json({
-      success: true,
-      completedCount: updatedOrders?.length || 0,
-      message: `Successfully completed ${updatedOrders?.length || 0} orders and cleaned up tables`,
-    });
-  } catch (_error) {
-
-    return apiErrors.internal("Internal server error");
-  }
   },
   {
-    requireRole: ["owner", "manager", "staff", "server", "kitchen"],
+    requireVenueAccess: true,
+    schema: bulkCompleteSchema,
+    requireRole: ["owner", "manager", "staff"],
   }
 );

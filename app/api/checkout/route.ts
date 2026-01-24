@@ -1,107 +1,54 @@
-import Stripe from "stripe";
-
-import { withStripeRetry } from "@/lib/stripe-retry";
-import { getStripeClient } from "@/lib/stripe-client";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { NextRequest } from "next/server";
-import { success, apiErrors } from "@/lib/api/standard-response";
-import { isDevelopment } from "@/lib/env";
+import { createApiHandler } from "@/lib/api/production-handler";
+import { stripeService } from "@/lib/services/StripeService";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
-// PUBLIC ENDPOINT - No auth required for QR orders
-export async function POST(req: NextRequest) {
-  try {
-    // Initialize Stripe client inside function to avoid build-time errors
-    const stripe = getStripeClient();
+const checkoutSchema = z.object({
+  amount: z.number().min(0.5, "Amount must be at least £0.50"),
+  venue_id: z.string(),
+  venue_name: z.string().optional(),
+  table_number: z.union([z.string(), z.number()]).optional(),
+  order_id: z.string(),
+  customer_name: z.string().optional().default("Customer"),
+  customer_email: z.string().email().optional(),
+  items: z.array(z.any()).optional(),
+  source: z.string().optional().default("qr"),
+  qr_type: z.string().optional().default("TABLE_FULL_SERVICE"),
+});
 
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
-
-    const body = await req.json();
-    const {
-      amount,
-      tableNumber,
-      customerName,
-      customerPhone,
-      orderId,
-      items,
-      source,
-      venueName,
-      customerEmail,
-      venueId,
-      qr_type,
-    } = body;
-
-    // Use venueId from body (QR orders provide it directly)
-    const finalVenueId = venueId;
-
-    if (!finalVenueId) {
-
-      return apiErrors.badRequest("venueId is required");
-    }
-
-    if (!amount || amount < 0.5) {
-
-      return apiErrors.badRequest("Amount must be at least £0.50");
-    }
-
-    // Convert to pence (Stripe uses smallest currency unit)
-    const amountInPence = Math.round(amount * 100);
-
-    // Build base URL
+/**
+ * POST: Create a Stripe Checkout Session for a QR order
+ */
+export const POST = createApiHandler(
+  async (req, context) => {
+    const { body } = context;
+    
     const host = req.headers.get("host") || "localhost:3000";
     const protocol = host.includes("localhost") ? "http" : "https";
     const base = `${protocol}://${host}`;
 
-    // Create Stripe checkout session with automatic tax disabled
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "gbp",
-            product_data: {
-              name: `Order at ${venueName || "Restaurant"}`,
-              description: `Table: ${tableNumber || "N/A"}`,
-            },
-            unit_amount: amountInPence,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      metadata: {
-        orderId: orderId || "unknown",
-        venueId: finalVenueId,
-        tableNumber: tableNumber?.toString() || "1",
-        customerName: customerName || "Customer",
-        customerPhone: customerPhone || "+1234567890",
-        source: source || "qr",
-        qr_type: qr_type || "TABLE_FULL_SERVICE",
-        items: JSON.stringify(items || []).substring(0, 200),
-      },
-      success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
-      cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${finalVenueId}&tableNumber=${tableNumber || "1"}`,
-    };
-
-    // Add customer email if provided - Stripe will automatically send digital receipts
-    if (customerEmail && customerEmail.trim() !== "") {
-      sessionParams.customer_email = customerEmail.trim();
-    }
-
-    const session = await withStripeRetry(() => stripe.checkout.sessions.create(sessionParams), {
-      maxRetries: 3,
+    const session = await stripeService.createOrderCheckoutSession({
+      amount: body.amount,
+      venueName: body.venue_name || "Restaurant",
+      venueId: body.venue_id,
+      tableNumber: String(body.table_number || "1"),
+      orderId: body.order_id,
+      customerName: body.customer_name,
+      customerEmail: body.customer_email,
+      items: body.items,
+      source: body.source,
+      qrType: body.qr_type,
+      successUrl: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${body.order_id}`,
+      cancelUrl: `${base}/payment/cancel?orderId=${body.order_id}&venueId=${body.venue_id}&tableNumber=${body.table_number || "1"}`,
     });
 
-    return success({ id: session.id, url: session.url });
-  } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-    const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-    return apiErrors.internal(isDevelopment() ? errorMessage : "Failed to create checkout session");
+    return { id: session.id, url: session.url };
+  },
+  {
+    schema: checkoutSchema,
+    requireAuth: false, // Public QR checkout
+    enforceIdempotency: true,
+    autoCase: true,
   }
-}
+);

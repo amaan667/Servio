@@ -1,68 +1,34 @@
-import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
-
+import { createApiHandler } from "@/lib/api/production-handler";
+import { orderService } from "@/lib/services/OrderService";
 import { apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type OrderParams = { params?: { orderId?: string } };
-
-export async function GET(_req: Request, context: OrderParams = {}) {
-  try {
-    const supabaseAdmin = createAdminClient();
-    const orderId = context.params?.orderId;
+/**
+ * GET: Fetch a single order by ID
+ * PUBLIC: Customers need this to track their order
+ */
+export const GET = createApiHandler(
+  async (_req, context) => {
+    const { orderId } = context.params;
 
     if (!orderId) {
       return apiErrors.badRequest("Order ID is required");
     }
 
-    // Fetch order with items (items are stored as JSONB in orders table)
-    const { data: order, error: orderError } = await supabaseAdmin
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .single();
-
-    if (orderError) {
-
-      return NextResponse.json(
-        {
-          error: "Order not found",
-        },
-        { status: 404 }
-      );
-    }
+    // Try to get order from service (handles caching)
+    // Note: We need venueId for the service call, but customers might not have it in the URL
+    // We'll use a direct supabase call for public tracking or update OrderService
+    const order = await orderService.getOrderByIdPublic(orderId);
 
     if (!order) {
-
-      return NextResponse.json(
-        {
-          error: "Order not found",
-        },
-        { status: 404 }
-      );
+      return apiErrors.notFound("Order not found");
     }
 
-    // Log payment details
-
-    // Items are already in the order object as JSONB
-    // Ensure items array exists (fallback to empty array if null)
-    const transformedOrder = {
-      ...order,
-      items: order.items || [],
-    };
-
-    return NextResponse.json({
-      order: transformedOrder,
-    });
-  } catch (_error) {
-
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-      },
-      { status: 500 }
-    );
+    return { order };
+  },
+  {
+    requireAuth: false, // Public tracking
   }
-}
+);

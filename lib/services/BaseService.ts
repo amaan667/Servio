@@ -56,4 +56,14 @@ export abstract class BaseService {
     if (process.env.NODE_ENV === "test") return;
     await this.cache.invalidate(pattern);
   }
+
+  /**
+   * Standard error handling for services
+   */
+  protected handleError(error: unknown, operation: string): never {
+    const err = error as { code?: string; message?: string };
+    if (err.code === 'PGRST116') throw new Error('Resource not found');
+    if (err.code === '23505') throw new Error('Resource already exists');
+    throw error;
+  }
 }
