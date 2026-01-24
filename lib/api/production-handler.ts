@@ -2,15 +2,6 @@
  * Production-Grade API Handler
  * 
  * Standardized handler for all API routes in Servio.
- * Handles:
- * 1. Authentication (via headers from middleware)
- * 2. Authorization (venue access & roles)
- * 3. Feature/Tier Gates
- * 4. Input Validation (Zod)
- * 5. Idempotency (x-idempotency-key)
- * 6. Rate Limiting
- * 7. Standardized Error/Success Responses
- * 8. Performance Tracking
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -34,23 +25,14 @@ import { isDevelopment } from "@/lib/env";
 import { keysToCamel, keysToSnake } from "@/lib/utils/casing";
 
 export interface HandlerOptions<TBody = unknown> {
-  /** Zod schema for request body validation */
   schema?: ZodSchema<TBody>;
-  /** Require authentication (defaults to true for protected paths) */
   requireAuth?: boolean;
-  /** Require specific venue access (requires venueId) */
   requireVenueAccess?: boolean;
-  /** Roles allowed to access this route */
   requireRole?: string[];
-  /** Minimum tier required for this feature */
   requireFeature?: keyof import("@/lib/tier-restrictions").TierLimits["features"];
-  /** Rate limit configuration (defaults to GENERAL) */
   rateLimit?: RateLimitConfig;
-  /** Whether to enforce idempotency (requires x-idempotency-key header) */
   enforceIdempotency?: boolean;
-  /** Source of venueId for access check */
   venueIdSource?: "params" | "query" | "body" | "header" | "auto";
-  /** Automatically convert incoming keys to snake_case and outgoing to camelCase */
   autoCase?: boolean;
 }
 
@@ -59,9 +41,6 @@ export type HandlerFunction<TBody = unknown, TResponse = unknown> = (
   context: AuthContext & { body: TBody; params: Record<string, string> }
 ) => Promise<TResponse>;
 
-/**
- * Creates a production-grade API handler
- */
 export function createApiHandler<TBody = unknown, TResponse = unknown>(
   handler: HandlerFunction<TBody, TResponse>,
   options: HandlerOptions<TBody> = {}
@@ -79,6 +58,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       const rlConfig = options.rateLimit || RATE_LIMITS.GENERAL;
       const rlResult = await rateLimit(req, rlConfig);
       if (!rlResult.success) {
+        perf.end();
         return apiErrors.rateLimit(Math.ceil((rlResult.reset - Date.now()) / 1000), requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
@@ -93,6 +73,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       // 3. Authentication
       const { user, error: authError } = await getAuthUserFromRequest(req);
       if (options.requireAuth !== false && (!user || authError)) {
+        perf.end();
         return apiErrors.unauthorized(authError || "Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
@@ -116,12 +97,12 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
           body = options.autoCase ? keysToSnake(rawBody) : rawBody;
         } catch (e) {
           if (req.method !== "GET" && req.method !== "DELETE") {
+            perf.end();
             return apiErrors.badRequest("Invalid JSON body", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
           }
         }
       }
 
-      // If venueId still null and source is body/auto, check body
       if (!venueId && options.requireVenueAccess && body && typeof body === "object") {
         const bodyObj = body as Record<string, unknown>;
         venueId = (bodyObj.venueId as string) || (bodyObj.venue_id as string) || null;
@@ -131,24 +112,26 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       let authContext: AuthContext;
       if (options.requireVenueAccess) {
         if (!venueId) {
+          perf.end();
           return apiErrors.badRequest("venueId is required for this route", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         const access = await verifyVenueAccess(venueId, user!.id);
         if (!access) {
+          perf.end();
           return apiErrors.forbidden("Access denied to this venue", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
-        // Feature check (based on venue owner's tier)
         if (options.requireFeature) {
           const featureCheck = await enforceFeatureAccess(access.venue.owner_user_id, options.requireFeature);
           if (!featureCheck.allowed) {
+            perf.end();
             return featureCheck.response as unknown as NextResponse<ApiResponse<TResponse>>;
           }
         }
 
-        // Role check
         if (options.requireRole && !options.requireRole.includes(access.role)) {
+          perf.end();
           return apiErrors.forbidden(
             `Requires one of: ${options.requireRole.join(", ")}`, 
             { currentRole: access.role }, 
@@ -156,12 +139,8 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
           ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
-        authContext = {
-          ...access,
-          venueId,
-        };
+        authContext = { ...access, venueId };
       } else {
-        // Basic context for non-venue routes
         authContext = {
           user: user ? { id: user.id, email: user.email } : ({} as { id: string; email: string }),
           venue: {
@@ -184,6 +163,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
         try {
           body = options.schema.parse(body);
         } catch (e) {
+          perf.end();
           if (e instanceof ZodError) {
             return handleZodError(e) as unknown as NextResponse<ApiResponse<TResponse>>;
           }
@@ -196,7 +176,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       if (idempotencyKey) {
         const existing = await checkIdempotency(idempotencyKey);
         if (existing.exists) {
-          perf.end({ status: "cached_idempotent" });
+          perf.end();
           return success(existing.response.response_data as TResponse, {
             timestamp: new Date().toISOString(),
             requestId,
@@ -204,6 +184,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
           });
         }
       } else if (options.enforceIdempotency) {
+        perf.end();
         return apiErrors.badRequest("x-idempotency-key header is required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
@@ -214,9 +195,8 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
         params
       });
 
-      // If handler returns a NextResponse directly, return it as is
       if (result instanceof NextResponse) {
-        perf.end({ status: "custom_response" });
+        perf.end();
         return result as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
@@ -227,7 +207,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
         await storeIdempotency(idempotencyKey, "", responseData, 200);
       }
 
-      perf.end({ status: "success" });
+      perf.end();
       return success(responseData, {
         timestamp: new Date().toISOString(),
         requestId,
@@ -235,13 +215,12 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       });
 
     } catch (error) {
-      perf.end({ status: "error" });
+      perf.end();
       const err = error as Error;
-
       if (err.name === "UnauthorizedError") return apiErrors.unauthorized(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
-      if (err.name === "ForbiddenError") return apiErrors.forbidden(err.message, undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+      if (err.name === "ForbiddenError") return apiErrors.forbidden(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       if (err.name === "NotFoundError") return apiErrors.notFound(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
-      if (err.name === "ValidationError") return apiErrors.validation(err.message, undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+      if (err.name === "ValidationError") return apiErrors.validation(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
 
       return apiErrors.internal(
         "Internal server error",

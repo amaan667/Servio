@@ -247,6 +247,25 @@ export class StripeService extends BaseService {
   }
 
   /**
+   * Handle subscription changes (Organization level)
+   */
+  private async handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
+    const supabase = createAdminClient();
+    const orgId = subscription.metadata?.organization_id;
+    if (!orgId) return;
+
+    const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
+    const tier = await getTierFromStripeSubscription(subscription, stripe);
+
+    await supabase.from("organizations").update({
+      stripe_subscription_id: subscription.id,
+      subscription_tier: tier,
+      subscription_status: subscription.status,
+      updated_at: new Date().toISOString(),
+    }).eq("id", orgId);
+  }
+
+  /**
    * Process a subscription event (from webhook or reconcile)
    */
   async processSubscriptionEvent(event: Stripe.Event): Promise<void> {
