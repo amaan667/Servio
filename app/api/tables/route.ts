@@ -3,6 +3,7 @@ import { tableService } from "@/lib/services/TableService";
 import { createTableSchema } from "@/lib/api/validation-schemas";
 import { enforceResourceLimit } from "@/lib/auth/unified-auth";
 import { ApiResponse } from "@/lib/api/standard-response";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 

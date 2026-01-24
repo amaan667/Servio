@@ -204,7 +204,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
           });
         }
       } else if (options.enforceIdempotency) {
-        return apiErrors.badRequest("x-idempotency-key header is required", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        return apiErrors.badRequest("x-idempotency-key header is required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
       // 9. Execute Handler
