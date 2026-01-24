@@ -62,7 +62,7 @@ export const POST = createApiHandler(
           items: result.items.map(item => ({
             item_name: item.item_name,
             quantity: item.quantity,
-            specialInstructions: (item.specialInstructions || item.special_instructions || undefined) as string | undefined,
+            specialInstructions: (item.special_instructions || undefined) as string | undefined,
             modifiers: item.modifiers,
           })),
           customer_name: result.customer_name,

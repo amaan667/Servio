@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     await stripeService.finalizeWebhookEvent(event.id, "succeeded");
     return NextResponse.json({ ok: true });
   } catch (err) {
-    await stripeService.finalizeWebhookEvent(event.id, "failed", err);
+    await stripeService.finalizeWebhookEvent(event.id, "failed", err as Error);
     trackPaymentError(err as Error, { 
       stripeSessionId: event.id,
     });

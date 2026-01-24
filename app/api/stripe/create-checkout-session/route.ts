@@ -19,7 +19,7 @@ const createCheckoutSchema = z.object({
  * POST: Create a Stripe Checkout Session for subscription
  */
 export const POST = createApiHandler(
-  async (req, context) => {
+  async (_req, context) => {
     const { body, user } = context;
     const priceIds = await stripeService.getTierPriceIds();
     const priceId = priceIds[body.tier];
@@ -45,7 +45,7 @@ export const POST = createApiHandler(
     }
 
     // 2. Handle Existing User Upgrade (auth required)
-    if (!user) {
+    if (!user || !user.id) {
       return apiErrors.unauthorized("Authentication required for upgrades");
     }
 
@@ -75,7 +75,10 @@ export const POST = createApiHandler(
     }
 
     // Get or Create Stripe Customer
-    const customerId = await stripeService.getOrCreateCustomer(org!, user);
+    const customerId = await stripeService.getOrCreateCustomer(org!, {
+      id: user.id,
+      email: user.email || "",
+    });
     
     // Update org if customer ID was just created
     if (customerId !== org!.stripe_customer_id) {

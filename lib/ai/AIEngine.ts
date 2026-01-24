@@ -65,11 +65,23 @@ export class AIEngine {
    * MENU
    */
   async executeMenuUpdatePrices(params: { items: { id: string; newPrice: number }[] }, venueId: string, _userId: string, preview: boolean): Promise<AIPreviewDiff | AIExecutionResult> {
+    const items = await menuService.getMenuItems(venueId, { includeUnavailable: true });
+    
     if (preview) {
-      const impact = params.items.length;
+      const before = params.items.map(upd => {
+        const item = items.find(i => i.id === upd.id);
+        return { id: upd.id, name: item?.name || "Unknown", price: item?.price || 0 };
+      });
+      const after = params.items.map(upd => {
+        const item = items.find(i => i.id === upd.id);
+        return { id: upd.id, name: item?.name || "Unknown", price: upd.newPrice };
+      });
+
       return {
         toolName: "menu.update_prices",
-        impact: { itemsAffected: impact, description: `Updating prices for ${impact} items` },
+        before,
+        after,
+        impact: { itemsAffected: params.items.length, description: `Updating prices for ${params.items.length} items` },
       };
     }
 
@@ -83,9 +95,22 @@ export class AIEngine {
   }
 
   async executeMenuToggleAvailability(params: { itemIds: string[], available: boolean }, venueId: string, _userId: string, preview: boolean): Promise<AIPreviewDiff | AIExecutionResult> {
+    const items = await menuService.getMenuItems(venueId, { includeUnavailable: true });
+
     if (preview) {
+      const before = params.itemIds.map(id => {
+        const item = items.find(i => i.id === id);
+        return { id, name: item?.name || "Unknown", available: item?.is_available };
+      });
+      const after = params.itemIds.map(id => {
+        const item = items.find(i => i.id === id);
+        return { id, name: item?.name || "Unknown", available: params.available };
+      });
+
       return {
         toolName: "menu.toggle_availability",
+        before,
+        after,
         impact: { itemsAffected: params.itemIds.length, description: `Toggling availability for ${params.itemIds.length} items` },
       };
     }
@@ -108,6 +133,8 @@ export class AIEngine {
     if (preview) {
       return {
         toolName: "tables.create",
+        before: [],
+        after: [{ label: params.tableLabel, seats: params.seats || 4 }],
         impact: { itemsAffected: 1, description: `Will create table ${params.tableLabel}` },
       };
     }
@@ -129,9 +156,22 @@ export class AIEngine {
    * INVENTORY
    */
   async executeInventoryAdjustStock(params: { adjustments: { ingredientId: string; delta: number }[], reason: string }, venueId: string, userId: string, preview: boolean): Promise<AIPreviewDiff | AIExecutionResult> {
+    const inventory = await inventoryService.getInventory(venueId);
+
     if (preview) {
+      const before = params.adjustments.map(adj => {
+        const item = inventory.find(i => i.id === adj.ingredientId);
+        return { id: adj.ingredientId, name: item?.name || "Unknown", onHand: item?.on_hand || 0 };
+      });
+      const after = params.adjustments.map(adj => {
+        const item = inventory.find(i => i.id === adj.ingredientId);
+        return { id: adj.ingredientId, name: item?.name || "Unknown", onHand: (item?.on_hand || 0) + adj.delta };
+      });
+
       return {
         toolName: "inventory.adjust_stock",
+        before,
+        after,
         impact: { itemsAffected: params.adjustments.length, description: `Adjusting stock for ${params.adjustments.length} items` },
       };
     }

@@ -31,7 +31,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyVenueAccess, type AuthorizedContext } from "@/lib/middleware/authorization";
+import { verifyVenueAccess as verifyVenueAccessMiddleware, type AuthorizedContext } from "@/lib/middleware/authorization";
+export { verifyVenueAccessMiddleware as verifyVenueAccess };
 import { checkFeatureAccess, checkLimit, TIER_LIMITS } from "@/lib/tier-restrictions";
 import { getAccessContext } from "@/lib/access/getAccessContext";
 

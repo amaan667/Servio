@@ -24,11 +24,11 @@ import {
 import { 
   getAuthUserFromRequest, 
   verifyVenueAccess, 
-  AuthContext
+  AuthContext,
+  enforceFeatureAccess
 } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS, RateLimitConfig } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS, type RateLimitConfig } from "@/lib/rate-limit";
 import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
-import { enforceFeatureAccess } from "@/lib/auth/unified-auth";
 import { performanceTracker } from "@/lib/monitoring/performance-tracker";
 import { isDevelopment } from "@/lib/env";
 import { keysToCamel, keysToSnake } from "@/lib/utils/casing";
@@ -49,7 +49,7 @@ export interface HandlerOptions<TBody = unknown> {
   /** Whether to enforce idempotency (requires x-idempotency-key header) */
   enforceIdempotency?: boolean;
   /** Source of venueId for access check */
-  venueIdSource?: "params" | "query" | "body" | "header";
+  venueIdSource?: "params" | "query" | "body" | "header" | "auto";
   /** Automatically convert incoming keys to snake_case and outgoing to camelCase */
   autoCase?: boolean;
 }
@@ -79,7 +79,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       const rlConfig = options.rateLimit || RATE_LIMITS.GENERAL;
       const rlResult = await rateLimit(req, rlConfig);
       if (!rlResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rlResult.reset - Date.now()) / 1000), requestId);
+        return apiErrors.rateLimit(Math.ceil((rlResult.reset - Date.now()) / 1000), requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
       // 2. Resolve Params
@@ -93,19 +93,18 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       // 3. Authentication
       const { user, error: authError } = await getAuthUserFromRequest(req);
       if (options.requireAuth !== false && (!user || authError)) {
-        return apiErrors.unauthorized(authError || "Authentication required", requestId);
+        return apiErrors.unauthorized(authError || "Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
       // 4. Extract Venue ID
       let venueId: string | null = null;
       if (options.requireVenueAccess) {
         const source = options.venueIdSource || "auto";
-        if (source === "params" || source === "auto") venueId = params.venueId || params.venue_id || null;
-        if (!venueId && (source === "query" || source === "auto")) {
+        if (source === "params" || (source as string) === "auto") venueId = params.venueId || params.venue_id || null;
+        if (!venueId && (source === "query" || (source as string) === "auto")) {
           const searchParams = req.nextUrl.searchParams;
           venueId = searchParams.get("venueId") || searchParams.get("venue_id");
         }
-        // Body extraction is deferred until body is parsed
       }
 
       // 5. Parse and Validate Body
@@ -117,7 +116,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
           body = options.autoCase ? keysToSnake(rawBody) : rawBody;
         } catch (e) {
           if (req.method !== "GET" && req.method !== "DELETE") {
-            return apiErrors.badRequest("Invalid JSON body", undefined, requestId);
+            return apiErrors.badRequest("Invalid JSON body", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
           }
         }
       }
@@ -132,12 +131,12 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       let authContext: AuthContext;
       if (options.requireVenueAccess) {
         if (!venueId) {
-          return apiErrors.badRequest("venueId is required for this route", undefined, requestId);
+          return apiErrors.badRequest("venueId is required for this route", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         const access = await verifyVenueAccess(venueId, user!.id);
         if (!access) {
-          return apiErrors.forbidden("Access denied to this venue", undefined, requestId);
+          return apiErrors.forbidden("Access denied to this venue", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         // Feature check (based on venue owner's tier)
@@ -154,7 +153,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
             `Requires one of: ${options.requireRole.join(", ")}`, 
             { currentRole: access.role }, 
             requestId
-          );
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         authContext = {
@@ -165,7 +164,14 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
         // Basic context for non-venue routes
         authContext = {
           user: user ? { id: user.id, email: user.email } : ({} as { id: string; email: string }),
-          venue: {} as { venue_id: string; owner_user_id: string; venue_name: string; [key: string]: unknown },
+          venue: {
+            venue_id: "",
+            owner_user_id: user?.id || "",
+            venue_name: "",
+            name: "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
           role: "none",
           venueId: "",
           tier: "starter",
@@ -179,7 +185,7 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
           body = options.schema.parse(body);
         } catch (e) {
           if (e instanceof ZodError) {
-            return handleZodError(e);
+            return handleZodError(e) as unknown as NextResponse<ApiResponse<TResponse>>;
           }
           throw e;
         }
@@ -198,11 +204,11 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
           });
         }
       } else if (options.enforceIdempotency) {
-        return apiErrors.badRequest("x-idempotency-key header is required", undefined, requestId);
+        return apiErrors.badRequest("x-idempotency-key header is required", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
       // 9. Execute Handler
-      let result = await handler(req, {
+      const result = await handler(req, {
         ...authContext,
         body,
         params
@@ -232,16 +238,16 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       perf.end({ status: "error" });
       const err = error as Error;
 
-      if (err.name === "UnauthorizedError") return apiErrors.unauthorized(err.message, requestId);
-      if (err.name === "ForbiddenError") return apiErrors.forbidden(err.message, undefined, requestId);
-      if (err.name === "NotFoundError") return apiErrors.notFound(err.message, requestId);
-      if (err.name === "ValidationError") return apiErrors.validation(err.message, undefined, requestId);
+      if (err.name === "UnauthorizedError") return apiErrors.unauthorized(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+      if (err.name === "ForbiddenError") return apiErrors.forbidden(err.message, undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+      if (err.name === "NotFoundError") return apiErrors.notFound(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+      if (err.name === "ValidationError") return apiErrors.validation(err.message, undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
 
       return apiErrors.internal(
         "Internal server error",
         isDevelopment() ? { message: err.message, stack: err.stack } : undefined,
         requestId
-      );
+      ) as unknown as NextResponse<ApiResponse<TResponse>>;
     }
   };
 }

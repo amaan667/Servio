@@ -8,6 +8,7 @@ import { stripe } from "@/lib/stripe-client";
 import { env } from "@/lib/env";
 import Stripe from "stripe";
 import { trackPaymentError } from "@/lib/monitoring/error-tracking";
+import { createAdminClient } from "@/lib/supabase";
 
 export class StripeService extends BaseService {
   /**
@@ -246,22 +247,33 @@ export class StripeService extends BaseService {
   }
 
   /**
-   * Handle subscription changes (Organization level)
+   * Process a subscription event (from webhook or reconcile)
    */
-  async handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
-    const supabase = createAdminClient();
-    const orgId = subscription.metadata?.organization_id;
-    if (!orgId) return;
-
-    const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
-    const tier = await getTierFromStripeSubscription(subscription, stripe);
-
-    await supabase.from("organizations").update({
-      stripe_subscription_id: subscription.id,
-      subscription_tier: tier,
-      subscription_status: subscription.status,
-      updated_at: new Date().toISOString(),
-    }).eq("id", orgId);
+  async processSubscriptionEvent(event: Stripe.Event): Promise<void> {
+    switch (event.type) {
+      case "checkout.session.completed":
+        // Subscriptions webhook uses metadata to link org
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === 'subscription') {
+          const orgId = session.metadata?.organization_id;
+          const tier = session.metadata?.tier;
+          if (orgId && tier) {
+            const supabase = createAdminClient();
+            await supabase.from("organizations").update({
+              stripe_subscription_id: session.subscription as string,
+              subscription_tier: tier,
+              subscription_status: "active",
+              updated_at: new Date().toISOString(),
+            }).eq("id", orgId);
+          }
+        }
+        break;
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted":
+        await this.handleSubscriptionChange(event.data.object as Stripe.Subscription);
+        break;
+    }
   }
 }
 

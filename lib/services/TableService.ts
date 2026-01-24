@@ -222,9 +222,12 @@ export class TableService extends BaseService {
       const session = sessions?.find((s) => s.table_id === table.id);
       const order = session?.order_id ? orderMap[session.order_id] : null;
       
+      const completionStatus = (order?.completion_status as string) || null;
+      const orderStatus = (order?.order_status as string) || null;
+
       const isOrderCompleted = 
-        order?.completion_status?.toUpperCase() === "COMPLETED" ||
-        ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(order?.order_status?.toUpperCase());
+        completionStatus?.toUpperCase() === "COMPLETED" ||
+        ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(orderStatus?.toUpperCase() || "");
 
       // If order is completed, table is effectively FREE
       const status = isOrderCompleted ? "FREE" : (session?.status || "FREE");
@@ -235,8 +238,8 @@ export class TableService extends BaseService {
         session_id: isOrderCompleted ? null : (session?.id || null),
         status,
         order_id: isOrderCompleted ? null : (session?.order_id || null),
-        order_status: isOrderCompleted ? null : (order?.order_status || null),
-        completion_status: order?.completion_status || null,
+        order_status: isOrderCompleted ? null : orderStatus,
+        completion_status: completionStatus,
         opened_at: isOrderCompleted ? null : (session?.opened_at || null),
       };
     });
