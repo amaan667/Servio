@@ -117,6 +117,8 @@ export default [
       "public/sw.js",
       "lib/error-suppression.ts",
       "lib/logger/production-logger.ts",
+      "lib/monitoring/apm.ts", // APM packages require require() for initialization
+      "lib/monitoring/structured-logger.ts", // Structured logging needs console
     ],
     rules: {
       "no-console": "off",

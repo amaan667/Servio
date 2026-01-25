@@ -29,6 +29,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "docs:api": "swagger-jsdoc -d docs/swagger.config.js -o api-docs.json",
+    "docs:openapi": "tsx scripts/generate-openapi.ts",
+    "docs:swagger": "echo 'Swagger UI available at /api/docs/swagger'",
     "migrate": "tsx scripts/run-migrations.ts",
     "migrate:create": "tsx scripts/create-migration.ts",
     "migrate:auto": "tsx scripts/run-migrations.ts",

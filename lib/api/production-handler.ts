@@ -21,6 +21,8 @@ import {
 import { rateLimit, RATE_LIMITS, type RateLimitConfig } from "@/lib/rate-limit";
 import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 import { performanceTracker } from "@/lib/monitoring/performance-tracker";
+import { logger } from "@/lib/monitoring/structured-logger";
+import { startTransaction } from "@/lib/monitoring/apm";
 import { isDevelopment } from "@/lib/env";
 import { keysToCamel, keysToSnake } from "@/lib/utils/casing";
 
@@ -52,6 +54,12 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
     const startTime = Date.now();
     const requestId = crypto.randomUUID();
     const perf = performanceTracker.start(`api:${req.nextUrl.pathname}`);
+    
+    // Start APM transaction (declared outside try/catch for scope)
+    const apmTransaction = startTransaction(`api.${req.method.toLowerCase()}.${req.nextUrl.pathname}`, "web");
+    apmTransaction.setTag("request.id", requestId);
+    apmTransaction.setTag("http.method", req.method);
+    apmTransaction.setTag("http.url", req.nextUrl.pathname);
 
     try {
       // 1. Rate Limiting
@@ -59,6 +67,12 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       const rlResult = await rateLimit(req, rlConfig);
       if (!rlResult.success) {
         perf.end();
+        logger.warn("Rate limit exceeded", {
+          requestId,
+          path: req.nextUrl.pathname,
+          method: req.method,
+          type: "rate_limit",
+        });
         return apiErrors.rateLimit(Math.ceil((rlResult.reset - Date.now()) / 1000), requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
@@ -74,6 +88,13 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       const { user, error: authError } = await getAuthUserFromRequest(req);
       if (options.requireAuth !== false && (!user || authError)) {
         perf.end();
+        logger.warn("Authentication failed", {
+          requestId,
+          path: req.nextUrl.pathname,
+          method: req.method,
+          error: authError,
+          type: "authentication",
+        });
         return apiErrors.unauthorized(authError || "Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
@@ -207,16 +228,58 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
         await storeIdempotency(idempotencyKey, "", responseData, 200);
       }
 
+      const duration = Date.now() - startTime;
       perf.end();
+      
+      // Finish APM transaction
+      apmTransaction.setTag("http.status_code", "200");
+      apmTransaction.finish();
+      
+      // Log successful request
+      logger.logResponse(
+        req.method,
+        req.nextUrl.pathname,
+        200,
+        {
+          requestId,
+          userId: authContext.user?.id,
+          venueId: authContext.venueId,
+          duration,
+        },
+        duration
+      );
+
       return success(responseData, {
         timestamp: new Date().toISOString(),
         requestId,
-        duration: Date.now() - startTime
+        duration
       });
 
     } catch (error) {
       perf.end();
+      const duration = Date.now() - startTime;
       const err = error as Error;
+      
+      // Record error in APM
+      apmTransaction.setTag("http.status_code", "500");
+      apmTransaction.setTag("error", "true");
+      apmTransaction.addError(err);
+      apmTransaction.finish();
+      
+      // Log error with full context
+      logger.error(
+        `API handler error: ${err.message}`,
+        {
+          requestId,
+          path: req.nextUrl.pathname,
+          method: req.method,
+          duration,
+          errorName: err.name,
+          type: "api_error",
+        },
+        err
+      );
+
       if (err.name === "UnauthorizedError") return apiErrors.unauthorized(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       if (err.name === "ForbiddenError") return apiErrors.forbidden(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       if (err.name === "NotFoundError") return apiErrors.notFound(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
