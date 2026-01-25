@@ -5,35 +5,42 @@
 
 import { BaseService } from "./BaseService";
 import { createSupabaseClient } from "@/lib/supabase";
+import { trackOrderError } from "@/lib/monitoring/error-tracking";
 
 export interface OrderItem {
-  menu_item_id: string;
+  menu_item_id: string | null;
   item_name: string;
   quantity: number;
   price: number;
-  specialInstructions?: string;
+  special_instructions?: string | null;
+  modifiers?: Record<string, unknown>;
   station?: string;
 }
 
 export interface Order {
   id: string;
   venue_id: string;
-  table_number?: number | null; // Only for table orders
+  table_number?: number | null;
   table_id?: string | null;
-  session_id?: string | null;
   fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
-  counter_label?: string | null; // For counter orders
-  customer_name?: string | null;
-  customer_phone?: string | null;
+  counter_label?: string | null;
+  customer_name: string;
+  customer_phone: string;
   customer_email?: string | null;
   items: OrderItem[];
   total_amount: number;
   order_status: string;
-  payment_status?: string | null;
-  payment_method?: string | null;
+  payment_status: string;
+  payment_method: string;
+  payment_mode: string;
   notes?: string | null;
+  source: string;
+  qr_type?: string | null;
+  requires_collection: boolean;
   created_at: string;
   updated_at: string;
+  table_auto_created?: boolean;
+  session_id?: string;
 }
 
 export interface OrderFilters {
@@ -147,18 +154,23 @@ export class OrderService extends BaseService {
    */
   async createOrder(
     venueId: string,
-    orderData: Omit<
-      Order,
-      "id" | "venue_id" | "created_at" | "updated_at" | "order_status" | "payment_status"
-    > & {
-      table_number?: number | null;
-      seat_count?: number;
+    orderData: {
+      table_number?: number | string | null;
+      customer_name: string;
+      customer_phone: string;
+      customer_email?: string | null;
+      items: Record<string, unknown>[];
+      total_amount: number;
+      notes?: string | null;
+      order_status?: string;
+      payment_status?: string;
+      payment_method?: string;
+      payment_mode?: string;
       source?: "qr" | "counter";
       fulfillment_type?: "table" | "counter" | "delivery" | "pickup";
       counter_label?: string | null;
-      order_status?: Order["order_status"];
-      payment_status?: Order["payment_status"];
-      payment_method?: Order["payment_method"];
+      qr_type?: string;
+      requires_collection?: boolean;
     }
   ): Promise<Order & { table_auto_created?: boolean; session_id?: string }> {
     const supabase = await createSupabaseClient();
@@ -168,24 +180,33 @@ export class OrderService extends BaseService {
       orderData.fulfillment_type ||
       (orderData.source === "counter" ? "counter" : "table");
 
+    // Standardize table number
+    const tableNumber = fulfillmentType === "table" ? 
+      (typeof orderData.table_number === 'string' ? parseInt(orderData.table_number) : orderData.table_number) 
+      : null;
+
     // Use RPC function for transactional order creation
-    // Note: RPC function needs to be updated to accept p_fulfillment_type and p_counter_label
-    // For now, we'll insert directly if RPC doesn't support new params
-    const { data, error } = await supabase.rpc("create_order_with_session", {
+    // This RPC handles:
+    // 1. Venue verification
+    // 2. Table auto-creation (if needed)
+    // 3. Table session management
+    // 4. Order insertion
+    // 5. KDS ticket creation (if logic is moved to DB)
+    const { data, error } = await supabase.rpc("create_order_with_session_v2", {
       p_venue_id: venueId,
-      p_table_number: fulfillmentType === "table" ? orderData.table_number ?? null : null,
+      p_table_number: tableNumber,
       p_fulfillment_type: fulfillmentType,
       p_counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
-      p_customer_name: orderData.customer_name ?? "",
-      p_customer_phone: orderData.customer_phone ?? "",
+      p_customer_name: orderData.customer_name,
+      p_customer_phone: orderData.customer_phone,
       p_customer_email: orderData.customer_email ?? null,
-      p_items: orderData.items as unknown as Record<string, unknown>,
+      p_items: orderData.items,
       p_total_amount: orderData.total_amount,
       p_notes: orderData.notes ?? null,
       p_order_status: orderData.order_status ?? "PLACED",
       p_payment_status: orderData.payment_status ?? "UNPAID",
       p_payment_method: orderData.payment_method ?? "PAY_NOW",
-      p_payment_mode: (() => {
+      p_payment_mode: orderData.payment_mode || (() => {
         const method = orderData.payment_method ?? "PAY_NOW";
         if (method === "PAY_NOW") return "online";
         if (method === "PAY_AT_TILL") return "offline";
@@ -193,17 +214,49 @@ export class OrderService extends BaseService {
         return "online";
       })(),
       p_source: orderData.source ?? "qr",
-      p_seat_count: orderData.seat_count ?? 4,
+      p_qr_type: orderData.qr_type ?? null,
+      p_requires_collection: orderData.requires_collection ?? false
     });
 
     if (error) {
-      throw new Error(`Order creation failed: ${error.message}`);
+      trackOrderError(error, { venueId, action: "createOrder" });
+      
+      // Fallback manual logic (simplified version of what was in route.ts)
+      const { data: manualData, error: manualError } = await supabase
+        .from("orders")
+        .insert({
+          venue_id: venueId,
+          table_number: tableNumber,
+          customer_name: orderData.customer_name,
+          customer_phone: orderData.customer_phone,
+          customer_email: orderData.customer_email,
+          items: orderData.items,
+          total_amount: orderData.total_amount,
+          notes: orderData.notes,
+          order_status: orderData.order_status || "PLACED",
+          payment_status: orderData.payment_status || "UNPAID",
+          payment_method: orderData.payment_method || "PAY_NOW",
+          payment_mode: orderData.payment_mode || "online",
+          source: orderData.source || "qr",
+          fulfillment_type: fulfillmentType,
+          counter_identifier: orderData.counter_label,
+          qr_type: orderData.qr_type,
+          requires_collection: orderData.requires_collection
+        })
+        .select("*")
+        .single();
+
+      if (manualError) {
+        trackOrderError(manualError, { venueId, action: "createOrder_manual_fallback" });
+        throw manualError;
+      }
+      return manualData;
     }
 
     // Invalidate cache
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);
 
-    return data as Order & { table_auto_created?: boolean; session_id?: string };
+    return data;
   }
 
   /**
@@ -261,17 +314,76 @@ export class OrderService extends BaseService {
   }
 
   /**
-   * Mark order as served
+   * Mark order as served (handles RPC + fulfillment_status)
    */
   async markServed(orderId: string, venueId: string): Promise<Order> {
-    return this.updateOrderStatus(orderId, venueId, "SERVED");
+    const supabase = await createSupabaseClient();
+    
+    // Canonical transition: SERVE (requires kitchen_status=BUMPED in DB)
+    const { data, error } = await supabase.rpc("orders_set_served", {
+      p_order_id: orderId,
+      p_venue_id: venueId,
+    });
+
+    if (error) throw error;
+
+    const result = Array.isArray(data) ? data[0] : data;
+    
+    // Best-effort: update table_sessions
+    await supabase
+      .from("table_sessions")
+      .update({ status: "SERVED", updated_at: new Date().toISOString() })
+      .eq("order_id", orderId)
+      .eq("venue_id", venueId);
+
+    await this.invalidateCachePattern(`orders:*:${venueId}:*`);
+    return result;
   }
 
   /**
-   * Mark order as completed
+   * Mark order as completed (handles RPC + cleanup)
    */
-  async markCompleted(orderId: string, venueId: string): Promise<Order> {
-    return this.updateOrderStatus(orderId, venueId, "COMPLETED");
+  async completeOrder(
+    orderId: string, 
+    venueId: string, 
+    options: { forced?: boolean; userId?: string; forcedReason?: string } = {}
+  ): Promise<Order> {
+    const supabase = await createSupabaseClient();
+
+    // 1. Execute canonical completion RPC
+    const { data, error } = await supabase.rpc("orders_complete", {
+      p_order_id: orderId,
+      p_venue_id: venueId,
+      p_forced: options.forced || false,
+      p_forced_by: options.forced ? options.userId : null,
+      p_forced_reason: options.forced ? options.forcedReason : null,
+    });
+
+    if (error) throw error;
+
+    const order = Array.isArray(data) ? data[0] : data;
+
+    // 2. Trigger table cleanup
+    if (order.table_id || order.table_number) {
+      const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
+      await cleanupTableOnOrderCompletion({
+        venueId,
+        tableId: order.table_id || undefined,
+        tableNumber: order.table_number?.toString() || undefined,
+        orderId,
+      });
+    }
+
+    // 3. Deduct inventory
+    await supabase.rpc("deduct_stock_for_order", {
+      p_order_id: orderId,
+      p_venue_id: venueId,
+    });
+
+    await this.invalidateCachePattern(`orders:*:${venueId}:*`);
+    await this.invalidateCachePattern(`tables:*:${venueId}:*`);
+    
+    return order;
   }
 
   /**
@@ -282,20 +394,54 @@ export class OrderService extends BaseService {
   }
 
   /**
-   * Bulk complete orders
+   * Bulk complete orders with atomic cleanup
    */
-  async bulkCompleteOrders(orderIds: string[], venueId: string): Promise<void> {
+  async bulkCompleteOrders(orderIds: string[], venueId: string): Promise<number> {
     const supabase = await createSupabaseClient();
-    const { error } = await supabase
+    
+    // 1. Get orders to complete
+    const { data: orders } = await supabase
       .from("orders")
-      .update({ order_status: "COMPLETED" })
+      .select("id, table_id, table_number, payment_status")
       .in("id", orderIds)
       .eq("venue_id", venueId);
 
-    if (error) throw error;
+    if (!orders || orders.length === 0) return 0;
 
-    // Invalidate cache
+    // 2. Validate payment status (Production requirement: all must be PAID)
+    const unpaid = orders.filter(o => o.payment_status !== 'PAID' && o.payment_status !== 'TILL');
+    if (unpaid.length > 0) {
+      throw new Error(`Cannot complete ${unpaid.length} unpaid orders.`);
+    }
+
+    let completedCount = 0;
+    for (const order of orders) {
+      try {
+        // Use RPC for atomic completion
+        const { error } = await supabase.rpc("orders_complete", {
+          p_order_id: order.id,
+          p_venue_id: venueId,
+        });
+
+        if (!error) {
+          completedCount++;
+          // Trigger cleanup
+          const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
+          await cleanupTableOnOrderCompletion({
+            venueId,
+            tableId: order.table_id || undefined,
+            tableNumber: order.table_number?.toString() || undefined,
+          });
+        }
+      } catch (err) {
+        trackOrderError(err, { venueId, orderId: order.id, action: "bulkComplete" });
+      }
+    }
+
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);
+    await this.invalidateCachePattern(`tables:*:${venueId}:*`);
+    
+    return completedCount;
   }
 
   /**
@@ -319,6 +465,30 @@ export class OrderService extends BaseService {
     const startDate = new Date();
     startDate.setHours(startDate.getHours() - hours);
     return this.getOrders(venueId, { startDate: startDate.toISOString() });
+  }
+
+  /**
+   * Get order by ID (Public - no venue filter)
+   * Use carefully for public tracking
+   */
+  async getOrderByIdPublic(orderId: string): Promise<Order | null> {
+    const cacheKey = this.getCacheKey("orders:public", orderId);
+
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("id", orderId)
+          .maybeSingle();
+
+        if (error) throw error;
+        return data;
+      },
+      30
+    ); // Short cache for public tracking
   }
 }
 

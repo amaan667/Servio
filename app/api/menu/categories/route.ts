@@ -1,17 +1,12 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache, cacheTTL } from "@/lib/cache";
 
-import { apiErrors, success } from "@/lib/api/standard-response";
+import { apiErrors } from "@/lib/api/standard-response";
 import { getClientIdentifier, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
-import { getRequestMetadata, getIdempotencyKey } from "@/lib/api/request-helpers";
-import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 
 export async function GET(_request: NextRequest) {
-  const requestMetadata = getRequestMetadata(_request);
-  const requestId = requestMetadata.correlationId;
-  
   try {
     const { searchParams } = new URL(_request.url);
     const venueId = searchParams.get("venueId");
@@ -42,7 +37,7 @@ export async function GET(_request: NextRequest) {
     const cachedCategories = await cache.get(cacheKey);
 
     if (cachedCategories) {
-      return success(cachedCategories, { timestamp: new Date().toISOString(), requestId }, requestId);
+      return NextResponse.json(cachedCategories);
     }
 
     const supabase = await createClient();
@@ -96,40 +91,27 @@ export async function GET(_request: NextRequest) {
     // Cache the response for 10 minutes
     await cache.set(cacheKey, response, { ttl: cacheTTL.medium });
 
-    return success(response, { timestamp: new Date().toISOString(), requestId }, requestId);
+    return NextResponse.json(response);
   } catch (_error) {
 
-    return apiErrors.internal("Internal server error", undefined, requestId);
+    return apiErrors.internal("Internal server error");
   }
 }
 
 export async function PUT(_request: NextRequest) {
-  const requestMetadata = getRequestMetadata(_request);
-  const requestId = requestMetadata.correlationId;
-  
   try {
     const req = _request;
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get("venueId");
     const body = await req.json();
-
-    // Optional idempotency check (non-breaking - only if header is provided)
-    const idempotencyKey = getIdempotencyKey(req);
-    if (idempotencyKey) {
-      const existing = await checkIdempotency(idempotencyKey);
-      if (existing.exists) {
-        return success(
-          existing.response.response_data as { success: boolean; message: string; categories: string[] },
-          { timestamp: new Date().toISOString(), requestId },
-          requestId
-        );
-      }
-    }
     const { categories } = body;
     const finalVenueId = venueId || body.venueId;
 
     if (!finalVenueId || !Array.isArray(categories)) {
-      return apiErrors.badRequest("finalVenueId and categories array are required", undefined, requestId);
+      return NextResponse.json(
+        { error: "finalVenueId and categories array are required" },
+        { status: 400 }
+      );
     }
 
     const supabase = await createClient();
@@ -177,53 +159,20 @@ export async function PUT(_request: NextRequest) {
       }
     }
 
-    const response = {
+    return NextResponse.json({
       success: true,
       message: "Category order updated successfully",
       categories,
-    };
-
-    // Store idempotency key if provided (non-breaking - only if header was sent)
-    if (idempotencyKey) {
-      const requestHash = JSON.stringify({ venueId, categories });
-      await storeIdempotency(
-        idempotencyKey,
-        requestHash,
-        response,
-        200,
-        3600 // 1 hour TTL
-      ).catch(() => {
-        // Don't fail request if idempotency storage fails
-      });
-    }
-
-    return success(response, { timestamp: new Date().toISOString(), requestId }, requestId);
+    });
   } catch (_error) {
 
-    return apiErrors.internal("Internal server error", undefined, requestId);
+    return apiErrors.internal("Internal server error");
   }
 }
 
 export async function POST(_request: NextRequest) {
-  const requestMetadata = getRequestMetadata(_request);
-  const requestId = requestMetadata.correlationId;
-  
   try {
-    const body = await _request.json();
-    const { finalVenueId, categoryName } = body;
-
-    // Optional idempotency check (non-breaking - only if header is provided)
-    const idempotencyKey = getIdempotencyKey(_request);
-    if (idempotencyKey) {
-      const existing = await checkIdempotency(idempotencyKey);
-      if (existing.exists) {
-        return success(
-          existing.response.response_data as { success: boolean; message: string; category: string; categories: string[] },
-          { timestamp: new Date().toISOString(), requestId },
-          requestId
-        );
-      }
-    }
+    const { finalVenueId, categoryName } = await _request.json();
 
     if (!finalVenueId || !categoryName) {
       return apiErrors.badRequest("finalVenueId and categoryName are required");
@@ -275,30 +224,64 @@ export async function POST(_request: NextRequest) {
       // For now, just return success without persisting to database
     }
 
-    const response = {
+    return NextResponse.json({
       success: true,
       message: "Category added successfully",
       category: categoryName,
       categories: newCategories,
-    };
+    });
+  } catch (_error) {
+    return apiErrors.internal("Internal server error");
+  }
+}
 
-    // Store idempotency key if provided (non-breaking - only if header was sent)
-    if (idempotencyKey) {
-      const requestHash = JSON.stringify(body);
-      await storeIdempotency(
-        idempotencyKey,
-        requestHash,
-        response,
-        200,
-        3600 // 1 hour TTL
-      ).catch(() => {
-        // Don't fail request if idempotency storage fails
-      });
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const venueId = searchParams.get("venueId");
+    const categoryName = searchParams.get("categoryName");
+
+    if (!venueId || !categoryName) {
+      return apiErrors.badRequest("venueId and categoryName are required");
     }
 
-    return success(response, { timestamp: new Date().toISOString(), requestId }, requestId);
-  } catch (_error) {
+    const supabase = await createClient();
 
-    return apiErrors.internal("Internal server error", undefined, requestId);
+    // 1. Delete all menu items in this category
+    const { error: deleteError } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("venue_id", venueId)
+      .eq("category", categoryName);
+
+    if (deleteError) throw deleteError;
+
+    // 2. Update category order in menu_uploads
+    const { data: uploadData } = await supabase
+      .from("menu_uploads")
+      .select("id, category_order")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (uploadData?.category_order) {
+      const newOrder = (uploadData.category_order as string[]).filter(c => c !== categoryName);
+      await supabase
+        .from("menu_uploads")
+        .update({ category_order: newOrder, updated_at: new Date().toISOString() })
+        .eq("id", uploadData.id);
+    }
+
+    // Invalidate cache
+    const cacheKey = `menu:categories:${venueId}`;
+    await cache.delete(cacheKey);
+
+    return NextResponse.json({
+      success: true,
+      message: `Category "${categoryName}" deleted successfully`,
+    });
+  } catch (_error) {
+    return apiErrors.internal("Internal server error");
   }
 }

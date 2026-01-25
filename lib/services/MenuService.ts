@@ -221,38 +221,75 @@ export class MenuService extends BaseService {
   }
 
   /**
-   * Get public menu (no auth required)
+   * Get public menu data (venue + items + uploads)
    */
-  async getPublicMenu(venueSlug: string): Promise<MenuItem[]> {
-    const cacheKey = this.getCacheKey("menu:public", venueSlug);
+  async getPublicMenuFull(
+    venueId: string,
+    options: { limit: number; offset: number }
+  ): Promise<Record<string, unknown>> {
+    const cacheKey = this.getCacheKey("menu:public:full", venueId, JSON.stringify(options));
 
     return this.withCache(
       cacheKey,
       async () => {
         const supabase = await createSupabaseClient();
 
-        // Get venue by slug
-        const { data: venue } = await supabase
+        // 1. Get Venue
+        const { data: venue, error: venueError } = await supabase
           .from("venues")
-          .select("venue_id")
-          .eq("slug", venueSlug)
-          .single();
+          .select("venue_id, venue_name")
+          .eq("venue_id", venueId)
+          .maybeSingle();
 
-        if (!venue) {
+        if (venueError || !venue) {
           throw new Error("Venue not found");
         }
 
-        // Get menu items
-        const { data, error } = await supabase
+        // 2. Get Menu Items
+        const {
+          data: menuItems,
+          error: menuError,
+          count: menuCount,
+        } = await supabase
           .from("menu_items")
-          .select("*")
+          .select("*", { count: "exact" })
           .eq("venue_id", venue.venue_id)
           .eq("is_available", true)
-          .order("category", { ascending: true })
-          .order("position", { ascending: true });
+          .order("created_at", { ascending: true })
+          .range(options.offset, options.offset + options.limit - 1);
 
-        if (error) throw error;
-        return data || [];
+        if (menuError) throw menuError;
+
+        // 3. Get Uploads
+        const { data: uploadData } = await supabase
+          .from("menu_uploads")
+          .select("pdf_images, pdf_images_cc, category_order, created_at")
+          .eq("venue_id", venue.venue_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const pdfImages = (uploadData?.pdf_images || uploadData?.pdf_images_cc || []) as string[];
+        const categoryOrder = Array.isArray(uploadData?.category_order)
+          ? (uploadData.category_order as string[])
+          : null;
+
+        return {
+          venue: {
+            id: venue.venue_id,
+            name: venue.venue_name,
+          },
+          menuItems: menuItems || [],
+          totalItems: menuCount || menuItems?.length || 0,
+          pdfImages,
+          categoryOrder,
+          pagination: {
+            limit: options.limit,
+            offset: options.offset,
+            returned: menuItems?.length || 0,
+            hasMore: (menuCount || 0) > options.offset + (menuItems?.length || 0),
+          },
+        };
       },
       300
     );
