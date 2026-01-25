@@ -56,10 +56,16 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
     const perf = performanceTracker.start(`api:${req.nextUrl.pathname}`);
     
     // Start APM transaction (declared outside try/catch for scope)
-    const apmTransaction = startTransaction(`api.${req.method.toLowerCase()}.${req.nextUrl.pathname}`, "web");
-    apmTransaction.setTag("request.id", requestId);
-    apmTransaction.setTag("http.method", req.method);
-    apmTransaction.setTag("http.url", req.nextUrl.pathname);
+    let apmTransaction: ReturnType<typeof startTransaction>;
+    try {
+      apmTransaction = startTransaction(`api.${req.method.toLowerCase()}.${req.nextUrl.pathname}`, "web");
+      apmTransaction.setTag("request.id", requestId);
+      apmTransaction.setTag("http.method", req.method);
+      apmTransaction.setTag("http.url", req.nextUrl.pathname);
+    } catch {
+      // APM initialization failed - create no-op transaction
+      apmTransaction = { finish: () => {}, setTag: () => {}, addError: () => {} };
+    }
 
     try {
       // 1. Rate Limiting
@@ -232,8 +238,12 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       perf.end();
       
       // Finish APM transaction
-      apmTransaction.setTag("http.status_code", "200");
-      apmTransaction.finish();
+      try {
+        apmTransaction.setTag("http.status_code", "200");
+        apmTransaction.finish();
+      } catch {
+        // APM error - ignore
+      }
       
       // Log successful request
       logger.logResponse(
@@ -261,10 +271,14 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       const err = error as Error;
       
       // Record error in APM
-      apmTransaction.setTag("http.status_code", "500");
-      apmTransaction.setTag("error", "true");
-      apmTransaction.addError(err);
-      apmTransaction.finish();
+      try {
+        apmTransaction.setTag("http.status_code", "500");
+        apmTransaction.setTag("error", "true");
+        apmTransaction.addError(err);
+        apmTransaction.finish();
+      } catch {
+        // APM error - ignore
+      }
       
       // Log error with full context
       logger.error(
