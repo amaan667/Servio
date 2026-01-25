@@ -7,6 +7,8 @@ import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
+import { getRequestMetadata, getIdempotencyKey } from "@/lib/api/request-helpers";
+import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 
 const createIngredientSchema = z.object({
   venue_id: z.string().uuid().optional(),
@@ -23,11 +25,14 @@ const createIngredientSchema = z.object({
 // GET /api/inventory/ingredients?venue_id=xxx
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
+    
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000), requestId);
       }
 
       // STEP 2: Get venueId from context (already verified)
@@ -55,14 +60,18 @@ export const GET = withUnifiedAuth(
       }
 
       // STEP 4: Return success response
-      return success(data || []);
+      return success(data || [], { timestamp: new Date().toISOString(), requestId }, requestId);
     } catch (error) {
 
       if (isZodError(error)) {
         return handleZodError(error);
       }
 
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined,
+        requestId
+      );
     }
   },
   {
@@ -81,15 +90,31 @@ export const GET = withUnifiedAuth(
 // POST /api/inventory/ingredients
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
+    
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000), requestId);
       }
 
       // STEP 2: Validate input
       const body = await validateBody(createIngredientSchema, await req.json());
+
+      // Optional idempotency check (non-breaking - only if header is provided)
+      const idempotencyKey = getIdempotencyKey(req);
+      if (idempotencyKey) {
+        const existing = await checkIdempotency(idempotencyKey);
+        if (existing.exists) {
+          return success(
+            existing.response.response_data as unknown,
+            { timestamp: new Date().toISOString(), requestId },
+            requestId
+          );
+        }
+      }
       const venueId = context.venueId || body.venue_id;
 
       if (!venueId) {
@@ -145,14 +170,34 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 4: Return success response
-      return success(ingredient);
+      const response = ingredient;
+
+      // Store idempotency key if provided (non-breaking - only if header was sent)
+      if (idempotencyKey) {
+        const requestHash = JSON.stringify(body);
+        await storeIdempotency(
+          idempotencyKey,
+          requestHash,
+          response,
+          200,
+          3600 // 1 hour TTL
+        ).catch(() => {
+          // Don't fail request if idempotency storage fails
+        });
+      }
+
+      return success(response, { timestamp: new Date().toISOString(), requestId }, requestId);
     } catch (error) {
 
       if (isZodError(error)) {
         return handleZodError(error);
       }
 
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined,
+        requestId
+      );
     }
   },
   {

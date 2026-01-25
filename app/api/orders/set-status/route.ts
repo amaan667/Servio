@@ -10,9 +10,13 @@ import {
   normalizePaymentStatus,
   validateOrderStatusTransition,
 } from "@/lib/orders/qr-payment-validation";
+import { getRequestMetadata } from "@/lib/api/request-helpers";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
+    
     try {
       const { orderId, status } = await req.json();
 
@@ -108,11 +112,11 @@ export const POST = withUnifiedAuth(
         }
       }
 
-      return success({});
+      return success({}, { timestamp: new Date().toISOString(), requestId }, requestId);
     } catch (_error) {
       const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
 
-      return apiErrors.internal(errorMessage);
+      return apiErrors.internal(errorMessage, undefined, requestId);
     }
   },
   {

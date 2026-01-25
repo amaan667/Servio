@@ -8,18 +8,26 @@ import {
   validateOrderStatusTransition,
 } from "@/lib/orders/qr-payment-validation";
 import { requireTierAtLeast } from "@/lib/entitlements/guards";
+import { getRequestMetadata } from "@/lib/api/request-helpers";
+import { NextRequest } from "next/server";
 
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+/**
+ * @deprecated This route is deprecated. Use /api/orders/set-status instead.
+ * This route is kept for backward compatibility but will be removed in a future version.
+ */
+export async function POST(req: NextRequest) {
+  const requestMetadata = getRequestMetadata(req);
+  const requestId = requestMetadata.correlationId;
   try {
     // Authenticate user
     const { user, error: authError } = await getAuthUserForAPI();
 
     if (authError || !user) {
-      return apiErrors.unauthorized("Unauthorized");
+      return apiErrors.unauthorized("Unauthorized", requestId);
     }
 
     const { orderId, status } = await req.json();
@@ -256,9 +264,13 @@ export async function POST(req: Request) {
       }
     }
 
-    return success({ order: data?.[0] });
+    return success(
+      { order: data?.[0] },
+      { timestamp: new Date().toISOString(), requestId },
+      requestId
+    );
   } catch (_error) {
 
-    return apiErrors.internal("Internal server error");
+    return apiErrors.internal("Internal server error", undefined, requestId);
   }
 }

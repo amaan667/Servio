@@ -4,6 +4,7 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { getRequestMetadata } from "@/lib/api/request-helpers";
 
 export const runtime = "nodejs";
 
@@ -14,11 +15,14 @@ export const runtime = "nodejs";
  */
 export const GET = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
+    
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000), requestId);
       }
 
       // STEP 2: Validate venueId
@@ -51,14 +55,22 @@ export const GET = withUnifiedAuth(
       }
 
       // STEP 4: Return success response
-      return success({ staff: staff || [] });
+      return success(
+        { staff: staff || [] },
+        { timestamp: new Date().toISOString(), requestId },
+        requestId
+      );
     } catch (error) {
 
       if (isZodError(error)) {
         return handleZodError(error);
       }
 
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined,
+        requestId
+      );
     }
   },
   {

@@ -15,6 +15,8 @@ import {
   normalizeQrType,
   validatePaymentMethodForQrType,
 } from "@/lib/orders/qr-payment-validation";
+import { getIdempotencyKey, getRequestMetadata } from "@/lib/api/request-helpers";
+import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 
 export const runtime = "nodejs";
 
@@ -271,7 +273,8 @@ async function createKDSTickets(
  *               $ref: '#/components/schemas/Error'
  */
 export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).substring(7);
+  const requestMetadata = getRequestMetadata(req);
+  const requestId = requestMetadata.correlationId;
   const startTime = Date.now();
 
   // Use logger.info for structured logging (Railway captures console.info via next.config.mjs)
@@ -291,6 +294,23 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as Partial<OrderPayload>;
+
+    // Optional idempotency check (non-breaking - only if header is provided)
+    const idempotencyKey = getIdempotencyKey(req);
+    if (idempotencyKey) {
+      const existing = await checkIdempotency(idempotencyKey);
+      if (existing.exists) {
+        return success(
+          existing.response.response_data as { order: unknown },
+          {
+            timestamp: new Date().toISOString(),
+            requestId,
+            duration: Date.now() - startTime,
+          },
+          requestId
+        );
+      }
+    }
 
     // Log received payload structure (for debugging 400 errors)
 
@@ -864,6 +884,20 @@ export async function POST(req: NextRequest) {
     }
 
     const duration = Date.now() - startTime;
+
+    // Store idempotency key if provided (non-breaking - only if header was sent)
+    if (idempotencyKey) {
+      const requestHash = JSON.stringify(body);
+      await storeIdempotency(
+        idempotencyKey,
+        requestHash,
+        response,
+        200,
+        3600 // 1 hour TTL
+      ).catch(() => {
+        // Don't fail request if idempotency storage fails
+      });
+    }
 
     return NextResponse.json(response);
   } catch (_error) {

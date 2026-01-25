@@ -1,15 +1,19 @@
 export const runtime = "nodejs";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { apiErrors } from "@/lib/api/standard-response";
+import { apiErrors, success } from "@/lib/api/standard-response";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { deriveQrTypeFromOrder, normalizePaymentStatus, validateOrderStatusTransition } from "@/lib/orders/qr-payment-validation";
+import { getRequestMetadata } from "@/lib/api/request-helpers";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
+    
     try {
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
@@ -122,10 +126,14 @@ export const POST = withUnifiedAuth(
       if (verifyOrder.service_status?.toUpperCase() === "SERVED") {
 
         // Return success since it's already in the desired state
-        return NextResponse.json({
-          success: true,
-          message: "Order is already marked as served",
-        });
+        return success(
+          {
+            success: true,
+            message: "Order is already marked as served",
+          },
+          { timestamp: new Date().toISOString(), requestId },
+          requestId
+        );
       }
 
       // Verify kitchen_status is BUMPED
@@ -175,13 +183,21 @@ export const POST = withUnifiedAuth(
         // Best-effort only
       }
 
-      return NextResponse.json({
-        success: true,
-        order: Array.isArray(data) ? data[0] : data,
-      });
+      return success(
+        {
+          success: true,
+          order: Array.isArray(data) ? data[0] : data,
+        },
+        { timestamp: new Date().toISOString(), requestId },
+        requestId
+      );
     } catch (_error) {
 
-      return apiErrors.internal("Internal server error", isDevelopment() ? _error : undefined);
+      return apiErrors.internal(
+        "Internal server error",
+        isDevelopment() ? _error : undefined,
+        requestId
+      );
     }
   },
   {

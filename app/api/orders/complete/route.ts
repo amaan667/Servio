@@ -13,6 +13,7 @@ import {
   normalizePaymentStatus,
   validateOrderStatusTransition,
 } from "@/lib/orders/qr-payment-validation";
+import { getRequestMetadata } from "@/lib/api/request-helpers";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,9 @@ const completeOrderSchema = z.object({
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
+    
     try {
       // STEP 1: Rate limiting (ALWAYS FIRST)
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -122,20 +126,28 @@ export const POST = withUnifiedAuth(
       }
 
       // STEP 6: Return success response
-      return success({
-        success: true,
-        message: forced
-          ? "Order force-completed and table freed"
-          : "Order marked as completed and table freed",
-        order: Array.isArray(completedRows) ? completedRows[0] : completedRows,
-      });
+      return success(
+        {
+          success: true,
+          message: forced
+            ? "Order force-completed and table freed"
+            : "Order marked as completed and table freed",
+          order: Array.isArray(completedRows) ? completedRows[0] : completedRows,
+        },
+        { timestamp: new Date().toISOString(), requestId },
+        requestId
+      );
     } catch (error) {
 
       if (isZodError(error)) {
         return handleZodError(error);
       }
 
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      return apiErrors.internal(
+        "Request processing failed",
+        isDevelopment() ? error : undefined,
+        requestId
+      );
     }
   },
   {

@@ -8,6 +8,8 @@ import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standa
 import { z } from "zod";
 import { validateBody } from "@/lib/api/validation-schemas";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
+import { getRequestMetadata, getIdempotencyKey } from "@/lib/api/request-helpers";
+import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 
 function looksLikeMissingLifecycleColumn(message: string): boolean {
   const m = message.toLowerCase();
@@ -152,11 +154,14 @@ const updateTicketSchema = z.object({
 
 // GET - Fetch KDS tickets for a venue or station
 export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
+  const requestMetadata = getRequestMetadata(req);
+  const requestId = requestMetadata.correlationId;
+  
   try {
     // STEP 1: Rate limiting (ALWAYS FIRST)
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000), requestId);
     }
 
     // STEP 2: Get venueId from context
@@ -302,28 +307,52 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     // STEP 5: Return success response
-    return success({ tickets: finalTickets });
+    return success(
+      { tickets: finalTickets },
+      { timestamp: new Date().toISOString(), requestId },
+      requestId
+    );
   } catch (error) {
 
     if (isZodError(error)) {
       return handleZodError(error);
     }
 
-    return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+    return apiErrors.internal(
+      "Request processing failed",
+      isDevelopment() ? error : undefined,
+      requestId
+    );
   }
 });
 
 // PATCH - Update ticket status
 export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
+  const requestMetadata = getRequestMetadata(req);
+  const requestId = requestMetadata.correlationId;
+  
   try {
     // STEP 1: Rate limiting (ALWAYS FIRST)
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000), requestId);
     }
 
     // STEP 2: Validate input
     const rawBody = await req.json();
+
+    // Optional idempotency check (non-breaking - only if header is provided)
+    const idempotencyKey = getIdempotencyKey(req);
+    if (idempotencyKey) {
+      const existing = await checkIdempotency(idempotencyKey);
+      if (existing.exists) {
+        return success(
+          existing.response.response_data as { ticket: unknown },
+          { timestamp: new Date().toISOString(), requestId },
+          requestId
+        );
+      }
+    }
 
     const body = await validateBody(updateTicketSchema, rawBody);
 
@@ -421,13 +450,33 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     // STEP 6: Return success response
-    return success({ ticket: updatedTicket });
+    const response = { ticket: updatedTicket };
+
+    // Store idempotency key if provided (non-breaking - only if header was sent)
+    if (idempotencyKey) {
+      const requestHash = JSON.stringify(rawBody);
+      await storeIdempotency(
+        idempotencyKey,
+        requestHash,
+        response,
+        200,
+        3600 // 1 hour TTL
+      ).catch(() => {
+        // Don't fail request if idempotency storage fails
+      });
+    }
+
+    return success(response, { timestamp: new Date().toISOString(), requestId }, requestId);
   } catch (error) {
 
     if (isZodError(error)) {
       return handleZodError(error);
     }
 
-    return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+    return apiErrors.internal(
+      "Request processing failed",
+      isDevelopment() ? error : undefined,
+      requestId
+    );
   }
 });

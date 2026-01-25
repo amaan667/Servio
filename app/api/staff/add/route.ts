@@ -3,6 +3,8 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import { getRequestMetadata, getIdempotencyKey } from "@/lib/api/request-helpers";
+import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 
 export const runtime = "nodejs";
 
@@ -13,16 +15,31 @@ export const runtime = "nodejs";
  */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
 
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
 
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000), requestId);
       }
 
       const body = await req.json().catch(() => ({}));
+
+      // Optional idempotency check (non-breaking - only if header is provided)
+      const idempotencyKey = getIdempotencyKey(req);
+      if (idempotencyKey) {
+        const existing = await checkIdempotency(idempotencyKey);
+        if (existing.exists) {
+          return success(
+            existing.response.response_data as unknown,
+            { timestamp: new Date().toISOString(), requestId },
+            requestId
+          );
+        }
+      }
 
       const { name, role } = body || {};
 
@@ -95,15 +112,31 @@ export const POST = withUnifiedAuth(
 
       if (!data || data.length === 0) {
 
-        return apiErrors.internal("Failed to create staff member - no data returned");
+        return apiErrors.internal("Failed to create staff member - no data returned", undefined, requestId);
       }
 
-      return success(data[0]);
+      const response = data[0];
+
+      // Store idempotency key if provided (non-breaking - only if header was sent)
+      if (idempotencyKey) {
+        const requestHash = JSON.stringify(body);
+        await storeIdempotency(
+          idempotencyKey,
+          requestHash,
+          response,
+          200,
+          3600 // 1 hour TTL
+        ).catch(() => {
+          // Don't fail request if idempotency storage fails
+        });
+      }
+
+      return success(response, { timestamp: new Date().toISOString(), requestId }, requestId);
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       const errorStack = e instanceof Error ? e.stack : undefined;
 
-      return apiErrors.internal(errorMessage);
+      return apiErrors.internal(errorMessage, undefined, requestId);
     }
   },
   { requireRole: ["owner", "manager"] }

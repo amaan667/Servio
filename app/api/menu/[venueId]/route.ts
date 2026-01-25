@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { cache, cacheKeys } from "@/lib/cache/index";
+import { cache } from "@/lib/cache/index";
 
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { getClientIdentifier, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -49,7 +49,7 @@ export async function GET(
     }
 
     // Try to get from cache first
-    const cacheKey = cacheKeys.menuItems(`${venueId}:l${limit}:o${offset}`);
+    const cacheKey = `menu:items:${venueId}:l${limit}:o${offset}`;
     const cachedMenu = await cache.get(cacheKey);
 
     if (cachedMenu) {

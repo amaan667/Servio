@@ -5,15 +5,19 @@ import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
-import { apiErrors } from "@/lib/api/standard-response";
+import { apiErrors, success } from "@/lib/api/standard-response";
 import {
   deriveQrTypeFromOrder,
   normalizePaymentMethod,
   validatePaymentMethodForQrType,
 } from "@/lib/orders/qr-payment-validation";
+import { getRequestMetadata } from "@/lib/api/request-helpers";
 
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
+    const requestMetadata = getRequestMetadata(req);
+    const requestId = requestMetadata.correlationId;
+    
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.PAYMENT);
@@ -157,12 +161,16 @@ export const POST = withUnifiedAuth(
         }
       }
 
-      return NextResponse.json({
-        success: true,
-        orderId,
-        payment_status: "PAID",
-        updated_at: new Date().toISOString(),
-      });
+      return success(
+        {
+          success: true,
+          orderId,
+          payment_status: "PAID",
+          updated_at: new Date().toISOString(),
+        },
+        { timestamp: new Date().toISOString(), requestId },
+        requestId
+      );
     } catch (_error) {
       const errorMessage =
         _error instanceof Error ? _error.message : "An unexpected error occurred";

@@ -5,6 +5,8 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { getRequestMetadata, getIdempotencyKey } from "@/lib/api/request-helpers";
+import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 
 export const runtime = "nodejs";
 
@@ -20,11 +22,14 @@ interface TableRow {
 // SECURITY: Uses authenticated client that respects RLS (not admin client)
 // This ensures venue isolation is enforced at the database level
 export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
+  const requestMetadata = getRequestMetadata(req);
+  const requestId = requestMetadata.correlationId;
+  
   try {
     // CRITICAL: Rate limiting
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return apiErrors.rateLimit();
+      return apiErrors.rateLimit(undefined, requestId);
     }
 
     // Use authenticated client that respects RLS (not admin client)
@@ -277,19 +282,30 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       });
     }
 
-    return success({ tables: tablesWithSessions });
+    return success(
+      { tables: tablesWithSessions },
+      { timestamp: new Date().toISOString(), requestId },
+      requestId
+    );
   } catch (error) {
 
     if (isZodError(error)) {
       return handleZodError(error);
     }
 
-    return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+    return apiErrors.internal(
+      "Request processing failed",
+      isDevelopment() ? error : undefined,
+      requestId
+    );
   }
 });
 
 // POST /api/tables - Create a new table
 export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
+  const requestMetadata = getRequestMetadata(req);
+  const requestId = requestMetadata.correlationId;
+  
   // Log route entry (only in development)
   if (isDevelopment()) {
     // Development mode logging
@@ -299,11 +315,24 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // STEP 1: Rate limiting (ALWAYS FIRST)
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
     if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
+      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000), requestId);
     }
 
     // STEP 2: Validate input
     const body = await req.json();
+
+    // Optional idempotency check (non-breaking - only if header is provided)
+    const idempotencyKey = getIdempotencyKey(req);
+    if (idempotencyKey) {
+      const existing = await checkIdempotency(idempotencyKey);
+      if (existing.exists) {
+        return success(
+          existing.response.response_data as { table: unknown; message: string },
+          { timestamp: new Date().toISOString(), requestId },
+          requestId
+        );
+      }
+    }
     const { label, seat_count, area } = body;
 
     if (!label) {
@@ -435,16 +464,36 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Success audit log
 
     // STEP 4: Return success response
-    return success({
+    const response = {
       table,
       message: `Table "${table.label}" created successfully!`,
-    });
+    };
+
+    // Store idempotency key if provided (non-breaking - only if header was sent)
+    if (idempotencyKey) {
+      const requestHash = JSON.stringify(body);
+      await storeIdempotency(
+        idempotencyKey,
+        requestHash,
+        response,
+        200,
+        3600 // 1 hour TTL
+      ).catch(() => {
+        // Don't fail request if idempotency storage fails
+      });
+    }
+
+    return success(response, { timestamp: new Date().toISOString(), requestId }, requestId);
   } catch (error) {
 
     if (isZodError(error)) {
       return handleZodError(error);
     }
 
-    return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+    return apiErrors.internal(
+      "Request processing failed",
+      isDevelopment() ? error : undefined,
+      requestId
+    );
   }
 });
