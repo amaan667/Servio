@@ -55,17 +55,11 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
     const requestId = crypto.randomUUID();
     const perf = performanceTracker.start(`api:${req.nextUrl.pathname}`);
     
-    // Start APM transaction (declared outside try/catch for scope)
-    let apmTransaction: ReturnType<typeof startTransaction>;
-    try {
-      apmTransaction = startTransaction(`api.${req.method.toLowerCase()}.${req.nextUrl.pathname}`, "web");
-      apmTransaction.setTag("request.id", requestId);
-      apmTransaction.setTag("http.method", req.method);
-      apmTransaction.setTag("http.url", req.nextUrl.pathname);
-    } catch {
-      // APM initialization failed - create no-op transaction
-      apmTransaction = { finish: () => {}, setTag: () => {}, addError: () => {} };
-    }
+    // Start APM transaction (always returns valid object, even if APM not configured)
+    const apmTransaction = startTransaction(`api.${req.method.toLowerCase()}.${req.nextUrl.pathname}`, "web");
+    apmTransaction.setTag("request.id", requestId);
+    apmTransaction.setTag("http.method", req.method);
+    apmTransaction.setTag("http.url", req.nextUrl.pathname);
 
     try {
       // 1. Rate Limiting
@@ -237,13 +231,9 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       const duration = Date.now() - startTime;
       perf.end();
       
-      // Finish APM transaction
-      try {
-        apmTransaction.setTag("http.status_code", "200");
-        apmTransaction.finish();
-      } catch {
-        // APM error - ignore
-      }
+      // Finish APM transaction (no-op if APM not configured)
+      apmTransaction.setTag("http.status_code", "200");
+      apmTransaction.finish();
       
       // Log successful request
       logger.logResponse(
@@ -270,15 +260,11 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       const duration = Date.now() - startTime;
       const err = error as Error;
       
-      // Record error in APM
-      try {
-        apmTransaction.setTag("http.status_code", "500");
-        apmTransaction.setTag("error", "true");
-        apmTransaction.addError(err);
-        apmTransaction.finish();
-      } catch {
-        // APM error - ignore
-      }
+      // Record error in APM (no-op if APM not configured)
+      apmTransaction.setTag("http.status_code", "500");
+      apmTransaction.setTag("error", "true");
+      apmTransaction.addError(err);
+      apmTransaction.finish();
       
       // Log error with full context
       logger.error(
