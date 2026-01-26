@@ -17,7 +17,7 @@
     "noUnusedParameters": true, // Phase 2: Enabled - respects _ prefix convention
     "noImplicitReturns": false, // React hooks need conditional returns - handled by ESLint
     "noFallthroughCasesInSwitch": true, // Enabled - catches real bugs
-    "noUncheckedIndexedAccess": false, // Gradually enable - can cause many changes
+    "noUncheckedIndexedAccess": false, // TODO: Enable gradually - 338 fixes needed (see tsconfig.strict.json)
     "strictNullChecks": true, // Phase 3: Enabled - null safety enforcement
     "strictFunctionTypes": true, // Phase 3: Enabled - function type checking
     "strictBindCallApply": true, // Phase 3: Enabled - bind/call/apply checks

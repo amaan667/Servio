@@ -3,7 +3,7 @@ import { menuService } from "@/lib/services/MenuService";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { paginationSchema } from "@/lib/api/validation-schemas";
 import { z } from "zod";
-import { apiErrors } from "@/lib/api/standard-response";
+import { apiErrors, success } from "@/lib/api/standard-response";
 
 const menuPaginationSchema = paginationSchema.extend({
   limit: z.coerce.number().int().min(1).max(500).default(200),
@@ -33,15 +33,22 @@ export const GET = createUnifiedHandler(
     });
 
     // Add timeout wrapper to prevent hanging requests
-    // Increased timeout for mobile networks (20 seconds)
+    // 8 second timeout - balances mobile network needs with UX
     const menuDataPromise = menuService.getPublicMenuFull(venueId, { limit, offset });
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Menu loading timeout")), 20000); // 20 second timeout for mobile
+      setTimeout(() => reject(new Error("Menu loading timeout - please refresh")), 8000);
     });
 
     try {
       const menuData = await Promise.race([menuDataPromise, timeoutPromise]);
-      return menuData;
+
+      // Return with edge caching headers for CDN optimization
+      // Cache for 60 seconds on client, 120 seconds on CDN, allow stale for 300 seconds while revalidating
+      return success(menuData, undefined, undefined, {
+        maxAge: 60,
+        sMaxAge: 120,
+        staleWhileRevalidate: 300,
+      });
     } catch (error) {
       // Enhanced error handling for private browsers and mobile
       const errorMessage = error instanceof Error ? error.message : "Unknown error";

@@ -27,17 +27,59 @@ export interface ApiResponse<T = unknown> {
 }
 
 /**
+ * Cache control options for public endpoints
+ */
+export interface CacheOptions {
+  /** Cache duration in seconds (default: no cache) */
+  maxAge?: number;
+  /** Allow CDN/edge caching */
+  sMaxAge?: number;
+  /** Revalidate in background */
+  staleWhileRevalidate?: number;
+  /** Private cache only (not CDN) */
+  private?: boolean;
+}
+
+/**
  * Create a successful response
  */
 export function success<T>(
   data: T,
   meta?: ApiResponse<T>["meta"],
-  correlationId?: string
+  correlationId?: string,
+  cacheOptions?: CacheOptions
 ): NextResponse<ApiResponse<T>> {
   const responseMeta = meta || {
     timestamp: new Date().toISOString(),
     ...(correlationId && { requestId: correlationId }),
   };
+
+  const headers: HeadersInit = {};
+
+  // Add cache headers if provided
+  if (cacheOptions) {
+    const directives: string[] = [];
+
+    if (cacheOptions.private) {
+      directives.push("private");
+    } else {
+      directives.push("public");
+    }
+
+    if (cacheOptions.maxAge !== undefined) {
+      directives.push(`max-age=${cacheOptions.maxAge}`);
+    }
+
+    if (cacheOptions.sMaxAge !== undefined) {
+      directives.push(`s-maxage=${cacheOptions.sMaxAge}`);
+    }
+
+    if (cacheOptions.staleWhileRevalidate !== undefined) {
+      directives.push(`stale-while-revalidate=${cacheOptions.staleWhileRevalidate}`);
+    }
+
+    headers["Cache-Control"] = directives.join(", ");
+  }
 
   return NextResponse.json<ApiResponse<T>>(
     {
@@ -45,7 +87,7 @@ export function success<T>(
       data,
       meta: responseMeta,
     },
-    { status: 200 }
+    { status: 200, headers }
   );
 }
 

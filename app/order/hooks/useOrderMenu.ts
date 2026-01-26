@@ -170,9 +170,9 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       
       // Add timeout and retry logic for reliability
-      // Increased timeout for mobile networks (25 seconds to allow for slow connections)
+      // 10 second client timeout - server has 8s, so client should be slightly longer
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout for mobile
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       
       let response: Response;
       try {
