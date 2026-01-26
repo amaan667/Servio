@@ -278,6 +278,7 @@ export class MenuService extends BaseService {
             throw new Error(`Failed to fetch menu items: ${menuError.message}`);
           }
 
+
           // Upload data is optional - don't fail if it doesn't exist
           // PGRST116 is "not found" which is fine
           if (uploadError && uploadError.code !== "PGRST116") {
@@ -289,20 +290,23 @@ export class MenuService extends BaseService {
             ? (uploadData.category_order as string[])
             : null;
 
+          const returnedItems = menuItems || [];
+          const availableCount = menuCount || returnedItems.length || 0;
+
           return {
             venue: {
               id: venue.venue_id,
               name: venue.venue_name,
             },
-            menuItems: menuItems || [],
-            totalItems: menuCount || menuItems?.length || 0,
+            menuItems: returnedItems,
+            totalItems: availableCount,
             pdfImages,
             categoryOrder,
             pagination: {
               limit: options.limit,
               offset: options.offset,
-              returned: menuItems?.length || 0,
-              hasMore: (menuCount || 0) > options.offset + (menuItems?.length || 0),
+              returned: returnedItems.length,
+              hasMore: availableCount > options.offset + returnedItems.length,
             },
           };
         } catch (error) {

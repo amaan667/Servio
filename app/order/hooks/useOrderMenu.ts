@@ -10,19 +10,19 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   const maxRetries = 3;
 
   // Initialize state with cached values (only on first render)
-  // This ensures instant loading from cache
+  // This ensures instant loading from cache - CRITICAL for mobile
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
     if (typeof window === "undefined") return [];
     const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
     const parsed = safeParseJSON<MenuItem[]>(cached, []);
-    // If we have cached data, menu loads instantly
+    // Always return cached data immediately for instant display
     return parsed;
   });
   const [loadingMenu, setLoadingMenu] = useState(() => {
     if (typeof window === "undefined") return true;
     const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
     const parsed = safeParseJSON<MenuItem[]>(cached, []);
-    // Only show loading if we have NO cached data
+    // Never show loading if we have cached data - instant display
     return parsed.length === 0;
   });
   const [menuError, setMenuError] = useState<string | null>(null);
@@ -35,7 +35,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     if (typeof window === "undefined") return "";
     return safeGetItem(sessionStorage, `venue_name_${venueSlug}`) || "";
   });
-  const [pdfImages, setPdfImages] = useState<string[]>([]);
+  const [pdfImages, setPdfImages] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    const cached = safeGetItem(sessionStorage, `pdf_images_${venueSlug}`);
+    return safeParseJSON<string[]>(cached, []);
+  });
 
   const normalizeVenueId = (id: string) => (id.startsWith("venue-") ? id : `venue-${id}`);
 
@@ -75,14 +79,14 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       return;
     }
 
-    // ALWAYS show cached data first for instant loading
+    // ALWAYS show cached data first for instant loading - CRITICAL for mobile UX
     let hasCachedData = false;
     if (typeof window !== "undefined" && venueSlug) {
       const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
       if (cached) {
         const parsedCache = safeParseJSON<MenuItem[]>(cached, []);
         if (parsedCache.length > 0) {
-          // Show cached data IMMEDIATELY - this makes it feel instant
+          // Show cached data IMMEDIATELY - instant display, no loading spinner
           setMenuItems(parsedCache);
           const cachedVenueName = safeGetItem(sessionStorage, `venue_name_${venueSlug}`);
           if (cachedVenueName) {
@@ -91,6 +95,14 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           const cachedCategories = safeGetItem(sessionStorage, `categories_${venueSlug}`);
           if (cachedCategories) {
             setCategoryOrder(safeParseJSON<string[] | null>(cachedCategories, null));
+          }
+          // Also load cached PDF images if available
+          const cachedPdfImages = safeGetItem(sessionStorage, `pdf_images_${venueSlug}`);
+          if (cachedPdfImages) {
+            const parsedPdfImages = safeParseJSON<string[]>(cachedPdfImages, []);
+            if (parsedPdfImages.length > 0) {
+              setPdfImages(parsedPdfImages);
+            }
           }
           // Clear any errors - we have cached data, so no errors should show
           setMenuError(null);
@@ -186,13 +198,16 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       if (!response.ok) {
         let errorMessage = "Failed to load menu";
+        let errorDetails: unknown = null;
         try {
           const errorData: unknown = await response.json();
           errorMessage = getApiErrorMessage(errorData);
+          errorDetails = errorData;
         } catch (parseError) {
           // If JSON parsing fails, use status text
           errorMessage = response.statusText || errorMessage;
         }
+
         
         // Always retry on 5xx errors - never show error to user
         if (retryCountRef.current < maxRetries && response.status >= 500) {
@@ -230,6 +245,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       };
 
       if (!data.success || !data.data) {
+
         // Always retry on API errors - never show error to user
         // If we have cached data, user won't notice any issues
         if (retryCountRef.current < maxRetries) {
@@ -268,7 +284,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       setPdfImages(Array.isArray(payload.pdfImages) ? payload.pdfImages : []);
       setCategoryOrder(Array.isArray(payload.categoryOrder) ? payload.categoryOrder : null);
 
-      // Cache menu data only if storage is working (skip in private browsing)
+      // Cache menu data aggressively for instant loading on next visit
       if (typeof window !== "undefined") {
         // Test storage availability first
         const testKey = `__storage_test_${Date.now()}`;
@@ -276,18 +292,15 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         safeRemoveItem(sessionStorage, testKey); // Clean up test
 
         if (storageAvailable) {
-          // Only cache if storage works
-          if (itemCount > 0) {
-            safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
-            safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
-            if (Array.isArray(payload.categoryOrder)) {
-              safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
-            }
-          } else {
-            // Clear cache when no items
-            safeRemoveItem(sessionStorage, `menu_${venueSlug}`);
-            safeRemoveItem(sessionStorage, `venue_name_${venueSlug}`);
-            safeRemoveItem(sessionStorage, `categories_${venueSlug}`);
+          // Always cache menu data - even if empty, cache it to prevent repeated API calls
+          safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
+          safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
+          if (Array.isArray(payload.categoryOrder)) {
+            safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
+          }
+          // Cache PDF images for instant display
+          if (Array.isArray(payload.pdfImages) && payload.pdfImages.length > 0) {
+            safeSetItem(sessionStorage, `pdf_images_${venueSlug}`, JSON.stringify(payload.pdfImages));
           }
         }
         // If storage fails, continue without caching - app still works
@@ -318,6 +331,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           // Non-fatal
         }
       }
+
 
       // Never show error for empty menu - just show empty state
       setMenuError(null);
