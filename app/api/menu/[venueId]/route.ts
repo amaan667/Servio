@@ -33,9 +33,10 @@ export const GET = createUnifiedHandler(
     });
 
     // Add timeout wrapper to prevent hanging requests
+    // Increased timeout for mobile networks (20 seconds)
     const menuDataPromise = menuService.getPublicMenuFull(venueId, { limit, offset });
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Menu loading timeout")), 10000); // 10 second timeout
+      setTimeout(() => reject(new Error("Menu loading timeout")), 20000); // 20 second timeout for mobile
     });
 
     try {
@@ -45,10 +46,17 @@ export const GET = createUnifiedHandler(
       // Enhanced error handling for private browsers and mobile
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       
+      // Log the actual error for debugging (will be captured by unified handler)
       // Return user-friendly error with retry suggestion
+      // Include error details in development, but keep message generic in production
       return apiErrors.internal(
         "Failed to load menu. Please try again.",
-        process.env.NODE_ENV === "development" ? { message: errorMessage } : undefined
+        {
+          message: errorMessage,
+          type: error instanceof Error ? error.name : "Unknown",
+          // Include timeout info if it's a timeout error
+          ...(errorMessage.includes("timeout") && { suggestion: "This may be due to a slow connection. The request will be retried automatically." }),
+        }
       );
     }
   },

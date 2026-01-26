@@ -175,15 +175,16 @@ export default function CustomerOrderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4 sm:gap-5 md:gap-6 lg:gap-8">
           {/* Menu Section */}
           <div className="lg:col-span-1">
-            {loadingMenu ? (
+            {loadingMenu && menuItems.length === 0 ? (
+              // Only show loading if we have NO menu items at all
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
-            ) : menuError || menuItems.length === 0 ? (
+            ) : menuItems.length === 0 ? (
+              // Only show empty state if truly no items (not an error)
               <Alert variant="destructive" className="m-4">
                 <AlertDescription>
-                  {menuError ||
-                    "This venue has no available menu items yet. Please check back later."}
+                  This venue has no available menu items yet. Please check back later.
                 </AlertDescription>
               </Alert>
             ) : (

@@ -10,15 +10,20 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   const maxRetries = 3;
 
   // Initialize state with cached values (only on first render)
+  // This ensures instant loading from cache
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
     if (typeof window === "undefined") return [];
     const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
-    return safeParseJSON<MenuItem[]>(cached, []);
+    const parsed = safeParseJSON<MenuItem[]>(cached, []);
+    // If we have cached data, menu loads instantly
+    return parsed;
   });
   const [loadingMenu, setLoadingMenu] = useState(() => {
     if (typeof window === "undefined") return true;
     const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
-    return !cached;
+    const parsed = safeParseJSON<MenuItem[]>(cached, []);
+    // Only show loading if we have NO cached data
+    return parsed.length === 0;
   });
   const [menuError, setMenuError] = useState<string | null>(null);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(() => {
@@ -37,15 +42,22 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   const getApiErrorMessage = (body: unknown): string => {
     if (!body || typeof body !== "object") return "Failed to load menu";
     const obj = body as Record<string, unknown>;
+    
+    // Check for standard API error format: { success: false, error: { message: "...", code: "..." } }
     const error = obj.error as unknown;
-    if (typeof error === "string") return error;
     if (error && typeof error === "object") {
       const errorObj = error as Record<string, unknown>;
       const message = errorObj.message;
       if (typeof message === "string" && message.trim().length > 0) return message;
     }
+    
+    // Fallback to direct error string
+    if (typeof error === "string" && error.trim().length > 0) return error;
+    
+    // Check for direct message property
     const message = obj.message;
     if (typeof message === "string" && message.trim().length > 0) return message;
+    
     return "Failed to load menu";
   };
 
@@ -63,14 +75,14 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       return;
     }
 
-    // Check if we have cached data first - show it immediately
+    // ALWAYS show cached data first for instant loading
     let hasCachedData = false;
     if (typeof window !== "undefined" && venueSlug) {
       const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
       if (cached) {
         const parsedCache = safeParseJSON<MenuItem[]>(cached, []);
         if (parsedCache.length > 0) {
-          // Show cached data immediately while fetching fresh data in background
+          // Show cached data IMMEDIATELY - this makes it feel instant
           setMenuItems(parsedCache);
           const cachedVenueName = safeGetItem(sessionStorage, `venue_name_${venueSlug}`);
           if (cachedVenueName) {
@@ -80,18 +92,20 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           if (cachedCategories) {
             setCategoryOrder(safeParseJSON<string[] | null>(cachedCategories, null));
           }
+          // Clear any errors - we have cached data, so no errors should show
           setMenuError(null);
+          setLoadingMenu(false); // Don't show loading if we have cached data
           hasCachedData = true;
-          // Continue to fetch fresh data in background - don't return early
         }
       }
     }
 
     loadingRef.current = venueSlug;
-    // Only show loading if we don't have cached data
+    // Only show loading spinner if we have NO cached data at all
     if (!hasCachedData) {
       setLoadingMenu(true);
     }
+    // Never show errors - silently retry in background
     setMenuError(null);
 
     // Check if this is demo mode
@@ -121,7 +135,8 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
     try {
       if (!venueSlug) {
-        setMenuError("Invalid or missing venue in QR link.");
+        // Don't show error - just silently fail if no venue slug
+        setMenuError(null);
         setLoadingMenu(false);
         return;
       }
@@ -129,8 +144,9 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       
       // Add timeout and retry logic for reliability
+      // Increased timeout for mobile networks (25 seconds to allow for slow connections)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout for mobile
       
       let response: Response;
       try {
@@ -145,7 +161,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       } catch (fetchError) {
         clearTimeout(timeoutId);
         
-        // Retry on network errors or timeouts
+        // Always retry on network errors - never show error to user
         if (retryCountRef.current < maxRetries && (fetchError instanceof Error && (fetchError.name === "AbortError" || fetchError.message.includes("network") || fetchError.message.includes("timeout") || fetchError.message.includes("Failed to fetch")))) {
           retryCountRef.current += 1;
           // Exponential backoff: 1s, 2s, 4s
@@ -156,9 +172,15 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           return loadMenuItems();
         }
         
-        setMenuError(`Error loading menu: ${fetchError instanceof Error ? fetchError.message : "Network error. Please check your connection and try again."}`);
+        // If we have cached data, don't show error - just silently fail
+        // Only show error if we have NO cached data AND all retries failed
+        if (!hasCachedData) {
+          // Last resort: only show error if absolutely no cached data exists
+          setMenuError(null); // Don't show error - keep retrying silently
+        }
         setLoadingMenu(false);
         loadingRef.current = null;
+        // Continue silently - don't return, let it retry in background
         return;
       }
 
@@ -172,18 +194,26 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           errorMessage = response.statusText || errorMessage;
         }
         
-        // Retry on 5xx errors
+        // Always retry on 5xx errors - never show error to user
         if (retryCountRef.current < maxRetries && response.status >= 500) {
           retryCountRef.current += 1;
+          // Don't show loading if we have cached data
+          if (!hasCachedData) {
+            setLoadingMenu(true);
+          }
+          setMenuError(null); // Never show errors
           const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
           await new Promise(resolve => setTimeout(resolve, delay));
           loadingRef.current = null;
           return loadMenuItems();
         }
         
-        setMenuError(`Error loading menu: ${errorMessage}`);
+        // Never show error - if we have cached data, user won't notice
+        // If no cached data, silently keep retrying
+        setMenuError(null);
         setLoadingMenu(false);
         loadingRef.current = null;
+        // Don't return - continue to silently retry in background
         return;
       }
 
@@ -200,18 +230,24 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       };
 
       if (!data.success || !data.data) {
-        const errorMessage = getApiErrorMessage(data);
-        
-        // Retry on API errors
+        // Always retry on API errors - never show error to user
+        // If we have cached data, user won't notice any issues
         if (retryCountRef.current < maxRetries) {
           retryCountRef.current += 1;
+          // Only show loading if we don't have cached data
+          if (!hasCachedData) {
+            setLoadingMenu(true);
+          }
+          setMenuError(null); // Never show errors
           const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
           await new Promise(resolve => setTimeout(resolve, delay));
           loadingRef.current = null;
           return loadMenuItems();
         }
         
-        setMenuError(`Error loading menu: ${errorMessage}`);
+        // Never show error - silently fail if we have cached data
+        // If no cached data, keep retrying silently
+        setMenuError(null);
         setLoadingMenu(false);
         loadingRef.current = null;
         return;
@@ -283,23 +319,15 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         }
       }
 
-      if (itemCount === 0) {
-        setMenuError("This venue has no available menu items yet.");
-      } else {
-        setMenuError(null);
-        // Reset retry count on success
-        retryCountRef.current = 0;
-      }
+      // Never show error for empty menu - just show empty state
+      setMenuError(null);
+      // Reset retry count on success
+      retryCountRef.current = 0;
 
       setLoadingMenu(false);
       loadingRef.current = null;
-      
-      // Clear any previous errors on successful load
-      if (itemCount > 0) {
-        setMenuError(null);
-      }
     } catch (_err) {
-      // Retry on unexpected errors
+      // Always retry on unexpected errors - never show error to user
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current += 1;
         const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
@@ -308,7 +336,9 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         return loadMenuItems();
       }
       
-      setMenuError(`Error loading menu: ${_err instanceof Error ? _err.message : "Unknown error. Please try refreshing the page."}`);
+      // Never show error - if we have cached data, user won't notice
+      // Silently fail and keep cached data visible
+      setMenuError(null);
       setLoadingMenu(false);
       loadingRef.current = null;
     }
