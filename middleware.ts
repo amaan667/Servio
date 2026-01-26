@@ -73,11 +73,7 @@ export async function middleware(request: NextRequest) {
         },
         set(name: string, value: string, options: CookieOptions) {
           request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
+          // Update response with new cookies - this will be used when we return
           response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
@@ -110,10 +106,33 @@ export async function middleware(request: NextRequest) {
 
   // Get user - use getUser() instead of getSession() for secure authentication
   // getUser() authenticates the data by contacting the Supabase Auth server
-  const {
+  // It also automatically refreshes the session if needed
+  let {
     data: { user },
-    error: _authError,
+    error: authError,
   } = await supabase.auth.getUser();
+
+  // If getUser() fails, try to refresh the session
+  // This handles stale sessions where the access token expired but refresh token is valid
+  if (authError && !user) {
+    try {
+      // Try to refresh the session
+      // The Supabase SSR client will automatically update cookies via the set() handler
+      const {
+        data: { session: refreshedSession },
+        error: refreshError,
+      } = await supabase.auth.refreshSession();
+      
+      if (refreshedSession?.user && !refreshError) {
+        user = refreshedSession.user;
+        authError = null;
+        // Response object is automatically updated with new cookies via the set() handler
+        // No need to manually update - Supabase SSR client handles it
+      }
+    } catch (_refreshErr) {
+      // Refresh failed, continue with original error
+    }
+  }
 
   // If getUser() fails, treat as unauthenticated
   const session = user ? { user } : null;
@@ -132,14 +151,15 @@ export async function middleware(request: NextRequest) {
       );
     }
 
+    // Return response with updated cookies (automatically set by Supabase SSR client)
+    // The response object is updated via the set() handler when refreshSession() is called
+    // Create a new response with the updated cookies and request headers
     const requestHeaders = new Headers(request.headers);
-
-    // If session exists, inject user info - routes trust this completely
-    if (session) {
-      requestHeaders.set("x-user-id", session.user.id);
-      requestHeaders.set("x-user-email", session.user.email || "");
-    }
-
+    requestHeaders.set("x-user-id", session.user.id);
+    requestHeaders.set("x-user-email", session.user.email || "");
+    
+    // Return the response object which has the updated cookies from refreshSession()
+    // and set the request headers for the next handler
     return NextResponse.next({
       request: {
         headers: requestHeaders,

@@ -17,7 +17,7 @@ const updateTableSchema = z.object({
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   const handler = withUnifiedAuth(
-    async (req: NextRequest, authContext) => {
+    async (req: NextRequest, authContext, routeParams) => {
       try {
         // STEP 1: Rate limiting (ALWAYS FIRST)
         const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -26,7 +26,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
         }
 
         // STEP 2: Get tableId from route params
-        const { tableId } = await context.params;
+        const params = await routeParams?.params;
+        const tableId = params?.tableId;
 
         if (!tableId) {
           return apiErrors.badRequest("tableId is required");
@@ -139,18 +140,17 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
     }
   );
 
-  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
-    params?: Promise<Record<string, string>>;
-  });
+  return handler(req, context as { params?: Promise<Record<string, string>> });
 }
 
-type TableParams = { params?: { tableId?: string } };
+type TableParams = { params?: Promise<{ tableId?: string }> };
 
 export async function DELETE(req: NextRequest, context: TableParams = {}) {
   const handler = withUnifiedAuth(
-    async (req: NextRequest, authContext) => {
+    async (req: NextRequest, authContext, routeParams) => {
       try {
-        const tableId = context.params?.tableId;
+        const params = await routeParams?.params;
+        const tableId = params?.tableId;
 
         if (!tableId) {
           return apiErrors.badRequest("Table ID is required");
@@ -369,7 +369,5 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
     }
   );
 
-  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
-    params?: Promise<Record<string, string>>;
-  });
+  return handler(req, context as { params?: Promise<Record<string, string>> });
 }

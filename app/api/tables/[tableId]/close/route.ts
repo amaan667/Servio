@@ -16,7 +16,7 @@ const tableIdParamSchema = z.object({
 });
 
 // POST /api/tables/[tableId]/close - Close a table
-type TableParams = { params?: { tableId?: string } };
+type TableParams = { params?: Promise<{ tableId?: string }> };
 
 export async function POST(req: NextRequest, context: TableParams = {}) {
   const handler = withUnifiedAuth(
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
         }
 
         // STEP 2: Validate params
-        const params = routeParams?.params ?? {};
+        const params = await routeParams?.params ?? {};
         const validatedParams = validateParams(tableIdParamSchema, params);
 
         // STEP 3: Business logic
@@ -87,7 +87,5 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
     }
   );
 
-  return handler(req, { params: Promise.resolve(context.params ?? {}) } as {
-    params?: Promise<Record<string, string>>;
-  });
+  return handler(req, context as { params?: Promise<Record<string, string>> });
 }
