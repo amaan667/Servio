@@ -16,33 +16,36 @@ const menuPaginationSchema = paginationSchema.extend({
  */
 export const GET = createUnifiedHandler(
   async (req, context) => {
+    const { params } = context;
+    const { searchParams } = req.nextUrl;
+
+    const rawVenueId = params.venueId;
+    if (!rawVenueId) {
+      return apiErrors.badRequest("Venue ID is required");
+    }
+
+    // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
+    const venueId = rawVenueId.startsWith("venue-") ? rawVenueId : `venue-${rawVenueId}`;
+
+    const { limit, offset } = menuPaginationSchema.parse({
+      limit: searchParams.get("limit") || undefined,
+      offset: searchParams.get("offset") || undefined,
+    });
+
+    // Add timeout wrapper to prevent hanging requests
+    const menuDataPromise = menuService.getPublicMenuFull(venueId, { limit, offset });
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Menu loading timeout")), 10000); // 10 second timeout
+    });
+
     try {
-      const { params } = context;
-      const { searchParams } = req.nextUrl;
-
-      const rawVenueId = params.venueId;
-      if (!rawVenueId) {
-        return apiErrors.badRequest("Venue ID is required");
-      }
-
-      // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
-      const venueId = rawVenueId.startsWith("venue-") ? rawVenueId : `venue-${rawVenueId}`;
-
-      const { limit, offset } = menuPaginationSchema.parse({
-        limit: searchParams.get("limit") || undefined,
-        offset: searchParams.get("offset") || undefined,
-      });
-
-      const menuData = await menuService.getPublicMenuFull(venueId, { limit, offset });
-
+      const menuData = await Promise.race([menuDataPromise, timeoutPromise]);
       return menuData;
     } catch (error) {
       // Enhanced error handling for private browsers and mobile
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       
-      // Error logged by production handler - no need to log here
-
-      // Return user-friendly error
+      // Return user-friendly error with retry suggestion
       return apiErrors.internal(
         "Failed to load menu. Please try again.",
         process.env.NODE_ENV === "development" ? { message: errorMessage } : undefined
@@ -52,5 +55,6 @@ export const GET = createUnifiedHandler(
   {
     requireAuth: false, // Public endpoint - no auth required
     rateLimit: RATE_LIMITS.MENU_PUBLIC,
+    venueIdSource: "params",
   }
 );

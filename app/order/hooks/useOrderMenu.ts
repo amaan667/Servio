@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MenuItem } from "../types";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import { safeGetItem, safeSetItem, safeRemoveItem, safeParseJSON } from "../utils/safeStorage";
 
 export function useOrderMenu(venueSlug: string, isDemo: boolean) {
-  // Track if we've already loaded to prevent duplicate fetches
-  const hasLoadedRef = useRef(false);
+  // Track loading state per venue to prevent duplicate fetches
+  const loadingRef = useRef<string | null>(null);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   // Initialize state with cached values (only on first render)
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
@@ -47,26 +49,49 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     return "Failed to load menu";
   };
 
-  const loadMenuItems = useCallback(async () => {
-    // Skip if already loaded or loading
-    if (hasLoadedRef.current) {
+  // Reset loading state when venue changes
+  useEffect(() => {
+    loadingRef.current = null;
+    retryCountRef.current = 0;
+    setMenuError(null);
+  }, [venueSlug]);
+
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const loadMenuItems = async () => {
+    // Skip if already loading this venue
+    if (loadingRef.current === venueSlug) {
       return;
     }
 
-    // Check if we have cached data
-    if (typeof window !== "undefined") {
+    // Check if we have cached data first - show it immediately
+    let hasCachedData = false;
+    if (typeof window !== "undefined" && venueSlug) {
       const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
       if (cached) {
         const parsedCache = safeParseJSON<MenuItem[]>(cached, []);
         if (parsedCache.length > 0) {
-          hasLoadedRef.current = true;
-          return;
+          // Show cached data immediately while fetching fresh data in background
+          setMenuItems(parsedCache);
+          const cachedVenueName = safeGetItem(sessionStorage, `venue_name_${venueSlug}`);
+          if (cachedVenueName) {
+            setVenueName(cachedVenueName);
+          }
+          const cachedCategories = safeGetItem(sessionStorage, `categories_${venueSlug}`);
+          if (cachedCategories) {
+            setCategoryOrder(safeParseJSON<string[] | null>(cachedCategories, null));
+          }
+          setMenuError(null);
+          hasCachedData = true;
+          // Continue to fetch fresh data in background - don't return early
         }
       }
     }
 
-    hasLoadedRef.current = true;
-    setLoadingMenu(true);
+    loadingRef.current = venueSlug;
+    // Only show loading if we don't have cached data
+    if (!hasCachedData) {
+      setLoadingMenu(true);
+    }
     setMenuError(null);
 
     // Check if this is demo mode
@@ -102,7 +127,40 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       }
 
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
-      const response = await fetch(apiUrl);
+      
+      // Add timeout and retry logic for reliability
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      let response: Response;
+      try {
+        response = await fetch(apiUrl, {
+          signal: controller.signal,
+          cache: "no-store", // Always fetch fresh data
+          headers: {
+            "Cache-Control": "no-cache",
+          },
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        // Retry on network errors or timeouts
+        if (retryCountRef.current < maxRetries && (fetchError instanceof Error && (fetchError.name === "AbortError" || fetchError.message.includes("network") || fetchError.message.includes("timeout") || fetchError.message.includes("Failed to fetch")))) {
+          retryCountRef.current += 1;
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          // Reset loading state to allow retry
+          loadingRef.current = null;
+          return loadMenuItems();
+        }
+        
+        setMenuError(`Error loading menu: ${fetchError instanceof Error ? fetchError.message : "Network error. Please check your connection and try again."}`);
+        setLoadingMenu(false);
+        loadingRef.current = null;
+        return;
+      }
 
       if (!response.ok) {
         let errorMessage = "Failed to load menu";
@@ -113,8 +171,19 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           // If JSON parsing fails, use status text
           errorMessage = response.statusText || errorMessage;
         }
+        
+        // Retry on 5xx errors
+        if (retryCountRef.current < maxRetries && response.status >= 500) {
+          retryCountRef.current += 1;
+          const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          loadingRef.current = null;
+          return loadMenuItems();
+        }
+        
         setMenuError(`Error loading menu: ${errorMessage}`);
         setLoadingMenu(false);
+        loadingRef.current = null;
         return;
       }
 
@@ -132,8 +201,19 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       if (!data.success || !data.data) {
         const errorMessage = getApiErrorMessage(data);
+        
+        // Retry on API errors
+        if (retryCountRef.current < maxRetries) {
+          retryCountRef.current += 1;
+          const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          loadingRef.current = null;
+          return loadMenuItems();
+        }
+        
         setMenuError(`Error loading menu: ${errorMessage}`);
         setLoadingMenu(false);
+        loadingRef.current = null;
         return;
       }
 
@@ -207,18 +287,40 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         setMenuError("This venue has no available menu items yet.");
       } else {
         setMenuError(null);
+        // Reset retry count on success
+        retryCountRef.current = 0;
       }
 
       setLoadingMenu(false);
+      loadingRef.current = null;
+      
+      // Clear any previous errors on successful load
+      if (itemCount > 0) {
+        setMenuError(null);
+      }
     } catch (_err) {
-      setMenuError(`Error loading menu: ${_err instanceof Error ? _err.message : "Unknown error"}`);
+      // Retry on unexpected errors
+      if (retryCountRef.current < maxRetries) {
+        retryCountRef.current += 1;
+        const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        loadingRef.current = null;
+        return loadMenuItems();
+      }
+      
+      setMenuError(`Error loading menu: ${_err instanceof Error ? _err.message : "Unknown error. Please try refreshing the page."}`);
       setLoadingMenu(false);
+      loadingRef.current = null;
     }
-  }, [venueSlug, isDemo]);
+  };
 
   useEffect(() => {
-    loadMenuItems();
-  }, [loadMenuItems]);
+    // Always load menu when venueSlug changes or component mounts
+    if (venueSlug) {
+      loadMenuItems();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueSlug, isDemo]);
 
   return {
     menuItems,

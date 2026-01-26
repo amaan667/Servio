@@ -222,6 +222,7 @@ export class MenuService extends BaseService {
 
   /**
    * Get public menu data (venue + items + uploads)
+   * Optimized for first-load performance - uses shorter cache TTL for public access
    */
   async getPublicMenuFull(
     venueId: string,
@@ -234,13 +235,36 @@ export class MenuService extends BaseService {
       async () => {
         try {
           const supabase = await createSupabaseClient();
+          
+          // Parallelize queries for better performance
+          const [venueResult, menuItemsResult, uploadResult] = await Promise.all([
+            // 1. Get Venue
+            supabase
+              .from("venues")
+              .select("venue_id, venue_name")
+              .eq("venue_id", venueId)
+              .maybeSingle(),
+            // 2. Get Menu Items (don't wait for venue)
+            supabase
+              .from("menu_items")
+              .select("*", { count: "exact" })
+              .eq("venue_id", venueId)
+              .eq("is_available", true)
+              .order("created_at", { ascending: true })
+              .range(options.offset, options.offset + options.limit - 1),
+            // 3. Get Uploads (optional - don't fail if missing)
+            supabase
+              .from("menu_uploads")
+              .select("pdf_images, pdf_images_cc, category_order, created_at")
+              .eq("venue_id", venueId)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+          ]);
 
-          // 1. Get Venue
-          const { data: venue, error: venueError } = await supabase
-            .from("venues")
-            .select("venue_id, venue_name")
-            .eq("venue_id", venueId)
-            .maybeSingle();
+          const { data: venue, error: venueError } = venueResult;
+          const { data: menuItems, error: menuError, count: menuCount } = menuItemsResult;
+          const { data: uploadData, error: uploadError } = uploadResult;
 
           if (venueError) {
             throw new Error(`Failed to fetch venue: ${venueError.message}`);
@@ -250,31 +274,9 @@ export class MenuService extends BaseService {
             throw new Error("Venue not found");
           }
 
-          // 2. Get Menu Items
-          const {
-            data: menuItems,
-            error: menuError,
-            count: menuCount,
-          } = await supabase
-            .from("menu_items")
-            .select("*", { count: "exact" })
-            .eq("venue_id", venue.venue_id)
-            .eq("is_available", true)
-            .order("created_at", { ascending: true })
-            .range(options.offset, options.offset + options.limit - 1);
-
           if (menuError) {
             throw new Error(`Failed to fetch menu items: ${menuError.message}`);
           }
-
-          // 3. Get Uploads (optional - don't fail if missing)
-          const { data: uploadData, error: uploadError } = await supabase
-            .from("menu_uploads")
-            .select("pdf_images, pdf_images_cc, category_order, created_at")
-            .eq("venue_id", venue.venue_id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
 
           // Upload data is optional - don't fail if it doesn't exist
           // PGRST116 is "not found" which is fine
@@ -309,7 +311,7 @@ export class MenuService extends BaseService {
           throw new Error(`Failed to load menu: ${errorMessage}`);
         }
       },
-      300
+      60 // Shorter cache TTL (1 minute) for public menu to ensure freshness
     );
   }
 }
