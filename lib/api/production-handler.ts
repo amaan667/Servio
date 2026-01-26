@@ -85,18 +85,41 @@ export function createApiHandler<TBody = unknown, TResponse = unknown>(
       }
 
       // 3. Authentication
-      const { user, error: authError } = await getAuthUserFromRequest(req);
-      if (options.requireAuth !== false && (!user || authError)) {
-        perf.end();
-        logger.warn("Authentication failed", {
-          requestId,
-          path: req.nextUrl.pathname,
-          method: req.method,
-          error: authError,
-          type: "authentication",
-        });
-        return apiErrors.unauthorized(authError || "Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+      // Skip auth check entirely for public endpoints to avoid cookie issues in private browsers
+      let user: { id: string; email?: string } | null = null;
+      let authError: string | null = null;
+      
+      if (options.requireAuth !== false) {
+        try {
+          const authResult = await getAuthUserFromRequest(req);
+          user = authResult.user;
+          authError = authResult.error;
+          
+          if (!user || authError) {
+            perf.end();
+            logger.warn("Authentication failed", {
+              requestId,
+              path: req.nextUrl.pathname,
+              method: req.method,
+              error: authError,
+              type: "authentication",
+            });
+            return apiErrors.unauthorized(authError || "Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+          }
+        } catch (authErr) {
+          // If getAuthUserFromRequest throws (e.g., in private browsers), treat as no auth
+          perf.end();
+          logger.warn("Authentication check failed", {
+            requestId,
+            path: req.nextUrl.pathname,
+            method: req.method,
+            error: authErr instanceof Error ? authErr.message : "Unknown error",
+            type: "authentication",
+          });
+          return apiErrors.unauthorized("Authentication check failed", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        }
       }
+      // For public endpoints (requireAuth: false), user remains null - no auth check needed
 
       // 4. Extract Venue ID
       let venueId: string | null = null;
