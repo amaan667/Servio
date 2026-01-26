@@ -4,14 +4,10 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors, success } from "@/lib/api/standard-response";
 import { createAdminClient } from "@/lib/supabase";
+import { stripeService } from "@/lib/services/StripeService";
 
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 import { trackError } from "@/lib/monitoring/error-tracking";
-import { processSubscriptionEvent, finalizeStripeEvent } from "@/app/api/stripe/webhooks/route";
-import {
-  processCustomerCheckoutSession,
-  finalizeEventStatus,
-} from "@/app/api/stripe/webhook/route";
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
@@ -52,7 +48,6 @@ export async function runStripeReconcile({
     .limit(batchLimit);
 
   if (fetchError) {
-
     trackError(fetchError, { action: "stripe_reconcile_fetch", requestId }, "high");
     throw new Error("Failed to fetch events");
   }
@@ -107,20 +102,22 @@ export async function runStripeReconcile({
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
-        const correlationId = session.metadata?.correlation_id ?? requestId;
-        await processCustomerCheckoutSession(session, supabase, correlationId);
-        await finalizeEventStatus(supabase, ev.event_id, "succeeded");
+        if (session.mode === 'payment') {
+          await stripeService.handleOrderPaymentSucceeded(session);
+        } else {
+          await stripeService.processSubscriptionEvent(event);
+        }
       } else {
-        await processSubscriptionEvent(event);
-        await finalizeStripeEvent(supabase, ev.event_id, "succeeded");
+        await stripeService.processSubscriptionEvent(event);
       }
 
+      await stripeService.finalizeWebhookEvent(ev.event_id, "succeeded");
       replayed.push(ev.event_id);
 
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       const stack = err instanceof Error ? err.stack : undefined;
-      await finalizeStripeEvent(supabase, ev.event_id, "failed", { message, stack });
+      await stripeService.finalizeWebhookEvent(ev.event_id, "failed", err instanceof Error ? err : new Error(message));
       failed.push({ eventId: ev.event_id, message });
 
       trackError(err, {

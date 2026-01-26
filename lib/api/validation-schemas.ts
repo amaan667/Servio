@@ -93,6 +93,10 @@ export const createOrderSchema = z.object({
   special_instructions: z.string().max(500).optional().nullable(),
   notes: z.string().optional().nullable(),
   requires_collection: z.boolean().optional(),
+  source: z.string().optional(),
+  counter_label: z.string().optional().nullable(),
+  counter_identifier: z.string().optional().nullable(),
+  session_id: z.string().optional().nullable(),
 });
 
 export const updateOrderStatusSchema = z.object({
@@ -124,9 +128,13 @@ export const updateMenuItemSchema = menuItemSchema.partial().extend({
  * Table schemas
  */
 export const createTableSchema = z.object({
-  venue_id: uuid,
-  table_number: nonEmptyString.max(20),
-  capacity: positiveNumber.int().max(50),
+  venue_id: uuid.optional(),
+  table_number: z.union([z.string(), z.number()]),
+  label: z.string().optional().nullable(),
+  capacity: z.number().int().positive().optional().nullable(),
+  seat_count: z.number().int().positive().optional().nullable(),
+  section: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
   qr_code: z.string().optional(),
 });
 

@@ -6,7 +6,11 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+import { initializeAPM } from "@/lib/monitoring/apm";
+
 export async function register() {
+  // Initialize APM if configured
+  initializeAPM();
   // Initialize Sentry based on runtime
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");

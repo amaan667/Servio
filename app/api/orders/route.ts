@@ -1,888 +1,96 @@
-import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
-import { type SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createSupabaseClient, createAdminClient } from "@/lib/supabase";
-
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
-import { validateBody, createOrderSchema } from "@/lib/api/validation-schemas";
+import { createAdminClient } from "@/lib/supabase";
+import { createOrderSchema } from "@/lib/api/validation-schemas";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
-import {
-  deriveQrTypeFromOrder,
-  normalizePaymentMethod,
-  normalizeQrType,
-  validatePaymentMethodForQrType,
-} from "@/lib/orders/qr-payment-validation";
+import { orderService } from "@/lib/services/OrderService";
+import { createApiHandler } from "@/lib/api/production-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 /**
- * @swagger
- * /api/orders:
- *   get:
- *     summary: Get orders for a venue
- *     tags: [Orders]
- *     parameters:
- *       - in: query
- *         name: venueId
- *         required: true
- *         schema:
- *           type: string
- *         description: Venue ID
- *       - in: query
- *         name: status
- *         required: false
- *         schema:
- *           type: string
- *         description: Filter by order status
- *     responses:
- *       200:
- *         description: List of orders
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 ok:
- *                   type: boolean
- *                 orders:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Order'
- *       400:
- *         description: Bad request
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ * GET: Fetch orders for a venue
  */
-// GET handler for orders - Requires auth
-export const GET = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+export const GET = createApiHandler(
+  async (_req, context) => {
+    const { searchParams } = _req.nextUrl;
+    const status = searchParams.get("status") || undefined;
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100", 10), 500);
 
-      const { searchParams } = new URL(req.url);
-      const status = searchParams.get("status");
-      const limitParam = searchParams.get("limit");
-      const offsetParam = searchParams.get("offset");
+    const orders = await orderService.getOrders(context.venueId, {
+      status,
+      limit,
+      startDate: searchParams.get("startDate") || undefined,
+      endDate: searchParams.get("endDate") || undefined,
+    });
 
-      // CRITICAL: Bound query to prevent unbounded data fetches
-      // Default limit: 100 orders (reasonable for pilot scale)
-      // Max limit: 500 orders (hard cap to prevent abuse)
-      const limit = Math.min(limitParam ? parseInt(limitParam, 10) : 100, 500);
-      const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
-
-      // venueId comes from context (already verified by withUnifiedAuth)
-      const venueId = context.venueId;
-
-      const supabase = await createSupabaseClient();
-
-      let query = supabase
-        .from("orders")
-        .select("*")
-        .eq("venue_id", venueId)
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1); // CRITICAL: Bound query with pagination
-
-      if (status) {
-        query = query.eq("order_status", status);
-      }
-
-      const { data: orders, error } = await query;
-
-      if (error) {
-
-        return apiErrors.database(
-          "Failed to fetch orders",
-          isDevelopment() ? error.message : undefined
-        );
-      }
-
-      return success({ orders: orders || [] });
-    } catch (_error) {
-      const errorMessage =
-        _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      return apiErrors.internal(
-        "Failed to fetch orders",
-        isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
-      );
-    }
+    return { orders };
   },
   {
-    // Extract venueId from query string
-    extractVenueId: async (req) => {
-      const { searchParams } = new URL(req.url);
-      return searchParams.get("venueId");
-    },
+    requireVenueAccess: true,
+    venueIdSource: "query",
   }
 );
 
-type OrderItem = {
-  menu_item_id: string | null;
-  quantity: number;
-  price: number;
-  item_name: string;
-  specialInstructions?: string | null;
-};
-
-type OrderPayload = {
-  venue_id: string;
-  table_number?: number | null; // Only for table orders
-  table_id?: string | null; // Add table_id field
-  fulfillment_type?: "table" | "counter" | "delivery" | "pickup"; // New: proper fulfillment type
-  counter_label?: string | null; // New: counter label for counter orders
-  qr_type?: "TABLE_FULL_SERVICE" | "TABLE_COLLECTION" | "COUNTER";
-  fulfillment_status?: "NEW" | "PREPARING" | "READY" | "SERVED" | "COMPLETED" | "CANCELLED";
-  customer_name: string;
-  customer_phone: string; // Make required since database requires it
-  items: OrderItem[];
-  total_amount: number;
-  notes?: string | null;
-  order_status?:
-    | "PLACED"
-    | "ACCEPTED"
-    | "IN_PREP"
-    | "READY"
-    | "SERVING"
-    | "COMPLETED"
-    | "CANCELLED"
-    | "REFUNDED";
-  payment_status?: "UNPAID" | "PAID" | "REFUNDED";
-  payment_mode?: "online" | "deferred" | "offline";
-  payment_method?: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL" | string; // Standardized payment method values
-  requires_collection?: boolean;
-  // NOTE: session_id is NOT a database column - it's only used for client-side tracking
-  source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter/pickup orders (QR or till)
-  stripe_session_id?: string | null;
-  stripe_payment_intent_id?: string | null;
-  scheduled_for?: string | null;
-  prep_lead_minutes?: number;
-};
-
-// Legacy helper - use apiErrors instead
-function bad(msg: string, status = 400, _requestId?: string) {
-  // Log error using structured logger (Railway captures via next.config.mjs)
-
-  if (status === 403) return apiErrors.forbidden(msg);
-  if (status === 404) return apiErrors.notFound(msg);
-  if (status === 500) return apiErrors.internal(msg);
-  return apiErrors.badRequest(msg);
-}
-
-// Wrapper function for backward compatibility
-async function createKDSTickets(
-  supabase: SupabaseClient,
-  order: {
-    id: string;
-    venue_id: string;
-    items?: Array<Record<string, unknown>>;
-    customer_name?: string;
-    table_number?: number | null;
-    table_id?: string;
-  }
-) {
-  return createKDSTicketsWithAI(supabase, {
-    id: order.id,
-    venue_id: order.venue_id,
-    items: order.items as Array<{
-      item_name?: string;
-      quantity?: string | number;
-      specialInstructions?: string;
-      modifiers?: unknown;
-    }>,
-    customer_name: order.customer_name,
-    table_number: order.table_number,
-    table_id: order.table_id,
-  });
-}
-
 /**
- * @swagger
- * /api/orders:
- *   post:
- *     summary: Create a new order
- *     tags: [Orders]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - venue_id
- *               - customer_name
- *               - customer_phone
- *               - items
- *               - total_amount
- *             properties:
- *               venue_id:
- *                 type: string
- *               customer_name:
- *                 type: string
- *               customer_phone:
- *                 type: string
- *               table_number:
- *                 type: number
- *               items:
- *                 type: array
- *                 items:
- *                   $ref: '#/components/schemas/OrderItem'
- *               total_amount:
- *                 type: number
- *               order_status:
- *                 type: string
- *                 enum: [PLACED, ACCEPTED, IN_PREP, READY, SERVING, COMPLETED, CANCELLED]
- *               payment_status:
- *                 type: string
- *                 enum: [UNPAID, PAID, TILL, REFUNDED]
- *     responses:
- *       200:
- *         description: Order created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 ok:
- *                   type: boolean
- *                 order:
- *                   $ref: '#/components/schemas/Order'
- *       400:
- *         description: Bad request
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ * POST: Create a new order (Public Customer Route)
  */
-export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).substring(7);
-  const startTime = Date.now();
+export const POST = createApiHandler(
+  async (_req, context) => {
+    const { body, venueId } = context;
 
-  // Use logger.info for structured logging (Railway captures console.info via next.config.mjs)
+    // 1. Create Order via Service (Atomic Transaction)
+    const result = await orderService.createOrder(venueId || body.venue_id, {
+      ...body,
+      source: (body.source as "qr" | "counter") || "qr",
+      fulfillment_type: body.qr_type === "COUNTER" ? "counter" : "table",
+      counter_label: body.counter_label || body.counter_identifier || null,
+    });
 
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const body = (await req.json()) as Partial<OrderPayload>;
-
-    // Log received payload structure (for debugging 400 errors)
-
-    // Validate venue_id is provided
-    if (!body.venue_id) {
-
-      return apiErrors.badRequest("venue_id is required");
-    }
-
-    const venueId = body.venue_id;
-
-    // STEP 3: Validate input with Zod
-    let validatedOrderBody: OrderPayload;
+    // 2. Async KDS Ticket Creation (Non-blocking)
     try {
-      const validatedBody = await validateBody(createOrderSchema, {
-        ...body,
-        venue_id: venueId, // Use venueId from context
-      });
+      const supabase = createAdminClient();
+      const paymentMethod = (body.payment_method || "PAY_NOW").toUpperCase();
+      const paymentStatus = (body.payment_status || "UNPAID").toUpperCase();
 
-      // Use validated body for rest of function
-      validatedOrderBody = validatedBody as OrderPayload;
-    } catch (validationError) {
-      // Log validation errors in detail for debugging 400 errors
-      if (isZodError(validationError)) {
-
-        return handleZodError(validationError);
-      }
-
-      return apiErrors.validation("Invalid order data");
-    }
-
-    const tn = validatedOrderBody.table_number;
-    const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
-
-    // SECURITY: Public customer route for QR code orders
-    // This route is intentionally public (customers are not authenticated)
-    // We use admin client because RLS would block unauthenticated inserts
-    // SAFETY MEASURES:
-    // 1. Venue is verified to exist before any operations
-    // 2. ALL queries explicitly filter by venue_id to prevent cross-venue access
-    // 3. Rate limiting is applied to prevent abuse
-    // 4. Input validation ensures venue_id matches the verified venue
-    const supabase = createAdminClient();
-
-    // CRITICAL: Verify venue exists and is valid before proceeding
-    // This prevents orders from being created for non-existent or invalid venues
-    const { data: venue, error: venueErr } = await supabase
-      .from("venues")
-      .select("venue_id, allow_pay_at_till_for_table_collection")
-      .eq("venue_id", venueId)
-      .maybeSingle();
-
-    if (venueErr) {
-
-      return bad(`Failed to verify venue: ${venueErr.message}`, 500, requestId);
-    }
-
-    if (!venue) {
-
-      return bad("Venue not found", 404, requestId);
-    }
-
-    // Determine order source early to know if this is a table or counter order
-    const orderSource =
-      (body as { source?: "qr" | "counter" }).source || ("qr" as "qr" | "counter");
-    const isTableOrder = orderSource === "qr";
-
-    // Auto-create table if it doesn't exist (only for table orders)
-    let tableId = null;
-    if (isTableOrder && validatedOrderBody.table_number) {
-      // Check if table exists - first try to find by table number directly
-      const { data: existingTable, error: lookupError } = await supabase
-        .from("tables")
-        .select("id, label")
-        .eq("venue_id", venueId)
-        .eq("label", validatedOrderBody.table_number.toString())
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (lookupError) {
-
-        return bad(`Failed to check existing tables: ${lookupError.message}`, 500, requestId);
-      }
-
-      if (existingTable) {
-        tableId = existingTable.id;
-      } else {
-        // Get group size from group session to determine seat count
-        let seatCount = 4; // Default fallback
-        try {
-          const { data: groupSession } = await supabase
-            .from("table_group_sessions")
-            .select("total_group_size")
-            .eq("venue_id", venueId)
-            .eq("table_number", validatedOrderBody.table_number)
-            .eq("is_active", true)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (groupSession && groupSession.total_group_size) {
-            seatCount = groupSession.total_group_size;
-          }
-        } catch {
-          // Error handled
-        }
-
-        // Insert new table. Avoid UPSERT because the database may not have
-        // a unique constraint on (venue_id, label) in some environments.
-        const { data: newTable, error: tableCreateErr } = await supabase
-          .from("tables")
-          .insert({
-            venue_id: venueId,
-            label: validatedOrderBody.table_number.toString(),
-            seat_count: seatCount,
-            area: null,
-            is_active: true,
-          })
-          .select("id, label")
-          .single();
-
-        if (tableCreateErr) {
-          // If it's a duplicate key error, try to fetch the existing table
-          if (tableCreateErr.code === "23505") {
-            const { data: existingTableAfterError } = await supabase
-              .from("tables")
-              .select("id, label")
-              .eq("venue_id", venueId)
-              .eq("label", validatedOrderBody.table_number.toString())
-              .eq("is_active", true)
-              .single();
-
-            if (existingTableAfterError) {
-              tableId = existingTableAfterError.id;
-            } else {
-
-              return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
-            }
-          } else {
-
-            return bad(`Failed to create table: ${tableCreateErr.message}`, 500, requestId);
-          }
-        } else {
-          tableId = newTable.id;
-        }
-
-        // Only create session if we have a valid tableId
-        if (tableId) {
-          // Check if session already exists to prevent duplicates
-          const { data: existingSession } = await supabase
-            .from("table_sessions")
-            .select("id")
-            .eq("venue_id", venueId)
-            .eq("table_id", tableId)
-            .is("closed_at", null)
-            .maybeSingle();
-
-          if (!existingSession) {
-            const { error: sessionErr } = await supabase.from("table_sessions").insert({
-              venue_id: venueId,
-              table_id: tableId,
-              status: "FREE",
-              opened_at: new Date().toISOString(),
-              closed_at: null,
-            });
-
-            if (sessionErr) {
-              // Don't fail the request if session creation fails
-            }
-          }
-        }
-      }
-    }
-
-    // Recompute total server-side for safety
-    const computedTotal = (validatedOrderBody.items || []).reduce((sum, it) => {
-      const qty = Number(it.quantity) || 0;
-      const price = Number(it.price) || 0;
-      return sum + qty * price;
-    }, 0);
-    const finalTotal =
-      Math.abs(computedTotal - (validatedOrderBody.total_amount || 0)) < 0.01
-        ? validatedOrderBody.total_amount!
-        : computedTotal;
-
-    const safeItems = (validatedOrderBody.items || []).map((it) => ({
-      menu_item_id: it.menu_item_id ?? null,
-      quantity: Number(it.quantity) || 0,
-      price: Number(it.price) || 0, // Use 'price' field directly (includes modifier price)
-      item_name: it.item_name,
-      specialInstructions:
-        ((it as Record<string, unknown>).special_instructions as string) ??
-        (it as { specialInstructions?: string }).specialInstructions ??
-        null,
-      modifiers: (it as { modifiers?: unknown }).modifiers || null,
-      modifierPrice: (it as { modifierPrice?: number }).modifierPrice || 0,
-    }));
-
-    // Determine fulfillment_type and counter_label based on source
-    // (orderSource was already determined earlier)
-    const fulfillmentType: "table" | "counter" =
-      orderSource === "counter" ? "counter" : "table";
-    const counterLabel =
-      orderSource === "counter"
-        ? (body as { counter_label?: string }).counter_label ||
-          (body as { counterNumber?: string }).counterNumber ||
-          (table_number ? `Counter ${table_number}` : "Counter A")
-        : null;
-
-    // For counter orders, set table_number to null (don't repurpose it)
-    // For table orders, keep table_number as is
-    const finalTableNumber = fulfillmentType === "counter" ? null : table_number;
-
-    const explicitQrType = normalizeQrType(
-      (validatedOrderBody as { qr_type?: string | null }).qr_type ?? null
-    );
-    const derivedQrType = deriveQrTypeFromOrder({
-      qr_type: explicitQrType,
-      fulfillment_type: fulfillmentType,
-      source: orderSource,
-      requires_collection: validatedOrderBody.requires_collection || false,
-    });
-
-    const normalizedPaymentMethod = normalizePaymentMethod(
-      (validatedOrderBody as { payment_method?: string | null }).payment_method ||
-        (body as { payment_method?: string | null }).payment_method
-    );
-    const paymentMethod = normalizedPaymentMethod || "PAY_NOW";
-    const allowPayAtTillForTableCollection =
-      venue?.allow_pay_at_till_for_table_collection === true;
-
-    const paymentValidation = validatePaymentMethodForQrType({
-      qrType: derivedQrType,
-      paymentMethod,
-      allowPayAtTillForTableCollection,
-    });
-
-    if (!paymentValidation.ok) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: paymentValidation.error,
-        },
-        { status: 400 }
-      );
-    }
-
-    const payload: OrderPayload = {
-      venue_id: venueId,
-      table_number: finalTableNumber, // Only set for table orders
-      table_id: fulfillmentType === "table" ? tableId : null, // Only set for table orders
-      fulfillment_type: fulfillmentType,
-      counter_label: counterLabel,
-      qr_type: derivedQrType,
-      fulfillment_status: "PREPARING",
-      customer_name: validatedOrderBody.customer_name.trim(),
-      customer_phone: validatedOrderBody.customer_phone.trim(), // Required field, already validated
-      items: safeItems,
-      total_amount: finalTotal,
-      notes: (body as { notes?: string }).notes ?? null,
-      order_status:
-        (
-          body as {
-            order_status?:
-              | "PLACED"
-              | "ACCEPTED"
-              | "IN_PREP"
-              | "READY"
-              | "SERVING"
-              | "COMPLETED"
-              | "CANCELLED"
-              | "REFUNDED";
-          }
-        ).order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
-      payment_status:
-        (body as { payment_status?: "UNPAID" | "PAID" | "REFUNDED" }).payment_status || "UNPAID", // Use provided status or default to 'UNPAID'
-      payment_mode: validatedOrderBody.payment_mode || "online", // New field for payment mode
-      payment_method: paymentMethod,
-      requires_collection: validatedOrderBody.requires_collection || false,
-      // NOTE: session_id is NOT a database column - don't include in payload
-      source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
-      // NOTE: is_active is a generated column in the database, don't include it in insert
-    };
-
-    // Check for duplicate orders (idempotency check)
-    // Look for orders with same customer, fulfillment type, venue, and recent timestamp (within 5 minutes)
-    // CRITICAL: All queries MUST filter by venue_id to prevent cross-venue data access
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    let duplicateQuery = supabase
-      .from("orders")
-      .select("id, created_at, order_status, payment_status")
-      .eq("venue_id", venueId) // CRITICAL: Explicit venue filter
-      .eq("customer_name", payload.customer_name)
-      .eq("customer_phone", payload.customer_phone)
-      .eq("fulfillment_type", payload.fulfillment_type)
-      .gte("created_at", fiveMinutesAgo);
-
-    // For table orders, check table_number; for counter orders, check counter_label
-    if (payload.fulfillment_type === "table" && payload.table_number) {
-      duplicateQuery = duplicateQuery.eq("table_number", payload.table_number);
-    } else if (payload.fulfillment_type === "counter" && payload.counter_label) {
-      duplicateQuery = duplicateQuery.eq("counter_label", payload.counter_label);
-    }
-
-    const { data: existingOrder, error: duplicateCheckError } = await duplicateQuery
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (duplicateCheckError) { /* Condition handled */ }
-
-    // If we found a recent duplicate, return it instead of creating a new one
-    if (existingOrder) {
-
-      return NextResponse.json({
-        ok: true,
-        order: existingOrder,
-        table_auto_created: tableId !== null,
-        table_id: tableId,
-        session_id: ((body as Record<string, unknown>).session_id as string) || null,
-        source: orderSource,
-        display_name:
-          payload.fulfillment_type === "counter"
-            ? payload.counter_label || "Counter A"
-            : `Table ${payload.table_number}`,
-        duplicate: true,
-      });
-    }
-
-    // Final validation before insertion
-
-    // Clean payload: remove undefined values, ensure nulls, add timestamps
-    // Database might require created_at/updated_at or have NOT NULL constraints
-    const now = new Date().toISOString();
-    const cleanPayload: Record<string, unknown> = {
-      venue_id: payload.venue_id,
-      table_number: payload.table_number ?? null,
-      table_id: payload.table_id ?? null,
-      customer_name: payload.customer_name,
-      customer_phone: payload.customer_phone,
-      customer_email:
-        (validatedOrderBody as { customer_email?: string | null }).customer_email ?? null, // Include customer_email if provided
-      items: payload.items,
-      total_amount: payload.total_amount,
-      notes: payload.notes ?? null,
-      order_status: payload.order_status || "PLACED", // Default to PLACED so orders show "waiting on kitchen" initially
-      payment_status: payload.payment_status || "UNPAID",
-      payment_method: payload.payment_method || "PAY_NOW", // Ensure payment_method is always set (required by constraint)
-      qr_type: payload.qr_type,
-      fulfillment_status: payload.fulfillment_status || "PREPARING",
-      requires_collection: payload.requires_collection || false,
-      table_identifier: payload.table_number ? `Table ${payload.table_number}` : null,
-      pickup_identifier: counterLabel || null,
-      counter_identifier: counterLabel || null,
-      // Unified lifecycle defaults (canonical source of truth)
-      kitchen_status: "PREPARING",
-      service_status: "NOT_SERVED",
-      completion_status: "OPEN",
-      payment_mode: (() => {
-        // Ensure payment_mode matches payment_method for constraint consistency
-        const method = payload.payment_method || "PAY_NOW";
-        const upperMethod = (method || "").toUpperCase();
-        if (upperMethod === "PAY_NOW") return "online";
-        if (upperMethod === "PAY_AT_TILL") return "offline";
-        if (upperMethod === "PAY_LATER") return "deferred";
-        // Default fallback
-        return payload.payment_mode || "online";
-      })(),
-      source: payload.source || "qr",
-      // NOTE: is_active is a GENERATED column in the database - computed automatically, DO NOT include in insert
-      created_at: now,
-      updated_at: now,
-    };
-
-    // Remove undefined fields (they break JSON serialization)
-    Object.keys(cleanPayload).forEach((key) => {
-      if (cleanPayload[key] === undefined) {
-        delete cleanPayload[key];
-      }
-    });
-
-    // Log the EXACT payload being inserted before database insert
-
-    const { data: inserted, error: insertErr } = await supabase
-      .from("orders")
-      .insert(cleanPayload)
-      .select("*");
-
-    if (insertErr) {
-
-      // Try to provide more specific error messages
-      let errorMessage = insertErr.message || "Database insert failed";
-      if (insertErr.code === "23505") {
-        errorMessage = "Order already exists with this ID";
-      } else if (insertErr.code === "23503") {
-        errorMessage = `Referenced venue or table does not exist: ${insertErr.message}`;
-      } else if (insertErr.code === "23514") {
-        errorMessage = `Data validation failed: ${insertErr.message || "Check required fields"}`;
-      } else if (insertErr.code === "23502") {
-        errorMessage = `Required field is missing: ${insertErr.message || insertErr.hint || "Check all required fields"}`;
-      } else if (insertErr.message) {
-        errorMessage = insertErr.message;
-        if (insertErr.hint) {
-          errorMessage += ` (${insertErr.hint})`;
-        }
-      }
-
-      return bad(`Insert failed: ${errorMessage}`, 400, requestId);
-    }
-
-    if (!inserted || inserted.length === 0) {
-
-      return bad("Order creation failed - no data returned", 500, requestId);
-    }
-
-    // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
-
-    // Create or update table session to show table as occupied if we have a table
-    if (tableId && inserted?.[0]?.id) {
-      // First, check if there's an existing open session
-      const { data: existingSession, error: checkError } = await supabase
-        .from("table_sessions")
-        .select("id, status")
-        .eq("table_id", tableId)
-        .is("closed_at", null)
-        .maybeSingle();
-
-      if (checkError) {
-        // Error checking for existing session
-      }
-
-      if (existingSession) {
-        // Update existing session to OCCUPIED status (table is now occupied with an order)
-        const { error: sessionUpdateError } = await supabase
-          .from("table_sessions")
-          .update({
-            status: "OCCUPIED",
-            order_id: inserted[0].id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingSession.id);
-
-        if (sessionUpdateError) { /* Condition handled */ }
-      } else {
-        // Create new session with OCCUPIED status (table is now occupied with an order)
-        const { error: sessionCreateError } = await supabase.from("table_sessions").insert({
-          table_id: tableId,
-          venue_id: venueId,
-          status: "OCCUPIED",
-          order_id: inserted[0].id,
-          opened_at: new Date().toISOString(),
-        });
-
-        if (sessionCreateError) { /* Condition handled */ }
-      }
-
-      // Also update table_runtime_state to show table as OCCUPIED
-      if (table_number) {
-        const { error: runtimeStateError } = await supabase
-          .from("table_runtime_state")
-          .update({
-            primary_status: "OCCUPIED",
-            order_id: inserted[0].id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("venue_id", venueId)
-          .eq("label", `Table ${table_number}`);
-
-        if (runtimeStateError) { /* Condition handled */ }
-      }
-
-      // Update by table_id if available
-      if (tableId) {
-        const { error: runtimeStateErrorById } = await supabase
-          .from("table_runtime_state")
-          .update({
-            primary_status: "OCCUPIED",
-            order_id: inserted[0].id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("venue_id", venueId)
-          .eq("table_id", tableId);
-
-        if (runtimeStateErrorById) { /* Condition handled */ }
-      }
-    }
-
-    // Ensure we have a valid order object
-    let createdOrder;
-    if (!inserted || inserted.length === 0 || !inserted[0]) {
-      // Try to fetch the order we just created by querying the database
-
-      const { data: fetchedOrder, error: fetchError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("venue_id", venueId)
-        .eq("customer_name", payload.customer_name)
-        .eq("total_amount", payload.total_amount)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (fetchError || !fetchedOrder) {
-
-        return bad("Order creation failed: No order data returned from database", 500, requestId);
-      }
-
-      createdOrder = fetchedOrder;
-    } else {
-      createdOrder = inserted[0];
-    }
-
-    const response = {
-      ok: true,
-      order: createdOrder,
-      table_auto_created: tableId !== null, // True if we auto-created a table
-      table_id: tableId,
-      session_id: ((body as Record<string, unknown>).session_id as string) || null, // Include session_id in response for client-side storage
-      source: orderSource, // Include the correctly determined source
-      display_name: orderSource === "counter" ? `Counter ${table_number}` : `Table ${table_number}`, // Include display name for UI
-    };
-
-    // Create KDS tickets for the order
-    try {
-      const orderForTickets = createdOrder;
-      const paymentMethod = String(
-        (orderForTickets as { payment_method?: unknown }).payment_method || ""
-      )
-        .toUpperCase()
-        .trim();
-      const paymentStatus = String(
-        (orderForTickets as { payment_status?: unknown }).payment_status || ""
-      )
-        .toUpperCase()
-        .trim();
-
-      // For PAY_NOW, only create KDS tickets once payment is confirmed.
-      // This prevents kitchen work starting before card payment is actually completed.
-      // For PAY_LATER and PAY_AT_TILL, create tickets immediately so kitchen can start.
       const shouldCreateTickets = paymentMethod !== "PAY_NOW" || paymentStatus === "PAID";
 
       if (shouldCreateTickets) {
+        // Run in background
+        createKDSTicketsWithAI(supabase, {
+          id: result.id,
+          venue_id: result.venue_id,
+          items: result.items.map(item => ({
+            item_name: item.item_name,
+            quantity: item.quantity,
+            specialInstructions: (item.special_instructions || undefined) as string | undefined,
+            modifiers: item.modifiers,
+          })),
+          customer_name: result.customer_name,
+          table_number: result.table_number ? parseInt(String(result.table_number), 10) : null,
+          table_id: result.table_id as string,
+        }).catch(_err => {
+          // Silent error in production
+        });
 
-        await createKDSTickets(supabase, orderForTickets);
-
-        // Update order status to IN_PREP for Pay Later and Pay at Till orders
-        // (Pay Now orders are updated to IN_PREP in Stripe webhook after payment confirmation)
         if (paymentMethod === "PAY_LATER" || paymentMethod === "PAY_AT_TILL") {
-          const { error: statusUpdateError } = await supabase
-            .from("orders")
-            .update({
-              order_status: "IN_PREP",
-              fulfillment_status: "PREPARING",
-              kitchen_status: "PREPARING",
-              service_status: "NOT_SERVED",
-              completion_status: "OPEN",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", (orderForTickets as { id: string }).id)
-            .eq("venue_id", (orderForTickets as { venue_id: string }).venue_id);
-
-          if (statusUpdateError) { /* Condition handled */ } else { /* Else case handled */ }
+          await orderService.updateOrderStatus(result.id, result.venue_id, "IN_PREP");
         }
-      } else { /* Else case handled */ }
-    } catch (kdsError) {
-      // Log detailed error but don't fail order creation
-      const errorMessage = kdsError instanceof Error ? kdsError.message : JSON.stringify(kdsError);
-      const errorStack = kdsError instanceof Error ? kdsError.stack : undefined;
-
-      // Don't fail the order creation if KDS tickets fail - order is already created
+      }
+    } catch (_kdsError) {
+      // Silent error in production
     }
 
-    const duration = Date.now() - startTime;
-
-    return NextResponse.json(response);
-  } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
-    const errorStack = _error instanceof Error ? _error.stack : undefined;
-    const duration = Date.now() - startTime;
-
-    // Check if it's an authentication/authorization error
-    if (errorMessage.includes("Unauthorized")) {
-      return apiErrors.unauthorized(errorMessage);
-    }
-    if (errorMessage.includes("Forbidden")) {
-      return apiErrors.forbidden(errorMessage);
-    }
-
-    // Return generic error in production, detailed in development
-    return apiErrors.internal(
-      "Failed to create order",
-      isDevelopment() ? { message: errorMessage, stack: errorStack } : undefined
-    );
+    return {
+      order: result,
+      table_auto_created: result.table_auto_created,
+      session_id: result.session_id,
+      source: body.source || "qr",
+    };
+  },
+  {
+    requireAuth: false, // Public route for customers
+    schema: createOrderSchema,
+    rateLimit: RATE_LIMITS.GENERAL,
+    enforceIdempotency: false, // Optional for now, but recommended
   }
-}
+);

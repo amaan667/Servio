@@ -1,155 +1,36 @@
-import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
-import { cache, cacheKeys } from "@/lib/cache/index";
-
-import { success, apiErrors } from "@/lib/api/standard-response";
-import { getClientIdentifier, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { paginationSchema, validateQuery } from "@/lib/api/validation-schemas";
+import { createApiHandler } from "@/lib/api/production-handler";
+import { menuService } from "@/lib/services/MenuService";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { paginationSchema } from "@/lib/api/validation-schemas";
 import { z } from "zod";
 
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ venueId: string }> }
-) {
-  let rawVenueId = "unknown";
+const menuPaginationSchema = paginationSchema.extend({
+  limit: z.coerce.number().int().min(1).max(500).default(200),
+});
 
-  const menuPaginationSchema = paginationSchema.extend({
-    limit: z.coerce.number().int().min(1).max(500).default(200),
-  });
+/**
+ * GET: Fetch public menu for a venue
+ */
+export const GET = createApiHandler(
+  async (req, context) => {
+    const { params } = context;
+    const { searchParams } = req.nextUrl;
 
-  try {
-    const { searchParams } = new URL(_request.url);
-    // IMPORTANT: URLSearchParams.get() returns null when missing.
-    // Passing null into z.coerce.number() becomes 0, which fails min(1).
-    const normalizeParam = (value: string | null) =>
-      value === null || value === "" ? undefined : value;
-    const { limit, offset } = validateQuery(menuPaginationSchema, {
-      limit: normalizeParam(searchParams.get("limit")),
-      offset: normalizeParam(searchParams.get("offset")),
-    });
-
-    const params = await context.params;
-    rawVenueId = params.venueId;
-
-    if (!rawVenueId) {
-      return apiErrors.badRequest("Venue ID is required");
-    }
-
+    const rawVenueId = params.venueId;
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
     const venueId = rawVenueId.startsWith("venue-") ? rawVenueId : `venue-${rawVenueId}`;
 
-    // PUBLIC ENDPOINT: rate limit by venue + client to avoid shared WiFi throttling
-    const identifier = `menu:${venueId}:${getClientIdentifier(_request)}`;
-    const rateLimitResult = await rateLimit(_request, {
-      ...RATE_LIMITS.MENU_PUBLIC,
-      identifier,
+    const { limit, offset } = menuPaginationSchema.parse({
+      limit: searchParams.get("limit") || undefined,
+      offset: searchParams.get("offset") || undefined,
     });
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
 
-    // Try to get from cache first
-    const cacheKey = cacheKeys.menuItems(`${venueId}:l${limit}:o${offset}`);
-    const cachedMenu = await cache.get(cacheKey);
+    const menuData = await menuService.getPublicMenuFull(venueId, { limit, offset });
 
-    if (cachedMenu) {
-      return success(cachedMenu);
-    }
-
-    // Use admin client to bypass RLS for public menu access
-    const supabase = createAdminClient();
-
-    // First check if venue exists with transformed ID
-    let { data: venue, error: venueError } = await supabase
-      .from("venues")
-      .select("venue_id, venue_name")
-      .eq("venue_id", venueId)
-      .single();
-
-    // If not found with transformed ID, try with original ID as fallback
-    if (venueError || !venue) {
-
-      const { data: fallbackVenue, error: fallbackError } = await supabase
-        .from("venues")
-        .select("venue_id, venue_name")
-        .eq("venue_id", rawVenueId)
-        .single();
-
-      if (!fallbackError && fallbackVenue) {
-        venue = fallbackVenue;
-        venueError = fallbackError;
-      }
-    }
-
-    if (venueError || !venue) {
-
-      return apiErrors.notFound("Venue not found");
-    }
-
-    // Fetch menu items for the venue using the same venue_id that was found
-    // Use created_at ordering as fallback since order_index column may not exist
-    const {
-      data: menuItems,
-      error: menuError,
-      count: menuCount,
-    } = await supabase
-      .from("menu_items")
-      .select("*", { count: "exact" })
-      .eq("venue_id", venue.venue_id)
-      .eq("is_available", true)
-      .order("created_at", { ascending: true })
-      .range(offset, offset + limit - 1);
-
-    const totalItems = typeof menuCount === "number" ? menuCount : menuItems?.length || 0;
-
-    if (menuError) {
-
-      return apiErrors.database("Failed to load menu items");
-    }
-
-    // Fetch latest uploaded PDF images + category order (public customer display)
-    const { data: uploadData } = await supabase
-      .from("menu_uploads")
-      .select("pdf_images, pdf_images_cc, category_order, created_at")
-      .eq("venue_id", venue.venue_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const pdfImages: string[] = (uploadData?.pdf_images ||
-      uploadData?.pdf_images_cc ||
-      []) as string[];
-
-    const categoryOrder: string[] | null = Array.isArray(uploadData?.category_order)
-      ? (uploadData?.category_order as string[])
-      : null;
-
-    // Return menu items with venue info
-    const response = {
-      venue: {
-        id: venue.venue_id,
-        name: venue.venue_name,
-      },
-      menuItems: menuItems || [],
-      totalItems,
-      pdfImages,
-      categoryOrder,
-      pagination: {
-        limit,
-        offset,
-        returned: menuItems?.length || 0,
-        hasMore: totalItems > offset + (menuItems?.length || 0),
-      },
-    };
-
-    // Cache the response for 5 minutes (300 seconds)
-    await cache.set(cacheKey, response, { ttl: 300 });
-
-    return success(response);
-  } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-    const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-    return apiErrors.internal(errorMessage);
+    return menuData;
+  },
+  {
+    requireAuth: false, // Public endpoint
+    rateLimit: RATE_LIMITS.MENU_PUBLIC,
   }
-}
+);

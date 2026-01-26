@@ -8,7 +8,7 @@ import { NextRequest } from "next/server";
 
 import { env } from "@/lib/env";
 
-interface RateLimitOptions {
+export interface RateLimitConfig {
   limit: number; // Maximum number of requests
   window: number; // Time window in seconds
   identifier?: string; // Custom identifier (defaults to IP)
@@ -104,7 +104,7 @@ export function getClientIdentifier(req: NextRequest): string {
  */
 export async function rateLimit(
   req: NextRequest,
-  options: RateLimitOptions
+  options: RateLimitConfig
 ): Promise<RateLimitResult> {
   const identifier = options.identifier || getClientIdentifier(req);
   const key = `ratelimit:${identifier}:${options.limit}:${options.window}`;
@@ -185,7 +185,7 @@ export async function rateLimit(
 /**
  * Rate limit middleware for API routes
  */
-export function withRateLimit(options: RateLimitOptions) {
+export function withRateLimit(options: RateLimitConfig) {
   return async (req: NextRequest): Promise<Response | null> => {
     const result = await rateLimit(req, options);
 

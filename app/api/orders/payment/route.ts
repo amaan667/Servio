@@ -10,17 +10,22 @@ import {
   validatePaymentMethodForQrType,
 } from "@/lib/orders/qr-payment-validation";
 
+import { getRequestMetadata } from "@/lib/api/request-helpers";
+
 /**
  * Payment API Route - No authentication required for ordering UI
  * This allows customers and staff to process payments without auth checks
  */
 export async function POST(req: NextRequest) {
+  const requestMetadata = getRequestMetadata(req);
+  const requestId = requestMetadata.correlationId;
+  
   try {
     const body = await req.json();
     const { orderId, venue_id, payment_method, payment_status } = body;
 
     if (!orderId || !venue_id) {
-      return apiErrors.badRequest("Order ID and venue ID are required");
+      return apiErrors.badRequest("Order ID and venue ID are required", undefined, requestId);
     }
 
     // Use admin client - no auth required for payment processing
@@ -39,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     if (checkError || !orderCheck) {
 
-      return apiErrors.notFound("Order not found");
+      return apiErrors.notFound("Order not found", requestId);
     }
 
     const { data: venueSettings } = await supabase
@@ -108,29 +113,40 @@ export async function POST(req: NextRequest) {
 
       // Provide more specific error message
       if (updateError.code === "PGRST116") {
-        return apiErrors.notFound("Order not found or access denied");
+        return apiErrors.notFound("Order not found or access denied", requestId);
       }
       if (updateError.code === "23505") {
         return apiErrors.badRequest(
-          "Payment status update conflict - order may have been modified"
+          "Payment status update conflict - order may have been modified",
+          undefined,
+          requestId
         );
       }
 
       return apiErrors.internal(
         `Failed to update payment status: ${updateError.message || "Unknown error"}`,
-        isDevelopment() ? updateError : undefined
+        isDevelopment() ? updateError : undefined,
+        requestId
       );
     }
 
     if (!updatedOrder) {
 
-      return apiErrors.internal("Payment update succeeded but order data not returned");
+      return apiErrors.internal(
+        "Payment update succeeded but order data not returned",
+        undefined,
+        requestId
+      );
     }
 
-    return success({ order: updatedOrder });
+    return success(
+      { order: updatedOrder },
+      { timestamp: new Date().toISOString(), requestId },
+      requestId
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-    return apiErrors.internal("Internal server error");
+    return apiErrors.internal("Internal server error", undefined, requestId);
   }
 }
