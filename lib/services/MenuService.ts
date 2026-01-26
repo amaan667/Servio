@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from "./BaseService";
-import { createSupabaseClient } from "@/lib/supabase";
+import { createSupabaseClient, createAdminClient } from "@/lib/supabase";
 
 export interface MenuItem {
   id: string;
@@ -223,6 +223,7 @@ export class MenuService extends BaseService {
   /**
    * Get public menu data (venue + items + uploads)
    * Optimized for first-load performance - uses shorter cache TTL for public access
+   * IMPORTANT: Uses admin client to bypass RLS for public/anonymous access (customers scanning QR codes)
    */
   async getPublicMenuFull(
     venueId: string,
@@ -234,7 +235,8 @@ export class MenuService extends BaseService {
       cacheKey,
       async () => {
         try {
-          const supabase = await createSupabaseClient();
+          // Use admin client to bypass RLS - customers don't have auth cookies
+          const supabase = createAdminClient();
           
           // Parallelize queries for better performance
           const [venueResult, menuItemsResult, uploadResult] = await Promise.all([
