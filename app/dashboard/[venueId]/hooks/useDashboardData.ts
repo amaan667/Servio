@@ -252,9 +252,10 @@ export function useDashboardData(
 
     const debouncedFetchCounts = () => {
       if (countsDebounceTimeout) clearTimeout(countsDebounceTimeout);
+      // Reduced debounce for table changes to ensure immediate updates
       countsDebounceTimeout = setTimeout(() => {
         fetchCounts(true);
-      }, 300);
+      }, 100);
     };
 
     const debouncedFetchStats = () => {

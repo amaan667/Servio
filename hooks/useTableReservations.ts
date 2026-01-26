@@ -655,7 +655,48 @@ export function useDeleteTable(venueId: string) {
       queryClient.invalidateQueries({ queryKey: ["tables", "grid", venueId] });
       queryClient.invalidateQueries({ queryKey: ["tables", "counters", venueId] });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Immediately fetch updated table count and dispatch event for instant dashboard update
+      try {
+        const { supabaseBrowser } = await import("@/lib/supabase");
+        const supabase = supabaseBrowser();
+        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        
+        const { data: activeTables } = await supabase
+          .from("tables")
+          .select("id, is_active")
+          .eq("venue_id", normalizedVenueId)
+          .eq("is_active", true);
+        
+        const count = activeTables?.length || 0;
+        
+        // Dispatch custom event for instant dashboard update
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("tablesChanged", {
+              detail: { venueId: normalizedVenueId, count },
+            })
+          );
+        }
+      } catch (_error) {
+        // If fetch fails, still dispatch event with optimistic count (current - 1)
+        // The realtime subscription will correct it shortly
+        if (typeof window !== "undefined") {
+          const currentTables = queryClient.getQueryData<TableGridItem[]>([
+            "tables",
+            "grid",
+            venueId,
+          ]) || [];
+          const optimisticCount = Math.max(0, (currentTables?.length || 1) - 1);
+          const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+          window.dispatchEvent(
+            new CustomEvent("tablesChanged", {
+              detail: { venueId: normalizedVenueId, count: optimisticCount },
+            })
+          );
+        }
+      }
+      
       toast({
         title: "Table deleted",
         description: "The table has been removed successfully",
