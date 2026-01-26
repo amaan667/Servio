@@ -244,12 +244,12 @@ export class MenuService extends BaseService {
               .select("venue_id, venue_name")
               .eq("venue_id", venueId)
               .maybeSingle(),
-            // 2. Get Menu Items (don't wait for venue)
+            // 2. Get Menu Items - show ALL items to customers (no is_available filter)
+            // Filtering by availability should be done in the UI if needed
             supabase
               .from("menu_items")
               .select("*", { count: "exact" })
               .eq("venue_id", venueId)
-              .eq("is_available", true)
               .order("created_at", { ascending: true })
               .range(options.offset, options.offset + options.limit - 1),
             // 3. Get Uploads (optional - don't fail if missing)
