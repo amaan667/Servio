@@ -88,7 +88,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         const menuCached = safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(mappedItems));
         const nameCached = safeSetItem(sessionStorage, `venue_name_${venueSlug}`, "Demo Café");
         if (!menuCached || !nameCached) {
-          console.log("[STORAGE] Menu cache failed - quota exceeded (private browsing mode)");
+          // Storage quota exceeded in private browsing mode - non-fatal, continue without cache
         }
       }
       return;
@@ -193,7 +193,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
               if (typeof window !== "undefined" && itemCount > 0) {
                 const categoriesCached = safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(categoryOrderData.categories));
                 if (!categoriesCached) {
-                  console.log("[STORAGE] Categories cache failed - quota exceeded (private browsing mode)");
+                  // Storage quota exceeded in private browsing mode - non-fatal, continue without cache
                 }
               }
             }

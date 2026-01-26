@@ -1,29 +1,25 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
+import { cacheKeys, RECOMMENDED_TTL } from "@/lib/cache/constants";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 
-export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
+export const GET = createUnifiedHandler(async (_req: NextRequest, context) => {
   try {
-    // STEP 1: Rate limiting (ALWAYS FIRST)
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
-
-    // STEP 2: Get venueId from context
+    // Rate limiting handled by unified handler
+    // Get venueId from context
     const venueId = context.venueId;
 
     if (!venueId) {
       return apiErrors.badRequest("venue_id is required");
     }
 
-    // STEP 3: Check cache
-    const cacheKey = `pos_orders:${venueId}`;
+    // Check cache using standardized keys
+    const cacheKey = cacheKeys.order.pos(venueId);
     const cachedOrders = await cache.get(cacheKey);
 
     if (cachedOrders) {
@@ -81,8 +77,8 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     const response = { orders: transformedOrders };
 
-    // STEP 6: Cache the response for 1 minute
-    await cache.set(cacheKey, response, { ttl: 60 });
+    // Cache the response using recommended TTL
+    await cache.set(cacheKey, response, { ttl: RECOMMENDED_TTL.DASHBOARD_COUNTS });
 
     // STEP 7: Return success response
     return success(response);
@@ -94,4 +90,8 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
   }
+}, {
+  requireVenueAccess: true,
+  venueIdSource: "query",
+  rateLimit: RATE_LIMITS.GENERAL,
 });

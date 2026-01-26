@@ -111,27 +111,31 @@ export function useDashboardData(
           return;
         }
 
-        // Fetch table counts directly
-        const { data: allTables } = await supabase
-          .from("tables")
-          .select("id, is_active")
-          .eq("venue_id", normalizedVenueId);
-
-        const { data: activeSessions } = await supabase
-          .from("table_sessions")
-          .select("id")
-          .eq("venue_id", normalizedVenueId)
-          .eq("status", "OCCUPIED")
-          .is("closed_at", null);
-
+        // Batch fetch table-related data in parallel for better performance
         const now = new Date();
-        const { data: currentReservations } = await supabase
-          .from("reservations")
-          .select("id")
-          .eq("venue_id", normalizedVenueId)
-          .eq("status", "BOOKED")
-          .lte("start_at", now.toISOString())
-          .gte("end_at", now.toISOString());
+        const [tablesResult, sessionsResult, reservationsResult] = await Promise.all([
+          supabase
+            .from("tables")
+            .select("id, is_active")
+            .eq("venue_id", normalizedVenueId),
+          supabase
+            .from("table_sessions")
+            .select("id")
+            .eq("venue_id", normalizedVenueId)
+            .eq("status", "OCCUPIED")
+            .is("closed_at", null),
+          supabase
+            .from("reservations")
+            .select("id")
+            .eq("venue_id", normalizedVenueId)
+            .eq("status", "BOOKED")
+            .lte("start_at", now.toISOString())
+            .gte("end_at", now.toISOString()),
+        ]);
+
+        const allTables = tablesResult.data;
+        const activeSessions = sessionsResult.data;
+        const currentReservations = reservationsResult.data;
 
         if (countsData && typeof countsData === "object") {
           const activeTables = allTables?.filter((t) => t.is_active) || [];

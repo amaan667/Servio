@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { apiErrors } from "@/lib/api/standard-response";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { apiErrors, success } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import {
   deriveQrTypeFromOrder,
   normalizePaymentMethod,
   validatePaymentMethodForQrType,
 } from "@/lib/orders/qr-payment-validation";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const payMultipleSchema = z.object({
+  order_ids: z.array(z.string().uuid()).min(1, "At least one order ID is required"),
+  payment_method: z.enum(["cash", "card", "till"]),
+  venue_id: z.string(),
+});
 
 /**
  * POST /api/orders/pay-multiple
@@ -18,30 +26,12 @@ export const dynamic = "force-dynamic";
  * Pay multiple orders at once (e.g., entire table)
  * Handles both till payment and card payment
  */
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-  try {
-    const body = await req.json();
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body } = context;
     const { order_ids, payment_method, venue_id } = body;
 
-    // Validation
-    if (!order_ids || !Array.isArray(order_ids) || order_ids.length === 0) {
-      return NextResponse.json(
-        { error: "order_ids array is required and must not be empty" },
-        { status: 400 }
-      );
-    }
-
-    if (!payment_method || !["cash", "card", "till"].includes(payment_method)) {
-      return NextResponse.json(
-        { error: "payment_method must be 'cash', 'card', or 'till'" },
-        { status: 400 }
-      );
-    }
-
-    if (!venue_id) {
-      return apiErrors.badRequest("venue_id is required");
-    }
+    // Validation already done by unified handler schema
 
     const admin = createAdminClient();
 
@@ -136,7 +126,7 @@ export const POST = withUnifiedAuth(
     // Calculate total
     const totalAmount = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
 
-    return NextResponse.json({
+    return success({
       ok: true,
       orders: updatedOrders || [],
       totalAmount,
@@ -144,12 +134,19 @@ export const POST = withUnifiedAuth(
       payment_method: normalizedPaymentMethod,
       message: `Successfully marked ${updatedOrders?.length || 0} order(s) as paid`,
     });
-  } catch (_error) {
-
-    return apiErrors.internal("Internal server error");
-  }
   },
   {
+    schema: payMultipleSchema,
+    requireVenueAccess: true,
     requireRole: ["owner", "manager", "staff", "server", "kitchen"],
+    rateLimit: RATE_LIMITS.GENERAL,
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.clone().json();
+        return body?.venue_id || null;
+      } catch {
+        return null;
+      }
+    },
   }
 );

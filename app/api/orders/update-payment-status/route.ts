@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { orderService } from "@/lib/services/OrderService";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ const updatePaymentSchema = z.object({
 /**
  * POST: Update order payment status
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
     

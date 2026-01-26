@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { kdsService } from "@/lib/services/KDSService";
 import { z } from "zod";
 
@@ -12,7 +12,7 @@ const updateTicketSchema = z.object({
 /**
  * GET: Fetch KDS tickets with auto-backfill
  */
-export const GET = createApiHandler(
+export const GET = createUnifiedHandler(
   async (req, context) => {
     const { venueId } = context;
     const stationId = req.nextUrl.searchParams.get("station_id") || undefined;
@@ -38,7 +38,7 @@ export const GET = createApiHandler(
 /**
  * PATCH: Update KDS ticket status
  */
-export const PATCH = createApiHandler(
+export const PATCH = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
     const ticket = await kdsService.updateTicketStatus(body.ticket_id, venueId, body.status);

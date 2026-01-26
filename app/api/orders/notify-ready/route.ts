@@ -1,11 +1,10 @@
 import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { env } from "@/lib/env";
 import { z } from "zod";
-import { validateBody } from "@/lib/api/validation-schemas";
 
 export const runtime = "nodejs";
 
@@ -19,18 +18,11 @@ const notifyReadySchema = z.object({
  * API endpoint to send "Order Ready" notifications to customers
  * Supports SMS, email, and in-app notifications
  */
-export const POST = withUnifiedAuth(
-  async (req: NextRequest) => {
-    try {
-      // STEP 1: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
-
-      // STEP 2: Validate input
-      const body = await validateBody(notifyReadySchema, await req.json());
-      const { orderId, venueId, notificationChannels } = body;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Validate input (already done by unified handler)
+    const { body } = context;
+    const { orderId, venueId, notificationChannels = [] } = body;
 
       // STEP 3: Get order and venue details
       const supabase = await createServerSupabase();
@@ -217,25 +209,21 @@ export const POST = withUnifiedAuth(
         }
       }
 
-      return success({
-        message: "Order ready notification processed",
-        orderId,
-        orderNumber,
-        notifications: notificationResults,
-        customerPhone: order.customer_phone ? `***${order.customer_phone.slice(-4)}` : null,
-        customerEmail: order.customer_email
-          ? `${order.customer_email.slice(0, 3)}***@${order.customer_email.split("@")[1]}`
-          : null,
-      });
-    } catch (error) {
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Failed to send notification", error);
-    }
+    return success({
+      message: "Order ready notification processed",
+      orderId,
+      orderNumber,
+      notifications: notificationResults,
+      customerPhone: order.customer_phone ? `***${order.customer_phone.slice(-4)}` : null,
+      customerEmail: order.customer_email
+        ? `${order.customer_email.slice(0, 3)}***@${order.customer_email.split("@")[1]}`
+        : null,
+    });
   },
   {
+    schema: notifyReadySchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
         const body = await req.clone().json().catch(() => ({}));

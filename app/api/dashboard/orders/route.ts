@@ -1,24 +1,20 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
+import { cacheKeys, RECOMMENDED_TTL } from "@/lib/cache/constants";
 
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from "@/lib/dates";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
-export const GET = withUnifiedAuth(
+export const GET = createUnifiedHandler(
   async (req: NextRequest, context) => {
     try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
-
+      // STEP 1: Rate limiting handled by unified handler
       // STEP 2: Get venueId from context (already verified)
       const venueId = context.venueId;
 
@@ -33,8 +29,8 @@ export const GET = withUnifiedAuth(
         return apiErrors.badRequest("venueId is required");
       }
 
-      // Try to get from cache first (1 minute TTL for dashboard orders)
-      const cacheKey = `dashboard_orders:${venueId}:${status}:${scope}:${limit}`;
+      // Try to get from cache first (using standardized cache keys)
+      const cacheKey = cacheKeys.order.dashboard(venueId, status, scope);
       const cachedOrders = await cache.get(cacheKey);
 
       if (cachedOrders) {
@@ -126,33 +122,16 @@ export const GET = withUnifiedAuth(
       //
       // }
 
-      // Get active tables count based on scope
-      let activeTablesQuery = supabase
-        .from("orders")
-        .select("table_number")
-        .eq("venue_id", venueId)
-        .not("table_number", "is", null);
+      // Get active tables count based on scope - optimized to use existing orders data
+      // Instead of a separate query, derive from the orders we already fetched
+      const activeTablesSet = new Set<string>();
+      transformedOrders.forEach((order) => {
+        if (order.table_number) {
+          activeTablesSet.add(String(order.table_number));
+        }
+      });
 
-      if (scope === "live") {
-        const timeWindow = liveOrdersWindow();
-        activeTablesQuery = activeTablesQuery.gte("created_at", timeWindow.startUtcISO);
-      } else if (scope === "earlier") {
-        const timeWindow = earlierTodayWindow();
-        activeTablesQuery = activeTablesQuery
-          .gte("created_at", timeWindow.startUtcISO)
-          .lt("created_at", timeWindow.endUtcISO);
-      } else if (scope === "history") {
-        const timeWindow = historyWindow();
-        activeTablesQuery = activeTablesQuery.lt("created_at", timeWindow.endUtcISO);
-      }
-
-      const { data: activeTables } = await activeTablesQuery;
-
-      const activeTablesToday = new Set(
-        activeTables?.map(
-          (o: Record<string, unknown>) => (o as { table_number?: string }).table_number
-        ) || []
-      ).size;
+      const activeTablesToday = activeTablesSet.size;
 
       const response = {
         ok: true,
@@ -163,8 +142,8 @@ export const GET = withUnifiedAuth(
         },
       };
 
-      // Cache the response for 1 minute (dashboard orders change frequently)
-      await cache.set(cacheKey, response, { ttl: 60 });
+      // Cache the response using recommended TTL
+      await cache.set(cacheKey, response, { ttl: RECOMMENDED_TTL.DASHBOARD_COUNTS });
 
       // STEP 7: Return success response
       return success(response);
@@ -188,14 +167,8 @@ export const GET = withUnifiedAuth(
     }
   },
   {
-    // STEP 9: Extract venueId from request (query params)
-    extractVenueId: async (req) => {
-      try {
-        const { searchParams } = new URL(req.url);
-        return searchParams.get("venueId");
-      } catch {
-        return null;
-      }
-    },
+    requireVenueAccess: true,
+    venueIdSource: "query",
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );

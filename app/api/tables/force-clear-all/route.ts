@@ -1,32 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import { apiErrors } from "@/lib/api/standard-response";
+import { NextRequest } from "next/server";
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+const forceClearAllSchema = z.object({
+  venue_id: z.string().optional(),
+  venueId: z.string().optional(),
+});
 
-    const body = await req.json();
-    const venue_id = context.venueId || body.venue_id;
+export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
+  const { body } = context;
+  const venue_id = context.venueId || body.venue_id || body.venueId;
 
-    if (!venue_id) {
-      return apiErrors.badRequest("venue_id is required");
-    }
+  if (!venue_id) {
+    return apiErrors.badRequest("venue_id is required");
+  }
 
     const supabase = createAdminClient();
 
@@ -37,14 +30,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (clearAllRefsError) {
-
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Failed to clear table references: ${clearAllRefsError.message}`,
-        },
-        { status: 500 }
-      );
+      return apiErrors.database(`Failed to clear table references: ${clearAllRefsError.message}`);
     }
 
     // Step 2: Delete all table sessions
@@ -64,14 +50,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { error: tablesError } = await supabase.from("tables").delete().eq("venue_id", venue_id);
 
     if (tablesError) {
-
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Failed to delete tables: ${tablesError.message}`,
-        },
-        { status: 500 }
-      );
+      return apiErrors.database(`Failed to delete tables: ${tablesError.message}`);
     }
 
     // Step 4: Clear table runtime state
@@ -100,18 +79,26 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       // Intentionally empty
     }
 
-    return NextResponse.json({
+    return success({
       ok: true,
       message: "All tables and sessions force cleared successfully",
     });
-  } catch (_error) {
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Internal server error",
-      },
-      { status: 500 }
-    );
+  },
+  {
+    schema: forceClearAllSchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.clone().json().catch(() => ({}));
+        return (
+          (body as { venue_id?: string; venueId?: string })?.venue_id ||
+          (body as { venue_id?: string; venueId?: string })?.venueId ||
+          null
+        );
+      } catch {
+        return null;
+      }
+    },
   }
-});
+);

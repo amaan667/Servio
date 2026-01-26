@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { menuService } from "@/lib/services/MenuService";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { paginationSchema } from "@/lib/api/validation-schemas";
@@ -14,7 +14,7 @@ const menuPaginationSchema = paginationSchema.extend({
  * Public endpoint - no authentication required
  * Works in private browsers and mobile devices
  */
-export const GET = createApiHandler(
+export const GET = createUnifiedHandler(
   async (req, context) => {
     try {
       const { params } = context;

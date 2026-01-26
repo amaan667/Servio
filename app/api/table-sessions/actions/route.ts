@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { z } from "zod";
 import {
   handleStartPreparing,
   handleMarkReady,
@@ -27,64 +27,77 @@ import {
  * Original: 771 lines → Now: ~110 lines
  */
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+const tableActionSchema = z.object({
+  action: z.string(),
+  table_id: z.string().uuid(),
+  order_id: z.string().uuid().optional(),
+  destination_table_id: z.string().uuid().optional(),
+  customer_name: z.string().optional(),
+  reservation_time: z.string().optional(),
+  reservation_duration: z.number().optional(),
+  reservation_id: z.string().uuid().optional(),
+  venue_id: z.string().optional(),
+  venueId: z.string().optional(),
+});
+
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Get venueId from context (already verified)
+    const venueId = context.venueId;
+    const { body } = context;
+    const {
+      action,
+      table_id,
+      order_id,
+      destination_table_id,
+      customer_name,
+      reservation_time,
+      reservation_duration,
+      reservation_id,
+    } = body;
+
+    // Validate inputs
+    if (!action || !table_id) {
+      return apiErrors.badRequest("action and table_id are required");
+    }
+
+    if (!venueId) {
+      return apiErrors.badRequest("venue_id is required");
+    }
+
+    // Security - Verify venue access (already done by unified handler)
+    // Verify table belongs to venue
+    const supabase = await createServerSupabase();
+    const { data: table } = await supabase
+      .from("tables")
+      .select("venue_id")
+      .eq("id", table_id)
+      .eq("venue_id", venueId)
+      .single();
+
+    if (!table) {
+      return apiErrors.notFound("Table not found or access denied");
+    }
+
+    // Route to appropriate handler based on action
     try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
-
-      // STEP 2: Parse request BEFORE accessing venueId from context
-      // (venueId extraction happens after body is parsed)
-      const body = await req.json();
-
-      // STEP 3: Get venueId from context (already verified)
-      const venueId = context.venueId;
-      const {
-        action,
-        table_id,
-        order_id,
-        destination_table_id,
-        customer_name,
-        reservation_time,
-        reservation_duration,
-        reservation_id,
-      } = body;
-
-      // STEP 4: Validate inputs
-      if (!action || !table_id) {
-        return apiErrors.badRequest("action and table_id are required");
-      }
-
-      if (!venueId) {
-        return apiErrors.badRequest("venue_id is required");
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-      // Verify table belongs to venue
-      const supabase = await createServerSupabase();
-      const { data: table } = await supabase
-        .from("tables")
-        .select("venue_id")
-        .eq("id", table_id)
-        .eq("venue_id", venueId)
-        .single();
-
-      if (!table) {
-        return apiErrors.notFound("Table not found or access denied");
-      }
-
-      // Route to appropriate handler based on action
       switch (action) {
         case "start_preparing":
+          if (!order_id) {
+            return apiErrors.badRequest("order_id is required for start_preparing action");
+          }
           return await handleStartPreparing(supabase, table_id, order_id);
 
         case "mark_ready":
+          if (!order_id) {
+            return apiErrors.badRequest("order_id is required for mark_ready action");
+          }
           return await handleMarkReady(supabase, table_id, order_id);
 
         case "mark_served":
+          if (!order_id) {
+            return apiErrors.badRequest("order_id is required for mark_served action");
+          }
           return await handleMarkServed(supabase, table_id, order_id);
 
         case "mark_awaiting_bill":
@@ -120,6 +133,9 @@ export const POST = withUnifiedAuth(
           if (!destination_table_id) {
             return apiErrors.badRequest("destination_table_id is required for merge_table action");
           }
+          if (!venueId) {
+            return apiErrors.badRequest("venueId is required for merge_table action");
+          }
           return await handleMergeTable(supabase, venueId, table_id, destination_table_id);
 
         case "unmerge_table":
@@ -135,16 +151,16 @@ export const POST = withUnifiedAuth(
           return apiErrors.badRequest("Invalid action");
       }
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }
-
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      return apiErrors.internal("Request processing failed");
     }
   },
   {
-    // Extract venueId from body - use cloned request to avoid consuming the stream
+    schema: tableActionSchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
         // Clone the request so we don't consume the original body

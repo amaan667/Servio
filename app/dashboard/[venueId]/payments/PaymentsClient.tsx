@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,7 +81,7 @@ function RefundDialog({ onRefundProcessed }: { onRefundProcessed: () => void }) 
         setOrders(data as PaymentOrder[]);
       }
     } catch (error) {
-      console.error("Error loading orders:", error);
+      // Error loading orders - handled silently
     }
   };
 
@@ -123,7 +123,7 @@ function RefundDialog({ onRefundProcessed }: { onRefundProcessed: () => void }) 
       setRefundReason("");
       setCustomReason("");
     } catch (error) {
-      console.error("Refund error:", error);
+      // Refund error - handled by toast notification
       alert(error instanceof Error ? error.message : "Failed to process refund");
     } finally {
       setIsProcessing(false);
@@ -325,7 +325,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     }
   }, [unpaidOrders]);
 
-  const loadPayments = useCallback(async () => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const loadPayments = async () => {
     if (!venueId) return;
 
     try {
@@ -480,9 +481,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     } catch (error) {
       // Error handled silently - show empty state
     }
-  }, [venueId]);
+  };
 
-  const loadRefunds = useCallback(async () => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const loadRefunds = async () => {
     if (!venueId) return;
 
     try {
@@ -502,7 +504,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .order("refunded_at", { ascending: false, nullsFirst: false });
 
       if (refundsError) {
-        console.error("Error fetching refunds:", refundsError);
+        // Error fetching refunds - handled silently
         return;
       }
 
@@ -554,9 +556,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         });
       }
     } catch (error) {
-      console.error("Error loading refunds:", error);
+      // Error loading refunds - handled silently
     }
-  }, [venueId]);
+  };
 
   // Predefined refund reasons
   const refundReasons = [
@@ -599,7 +601,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
       return result;
     } catch (error) {
-      console.error("Refund error:", error);
+      // Refund error - rethrow for caller to handle
       throw error;
     } finally {
       setIsProcessingRefund(false);
@@ -670,7 +672,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         window.removeEventListener("order-payment-updated", handlePaymentUpdate as EventListener);
       }
     };
-  }, [venueId, loadPayments]);
+  }, [venueId]);
 
   const handleMarkAsPaid = async (orderId: string) => {
     try {

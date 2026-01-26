@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Edit,
@@ -84,7 +84,8 @@ export default function QuestionsClient({
     setShowAddForm(false);
   };
 
-  const fetchQuestions = useCallback(async () => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const fetchQuestions = async () => {
     if (!venueId) {
       return;
     }
@@ -168,14 +169,15 @@ export default function QuestionsClient({
     } finally {
       setLoading(false);
     }
-  }, [venueId, toast]);
+  };
 
   // Load questions on mount
   useEffect(() => {
     if (venueId) {
       fetchQuestions();
     }
-  }, [venueId, fetchQuestions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

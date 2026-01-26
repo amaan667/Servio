@@ -1,57 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
+const createReservationSchema = z.object({
+  tableId: z.string().uuid().optional().nullable(),
+  startAt: z.string().datetime(),
+  endAt: z.string().datetime(),
+  partySize: z.number().int().positive().optional().default(2),
+  name: z.string().min(1),
+  phone: z.string().optional().nullable(),
+});
 
-    const body = await req.json();
-    const { tableId, startAt, endAt, partySize, name, phone } = body;
+export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
+  const { body, venueId } = context;
+  const { tableId, startAt, endAt, partySize, name, phone } = body;
 
-    // Validate inputs
-    if (!startAt || !endAt) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "startAt and endAt are required",
-        },
-        { status: 400 }
-      );
-    }
-
+    // Validation already done by unified handler schema
     if (new Date(startAt) >= new Date(endAt)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "endAt must be after startAt",
-        },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("endAt must be after startAt");
     }
 
-    if (!name) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "name is required",
-        },
-        { status: 400 }
-      );
+    if (!venueId) {
+      return apiErrors.badRequest("venueId is required");
     }
 
     const adminSupabase = createAdminClient();
@@ -60,7 +36,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: reservation, error: reservationError } = await adminSupabase
       .from("reservations")
       .insert({
-        venue_id: context.venueId,
+        venue_id: venueId,
         table_id: tableId || null,
         start_at: startAt,
         end_at: endAt,
@@ -73,28 +49,17 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (reservationError) {
-
-      return NextResponse.json(
-        {
-          ok: false,
-          error: reservationError.message || "Failed to create reservation",
-        },
-        { status: 500 }
-      );
+      return apiErrors.database(reservationError.message || "Failed to create reservation");
     }
 
-    return NextResponse.json({
+    return success({
       ok: true,
       reservation,
     });
-  } catch (_error) {
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: _error instanceof Error ? _error.message : "An unexpected error occurred",
-      },
-      { status: 500 }
-    );
+  },
+  {
+    schema: createReservationSchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
-});
+);

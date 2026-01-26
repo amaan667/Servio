@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,23 +12,16 @@ export const dynamic = "force-dynamic";
  * Clear tables for all completed/cancelled orders
  * Call: POST /api/tables/clear-completed
  */
-export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
-  try {
-    // STEP 1: Rate limiting (ALWAYS FIRST)
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
+export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
+  // Get venueId from context
+  const venueId = context.venueId;
 
-    // STEP 2: Get venueId from context
-    const venueId = context.venueId;
+  if (!venueId) {
+    return apiErrors.badRequest("venue_id is required");
+  }
 
-    if (!venueId) {
-      return apiErrors.badRequest("venue_id is required");
-    }
-
-    // STEP 3: Business logic - Find completed orders and clear their table sessions
-    const supabase = createAdminClient();
+  // Business logic - Find completed orders and clear their table sessions
+  const supabase = createAdminClient();
 
     // Find all orders that are completed or cancelled and have a table
     const { data: completedOrders, error: ordersError } = await supabase
@@ -39,11 +31,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("order_status", ["COMPLETED", "CANCELLED"]);
 
     if (ordersError) {
-
-      return apiErrors.database(
-        "Failed to fetch completed orders",
-        isDevelopment() ? ordersError.message : undefined
-      );
+      return apiErrors.database("Failed to fetch completed orders");
     }
 
     if (!completedOrders || completedOrders.length === 0) {
@@ -78,11 +66,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .select();
 
     if (clearError) {
-
-      return apiErrors.database(
-        "Failed to clear table sessions",
-        isDevelopment() ? clearError.message : undefined
-      );
+      return apiErrors.database("Failed to clear table sessions");
     }
 
     return success({
@@ -90,12 +74,9 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       cleared: clearedSessions?.length || 0,
       orderIds,
     });
-  } catch (error) {
-
-    if (isZodError(error)) {
-      return handleZodError(error);
-    }
-
-    return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+  },
+  {
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
-});
+);

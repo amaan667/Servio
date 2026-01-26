@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { tableService } from "@/lib/services/TableService";
 import { createTableSchema } from "@/lib/api/validation-schemas";
 import { enforceResourceLimit } from "@/lib/auth/unified-auth";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 /**
  * GET: Fetch all tables with their current runtime state
  */
-export const GET = createApiHandler(
+export const GET = createUnifiedHandler(
   async (_req, context) => {
     const tables = await tableService.getTablesWithState(context.venueId);
     return { tables };
@@ -24,7 +24,7 @@ export const GET = createApiHandler(
 /**
  * POST: Create a new table (with tier limit check)
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId, venue } = context;
 

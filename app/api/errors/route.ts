@@ -1,11 +1,9 @@
 import { NextRequest } from "next/server";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { z } from "zod";
-import { validateBody } from "@/lib/api/validation-schemas";
 
 const errorDataSchema = z.object({
   error: z
@@ -33,68 +31,40 @@ const errorDataSchema = z.object({
   }),
 });
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Validate input (already done by unified handler)
+    const { body } = context;
+    const data = body;
 
-      // STEP 2: Validate input
-      const data = await validateBody(errorDataSchema, await req.json());
+    // Business logic - Log error/message
+    if (data.error) { /* Condition handled */ } else if (data.message) { /* Condition handled */ }
 
-      // STEP 3: Business logic - Log error/message
-      if (data.error) { /* Condition handled */ } else if (data.message) { /* Condition handled */ }
+    // Store in database or send to external service
+    // For now, we'll just log it
+    // In production, you might want to store this in a database
+    // or send it to a service like Sentry, LogRocket, etc.
 
-      // Store in database or send to external service
-      // For now, we'll just log it
-      // In production, you might want to store this in a database
-      // or send it to a service like Sentry, LogRocket, etc.
-
-      // STEP 4: Return success response
-      return success({ success: true });
-    } catch (error) {
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Failed to process error", isDevelopment() ? error : undefined);
-    }
+    return success({ success: true });
   },
   {
-    // System route - no venue required (errors can come from anywhere)
-    extractVenueId: async () => null,
+    schema: errorDataSchema,
+    requireAuth: false, // Errors can come from unauthenticated users
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );
 
-export const GET = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
-
-      // STEP 2: Return success response
-      return success({
-        message: "Error tracking endpoint",
-        status: "active",
-      });
-    } catch (error) {
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
-    }
+export const GET = createUnifiedHandler(
+  async (_req: NextRequest) => {
+    return success({
+      message: "Error tracking endpoint",
+      status: "active",
+    });
   },
   {
-    // System route - no venue required
-    extractVenueId: async () => null,
+    requireAuth: false,
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );

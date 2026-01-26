@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase";
 
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { z } from "zod";
-import { validateBody } from "@/lib/api/validation-schemas";
 
 const updateTableSchema = z.object({
   label: z.string().min(1).optional(),
@@ -16,112 +15,94 @@ const updateTableSchema = z.object({
 });
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
-  const handler = withUnifiedAuth(
-    async (req: NextRequest, authContext, routeParams) => {
-      try {
-        // STEP 1: Rate limiting (ALWAYS FIRST)
-        const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-        if (!rateLimitResult.success) {
-          return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-        }
+  const handler = createUnifiedHandler(
+    async (_req: NextRequest, handlerContext) => {
+      // Get tableId from route params (handled by unified handler)
+      const tableId = handlerContext.params?.tableId;
 
-        // STEP 2: Get tableId from route params
-        const params = await routeParams?.params;
-        const tableId = params?.tableId;
-
-        if (!tableId) {
-          return apiErrors.badRequest("tableId is required");
-        }
-
-        // STEP 3: Validate input
-        const body = await validateBody(updateTableSchema, await req.json());
-
-        // STEP 4: Get venueId from context
-        const venueId = authContext.venueId;
-
-        if (!venueId) {
-          return apiErrors.badRequest("venue_id is required");
-        }
-
-        // STEP 5: Business logic - Update table
-        // Use authenticated client that respects RLS (not admin client)
-        // RLS policies ensure users can only access tables for venues they have access to
-        const supabase = await createClient();
-
-        // Verify table exists and belongs to venue
-        // RLS ensures user can only access tables for venues they have access to
-        const { data: existingTable, error: checkError } = await supabase
-          .from("tables")
-          .select("venue_id")
-          .eq("id", tableId)
-          .eq("venue_id", venueId) // Explicit venue check (RLS also enforces this)
-          .single();
-
-        if (checkError || !existingTable) {
-
-          return apiErrors.notFound("Table not found");
-        }
-
-        // Build update data
-        const updateData: {
-          label?: string;
-          seat_count?: number;
-          is_active?: boolean;
-          qr_version?: number;
-          updated_at: string;
-        } = {
-          updated_at: new Date().toISOString(),
-        };
-
-        if (body.label !== undefined) {
-          updateData.label = body.label;
-        }
-        if (body.seat_count !== undefined) {
-          updateData.seat_count = body.seat_count;
-        }
-        if (body.is_active !== undefined) {
-          updateData.is_active = body.is_active;
-        }
-        if (body.qr_version !== undefined) {
-          updateData.qr_version = body.qr_version;
-        }
-
-        // Update table
-        // RLS ensures user can only update tables for venues they have access to
-        const { data: table, error: updateError } = await supabase
-          .from("tables")
-          .update(updateData)
-          .eq("id", tableId)
-          .eq("venue_id", venueId) // Explicit venue check (RLS also enforces this)
-          .select()
-          .single();
-
-        if (updateError || !table) {
-
-          return apiErrors.database(
-            "Failed to update table",
-            isDevelopment() ? updateError?.message : undefined
-          );
-        }
-
-        // STEP 6: Return success response
-        return success({ table });
-      } catch (error) {
-
-        if (isZodError(error)) {
-          return handleZodError(error);
-        }
-
-        return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      if (!tableId) {
+        return apiErrors.badRequest("tableId is required");
       }
+
+      // Get venueId from context (already verified)
+      const venueId = handlerContext.venueId;
+      const { body } = handlerContext;
+
+      if (!venueId) {
+        return apiErrors.badRequest("venue_id is required");
+      }
+
+      // Business logic - Update table
+      // Use authenticated client that respects RLS (not admin client)
+      // RLS policies ensure users can only access tables for venues they have access to
+      const supabase = await createClient();
+
+      // Verify table exists and belongs to venue
+      // RLS ensures user can only access tables for venues they have access to
+      const { data: existingTable, error: checkError } = await supabase
+        .from("tables")
+        .select("venue_id")
+        .eq("id", tableId)
+        .eq("venue_id", venueId) // Explicit venue check (RLS also enforces this)
+        .single();
+
+      if (checkError || !existingTable) {
+        return apiErrors.notFound("Table not found");
+      }
+
+      // Build update data
+      const updateData: {
+        label?: string;
+        seat_count?: number;
+        is_active?: boolean;
+        qr_version?: number;
+        updated_at: string;
+      } = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (body.label !== undefined) {
+        updateData.label = body.label;
+      }
+      if (body.seat_count !== undefined) {
+        updateData.seat_count = body.seat_count;
+      }
+      if (body.is_active !== undefined) {
+        updateData.is_active = body.is_active;
+      }
+      if (body.qr_version !== undefined) {
+        updateData.qr_version = body.qr_version;
+      }
+
+      // Update table
+      // RLS ensures user can only update tables for venues they have access to
+      const { data: table, error: updateError } = await supabase
+        .from("tables")
+        .update(updateData)
+        .eq("id", tableId)
+        .eq("venue_id", venueId) // Explicit venue check (RLS also enforces this)
+        .select()
+        .single();
+
+      if (updateError || !table) {
+        return apiErrors.database("Failed to update table");
+      }
+
+      return success({ table });
     },
     {
-      extractVenueId: async (req, routeParams) => {
+      schema: updateTableSchema,
+      requireVenueAccess: true,
+      rateLimit: RATE_LIMITS.GENERAL,
+      extractVenueId: async (req, routeContext) => {
         // Try to get venueId from table record
-        if (routeParams?.params) {
-          const params = await routeParams.params;
+        if (routeContext?.params) {
+          const params = routeContext.params instanceof Promise 
+            ? await routeContext.params 
+            : routeContext.params;
           const tableId = params?.tableId;
           if (tableId) {
+            const { createAdminClient } = await import("@/lib/supabase");
             const adminSupabase = createAdminClient();
             const { data: table } = await adminSupabase
               .from("tables")
@@ -147,7 +128,7 @@ type TableParams = { params?: Promise<{ tableId?: string }> };
 
 export async function DELETE(req: NextRequest, context: TableParams = {}) {
   const handler = withUnifiedAuth(
-    async (req: NextRequest, authContext, routeParams) => {
+    async (req: NextRequest, authContext: { venueId: string; user: { id: string } }, routeParams?: { params?: Promise<{ tableId?: string }> }) => {
       try {
         const params = await routeParams?.params;
         const tableId = params?.tableId;
@@ -345,7 +326,7 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
       }
     },
     {
-      extractVenueId: async (req, routeParams) => {
+      extractVenueId: async (req: NextRequest, routeParams?: { params?: Promise<{ tableId?: string }> }) => {
         // Try to get venueId from table record
         if (routeParams?.params) {
           const params = await routeParams.params;

@@ -1,97 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { apiErrors } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
-export const GET = withUnifiedAuth(
-  async (req: NextRequest, context, routeParams?: { params?: Promise<Record<string, string>> }) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return NextResponse.json(
-          {
-            error: "Too many requests",
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-          },
-          { status: 429 }
-        );
-      }
+export const GET = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Get venueId from context or params (already verified)
+    const venueId = context.venueId || context.params?.venueId;
 
-      // STEP 2: Get venueId from context (already verified)
-      const venueId = context.venueId;
-
-      // Also try to get from route params if not in context
-      let finalVenueId: string | null = venueId;
-      if (!finalVenueId && routeParams?.params) {
-        const params = await routeParams.params;
-        finalVenueId = (params?.venueId as string) || null;
-      }
-
-      // STEP 3: Parse request
-      // STEP 4: Validate inputs
-      if (!finalVenueId) {
-        return apiErrors.badRequest("Venue ID is required");
-      }
-
-      // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
-      // Tier information is already available in the unified context from get_access_context RPC
-      // No need for additional database queries - this eliminates duplicate calls
-
-      // DEBUG: Also log what the database actually contains
-      const supabase = await createAdminClient();
-      const { data: orgData } = await supabase
-        .from("organizations")
-        .select("subscription_tier, subscription_status, stripe_customer_id")
-        .eq("owner_user_id", context.user.id)
-        .maybeSingle();
-
-      // STEP 7: Return success response
-      return NextResponse.json({
-        tier: context.tier,
-        status: "active", // Status is handled by the RPC logic (inactive subscriptions return 'starter' tier)
-      });
-    } catch (_error) {
-      const errorMessage =
-        _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            tier: "starter",
-            status: "active",
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
-      }
-
-      return NextResponse.json(
-        {
-          tier: "starter",
-          status: "active",
-        },
-        { status: 200 }
-      );
+    // Validation
+    if (!venueId) {
+      return apiErrors.badRequest("Venue ID is required");
     }
+
+    // Business logic
+    // Tier information is already available in the unified context from get_access_context RPC
+    // No need for additional database queries - this eliminates duplicate calls
+
+    // DEBUG: Also log what the database actually contains
+    const supabase = await createAdminClient();
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("subscription_tier, subscription_status, stripe_customer_id")
+      .eq("owner_user_id", context.user.id)
+      .maybeSingle();
+
+    return success({
+      tier: context.tier,
+      status: "active", // Status is handled by the RPC logic (inactive subscriptions return 'starter' tier)
+    });
   },
   {
-    // Extract venueId from URL params
-    extractVenueId: async (_req, routeParams) => {
-      try {
-        if (routeParams?.params) {
-          const params = await routeParams.params;
-          return params?.venueId || null;
-        }
-        return null;
-      } catch {
-        return null;
-      }
-    },
+    requireVenueAccess: true,
+    venueIdSource: "params",
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );

@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { orderService } from "@/lib/services/OrderService";
 import { z } from "zod";
 
@@ -11,7 +11,7 @@ const serveOrderSchema = z.object({
 /**
  * POST: Mark order as served
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
     const order = await orderService.markServed(body.orderId, venueId);

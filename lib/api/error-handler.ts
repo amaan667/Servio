@@ -3,6 +3,9 @@
  *
  * Provides consistent error handling, logging, and correlation ID tracking
  * for all API routes.
+ * 
+ * @deprecated Use createUnifiedHandler from './unified-handler' instead.
+ * This handler is kept for backward compatibility but will be removed in a future version.
  */
 
 import { NextRequest, NextResponse } from "next/server";

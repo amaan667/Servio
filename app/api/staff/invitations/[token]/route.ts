@@ -1,12 +1,9 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { z } from "zod";
-import { validateParams, validateBody } from "@/lib/api/validation-schemas";
 
 // Validation schemas
 const acceptInvitationSchema = z.object({
@@ -19,103 +16,65 @@ const tokenParamSchema = z.object({
 });
 
 // GET /api/staff/invitations/[token] - Get invitation details by token
-export const GET = withUnifiedAuth(
-  async (req: NextRequest, _context, routeParams?: { params?: Promise<Record<string, string>> }) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
+export const GET = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Validate route parameters
+    const token = context.params?.token;
 
-      // STEP 2: Validate route parameters
-      let token: string | null = null;
-      if (routeParams?.params) {
-        const params = await routeParams.params;
-        const validated = validateParams(tokenParamSchema, params);
-        token = validated.token;
-      }
-
-      if (!token) {
-        return apiErrors.badRequest("Token is required");
-      }
-
-      // STEP 3: Business logic
-      const supabase = createAdminClient();
-
-      // Get invitation details using the database function
-      const { data, error } = await supabase.rpc("get_invitation_by_token", { p_token: token });
-
-      if (error) {
-
-        return apiErrors.database(
-          "Failed to fetch invitation",
-          isDevelopment() ? error.message : undefined
-        );
-      }
-
-      if (!data || data.length === 0) {
-        return apiErrors.notFound("Invitation not found or expired");
-      }
-
-      const invitation = data[0];
-
-      // Check if invitation is expired
-      if (new Date(invitation.expires_at) < new Date()) {
-        return apiErrors.badRequest("Invitation has expired", { status: 410 });
-      }
-
-      // Check if invitation is already accepted
-      if (invitation.status !== "pending") {
-        return apiErrors.badRequest("Invitation is no longer valid", { status: 410 });
-      }
-
-      // STEP 4: Return success response
-      return success({ invitation });
-    } catch (error) {
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+    if (!token) {
+      return apiErrors.badRequest("Token is required");
     }
+
+    // Business logic
+    const supabase = createAdminClient();
+
+    // Get invitation details using the database function
+    const { data, error } = await supabase.rpc("get_invitation_by_token", { p_token: token });
+
+    if (error) {
+      return apiErrors.database("Failed to fetch invitation");
+    }
+
+    if (!data || data.length === 0) {
+      return apiErrors.notFound("Invitation not found or expired");
+    }
+
+    const invitation = data[0];
+
+    // Check if invitation is expired
+    if (new Date(invitation.expires_at) < new Date()) {
+      return apiErrors.badRequest("Invitation has expired", { status: 410 });
+    }
+
+    // Check if invitation is already accepted
+    if (invitation.status !== "pending") {
+      return apiErrors.badRequest("Invitation is no longer valid", { status: 410 });
+    }
+
+    return success({ invitation });
   },
   {
-    // Extract token from URL params
-    extractVenueId: async () => {
-      // Invitations don't require venue access - token is in URL
-      return null;
-    },
+    requireAuth: false, // Invitations can be accessed without auth
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
+    venueIdSource: "params",
   }
 );
 
 // POST /api/staff/invitations/[token] - Accept invitation and create account
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, _context, routeParams?: { params?: Promise<Record<string, string>> }) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.AUTH);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Validate route parameters and body
+    const token = context.params?.token;
 
-      // STEP 2: Validate route parameters and body
-      let token: string | null = null;
-      if (routeParams?.params) {
-        const params = await routeParams.params;
-        const validated = validateParams(tokenParamSchema, params);
-        token = validated.token;
-      }
+    if (!token) {
+      return apiErrors.badRequest("Token is required");
+    }
 
-      if (!token) {
-        return apiErrors.badRequest("Token is required");
-      }
+    const { body } = context;
 
-      const body = await validateBody(acceptInvitationSchema, await req.json());
-
-      // STEP 3: Business logic
-      const supabase = createAdminClient();
+    // Business logic
+    const supabase = createAdminClient();
 
       // Get invitation details
       const { data: invitationData, error: fetchError } = await supabase.rpc(
@@ -124,11 +83,7 @@ export const POST = withUnifiedAuth(
       );
 
       if (fetchError) {
-
-        return apiErrors.database(
-          "Failed to fetch invitation",
-          isDevelopment() ? fetchError.message : undefined
-        );
+        return apiErrors.database("Failed to fetch invitation");
       }
 
       if (!invitationData || invitationData.length === 0) {
@@ -177,10 +132,7 @@ export const POST = withUnifiedAuth(
           );
         }
 
-        return apiErrors.internal(
-          "Failed to create account",
-          isDevelopment() ? signUpError : undefined
-        );
+        return apiErrors.internal("Failed to create account");
       }
 
       if (!newUser?.user) {
@@ -196,11 +148,7 @@ export const POST = withUnifiedAuth(
       });
 
       if (acceptError) {
-
-        return apiErrors.database(
-          "Failed to accept invitation",
-          isDevelopment() ? acceptError.message : undefined
-        );
+        return apiErrors.database("Failed to accept invitation");
       }
 
       if (!acceptResult) {
@@ -221,26 +169,19 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (updateError) {
-
         // Continue anyway - invitation was accepted
       }
 
-      // STEP 4: Return success response
       return success({
         message: "Invitation accepted successfully",
         invitation: updatedInvitation,
       });
-    } catch (error) {
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
-    }
   },
   {
-    // Extract token from URL params - no venue required
-    extractVenueId: async () => null,
+    schema: acceptInvitationSchema,
+    requireAuth: false, // Invitations can be accepted without auth
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.AUTH,
+    venueIdSource: "params",
   }
 );

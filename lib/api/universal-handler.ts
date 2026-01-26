@@ -1,7 +1,11 @@
 /**
  * Universal API Handler
  * Standardized handler with validation, auth, logging, and error handling
- * Use this for ALL API routes to ensure consistency
+ * 
+ * @deprecated Use createUnifiedHandler from './unified-handler' instead.
+ * This handler is kept for backward compatibility but will be removed in a future version.
+ * 
+ * Migration: Replace createUniversalHandler with createUnifiedHandler for better features.
  */
 
 import { NextRequest, NextResponse } from "next/server";

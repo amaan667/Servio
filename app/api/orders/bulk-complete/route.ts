@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { orderService } from "@/lib/services/OrderService";
 import { apiErrors } from "@/lib/api/standard-response";
 import { z } from "zod";
@@ -11,7 +11,7 @@ const bulkCompleteSchema = z.object({
 /**
  * POST: Bulk complete orders
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
     

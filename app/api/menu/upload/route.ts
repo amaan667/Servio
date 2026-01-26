@@ -1,6 +1,6 @@
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { apiErrors } from "@/lib/api/standard-response";
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
 /**
  * POST: Upload menu file for a venue
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (req, context) => {
     const { venueId } = context;
 

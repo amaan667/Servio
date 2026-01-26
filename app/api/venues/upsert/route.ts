@@ -2,24 +2,26 @@ import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
+const venueUpsertSchema = z.object({
+  name: z.string().min(1),
+  business_type: z.string().min(1),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional(),
+  venueId: z.string().optional(),
+});
 
-    const body = await req.json();
-    const { name, business_type, address, phone, email } = body;
-    const finalVenueId = context.venueId || body.venueId;
-    const user = context.user;
+export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
+  const { body, user } = context;
+  const { name, business_type, address, phone, email } = body;
+  const finalVenueId = context.venueId || body.venueId;
 
     if (!finalVenueId || !name || !business_type) {
       return apiErrors.badRequest("finalVenueId, name, and business_type required");
@@ -143,9 +145,19 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       }
       return success({ venue: data });
     }
-  } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-
-    return apiErrors.internal(errorMessage);
+  },
+  {
+    schema: venueUpsertSchema,
+    requireAuth: true,
+    requireVenueAccess: false, // Can create new venues
+    rateLimit: RATE_LIMITS.GENERAL,
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.clone().json();
+        return body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-});
+);

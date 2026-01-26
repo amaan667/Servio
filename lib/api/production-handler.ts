@@ -2,6 +2,10 @@
  * Production-Grade API Handler
  * 
  * Standardized handler for all API routes in Servio.
+ * 
+ * @deprecated Use createUnifiedHandler from './unified-handler' instead.
+ * This handler is kept for backward compatibility but will be removed in a future version.
+ * The unified handler includes all features from this handler plus additional improvements.
  */
 
 import { NextRequest, NextResponse } from "next/server";

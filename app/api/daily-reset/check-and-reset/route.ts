@@ -1,296 +1,249 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
+const dailyResetSchema = z.object({
+  venueId: z.string().optional(),
+  force: z.boolean().optional().default(false),
+});
+
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body } = context;
+    const finalVenueId = context.venueId || body.venueId;
+    const force = body.force || false;
+
+    if (!finalVenueId) {
+      return apiErrors.badRequest("Venue ID is required");
+    }
+
+    const supabase = createAdminClient();
+
+    // Check if venue exists
+    const { data: venue, error: venueError } = await supabase
+      .from("venues")
+      .select("venue_id, venue_name")
+      .eq("venue_id", finalVenueId)
+      .single();
+
+    if (venueError) {
+      return apiErrors.database("Failed to fetch venue");
+    }
+
+    if (!venue) {
+      return apiErrors.notFound("Venue not found");
+    }
+
+    // Check if we need to reset based on date
+    const today = new Date();
+    const todayString = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+    // Try to create the daily_reset_log table if it doesn't exist
     try {
-      // CRITICAL: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit();
-      }
-
-      const body = await req.json();
-      const finalVenueId = context.venueId || body.venueId;
-      const force = body.force || false;
-
-      if (!finalVenueId) {
-        return apiErrors.badRequest("Venue ID is required");
-      }
-
-      const supabase = createAdminClient();
-
-      // Check if venue exists
-      const { data: venue, error: venueError } = await supabase
-        .from("venues")
-        .select("venue_id, venue_name")
-        .eq("venue_id", finalVenueId)
-        .single();
-
-      if (venueError) {
-
-        return apiErrors.database(
-          "Failed to fetch venue",
-          isDevelopment() ? venueError.message : undefined
+      await supabase.rpc("exec_sql", {
+        sql: `
+        CREATE TABLE IF NOT EXISTS daily_reset_log (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          venue_id TEXT NOT NULL,
+          reset_date DATE NOT NULL,
+          reset_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          completed_orders INTEGER DEFAULT 0,
+          canceled_reservations INTEGER DEFAULT 0,
+          reset_tables INTEGER DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(venue_id, reset_date)
         );
-      }
+      `,
+      });
+    } catch {
+      // Ignore error if table already exists
+    }
 
-      if (!venue) {
-        return apiErrors.notFound("Venue not found");
-      }
+    // Check if there's a reset record for today
+    const { data: resetRecord } = await supabase
+      .from("daily_reset_log")
+      .select("*")
+      .eq("venue_id", finalVenueId)
+      .eq("reset_date", todayString)
+      .maybeSingle();
 
-      // Check if we need to reset based on date
-      const today = new Date();
-      const todayString = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+    // If we already reset today, return success (unless force=true)
+    if (resetRecord && !force) {
+      return success({
+        success: true,
+        message: "Already reset today",
+        resetDate: todayString,
+        alreadyReset: true,
+      });
+    }
 
-      // Try to create the daily_reset_log table if it doesn't exist
-      try {
-        await supabase.rpc("exec_sql", {
-          sql: `
-          CREATE TABLE IF NOT EXISTS daily_reset_log (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            venue_id TEXT NOT NULL,
-            reset_date DATE NOT NULL,
-            reset_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            completed_orders INTEGER DEFAULT 0,
-            canceled_reservations INTEGER DEFAULT 0,
-            reset_tables INTEGER DEFAULT 0,
-            created_at TIMESTAMPTZ DEFAULT NOW(),
-            updated_at TIMESTAMPTZ DEFAULT NOW(),
-            UNIQUE(venue_id, reset_date)
-          );
-        `,
-        });
-      } catch {
-        // Ignore error if table already exists
-      }
+    // Check if there are unknown recent orders (within last 2 hours) - if so, don't reset
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const { data: recentOrders } = await supabase
+      .from("orders")
+      .select("id, created_at")
+      .eq("venue_id", finalVenueId)
+      .gte("created_at", twoHoursAgo)
+      .limit(1);
 
-      // Check if there's a reset record for today
-      const { data: resetRecord, error: resetError } = await supabase
-        .from("daily_reset_log")
-        .select("*")
-        .eq("venue_id", finalVenueId)
-        .eq("reset_date", todayString)
-        .maybeSingle();
+    if (recentOrders && recentOrders.length > 0) {
+      return success({
+        success: true,
+        message: "Skipping reset due to recent orders",
+        resetDate: todayString,
+        alreadyReset: false,
+        skipped: true,
+        reason: "Recent orders found",
+      });
+    }
 
-      if (resetError) {
-        // Continue anyway - don't fail if table doesn't exist
-      }
+    // Perform the reset
+    const resetSummary = {
+      completedOrders: 0,
+      canceledReservations: 0,
+      resetTables: 0,
+    };
 
-      // If we already reset today, return success (unless force=true)
-      if (resetRecord && !force) {
-        return success({
-          success: true,
-          message: "Already reset today",
-          resetDate: todayString,
-          alreadyReset: true,
-        });
-      }
+    // Step 1: Complete all active orders
+    const { data: activeOrders, error: activeOrdersError } = await supabase
+      .from("orders")
+      .select("id, order_status, table_number")
+      .eq("venue_id", finalVenueId)
+      .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
-      if (force) { /* Condition handled */ }
+    if (activeOrdersError) {
+      return apiErrors.internal("Failed to fetch active orders");
+    }
 
-      // Check if there are unknown recent orders (within last 2 hours) - if so, don't reset
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      const { data: recentOrders, error: recentOrdersError } = await supabase
+    if (activeOrders && activeOrders.length > 0) {
+      const { error: completeOrdersError } = await supabase
         .from("orders")
-        .select("id, created_at")
-        .eq("venue_id", finalVenueId)
-        .gte("created_at", twoHoursAgo)
-        .limit(1);
-
-      if (recentOrdersError) {
-
-        // Continue with reset if we can't check
-      } else if (recentOrders && recentOrders.length > 0) {
-        return success({
-          success: true,
-          message: "Skipping reset due to recent orders",
-          resetDate: todayString,
-          alreadyReset: false,
-          skipped: true,
-          reason: "Recent orders found",
-        });
-      }
-
-      // Perform the reset
-      const resetSummary = {
-        completedOrders: 0,
-        canceledReservations: 0,
-        resetTables: 0,
-      };
-
-      // Step 1: Complete all active orders
-      const { data: activeOrders, error: activeOrdersError } = await supabase
-        .from("orders")
-        .select("id, order_status, table_number")
+        .update({
+          order_status: "COMPLETED",
+          updated_at: new Date().toISOString(),
+        })
         .eq("venue_id", finalVenueId)
         .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
-      if (activeOrdersError) {
-
-        return apiErrors.internal("Failed to fetch active orders");
+      if (completeOrdersError) {
+        return apiErrors.internal("Failed to complete active orders");
       }
 
-      if (activeOrders && activeOrders.length > 0) {
-        const { error: completeOrdersError } = await supabase
-          .from("orders")
-          .update({
-            order_status: "COMPLETED",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("venue_id", finalVenueId)
-          .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
+      resetSummary.completedOrders = activeOrders.length;
+    }
 
-        if (completeOrdersError) {
+    // Step 2: Cancel all active reservations
+    const { data: activeReservations, error: activeReservationsError } = await supabase
+      .from("reservations")
+      .select("id, status")
+      .eq("venue_id", finalVenueId)
+      .eq("status", "BOOKED");
 
-          return apiErrors.internal("Failed to complete active orders");
-        }
+    if (activeReservationsError) {
+      return apiErrors.internal("Failed to fetch active reservations");
+    }
 
-        resetSummary.completedOrders = activeOrders.length;
-      }
-
-      // Step 2: Cancel all active reservations
-      const { data: activeReservations, error: activeReservationsError } = await supabase
+    if (activeReservations && activeReservations.length > 0) {
+      const { error: cancelReservationsError } = await supabase
         .from("reservations")
-        .select("id, status")
+        .update({
+          status: "CANCELLED",
+          updated_at: new Date().toISOString(),
+        })
         .eq("venue_id", finalVenueId)
         .eq("status", "BOOKED");
 
-      if (activeReservationsError) {
-
-        return apiErrors.internal("Failed to fetch active reservations");
+      if (cancelReservationsError) {
+        return apiErrors.internal("Failed to cancel active reservations");
       }
 
-      if (activeReservations && activeReservations.length > 0) {
-        const { error: cancelReservationsError } = await supabase
-          .from("reservations")
-          .update({
-            status: "CANCELLED",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("venue_id", finalVenueId)
-          .eq("status", "BOOKED");
+      resetSummary.canceledReservations = activeReservations.length;
+    }
 
-        if (cancelReservationsError) {
+    // Step 3: Delete all tables for complete reset
+    const { data: tables, error: tablesError } = await supabase
+      .from("tables")
+      .select("id, label")
+      .eq("venue_id", finalVenueId);
 
-          return apiErrors.internal("Failed to cancel active reservations");
-        }
+    if (tablesError) {
+      return apiErrors.internal("Failed to fetch tables");
+    }
 
-        resetSummary.canceledReservations = activeReservations.length;
-      }
-
-      // Step 3: Delete all tables for complete reset
-      const { data: tables, error: tablesError } = await supabase
-        .from("tables")
-        .select("id, label")
+    if (tables && tables.length > 0) {
+      // Step 3a: Clear table references from all orders to avoid foreign key constraint
+      const { error: clearTableRefsError } = await supabase
+        .from("orders")
+        .update({ table_id: null })
         .eq("venue_id", finalVenueId);
 
-      if (tablesError) {
-
-        return apiErrors.internal("Failed to fetch tables");
+      if (clearTableRefsError) {
+        return apiErrors.internal("Failed to clear table references from orders");
       }
 
-      if (tables && tables.length > 0) {
-        // Step 3a: Clear table references from all orders to avoid foreign key constraint
-        const { error: clearTableRefsError } = await supabase
-          .from("orders")
-          .update({ table_id: null })
-          .eq("venue_id", finalVenueId);
-
-        if (clearTableRefsError) {
-
-          return apiErrors.internal("Failed to clear table references from orders");
-        }
-
-        // Step 3b: Delete all table sessions first (if they exist)
-        const { error: deleteSessionsError } = await supabase
-          .from("table_sessions")
-          .delete()
-          .eq("venue_id", finalVenueId);
-
-        if (deleteSessionsError) {
-
-          // Don't fail for this, continue
-        }
-
-        // Step 3c: Delete all tables for the venue
-        const { error: deleteTablesError } = await supabase
-          .from("tables")
-          .delete()
-          .eq("venue_id", finalVenueId);
-
-        if (deleteTablesError) {
-
-          return apiErrors.internal("Failed to delete tables");
-        }
-
-        resetSummary.resetTables = tables.length;
-      }
-
-      // Step 4: Clear unknown table runtime state
-      const { error: clearRuntimeError } = await supabase
-        .from("table_runtime_state")
+      // Step 3b: Delete all table sessions first (if they exist)
+      await supabase
+        .from("table_sessions")
         .delete()
         .eq("venue_id", finalVenueId);
 
-      if (clearRuntimeError) {
+      // Step 3c: Delete all tables for the venue
+      const { error: deleteTablesError } = await supabase
+        .from("tables")
+        .delete()
+        .eq("venue_id", finalVenueId);
 
-        // Don't fail the entire operation for this
-
+      if (deleteTablesError) {
+        return apiErrors.internal("Failed to delete tables");
       }
 
-      // Step 5: Record the reset in the log
-      const { error: logError } = await supabase.from("daily_reset_log").insert({
-        venue_id: finalVenueId,
-        reset_date: todayString,
-        reset_timestamp: new Date().toISOString(),
-        completed_orders: resetSummary.completedOrders,
-        canceled_reservations: resetSummary.canceledReservations,
-        reset_tables: resetSummary.resetTables,
-      });
-
-      if (logError) {
-
-        // Don't fail the operation for this
-
-      }
-
-      return success({
-        success: true,
-        message: "Daily reset completed successfully",
-        resetDate: todayString,
-        summary: {
-          venueId: finalVenueId,
-          venueName: venue.venue_name,
-          completedOrders: resetSummary.completedOrders,
-          canceledReservations: resetSummary.canceledReservations,
-          deletedTables: resetSummary.resetTables,
-          timestamp: new Date().toISOString(),
-        },
-      });
-    } catch (error) {
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      resetSummary.resetTables = tables.length;
     }
+
+    // Step 4: Clear unknown table runtime state
+    await supabase
+      .from("table_runtime_state")
+      .delete()
+      .eq("venue_id", finalVenueId);
+
+    // Step 5: Record the reset in the log
+    await supabase.from("daily_reset_log").insert({
+      venue_id: finalVenueId,
+      reset_date: todayString,
+      reset_timestamp: new Date().toISOString(),
+      completed_orders: resetSummary.completedOrders,
+      canceled_reservations: resetSummary.canceledReservations,
+      reset_tables: resetSummary.resetTables,
+    });
+
+    return success({
+      success: true,
+      message: "Daily reset completed successfully",
+      resetDate: todayString,
+      summary: {
+        venueId: finalVenueId,
+        venueName: venue.venue_name,
+        completedOrders: resetSummary.completedOrders,
+        canceledReservations: resetSummary.canceledReservations,
+        deletedTables: resetSummary.resetTables,
+        timestamp: new Date().toISOString(),
+      },
+    });
   },
   {
-    // Extract venueId from body
+    schema: dailyResetSchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        // Clone the request so we don't consume the original body
-        const clonedReq = req.clone();
-        const body = await clonedReq.json().catch(() => ({}));
+        const body = await req.clone().json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||
           (body as { venue_id?: string; venueId?: string })?.venueId ||

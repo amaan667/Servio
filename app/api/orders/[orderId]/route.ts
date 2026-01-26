@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { orderService } from "@/lib/services/OrderService";
 import { apiErrors } from "@/lib/api/standard-response";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * GET: Fetch a single order by ID
  * PUBLIC: Customers need this to track their order
  */
-export const GET = createApiHandler(
+export const GET = createUnifiedHandler(
   async (_req, context) => {
     const { orderId } = context.params;
 

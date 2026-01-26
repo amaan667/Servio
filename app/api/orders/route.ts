@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { createOrderSchema } from "@/lib/api/validation-schemas";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 import { orderService } from "@/lib/services/OrderService";
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 /**
  * GET: Fetch orders for a venue
  */
-export const GET = createApiHandler(
+export const GET = createUnifiedHandler(
   async (_req, context) => {
     const { searchParams } = _req.nextUrl;
     const status = searchParams.get("status") || undefined;
@@ -34,7 +34,7 @@ export const GET = createApiHandler(
 /**
  * POST: Create a new order (Public Customer Route)
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
 

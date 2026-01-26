@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { stripeService } from "@/lib/services/StripeService";
 import { createSupabaseClient } from "@/lib/supabase";
 import { z } from "zod";
@@ -18,7 +18,7 @@ const createCheckoutSchema = z.object({
 /**
  * POST: Create a Stripe Checkout Session for subscription
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, user } = context;
     const priceIds = await stripeService.getTierPriceIds();

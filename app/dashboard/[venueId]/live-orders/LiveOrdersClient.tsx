@@ -11,7 +11,7 @@
  * Orders automatically move from "Live Orders" to "Earlier Today" after a period of time
  */
 
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useTabCounts } from "@/hooks/use-tab-counts";
@@ -222,30 +222,33 @@ export default function LiveOrdersClient({
   };
 
   // Memoized filtered orders for each tab
-  const filteredLiveOrders = useMemo(() => {
+  // Derived state - no memoization needed (React Compiler handles this)
+  const filteredLiveOrders = (() => {
     let filtered = orders;
     if (parsedTableFilter) {
       filtered = filtered.filter((order) => order.table_number?.toString() === parsedTableFilter);
     }
     return filterOrdersBySearch(filtered);
-  }, [orders, parsedTableFilter, searchQuery]);
+  })();
 
-  const filteredAllTodayOrders = useMemo(() => {
+  // Derived state - no memoization needed (React Compiler handles this)
+  const filteredAllTodayOrders = (() => {
     let filtered = allTodayOrders;
     if (parsedTableFilter) {
       filtered = filtered.filter((order) => order.table_number?.toString() === parsedTableFilter);
     }
     return filterOrdersBySearch(filtered);
-  }, [allTodayOrders, parsedTableFilter, searchQuery]);
+  })();
 
-  const filteredHistoryOrders = useMemo(() => {
+  // Derived state - no memoization needed (React Compiler handles this)
+  const filteredHistoryOrders = (() => {
     const allHistoryOrders = Object.values(groupedHistoryOrders).flat();
     let filtered = allHistoryOrders;
     if (parsedTableFilter) {
       filtered = filtered.filter((order) => order.table_number?.toString() === parsedTableFilter);
     }
     return filterOrdersBySearch(filtered);
-  }, [groupedHistoryOrders, parsedTableFilter, searchQuery]);
+  })();
 
   const renderOrderCard = (order: unknown, showActions: boolean = true) => {
     const orderData = order as {
@@ -507,8 +510,9 @@ export default function LiveOrdersClient({
             ) : (
               (() => {
                 // Group filtered history orders by date
-                const groupedFiltered = filteredHistoryOrders.reduce(
+                const groupedFiltered = filteredHistoryOrders.reduce<Record<string, Order[]>>(
                   (acc, order) => {
+                    if (!order) return acc;
                     const date = new Date(order.created_at).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "long",
@@ -518,7 +522,7 @@ export default function LiveOrdersClient({
                     acc[date].push(order);
                     return acc;
                   },
-                  {} as Record<string, Order[]>
+                  {}
                 );
 
                 return (

@@ -1,12 +1,10 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { z } from "zod";
-import { validateParams } from "@/lib/api/validation-schemas";
 import { handleCloseTable } from "@/app/api/table-sessions/handlers/table-action-handlers";
 
 export const runtime = "nodejs";
@@ -19,54 +17,51 @@ const tableIdParamSchema = z.object({
 type TableParams = { params?: Promise<{ tableId?: string }> };
 
 export async function POST(req: NextRequest, context: TableParams = {}) {
-  const handler = withUnifiedAuth(
-    async (req: NextRequest, authContext, routeParams) => {
-      try {
-        // STEP 1: Rate limiting (ALWAYS FIRST)
-        const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-        if (!rateLimitResult.success) {
-          return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-        }
+  const handler = createUnifiedHandler(
+    async (_req: NextRequest, handlerContext) => {
+      // Get tableId from route params (handled by unified handler)
+      const tableId = handlerContext.params?.tableId;
 
-        // STEP 2: Validate params
-        const params = await routeParams?.params ?? {};
-        const validatedParams = validateParams(tableIdParamSchema, params);
-
-        // STEP 3: Business logic
-        const supabase = createAdminClient();
-
-        // Verify table belongs to venue
-        const { data: table, error: tableError } = await supabase
-          .from("tables")
-          .select("venue_id")
-          .eq("id", validatedParams.tableId)
-          .eq("venue_id", authContext.venueId)
-          .single();
-
-        if (tableError || !table) {
-
-          return apiErrors.notFound("Table not found or access denied");
-        }
-
-        // Use the handler function
-        const result = await handleCloseTable(supabase, validatedParams.tableId);
-
-        // STEP 4: Return success response
-        return success(result);
-      } catch (error) {
-
-        if (isZodError(error)) {
-          return handleZodError(error);
-        }
-
-        return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
+      if (!tableId) {
+        return apiErrors.badRequest("tableId is required");
       }
+
+      // Get venueId from context (already verified)
+      const venueId = handlerContext.venueId;
+
+      if (!venueId) {
+        return apiErrors.badRequest("venueId is required");
+      }
+
+      // Business logic
+      const supabase = createAdminClient();
+
+      // Verify table belongs to venue
+      const { data: table, error: tableError } = await supabase
+        .from("tables")
+        .select("venue_id")
+        .eq("id", tableId)
+        .eq("venue_id", venueId)
+        .single();
+
+      if (tableError || !table) {
+        return apiErrors.notFound("Table not found or access denied");
+      }
+
+      // Use the handler function
+      const result = await handleCloseTable(supabase, tableId);
+
+      return success(result);
     },
     {
-      extractVenueId: async (req, routeParams) => {
+      requireVenueAccess: true,
+      rateLimit: RATE_LIMITS.GENERAL,
+      extractVenueId: async (req, routeContext) => {
         // Get venueId from table record
-        if (routeParams?.params) {
-          const params = await routeParams.params;
+        if (routeContext?.params) {
+          const params = routeContext.params instanceof Promise 
+            ? await routeContext.params 
+            : routeContext.params;
           const tableId = params?.tableId;
           if (tableId) {
             const adminSupabase = createAdminClient();

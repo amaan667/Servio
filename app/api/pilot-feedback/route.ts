@@ -1,75 +1,54 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import { z } from "zod";
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
+const pilotFeedbackSchema = z.object({
+  type: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().min(1),
+  email: z.string().email().optional(),
+  userAgent: z.string().optional(),
+  timestamp: z.string().optional(),
+});
 
-      // STEP 2: Get user from context (already verified)
-      // STEP 3: Parse request
-      const body = await req.json();
-      const { type, title, description, email, userAgent, timestamp } = body;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body } = context;
+    const { type, title, description, email, userAgent, timestamp } = body;
 
-      // STEP 4: Validate inputs
-      if (!description || !type) {
-        return apiErrors.badRequest("Missing required fields");
-      }
-
-      // STEP 5: Security - Verify auth (already done by withUnifiedAuth)
-
-      // STEP 6: Business logic
-      const supabase = createAdminClient();
-
-      // Store feedback in database
-      const { error } = await supabase.from("feedback").insert({
-        type,
-        title: title || `${type} submission`,
-        description,
-        email,
-        user_agent: userAgent,
-        created_at: timestamp || new Date().toISOString(),
-        status: "pending",
-      });
-
-      if (error) {
-
-        // Don't fail if database insert fails - log it
-      }
-
-      // Log to console for immediate visibility during pilot
-
-      // STEP 7: Return success response
-      return success({});
-    } catch (_error) {
-      const errorMessage =
-        _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      if (errorMessage.includes("Unauthorized")) {
-        return apiErrors.unauthorized(errorMessage);
-      }
-      if (errorMessage.includes("Forbidden")) {
-        return apiErrors.forbidden(errorMessage);
-      }
-
-      return apiErrors.internal(
-        isDevelopment() ? errorMessage : "Request processing failed",
-        isDevelopment() && errorStack ? { stack: errorStack } : undefined
-      );
+    // Validation already done by unified handler schema
+    if (!description) {
+      return apiErrors.badRequest("Description is required");
     }
+
+    // Business logic
+    const supabase = createAdminClient();
+
+    // Store feedback in database
+    const { error } = await supabase.from("feedback").insert({
+      type: type || "general",
+      title: title || `${type || "general"} submission`,
+      description,
+      email,
+      user_agent: userAgent,
+      created_at: timestamp || new Date().toISOString(),
+      status: "pending",
+    });
+
+    if (error) {
+      // Don't fail if database insert fails - log it silently
+    }
+
+    return success({});
   },
   {
-    // System route - no venue required
-    extractVenueId: async () => null,
+    schema: pilotFeedbackSchema,
+    requireAuth: false, // Pilot feedback can be anonymous
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );

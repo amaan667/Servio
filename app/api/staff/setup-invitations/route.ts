@@ -1,30 +1,18 @@
 // API endpoint to set up the staff invitation system
 // Creates the required database tables for staff invitations
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const user = context.user;
-    const { createAdminClient } = await import("@/lib/supabase");
-    const supabase = createAdminClient();
+export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
+  const user = context.user;
+  const { createAdminClient } = await import("@/lib/supabase");
+  const supabase = createAdminClient();
 
     // Check if staff_invitations table already exists
     const { error: invitationsError } = await supabase
@@ -35,7 +23,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const invitationsExist = !invitationsError || invitationsError.code !== "PGRST116";
 
     if (invitationsExist) {
-      return NextResponse.json({
+      return success({
         success: true,
         message: "Staff invitation system already exists",
         tables: {
@@ -89,10 +77,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
       if (testError && testError.code === "PGRST116") {
         // Table doesn't exist, we need to create it
-
-        return NextResponse.json({
-          success: false,
-          message: "Database table needs to be created manually",
+        return apiErrors.badRequest("Database table needs to be created manually", {
           instructions:
             "Please run the SQL from scripts/staff-invitation-system.sql in your Supabase dashboard SQL editor",
           sql: createTableSQL,
@@ -102,7 +87,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // Indexes and RLS will be set up via migration scripts
 
-    return NextResponse.json({
+    return success({
       success: true,
       message: "Staff invitation system setup completed",
       tables: {
@@ -114,15 +99,10 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         "Invited staff will receive email invitations to join your venue",
       ],
     });
-  } catch (_error) {
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to set up staff invitation system",
-        details: _error instanceof Error ? _error.message : "Unknown _error",
-      },
-      { status: 500 }
-    );
+  },
+  {
+    requireAuth: true,
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
-});
+);

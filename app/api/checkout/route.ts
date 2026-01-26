@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { stripeService } from "@/lib/services/StripeService";
 import { z } from "zod";
 
@@ -12,7 +12,7 @@ const checkoutSchema = z.object({
   order_id: z.string(),
   customer_name: z.string().optional().default("Customer"),
   customer_email: z.string().email().optional(),
-  items: z.array(z.any()).optional(),
+  items: z.array(z.unknown()).optional(),
   source: z.string().optional().default("qr"),
   qr_type: z.string().optional().default("TABLE_FULL_SERVICE"),
 });
@@ -20,7 +20,7 @@ const checkoutSchema = z.object({
 /**
  * POST: Create a Stripe Checkout Session for a QR order
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (req, context) => {
     const { body } = context;
     

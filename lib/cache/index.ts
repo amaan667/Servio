@@ -178,8 +178,8 @@ class Cache {
 // Export singleton instance
 export const cache = new Cache();
 
-// Export cache key generators
-export const cacheKeys = {
+// Legacy cache key generators (deprecated - use cacheKeys from './constants' instead)
+export const legacyCacheKeys = {
   menu: (venueId: string) => `menu:${venueId}`,
   menuItems: (venueId: string) => `menu:items:${venueId}`,
   menuCategories: (venueId: string) => `menu:categories:${venueId}`,
@@ -190,13 +190,22 @@ export const cacheKeys = {
   analytics: (venueId: string) => `analytics:${venueId}`,
 };
 
-// Export TTL constants
+// Export TTL constants (deprecated - use CACHE_TTL from './constants' instead)
 export const cacheTTL = {
   short: 60, // 1 minute
   medium: 300, // 5 minutes
   long: 1800, // 30 minutes
   veryLong: 3600, // 1 hour
 };
+
+// Export new standardized cache constants
+export {
+  CACHE_TTL,
+  CACHE_PREFIX,
+  cacheKeys,
+  cacheTags,
+  RECOMMENDED_TTL,
+} from "./constants";
 
 // Export cache interface for type safety
 export interface CacheInterface {

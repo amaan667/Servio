@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { validateBody, validateQuery } from "@/lib/api/validation-schemas";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { validateQuery } from "@/lib/api/validation-schemas";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
 import { z } from "zod";
 
@@ -31,64 +31,45 @@ const getCartQuerySchema = z.object({
   cartId: z.string().uuid(),
 });
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
-
-      // STEP 2: Get venueId from context (already verified)
-      const venueId = context.venueId;
-
-      // STEP 3: Validate input
-      const body = await validateBody(storeCartRequestSchema, await req.json());
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body, venueId } = context;
 
       // Verify venue_id matches context
       if (body.venueId !== venueId) {
         return apiErrors.forbidden("Venue ID mismatch");
       }
 
-      // STEP 4: Business logic - Store cart data
-      const cartData = {
-        id: body.cartId,
-        venue_id: venueId,
-        table_number: body.tableNumber || null,
-        customer_name: body.customerName,
-        customer_phone: body.customerPhone,
-        items: body.items.map((item) => ({
-          menu_item_id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          specialInstructions: item.specialInstructions || null,
-          image: item.image || null,
-        })),
-        total_amount: body.total,
-        notes: body.notes || null,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
-      };
+    // Business logic - Store cart data
+    const cartData = {
+      id: body.cartId,
+      venue_id: venueId,
+      table_number: body.tableNumber || null,
+      customer_name: body.customerName,
+      customer_phone: body.customerPhone,
+      items: body.items.map((item) => ({
+        menu_item_id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        specialInstructions: item.specialInstructions || null,
+        image: item.image || null,
+      })),
+      total_amount: body.total,
+      notes: body.notes || null,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
+    };
 
-      // STEP 5: Return success response
-      return success({ cartData });
-    } catch (error) {
-
-      // Handle validation errors
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Failed to store cart", error);
-    }
+    return success({ cartData });
   },
   {
-    // Extract venueId from body
+    schema: storeCartRequestSchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.json().catch(() => ({}));
+        const body = await req.clone().json().catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||
           (body as { venueId?: string; venue_id?: string })?.venue_id ||
@@ -101,39 +82,23 @@ export const POST = withUnifiedAuth(
   }
 );
 
-export const GET = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
+export const GET = createUnifiedHandler(
+  async (req: NextRequest) => {
+    // Validate query parameters
+    const { searchParams } = new URL(req.url);
+    const query = validateQuery(getCartQuerySchema, {
+      cartId: searchParams.get("cartId"),
+    });
 
-      // STEP 2: Validate query parameters
-      const { searchParams } = new URL(req.url);
-      const query = validateQuery(getCartQuerySchema, {
-        cartId: searchParams.get("cartId"),
-      });
+    // Business logic - Retrieve cart
+    // In a real implementation, you'd retrieve from database
+    // For now, return null to indicate cart not found
 
-      // STEP 3: Business logic - Retrieve cart
-      // In a real implementation, you'd retrieve from database
-      // For now, return null to indicate cart not found
-
-      // STEP 4: Return success response
-      return success({ cartData: null });
-    } catch (error) {
-
-      // Handle validation errors
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Failed to retrieve cart", error);
-    }
+    return success({ cartData: null });
   },
   {
-    // System route - no venue required for cart retrieval
-    extractVenueId: async () => null,
+    requireAuth: false, // Cart retrieval can be public
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );

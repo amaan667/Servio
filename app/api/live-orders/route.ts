@@ -1,26 +1,22 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { cache } from "@/lib/cache";
+import { cacheKeys, RECOMMENDED_TTL } from "@/lib/cache/constants";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
-export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
+export const GET = createUnifiedHandler(async (_req: NextRequest, context) => {
   try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-    }
-
+    // Rate limiting handled by unified handler
     const venueId = context.venueId;
 
-    // Try to get from cache first (30 second TTL for live orders)
-    const cacheKey = `live_orders:${venueId}`;
+    // Try to get from cache first (using standardized cache keys)
+    const cacheKey = cacheKeys.order.live(venueId);
     const cachedOrders = await cache.get(cacheKey);
 
     if (cachedOrders) {
@@ -69,8 +65,8 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       orders: transformedOrders,
     };
 
-    // Cache the response for 30 seconds (live orders change frequently)
-    await cache.set(cacheKey, response, { ttl: 30 });
+    // Cache the response using recommended TTL
+    await cache.set(cacheKey, response, { ttl: RECOMMENDED_TTL.LIVE_ORDERS });
 
     return success(response);
   } catch (_error) {
@@ -90,4 +86,8 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       isDevelopment() && errorStack ? { stack: errorStack } : undefined
     );
   }
+}, {
+  requireVenueAccess: true,
+  venueIdSource: "query",
+  rateLimit: RATE_LIMITS.GENERAL,
 });

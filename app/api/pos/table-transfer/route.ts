@@ -1,12 +1,10 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { z } from "zod";
-import { validateBody } from "@/lib/api/validation-schemas";
 
 export const runtime = "nodejs";
 
@@ -19,27 +17,19 @@ const tableTransferSchema = z.object({
   venue_id: z.string().uuid().optional(),
 });
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body } = context;
+    const venue_id = context.venueId || body.venue_id;
 
-      // STEP 2: Validate input
-      const body = await validateBody(tableTransferSchema, await req.json());
-      const venue_id = context.venueId || body.venue_id;
+    if (!venue_id || !body.action || !body.source_table_id || !body.target_table_id) {
+      return apiErrors.badRequest(
+        "venue_id, action, source_table_id, and target_table_id are required"
+      );
+    }
 
-      if (!venue_id || !body.action || !body.source_table_id || !body.target_table_id) {
-        return apiErrors.badRequest(
-          "venue_id, action, source_table_id, and target_table_id are required"
-        );
-      }
-
-      // STEP 3: Business logic
-      const supabase = createAdminClient();
+    // Business logic
+    const supabase = createAdminClient();
       let result;
 
       switch (body.action) {
@@ -57,11 +47,7 @@ export const POST = withUnifiedAuth(
             .eq("table_id", body.source_table_id);
 
           if (transferError) {
-
-            return apiErrors.database(
-              "Failed to transfer orders",
-              isDevelopment() ? transferError.message : undefined
-            );
+            return apiErrors.database("Failed to transfer orders");
           }
 
           result = {
@@ -82,11 +68,7 @@ export const POST = withUnifiedAuth(
             .eq("is_active", true);
 
           if (sourceError) {
-
-            return apiErrors.database(
-              "Failed to fetch source orders",
-              isDevelopment() ? sourceError.message : undefined
-            );
+            return apiErrors.database("Failed to fetch source orders");
           }
 
           if (sourceOrders && sourceOrders.length > 0) {
@@ -99,11 +81,7 @@ export const POST = withUnifiedAuth(
               .eq("venue_id", venue_id);
 
             if (mergeError) {
-
-              return apiErrors.database(
-                "Failed to merge orders",
-                isDevelopment() ? mergeError.message : undefined
-              );
+              return apiErrors.database("Failed to merge orders");
             }
           }
 
@@ -145,11 +123,7 @@ export const POST = withUnifiedAuth(
             .eq("table_id", body.source_table_id);
 
           if (splitError) {
-
-            return apiErrors.database(
-              "Failed to split orders",
-              isDevelopment() ? splitError.message : undefined
-            );
+            return apiErrors.database("Failed to split orders");
           }
 
           result = {
@@ -164,22 +138,15 @@ export const POST = withUnifiedAuth(
           return apiErrors.badRequest("Invalid action");
       }
 
-      // STEP 4: Return success response
-      return success(result);
-    } catch (error) {
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal("Request processing failed", isDevelopment() ? error : undefined);
-    }
+    return success(result);
   },
   {
-    // Extract venueId from body
+    schema: tableTransferSchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.json().catch(() => ({}));
+        const body = await req.clone().json().catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||
           (body as { venue_id?: string; venueId?: string })?.venueId ||

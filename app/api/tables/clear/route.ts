@@ -1,20 +1,12 @@
 import { NextRequest } from "next/server";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { success, apiErrors } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success } from "@/lib/api/standard-response";
 
-export const POST = withUnifiedAuth(async (req: NextRequest, _context) => {
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return apiErrors.rateLimit();
-    }
-
-    return success({ message: "All table sessions cleared" });
-  } catch (_error) {
-
-    return apiErrors.internal("Internal server error");
-  }
+export const POST = createUnifiedHandler(async (_req: NextRequest) => {
+  return success({ message: "All table sessions cleared" });
+}, {
+  requireVenueAccess: true,
+  rateLimit: RATE_LIMITS.GENERAL,
 });

@@ -1,36 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { apiErrors } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
+import { z } from "zod";
 
 export const runtime = "nodejs";
+
+const printTicketSchema = z.object({
+  orderId: z.string().uuid(),
+  printerType: z.enum(["thermal", "escpos", "plain"]).optional().default("thermal"),
+  venueId: z.string().optional(),
+});
 
 /**
  * Print physical ticket for counter/table orders
  * Supports ESC/POS format for thermal printers
  */
-export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
-  try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Too many requests",
-          message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.reset - Date.now()) / 1000)} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    const body = await req.json();
-    const { orderId, printerType = "thermal" } = body;
-    const finalVenueId = context.venueId || body.venueId;
+export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
+  const { body } = context;
+  const { orderId, printerType = "thermal" } = body;
+  const finalVenueId = context.venueId || body.venueId;
 
     if (!orderId || !finalVenueId) {
-      return NextResponse.json({ error: "orderId and finalVenueId are required" }, { status: 400 });
+      return apiErrors.badRequest("orderId and venueId are required");
     }
 
     const supabase = createAdminClient();
@@ -78,20 +72,27 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Example:
     // await sendToPrinter(printerId, ticketContent);
 
-    return NextResponse.json({
+    return success({
       success: true,
       ticket: ticketContent,
       format: printerType,
       note: "Ticket content generated. Integrate with printer API for physical printing.",
     });
-  } catch (error) {
-
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
-    );
+  },
+  {
+    schema: printTicketSchema,
+    requireVenueAccess: true,
+    rateLimit: RATE_LIMITS.GENERAL,
+    extractVenueId: async (req) => {
+      try {
+        const body = await req.clone().json();
+        return body?.venueId || null;
+      } catch {
+        return null;
+      }
+    },
   }
-});
+);
 
 /**
  * Generate ESC/POS formatted ticket

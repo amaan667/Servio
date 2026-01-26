@@ -1,16 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-import { apiErrors } from "@/lib/api/standard-response";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { apiErrors, success } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import {
   deriveQrTypeFromOrder,
   normalizePaymentMethod,
   validatePaymentMethodForQrType,
 } from "@/lib/orders/qr-payment-validation";
+import { z } from "zod";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const collectPaymentSchema = z.object({
+  payment_method: z.enum(["till", "card", "cash"]),
+  venue_id: z.string(),
+});
 
 /**
  * POST /api/orders/[orderId]/collect-payment
@@ -18,26 +25,19 @@ export const dynamic = "force-dynamic";
  * Mark payment as collected for "pay_at_till" orders
  * Staff uses this after processing payment via card reader/cash register
  */
-export const POST = withUnifiedAuth(
-  async (_request: NextRequest, contextWithAuth, routeParams) => {
-  const params = routeParams?.params ? await routeParams.params : undefined;
-  const orderId = params?.orderId;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Get orderId from route params (handled by unified handler)
+    const orderId = context.params?.orderId as string | undefined;
 
-  if (!orderId) {
-    return apiErrors.badRequest("Order ID is required");
-  }
+    if (!orderId) {
+      return apiErrors.badRequest("Order ID is required");
+    }
 
-  try {
-    const body = await _request.json();
+    const { body } = context;
     const { payment_method, venue_id } = body;
 
-    // Validate payment method
-    if (!payment_method || !["till", "card", "cash"].includes(payment_method)) {
-      return NextResponse.json(
-        { error: "Invalid payment method. Must be 'till', 'card', or 'cash'" },
-        { status: 400 }
-      );
-    }
+    // Validation already done by unified handler schema
 
     const admin = createAdminClient();
 
@@ -58,7 +58,7 @@ export const POST = withUnifiedAuth(
 
     // Idempotent: if already paid, return success
     if (String(order.payment_status || "").toUpperCase() === "PAID") {
-      return NextResponse.json({
+      return success({
         ok: true,
         order,
         message: "Order already marked as paid",
@@ -83,20 +83,11 @@ export const POST = withUnifiedAuth(
     });
 
     if (!validation.ok) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: validation.error,
-        },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(validation.error || "Invalid payment method for this order type");
     }
 
     if (!["PAY_AT_TILL", "PAY_LATER"].includes(normalizedPaymentMethod)) {
-      return NextResponse.json(
-        { error: "This endpoint is only for Pay at Till or Pay Later orders" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("This endpoint is only for Pay at Till or Pay Later orders");
     }
 
     // Update order to mark as paid
@@ -106,7 +97,7 @@ export const POST = withUnifiedAuth(
         payment_status: "PAID",
         payment_method: normalizedPaymentMethod,
         paid_at: new Date().toISOString(),
-        paid_by_user_id: contextWithAuth.user.id,
+        paid_by_user_id: context.user.id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId)
@@ -115,37 +106,42 @@ export const POST = withUnifiedAuth(
       .single();
 
     if (updateError) {
-
       return apiErrors.internal("Failed to mark payment as collected");
     }
 
-    return NextResponse.json({
+    return success({
       ok: true,
       order: updatedOrder,
       message: "Payment collected successfully",
     });
-  } catch (_error) {
-
-    return apiErrors.internal("Internal server error");
-  }
   },
   {
-    extractVenueId: async (req) => {
+    schema: collectPaymentSchema,
+    requireVenueAccess: true,
+    requireRole: ["owner", "manager", "staff", "server", "kitchen"],
+    rateLimit: RATE_LIMITS.GENERAL,
+    extractVenueId: async (req, routeContext) => {
       try {
+        // Try to get from body first
         const body = await req.clone().json();
-        const orderId = body?.orderId;
-        if (!orderId) return null;
-        const admin = createAdminClient();
-        const { data: order } = await admin
-          .from("orders")
-          .select("venue_id")
-          .eq("id", orderId)
-          .single();
-        return (order?.venue_id as string | undefined) ?? null;
+        if (body?.venue_id) return body.venue_id;
+        
+        // Try to get from orderId in route params
+        const params = routeContext?.params ? await routeContext.params : {};
+        const orderId = params?.orderId as string | undefined;
+        if (orderId) {
+          const admin = createAdminClient();
+          const { data: order } = await admin
+            .from("orders")
+            .select("venue_id")
+            .eq("id", orderId)
+            .single();
+          return (order?.venue_id as string | undefined) ?? null;
+        }
+        return null;
       } catch {
         return null;
       }
     },
-    requireRole: ["owner", "manager", "staff", "server", "kitchen"],
   }
 );

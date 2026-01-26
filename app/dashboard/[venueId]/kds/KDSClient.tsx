@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,7 +96,8 @@ export default function KDSClient({
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   // Fetch stations
-  const fetchStations = useCallback(async () => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const fetchStations = async () => {
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/stations", { params: { venueId } });
@@ -123,10 +124,11 @@ export default function KDSClient({
     } catch {
       setError("Failed to load stations");
     }
-  }, [venueId, selectedStation]);
+  };
 
   // Fetch tickets
-  const fetchTickets = useCallback(async () => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const fetchTickets = async () => {
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/tickets", {
@@ -159,11 +161,11 @@ export default function KDSClient({
     } finally {
       setLoading(false);
     }
-  }, [venueId, selectedStation]);
+  };
 
   // Update ticket status
-  const updateTicketStatus = useCallback(
-    async (ticketId: string, status: string) => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const updateTicketStatus = async (ticketId: string, status: string) => {
       try {
         const { apiClient } = await import("@/lib/api-client");
         const payload = { ticket_id: ticketId, status, venueId };
@@ -190,12 +192,11 @@ export default function KDSClient({
         // Error handled by UI state
         setError(error instanceof Error ? error.message : "Failed to update ticket");
       }
-    },
-    [venueId, fetchTickets]
-  );
+  };
 
   // Bump all ready tickets for an order
-  const bumpOrder = useCallback(async (orderId: string) => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const bumpOrder = async (orderId: string) => {
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.patch("/api/kds/tickets/bulk-update", {
@@ -215,10 +216,11 @@ export default function KDSClient({
     } catch (_error) {
       // Error handled silently
     }
-  }, []);
+  };
 
   // Calculate time elapsed since ticket creation
-  const getTimeElapsed = useCallback((createdAt: string) => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const getTimeElapsed = (createdAt: string) => {
     const created = new Date(createdAt);
     const now = new Date();
     const diffMs = now.getTime() - created.getTime();
@@ -229,7 +231,7 @@ export default function KDSClient({
     const hours = Math.floor(diffMins / 60);
     const mins = diffMins % 60;
     return `${hours}h ${mins}m`;
-  }, []);
+  };
 
   // Get priority color
   const getPriorityIndicator = (createdAt: string) => {
@@ -243,14 +245,15 @@ export default function KDSClient({
   };
 
   // Group tickets by order
-  const ticketsByOrder = useMemo(() => {
+  // Derived state - no memoization needed (React Compiler handles this)
+  const ticketsByOrder = (() => {
     const grouped = new Map<string, KDSTicket[]>();
     tickets.forEach((ticket) => {
       const existing = grouped.get(ticket.order_id) || [];
       grouped.set(ticket.order_id, [...existing, ticket]);
     });
     return grouped;
-  }, [tickets]);
+  })();
 
   // Trigger backfill if no tickets found after initial load
   useEffect(() => {

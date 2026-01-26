@@ -1,17 +1,17 @@
 export const runtime = "nodejs";
 
+import { NextRequest } from "next/server";
 import { success, apiErrors } from "@/lib/api/standard-response";
 import { createClient } from "@/lib/supabase";
-
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { NextRequest } from "next/server";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * Get orders for a venue with scope filtering
  * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
  * The authenticated client ensures users can only access orders for venues they have access to.
  */
-export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
+export const GET = createUnifiedHandler(async (req: NextRequest, context) => {
   const url = new URL(req.url);
   // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
   const scope = (url.searchParams.get("scope") || "live") as "live" | "earlier" | "history";
@@ -67,11 +67,26 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     // Transform orders to include table_label
+    interface OrderWithTable {
+      id: string;
+      venue_id: string;
+      table_number?: string | number | null;
+      table_id?: string | null;
+      customer_name?: string | null;
+      items?: unknown;
+      total_amount?: number;
+      created_at: string;
+      order_status?: string;
+      payment_status?: string;
+      source?: string;
+      tables?: { label?: string } | null | Array<{ label?: string }>;
+    }
+
     const transformedOrders =
-      data?.map((order: Record<string, unknown>) => ({
-        ...(order as Record<string, unknown>),
+      data?.map((order: OrderWithTable) => ({
+        ...order,
         table_label:
-          (order.tables as { label?: string } | null | undefined)?.label ||
+          (Array.isArray(order.tables) ? order.tables[0]?.label : order.tables?.label) ||
           (order.source === "counter"
             ? `Counter ${order.table_number}`
             : `Table ${order.table_number}`) ||
@@ -109,4 +124,8 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return apiErrors.internal(errorMessage);
   }
+}, {
+  requireVenueAccess: true,
+  venueIdSource: "query",
+  rateLimit: RATE_LIMITS.GENERAL,
 });

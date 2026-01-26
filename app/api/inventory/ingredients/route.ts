@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { inventoryService } from "@/lib/services/InventoryService";
 import { z } from "zod";
 
@@ -18,7 +18,7 @@ const createIngredientSchema = z.object({
 /**
  * GET: Fetch all ingredients for a venue
  */
-export const GET = createApiHandler(
+export const GET = createUnifiedHandler(
   async (_req, context) => {
     const ingredients = await inventoryService.getInventory(context.venueId);
     return ingredients;
@@ -32,7 +32,7 @@ export const GET = createApiHandler(
 /**
  * POST: Create a new inventory ingredient
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
     const ingredient = await inventoryService.createIngredient(venueId, body);

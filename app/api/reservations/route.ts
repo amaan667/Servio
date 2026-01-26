@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { reservationService } from "@/lib/services/ReservationService";
 import { z } from "zod";
 
@@ -18,7 +18,7 @@ const createReservationSchema = z.object({
 /**
  * GET: Fetch reservations for a venue
  */
-export const GET = createApiHandler(
+export const GET = createUnifiedHandler(
   async (req, context) => {
     const status = req.nextUrl.searchParams.get("status") || undefined;
     const date = req.nextUrl.searchParams.get("date") || undefined;
@@ -39,7 +39,7 @@ export const GET = createApiHandler(
 /**
  * POST: Create a new reservation
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
     const reservation = await reservationService.createReservation(venueId, body);

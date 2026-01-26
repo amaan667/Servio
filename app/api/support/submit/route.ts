@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { apiErrors, success } from "@/lib/api/standard-response";
 import { z } from "zod";
 
@@ -13,31 +13,18 @@ const supportSubmissionSchema = z.object({
   steps: z.string().optional(),
 });
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, context) => {
-    try {
-      // STEP 1: Rate limiting
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body, user } = context;
+    const { type, subject, description, steps } = body;
+    
+    const userEmail = user?.email || "unknown@example.com";
+    const userMetadata = user?.user_metadata as { full_name?: string } | undefined;
+    const userName = userMetadata?.full_name || user?.email?.split("@")[0] || "User";
+    const userId = user?.id || "";
 
-      // STEP 2: Validate request body
-      const body = await req.json();
-      const validation = supportSubmissionSchema.safeParse(body);
-
-      if (!validation.success) {
-        return apiErrors.badRequest("Invalid request data", validation.error.errors);
-      }
-
-      const { type, subject, description, steps } = validation.data;
-      const userEmail = context.user.email || "unknown@example.com";
-      const userMetadata = context.user.user_metadata as { full_name?: string } | undefined;
-      const userName = userMetadata?.full_name || context.user.email?.split("@")[0] || "User";
-      const userId = context.user.id;
-
-      // STEP 3: Generate email content
-      const isFeatureRequest = type === "feature";
+    // Generate email content
+    const isFeatureRequest = type === "feature";
       const emailSubject = `[${isFeatureRequest ? "FEATURE REQUEST" : "BUG REPORT"}] ${subject}`;
 
       const emailHtml = `
@@ -116,32 +103,28 @@ ${steps ? `Steps to Reproduce:\n${steps}\n` : ""}
 Submitted: ${new Date().toLocaleString("en-GB", { dateStyle: "full", timeStyle: "long" })}
       `.trim();
 
-      // STEP 4: Send email
-      const emailSent = await sendEmail({
-        to: "enquiries@servio.uk",
-        subject: emailSubject,
-        html: emailHtml,
-        text: emailText,
-      });
+    // Send email
+    const emailSent = await sendEmail({
+      to: "enquiries@servio.uk",
+      subject: emailSubject,
+      html: emailHtml,
+      text: emailText,
+    });
 
-      if (!emailSent) {
-
-        return apiErrors.internal("Failed to send support request. Please try again.");
-      }
-
-      // STEP 5: Return success
-      return success({
-        message: isFeatureRequest
-          ? "Feature request submitted successfully"
-          : "Bug report submitted successfully",
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-
-      return apiErrors.internal("Failed to submit support request");
+    if (!emailSent) {
+      return apiErrors.internal("Failed to send support request. Please try again.");
     }
+
+    return success({
+      message: isFeatureRequest
+        ? "Feature request submitted successfully"
+        : "Bug report submitted successfully",
+    });
   },
   {
-    extractVenueId: async () => null, // Support submissions don't require venue context
+    schema: supportSubmissionSchema,
+    requireAuth: true,
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );

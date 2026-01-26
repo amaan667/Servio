@@ -1,23 +1,15 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
-export const POST = withUnifiedAuth(
-  async (req: NextRequest, _context) => {
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
-
-      // STEP 2: Business logic
-      const admin = createAdminClient();
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest) => {
+    // Business logic
+    const admin = createAdminClient();
       const sql = `
   create table if not exists public.staff (
     id uuid primary key default gen_random_uuid(),
@@ -37,31 +29,16 @@ export const POST = withUnifiedAuth(
     );
   exception when others then null; end $$;`;
 
-      const { error } = await admin.rpc("exec_sql", { sql });
-      if (error) {
-
-        return apiErrors.database(
-          "Failed to initialize staff table",
-          isDevelopment() ? error.message : undefined
-        );
-      }
-
-      // STEP 3: Return success response
-      return success({ ok: true });
-    } catch (error) {
-
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      return apiErrors.internal(
-        "Failed to initialize staff table",
-        isDevelopment() ? error : undefined
-      );
+    const { error } = await admin.rpc("exec_sql", { sql });
+    if (error) {
+      return apiErrors.database("Failed to initialize staff table");
     }
+
+    return success({ ok: true });
   },
   {
-    // System route - no venue required
-    extractVenueId: async () => null,
+    requireAuth: true,
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.GENERAL,
   }
 );

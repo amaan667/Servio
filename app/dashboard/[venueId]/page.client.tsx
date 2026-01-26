@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useCallback, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 import { Clock, TrendingUp, ShoppingBag, Table } from "lucide-react";
@@ -82,17 +82,11 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Hooks must be called unconditionally - can't be in try-catch
   const { user: authUser, isLoading: authRedirectLoading, isAuthenticated } = useAuthRedirect();
-  const [user, setUser] = useState<{ id: string } | null>(getCachedUser());
+  // Use authUser directly or fallback to cached user
+  const user = authUser || getCachedUser();
   const [venue, setVenue] = useState<Record<string, unknown> | null>(getCachedVenue());
   const [userRole, setUserRole] = useState<string | null>(getCachedRole());
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
-
-  // Sync authUser to local user state if needed
-  useEffect(() => {
-    if (authUser && !user) {
-      setUser(authUser);
-    }
-  }, [authUser, user]);
 
   // Monitor connection status (must be at top before any returns)
   // Hooks must be called unconditionally
@@ -342,23 +336,22 @@ const DashboardClient = React.memo(function DashboardClient({
   const analyticsData = useAnalyticsData(venueId);
 
   // Log after hook completes
-  useEffect(() => { /* Intentionally empty */ }, [analyticsData]);
+  // Analytics data is derived - no effect needed
 
   // Handle venue change
-  const handleVenueChange = useCallback(
-    (newVenueId: string) => {
-      router.push(`/dashboard/${newVenueId}`);
-    },
-    [router]
-  );
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const handleVenueChange = (newVenueId: string) => {
+    router.push(`/dashboard/${newVenueId}`);
+  };
 
-  const handleRefresh = useCallback(async () => {
+  // Derived function - no useCallback needed (React Compiler handles this)
+  const handleRefresh = async () => {
     await dashboardData.refreshCounts();
     const venue = dashboardData.venue as { venue_id: string } | null;
     if (venue?.venue_id && dashboardData.todayWindow) {
       await dashboardData.loadStats(venue.venue_id, dashboardData.todayWindow);
     }
-  }, [dashboardData]);
+  };
 
   // Auto-refresh when returning from checkout success
   useEffect(() => {
@@ -419,43 +412,39 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [handleRefresh]);
 
   // Use live analytics data or fallback to empty data
-  const ordersByHour = useMemo(() => {
-    if (analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0) {
-      return analyticsData.data.ordersByHour;
-    }
-    // Fallback: return empty data for all hours
-    return Array.from({ length: 24 }, (_, i) => ({
-      hour: `${i}:00`,
-      orders: 0,
-    }));
-  }, [analyticsData.data?.ordersByHour]);
+  // Derived state - no memoization needed (React Compiler handles this)
+  const ordersByHour = analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0
+    ? analyticsData.data.ordersByHour
+    : Array.from({ length: 24 }, (_, i) => ({
+        hour: `${i}:00`,
+        orders: 0,
+      }));
 
   // Removed table utilization - can't calculate without knowing max table capacity
   const tableUtilization = 0; // Placeholder, not displayed
 
-  const revenueByCategory = useMemo(() => {
+  // Derived state - no memoization needed (React Compiler handles this)
+  const revenueByCategory: Array<{ name: string; value: number; color: string }> = (() => {
     const data = analyticsData.data?.revenueByCategory;
     if (data && Array.isArray(data) && data.length > 0) {
       return data;
     }
     return [];
-  }, [analyticsData.data?.revenueByCategory]);
+  })();
 
   // Auth check removed - server already did getAccessContext() RPC via requirePageAuth()
   // User comes from useAuthRedirect() hook which uses AuthProvider
   // Role/venue from cache or server data - no redundant client-side queries needed
+  // Cache user data when available
   useEffect(() => {
-    if (authUser && !user) {
-      setUser(authUser);
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(authUser));
-      }
+    if (authUser && typeof window !== "undefined") {
+      sessionStorage.setItem(`dashboard_user_${venueId}`, JSON.stringify(authUser));
     }
     setAuthCheckComplete(true);
-  }, [authUser, user, venueId]);
+  }, [authUser, venueId]);
 
   // Log whenever userRole changes for dashboard rendering
-  useEffect(() => { /* Intentionally empty */ }, [userRole]);
+  // User role is derived - no effect needed
 
   // CRITICAL: Render immediately - don't block on auth loading
   // Auth check happens in background, page renders with cached data

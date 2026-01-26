@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api/production-handler";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { staffService } from "@/lib/services/StaffService";
 import { enforceResourceLimit } from "@/lib/auth/unified-auth";
 import { z } from "zod";
@@ -15,7 +15,7 @@ const addStaffSchema = z.object({
 /**
  * POST: Add staff member to a venue
  */
-export const POST = createApiHandler(
+export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId, venue } = context;
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
