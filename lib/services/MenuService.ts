@@ -232,64 +232,82 @@ export class MenuService extends BaseService {
     return this.withCache(
       cacheKey,
       async () => {
-        const supabase = await createSupabaseClient();
+        try {
+          const supabase = await createSupabaseClient();
 
-        // 1. Get Venue
-        const { data: venue, error: venueError } = await supabase
-          .from("venues")
-          .select("venue_id, venue_name")
-          .eq("venue_id", venueId)
-          .maybeSingle();
+          // 1. Get Venue
+          const { data: venue, error: venueError } = await supabase
+            .from("venues")
+            .select("venue_id, venue_name")
+            .eq("venue_id", venueId)
+            .maybeSingle();
 
-        if (venueError || !venue) {
-          throw new Error("Venue not found");
+          if (venueError) {
+            throw new Error(`Failed to fetch venue: ${venueError.message}`);
+          }
+
+          if (!venue) {
+            throw new Error("Venue not found");
+          }
+
+          // 2. Get Menu Items
+          const {
+            data: menuItems,
+            error: menuError,
+            count: menuCount,
+          } = await supabase
+            .from("menu_items")
+            .select("*", { count: "exact" })
+            .eq("venue_id", venue.venue_id)
+            .eq("is_available", true)
+            .order("created_at", { ascending: true })
+            .range(options.offset, options.offset + options.limit - 1);
+
+          if (menuError) {
+            throw new Error(`Failed to fetch menu items: ${menuError.message}`);
+          }
+
+          // 3. Get Uploads (optional - don't fail if missing)
+          const { data: uploadData, error: uploadError } = await supabase
+            .from("menu_uploads")
+            .select("pdf_images, pdf_images_cc, category_order, created_at")
+            .eq("venue_id", venue.venue_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          // Upload data is optional - don't fail if it doesn't exist
+          // PGRST116 is "not found" which is fine
+          if (uploadError && uploadError.code !== "PGRST116") {
+            // Non-critical error - continue without upload data
+          }
+
+          const pdfImages = (uploadData?.pdf_images || uploadData?.pdf_images_cc || []) as string[];
+          const categoryOrder = Array.isArray(uploadData?.category_order)
+            ? (uploadData.category_order as string[])
+            : null;
+
+          return {
+            venue: {
+              id: venue.venue_id,
+              name: venue.venue_name,
+            },
+            menuItems: menuItems || [],
+            totalItems: menuCount || menuItems?.length || 0,
+            pdfImages,
+            categoryOrder,
+            pagination: {
+              limit: options.limit,
+              offset: options.offset,
+              returned: menuItems?.length || 0,
+              hasMore: (menuCount || 0) > options.offset + (menuItems?.length || 0),
+            },
+          };
+        } catch (error) {
+          // Enhanced error handling - re-throw with more context
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          throw new Error(`Failed to load menu: ${errorMessage}`);
         }
-
-        // 2. Get Menu Items
-        const {
-          data: menuItems,
-          error: menuError,
-          count: menuCount,
-        } = await supabase
-          .from("menu_items")
-          .select("*", { count: "exact" })
-          .eq("venue_id", venue.venue_id)
-          .eq("is_available", true)
-          .order("created_at", { ascending: true })
-          .range(options.offset, options.offset + options.limit - 1);
-
-        if (menuError) throw menuError;
-
-        // 3. Get Uploads
-        const { data: uploadData } = await supabase
-          .from("menu_uploads")
-          .select("pdf_images, pdf_images_cc, category_order, created_at")
-          .eq("venue_id", venue.venue_id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const pdfImages = (uploadData?.pdf_images || uploadData?.pdf_images_cc || []) as string[];
-        const categoryOrder = Array.isArray(uploadData?.category_order)
-          ? (uploadData.category_order as string[])
-          : null;
-
-        return {
-          venue: {
-            id: venue.venue_id,
-            name: venue.venue_name,
-          },
-          menuItems: menuItems || [],
-          totalItems: menuCount || menuItems?.length || 0,
-          pdfImages,
-          categoryOrder,
-          pagination: {
-            limit: options.limit,
-            offset: options.offset,
-            returned: menuItems?.length || 0,
-            hasMore: (menuCount || 0) > options.offset + (menuItems?.length || 0),
-          },
-        };
       },
       300
     );
