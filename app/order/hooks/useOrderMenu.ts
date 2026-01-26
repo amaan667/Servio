@@ -377,7 +377,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     if (venueSlug) {
       loadMenuItems();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueSlug, isDemo]);
 
   return {

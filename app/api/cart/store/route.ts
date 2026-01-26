@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { validateQuery } from "@/lib/api/validation-schemas";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { success, apiErrors } from "@/lib/api/standard-response";
 import { z } from "zod";
 
 // Validation schemas

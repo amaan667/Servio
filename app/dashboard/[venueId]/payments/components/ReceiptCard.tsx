@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Receipt, Download, CheckCircle, Split, Clock, User, MapPin } from "lucide-react";
-import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 
 interface PaymentOrder {
   id: string;

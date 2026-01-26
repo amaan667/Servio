@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { RATE_LIMITS } from "@/lib/rate-limit";
-import { success, apiErrors } from "@/lib/api/standard-response";
+import { success } from "@/lib/api/standard-response";
 
 export const GET = createUnifiedHandler(
   async (_req: NextRequest, context) => {

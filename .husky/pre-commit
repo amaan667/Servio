@@ -1,5 +1,9 @@
 # Run lint-staged (formatting and linting)
 pnpm lint-staged
 
+# Run TypeScript type checking (catches type errors that lint-staged misses)
+echo "Running type check..."
+pnpm typecheck
+
 # Run quick tests on staged files (optional - can be slow)
 # pnpm test --related $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$')

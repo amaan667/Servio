@@ -201,7 +201,7 @@ export function usePaymentsData(venueId: string) {
 
   useEffect(() => {
     loadAllData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId]);
 
   return {

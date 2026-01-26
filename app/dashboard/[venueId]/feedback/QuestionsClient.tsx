@@ -176,7 +176,7 @@ export default function QuestionsClient({
     if (venueId) {
       fetchQuestions();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [venueId]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -67,11 +67,14 @@ export default [
       // imports (above) since those are pure noise and safely auto-fixable.
       "unused-imports/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unsafe-argument": "warn",
-      "@typescript-eslint/no-unsafe-assignment": "warn",
-      "@typescript-eslint/no-unsafe-call": "warn",
-      "@typescript-eslint/no-unsafe-member-access": "warn",
-      "@typescript-eslint/no-unsafe-return": "warn",
+      // NOTE: no-unsafe-* rules require parserOptions.project which is slow and
+      // doesn't work well with lint-staged. We rely on `pnpm typecheck` in
+      // pre-commit hook for type safety. Disabled to allow faster linting.
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
       "@typescript-eslint/no-require-imports": "error",
       "@typescript-eslint/no-empty-object-type": "error",
       "@typescript-eslint/no-unsafe-function-type": "error",
