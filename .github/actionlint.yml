@@ -12,4 +12,9 @@ paths:
   # These are false positives - secrets are valid but may not be configured in all environments
   '.github/workflows/**/*.{yml,yaml}':
     ignore:
-      - 'Context access might be invalid.*'
+      - '.*Context access might be invalid.*'
+      - 'Context access might be invalid: NEXT_PUBLIC_SUPABASE_URL'
+      - 'Context access might be invalid: NEXT_PUBLIC_SUPABASE_ANON_KEY'
+      - 'Context access might be invalid: DATABASE_URL'
+      - 'Context access might be invalid: SNYK_TOKEN'
+      - 'Context access might be invalid: RAILWAY_TOKEN'

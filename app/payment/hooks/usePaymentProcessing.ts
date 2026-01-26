@@ -622,12 +622,35 @@ export function usePaymentProcessing() {
         return;
       } else if (action === "later") {
 
-        // IMMEDIATELY create order in DB (per spec)
-        const orderResult = await createOrder();
-        const orderId = orderResult.order?.id;
+        let orderId: string;
 
-        if (!orderId) {
-          throw new Error("Failed to create order");
+        // If orderId exists in checkoutData, update existing order instead of creating new one
+        if (checkoutData.orderId) {
+          // Update existing order to PAY_LATER
+          const updateResponse = await fetch("/api/pay/later", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              order_id: checkoutData.orderId,
+              venue_id: checkoutData.venueId,
+              sessionId: checkoutData.sessionId,
+            }),
+          });
+
+          if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            throw new Error(errorData.error || "Failed to update order payment method");
+          }
+
+          orderId = checkoutData.orderId;
+        } else {
+          // IMMEDIATELY create order in DB (per spec)
+          const orderResult = await createOrder();
+          orderId = orderResult.order?.id;
+
+          if (!orderId) {
+            throw new Error("Failed to create order");
+          }
         }
 
         // Store session for QR re-scan logic
