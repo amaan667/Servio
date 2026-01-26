@@ -65,11 +65,25 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     return "Failed to load menu";
   };
 
-  // Reset loading state when venue changes
+  // Reset loading state when venue changes and clear stale cache
   useEffect(() => {
     loadingRef.current = null;
     retryCountRef.current = 0;
     setMenuError(null);
+    
+    // Clear any potentially stale empty cache for this venue
+    // This ensures fresh data is fetched when scanning a new QR code
+    if (typeof window !== "undefined" && venueSlug) {
+      const cachedMenu = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+      const parsed = safeParseJSON<MenuItem[]>(cachedMenu, []);
+      // If cache is empty, clear it to force fresh fetch
+      if (parsed.length === 0) {
+        safeRemoveItem(sessionStorage, `menu_${venueSlug}`);
+        safeRemoveItem(sessionStorage, `venue_name_${venueSlug}`);
+        safeRemoveItem(sessionStorage, `categories_${venueSlug}`);
+        safeRemoveItem(sessionStorage, `pdf_images_${venueSlug}`);
+      }
+    }
   }, [venueSlug]);
 
   // Derived function - no useCallback needed (React Compiler handles this)
