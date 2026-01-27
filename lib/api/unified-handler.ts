@@ -404,9 +404,19 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         return apiErrors.validation(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
+      // Always include error message for debugging (even in production for now)
+      // eslint-disable-next-line no-console
+      console.error("❌ [UnifiedHandler] Unhandled error:", {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+        path: req.nextUrl.pathname,
+        requestId,
+      });
+      
       return apiErrors.internal(
-        "Internal server error",
-        isDevelopment() ? { message: err.message, stack: err.stack } : undefined,
+        err.message || "Internal server error",
+        isDevelopment() ? { message: err.message, stack: err.stack, name: err.name } : { message: err.message },
         requestId
       ) as unknown as NextResponse<ApiResponse<TResponse>>;
     }
