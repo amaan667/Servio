@@ -158,13 +158,19 @@ export default function KDSClient({
       const data = await response.json();
 
       if (data.success) {
-        setTickets(data.data?.tickets || []);
+        const fetchedTickets = (data.data?.tickets || []) as KDSTicket[];
+        // CRITICAL: Filter out bumped tickets - they should not appear in KDS
+        const activeTickets = fetchedTickets.filter((t) => t.status !== "bumped");
+        
+        // Update tickets - this will preserve any tickets that are currently being interacted with
+        // The real-time handlers will keep them in sync
+        setTickets(activeTickets);
         setError(null); // Clear any previous errors
         // Cache tickets
         if (typeof window !== "undefined") {
           sessionStorage.setItem(
             `kds_tickets_${venueId}`,
-            JSON.stringify(data.data?.tickets || [])
+            JSON.stringify(activeTickets)
           );
         }
       } else {
@@ -391,6 +397,11 @@ export default function KDSClient({
               // When a new ticket is inserted, add it to the view if it matches the filter
               const newTicket = payload.new as KDSTicket | undefined;
               if (newTicket) {
+                // CRITICAL: Never add bumped tickets - they should not appear in KDS
+                if (newTicket.status === "bumped") {
+                  return;
+                }
+
                 // If no filter (All Stations), add all new tickets
                 if (!selectedStation) {
                   setTickets((prev) => {
@@ -417,19 +428,32 @@ export default function KDSClient({
               // But only if it matches the current station filter (or no filter for "All Stations")
               const updatedTicket = payload.new as KDSTicket | undefined;
               if (updatedTicket) {
+                // CRITICAL: Always remove bumped tickets immediately - they disappear from KDS
+                if (updatedTicket.status === "bumped") {
+                  setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
+                  return;
+                }
+
+                // Get the old ticket to check if station changed
+                const oldTicket = payload.old as KDSTicket | undefined;
+                const stationChanged = oldTicket && oldTicket.station_id !== updatedTicket.station_id;
+
                 // If no filter (All Stations), update all tickets regardless of station
                 if (!selectedStation) {
                   setTickets((prev) => {
                     const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
                     if (existingIndex >= 0) {
-                      // Update existing ticket
+                      // Update existing ticket (status change, etc.)
                       return prev.map((t) =>
                         t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t
                       );
                     } else {
                       // Ticket doesn't exist yet, add it (might be a new ticket or from another station)
-                      // Only add if it's for an OPEN order (not completed)
-                      return [...prev, updatedTicket];
+                      // Only add if it's not bumped
+                      if (updatedTicket.status !== "bumped") {
+                        return [...prev, updatedTicket];
+                      }
+                      return prev;
                     }
                   });
                 } else {
@@ -438,19 +462,24 @@ export default function KDSClient({
                     setTickets((prev) => {
                       const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
                       if (existingIndex >= 0) {
-                        // Update existing ticket
+                        // Update existing ticket (status change, etc.)
                         return prev.map((t) =>
                           t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t
                         );
                       } else {
                         // Ticket doesn't exist yet, add it (might have been moved to this station)
-                        return [...prev, updatedTicket];
+                        // Only add if it's not bumped
+                        if (updatedTicket.status !== "bumped") {
+                          return [...prev, updatedTicket];
+                        }
+                        return prev;
                       }
                     });
                   } else {
                     // Ticket was moved to a different station, remove it from current view
-                    // But only if we have a station filter - if no filter, keep all tickets
-                    if (selectedStation) {
+                    // But only if we have a station filter AND the station actually changed
+                    // (don't remove if it was already in a different station)
+                    if (selectedStation && stationChanged) {
                       setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
                     }
                   }
