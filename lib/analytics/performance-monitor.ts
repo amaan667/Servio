@@ -48,7 +48,7 @@ export class PerformanceMonitor {
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
-        this.recordMetric("lcp", lastEntry.startTime);
+        if (lastEntry) this.recordMetric("lcp", lastEntry.startTime);
       });
       lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
       this.observers.push(lcpObserver);
@@ -231,13 +231,13 @@ export class PerformanceMonitor {
     const average: Partial<PerformanceMetrics> = {
       /* Empty */
     };
+    const firstMetric = this.metrics[0];
     const current = this.metrics[this.metrics.length - 1];
-    const trends: Record<string, number> = {
-      /* Empty */
-    };
+    const trends: Record<string, number> = {};
 
-    // Calculate averages
-    Object.keys(this.metrics[0]).forEach((key) => {
+    if (!firstMetric || !current) return { average, current: current ?? ({} as PerformanceMetrics), trends };
+
+    Object.keys(firstMetric).forEach((key) => {
       const values = this.metrics
         .map((m) => m[key as keyof PerformanceMetrics])
         .filter((v) => v !== undefined);
@@ -252,7 +252,7 @@ export class PerformanceMonitor {
     const recent = this.metrics.slice(-recentCount);
     const early = this.metrics.slice(0, recentCount);
 
-    Object.keys(this.metrics[0]).forEach((key) => {
+    Object.keys(firstMetric).forEach((key) => {
       const recentValues = recent
         .map((m) => m[key as keyof PerformanceMetrics])
         .filter((v) => v !== undefined);

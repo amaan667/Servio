@@ -83,7 +83,7 @@ export function TimePeriodSelector({
                     onChange={(e) =>
                       onCustomDateRangeChange({
                         start: e.target.value,
-                        end: customDateRange?.end || new Date().toISOString().split("T")[0],
+                        end: customDateRange?.end ?? new Date().toISOString().split("T")[0] ?? "",
                       })
                     }
                   />
@@ -96,7 +96,7 @@ export function TimePeriodSelector({
                     value={customDateRange?.end || ""}
                     onChange={(e) =>
                       onCustomDateRangeChange({
-                        start: customDateRange?.start || new Date().toISOString().split("T")[0],
+                        start: customDateRange?.start ?? new Date().toISOString().split("T")[0] ?? "",
                         end: e.target.value,
                       })
                     }

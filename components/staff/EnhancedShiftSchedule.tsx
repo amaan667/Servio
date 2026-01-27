@@ -226,7 +226,7 @@ export default function EnhancedShiftSchedule({
   // Handle individual staff shift button click
   const handleStaffShiftClick = (staffId: string) => {
     setSelectedStaffId(staffId);
-    setShiftDate(currentDate.toISOString().split("T")[0]);
+    setShiftDate(currentDate.toISOString().split("T")[0] ?? "");
     setIsAddShiftModalOpen(true);
   };
 

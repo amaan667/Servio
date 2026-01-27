@@ -126,34 +126,37 @@ export default function DemoPage() {
 
                       {/* Menu Items Grid */}
                       <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-                        {showcaseItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex gap-3 bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
-                          >
-                            <Image
-                              src={item.image || "/placeholder-logo.png"}
-                              alt={item.name}
-                              width={80}
-                              height={80}
-                              className="rounded-lg object-cover flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
-                              <p className="text-xs text-gray-600 line-clamp-2">
-                                {item.description}
-                              </p>
-                              <div className="flex items-center justify-between mt-2">
-                                <p className="text-base font-bold text-purple-600">
-                                  £{item.price.toFixed(2)}
+                        {showcaseItems.map((item) => {
+                          if (!item) return null;
+                          return (
+                            <div
+                              key={item.id}
+                              className="flex gap-3 bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
+                            >
+                              <Image
+                                src={item.image || "/placeholder-logo.png"}
+                                alt={item.name}
+                                width={80}
+                                height={80}
+                                className="rounded-lg object-cover flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
+                                <p className="text-xs text-gray-600 line-clamp-2">
+                                  {item.description}
                                 </p>
-                                <Button size="sm" variant="servio" className="h-7 px-3">
-                                  <Plus className="w-3 h-3" />
-                                </Button>
+                                <div className="flex items-center justify-between mt-2">
+                                  <p className="text-base font-bold text-purple-600">
+                                    £{item.price.toFixed(2)}
+                                  </p>
+                                  <Button size="sm" variant="servio" className="h-7 px-3">
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Cart Footer */}

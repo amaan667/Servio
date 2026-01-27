@@ -510,6 +510,7 @@ export default function QuestionsClient({
 
     const currentQuestion = questions[currentIndex];
     const targetQuestion = questions[newIndex];
+    if (!currentQuestion || !targetQuestion) return;
 
     try {
       const response = await fetch("/api/feedback/questions", {

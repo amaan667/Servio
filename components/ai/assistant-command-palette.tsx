@@ -432,9 +432,9 @@ export function AssistantCommandPalette({
                   <Check className="h-4 w-4 text-green-500" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-green-500">
-                      {plan?.tools.length === 1
+                      {plan?.tools.length === 1 && plan.tools[0]
                         ? getSuccessMessage(plan.tools[0].name)
-                        : `All ${plan?.tools.length || 0} actions completed successfully!`}
+                        : `All ${plan?.tools.length ?? 0} actions completed successfully!`}
                     </p>
                     <p className="text-xs text-green-600/80 mt-0.5">{plan?.intent}</p>
                   </div>

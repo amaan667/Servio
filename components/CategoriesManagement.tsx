@@ -105,6 +105,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
 
     const newCategories = Array.from(categories);
     const [reorderedItem] = newCategories.splice(result.source.index, 1);
+    if (!reorderedItem) return;
     newCategories.splice(result.destination.index, 0, reorderedItem);
 
     setCategories(newCategories);

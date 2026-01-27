@@ -90,7 +90,8 @@ export default function OnboardingProgress({
     if (!allowNavigation) return;
 
     if (stepNumber !== currentStep) {
-      router.push(steps[stepNumber - 1].route);
+      const s = steps[stepNumber - 1];
+      if (s) router.push(s.route);
       onStepChange?.(stepNumber);
     }
   };
@@ -110,8 +111,9 @@ export default function OnboardingProgress({
       // Move to next step or complete onboarding
       if (stepNumber < 4) {
         const nextStep = Math.min(...steps.filter(s => !newCompletedSteps.includes(s.number)).map(s => s.number));
-        if (nextStep && nextStep !== Infinity) {
-          router.push(steps[nextStep - 1].route);
+        const next = nextStep != null && nextStep !== Infinity ? steps[nextStep - 1] : undefined;
+        if (next) {
+          router.push(next.route);
           onStepChange?.(nextStep);
         } else {
           // All steps completed, redirect to dashboard
@@ -218,7 +220,7 @@ export default function OnboardingProgress({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600">
-            Step {currentStep} of 4 • Estimated time: {steps[currentStep - 1].estimatedTime}
+            Step {currentStep} of 4 • Estimated time: {steps[currentStep - 1]?.estimatedTime ?? "—"}
           </p>
           <p className="text-xs text-gray-500 mt-1">
             {completedSteps.length} of 4 steps completed

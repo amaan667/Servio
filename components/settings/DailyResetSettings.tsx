@@ -75,8 +75,10 @@ export function DailyResetSettings({
 
   const formatTimeForDisplay = (time: string) => {
     if (!time) return "00:00";
-    const [hours, minutes] = time.split(":");
-    const hour = parseInt(hours);
+    const parts = time.split(":");
+    const hours = parts[0] ?? "0";
+    const minutes = parts[1] ?? "0";
+    const hour = parseInt(hours, 10);
     const ampm = hour >= 12 ? "PM" : "AM";
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     return `${displayHour}:${minutes} ${ampm}`;
@@ -86,7 +88,9 @@ export function DailyResetSettings({
     if (!resetTime) return "Not set";
 
     const now = new Date();
-    const [hours, minutes] = resetTime.split(":").map(Number);
+    const parts = resetTime.split(":").map(Number);
+    const hours = parts[0] ?? 0;
+    const minutes = parts[1] ?? 0;
 
     const nextReset = new Date();
     nextReset.setHours(hours, minutes, 0, 0);

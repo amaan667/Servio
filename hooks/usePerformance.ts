@@ -31,7 +31,7 @@ export function usePerformance() {
           performance.clearMarks(endMark);
           performance.clearMeasures(measureName);
 
-          return measure.duration;
+          return measure?.duration ?? 0;
         } catch (_error) {
           // Silent error handling
           return 0;

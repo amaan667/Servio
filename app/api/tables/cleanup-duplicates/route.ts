@@ -70,7 +70,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
         // Mark all but the first (oldest) for removal
         for (let i = 1; i < sorted.length; i++) {
-          duplicatesToRemove.push(sorted[i].id);
+          const t = sorted[i];
+          if (t) duplicatesToRemove.push(t.id);
         }
       }
     });

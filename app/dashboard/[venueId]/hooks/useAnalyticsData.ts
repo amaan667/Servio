@@ -167,7 +167,7 @@ export function buildRevenueByCategory(params: {
 
   return sorted.map((entry, index) => ({
     ...entry,
-    color: COLORS[index % COLORS.length],
+    color: COLORS[index % COLORS.length] ?? "#64748b",
   }));
 }
 

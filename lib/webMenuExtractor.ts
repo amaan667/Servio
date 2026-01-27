@@ -523,29 +523,40 @@ function calculateSimilarity(str1: string, str2: string): number {
  * Levenshtein distance algorithm
  */
 function levenshteinDistance(str1: string, str2: string): number {
+  const rows = str2.length;
+  const cols = str1.length;
+  if (rows === 0) return cols;
+  if (cols === 0) return rows;
+
   const matrix: number[][] = [];
-
-  for (let i = 0; i <= str2.length; i++) {
-    matrix[i] = [i];
+  for (let i = 0; i <= rows; i++) {
+    const row = new Array<number>(cols + 1).fill(0);
+    row[0] = i;
+    matrix[i] = row;
+  }
+  const row0 = matrix[0]!;
+  for (let j = 0; j <= cols; j++) {
+    row0[j] = j;
   }
 
-  for (let j = 0; j <= str1.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
+  for (let i = 1; i <= rows; i++) {
+    const row = matrix[i]!;
+    const prevRow = matrix[i - 1]!;
+    const c2 = str2.charAt(i - 1);
+    for (let j = 1; j <= cols; j++) {
+      const c1 = str1.charAt(j - 1);
+      if (c2 === c1) {
+        row[j] = prevRow[j - 1]!;
       } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1, // insertion
-          matrix[i - 1][j] + 1 // deletion
+        row[j] = Math.min(
+          prevRow[j - 1]! + 1,
+          row[j - 1]! + 1,
+          prevRow[j]! + 1
         );
       }
     }
   }
 
-  return matrix[str2.length][str1.length];
+  const lastRow = matrix[rows];
+  return lastRow?.[cols] ?? 0;
 }

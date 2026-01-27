@@ -204,7 +204,7 @@ class RedisCache {
 
   private parseMemoryInfo(info: string): string {
     const match = info.match(/used_memory_human:([^\r\n]+)/);
-    return match ? match[1].trim() : "0B";
+    return (match?.[1] ?? "").trim() || "0B";
   }
 }
 

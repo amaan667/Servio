@@ -235,9 +235,9 @@ function groupByDay(
   sumKey?: string
 ): Record<string, number> {
   return array.reduce<Record<string, number>>((acc, item) => {
-    const date = new Date(item.created_at as string).toISOString().split("T")[0];
+    const date = (new Date(item.created_at as string).toISOString().split("T")[0] ?? "") as string;
     const value = sumKey ? (item[sumKey] as number) || 0 : 1;
-    acc[date] = (acc[date] || 0) + value;
+    acc[date] = (acc[date] ?? 0) + value;
     return acc;
   }, {});
 }

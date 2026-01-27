@@ -85,24 +85,24 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
   const handleViewOrder = () => {
     // Use the first order's ID to navigate directly to that specific order
     // This ensures we find it in ANY tab (live, all, history) using the unique order ID
-    if (orders.length > 0) {
-      const firstOrderId = orders[0].id;
+    const first = orders[0];
+    if (first) {
+      const firstOrderId = first.id;
       // Navigate to Live Orders and search by order ID (last 6 chars) - will find it in any tab
       // The search functionality searches across all tabs automatically
       router.push(
         `/dashboard/${venueId}/live-orders?search=${encodeURIComponent(firstOrderId.slice(-6).toUpperCase())}&tab=all`
       );
     } else {
-      // Fallback: filter by table number
-      const tableNumber = tableLabel.replace(/^Table\s*/i, "").replace(/^Counter\s*/i, "");
+      const tableNumber = (tableLabel ?? "").replace(/^Table\s*/i, "").replace(/^Counter\s*/i, "") || "0";
       router.push(
         `/dashboard/${venueId}/live-orders?table=${encodeURIComponent(tableNumber)}&tab=all`
       );
     }
   };
 
-  const overallStatus = getOverallStatus();
-  const overallPaymentStatus = getOverallPaymentStatus();
+  const overallStatus = getOverallStatus() ?? "unknown";
+  const overallPaymentStatus = getOverallPaymentStatus() ?? "unknown";
   const isQrTable = orders[0]?.source !== "counter";
 
   return (

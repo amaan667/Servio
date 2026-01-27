@@ -217,6 +217,7 @@ export default function QRCodeClient({
 
         for (let i = 0; i < pageQRs.length; i++) {
           const qr = pageQRs[i];
+          if (!qr) continue;
           const row = Math.floor(i / cardsPerRow);
           const col = i % cardsPerRow;
 

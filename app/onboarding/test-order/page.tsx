@@ -72,6 +72,7 @@ export default function OnboardingTestOrderPage() {
 
           if (orders && orders.length > 0) {
             const recentOrder = orders[0];
+            if (!recentOrder) return;
             const orderAge = Date.now() - new Date(recentOrder.created_at).getTime();
             // If order was created in last 5 minutes, consider it a test order
             if (orderAge < 5 * 60 * 1000) {

@@ -100,6 +100,7 @@ export function AccountMigrator() {
 
     for (let i = 0; i < localAccounts.length; i++) {
       const account = localAccounts[i];
+      if (!account) continue;
       setMigrationStatus((prev: Record<string, "pending" | "success" | "error">) => ({
         ...prev,
         [account.contactEmail]: "pending",
@@ -319,7 +320,7 @@ export function AccountMigrator() {
                       <p className="text-sm text-gray-900">{account.contactEmail}</p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {getStatusIcon(migrationStatus[account.contactEmail])}
+                      {getStatusIcon(migrationStatus[account.contactEmail] ?? "pending")}
                       <Badge variant="outline">{account.venueType}</Badge>
                     </div>
                   </div>

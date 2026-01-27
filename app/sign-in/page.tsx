@@ -32,7 +32,7 @@ function SignInPageContent() {
           // DON'T call signOut() - it clears PKCE verifier needed for OAuth!
           // Clear broken auth cookies AND localStorage items manually
           cookies.forEach((cookie) => {
-            const name = cookie.split("=")[0].trim();
+            const name = (cookie.split("=")[0] ?? "").trim();
             // Clear auth cookies but PRESERVE code-verifier for OAuth
             if (name.startsWith("sb-") && !name.includes("code-verifier")) {
               document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;

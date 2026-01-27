@@ -78,6 +78,7 @@ export default function OnboardingMenuPage() {
     if (!e.target.files || e.target.files.length === 0 || !venueId) return;
 
     const file = e.target.files[0];
+    if (!file) return;
     setUploading(true);
 
     try {
@@ -184,7 +185,8 @@ export default function OnboardingMenuPage() {
 
   const updateManualItem = (index: number, field: string, value: string) => {
     const updated = [...manualItems];
-    updated[index] = { ...updated[index], [field]: value };
+    const prev = updated[index];
+    updated[index] = { ...(prev ?? { name: "", price: "", category: "Drinks" }), [field]: value };
     setManualItems(updated);
   };
 

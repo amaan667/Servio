@@ -18,5 +18,6 @@ export async function getPrimaryVenue() {
     .limit(1);
 
   if (error || !venueData?.length) return null;
-  return venueData[0].venue_id as string;
+  const first = venueData[0];
+  return (first?.venue_id as string) ?? null;
 }

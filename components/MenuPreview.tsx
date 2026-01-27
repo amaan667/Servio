@@ -94,18 +94,13 @@ export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewPr
   const styleClasses = getMenuStyleClasses(menuStyle);
 
   // Group items by category
-  const groupedItems = menuItems.reduce(
-    (acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
-      return acc;
-    },
-    {
-      /* Empty */
-    } as Record<string, MenuItem[]>
-  );
+  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
+    const cat = item.category ?? "";
+    const arr = acc[cat] ?? [];
+    arr.push(item);
+    acc[cat] = arr;
+    return acc;
+  }, {});
 
   // Get category order or use alphabetical
   const categories = categoryOrder || Object.keys(groupedItems).sort();

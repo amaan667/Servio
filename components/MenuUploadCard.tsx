@@ -416,9 +416,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     setIsDragOver(false);
 
     const files = event.dataTransfer.files;
-    if (files.length > 0) {
-      await processFile(files[0]);
-    }
+    const f = files[0];
+    if (f) await processFile(f);
   };
 
   const handleUrlOnlyImport = async () => {

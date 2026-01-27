@@ -699,19 +699,21 @@ export async function getAnalyticsSummary(
   const byDayOfWeek = Array.from({ length: 7 }, (_, i) => {
     const stats = dayStats.get(i) || { revenue: 0, orders: 0 };
     return {
-      day: dayNames[i],
+      day: dayNames[i] ?? "",
       revenue: Number(stats.revenue.toFixed(2)),
       orders: stats.orders,
       avgOrderValue: stats.orders > 0 ? Number((stats.revenue / stats.orders).toFixed(2)) : 0,
     };
   });
 
-  // Find busiest day
   const busiestDayIndex = byDayOfWeek.reduce(
-    (maxIdx, day, idx, arr) => (day.orders > arr[maxIdx].orders ? idx : maxIdx),
+    (maxIdx, day, idx, arr) => {
+      const el = arr[maxIdx];
+      return el && day.orders > el.orders ? idx : maxIdx;
+    },
     0
   );
-  const busiestDay = dayNames[busiestDayIndex];
+  const busiestDay = dayNames[busiestDayIndex] ?? "";
 
   // By hour
   const hourStats = new Map<number, { revenue: number; orders: number }>();

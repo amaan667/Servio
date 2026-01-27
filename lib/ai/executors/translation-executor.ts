@@ -1180,9 +1180,9 @@ function detectSourceLanguage(
 
   counts.sort((a, b) => b.count - a.count);
 
-  // If we have a clear winner (more than 3 matches), use it
-  if (counts[0].count > 3) {
-    return counts[0].lang;
+  const first = counts[0];
+  if (first && first.count > 3) {
+    return first.lang;
   }
 
   // Otherwise, assume the opposite of target language

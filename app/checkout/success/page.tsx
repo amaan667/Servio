@@ -232,17 +232,17 @@ export default function CheckoutSuccessPage() {
 
                     if (!error && venues && venues.length > 0) {
                       const primaryVenue = venues[0];
-
+                      if (!primaryVenue) {
+                        router.push("/");
+                        return;
+                      }
                       // Check if venue was created recently (within last 5 minutes = new signup)
                       const venueCreatedAt = new Date(primaryVenue.created_at);
                       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
                       const isNewSignup = venueCreatedAt > fiveMinutesAgo;
-
                       if (isNewSignup && !onboardingCompleted) {
-                        // New user who just signed up - redirect to onboarding
                         router.push("/onboarding/venue-setup");
                       } else {
-                        // Existing user or onboarding completed - go to dashboard
                         router.push(`/dashboard/${primaryVenue.venue_id}?upgrade=success`);
                       }
                     } else {

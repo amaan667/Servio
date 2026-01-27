@@ -207,10 +207,12 @@ export function checkAnalyticsAccessByTier(
   const tierKey = String(tier || "starter")
     .toLowerCase()
     .trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS["starter"];
+  if (!limits) {
+    return { allowed: false, reason: "Unknown tier", currentTier: tierKey, userRole };
+  }
 
   if (requireExports) {
-    // Pro and Enterprise both have exports (Pro = CSV, Enterprise = CSV + financial)
     if (limits.features.analytics !== "advanced+exports") {
       return {
         allowed: false,

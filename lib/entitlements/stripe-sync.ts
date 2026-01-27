@@ -150,7 +150,10 @@ async function syncVenueTier(venueId: string): Promise<void> {
     throw fetchError;
   }
 
-  const orgTier = (venueData as { organizations: { subscription_tier: string }[] }).organizations[0].subscription_tier;
+  const orgs = (venueData as { organizations: { subscription_tier: string }[] }).organizations;
+  const org = orgs?.[0];
+  if (!org) throw new Error("No organization");
+  const orgTier = org.subscription_tier;
   const currentTier = venueData.tier;
 
   if (orgTier !== currentTier) {

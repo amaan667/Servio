@@ -115,21 +115,14 @@ export function StyledMenuDisplay({
 
   const styleClasses = getMenuStyleClasses(menuStyle);
 
-  // Group items by category
-  const groupedItems = menuItems.reduce(
-    (acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
-      return acc;
-    },
-    {
-      /* Empty */
-    } as Record<string, MenuItem[]>
-  );
+  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
+    const cat = item.category ?? "";
+    const arr = acc[cat] ?? [];
+    arr.push(item);
+    acc[cat] = arr;
+    return acc;
+  }, {});
 
-  // Get category order or use alphabetical
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
   return (
@@ -137,7 +130,6 @@ export function StyledMenuDisplay({
       className="min-h-screen"
       style={{ backgroundColor: menuStyle.background_color, color: menuStyle.text_color }}
     >
-      {/* Header with Logo and Venue Name */}
       {menuStyle.logo_url && (
         <div className="flex justify-center items-center py-8">
           <img
@@ -278,18 +270,13 @@ function DefaultMenuDisplay({
   onRemoveFromCart: _onRemoveFromCart,
   onUpdateQuantity,
 }: Omit<StyledMenuDisplayProps, "venueId">) {
-  const groupedItems = menuItems.reduce(
-    (acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
-      return acc;
-    },
-    {
-      /* Empty */
-    } as Record<string, MenuItem[]>
-  );
+  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
+    const cat = item.category ?? "";
+    const arr = acc[cat] ?? [];
+    arr.push(item);
+    acc[cat] = arr;
+    return acc;
+  }, {});
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 

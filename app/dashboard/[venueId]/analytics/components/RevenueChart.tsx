@@ -145,16 +145,16 @@ export function RevenueChart({
             </div>
 
             {/* Hover Tooltip */}
-            {hoveredPoint !== null && (
+            {hoveredPoint !== null && revenueOverTime[hoveredPoint] && (
               <div className="absolute top-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
                 <div className="text-sm font-medium text-gray-900">
-                  {formatTooltipDate(revenueOverTime[hoveredPoint]?.date, timePeriod)}
+                  {formatTooltipDate(revenueOverTime[hoveredPoint].date, timePeriod)}
                 </div>
                 <div className="text-sm text-gray-900 mt-1">
-                  Revenue: £{revenueOverTime[hoveredPoint]?.revenue.toFixed(2)}
+                  Revenue: £{revenueOverTime[hoveredPoint].revenue.toFixed(2)}
                 </div>
                 <div className="text-sm text-gray-900">
-                  Orders: {revenueOverTime[hoveredPoint]?.orders}
+                  Orders: {revenueOverTime[hoveredPoint].orders}
                 </div>
               </div>
             )}

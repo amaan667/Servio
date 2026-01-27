@@ -129,8 +129,10 @@ export async function compressImage(
  */
 export function dataURLtoBlob(dataUrl: string): Blob {
   const arr = dataUrl.split(",");
-  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
-  const bstr = atob(arr[1]);
+  const mime = arr[0]?.match(/:(.*?);/)?.[1] ?? "image/png";
+  const b64 = arr[1];
+  if (!b64) throw new Error("Invalid data URL");
+  const bstr = atob(b64);
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
 

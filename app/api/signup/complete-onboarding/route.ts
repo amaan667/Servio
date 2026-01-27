@@ -51,11 +51,12 @@ export const POST = withUnifiedAuth(
           .eq("owner_user_id", userId)
           .limit(1);
 
-        if (existingVenues && existingVenues.length > 0) {
+        const firstVenue = existingVenues?.[0];
+        if (firstVenue) {
           return NextResponse.json({
             success: true,
-            venueId: existingVenues[0].venue_id,
-            organizationId: existingVenues[0].organization_id,
+            venueId: firstVenue.venue_id,
+            organizationId: firstVenue.organization_id,
             message: "Onboarding already completed",
           });
         }

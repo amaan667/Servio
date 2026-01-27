@@ -130,7 +130,8 @@ export function TableCardNew({
             if (isThisMergedIntoAnother) {
               setMergedTableId(table.id); // This table is the secondary table
             } else if (hasTablesMergedIntoThis) {
-              setMergedTableId(mergedIntoThis[0].id); // The first table merged into this one
+              const first = mergedIntoThis[0];
+              if (first) setMergedTableId(first.id);
             } else {
               // Fallback: if we can't determine the exact relationship, use this table's ID
               setMergedTableId(table.id);

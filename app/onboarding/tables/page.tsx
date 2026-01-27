@@ -144,7 +144,8 @@ export default function OnboardingTablesPage() {
 
   const updateTable = (index: number, field: string, value: string | number) => {
     const updated = [...tables];
-    updated[index] = { ...updated[index], [field]: value };
+    const prev = updated[index];
+    updated[index] = { ...(prev ?? { name: "", section: "", capacity: 2 }), [field]: value };
     setTables(updated);
     if (venueId) {
       generatePreview(selectedCount, venueId);

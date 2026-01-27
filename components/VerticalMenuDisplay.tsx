@@ -40,23 +40,16 @@ export function VerticalMenuDisplay({
     /* Empty */
   });
 
-  // Group items by category
-  const groupedItems = menuItems.reduce(
-    (acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
-      return acc;
-    },
-    {
-      /* Empty */
-    } as Record<string, MenuItem[]>
-  );
+  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
+    const cat = item.category ?? "";
+    const arr = acc[cat] ?? [];
+    arr.push(item);
+    acc[cat] = arr;
+    return acc;
+  }, {});
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
-  // Filter items by search
   const filteredItems = menuItems.filter(
     (item) =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -64,18 +57,13 @@ export function VerticalMenuDisplay({
   );
 
   const filteredGroupedItems = searchQuery
-    ? filteredItems.reduce(
-        (acc, item) => {
-          if (!acc[item.category]) {
-            acc[item.category] = [];
-          }
-          acc[item.category].push(item);
-          return acc;
-        },
-        {
-          /* Empty */
-        } as Record<string, MenuItem[]>
-      )
+    ? filteredItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
+        const cat = item.category ?? "";
+        const arr = acc[cat] ?? [];
+        arr.push(item);
+        acc[cat] = arr;
+        return acc;
+      }, {})
     : groupedItems;
 
   // Scroll to category

@@ -4,7 +4,7 @@
  */
 
 import { UserRole } from "@/lib/permissions";
-import { TIER_LIMITS, type TierLimits } from "@/lib/tier-restrictions";
+import { TIER_LIMITS } from "@/lib/tier-restrictions";
 import { checkAccessByTier } from "@/lib/access-control";
 
 /**
@@ -53,7 +53,8 @@ export async function canCreateResource(
   const tierKey = String(tier || "starter")
     .toLowerCase()
     .trim();
-  const limits: TierLimits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter;
+  if (!limits) return { allowed: false, reason: "Unknown tier", limit: 0, currentTier: tierKey };
   const limit = limits[limitType];
 
   // -1 means unlimited

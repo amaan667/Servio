@@ -49,6 +49,7 @@ export function useDragAndDrop<T extends MenuItem>(
         // Create new array with reordered items
         const newItems = Array.from(items);
         const [removed] = newItems.splice(source.index, 1);
+        if (!removed) return;
         newItems.splice(destination.index, 0, removed);
 
         // Update positions

@@ -149,7 +149,7 @@ export async function analyzeCostPerDish(venueId: string): Promise<CostAnalysisR
 
   let totalMonthlyCost = 0;
   const itemCosts = menuItems.map((item) => {
-    const costRatio = costEstimates[item.category] || costEstimates.default;
+    const costRatio = costEstimates[item.category] ?? costEstimates.default ?? 0.35;
     const estimatedCost = item.price * costRatio;
     const profit = item.price - estimatedCost;
     const profitMargin = (profit / item.price) * 100;

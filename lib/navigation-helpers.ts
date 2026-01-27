@@ -9,7 +9,7 @@ export interface NavigationItem {
   label: string;
   href: string;
   feature: string;
-  tierFeature?: keyof typeof TIER_LIMITS.starter.features;
+  tierFeature?: keyof NonNullable<typeof TIER_LIMITS.starter>["features"];
   requiredTier?: "starter" | "pro" | "enterprise";
 }
 
@@ -29,21 +29,19 @@ export async function canAccessNavigationItem(
 
   // If tier check is required, check subscription tier
   if (item.tierFeature) {
-    const tierKey = String(tier || "starter")
-      .toLowerCase()
-      .trim();
-    const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+    const tierKey = String(tier || "starter").toLowerCase().trim();
+    const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter;
+    if (!limits) return false;
     const featureValue = limits.features[item.tierFeature];
     return typeof featureValue === "boolean" ? featureValue : true;
   }
 
-  // If specific tier is required, check it
   if (item.requiredTier) {
-    const tierKey = String(tier || "starter")
-      .toLowerCase()
-      .trim();
+    const tierKey = String(tier || "starter").toLowerCase().trim();
     const tierOrder: Record<string, number> = { starter: 1, pro: 2, enterprise: 3 };
-    return (tierOrder[tierKey] || 0) >= tierOrder[item.requiredTier];
+    const a = tierOrder[tierKey] ?? 0;
+    const b = tierOrder[item.requiredTier] ?? 0;
+    return a >= b;
   }
 
   return true;

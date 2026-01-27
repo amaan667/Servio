@@ -25,6 +25,7 @@ export function useDragAndDrop(
 
     const newItems = Array.from(categoryItems);
     const [removed] = newItems.splice(source.index, 1);
+    if (!removed) return;
     newItems.splice(destination.index, 0, removed);
 
     const updatedItems = menuItems.map((item) => {
@@ -73,6 +74,7 @@ export function useDragAndDrop(
 
     const newOrder = Array.from(currentOrder);
     const [reorderedCategory] = newOrder.splice(source.index, 1);
+    if (!reorderedCategory) return;
     newOrder.splice(destination.index, 0, reorderedCategory);
 
     setCategoryOrder(newOrder);

@@ -279,20 +279,22 @@ export function EnhancedPDFMenuDisplay({
 
   // Touch handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1 && zoomLevel > 1) {
+    const t = e.touches[0];
+    if (t && e.touches.length === 1 && zoomLevel > 1) {
       setIsDragging(true);
       setDragStart({
-        x: e.touches[0].clientX - imagePosition.x,
-        y: e.touches[0].clientY - imagePosition.y,
+        x: t.clientX - imagePosition.x,
+        y: t.clientY - imagePosition.y,
       });
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isDragging && e.touches.length === 1 && zoomLevel > 1) {
+    const t = e.touches[0];
+    if (isDragging && t && e.touches.length === 1 && zoomLevel > 1) {
       setImagePosition({
-        x: e.touches[0].clientX - dragStart.x,
-        y: e.touches[0].clientY - dragStart.y,
+        x: t.clientX - dragStart.x,
+        y: t.clientY - dragStart.y,
       });
     }
   };
@@ -317,10 +319,10 @@ export function EnhancedPDFMenuDisplay({
   // Group items by category
   const groupedItems = filteredItems.reduce(
     (acc, item: MenuItem) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
+      const cat = item.category ?? "";
+      const arr = acc[cat] ?? [];
+      arr.push(item);
+      acc[cat] = arr;
       return acc;
     },
     {
@@ -329,7 +331,7 @@ export function EnhancedPDFMenuDisplay({
   );
 
   const categories = categoryOrder
-    ? categoryOrder.filter((cat) => groupedItems[cat]?.length > 0)
+    ? categoryOrder.filter((cat) => (groupedItems[cat] ?? []).length > 0)
     : Object.keys(groupedItems).sort();
 
   if (loading) {

@@ -44,8 +44,9 @@ function CallbackContent() {
             .order("created_at", { ascending: true })
             .limit(1);
 
-          if (venues && venues.length > 0) {
-            router.push(`/dashboard/${venues[0].venue_id}`);
+          const firstVenue = venues?.[0];
+          if (firstVenue) {
+            router.push(`/dashboard/${firstVenue.venue_id}`);
             return;
           }
 

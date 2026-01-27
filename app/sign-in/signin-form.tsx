@@ -142,8 +142,9 @@ export default function SignInForm({
               .order("created_at", { ascending: true })
               .limit(1);
 
-            if (venues && venues.length > 0) {
-              window.location.href = `/dashboard/${venues[0].venue_id}`;
+            const v = venues?.[0];
+            if (v) {
+              window.location.href = `/dashboard/${v.venue_id}`;
               return;
             }
           }

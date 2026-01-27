@@ -332,7 +332,7 @@ export default function AnalyticsClient({
                     "Tuesday",
                     "Monday",
                   ].map((day, index) => {
-                    const percentage = [95, 88, 75, 65, 60, 45, 40][index];
+                    const percentage = [95, 88, 75, 65, 60, 45, 40][index] ?? 0;
                     return (
                       <div key={day} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
