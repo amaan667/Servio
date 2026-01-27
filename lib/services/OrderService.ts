@@ -149,8 +149,8 @@ export class OrderService extends BaseService {
   }
 
   /**
-   * Create order using transactional RPC function
-   * This ensures atomicity: order + table (if needed) + table session
+   * Create order using direct insert
+   * Simple and reliable order creation
    */
   async createOrder(
     venueId: string,
@@ -185,82 +185,43 @@ export class OrderService extends BaseService {
       (typeof orderData.table_number === 'string' ? parseInt(orderData.table_number) : orderData.table_number) 
       : null;
 
-    // Use RPC function for transactional order creation
-    // This RPC handles:
-    // 1. Venue verification
-    // 2. Table auto-creation (if needed)
-    // 3. Table session management
-    // 4. Order insertion
-    // 5. KDS ticket creation (if logic is moved to DB)
-    const { data, error } = await supabase.rpc("create_order_with_session_v2", {
-      p_venue_id: venueId,
-      p_table_number: tableNumber,
-      p_fulfillment_type: fulfillmentType,
-      p_counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
-      p_customer_name: orderData.customer_name,
-      p_customer_phone: orderData.customer_phone,
-      p_customer_email: orderData.customer_email ?? null,
-      p_items: orderData.items,
-      p_total_amount: orderData.total_amount,
-      p_notes: orderData.notes ?? null,
-      p_order_status: orderData.order_status ?? "PLACED",
-      p_payment_status: orderData.payment_status ?? "UNPAID",
-      p_payment_method: orderData.payment_method ?? "PAY_NOW",
-      p_payment_mode: orderData.payment_mode || (() => {
-        const method = orderData.payment_method ?? "PAY_NOW";
-        if (method === "PAY_NOW") return "online";
-        if (method === "PAY_AT_TILL") return "offline";
-        if (method === "PAY_LATER") return "deferred";
-        return "online";
-      })(),
-      p_source: orderData.source ?? "qr",
-      p_qr_type: orderData.qr_type ?? null,
-      p_requires_collection: orderData.requires_collection ?? false
-    });
+    // Calculate payment_mode based on payment_method
+    const paymentMode = orderData.payment_mode || (() => {
+      const method = orderData.payment_method ?? "PAY_NOW";
+      if (method === "PAY_NOW") return "online";
+      if (method === "PAY_AT_TILL") return "offline";
+      if (method === "PAY_LATER") return "deferred";
+      return "online";
+    })();
+
+    // Direct insert - simple and reliable
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({
+        venue_id: venueId,
+        table_number: tableNumber,
+        customer_name: orderData.customer_name,
+        customer_phone: orderData.customer_phone,
+        customer_email: orderData.customer_email ?? null,
+        items: orderData.items,
+        total_amount: orderData.total_amount,
+        notes: orderData.notes ?? null,
+        order_status: orderData.order_status || "PLACED",
+        payment_status: orderData.payment_status || "UNPAID",
+        payment_method: orderData.payment_method || "PAY_NOW",
+        payment_mode: paymentMode,
+        source: orderData.source || "qr",
+        fulfillment_type: fulfillmentType,
+        counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
+        qr_type: orderData.qr_type ?? null,
+        requires_collection: orderData.requires_collection ?? false
+      })
+      .select("*")
+      .single();
 
     if (error) {
       trackOrderError(error, { venueId, action: "createOrder" });
-      
-      // RPC failed - use direct insert as fallback
-      // Calculate payment_mode based on payment_method
-      const paymentMode = orderData.payment_mode || (() => {
-        const method = orderData.payment_method ?? "PAY_NOW";
-        if (method === "PAY_NOW") return "online";
-        if (method === "PAY_AT_TILL") return "offline";
-        if (method === "PAY_LATER") return "deferred";
-        return "online";
-      })();
-      
-      const { data: insertedOrder, error: insertError } = await supabase
-        .from("orders")
-        .insert({
-          venue_id: venueId,
-          table_number: tableNumber,
-          customer_name: orderData.customer_name,
-          customer_phone: orderData.customer_phone,
-          customer_email: orderData.customer_email ?? null,
-          items: orderData.items,
-          total_amount: orderData.total_amount,
-          notes: orderData.notes ?? null,
-          order_status: orderData.order_status || "PLACED",
-          payment_status: orderData.payment_status || "UNPAID",
-          payment_method: orderData.payment_method || "PAY_NOW",
-          payment_mode: paymentMode,
-          source: orderData.source || "qr",
-          fulfillment_type: fulfillmentType,
-          counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
-          qr_type: orderData.qr_type ?? null,
-          requires_collection: orderData.requires_collection ?? false
-        })
-        .select("*")
-        .single();
-
-      if (insertError) {
-        trackOrderError(insertError, { venueId, action: "createOrder_fallback" });
-        throw new Error(`Failed to create order: ${insertError.message}`);
-      }
-      
-      return insertedOrder;
+      throw new Error(`Failed to create order: ${error.message}`);
     }
 
     // Invalidate cache
