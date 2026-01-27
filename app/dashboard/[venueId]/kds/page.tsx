@@ -34,15 +34,17 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     }
 
     // BACKFILL: Create tickets for existing orders that don't have them
-    // CRITICAL: Get ALL orders - NO date restrictions, NO status filters - EVERY SINGLE ORDER
+    // CRITICAL: Get ALL OPEN orders - NO date restrictions - includes earlier today orders
+    // Only OPEN orders need tickets (completed orders shouldn't have active tickets)
     try {
-      // Step 1: Get ALL orders from this venue (no filters except venue_id)
+      // Step 1: Get ALL OPEN orders from this venue (no date filters - includes earlier today)
       const { data: allOrders, error: ordersError } = await supabase
         .from("orders")
         .select(
-          "id, venue_id, table_number, table_id, items, customer_name, order_status, payment_status"
+          "id, venue_id, table_number, table_id, items, customer_name, order_status, payment_status, completion_status"
         )
         .eq("venue_id", venueId)
+        .eq("completion_status", "OPEN") // Only backfill OPEN orders - completed orders don't need tickets
         .order("created_at", { ascending: false });
 
       if (ordersError) { /* Condition handled */ } else if (allOrders && allOrders.length > 0) {

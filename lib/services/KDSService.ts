@@ -28,6 +28,8 @@ export class KDSService extends BaseService {
   async getTickets(venueId: string, filters?: { station_id?: string; status?: string }): Promise<Record<string, unknown>[]> {
     const supabase = await createSupabaseClient();
     
+    // CRITICAL: Don't filter by completion_status - tickets should show regardless of order completion status
+    // Only filter by bumped status (handled in client-side filtering)
     let query = supabase
       .from("kds_tickets")
       .select(`
@@ -36,7 +38,7 @@ export class KDSService extends BaseService {
         orders (id, customer_name, order_status, kitchen_status, service_status, completion_status, payment_method, payment_status)
       `)
       .eq("venue_id", venueId)
-      .eq("orders.completion_status", "OPEN")
+      .neq("status", "bumped") // Exclude bumped tickets - they move to Live Orders
       .order("created_at", { ascending: false });
 
     if (filters?.station_id) query = query.eq("station_id", filters.station_id);
@@ -53,6 +55,7 @@ export class KDSService extends BaseService {
           orders (id, customer_name, order_status, payment_status)
         `)
         .eq("venue_id", venueId)
+        .neq("status", "bumped") // Exclude bumped tickets
         .order("created_at", { ascending: false });
       
       if (fallbackError) throw fallbackError;

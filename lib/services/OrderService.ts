@@ -414,20 +414,27 @@ export class OrderService extends BaseService {
     // 1. Get orders to complete
     const { data: orders } = await supabase
       .from("orders")
-      .select("id, table_id, table_number, payment_status")
+      .select("id, table_id, table_number, payment_status, order_status")
       .in("id", orderIds)
       .eq("venue_id", venueId);
 
     if (!orders || orders.length === 0) return 0;
 
-    // 2. Validate payment status (Production requirement: all must be PAID)
-    const unpaid = orders.filter(o => o.payment_status !== 'PAID' && o.payment_status !== 'TILL');
+    // 2. Filter out already COMPLETED orders - they shouldn't be overridden (still need payment)
+    const ordersToComplete = orders.filter(o => o.order_status !== "COMPLETED");
+    
+    if (ordersToComplete.length === 0) {
+      return 0; // All orders are already completed
+    }
+
+    // 3. Validate payment status (Production requirement: all must be PAID)
+    const unpaid = ordersToComplete.filter(o => o.payment_status !== 'PAID' && o.payment_status !== 'TILL');
     if (unpaid.length > 0) {
       throw new Error(`Cannot complete ${unpaid.length} unpaid orders.`);
     }
 
     let completedCount = 0;
-    for (const order of orders) {
+    for (const order of ordersToComplete) {
       try {
         // Use RPC for atomic completion
         const { error } = await supabase.rpc("orders_complete", {

@@ -18,10 +18,21 @@ export const POST = createUnifiedHandler(
     // 1. Get IDs to complete
     let orderIds = body.orderIds;
     if (!orderIds || orderIds.length === 0) {
+      // Include SERVED orders but exclude COMPLETED orders (they still need payment)
       const activeOrders = await orderService.getOrders(venueId, {
-        status: "PLACED,IN_PREP,READY,SERVING",
+        status: "PLACED,IN_PREP,READY,SERVING,SERVED",
       });
-      orderIds = activeOrders.map(o => o.id);
+      // Filter out already COMPLETED orders - they shouldn't be overridden
+      orderIds = activeOrders
+        .filter(o => o.order_status !== "COMPLETED")
+        .map(o => o.id);
+    } else {
+      // If specific order IDs provided, filter out COMPLETED ones
+      const orders = await orderService.getOrders(venueId, {});
+      const completedOrderIds = new Set(
+        orders.filter(o => o.order_status === "COMPLETED").map(o => o.id)
+      );
+      orderIds = orderIds.filter(id => !completedOrderIds.has(id));
     }
 
     if (!orderIds || orderIds.length === 0) {

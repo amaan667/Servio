@@ -160,17 +160,50 @@ export default function KDSClient({
       if (data.success) {
         const fetchedTickets = (data.data?.tickets || []) as KDSTicket[];
         // CRITICAL: Filter out bumped tickets - they should not appear in KDS
-        const activeTickets = fetchedTickets.filter((t) => t.status !== "bumped");
+        const activeFetchedTickets = fetchedTickets.filter((t) => t.status !== "bumped");
         
-        // Update tickets - this will preserve any tickets that are currently being interacted with
-        // The real-time handlers will keep them in sync
-        setTickets(activeTickets);
+        // Merge with existing tickets to prevent flicker/disappearing
+        // This ensures tickets stay visible during status transitions (new -> in_progress -> ready)
+        setTickets((prev) => {
+          // Create a map of fetched tickets by ID for quick lookup
+          const fetchedMap = new Map(activeFetchedTickets.map((t) => [t.id, t]));
+          
+          // Start with fetched tickets (source of truth from server)
+          const merged = [...activeFetchedTickets];
+          
+          // Preserve any existing tickets that are not in the fetched list
+          // These might be in the process of being updated (status transitions)
+          // Only preserve if they're not bumped and match current filter
+          prev.forEach((existingTicket) => {
+            if (!fetchedMap.has(existingTicket.id)) {
+              // Ticket exists locally but not in fetched list
+              // Preserve it if it's not bumped and matches filter
+              if (existingTicket.status !== "bumped") {
+                if (!selectedStation || existingTicket.station_id === selectedStation) {
+                  merged.push(existingTicket);
+                }
+              }
+            }
+          });
+          
+          // Remove duplicates (prefer fetched data) and filter out bumped
+          const unique = Array.from(
+            new Map(merged.map((t) => [t.id, t])).values()
+          ).filter((t) => t.status !== "bumped");
+          
+          // Sort by created_at (oldest first for priority)
+          return unique.sort(
+            (a, b) =>
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
+        
         setError(null); // Clear any previous errors
         // Cache tickets
         if (typeof window !== "undefined") {
           sessionStorage.setItem(
             `kds_tickets_${venueId}`,
-            JSON.stringify(activeTickets)
+            JSON.stringify(activeFetchedTickets)
           );
         }
       } else {
@@ -200,13 +233,20 @@ export default function KDSClient({
 
         if (data.success) {
           // Update local state immediately for instant feedback
-          setTickets((prev) =>
-            prev.map((t) => (t.id === ticketId ? { ...t, ...data.data?.ticket } : t))
-          );
-          // Refetch tickets after a short delay to ensure consistency
-          setTimeout(() => {
-            fetchTickets();
-          }, 500);
+          // Real-time handler will also update it, but this provides instant UI feedback
+          setTickets((prev) => {
+            const updatedTicket = data.data?.ticket as KDSTicket | undefined;
+            if (!updatedTicket) return prev;
+            
+            // If ticket is bumped, remove it immediately
+            if (updatedTicket.status === "bumped") {
+              return prev.filter((t) => t.id !== ticketId);
+            }
+            
+            // Otherwise, update the ticket in place
+            return prev.map((t) => (t.id === ticketId ? { ...t, ...updatedTicket } : t));
+          });
+          // Don't refetch - real-time handler will keep it in sync
         }
       } catch (error) {
         // Error handled by UI state
