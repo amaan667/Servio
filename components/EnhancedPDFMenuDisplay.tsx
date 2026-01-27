@@ -7,6 +7,7 @@ import { Plus, Minus, ShoppingCart, Search, List, Grid, ZoomIn, ZoomOut } from "
 import { ItemDetailsModal } from "@/components/ItemDetailsModal";
 import { Input } from "@/components/ui/input";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
+import { groupByCategory } from "@/lib/utils/group-by-category";
 import { safeGetItem, safeSetItem, safeRemoveItem } from "@/app/order/utils/safeStorage";
 
 interface MenuItem {
@@ -317,18 +318,7 @@ export function EnhancedPDFMenuDisplay({
   );
 
   // Group items by category
-  const groupedItems = filteredItems.reduce(
-    (acc, item: MenuItem) => {
-      const cat = item.category ?? "";
-      const arr = acc[cat] ?? [];
-      arr.push(item);
-      acc[cat] = arr;
-      return acc;
-    },
-    {
-      /* Empty */
-    } as Record<string, MenuItem[]>
-  );
+  const groupedItems = groupByCategory<MenuItem>(filteredItems);
 
   const categories = categoryOrder
     ? categoryOrder.filter((cat) => (groupedItems[cat] ?? []).length > 0)

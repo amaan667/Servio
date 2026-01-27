@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { MenuStyle, getMenuStyleClasses } from "@/lib/menu-style-extractor";
+import { groupByCategory } from "@/lib/utils/group-by-category";
 
 export interface MenuItem {
   id: string;
@@ -94,13 +95,7 @@ export function MenuPreview({ venueId, menuItems, categoryOrder }: MenuPreviewPr
   const styleClasses = getMenuStyleClasses(menuStyle);
 
   // Group items by category
-  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
-    const cat = item.category ?? "";
-    const arr = acc[cat] ?? [];
-    arr.push(item);
-    acc[cat] = arr;
-    return acc;
-  }, {});
+  const groupedItems = groupByCategory<MenuItem>(menuItems);
 
   // Get category order or use alphabetical
   const categories = categoryOrder || Object.keys(groupedItems).sort();
@@ -215,13 +210,7 @@ function DefaultMenuPreview({
   menuItems: MenuItem[];
   categoryOrder: string[] | null;
 }) {
-  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
-    const cat = item.category ?? "";
-    const arr = acc[cat] ?? [];
-    arr.push(item);
-    acc[cat] = arr;
-    return acc;
-  }, {});
+  const groupedItems = groupByCategory<MenuItem>(menuItems);
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 

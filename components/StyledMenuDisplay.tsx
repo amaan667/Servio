@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { MenuStyle, getMenuStyleClasses } from "@/lib/menu-style-extractor";
+import { groupByCategory } from "@/lib/utils/group-by-category";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
 import { VerticalMenuDisplay } from "./VerticalMenuDisplay";
@@ -115,13 +116,7 @@ export function StyledMenuDisplay({
 
   const styleClasses = getMenuStyleClasses(menuStyle);
 
-  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
-    const cat = item.category ?? "";
-    const arr = acc[cat] ?? [];
-    arr.push(item);
-    acc[cat] = arr;
-    return acc;
-  }, {});
+  const groupedItems = groupByCategory<MenuItem>(menuItems);
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
@@ -270,13 +265,7 @@ function DefaultMenuDisplay({
   onRemoveFromCart: _onRemoveFromCart,
   onUpdateQuantity,
 }: Omit<StyledMenuDisplayProps, "venueId">) {
-  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
-    const cat = item.category ?? "";
-    const arr = acc[cat] ?? [];
-    arr.push(item);
-    acc[cat] = arr;
-    return acc;
-  }, {});
+  const groupedItems = groupByCategory<MenuItem>(menuItems);
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { groupByCategory } from "@/lib/utils/group-by-category";
 
 interface MenuItem {
   id: string;
@@ -40,13 +41,7 @@ export function VerticalMenuDisplay({
     /* Empty */
   });
 
-  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
-    const cat = item.category ?? "";
-    const arr = acc[cat] ?? [];
-    arr.push(item);
-    acc[cat] = arr;
-    return acc;
-  }, {});
+  const groupedItems = groupByCategory<MenuItem>(menuItems);
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 
@@ -57,13 +52,7 @@ export function VerticalMenuDisplay({
   );
 
   const filteredGroupedItems = searchQuery
-    ? filteredItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
-        const cat = item.category ?? "";
-        const arr = acc[cat] ?? [];
-        arr.push(item);
-        acc[cat] = arr;
-        return acc;
-      }, {})
+    ? groupByCategory<MenuItem>(filteredItems)
     : groupedItems;
 
   // Scroll to category

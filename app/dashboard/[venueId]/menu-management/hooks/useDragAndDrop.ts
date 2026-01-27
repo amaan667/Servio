@@ -1,4 +1,5 @@
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { reorderList } from "@/lib/utils/reorder";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "@hello-pangea/dnd";
 import { MenuItem } from "../types";
@@ -23,10 +24,7 @@ export function useDragAndDrop(
       .filter((item) => item.category === category)
       .sort((a, b) => (a.position || 0) - (b.position || 0));
 
-    const newItems = Array.from(categoryItems);
-    const [removed] = newItems.splice(source.index, 1);
-    if (!removed) return;
-    newItems.splice(destination.index, 0, removed);
+    const newItems = reorderList(categoryItems, source.index, destination.index);
 
     const updatedItems = menuItems.map((item) => {
       if (item.category === category) {
@@ -72,10 +70,7 @@ export function useDragAndDrop(
         ? categoryOrder.filter((cat) => uniqueCategories.includes(cat))
         : uniqueCategories;
 
-    const newOrder = Array.from(currentOrder);
-    const [reorderedCategory] = newOrder.splice(source.index, 1);
-    if (!reorderedCategory) return;
-    newOrder.splice(destination.index, 0, reorderedCategory);
+    const newOrder = reorderList(currentOrder, source.index, destination.index);
 
     setCategoryOrder(newOrder);
 

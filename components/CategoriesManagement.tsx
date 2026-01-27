@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { GripVertical, Plus, Edit, Trash2, Save, X, RotateCcw } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { reorderList } from "@/lib/utils/reorder";
 
 interface CategoriesManagementProps {
   venueId: string;
@@ -103,10 +104,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
-    const newCategories = Array.from(categories);
-    const [reorderedItem] = newCategories.splice(result.source.index, 1);
-    if (!reorderedItem) return;
-    newCategories.splice(result.destination.index, 0, reorderedItem);
+    const newCategories = reorderList(categories, result.source.index, result.destination.index);
 
     setCategories(newCategories);
     await saveCategories(newCategories);

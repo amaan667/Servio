@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from "react";
 import { DropResult } from "@hello-pangea/dnd";
+import { reorderList } from "@/lib/utils/reorder";
 
 interface MenuItem {
   id: string;
@@ -46,13 +47,8 @@ export function useDragAndDrop<T extends MenuItem>(
       try {
         setIsReordering(true);
 
-        // Create new array with reordered items
-        const newItems = Array.from(items);
-        const [removed] = newItems.splice(source.index, 1);
-        if (!removed) return;
-        newItems.splice(destination.index, 0, removed);
+        const newItems = reorderList(items, source.index, destination.index);
 
-        // Update positions
         const reorderedItems = newItems.map((item, index) => ({
           ...item,
           position: index,
