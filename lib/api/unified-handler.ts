@@ -28,7 +28,6 @@ import {
   getAuthUserFromRequest, 
   verifyVenueAccess, 
   AuthContext,
-  enforceFeatureAccess,
   hasRole,
   isOwner
 } from "@/lib/auth/unified-auth";
@@ -135,15 +134,37 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
       let user: { id: string; email?: string } | null = null;
       let authError: string | null = null;
       
+      // eslint-disable-next-line no-console
+      console.log("[UNIFIED-HANDLER] Auth check", {
+        path: req.nextUrl.pathname,
+        method: req.method,
+        requireAuth: options.requireAuth !== false,
+        headers: {
+          userId: req.headers.get("x-user-id"),
+          email: req.headers.get("x-user-email"),
+          tier: req.headers.get("x-user-tier"),
+          role: req.headers.get("x-user-role"),
+          venueId: req.headers.get("x-venue-id"),
+        },
+      });
+      
       if (options.requireAuth !== false) {
         try {
           const authResult = await getAuthUserFromRequest(req);
           user = authResult.user;
           authError = authResult.error;
           
+          // eslint-disable-next-line no-console
+          console.log("[UNIFIED-HANDLER] Auth result", {
+            hasUser: !!user,
+            userId: user?.id,
+            error: authError,
+          });
+          
           if (!user || authError) {
             perf.end();
-            logger.warn("Authentication failed", {
+            // eslint-disable-next-line no-console
+            console.error("[UNIFIED-HANDLER] Authentication failed", {
               requestId,
               path: req.nextUrl.pathname,
               method: req.method,
@@ -214,14 +235,88 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           return apiErrors.unauthorized("Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
-        const access = await verifyVenueAccess(venueId, user.id);
+        // Check if tier/role headers are already set (from middleware for dashboard routes)
+        // If not, we need to call RPC to get them (for API routes)
+        let tier = req.headers.get("x-user-tier");
+        let role = req.headers.get("x-user-role");
+        const headerVenueId = req.headers.get("x-venue-id");
+
+        // eslint-disable-next-line no-console
+        console.log("[UNIFIED-HANDLER] Checking headers before venue access", {
+          hasTier: !!tier,
+          hasRole: !!role,
+          hasVenueId: !!headerVenueId,
+          venueId,
+        });
+
+        // If tier/role headers missing, call RPC (for API routes that middleware didn't process)
+        if (!tier || !role || headerVenueId !== venueId) {
+          // eslint-disable-next-line no-console
+          console.log("[UNIFIED-HANDLER] Headers missing, calling RPC", {
+            venueId,
+            userId: user.id,
+          });
+
+          const { getAccessContext } = await import("@/lib/access/getAccessContext");
+          const accessContext = await getAccessContext(venueId);
+          
+          if (!accessContext || accessContext.user_id !== user.id || accessContext.venue_id !== venueId) {
+            perf.end();
+            // eslint-disable-next-line no-console
+            console.error("[UNIFIED-HANDLER] RPC returned invalid access context", {
+              hasContext: !!accessContext,
+              contextUserId: accessContext?.user_id,
+              requestedUserId: user.id,
+              contextVenueId: accessContext?.venue_id,
+              requestedVenueId: venueId,
+            });
+            return apiErrors.forbidden("Access denied to this venue", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+          }
+
+          tier = accessContext.tier;
+          role = accessContext.role;
+
+          // Set headers for downstream use
+          req.headers.set("x-user-tier", tier);
+          req.headers.set("x-user-role", role);
+          req.headers.set("x-venue-id", venueId);
+        }
+
+        // Verify venue access (this will use headers we just set)
+        // eslint-disable-next-line no-console
+        console.log("[UNIFIED-HANDLER] Verifying venue access", {
+          venueId,
+          userId: user.id,
+          tier,
+          role,
+        });
+
+        const access = await verifyVenueAccess(venueId, user.id, req);
+        
+        // eslint-disable-next-line no-console
+        console.log("[UNIFIED-HANDLER] Venue access result", {
+          hasAccess: !!access,
+          venueId,
+          userId: user.id,
+          tier: access?.tier,
+          role: access?.role,
+        });
+        
         if (!access) {
           perf.end();
+          // eslint-disable-next-line no-console
+          console.error("[UNIFIED-HANDLER] Venue access denied", {
+            requestId,
+            path: req.nextUrl.pathname,
+            userId: user.id,
+            venueId,
+          });
           return apiErrors.forbidden("Access denied to this venue", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         // Feature check
         if (options.requireFeature) {
+          const { enforceFeatureAccess } = await import("@/lib/auth/unified-auth");
           const featureCheck = await enforceFeatureAccess(access.venue.owner_user_id, options.requireFeature);
           if (!featureCheck.allowed) {
             perf.end();

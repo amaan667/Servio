@@ -34,7 +34,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyVenueAccess as verifyVenueAccessMiddleware, type AuthorizedContext } from "@/lib/middleware/authorization";
 export const verifyVenueAccess = verifyVenueAccessMiddleware;
 import { checkFeatureAccess, checkLimit, TIER_LIMITS } from "@/lib/tier-restrictions";
-import { getAccessContext } from "@/lib/access/getAccessContext";
 
 import { apiErrors } from "@/lib/api/standard-response";
 import type { User } from "@supabase/supabase-js";
@@ -85,58 +84,9 @@ export async function getAuthUserFromRequest(
     };
   }
 
-  // Fallback: Read session from cookies if middleware didn't process this route
-  // This is needed for routes like /api/stripe that aren't in protectedPaths
-  try {
-    const { createServerClient } = await import("@supabase/ssr");
-    const supabaseModule = await import("@/lib/supabase");
-
-    // Create Supabase client with request cookies (similar to middleware)
-    const supabase = createServerClient(
-      supabaseModule.getSupabaseUrl(),
-      supabaseModule.getSupabaseAnonKey(),
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
-          },
-          set() {
-            // Read-only mode - we're just reading the session
-          },
-          remove() {
-            // Read-only mode
-          },
-        },
-      }
-    );
-
-    // Use getUser() instead of getSession() for secure authentication
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error) {
-      // Silently handle refresh token errors
-      if (
-        error.message?.includes("refresh_token_not_found") ||
-        error.message?.includes("Invalid Refresh Token")
-      ) {
-        return { user: null, error: null };
-      }
-      return { user: null, error: error.message };
-    }
-
-    if (user) {
-      return { user, error: null };
-    }
-
-    return { user: null, error: "No authentication found" };
-  } catch (error) {
-    // If cookie reading fails, return no auth
-
-    return { user: null, error: "No authentication found" };
-  }
+  // No fallback - middleware must set headers
+  // All routes should go through middleware which calls RPC once
+  return { user: null, error: "Not authenticated" };
 }
 
 /**
@@ -193,11 +143,10 @@ export async function requireAuthAndVenueAccess(
     };
   }
 
-  // 3. Venue access check
-  const access = await verifyVenueAccess(venueId, user.id);
+  // 3. Venue access check (pass request so it can read headers instead of calling RPC)
+  const access = await verifyVenueAccess(venueId, user.id, request);
 
   if (!access) {
-
     return {
       success: false,
       response: NextResponse.json(
@@ -207,20 +156,20 @@ export async function requireAuthAndVenueAccess(
     };
   }
 
-  // 4. Get user tier via unified access context (single RPC call)
-  // IMPORTANT: Tier is owned by the venue's billing owner/org, not the staff user.
-  const accessContext = await getAccessContext(venueId);
-  const tier = accessContext?.tier || "starter";
+  // 4. Get tier/role from middleware headers (already set by middleware RPC call)
+  // No duplicate RPC - middleware already called get_access_context
+  const tier = request.headers.get("x-user-tier") || access.tier || "starter";
+  const role = request.headers.get("x-user-role") || access.role;
 
   return {
     success: true,
     context: {
       venue: access.venue,
       user: access.user,
-      role: access.role,
+      role,
       venueId,
       tier,
-      venue_ids: accessContext?.venue_ids || [],
+      venue_ids: access.venue_ids || [],
     },
   };
 }
@@ -343,7 +292,8 @@ export async function enforceResourceLimit(
  */
 export async function getPageAuthContext(
   userId: string,
-  venueId: string
+  venueId: string,
+  requestHeaders?: Headers
 ): Promise<{
   tier: string;
   role: string;
@@ -353,15 +303,15 @@ export async function getPageAuthContext(
   venueAccess: boolean;
 } | null> {
   try {
-    // Verify venue access
-    const access = await verifyVenueAccess(venueId, userId);
+    // Verify venue access (pass headers to avoid duplicate RPC)
+    const access = await verifyVenueAccess(venueId, userId, requestHeaders ? { headers: requestHeaders } : undefined);
     if (!access) {
       return null;
     }
 
-    // Get tier via unified access context (single RPC call)
-    const accessContext = await getAccessContext(venueId);
-    const tier = accessContext?.tier || "starter";
+    // Get tier/role from headers (middleware already called RPC)
+    const tier = requestHeaders?.get("x-user-tier") || access.tier || "starter";
+    const role = requestHeaders?.get("x-user-role") || access.role;
 
     // Helper to check feature access (synchronous check using tier)
     const hasFeatureAccess = (

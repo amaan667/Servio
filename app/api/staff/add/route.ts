@@ -1,6 +1,6 @@
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { staffService } from "@/lib/services/StaffService";
-import { enforceResourceLimit } from "@/lib/auth/unified-auth";
+import { enforceResourceLimit } from "@/lib/enforce-tier-limits";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { ApiResponse } from "@/lib/api/standard-response";
@@ -16,7 +16,7 @@ const addStaffSchema = z.object({
  * POST: Add staff member to a venue
  */
 export const POST = createUnifiedHandler(
-  async (_req, context) => {
+  async (req, context) => {
     const { body, venueId, venue } = context;
     const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
 
@@ -24,8 +24,10 @@ export const POST = createUnifiedHandler(
     const currentStaff = await staffService.getStaff(normalizedVenueId);
     const limitCheck = await enforceResourceLimit(
       venue.owner_user_id,
+      normalizedVenueId,
       "maxStaff",
-      currentStaff.length
+      currentStaff.length,
+      req.headers
     );
 
     if (!limitCheck.allowed) {

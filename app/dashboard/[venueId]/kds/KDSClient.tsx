@@ -52,6 +52,7 @@ interface KDSClientProps {
   initialStations?: unknown;
   kdsTier?: "basic" | "advanced" | "enterprise" | false;
   tier?: string;
+  role?: string;
 }
 
 export default function KDSClient({
@@ -59,7 +60,17 @@ export default function KDSClient({
   initialTickets,
   initialStations,
   kdsTier = false,
+  tier,
 }: KDSClientProps) {
+   
+  console.log("[KDS-CLIENT] Component mounted", {
+    venueId,
+    kdsTier,
+    tier,
+    hasInitialTickets: !!initialTickets,
+    hasInitialStations: !!initialStations,
+    timestamp: new Date().toISOString(),
+  });
   // Cache KDS stations to prevent flicker
   const getCachedStations = () => {
     if (typeof window === "undefined") return [];
@@ -108,9 +119,31 @@ export default function KDSClient({
   // Fetch stations
   const fetchStations = async () => {
     try {
+       
+      console.log("[KDS-CLIENT] Fetching stations", {
+        venueId,
+        timestamp: new Date().toISOString(),
+      });
+
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/stations", { params: { venueId } });
+      
+       
+      console.log("[KDS-CLIENT] Stations response", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
       const data = await response.json();
+
+       
+      console.log("[KDS-CLIENT] Stations data", {
+        success: data.success,
+        hasStations: !!data.data?.stations,
+        stationCount: data.data?.stations?.length || 0,
+        error: data.error,
+      });
 
       if (data.success) {
         const fetchedStations = data.data?.stations || [];
@@ -126,9 +159,19 @@ export default function KDSClient({
           }
         }
       } else {
+         
+        console.error("[KDS-CLIENT] Failed to load stations", {
+          error: data.error,
+          message: data.error?.message,
+        });
         setError(data.error?.message || "Failed to load stations");
       }
-    } catch {
+    } catch (error) {
+       
+      console.error("[KDS-CLIENT] Exception fetching stations", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       setError("Failed to load stations");
     }
   };
@@ -139,21 +182,50 @@ export default function KDSClient({
     const timeSinceLastFetch = now - lastFetchRef.current;
     
     if (timeSinceLastFetch < minFetchInterval) {
+       
+      console.log("[KDS-CLIENT] Fetch throttled", {
+        timeSinceLastFetch,
+        minInterval: minFetchInterval,
+      });
       return;
     }
     
     lastFetchRef.current = now;
     
     try {
-      const { apiClient } = await import("@/lib/api-client");
       const currentStation = selectedStationRef.current;
+      
+       
+      console.log("[KDS-CLIENT] Fetching tickets", {
+        venueId,
+        stationId: currentStation,
+        timestamp: new Date().toISOString(),
+      });
+
+      const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/tickets", {
         params: {
           venueId,
           ...(currentStation ? { station_id: currentStation } : {}),
         },
       });
+      
+       
+      console.log("[KDS-CLIENT] Tickets response", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
       const data = await response.json();
+
+       
+      console.log("[KDS-CLIENT] Tickets data", {
+        success: data.success,
+        hasTickets: !!data.data?.tickets,
+        ticketCount: data.data?.tickets?.length || 0,
+        error: data.error,
+      });
 
       if (data.success) {
         const fetchedTickets = (data.data?.tickets || []) as KDSTicket[];
@@ -169,9 +241,19 @@ export default function KDSClient({
           );
         }
       } else {
+         
+        console.error("[KDS-CLIENT] Failed to load tickets", {
+          error: data.error,
+          message: data.error?.message,
+        });
         setError(data.error?.message || "Failed to load tickets");
       }
     } catch (error) {
+       
+      console.error("[KDS-CLIENT] Exception fetching tickets", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       setError(error instanceof Error ? error.message : "Failed to load tickets");
     } finally {
       setLoading(false);

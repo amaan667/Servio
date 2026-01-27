@@ -1,7 +1,7 @@
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { tableService } from "@/lib/services/TableService";
 import { createTableSchema } from "@/lib/api/validation-schemas";
-import { enforceResourceLimit } from "@/lib/auth/unified-auth";
+import { enforceResourceLimit } from "@/lib/enforce-tier-limits";
 import { ApiResponse } from "@/lib/api/standard-response";
 import { NextResponse } from "next/server";
 
@@ -25,15 +25,17 @@ export const GET = createUnifiedHandler(
  * POST: Create a new table (with tier limit check)
  */
 export const POST = createUnifiedHandler(
-  async (_req, context) => {
+  async (req, context) => {
     const { body, venueId, venue } = context;
 
     // 1. Check Tier Limits (based on venue owner)
     const tables = await tableService.getTables(venueId);
     const limitCheck = await enforceResourceLimit(
-      venue.owner_user_id, 
-      "maxTables", 
-      tables.length
+      venue.owner_user_id,
+      venueId,
+      "maxTables",
+      tables.length,
+      req.headers
     );
 
     if (!limitCheck.allowed) {

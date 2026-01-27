@@ -32,29 +32,34 @@ export const PREMIUM_FEATURES = {
 
 /**
  * Check if a venue has access to a specific feature
- * Fetches tier from organization (which is synced from Stripe)
+ * SIMPLIFIED: Reads from headers if available (middleware already called RPC)
+ * Falls back to RPC only if headers not available
  */
 export async function checkFeatureAccess(
   venueId: string,
-  requiredTier: SubscriptionTier
+  requiredTier: SubscriptionTier,
+  requestHeaders?: Headers
 ): Promise<FeatureAccess> {
   try {
-    // Use unified access context (single RPC call - most efficient)
-    const accessContext = await getAccessContext(venueId);
-
-    if (!accessContext) {
-
-      // Deny access if we can't verify tier (fail secure)
-      return {
-        hasAccess: false,
-        tier: "starter",
-        requiredTier,
-        message: "Unable to verify subscription tier. Please contact support.",
-      };
+    // Try to read from headers first (middleware already called RPC)
+    let tier: SubscriptionTier = "starter";
+    if (requestHeaders) {
+      const headerTier = requestHeaders.get("x-user-tier");
+      if (headerTier && ["starter", "pro", "enterprise"].includes(headerTier)) {
+        tier = headerTier as SubscriptionTier;
+      } else {
+        // Headers not available, fallback to RPC
+        const accessContext = await getAccessContext(venueId);
+        tier = (accessContext?.tier || "starter") as SubscriptionTier;
+      }
+    } else {
+      // No headers, fallback to RPC
+      const accessContext = await getAccessContext(venueId);
+      tier = (accessContext?.tier || "starter") as SubscriptionTier;
     }
 
-    // Get tier from access context (already validated and synced)
-    const currentTier = accessContext.tier as SubscriptionTier;
+    // Use tier from headers or RPC fallback
+    const currentTier = tier;
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
       starter: 1,

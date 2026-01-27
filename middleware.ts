@@ -136,26 +136,29 @@ export async function middleware(request: NextRequest) {
   const session = user ? { user } : null;
 
   // For API routes, inject user info into headers if session exists
-  // Middleware does ALL auth checks - routes just read headers
+  // SIMPLIFIED: Only set user-id/email. Unified handler will extract venueId and call RPC if needed.
+  // This is more reliable than trying to extract venueId from URL patterns in middleware.
   if (pathname.startsWith("/api/")) {
-    // FAIL CLOSED: protected API routes require an authenticated user.
-    if (!session) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized",
-          code: "UNAUTHORIZED",
-        },
-        { status: 401 }
-      );
+    // Only set headers if we have a session - unified handler will check auth
+    if (session) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-user-id", session.user.id);
+      requestHeaders.set("x-user-email", session.user.email || "");
+      
+      // Note: Tier/role headers are set by unified handler after it extracts venueId
+      // This is more reliable than trying to parse venueId from URL patterns here
+      
+      return NextResponse.next({
+        request: { headers: requestHeaders },
+      });
     }
-
-    // Return response with updated cookies (automatically set by Supabase SSR client)
-    // The response object is updated via the set() handler when refreshSession() is called
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", session.user.id);
-    requestHeaders.set("x-user-email", session.user.email || "");
+    
+    // No session - pass through without headers, let unified handler decide
+    // This allows public routes (requireAuth: false) to work
     return NextResponse.next({
-      request: { headers: requestHeaders },
+      request: {
+        headers: request.headers,
+      },
     });
   }
 
@@ -172,14 +175,80 @@ export async function middleware(request: NextRequest) {
       : `venue-${venueSegment}`;
 
     try {
+      // eslint-disable-next-line no-console
+      console.log("[MIDDLEWARE] Dashboard page - calling get_access_context", {
+        pathname,
+        venueId: normalizedVenueId,
+        userId: session.user.id,
+        email: session.user.email,
+      });
+
+      // Verify we have an authenticated session before calling RPC
+      const { data: { user: verifyUser }, error: verifyError } = await supabase.auth.getUser();
+      
+      // eslint-disable-next-line no-console
+      console.log("[MIDDLEWARE] Session verification", {
+        hasUser: !!verifyUser,
+        userId: verifyUser?.id,
+        verifyError: verifyError?.message,
+      });
+
+      if (!verifyUser) {
+        // eslint-disable-next-line no-console
+        console.log("[MIDDLEWARE] No authenticated user for RPC call");
+        return response;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: rpcErr } = await (supabase as any).rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
       });
-      if (rpcErr || !data) return response;
+
+      // eslint-disable-next-line no-console
+      console.log("[MIDDLEWARE] get_access_context result", {
+        hasData: !!data,
+        hasError: !!rpcErr,
+        error: rpcErr ? {
+          message: rpcErr.message,
+          code: rpcErr.code,
+          details: rpcErr.details,
+          hint: rpcErr.hint,
+        } : null,
+        data: data ? { 
+          userId: data.user_id, 
+          role: data.role, 
+          tier: data.tier,
+          venueId: data.venue_id,
+        } : null,
+      });
+
+      if (rpcErr) {
+        // eslint-disable-next-line no-console
+        console.error("[MIDDLEWARE] RPC error details", {
+          message: rpcErr.message,
+          code: rpcErr.code,
+          details: rpcErr.details,
+          hint: rpcErr.hint,
+        });
+        return response;
+      }
+
+      if (!data) {
+        // eslint-disable-next-line no-console
+        console.log("[MIDDLEWARE] RPC returned no data (user may not have access to venue)");
+        return response;
+      }
 
       const ctx = data as { user_id?: string; venue_id?: string | null; role?: string; tier?: string };
-      if (!ctx.user_id || !ctx.role) return response;
+      if (!ctx.user_id || !ctx.role) {
+        // eslint-disable-next-line no-console
+        console.log("[MIDDLEWARE] Missing user_id or role in context", {
+          hasUserId: !!ctx.user_id,
+          hasRole: !!ctx.role,
+          fullData: ctx,
+        });
+        return response;
+      }
 
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-user-id", ctx.user_id);
@@ -188,10 +257,23 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("x-user-role", ctx.role);
       requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
 
+      // eslint-disable-next-line no-console
+      console.log("[MIDDLEWARE] Setting dashboard headers", {
+        userId: ctx.user_id,
+        tier: ctx.tier ?? "starter",
+        role: ctx.role,
+        venueId: ctx.venue_id ?? normalizedVenueId,
+      });
+
       return NextResponse.next({
         request: { headers: requestHeaders },
       });
-    } catch {
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("[MIDDLEWARE] Exception in dashboard auth", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return response;
     }
   }

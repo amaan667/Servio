@@ -31,7 +31,7 @@ export const GET = createUnifiedHandler(
 
     // Business logic
     const requiredTier = PREMIUM_FEATURES[feature];
-    const access = await checkFeatureAccess(venueId, requiredTier);
+    const access = await checkFeatureAccess(venueId, requiredTier, req.headers);
 
     return success(access);
   },

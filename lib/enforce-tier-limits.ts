@@ -1,6 +1,5 @@
 // Middleware helpers for enforcing tier limits in API routes
 import { NextResponse } from "next/server";
-import { getAccessContext } from "./access/getAccessContext";
 import { TIER_LIMITS } from "./tier-restrictions";
 import { createClient } from "./supabase";
 
@@ -13,18 +12,19 @@ interface TierCheckResult {
 /**
  * Check if user can create more of a resource type
  * Returns error response if limit exceeded
- * Uses unified get_access_context RPC for single database call
+ * REQUIRES headers from middleware - no fallback
  */
 export async function enforceResourceLimit(
   _userId: string,
   venueId: string,
   resourceType: "maxMenuItems" | "maxTables" | "maxStaff" | "maxVenues",
-  currentCount: number
+  currentCount: number,
+  requestHeaders: Headers
 ): Promise<TierCheckResult> {
-  // Get unified access context (single RPC call)
-  const accessContext = await getAccessContext(venueId);
-
-  if (!accessContext) {
+  // REQUIRE headers - no fallback
+  if (!requestHeaders) {
+    // eslint-disable-next-line no-console
+    console.error("[ENFORCE-LIMITS] No headers provided - middleware should have set them");
     return {
       allowed: false,
       response: NextResponse.json(
@@ -37,14 +37,35 @@ export async function enforceResourceLimit(
     };
   }
 
-  const tierLimits = TIER_LIMITS[accessContext.tier];
+  const headerTier = requestHeaders.get("x-user-tier");
+  if (!headerTier || !["starter", "pro", "enterprise"].includes(headerTier)) {
+    // eslint-disable-next-line no-console
+    console.error("[ENFORCE-LIMITS] Invalid or missing tier header", {
+      headerTier,
+      venueId,
+    });
+    return {
+      allowed: false,
+      response: NextResponse.json(
+        {
+          error: "Access denied",
+          message: "Unable to verify subscription tier",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  const tier = headerTier;
+
+  const tierLimits = TIER_LIMITS[tier];
   if (!tierLimits) {
     return {
       allowed: false,
       response: NextResponse.json(
         {
           error: "Invalid tier",
-          currentTier: accessContext.tier,
+          currentTier: tier,
         },
         { status: 403 }
       ),
@@ -62,34 +83,35 @@ export async function enforceResourceLimit(
       response: NextResponse.json(
         {
           error: `Limit reached: ${currentCount}/${typeof limit === "number" ? limit : 0} ${resourceName}`,
-          currentTier: accessContext.tier,
+          currentTier: tier,
           limit: typeof limit === "number" ? limit : 0,
           upgradeRequired: true,
           message: `Upgrade your plan to add more ${resourceName}`,
         },
         { status: 403 }
       ),
-      tier: accessContext.tier,
+      tier,
     };
   }
 
-  return { allowed: true, tier: accessContext.tier };
+  return { allowed: true, tier };
 }
 
 /**
  * Check if user can access a feature
  * Returns error response if feature not available in tier
- * Uses unified get_access_context RPC for single database call
+ * REQUIRES headers from middleware - no fallback
  */
 export async function enforceFeatureAccess(
   _userId: string,
   venueId: string,
-  feature: "kds" | "inventory" | "analytics" | "aiAssistant" | "multiVenue"
+  feature: "kds" | "inventory" | "analytics" | "aiAssistant" | "multiVenue",
+  requestHeaders: Headers
 ): Promise<TierCheckResult> {
-  // Get unified access context (single RPC call)
-  const accessContext = await getAccessContext(venueId);
-
-  if (!accessContext) {
+  // REQUIRE headers - no fallback
+  if (!requestHeaders) {
+    // eslint-disable-next-line no-console
+    console.error("[ENFORCE-FEATURE] No headers provided - middleware should have set them");
     return {
       allowed: false,
       response: NextResponse.json(
@@ -102,14 +124,35 @@ export async function enforceFeatureAccess(
     };
   }
 
-  const tierLimits = TIER_LIMITS[accessContext.tier];
+  const headerTier = requestHeaders.get("x-user-tier");
+  if (!headerTier || !["starter", "pro", "enterprise"].includes(headerTier)) {
+    // eslint-disable-next-line no-console
+    console.error("[ENFORCE-FEATURE] Invalid or missing tier header", {
+      headerTier,
+      venueId,
+    });
+    return {
+      allowed: false,
+      response: NextResponse.json(
+        {
+          error: "Access denied",
+          message: "Unable to verify subscription tier",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  const tier = headerTier;
+
+  const tierLimits = TIER_LIMITS[tier];
   if (!tierLimits) {
     return {
       allowed: false,
       response: NextResponse.json(
         {
           error: "Invalid tier",
-          currentTier: accessContext.tier,
+          currentTier: tier,
         },
         { status: 403 }
       ),
@@ -129,17 +172,17 @@ export async function enforceFeatureAccess(
         response: NextResponse.json(
           {
             error: `This feature requires Pro tier or higher`,
-            currentTier: accessContext.tier,
+            currentTier: tier,
             requiredTier: "pro",
             upgradeRequired: true,
             message: `Upgrade to Pro to access ${feature}`,
           },
           { status: 403 }
         ),
-        tier: accessContext.tier,
+        tier,
       };
     }
-    return { allowed: true, tier: accessContext.tier };
+    return { allowed: true, tier };
   }
 
   // For boolean features, return the value directly
@@ -150,21 +193,21 @@ export async function enforceFeatureAccess(
         response: NextResponse.json(
           {
             error: `This feature requires Enterprise tier`,
-            currentTier: accessContext.tier,
+            currentTier: tier,
             requiredTier: "enterprise",
             upgradeRequired: true,
             message: `Upgrade to Enterprise to access ${feature}`,
           },
           { status: 403 }
         ),
-        tier: accessContext.tier,
+        tier,
       };
     }
-    return { allowed: true, tier: accessContext.tier };
+    return { allowed: true, tier };
   }
 
   // For analytics and supportLevel, they're always allowed (just different levels)
-  return { allowed: true, tier: accessContext.tier };
+  return { allowed: true, tier };
 }
 
 /**

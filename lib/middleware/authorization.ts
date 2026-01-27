@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 
-import { getAccessContext } from "@/lib/access/getAccessContext";
 
 export interface Venue {
   venue_id: string;
@@ -47,34 +46,16 @@ export interface AuthorizedContext {
 
 /**
  * Verify user has access to venue (owner or staff)
- * Uses unified get_access_context RPC for single database call
+ * SIMPLIFIED: Reads from middleware headers (tier/role) + verifies venue exists
+ * No duplicate RPC calls - middleware already called get_access_context
  */
 export async function verifyVenueAccess(
   venueId: string,
-  userId: string
+  userId: string,
+  request?: { headers: Headers }
 ): Promise<VenueAccess | null> {
   try {
-    // Use unified access context RPC - single database call for all access info
-    const accessContext = await getAccessContext(venueId);
-
-    if (!accessContext) {
-
-      return null;
-    }
-
-    // Verify the access context matches the requested user
-    if (accessContext.user_id !== userId) {
-
-      return null;
-    }
-
-    // Verify venue access
-    if (accessContext.venue_id !== venueId) {
-
-      return null;
-    }
-
-    // Get venue details (we still need the full venue object for backward compatibility)
+    // Get venue details
     const supabase = await createSupabaseClient();
     const { data: venue, error: venueError } = await supabase
       .from("venues")
@@ -83,19 +64,54 @@ export async function verifyVenueAccess(
       .single();
 
     if (venueError || !venue) {
+      return null;
+    }
 
+    // REQUIRE headers from middleware - no fallback
+    // If headers aren't available, middleware failed and we should know about it
+    if (!request?.headers) {
+      // eslint-disable-next-line no-console
+      console.error("[VERIFY-VENUE-ACCESS] No request headers provided - middleware should have set them");
+      return null;
+    }
+
+    const headerUserId = request.headers.get("x-user-id");
+    const headerRole = request.headers.get("x-user-role");
+    const headerTier = request.headers.get("x-user-tier");
+    const headerVenueId = request.headers.get("x-venue-id");
+
+    // Verify headers are present
+    if (!headerUserId || !headerRole || !headerTier || !headerVenueId) {
+      // eslint-disable-next-line no-console
+      console.error("[VERIFY-VENUE-ACCESS] Missing required headers", {
+        hasUserId: !!headerUserId,
+        hasRole: !!headerRole,
+        hasTier: !!headerTier,
+        hasVenueId: !!headerVenueId,
+      });
+      return null;
+    }
+
+    // Verify user matches
+    if (headerUserId !== userId || headerVenueId !== venueId) {
+      // eslint-disable-next-line no-console
+      console.error("[VERIFY-VENUE-ACCESS] User or venue mismatch", {
+        headerUserId,
+        requestedUserId: userId,
+        headerVenueId,
+        requestedVenueId: venueId,
+      });
       return null;
     }
 
     return {
       venue,
       user: { id: userId },
-      role: accessContext.role,
-      tier: accessContext.tier,
-      venue_ids: accessContext.venue_ids,
+      role: headerRole,
+      tier: headerTier,
+      venue_ids: [], // Can be enhanced if needed
     };
   } catch (error) {
-
     return null;
   }
 }

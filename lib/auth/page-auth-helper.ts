@@ -1,10 +1,18 @@
 /**
  * Page auth: middleware only (Supabase). No per-page RPC for dashboard.
  *
- * Middleware sets x-user-id, x-user-email, x-user-tier, x-user-role, x-venue-id
- * for /dashboard/[venueId]/*. Pages read headers via getAuthFromMiddlewareHeaders.
- *
+ * SINGLE SOURCE OF TRUTH: All dashboard pages use requirePageAuth(venueId)
+ * 
+ * Architecture:
+ * 1. Middleware calls get_access_context RPC ONCE and sets headers:
+ *    - x-user-id, x-user-email, x-user-tier, x-user-role, x-venue-id
+ * 2. Pages call requirePageAuth(venueId) which:
+ *    - Reads headers (no duplicate RPC calls)
+ *    - Validates venueId matches headers (security)
+ *    - Optionally checks role/feature requirements
+ * 
  * CRITICAL: No redirects. Returns null on auth failure.
+ * All pages should use requirePageAuth(venueId) for consistency.
  */
 
 import { headers } from "next/headers";
@@ -59,11 +67,37 @@ function buildHasFeatureAccess(tier: Tier): (feature: FeatureKey) => boolean {
 export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthContext | null> => {
   const h = await headers();
   const userId = h.get("x-user-id");
-  if (!userId) return null;
+  const tierHeader = h.get("x-user-tier");
+  const roleHeader = h.get("x-user-role");
+  const venueIdHeader = h.get("x-venue-id");
 
-  const tier = (h.get("x-user-tier") ?? "starter") as Tier;
-  const role = (h.get("x-user-role") ?? "viewer") as UserRole;
-  const venueId = h.get("x-venue-id") ?? "";
+  // eslint-disable-next-line no-console
+  console.log("[PAGE-AUTH] Reading headers", {
+    hasUserId: !!userId,
+    userId,
+    tier: tierHeader,
+    role: roleHeader,
+    venueId: venueIdHeader,
+    allHeaders: Array.from(h.entries()).filter(([k]) => k.startsWith("x-")),
+  });
+
+  if (!userId) {
+    // eslint-disable-next-line no-console
+    console.log("[PAGE-AUTH] No x-user-id header found");
+    return null;
+  }
+
+  const tier = (tierHeader ?? "starter") as Tier;
+  const role = (roleHeader ?? "viewer") as UserRole;
+  const venueId = venueIdHeader ?? "";
+
+  // eslint-disable-next-line no-console
+  console.log("[PAGE-AUTH] Returning auth context", {
+    userId,
+    tier,
+    role,
+    venueId,
+  });
 
   return {
     user: { id: userId, email: h.get("x-user-email") ?? null },
@@ -74,22 +108,70 @@ export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthCont
   };
 });
 
-/** Page auth: headers only + optional requireRole filter. No per-page RPC. */
+/**
+ * Page auth: headers only + optional requireRole filter. No per-page RPC.
+ * Validates venueId matches headers for security.
+ */
 export async function requirePageAuth(
-  _venueId?: string,
+  venueId?: string,
   options: RequirePageAuthOptions = {}
 ): Promise<PageAuthContext | null> {
   const auth = await getAuthFromMiddlewareHeaders();
-  if (!auth) return null;
-
-  if (options.requireRole && options.requireRole.length > 0 && !options.requireRole.includes(auth.role)) {
+  if (!auth) {
+    // eslint-disable-next-line no-console
+    console.log("[PAGE-AUTH] requirePageAuth: No auth from headers");
     return null;
   }
 
-  return auth;
+  // Validate venueId matches headers (security check)
+  if (venueId && auth.venueId && venueId !== auth.venueId) {
+    // eslint-disable-next-line no-console
+    console.error("[PAGE-AUTH] requirePageAuth: VenueId mismatch", {
+      requestedVenueId: venueId,
+      headerVenueId: auth.venueId,
+    });
+    return null;
+  }
+
+  // Use venueId from params if provided, otherwise use header
+  const finalVenueId = venueId || auth.venueId;
+  if (!finalVenueId && !options.allowNoVenue) {
+    // eslint-disable-next-line no-console
+    console.error("[PAGE-AUTH] requirePageAuth: No venueId available");
+    return null;
+  }
+
+  // Role check
+  if (options.requireRole && options.requireRole.length > 0 && !options.requireRole.includes(auth.role)) {
+    // eslint-disable-next-line no-console
+    console.log("[PAGE-AUTH] requirePageAuth: Role check failed", {
+      userRole: auth.role,
+      requiredRoles: options.requireRole,
+    });
+    return null;
+  }
+
+  // Feature check
+  if (options.requireFeature && !auth.hasFeatureAccess(options.requireFeature)) {
+    // eslint-disable-next-line no-console
+    console.log("[PAGE-AUTH] requirePageAuth: Feature check failed", {
+      feature: options.requireFeature,
+      tier: auth.tier,
+    });
+    return null;
+  }
+
+  // Return auth with validated venueId
+  return {
+    ...auth,
+    venueId: finalVenueId || auth.venueId,
+  };
 }
 
-/** Alias for getAuthFromMiddlewareHeaders. */
+/**
+ * @deprecated Use requirePageAuth(venueId) instead for consistency
+ * This function is kept for backward compatibility only
+ */
 export async function getOptionalPageAuth(): Promise<PageAuthContext | null> {
   return getAuthFromMiddlewareHeaders();
 }
