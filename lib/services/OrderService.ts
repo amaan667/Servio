@@ -220,7 +220,47 @@ export class OrderService extends BaseService {
 
     if (error) {
       trackOrderError(error, { venueId, action: "createOrder" });
-      throw new Error(`Failed to create order: ${error.message}`);
+      
+      // RPC failed - use direct insert as fallback
+      // Calculate payment_mode based on payment_method
+      const paymentMode = orderData.payment_mode || (() => {
+        const method = orderData.payment_method ?? "PAY_NOW";
+        if (method === "PAY_NOW") return "online";
+        if (method === "PAY_AT_TILL") return "offline";
+        if (method === "PAY_LATER") return "deferred";
+        return "online";
+      })();
+      
+      const { data: insertedOrder, error: insertError } = await supabase
+        .from("orders")
+        .insert({
+          venue_id: venueId,
+          table_number: tableNumber,
+          customer_name: orderData.customer_name,
+          customer_phone: orderData.customer_phone,
+          customer_email: orderData.customer_email ?? null,
+          items: orderData.items,
+          total_amount: orderData.total_amount,
+          notes: orderData.notes ?? null,
+          order_status: orderData.order_status || "PLACED",
+          payment_status: orderData.payment_status || "UNPAID",
+          payment_method: orderData.payment_method || "PAY_NOW",
+          payment_mode: paymentMode,
+          source: orderData.source || "qr",
+          fulfillment_type: fulfillmentType,
+          counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
+          qr_type: orderData.qr_type ?? null,
+          requires_collection: orderData.requires_collection ?? false
+        })
+        .select("*")
+        .single();
+
+      if (insertError) {
+        trackOrderError(insertError, { venueId, action: "createOrder_fallback" });
+        throw new Error(`Failed to create order: ${insertError.message}`);
+      }
+      
+      return insertedOrder;
     }
 
     // Invalidate cache
