@@ -230,12 +230,11 @@ export class OrderService extends BaseService {
     // eslint-disable-next-line no-console
     console.log("🔄 [OrderService] Executing Supabase insert...");
 
-    // Direct insert - simple and reliable
-    const { data, error } = await supabase
+    // Direct insert - don't use .single() as it fails when no rows returned
+    const { data: insertedRows, error } = await supabase
       .from("orders")
       .insert(insertPayload)
-      .select("*")
-      .single();
+      .select("*");
 
     if (error) {
       // eslint-disable-next-line no-console
@@ -247,6 +246,15 @@ export class OrderService extends BaseService {
       });
       trackOrderError(error, { venueId, action: "createOrder" });
       throw new Error(`Failed to create order: ${error.message}`);
+    }
+
+    // Handle array response - take first row
+    const data = Array.isArray(insertedRows) ? insertedRows[0] : insertedRows;
+    
+    if (!data) {
+      // eslint-disable-next-line no-console
+      console.error("❌ [OrderService] Insert returned no data");
+      throw new Error("Failed to create order: No data returned from insert");
     }
 
     // eslint-disable-next-line no-console

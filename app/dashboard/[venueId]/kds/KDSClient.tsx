@@ -89,11 +89,15 @@ export default function KDSClient({
   const [error, setError] = useState<string | null>(null);
   const [selectedStation, setSelectedStation] = useState<string | null>(getCachedSelectedStation());
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(5); // seconds
+  const [refreshInterval, setRefreshInterval] = useState(15); // seconds - increased to reduce rate limiting
   const [connectionStatus, setConnectionStatus] = useState<
     "connected" | "connecting" | "disconnected" | "error"
   >("connecting");
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  
+  // Throttle fetch requests to prevent rate limiting
+  const lastFetchRef = React.useRef<number>(0);
+  const minFetchInterval = 3000; // Minimum 3 seconds between fetches
 
   // Fetch stations
   // Derived function - no useCallback needed (React Compiler handles this)
@@ -126,9 +130,19 @@ export default function KDSClient({
     }
   };
 
-  // Fetch tickets
+  // Fetch tickets with throttling to prevent rate limiting
   // Derived function - no useCallback needed (React Compiler handles this)
   const fetchTickets = async () => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchRef.current;
+    
+    // Throttle: skip if called too soon after last fetch
+    if (timeSinceLastFetch < minFetchInterval) {
+      return;
+    }
+    
+    lastFetchRef.current = now;
+    
     try {
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/tickets", {
@@ -208,8 +222,19 @@ export default function KDSClient({
       const data = await response.json();
 
       if (data.success) {
-        // REMOVE bumped tickets from KDS entirely
-        setTickets((prev) => prev.filter((t) => t.order_id !== orderId));
+        // Update ticket status to bumped but keep them visible
+        // Tickets will remain visible until order is marked as served
+        setTickets((prev) =>
+          prev.map((t) =>
+            t.order_id === orderId && t.status === "ready"
+              ? { ...t, status: "bumped" as const }
+              : t
+          )
+        );
+        // Refetch to ensure consistency
+        setTimeout(() => {
+          fetchTickets();
+        }, 500);
       } else {
         // Intentionally empty
       }
@@ -255,14 +280,19 @@ export default function KDSClient({
     return grouped;
   })();
 
-  // Trigger backfill if no tickets found after initial load
+  // Trigger backfill if no tickets found after initial load (only once)
+  const backfillTriggeredRef = React.useRef(false);
   useEffect(() => {
+    // Only trigger backfill once per session
+    if (backfillTriggeredRef.current) return;
+    
     const triggerBackfill = async () => {
       // Wait a bit for initial fetch to complete
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // If still no tickets, trigger backfill
-      if (tickets.length === 0 && !loading) {
+      // If still no tickets, trigger backfill ONCE
+      if (tickets.length === 0 && !loading && !backfillTriggeredRef.current) {
+        backfillTriggeredRef.current = true;
         try {
           const { apiClient } = await import("@/lib/api-client");
           const response = await apiClient.post("/api/kds/backfill", {
@@ -430,7 +460,10 @@ export default function KDSClient({
                     });
                   } else {
                     // Ticket was moved to a different station, remove it from current view
-                    setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
+                    // But only if we have a station filter - if no filter, keep all tickets
+                    if (selectedStation) {
+                      setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
+                    }
                   }
                 }
               }
@@ -511,16 +544,18 @@ export default function KDSClient({
   // Sort tickets: non-bumped first (by created_at), then bumped at bottom
   const sortedTickets = [...tickets].sort((a, b) => {
     // Bumped tickets always go to bottom
-    if (a.ticket_status === "bumped" && b.ticket_status !== "bumped") return 1;
-    if (a.ticket_status !== "bumped" && b.ticket_status === "bumped") return -1;
+    const aBumped = a.status === "bumped" || a.ticket_status === "bumped";
+    const bBumped = b.status === "bumped" || b.ticket_status === "bumped";
+    if (aBumped && !bBumped) return 1;
+    if (!aBumped && bBumped) return -1;
 
     // For non-bumped tickets, sort by created_at (oldest first for priority)
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
 
-  const activeTickets = sortedTickets.filter((t) => t.status !== "bumped");
-  const newTickets = activeTickets.filter((t) => t.status === "new" || t.status === "in_progress"); // Treat all as "preparing"
-  const readyTickets = activeTickets.filter((t) => t.status === "ready");
+  // Include bumped tickets - they should remain visible until order is served
+  const newTickets = sortedTickets.filter((t) => t.status === "new" || t.status === "in_progress");
+  const readyTickets = sortedTickets.filter((t) => t.status === "ready");
   const bumpedTickets = sortedTickets.filter((t) => t.status === "bumped");
 
   return (
@@ -580,12 +615,12 @@ export default function KDSClient({
                   onChange={(e) => setRefreshInterval(Number(e.target.value))}
                   className="text-sm border rounded-md px-2 py-1 bg-white"
                 >
-                  <option value={3}>3s</option>
-                  <option value={5}>5s</option>
                   <option value={10}>10s</option>
                   <option value={15}>15s</option>
+                  <option value={20}>20s</option>
                   <option value={30}>30s</option>
                   <option value={60}>1m</option>
+                  <option value={120}>2m</option>
                 </select>
               </div>
             )}
@@ -613,10 +648,18 @@ export default function KDSClient({
         </Card>
         <Card>
           <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-500">Bumped</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-600">{bumpedTickets.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-500">Total Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{activeTickets.length}</div>
+            <div className="text-3xl font-bold">{sortedTickets.length}</div>
           </CardContent>
         </Card>
       </div>
@@ -668,8 +711,8 @@ export default function KDSClient({
         )}
       </div>
 
-      {/* Tickets Grid - Kanban Style (2 columns: Preparing + Ready) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
+      {/* Tickets Grid - Kanban Style (3 columns: Preparing + Ready + Bumped) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
         {/* Preparing Column (no action needed - automatically in prep) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
@@ -811,6 +854,70 @@ export default function KDSClient({
             ))}
             {readyTickets.length === 0 && (
               <div className="text-center text-gray-400 py-8">No ready tickets</div>
+            )}
+          </div>
+        </div>
+
+        {/* Bumped Column - Items ready to be marked as served */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between bg-purple-50 p-3 rounded-lg">
+            <h3 className="font-semibold text-purple-800">Bumped ({bumpedTickets.length})</h3>
+            <ArrowRight className="h-5 w-5 text-purple-600" />
+          </div>
+          <div className="space-y-3">
+            {bumpedTickets.map((ticket) => (
+              <Card
+                key={ticket.id}
+                className="transition-all hover:shadow-lg cursor-pointer border-l-4 border-purple-500"
+              >
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-lg">{ticket.item_name}</div>
+                        <div className="text-sm text-gray-600 font-medium">
+                          {ticket.orders?.customer_name ||
+                            ticket.table_label ||
+                            `Table ${ticket.table_number}`}
+                        </div>
+                        {ticket.orders?.customer_name && ticket.table_number && (
+                          <div className="text-xs text-gray-500">Table {ticket.table_number}</div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <Badge className="bg-purple-600 text-white">{ticket.quantity}x</Badge>
+                      </div>
+                    </div>
+
+                    {/* Special Instructions */}
+                    {ticket.special_instructions && (
+                      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Note:</strong> {ticket.special_instructions}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Time Elapsed Since Bumped */}
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Clock className="h-4 w-4 mr-1" />
+                      Bumped {getTimeElapsed(ticket.bumped_at || ticket.ready_at || ticket.created_at)} ago
+                    </div>
+
+                    {/* Info message */}
+                    <div className="bg-purple-50 border border-purple-200 p-2 rounded text-sm text-purple-800">
+                      <p className="font-medium">Ready for staff to mark as served</p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        This item will disappear once the order is marked as served in Live Orders
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {bumpedTickets.length === 0 && (
+              <div className="text-center text-gray-400 py-8">No bumped tickets</div>
             )}
           </div>
         </div>

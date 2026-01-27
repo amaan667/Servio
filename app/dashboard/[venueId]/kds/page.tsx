@@ -118,7 +118,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       `
       )
       .eq("venue_id", venueId)
-      .neq("status", "bumped")
+      // Include bumped tickets - they should remain visible until order is served
       .order("created_at", { ascending: true });
 
     if (ticketsError) { /* Condition handled */ } else if (tickets) {

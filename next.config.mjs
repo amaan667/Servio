@@ -136,7 +136,7 @@ const nextConfig = {
                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                   "img-src 'self' data: blob: https: https://*.supabase.co https://images.unsplash.com https://*.stripe.com https://www.googletagmanager.com https://www.google-analytics.com",
                   "font-src 'self' https://fonts.gstatic.com",
-                  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://*.google-analytics.com https://www.googletagmanager.com https://analytics.google.com https://region1.google-analytics.com",
+                  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://*.google-analytics.com https://region1.google-analytics.com https://region2.google-analytics.com https://www.googletagmanager.com https://analytics.google.com",
                   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
                   "frame-ancestors 'self'",
                   "form-action 'self'",
