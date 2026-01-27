@@ -38,44 +38,12 @@ export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
 
-    // Detailed server-side logging
-    // eslint-disable-next-line no-console
-    console.log("🔵 [API] /api/orders POST - Request received");
-    // eslint-disable-next-line no-console
-    console.log("📋 Context:", {
-      venueId,
-      bodyVenueId: body.venue_id,
-      hasBody: !!body,
-      bodyKeys: body ? Object.keys(body) : [],
-    });
-    // eslint-disable-next-line no-console
-    console.log("📦 Request Body:", JSON.stringify(body, null, 2));
-
     const targetVenueId = venueId || body.venue_id;
     if (!targetVenueId) {
-      // eslint-disable-next-line no-console
-      console.error("❌ [API] Missing venue_id");
       throw new Error("venue_id is required");
     }
 
-    // eslint-disable-next-line no-console
-    console.log("✅ [API] Target Venue ID:", targetVenueId);
-    // eslint-disable-next-line no-console
-    console.log("📋 [API] Order Data:", {
-      source: (body.source as "qr" | "counter") || "qr",
-      fulfillment_type: body.qr_type === "COUNTER" ? "counter" : "table",
-      counter_label: body.counter_label || body.counter_identifier || null,
-      payment_method: body.payment_method,
-      payment_status: body.payment_status,
-      customer_name: body.customer_name,
-      customer_phone: body.customer_phone,
-      items_count: Array.isArray(body.items) ? body.items.length : 0,
-      total_amount: body.total_amount,
-    });
-
     // 1. Create Order via Service (Atomic Transaction)
-    // eslint-disable-next-line no-console
-    console.log("🔄 [API] Calling orderService.createOrder...");
     let result;
     try {
       result = await orderService.createOrder(targetVenueId, {
@@ -84,23 +52,7 @@ export const POST = createUnifiedHandler(
         fulfillment_type: body.qr_type === "COUNTER" ? "counter" : "table",
         counter_label: body.counter_label || body.counter_identifier || null,
       });
-      // eslint-disable-next-line no-console
-      console.log("✅ [API] Order created successfully:", {
-        orderId: result.id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        orderNumber: (result as any).order_number,
-        status: result.order_status,
-        paymentStatus: result.payment_status,
-      });
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error("❌ [API] Order creation failed:", error);
-      // eslint-disable-next-line no-console
-      console.error("❌ [API] Error details:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : undefined,
-      });
       throw error;
     }
 

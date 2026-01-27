@@ -173,17 +173,6 @@ export class OrderService extends BaseService {
       requires_collection?: boolean;
     }
   ): Promise<Order & { table_auto_created?: boolean; session_id?: string }> {
-    // eslint-disable-next-line no-console
-    console.log("🔄 [OrderService] createOrder called");
-    // eslint-disable-next-line no-console
-    console.log("📋 [OrderService] Input:", {
-      venueId,
-      orderData: {
-        ...orderData,
-        items_count: orderData.items?.length || 0,
-      },
-    });
-
     const supabase = await createSupabaseClient();
 
     // Determine fulfillment_type from source if not provided
@@ -225,11 +214,6 @@ export class OrderService extends BaseService {
       requires_collection: orderData.requires_collection ?? false
     };
 
-    // eslint-disable-next-line no-console
-    console.log("📦 [OrderService] Insert Payload:", JSON.stringify(insertPayload, null, 2));
-    // eslint-disable-next-line no-console
-    console.log("🔄 [OrderService] Executing Supabase insert...");
-
     // Direct insert - don't use .single() as it fails when no rows returned
     const { data: insertedRows, error } = await supabase
       .from("orders")
@@ -237,13 +221,6 @@ export class OrderService extends BaseService {
       .select("*");
 
     if (error) {
-      // eslint-disable-next-line no-console
-      console.error("❌ [OrderService] Insert failed:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-      });
       trackOrderError(error, { venueId, action: "createOrder" });
       throw new Error(`Failed to create order: ${error.message}`);
     }
@@ -252,18 +229,8 @@ export class OrderService extends BaseService {
     const data = Array.isArray(insertedRows) ? insertedRows[0] : insertedRows;
     
     if (!data) {
-      // eslint-disable-next-line no-console
-      console.error("❌ [OrderService] Insert returned no data");
       throw new Error("Failed to create order: No data returned from insert");
     }
-
-    // eslint-disable-next-line no-console
-    console.log("✅ [OrderService] Order created:", {
-      id: data?.id,
-      order_number: data?.order_number,
-      status: data?.order_status,
-      payment_status: data?.payment_status,
-    });
 
     // Invalidate cache
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);

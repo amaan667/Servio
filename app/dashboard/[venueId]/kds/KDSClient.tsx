@@ -98,9 +98,14 @@ export default function KDSClient({
   // Throttle fetch requests to prevent rate limiting
   const lastFetchRef = React.useRef<number>(0);
   const minFetchInterval = 3000; // Minimum 3 seconds between fetches
+  const selectedStationRef = React.useRef<string | null>(selectedStation);
+  
+  // Keep ref in sync with state
+  React.useEffect(() => {
+    selectedStationRef.current = selectedStation;
+  }, [selectedStation]);
 
   // Fetch stations
-  // Derived function - no useCallback needed (React Compiler handles this)
   const fetchStations = async () => {
     try {
       const { apiClient } = await import("@/lib/api-client");
@@ -110,12 +115,10 @@ export default function KDSClient({
       if (data.success) {
         const fetchedStations = data.data?.stations || [];
         setStations(fetchedStations);
-        // Cache stations to prevent flicker
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`kds_stations_${venueId}`, JSON.stringify(fetchedStations));
         }
-        // Auto-select first station if none selected
-        if (!selectedStation && fetchedStations.length > 0) {
+        if (!selectedStationRef.current && fetchedStations.length > 0) {
           const firstStationId = fetchedStations[0].id;
           setSelectedStation(firstStationId);
           if (typeof window !== "undefined") {
@@ -131,12 +134,10 @@ export default function KDSClient({
   };
 
   // Fetch tickets with throttling to prevent rate limiting
-  // Derived function - no useCallback needed (React Compiler handles this)
   const fetchTickets = async () => {
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchRef.current;
     
-    // Throttle: skip if called too soon after last fetch
     if (timeSinceLastFetch < minFetchInterval) {
       return;
     }
@@ -145,61 +146,22 @@ export default function KDSClient({
     
     try {
       const { apiClient } = await import("@/lib/api-client");
+      const currentStation = selectedStationRef.current;
       const response = await apiClient.get("/api/kds/tickets", {
         params: {
           venueId,
-          ...(selectedStation
-            ? { station_id: selectedStation }
-            : {
-                /* Empty */
-              }),
+          ...(currentStation ? { station_id: currentStation } : {}),
         },
       });
       const data = await response.json();
 
       if (data.success) {
         const fetchedTickets = (data.data?.tickets || []) as KDSTicket[];
-        // CRITICAL: Filter out bumped tickets - they should not appear in KDS
         const activeFetchedTickets = fetchedTickets.filter((t) => t.status !== "bumped");
         
-        // Merge with existing tickets to prevent flicker/disappearing
-        // This ensures tickets stay visible during status transitions (new -> in_progress -> ready)
-        setTickets((prev) => {
-          // Create a map of fetched tickets by ID for quick lookup
-          const fetchedMap = new Map(activeFetchedTickets.map((t) => [t.id, t]));
-          
-          // Start with fetched tickets (source of truth from server)
-          const merged = [...activeFetchedTickets];
-          
-          // Preserve any existing tickets that are not in the fetched list
-          // These might be in the process of being updated (status transitions)
-          // Only preserve if they're not bumped and match current filter
-          prev.forEach((existingTicket) => {
-            if (!fetchedMap.has(existingTicket.id)) {
-              // Ticket exists locally but not in fetched list
-              // Preserve it if it's not bumped and matches filter
-              if (existingTicket.status !== "bumped") {
-                if (!selectedStation || existingTicket.station_id === selectedStation) {
-                  merged.push(existingTicket);
-                }
-              }
-            }
-          });
-          
-          // Remove duplicates (prefer fetched data) and filter out bumped
-          const unique = Array.from(
-            new Map(merged.map((t) => [t.id, t])).values()
-          ).filter((t) => t.status !== "bumped");
-          
-          // Sort by created_at (oldest first for priority)
-          return unique.sort(
-            (a, b) =>
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-        });
-        
-        setError(null); // Clear any previous errors
-        // Cache tickets
+        // Simple update - use fetched tickets directly (real-time handlers handle updates)
+        setTickets(activeFetchedTickets);
+        setError(null);
         if (typeof window !== "undefined") {
           sessionStorage.setItem(
             `kds_tickets_${venueId}`,
@@ -434,34 +396,28 @@ export default function KDSClient({
             if (!isMounted) return;
 
             if (payload.eventType === "INSERT") {
-              // When a new ticket is inserted, add it to the view if it matches the filter
               const newTicket = payload.new as KDSTicket | undefined;
               if (newTicket) {
-                // CRITICAL: Never add bumped tickets - they should not appear in KDS
                 if (newTicket.status === "bumped") {
                   return;
                 }
 
-                // If no filter (All Stations), add all new tickets
-                if (!selectedStation) {
+                const currentStation = selectedStationRef.current;
+                if (!currentStation) {
                   setTickets((prev) => {
-                    // Check if ticket already exists (avoid duplicates)
                     if (prev.some((t) => t.id === newTicket.id)) {
                       return prev;
                     }
                     return [...prev, newTicket];
                   });
-                } else if (newTicket.station_id === selectedStation) {
-                  // If we have a station filter, only add if it matches
+                } else if (newTicket.station_id === currentStation) {
                   setTickets((prev) => {
-                    // Check if ticket already exists (avoid duplicates)
                     if (prev.some((t) => t.id === newTicket.id)) {
                       return prev;
                     }
                     return [...prev, newTicket];
                   });
                 }
-                // If ticket doesn't match filter, don't add it (will appear when filter changes)
               }
             } else if (payload.eventType === "UPDATE") {
               // For updates, merge the updated ticket data
@@ -474,22 +430,18 @@ export default function KDSClient({
                   return;
                 }
 
-                // Get the old ticket to check if station changed
                 const oldTicket = payload.old as KDSTicket | undefined;
                 const stationChanged = oldTicket && oldTicket.station_id !== updatedTicket.station_id;
+                const currentStation = selectedStationRef.current;
 
-                // If no filter (All Stations), update all tickets regardless of station
-                if (!selectedStation) {
+                if (!currentStation) {
                   setTickets((prev) => {
                     const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
                     if (existingIndex >= 0) {
-                      // Update existing ticket (status change, etc.)
                       return prev.map((t) =>
                         t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t
                       );
                     } else {
-                      // Ticket doesn't exist yet, add it (might be a new ticket or from another station)
-                      // Only add if it's not bumped
                       if (updatedTicket.status !== "bumped") {
                         return [...prev, updatedTicket];
                       }
@@ -497,18 +449,14 @@ export default function KDSClient({
                     }
                   });
                 } else {
-                  // If we have a station filter, only update if the ticket belongs to that station
-                  if (updatedTicket.station_id === selectedStation) {
+                  if (updatedTicket.station_id === currentStation) {
                     setTickets((prev) => {
                       const existingIndex = prev.findIndex((t) => t.id === updatedTicket.id);
                       if (existingIndex >= 0) {
-                        // Update existing ticket (status change, etc.)
                         return prev.map((t) =>
                           t.id === updatedTicket.id ? { ...t, ...updatedTicket } : t
                         );
                       } else {
-                        // Ticket doesn't exist yet, add it (might have been moved to this station)
-                        // Only add if it's not bumped
                         if (updatedTicket.status !== "bumped") {
                           return [...prev, updatedTicket];
                         }
@@ -516,10 +464,7 @@ export default function KDSClient({
                       }
                     });
                   } else {
-                    // Ticket was moved to a different station, remove it from current view
-                    // But only if we have a station filter AND the station actually changed
-                    // (don't remove if it was already in a different station)
-                    if (selectedStation && stationChanged) {
+                    if (currentStation && stationChanged) {
                       setTickets((prev) => prev.filter((t) => t.id !== updatedTicket.id));
                     }
                   }

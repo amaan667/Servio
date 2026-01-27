@@ -140,7 +140,6 @@ export function useOrderSession(orderParams: OrderParams) {
                 }
               } catch (checkoutError) {
                 // If checkout creation fails, fall back to payment page
-                console.error("Failed to create checkout session:", checkoutError);
               }
             }
 
@@ -234,7 +233,6 @@ export function useOrderSession(orderParams: OrderParams) {
                 }
               } catch (checkoutError) {
                 // If checkout creation fails, fall back to payment page
-                console.error("Failed to create checkout session:", checkoutError);
               }
             }
 
@@ -339,7 +337,6 @@ export function useOrderSession(orderParams: OrderParams) {
                 }
               } catch (checkoutError) {
                 // If checkout creation fails, continue to normal order flow
-                console.error("Failed to create checkout session:", checkoutError);
               }
             }
           }
