@@ -104,42 +104,44 @@ export function useOrderSession(orderParams: OrderParams) {
           if (orderError) { /* Condition handled */ }
 
           if (orderInDb) {
-            // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
+            // If order has payment_method="PAY_LATER" and payment_status="UNPAID", redirect directly to Stripe checkout
             const isPayLater =
               (orderInDb.payment_method === "PAY_LATER" ||
                 orderInDb.payment_mode === "pay_later" ||
                 orderInDb.payment_mode === "deferred") &&
-              (orderInDb.payment_status === "UNPAID" ||
-                orderInDb.payment_status === "PAY_LATER_PENDING");
-
-            // For unpaid Pay Later or Pay at Till orders, redirect to payment page
-            // where customer can choose payment method (Stripe checkout or Pay at Till)
-            const isPayAtTill =
-              (orderInDb.payment_method === "PAY_AT_TILL" ||
-                orderInDb.payment_mode === "offline") &&
               orderInDb.payment_status === "UNPAID";
 
-            if (isPayLater || isPayAtTill) {
+            if (isPayLater) {
+              // Create Stripe checkout session and redirect directly
+              try {
+                const checkoutResponse = await fetch("/api/checkout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    amount: orderInDb.total_amount,
+                    venue_id: orderData.venueId,
+                    venue_name: orderParams.venueSlug || "Restaurant",
+                    table_number: orderData.tableNumber,
+                    order_id: orderData.orderId,
+                    customer_name: orderInDb.customer_name || orderData.customerName,
+                    customer_email: orderInDb.customer_email || orderData.customerEmail,
+                    items: orderInDb.items || [],
+                    source: "qr",
+                    qr_type: orderInDb.qr_type || "TABLE_FULL_SERVICE",
+                  }),
+                });
 
-              // Redirect to payment page where customer can choose payment method
-              const checkoutData = {
-                venueId: orderData.venueId,
-                venueName: orderParams.venueSlug || "Venue",
-                tableNumber: orderData.tableNumber,
-                customerName: orderInDb.customer_name || orderData.customerName,
-                customerPhone: orderInDb.customer_phone || orderData.customerPhone,
-                customerEmail: orderInDb.customer_email || orderData.customerEmail,
-                cart: orderData.cart || [],
-                total: orderInDb.total_amount || orderData.total,
-                orderId: orderData.orderId,
-                orderNumber: orderData.orderNumber,
-                sessionId: sessionParam,
-                isDemo: orderParams.isDemo,
-              };
-
-              safeSetItem(localStorage, "servio-checkout-data", JSON.stringify(checkoutData));
-              window.location.href = "/payment";
-              return;
+                if (checkoutResponse.ok) {
+                  const { url } = await checkoutResponse.json();
+                  if (url) {
+                    window.location.href = url;
+                    return;
+                  }
+                }
+              } catch (checkoutError) {
+                // If checkout creation fails, fall back to payment page
+                console.error("Failed to create checkout session:", checkoutError);
+              }
             }
 
             const checkoutData = {
@@ -196,42 +198,44 @@ export function useOrderSession(orderParams: OrderParams) {
           if (sessionOrderError) { /* Condition handled */ }
 
           if (sessionOrderInDb) {
-            // If order has payment_method="PAY_LATER" or payment_mode="pay_later" and payment_status="UNPAID", redirect to Stripe checkout
-            // For unpaid Pay Later or Pay at Till orders, redirect to payment page
-            // where customer can choose payment method (Stripe checkout or Pay at Till)
+            // If order has payment_method="PAY_LATER" and payment_status="UNPAID", redirect directly to Stripe checkout
             const isPayLater =
               (sessionOrderInDb.payment_method === "PAY_LATER" ||
                 sessionOrderInDb.payment_mode === "pay_later" ||
                 sessionOrderInDb.payment_mode === "deferred") &&
-              (sessionOrderInDb.payment_status === "UNPAID" ||
-                sessionOrderInDb.payment_status === "PAY_LATER_PENDING");
-
-            const isPayAtTill =
-              (sessionOrderInDb.payment_method === "PAY_AT_TILL" ||
-                sessionOrderInDb.payment_mode === "offline") &&
               sessionOrderInDb.payment_status === "UNPAID";
 
-            if (isPayLater || isPayAtTill) {
+            if (isPayLater) {
+              // Create Stripe checkout session and redirect directly
+              try {
+                const checkoutResponse = await fetch("/api/checkout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    amount: sessionOrderInDb.total_amount,
+                    venue_id: orderData.venueId,
+                    venue_name: orderParams.venueSlug || "Restaurant",
+                    table_number: orderData.tableNumber,
+                    order_id: orderData.orderId,
+                    customer_name: sessionOrderInDb.customer_name || orderData.customerName,
+                    customer_email: sessionOrderInDb.customer_email || orderData.customerEmail,
+                    items: sessionOrderInDb.items || [],
+                    source: "qr",
+                    qr_type: sessionOrderInDb.qr_type || "TABLE_FULL_SERVICE",
+                  }),
+                });
 
-              // Redirect to payment page where customer can choose payment method
-              const checkoutData = {
-                venueId: orderData.venueId,
-                venueName: orderParams.venueSlug || "Venue",
-                tableNumber: orderData.tableNumber,
-                customerName: sessionOrderInDb.customer_name || orderData.customerName,
-                customerPhone: sessionOrderInDb.customer_phone || orderData.customerPhone,
-                customerEmail: sessionOrderInDb.customer_email || orderData.customerEmail,
-                cart: orderData.cart || [],
-                total: sessionOrderInDb.total_amount || orderData.total,
-                orderId: orderData.orderId,
-                orderNumber: orderData.orderNumber,
-                sessionId: sessionParam,
-                isDemo: orderParams.isDemo,
-              };
-
-              safeSetItem(localStorage, "servio-checkout-data", JSON.stringify(checkoutData));
-              window.location.href = "/payment";
-              return;
+                if (checkoutResponse.ok) {
+                  const { url } = await checkoutResponse.json();
+                  if (url) {
+                    window.location.href = url;
+                    return;
+                  }
+                }
+              } catch (checkoutError) {
+                // If checkout creation fails, fall back to payment page
+                console.error("Failed to create checkout session:", checkoutError);
+              }
             }
 
             // Check if there are multiple unpaid orders for this table
@@ -282,8 +286,9 @@ export function useOrderSession(orderParams: OrderParams) {
         }
       }
 
-      // NEW: Check for unpaid orders for this table even without localStorage session
+      // NEW: Check for unpaid Pay Later orders for this table even without localStorage session
       // This handles cases where customer rescans QR on different device
+      // For Pay Later orders, redirect directly to Stripe checkout
       if (orderParams.tableNumber && !orderParams.isCounterOrder && !orderParams.isDemo) {
         try {
           const todayStart = new Date();
@@ -291,21 +296,52 @@ export function useOrderSession(orderParams: OrderParams) {
           const todayEnd = new Date();
           todayEnd.setHours(23, 59, 59, 999);
 
-          const { data: unpaidTableOrders } = await supabase
+          const { data: unpaidPayLaterOrders } = await supabase
             .from("orders")
-            .select("id, payment_status, payment_mode, total_amount")
+            .select("id, venue_id, table_number, customer_name, customer_email, total_amount, items, qr_type, payment_method, payment_status")
             .eq("venue_id", orderParams.venueSlug)
             .eq("table_number", parseInt(orderParams.tableNumber))
-            .in("payment_status", ["UNPAID"])
-            .in("payment_mode", ["pay_later", "pay_at_till", "online"])
+            .eq("payment_method", "PAY_LATER")
+            .eq("payment_status", "UNPAID")
             .gte("created_at", todayStart.toISOString())
-            .lte("created_at", todayEnd.toISOString());
+            .lte("created_at", todayEnd.toISOString())
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-          if (unpaidTableOrders && unpaidTableOrders.length > 0) {
+          if (unpaidPayLaterOrders && unpaidPayLaterOrders.length > 0) {
+            const order = unpaidPayLaterOrders[0];
+            if (order) {
+              // Create Stripe checkout session and redirect directly
+              try {
+                const checkoutResponse = await fetch("/api/checkout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    amount: order.total_amount,
+                    venue_id: order.venue_id,
+                    venue_name: orderParams.venueSlug || "Restaurant",
+                    table_number: order.table_number,
+                    order_id: order.id,
+                    customer_name: order.customer_name || "Customer",
+                    customer_email: order.customer_email || undefined,
+                    items: order.items || [],
+                    source: "qr",
+                    qr_type: order.qr_type || "TABLE_FULL_SERVICE",
+                  }),
+                });
 
-            // Redirect to table payment screen
-            window.location.href = `/payment/table?venue=${orderParams.venueSlug}&table=${orderParams.tableNumber}`;
-            return;
+                if (checkoutResponse.ok) {
+                  const { url } = await checkoutResponse.json();
+                  if (url) {
+                    window.location.href = url;
+                    return;
+                  }
+                }
+              } catch (checkoutError) {
+                // If checkout creation fails, continue to normal order flow
+                console.error("Failed to create checkout session:", checkoutError);
+              }
+            }
           }
         } catch (tableCheckError) {
           // Silently continue to normal order flow if check fails

@@ -220,37 +220,7 @@ export class OrderService extends BaseService {
 
     if (error) {
       trackOrderError(error, { venueId, action: "createOrder" });
-      
-      // Fallback manual logic (simplified version of what was in route.ts)
-      const { data: manualData, error: manualError } = await supabase
-        .from("orders")
-        .insert({
-          venue_id: venueId,
-          table_number: tableNumber,
-          customer_name: orderData.customer_name,
-          customer_phone: orderData.customer_phone,
-          customer_email: orderData.customer_email,
-          items: orderData.items,
-          total_amount: orderData.total_amount,
-          notes: orderData.notes,
-          order_status: orderData.order_status || "PLACED",
-          payment_status: orderData.payment_status || "UNPAID",
-          payment_method: orderData.payment_method || "PAY_NOW",
-          payment_mode: orderData.payment_mode || "online",
-          source: orderData.source || "qr",
-          fulfillment_type: fulfillmentType,
-          counter_identifier: orderData.counter_label,
-          qr_type: orderData.qr_type,
-          requires_collection: orderData.requires_collection
-        })
-        .select("*")
-        .single();
-
-      if (manualError) {
-        trackOrderError(manualError, { venueId, action: "createOrder_manual_fallback" });
-        throw manualError;
-      }
-      return manualData;
+      throw new Error(`Failed to create order: ${error.message}`);
     }
 
     // Invalidate cache

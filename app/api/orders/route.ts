@@ -38,8 +38,13 @@ export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
 
+    const targetVenueId = venueId || body.venue_id;
+    if (!targetVenueId) {
+      throw new Error("venue_id is required");
+    }
+
     // 1. Create Order via Service (Atomic Transaction)
-    const result = await orderService.createOrder(venueId || body.venue_id, {
+    const result = await orderService.createOrder(targetVenueId, {
       ...body,
       source: (body.source as "qr" | "counter") || "qr",
       fulfillment_type: body.qr_type === "COUNTER" ? "counter" : "table",
