@@ -61,13 +61,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
       return apiErrors.forbidden("Forbidden");
     }
 
-    // Check if order was paid via Stripe
-    if (!order.stripe_payment_intent_id && !order.stripe_session_id) {
-      return apiErrors.badRequest("Order was not paid via Stripe. Cannot process refund.", {
-        payment_method: order.payment_method,
-      });
-    }
-
     // Check if order is already refunded
     if (order.payment_status === "REFUNDED") {
       return apiErrors.badRequest("Order is already refunded");
@@ -81,6 +74,48 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
       return apiErrors.badRequest("Refund amount cannot exceed order total");
     }
 
+    // If the order was not paid via Stripe, record a manual refund in our system only
+    const isStripeOrder = !!(order.stripe_payment_intent_id || order.stripe_session_id);
+
+    if (!isStripeOrder) {
+      const manualRefundAmount = refundAmount ?? orderAmount;
+
+      if (manualRefundAmount > orderAmount) {
+        return apiErrors.badRequest("Refund amount cannot exceed order total");
+      }
+
+      const isPartialManualRefund = manualRefundAmount < orderAmount;
+      const manualPaymentStatus = isPartialManualRefund ? "PARTIALLY_REFUNDED" : "REFUNDED";
+
+      const { error: manualUpdateError } = await supabase
+        .from("orders")
+        .update({
+          payment_status: manualPaymentStatus,
+          refund_amount: manualRefundAmount / 100,
+          refund_id: null,
+          refund_reason: reason || null,
+          refunded_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId);
+
+      if (manualUpdateError) {
+        return apiErrors.internal("Failed to record manual refund", manualUpdateError.message);
+      }
+
+      return success({
+        refund: {
+          id: null,
+          amount: manualRefundAmount / 100,
+          status: "manual_recorded",
+          payment_status: manualPaymentStatus,
+        },
+        order_id: orderId,
+        processed_via: "manual",
+      });
+    }
+
+    // Stripe-backed refund: call Stripe and then update our order
     // Get payment intent ID
     let paymentIntentId = order.stripe_payment_intent_id;
 
@@ -93,7 +128,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         );
         paymentIntentId = session.payment_intent as string | null;
       } catch (sessionError) {
-
         return apiErrors.internal("Failed to retrieve payment information");
       }
     }
@@ -134,7 +168,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         .eq("id", orderId);
 
       if (updateError) {
-
         // Refund was successful in Stripe, but DB update failed
         // This is a critical issue - log it but don't fail the request
         return success({
@@ -152,9 +185,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
           payment_status: newPaymentStatus,
         },
         order_id: orderId,
+        processed_via: "stripe",
       });
     } catch (stripeError) {
-
       if (stripeError instanceof Error && stripeError.message.includes("already been refunded")) {
         // Order was already refunded in Stripe but not in our DB
         // Update our DB to match Stripe

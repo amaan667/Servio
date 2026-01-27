@@ -1328,7 +1328,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       {/* Refund Dialog */}
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="fixed bottom-6 right-6 shadow-lg">
+          <Button className="fixed bottom-6 right-28 shadow-lg">
             <Undo2 className="h-4 w-4 mr-2" />
             Process Refund
           </Button>
