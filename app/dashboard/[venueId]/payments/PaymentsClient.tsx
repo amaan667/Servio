@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +45,15 @@ interface RefundStats {
 }
 
 // Refund Dialog Component
-function RefundDialog({ onRefundProcessed }: { onRefundProcessed: () => void }) {
+function RefundDialog({
+  onRefundProcessed,
+  isOpen,
+  setIsOpen,
+}: {
+  onRefundProcessed: () => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+}) {
   const supabase = createClient();
   const [selectedOrder, setSelectedOrder] = useState<PaymentOrder | null>(null);
   const [refundAmount, setRefundAmount] = useState("");
@@ -54,7 +62,6 @@ function RefundDialog({ onRefundProcessed }: { onRefundProcessed: () => void }) 
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [orders, setOrders] = useState<PaymentOrder[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
 
   const refundReasons = [
     "Customer request",
@@ -304,6 +311,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
   const [selectedRefundOrder, setSelectedRefundOrder] = useState<RefundOrder | null>(null);
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const [activeTab, setActiveTab] = useState("pay-at-till");
+  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
 
   // Check URL params for split action / direct order focus
   useEffect(() => {
@@ -1326,15 +1334,22 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       )}
 
       {/* Refund Dialog */}
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="fixed bottom-6 right-28 shadow-lg">
-            <Undo2 className="h-4 w-4 mr-2" />
-            Process Refund
-          </Button>
-        </DialogTrigger>
-        <RefundDialog onRefundProcessed={loadRefunds} />
-      </Dialog>
+      {/* Floating Refund Button + Controlled Dialog (so it always opens correctly) */}
+      <Button
+        className="fixed bottom-6 right-28 shadow-lg"
+        onClick={() => setIsRefundDialogOpen(true)}
+      >
+        <Undo2 className="h-4 w-4 mr-2" />
+        Process Refund
+      </Button>
+      <RefundDialog
+        onRefundProcessed={() => {
+          loadRefunds();
+          setIsRefundDialogOpen(false);
+        }}
+        isOpen={isRefundDialogOpen}
+        setIsOpen={setIsRefundDialogOpen}
+      />
 
       {/* Receipt Modal for Refunded Orders */}
       {selectedRefundOrder && (
