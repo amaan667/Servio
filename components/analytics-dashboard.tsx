@@ -204,7 +204,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             return sum + quantity * price;
           }, 0);
         }
-        hourlyStats[orderHour].revenue += amount;
+        hourlyStats[orderHour]!.revenue += amount;
       });
 
       setHourlyData(hourlyStats);
@@ -281,12 +281,12 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         };
         for (let i = 6; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-          const dateKey = date.toISOString().split("T")[0];
+          const dateKey = date.toISOString().split("T")[0]!;
           dailyRevenue[dateKey] = 0;
         }
 
         filteredOrders.forEach((order) => {
-          const orderDate = order.created_at.split("T")[0];
+          const orderDate = order.created_at.split("T")[0]!;
           if (dailyRevenue[orderDate] !== undefined) {
             let amount = order.total_amount;
             if (!amount || amount <= 0) {
@@ -296,7 +296,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
                 return sum + quantity * price;
               }, 0);
             }
-            dailyRevenue[orderDate] += amount;
+            dailyRevenue[orderDate]! += amount;
           }
         });
 
@@ -309,14 +309,14 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       }
 
       // Day-of-week breakdown
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
       const dow = new Array(7)
         .fill(null)
-        .map((_, i) => ({ name: days[i], value: 0, revenue: 0, orders: 0 }));
+        .map((_, i) => ({ name: days[i]!, value: 0, revenue: 0, orders: 0 }));
       filteredOrders.forEach((order) => {
         const d = new Date(order.created_at).getDay();
-        dow[d].orders += 1;
-        dow[d].value += 1;
+        dow[d]!.orders += 1;
+        dow[d]!.value += 1;
         let amt = order.total_amount;
         if (!amt || amt <= 0) {
           amt = order.items.reduce(
@@ -324,7 +324,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             0
           );
         }
-        dow[d].revenue += amt;
+        dow[d]!.revenue += amt;
       });
       setDayOfWeekData(dow);
     } catch (_error) {

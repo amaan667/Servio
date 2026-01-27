@@ -130,7 +130,10 @@ export function supabaseBrowser() {
             // Fallback to cookies if localStorage unavailable
             const cookies = document.cookie.split(";");
             const cookie = cookies.find((c) => c.trim().startsWith(`${key}=`));
-            return cookie ? decodeURIComponent(cookie.split("=")[1]) : null;
+            if (!cookie) return null;
+            const parts = cookie.split("=");
+            const v = parts[1];
+            return v ? decodeURIComponent(v) : null;
           } catch {
             return null;
           }

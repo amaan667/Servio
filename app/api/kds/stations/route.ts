@@ -65,7 +65,7 @@ export const GET = createUnifiedHandler(async (_req: NextRequest, context) => {
 }, {
   requireVenueAccess: true,
   venueIdSource: "query",
-  rateLimit: RATE_LIMITS.GENERAL,
+  rateLimit: RATE_LIMITS.KDS,
 });
 
 // POST - Create a new KDS station
@@ -153,5 +153,5 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
   schema: createStationSchema,
   requireVenueAccess: true,
   venueIdSource: "query",
-  rateLimit: RATE_LIMITS.GENERAL,
+  rateLimit: RATE_LIMITS.KDS,
 });

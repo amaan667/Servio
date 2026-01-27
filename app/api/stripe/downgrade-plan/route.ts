@@ -91,14 +91,13 @@ export async function POST(_request: NextRequest) {
           };
 
           const newPriceId = priceIds[newTier as keyof typeof priceIds];
+          const firstItem = subscription?.items?.data?.[0];
 
-          if (newPriceId && subscription.items.data[0]) {
-            // Update the subscription to the new price immediately
-            // Use 'always_invoice' to immediately apply the change
+          if (newPriceId && subscription && firstItem) {
             await stripe.subscriptions.update(subscription.id, {
               items: [
                 {
-                  id: subscription.items.data[0].id,
+                  id: firstItem.id,
                   price: newPriceId,
                 },
               ],

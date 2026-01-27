@@ -69,6 +69,7 @@ export const POST = withUnifiedAuth(
 
         for (let i = 0; i < body.splits.length; i++) {
           const split = body.splits[i];
+          if (!split) continue;
 
           // Create bill split record
           const { data: billSplit, error: splitError } = await supabase

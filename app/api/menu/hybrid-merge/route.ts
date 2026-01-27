@@ -95,7 +95,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const menuItems = [];
 
     for (let i = 0; i < extractionResult.items.length; i++) {
-      const item = extractionResult.items[i];
+      const item = extractionResult.items[i]!;
       const itemId = uuidv4();
 
       // Convert spice level string to integer for database

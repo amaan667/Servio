@@ -83,6 +83,7 @@ class OfflineSync {
 
     while (this.queue.length > 0) {
       const item = this.queue[0];
+      if (!item) return;
       
       try {
         const response = await fetch(item.url, {

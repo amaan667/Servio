@@ -214,7 +214,7 @@ function generateRevenueOverTime(
   for (let i = 0; i < daysDiff; i += interval) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = date.toISOString().split("T")[0]!;
     periods.push({ date: dateStr, dateObj: date });
   }
 
@@ -223,7 +223,7 @@ function generateRevenueOverTime(
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
       allDays.push({
-        date: currentDate.toISOString().split("T")[0],
+        date: currentDate.toISOString().split("T")[0]!,
         dateObj: new Date(currentDate),
       });
       currentDate.setDate(currentDate.getDate() + 1);
@@ -249,8 +249,8 @@ function generateRevenueOverTime(
 
       periodOrdersList = orders.filter((order: Record<string, unknown>) => {
         const createdAt = typeof order.created_at === "string" ? order.created_at : "";
-        const orderDate = createdAt.split("T")[0];
-        return orderDate >= dateStr && orderDate <= weekEndStr;
+        const orderDate = createdAt.split("T")[0] ?? "";
+        return orderDate >= dateStr && orderDate <= (weekEndStr ?? "");
       });
     } else if (dateFormat === "month") {
       const endOfMonth = new Date(period.dateObj);
@@ -259,8 +259,8 @@ function generateRevenueOverTime(
 
       periodOrdersList = orders.filter((order: Record<string, unknown>) => {
         const createdAt = typeof order.created_at === "string" ? order.created_at : "";
-        const orderDate = createdAt.split("T")[0];
-        return orderDate >= dateStr && orderDate <= monthEndStr;
+        const orderDate = createdAt.split("T")[0] ?? "";
+        return orderDate >= dateStr && orderDate <= (monthEndStr ?? "");
       });
     }
 
@@ -321,10 +321,12 @@ function findPeakAndLowestDays(
 
   if (revenueOverTime.length > 0) {
     const sortedByRevenue = [...revenueOverTime].sort((a, b) => b.revenue - a.revenue);
-    peakDay = { date: sortedByRevenue[0].date, revenue: sortedByRevenue[0].revenue };
+    const first = sortedByRevenue[0]!;
+    const last = sortedByRevenue[sortedByRevenue.length - 1]!;
+    peakDay = { date: first.date, revenue: first.revenue };
     lowestDay = {
-      date: sortedByRevenue[sortedByRevenue.length - 1].date,
-      revenue: sortedByRevenue[sortedByRevenue.length - 1].revenue,
+      date: last.date,
+      revenue: last.revenue,
     };
 
     revenueOverTime.forEach((period) => {

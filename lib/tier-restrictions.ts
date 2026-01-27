@@ -87,6 +87,16 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
   },
 };
 
+// Default tier limits - guaranteed to exist
+const DEFAULT_TIER_LIMITS: TierLimits = TIER_LIMITS.starter as TierLimits;
+
+/**
+ * Safely get tier limits with fallback to starter tier
+ */
+export function getTierLimits(tier: string): TierLimits {
+  return TIER_LIMITS[tier] ?? DEFAULT_TIER_LIMITS;
+}
+
 /**
  * @deprecated Use getAccessContext() RPC instead - single call for all access context
  * This function is kept for backward compatibility but should be replaced with RPC
@@ -109,12 +119,11 @@ export async function checkFeatureAccess(
   feature: keyof TierLimits["features"]
 ): Promise<{ allowed: boolean; currentTier: string; requiredTier?: string }> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier];
+  const limits = getTierLimits(tier);
 
   // Safety check: if tier doesn't exist in TIER_LIMITS, default to starter
-  if (!limits) {
-
-    const defaultLimits = TIER_LIMITS.starter;
+  if (!limits || tier === "starter") {
+    const defaultLimits = getTierLimits("starter");
 
     // Special handling for analytics tier
     if (feature === "analytics") {
@@ -184,11 +193,10 @@ export async function checkFeatureAccess(
 
   // Find the minimum tier that has this feature
   let requiredTier = "enterprise";
-  if (TIER_LIMITS.pro.features[feature]) {
-    const proValue = TIER_LIMITS.pro.features[feature];
-    if (typeof proValue === "boolean" && proValue) {
-      requiredTier = "pro";
-    }
+  const proLimits = getTierLimits("pro");
+  const proValue = proLimits.features[feature];
+  if (typeof proValue === "boolean" && proValue) {
+    requiredTier = "pro";
   }
 
   return { allowed: false, currentTier: tier, requiredTier };
@@ -199,7 +207,7 @@ export async function checkFeatureAccess(
  */
 export async function hasAdvancedAnalytics(userId: string): Promise<boolean> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier];
+  const limits = getTierLimits(tier);
   return (
     limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
   );
@@ -211,7 +219,7 @@ export async function hasAdvancedAnalytics(userId: string): Promise<boolean> {
  */
 export function hasAdvancedAnalyticsByTier(tier: string): boolean {
   const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = getTierLimits(tierKey);
   return (
     limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
   );
@@ -223,7 +231,7 @@ export function hasAdvancedAnalyticsByTier(tier: string): boolean {
  */
 export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "enterprise" {
   const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = getTierLimits(tierKey);
   
   if (tierKey === "enterprise") {
     return "enterprise";
@@ -240,7 +248,7 @@ export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "ent
  */
 export async function hasAnalyticsExports(userId: string): Promise<boolean> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier];
+  const limits = getTierLimits(tier);
   // Both Pro and Enterprise have exports (Pro = CSV, Enterprise = CSV + financial)
   return limits.features.analytics === "advanced+exports";
 }
@@ -250,7 +258,7 @@ export async function hasAnalyticsExports(userId: string): Promise<boolean> {
  */
 export async function getKDSTier(userId: string): Promise<KDSTier | false> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier];
+  const limits = getTierLimits(tier);
   return limits.features.kds || false;
 }
 
@@ -340,7 +348,7 @@ export async function checkKDSStationLimit(
  */
 export async function hasLoyaltyTracking(userId: string): Promise<boolean> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier];
+  const limits = getTierLimits(tier);
   return limits.features.loyaltyTracking === true;
 }
 
@@ -349,7 +357,7 @@ export async function hasLoyaltyTracking(userId: string): Promise<boolean> {
  */
 export async function getBrandingTier(userId: string): Promise<BrandingTier> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier];
+  const limits = getTierLimits(tier);
   return limits.features.branding;
 }
 
@@ -359,12 +367,11 @@ export async function checkLimit(
   currentCount: number
 ): Promise<{ allowed: boolean; limit: number; currentTier: string }> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier];
+  const limits = getTierLimits(tier);
 
-  // Safety check: if tier doesn't exist, default to starter
-  if (!limits) {
-
-    const defaultLimits = TIER_LIMITS.starter;
+  // Safety check: if tier is starter (default), use starter limits
+  if (tier === "starter") {
+    const defaultLimits = getTierLimits("starter");
     const limit = defaultLimits[limitType];
 
     // -1 means unlimited
@@ -407,9 +414,8 @@ export async function requireFeature(
   }
 }
 
-// Get tier limits for a user
-export async function getTierLimits(userId: string): Promise<TierLimits> {
+// Get tier limits for a user (async version)
+export async function getUserTierLimits(userId: string): Promise<TierLimits> {
   const tier = await getUserTier(userId);
-  const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
-  return limits || TIER_LIMITS.starter;
+  return getTierLimits(tier);
 }

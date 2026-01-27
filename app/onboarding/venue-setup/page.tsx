@@ -69,6 +69,7 @@ export default function OnboardingVenueSetupPage() {
       if (venues && venues.length > 0) {
         // Venue already exists - use it
         const venue = venues[0];
+        if (!venue) return;
         setVenueId(venue.venue_id);
         setVenueName(venue.venue_name || "");
 
@@ -121,6 +122,7 @@ export default function OnboardingVenueSetupPage() {
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
+    if (!file) return;
     setUploadingLogo(true);
 
     try {

@@ -95,7 +95,7 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
  */
 export function hasAdvancedAnalyticsByTier(tier: string): boolean {
   const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
   return (
     limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
   );
@@ -107,7 +107,7 @@ export function hasAdvancedAnalyticsByTier(tier: string): boolean {
  */
 export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "enterprise" {
   const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
 
   if (tierKey === "enterprise") {
     return "enterprise";
@@ -123,7 +123,7 @@ export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "ent
  */
 export function hasKDSAccessByTier(tier: string): boolean {
   const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
   return limits.features.kds !== false;
 }
 
@@ -132,7 +132,7 @@ export function hasKDSAccessByTier(tier: string): boolean {
  */
 export function getKDSTierByTier(tier: string): KDSTier | false {
   const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
   return limits.features.kds || false;
 }
 
@@ -169,7 +169,7 @@ export function hasFeatureAccess(
 ): boolean {
   if (!context) return false;
 
-  const tierLimits = TIER_LIMITS[context.tier];
+  const tierLimits = TIER_LIMITS[context.tier] ?? TIER_LIMITS.starter!;
   if (!tierLimits) return false;
 
   // Handle legacy "customBranding" -> "branding" mapping
@@ -194,7 +194,7 @@ export function hasFeatureAccessByTier(
   feature: keyof TierLimits["features"]
 ): boolean {
   const tierKey = String(tier || "starter").toLowerCase().trim();
-  const limits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+  const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
 
   // Special handling for analytics tier
   if (feature === "analytics") {

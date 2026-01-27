@@ -86,6 +86,7 @@ export function useGestures(
     if (e.touches.length !== 1) return;
 
     const touch = e.touches[0];
+    if (!touch) return;
     const now = Date.now();
 
     startTimeRef.current = now;
@@ -114,6 +115,7 @@ export function useGestures(
       if (e.touches.length !== 1 || !gestureState.isDragging) return;
 
       const touch = e.touches[0];
+      if (!touch) return;
       const now = Date.now();
 
       const deltaX = touch.clientX - gestureState.startX;

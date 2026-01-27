@@ -95,6 +95,10 @@ export const POST = withUnifiedAuth(
       }
 
       const subscription = subscriptions.data[0];
+      if (!subscription) {
+        return apiErrors.notFound("No active subscription found");
+      }
+
       // Get tier directly from Stripe (no normalization)
       const tier = await getTierFromStripeSubscription(subscription, stripe);
 

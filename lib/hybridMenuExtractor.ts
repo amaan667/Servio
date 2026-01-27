@@ -234,6 +234,7 @@ function extractParentheticalVariants(name: string): string[] {
 
   while ((match = parentheticalRegex.exec(name)) !== null) {
     const content = match[1];
+    if (!content) continue;
 
     // Split on / or , or &
     const options = content.split(/[\/,&]/).map((s) => s.trim());
@@ -777,8 +778,8 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
   merged.forEach((item) => {
     if (item.has_web_enhancement && item.merge_source === "pdf_enhanced_with_url") {
       // Extract base reason (before boosts)
-      const reason = String(item._matchReason || "unknown").split("_")[0];
-      matchReasons[reason] = (matchReasons[reason] || 0) + 1;
+      const reason = String(item._matchReason || "unknown").split("_")[0] ?? "unknown";
+      matchReasons[reason] = (matchReasons[reason] ?? 0) + 1;
     }
   });
 
@@ -808,6 +809,7 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
 
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
         const batch = batches[batchIndex];
+        if (!batch) continue;
 
         // PARALLEL AI FALLBACK MATCHING - Process 5 items at once within each batch
         const PARALLEL_SIZE = 5;
@@ -827,6 +829,9 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
               const mergedIndex = merged.findIndex((m) => m.name === pdfItem.name && m._unmatched);
 
               if (mergedIndex !== -1) {
+                const existingItem = merged[mergedIndex];
+                if (!existingItem) return;
+
                 aiMatchedCount++;
                 if (aiMatch.item.name_normalized) {
                   matchedWebItems.add(aiMatch.item.name_normalized);
@@ -834,13 +839,13 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
 
                 // Enhance the item with URL data
                 merged[mergedIndex] = {
-                  ...merged[mergedIndex],
-                  image_url: aiMatch.item.image_url || merged[mergedIndex].image_url,
-                  description: aiMatch.item.description || merged[mergedIndex].description,
-                  price: aiMatch.item.price || merged[mergedIndex].price,
-                  allergens: merged[mergedIndex].allergens || aiMatch.item.allergens || [],
-                  dietary: merged[mergedIndex].dietary || aiMatch.item.dietary || [],
-                  spiceLevel: merged[mergedIndex].spiceLevel || aiMatch.item.spiceLevel || null,
+                  ...existingItem,
+                  image_url: aiMatch.item.image_url || existingItem.image_url,
+                  description: aiMatch.item.description || existingItem.description,
+                  price: aiMatch.item.price || existingItem.price,
+                  allergens: existingItem.allergens || aiMatch.item.allergens || [],
+                  dietary: existingItem.dietary || aiMatch.item.dietary || [],
+                  spiceLevel: existingItem.spiceLevel || aiMatch.item.spiceLevel || null,
                   has_web_enhancement: true,
                   has_image: !!aiMatch.item.image_url,
                   merge_source: "pdf_enhanced_with_url_ai",
@@ -952,6 +957,7 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
 
     for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
       const batch = batches[batchIdx];
+      if (!batch) continue;
 
       // Process batch in parallel
       const results = await Promise.all(
@@ -963,6 +969,7 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
       // Apply results
       batch.forEach(({ webItem }, idx) => {
         const aiResult = results[idx];
+        if (!aiResult) return;
         const assignedCategory = aiResult.category;
         const shouldCreateNew = aiResult.shouldCreateNew;
         aiCategorizedCount++;

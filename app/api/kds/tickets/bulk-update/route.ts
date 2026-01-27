@@ -71,5 +71,5 @@ export const PATCH = createUnifiedHandler(async (_req: NextRequest, context) => 
   schema: bulkUpdateTicketsSchema,
   requireVenueAccess: true,
   venueIdSource: "query",
-  rateLimit: RATE_LIMITS.GENERAL,
+  rateLimit: RATE_LIMITS.KDS,
 });

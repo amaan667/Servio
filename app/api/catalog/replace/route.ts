@@ -105,7 +105,7 @@ async function mergeItemsIntelligently(
       // Found a match - enhance the existing item with better data from new item
       const existingIndex = resultItems.findIndex(item => item.name === matchResult.item.name);
       if (existingIndex !== -1) {
-        const existingItem = resultItems[existingIndex];
+        const existingItem = resultItems[existingIndex]!;
         processedExistingNames.add(existingItem.name);
 
         // Intelligently merge - prefer better/more complete data

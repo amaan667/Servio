@@ -60,16 +60,18 @@ export function AIInsights({
   // Top selling item insight
   if (topSellingItems && topSellingItems.length > 0) {
     const topItem = topSellingItems[0];
-    const timesText = topItem.count === 1 ? "time" : "times";
-    insights.push({
-      type: "success",
-      title: "Top Seller",
-      message: `"${topItem.name}" (£${topItem.price.toFixed(2)}) has been added to cart ${topItem.count} ${timesText} today. Consider promoting it!`,
-      action: {
-        label: "Edit Menu",
-        href: `/dashboard/${venueId}/menu-management`,
-      },
-    });
+    if (topItem) {
+      const timesText = topItem.count === 1 ? "time" : "times";
+      insights.push({
+        type: "success",
+        title: "Top Seller",
+        message: `"${topItem.name}" (£${topItem.price.toFixed(2)}) has been added to cart ${topItem.count} ${timesText} today. Consider promoting it!`,
+        action: {
+          label: "Edit Menu",
+          href: `/dashboard/${venueId}/menu-management`,
+        },
+      });
+    }
   }
 
   // Yesterday comparison insights

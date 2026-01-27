@@ -78,7 +78,9 @@ export async function POST(req: NextRequest) {
     const venuesToReset = venues.filter((venue: { daily_reset_time: string | null }) => {
       if (!venue.daily_reset_time) return false;
 
-      const [resetHour, resetMinute] = venue.daily_reset_time.split(":").map(Number);
+      const timeParts = venue.daily_reset_time.split(":").map(Number);
+      const resetHour = timeParts[0] ?? 0;
+      const resetMinute = timeParts[1] ?? 0;
       const timeDiff = Math.abs(currentHour * 60 + currentMinute - (resetHour * 60 + resetMinute));
 
       // Reset if within 5 minutes of the scheduled time

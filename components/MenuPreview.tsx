@@ -220,18 +220,13 @@ function DefaultMenuPreview({
   menuItems: MenuItem[];
   categoryOrder: string[] | null;
 }) {
-  const groupedItems = menuItems.reduce(
-    (acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
-      return acc;
-    },
-    {
-      /* Empty */
-    } as Record<string, MenuItem[]>
-  );
+  const groupedItems = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
+    const cat = item.category ?? "";
+    const arr = acc[cat] ?? [];
+    arr.push(item);
+    acc[cat] = arr;
+    return acc;
+  }, {});
 
   const categories = categoryOrder || Object.keys(groupedItems).sort();
 

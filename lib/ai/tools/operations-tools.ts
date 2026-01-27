@@ -144,7 +144,7 @@ export async function analyzeKitchenBottlenecks(venueId: string): Promise<Kitche
 
   const summary =
     bottlenecks.length > 0
-      ? `Slowest station: ${bottlenecks[0].station} (${bottlenecks[0].avgPrepTime} min avg). ${bottlenecks.filter((b) => b.overdueTickets > 0).length} stations have overdue tickets.`
+      ? `Slowest station: ${bottlenecks[0]!.station} (${bottlenecks[0]!.avgPrepTime} min avg). ${bottlenecks.filter((b) => b.overdueTickets > 0).length} stations have overdue tickets.`
       : "All stations operating within normal parameters.";
 
   return {
@@ -214,7 +214,7 @@ export async function optimizeStaffSchedule(venueId: string): Promise<StaffSched
         const suggestedStaff = Math.ceil(orders / 5); // Rough estimate: 1 staff per 5 orders/hour
 
         recommendations.push({
-          dayOfWeek: dayNames[day],
+          dayOfWeek: dayNames[day]!,
           timeSlot: `${hour}:00-${hour + 1}:00`,
           suggestedStaff,
           reasoning: `Peak period with ${orders} orders/hour (${((orders / avgOrders - 1) * 100).toFixed(0)}% above average)`,
@@ -229,7 +229,7 @@ export async function optimizeStaffSchedule(venueId: string): Promise<StaffSched
 
   const summary =
     recommendations.length > 0
-      ? `Identified ${recommendations.length} peak periods. Busiest: ${recommendations[0].dayOfWeek} ${recommendations[0].timeSlot} (${recommendations[0].expectedOrders} orders/hour).`
+      ? `Identified ${recommendations.length} peak periods. Busiest: ${recommendations[0]!.dayOfWeek} ${recommendations[0]!.timeSlot} (${recommendations[0]!.expectedOrders} orders/hour).`
       : "Order volume is consistent throughout the week. Standard staffing recommended.";
 
   return {
@@ -379,9 +379,9 @@ export async function improveTurnover(venueId: string): Promise<TableTurnoverRes
     );
   }
 
-  if (byTable.length > 0 && byTable[0].avgTime > avgTurnoverTime * 1.3) {
+  if (byTable.length > 0 && byTable[0]!.avgTime > avgTurnoverTime * 1.3) {
     recommendations.push(
-      `Table ${byTable[0].tableNumber} is ${Math.round((byTable[0].avgTime / avgTurnoverTime - 1) * 100)}% slower than average. Check for service issues at this table.`
+      `Table ${byTable[0]!.tableNumber} is ${Math.round((byTable[0]!.avgTime / avgTurnoverTime - 1) * 100)}% slower than average. Check for service issues at this table.`
     );
   }
 

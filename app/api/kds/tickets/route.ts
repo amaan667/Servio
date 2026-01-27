@@ -1,4 +1,5 @@
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { kdsService } from "@/lib/services/KDSService";
 import { z } from "zod";
 
@@ -10,7 +11,7 @@ const updateTicketSchema = z.object({
 });
 
 /**
- * GET: Fetch KDS tickets with auto-backfill
+ * GET: Fetch KDS tickets with auto-backfill (middleware auth; KDS rate limit)
  */
 export const GET = createUnifiedHandler(
   async (req, context) => {
@@ -18,25 +19,22 @@ export const GET = createUnifiedHandler(
     const stationId = req.nextUrl.searchParams.get("station_id") || undefined;
     const status = req.nextUrl.searchParams.get("status") || undefined;
 
-    // 1. Proactive backfill for missing tickets
     await kdsService.autoBackfill(venueId);
-
-    // 2. Fetch tickets
     const tickets = await kdsService.getTickets(venueId, {
       station_id: stationId,
       status: status,
     });
-
     return { tickets };
   },
   {
     requireVenueAccess: true,
     venueIdSource: "query",
+    rateLimit: RATE_LIMITS.KDS,
   }
 );
 
 /**
- * PATCH: Update KDS ticket status
+ * PATCH: Update KDS ticket status (middleware auth; KDS rate limit)
  */
 export const PATCH = createUnifiedHandler(
   async (_req, context) => {
@@ -48,5 +46,6 @@ export const PATCH = createUnifiedHandler(
     requireVenueAccess: true,
     schema: updateTicketSchema,
     enforceIdempotency: true,
+    rateLimit: RATE_LIMITS.KDS,
   }
 );

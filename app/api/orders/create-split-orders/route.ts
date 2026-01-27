@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     const checkoutSessions = [];
 
     for (let i = 0; i < splits.length; i++) {
-      const split = splits[i];
+      const split = splits[i]!;
       const splitCustomerName = `${customerName} - ${split.name}`;
 
       // Create order for this split

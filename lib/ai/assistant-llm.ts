@@ -1120,7 +1120,8 @@ function formatDataAsAnswer(data: unknown, question: string): string {
 
     // Category performance
     const entries = Object.entries(obj);
-    if (entries.length > 0 && typeof entries[0][1] === "object") {
+    const firstEntry = entries[0];
+    if (entries.length > 0 && firstEntry && typeof firstEntry[1] === "object") {
       const formatted = entries
         .sort((a, b) => {
           const aRev = (a[1] as { revenue?: number })?.revenue || 0;
@@ -1274,7 +1275,11 @@ Respond with JSON only:
       max_tokens: 150,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const firstChoice = response.choices[0];
+    if (!firstChoice) {
+      throw new Error("No response from OpenAI");
+    }
+    const result = JSON.parse(firstChoice.message.content || "{}");
 
     // High confidence threshold for direct answers
     if (result.canAnswer && result.confidence >= 0.85 && result.dataPath) {
@@ -1395,7 +1400,11 @@ export async function planAssistantAction(
     });
 
     // Get the message from completion
-    const message = completion.choices[0].message;
+    const firstChoice = completion.choices[0];
+    if (!firstChoice) {
+      throw new Error("No response from OpenAI");
+    }
+    const message = firstChoice.message;
 
     // Try to get parsed response (available when using zodResponseFormat)
     const parsed = (message as { parsed?: unknown }).parsed;
@@ -1445,7 +1454,11 @@ export async function planAssistantAction(
           temperature: 0.1,
         });
 
-        const message = completion.choices[0].message;
+        const firstChoice = completion.choices[0];
+        if (!firstChoice) {
+          throw new Error("No response from OpenAI");
+        }
+        const message = firstChoice.message;
         const parsed = (message as { parsed?: unknown }).parsed;
 
         if (parsed) {
@@ -1514,7 +1527,11 @@ User Role: ${context.userRole}`;
       max_tokens: 150,
     });
 
-    return completion.choices[0].message.content || "Action explanation unavailable.";
+    const firstChoice = completion.choices[0];
+    if (!firstChoice) {
+      return "Action explanation unavailable.";
+    }
+    return firstChoice.message.content || "Action explanation unavailable.";
   } catch (_error) {
 
     return "Unable to generate explanation.";
@@ -1548,7 +1565,11 @@ Focus on common tasks, optimizations, or insights based on the data.`;
       max_tokens: 200,
     });
 
-    const response = JSON.parse(completion.choices[0].message.content || "{ /* Empty */ }");
+    const firstChoice = completion.choices[0];
+    if (!firstChoice) {
+      throw new Error("No response from OpenAI");
+    }
+    const response = JSON.parse(firstChoice.message.content || "{ /* Empty */ }");
     return response.suggestions || [];
   } catch (_error) {
 
@@ -1605,7 +1626,11 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
       max_tokens: 20,
     });
 
-    const title = response.choices[0].message.content?.trim() || "New Chat";
+    const firstChoice = response.choices[0];
+    if (!firstChoice) {
+      return "New Chat";
+    }
+    const title = firstChoice.message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
   } catch (error) {
 

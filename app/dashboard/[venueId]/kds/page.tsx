@@ -1,13 +1,13 @@
 import KDSClientPage from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
-import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { getAuthFromMiddlewareHeaders } from "@/lib/auth/page-auth-helper";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export default async function KDSPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Server-side auth check - NO REDIRECTS - Dashboard always loads
-  const auth = await requirePageAuth(venueId).catch(() => null);
+  // Auth from middleware only (no per-page RPC) - no auth/rate-limit errors
+  const auth = await getAuthFromMiddlewareHeaders();
 
   // Determine KDS tier from tier limits - matches TIER_LIMITS configuration
   const currentTier = auth?.tier ?? "starter";

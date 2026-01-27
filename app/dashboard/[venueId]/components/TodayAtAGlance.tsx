@@ -45,16 +45,19 @@ export function TodayAtAGlance({
     payload?: Array<{ payload: { hour: string }; value: number }>;
   }) => {
     if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-            {payload[0].payload.hour}
-          </p>
-          <p className="text-sm text-blue-600 dark:text-blue-400">
-            {payload[0].value} {payload[0].value === 1 ? "order" : "orders"}
-          </p>
-        </div>
-      );
+      const firstPayload = payload[0];
+      if (firstPayload) {
+        return (
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              {firstPayload.payload.hour}
+            </p>
+            <p className="text-sm text-blue-600 dark:text-blue-400">
+              {firstPayload.value} {firstPayload.value === 1 ? "order" : "orders"}
+            </p>
+          </div>
+        );
+      }
     }
     return null;
   };
@@ -68,14 +71,17 @@ export function TodayAtAGlance({
     payload?: Array<{ name: string; value: number }>;
   }) => {
     if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">{payload[0].name}</p>
-          <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-            £{payload[0].value.toFixed(2)}
-          </p>
-        </div>
-      );
+      const firstPayload = payload[0];
+      if (firstPayload) {
+        return (
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{firstPayload.name}</p>
+            <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+              £{firstPayload.value.toFixed(2)}
+            </p>
+          </div>
+        );
+      }
     }
     return null;
   };

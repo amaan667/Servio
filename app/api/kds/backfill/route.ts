@@ -9,8 +9,8 @@ export const runtime = "nodejs"; // KDS backfill endpoint
 
 export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
   try {
-    // CRITICAL: Rate limiting
-    const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
+    // CRITICAL: KDS rate limit (backfill called from KDS client)
+    const rateLimitResult = await rateLimit(req, RATE_LIMITS.KDS);
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {

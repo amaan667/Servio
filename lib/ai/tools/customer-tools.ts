@@ -247,7 +247,7 @@ export async function identifyPopularCombos(venueId: string): Promise<PopularCom
     // Get all pairs
     for (let i = 0; i < items.length; i++) {
       for (let j = i + 1; j < items.length; j++) {
-        const combo = [items[i].item_name, items[j].item_name].sort().join(" + ");
+        const combo = [items[i]!.item_name, items[j]!.item_name].sort().join(" + ");
         const existing = comboMap.get(combo) || { count: 0, revenue: 0 };
         existing.count++;
         existing.revenue += order.total_amount || 0;
@@ -285,7 +285,7 @@ export async function identifyPopularCombos(venueId: string): Promise<PopularCom
 
   const summary =
     combos.length > 0
-      ? `Found ${combos.length} popular item combinations. Most frequent: "${combos[0].items.join(" + ")}" (${combos[0].frequency} orders).`
+      ? `Found ${combos.length} popular item combinations. Most frequent: "${combos[0]!.items.join(" + ")}" (${combos[0]!.frequency} orders).`
       : "No significant item combinations found. Single-item orders are most common.";
 
   return {
@@ -361,7 +361,7 @@ export async function analyzeRepeatCustomers(venueId: string): Promise<RepeatCus
       orderCount: data.orderCount,
       totalSpent: Math.round(data.totalSpent * 100) / 100,
       avgOrderValue: Math.round((data.totalSpent / data.orderCount) * 100) / 100,
-      lastVisit: data.lastVisit.toISOString().split("T")[0],
+      lastVisit: data.lastVisit.toISOString().split("T")[0]!,
     }))
     .sort((a, b) => b.totalSpent - a.totalSpent)
     .slice(0, 10);
@@ -381,7 +381,7 @@ export async function analyzeRepeatCustomers(venueId: string): Promise<RepeatCus
 
   if (topCustomers.length > 0) {
     insights.push(
-      `Top customer has ordered ${topCustomers[0].orderCount} times, spending ${topCustomers[0].totalSpent}. Reward loyal customers with exclusive offers.`
+      `Top customer has ordered ${topCustomers[0]!.orderCount} times, spending ${topCustomers[0]!.totalSpent}. Reward loyal customers with exclusive offers.`
     );
   }
 
@@ -479,17 +479,21 @@ export async function forecastDemand(venueId: string): Promise<DemandForecastRes
       const peakHour = Array.from(hourCounts.entries()).sort((a, b) => b[1] - a[1])[0];
 
       return {
-        dayOfWeek: dayNames[day],
+        dayOfWeek: dayNames[day]!,
         avgOrders: Math.round(avgOrders * 10) / 10,
         peakHour: peakHour ? `${peakHour[0]}:00-${peakHour[0] + 1}:00` : "Unknown",
       };
     })
     .sort((a, b) => b.avgOrders - a.avgOrders);
 
-  const busiestHour = hourly.reduce((max, h) => (h.avgOrders > max.avgOrders ? h : max), hourly[0]);
+  const busiestHour = hourly.length > 0 
+    ? hourly.reduce((max, h) => (h.avgOrders > max.avgOrders ? h : max), hourly[0]!)
+    : null;
   const busiestDay = daily[0];
 
-  const summary = `Peak demand: ${busiestDay?.dayOfWeek} during ${busiestHour?.timeRange} (avg ${busiestHour?.avgOrders} orders/hour). Plan inventory and staffing accordingly.`;
+  const summary = busiestDay && busiestHour
+    ? `Peak demand: ${busiestDay.dayOfWeek} during ${busiestHour.timeRange} (avg ${busiestHour.avgOrders} orders/hour). Plan inventory and staffing accordingly.`
+    : "Not enough data to determine peak demand patterns.";
 
   return {
     hourly,

@@ -43,7 +43,8 @@ export const detectColorsFromImage = (
           const b = pixels[pixelIndex + 2];
           const a = pixels[pixelIndex + 3];
 
-          if (a < 128) continue;
+          if (a === undefined || a < 128) continue;
+          if (r === undefined || g === undefined || b === undefined) continue;
           if (r > 240 && g > 240 && b > 240) continue;
 
           const color = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;

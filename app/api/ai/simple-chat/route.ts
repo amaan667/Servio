@@ -126,7 +126,7 @@ export const POST = withUnifiedAuth(
         const messages: string[] = [];
 
         for (let i = 0; i < plan.tools.length; i++) {
-          const tool = plan.tools[i];
+          const tool = plan.tools[i]!;
           // Executing tool
 
           try {

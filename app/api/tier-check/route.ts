@@ -33,7 +33,7 @@ export const POST = createUnifiedHandler(
     const tierKey = String(context.tier || "starter")
       .toLowerCase()
       .trim();
-    const tierLimits: TierLimits = TIER_LIMITS[tierKey] || TIER_LIMITS.starter;
+    const tierLimits: TierLimits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
 
     // Check based on action type
     if (action === "create" && resource) {

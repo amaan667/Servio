@@ -12,7 +12,7 @@ export const getTableSummary = (orders: Order[]) => {
   let overallStatus = "MIXED";
   const uniqueStatuses = [...new Set(statuses)];
   if (uniqueStatuses.length === 1) {
-    overallStatus = uniqueStatuses[0];
+    overallStatus = uniqueStatuses[0] ?? "MIXED";
   } else if (uniqueStatuses.includes("READY")) {
     overallStatus = "MIXED_READY";
   } else if (uniqueStatuses.includes("IN_PREP")) {

@@ -113,8 +113,9 @@ export async function analyzeMenuPerformance(
   // Generate recommendations
   const recommendations: string[] = [];
   if (topPerformers.length > 0) {
+    const topItem = topPerformers[0]!;
     recommendations.push(
-      `Your top item "${topPerformers[0].name}" generated ${topPerformers[0].revenue.toFixed(2)} in revenue. Consider featuring it more prominently.`
+      `Your top item "${topItem.name}" generated ${topItem.revenue.toFixed(2)} in revenue. Consider featuring it more prominently.`
     );
   }
   if (underPerformers.length > 0) {
@@ -288,9 +289,11 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
     .sort((a, b) => b.avg - a.avg);
 
   if (dayAvgs.length > 0) {
-    trends.push(`Best day: ${dayNames[dayAvgs[0].day]} (avg ${dayAvgs[0].avg.toFixed(2)})`);
+    const bestDay = dayAvgs[0]!;
+    const slowestDay = dayAvgs[dayAvgs.length - 1]!;
+    trends.push(`Best day: ${dayNames[bestDay.day]} (avg ${bestDay.avg.toFixed(2)})`);
     trends.push(
-      `Slowest day: ${dayNames[dayAvgs[dayAvgs.length - 1].day]} (avg ${dayAvgs[dayAvgs.length - 1].avg.toFixed(2)})`
+      `Slowest day: ${dayNames[slowestDay.day]} (avg ${slowestDay.avg.toFixed(2)})`
     );
   }
 
@@ -306,10 +309,14 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
     );
   }
 
-  if (dayAvgs.length > 1 && dayAvgs[0].avg / dayAvgs[dayAvgs.length - 1].avg > 2) {
-    recommendations.push(
-      `${dayNames[dayAvgs[dayAvgs.length - 1].day]} is significantly slower. Consider special promotions or reduced hours.`
-    );
+  if (dayAvgs.length > 1) {
+    const bestDay = dayAvgs[0]!;
+    const slowestDay = dayAvgs[dayAvgs.length - 1]!;
+    if (bestDay.avg / slowestDay.avg > 2) {
+      recommendations.push(
+        `${dayNames[slowestDay.day]} is significantly slower. Consider special promotions or reduced hours.`
+      );
+    }
   }
 
   const currency = orders[0]?.currency || "GBP";
@@ -362,7 +369,7 @@ export async function calculateItemMargins(venueId: string): Promise<{
 
   const items =
     menuItems?.map((item) => {
-      const costRatio = costEstimates[item.category] || costEstimates.default;
+      const costRatio = costEstimates[item.category] ?? costEstimates.default ?? 0.35;
       const estimatedCost = item.price * costRatio;
       const margin = item.price - estimatedCost;
       const marginPercent = (margin / item.price) * 100;

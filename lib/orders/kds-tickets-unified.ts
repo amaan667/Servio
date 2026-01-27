@@ -90,7 +90,7 @@ export async function createKDSTicketsWithAI(
     }
 
     for (let i = 0; i < items.length; i++) {
-      const item = items[i];
+      const item = items[i]!;
       const itemName = item.item_name || "Unknown Item";
       const menuItemId = item.menu_item_id;
 

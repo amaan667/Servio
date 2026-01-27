@@ -93,8 +93,8 @@ export function getClientIdentifier(req: NextRequest): string {
 
   // Fall back to IP address
   const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0] : req.headers.get("x-real-ip") || "unknown";
-
+  const first = forwarded?.split(",")[0];
+  const ip = (typeof first === "string" ? first.trim() : null) ?? req.headers.get("x-real-ip") ?? "unknown";
   return ip;
 }
 
@@ -226,6 +226,8 @@ export const RATE_LIMITS = {
   PAYMENT: { limit: 20, window: 60 }, // 20 requests per minute
   ORDER_CREATE: { limit: 30, window: 60 }, // 30 requests per minute
   GENERAL: { limit: 100, window: 60 }, // 100 requests per minute
+  /** KDS polls stations + tickets ~every 5s; per-user when x-user-id set. Avoid auth/rate-limit errors. */
+  KDS: { limit: 500, window: 60 },
   MENU_PUBLIC: { limit: 60, window: 60 }, // 60 requests per minute
   STRICT: { limit: 5, window: 60 }, // 5 requests per minute
 } as const;

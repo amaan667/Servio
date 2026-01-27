@@ -107,9 +107,11 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
     apmTransaction.setTag("http.url", req.nextUrl.pathname);
 
     try {
-      // 1. Rate Limiting
+      // 1. Rate Limiting (per-user when middleware set x-user-id, else per-IP)
       const rlConfig = options.rateLimit || RATE_LIMITS.GENERAL;
-      const rlResult = await rateLimit(req, rlConfig);
+      const userId = req.headers.get("x-user-id");
+      const configWithId = { ...rlConfig, identifier: userId || undefined };
+      const rlResult = await rateLimit(req, configWithId);
       if (!rlResult.success) {
         perf.end();
         logger.warn("Rate limit exceeded", {

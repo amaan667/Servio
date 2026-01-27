@@ -25,6 +25,7 @@ export const groupOrdersByTable = (orders: Order[]) => {
 
   Object.keys(tableGroups).forEach((tableNum) => {
     const orders = tableGroups[Number(tableNum)];
+    if (!orders) return;
 
     if (orders.length === 1) {
       filteredGroups[Number(tableNum)] = orders;
@@ -41,6 +42,7 @@ export const groupOrdersByTable = (orders: Order[]) => {
       if (index === 0) return true;
 
       const prevOrder = orders[index - 1];
+      if (!prevOrder) return false;
       const timeDiff =
         new Date(order.created_at).getTime() - new Date(prevOrder.created_at).getTime();
       const timeDiffMinutes = timeDiff / (1000 * 60);

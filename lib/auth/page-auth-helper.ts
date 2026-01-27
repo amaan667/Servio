@@ -1,18 +1,15 @@
 /**
- * Reusable Page Authentication Helper
+ * Page auth: middleware only (Supabase). No per-page RPC for dashboard.
  *
- * Use this in all dashboard page.tsx files for consistent auth checking
+ * Middleware sets x-user-id, x-user-email, x-user-tier, x-user-role, x-venue-id
+ * for /dashboard/[venueId]/*. Pages read headers via getAuthFromMiddlewareHeaders.
  *
- * CRITICAL: NO REDIRECTS - User requested ZERO sign-in redirects
- * Returns null on auth failures instead of redirecting
+ * CRITICAL: No redirects. Returns null on auth failure.
  */
 
-// redirect import removed - NO REDIRECTS
-import { createServerSupabase } from "@/lib/supabase";
-import { TIER_LIMITS } from "@/lib/tier-restrictions";
-
+import { headers } from "next/headers";
 import { cache } from "react";
-import { getAccessContext } from "@/lib/access/getAccessContext";
+import { TIER_LIMITS } from "@/lib/tier-restrictions";
 import type { UserRole } from "@/lib/permissions";
 
 export type { UserRole };
@@ -43,155 +40,56 @@ export interface PageAuthContext {
 export interface RequirePageAuthOptions {
   requireFeature?: FeatureKey;
   requireRole?: UserRole[];
-  allowNoVenue?: boolean; // e.g. /dashboard (no [venueId])
+  allowNoVenue?: boolean;
 }
 
-/**
- * Main helper used by ALL dashboard pages
- *
- * NEVER throws - always redirects on auth failures to prevent 500 errors
- *
- * Usage:
- * ```typescript
- * export default async function MyPage({ params }: { params: { venueId: string } }) {
- *   const { venueId } = params;
- *
- *   const auth = await requirePageAuth(venueId, {
- *     requireFeature: "aiAssistant", // optional
- *     requireRole: ["owner", "manager"], // optional
- *   });
- *
- *   // Now safe to fetch data and render
- *   return <MyClientPage venueId={venueId} tier={auth.tier} role={auth.role} />;
- * }
- * ```
- */
-const getBasePageAuth = cache(
-  async (venueIdFromPage?: string, allowNoVenue = false): Promise<PageAuthContext | null> => {
-    // STEP 1: Resolve venueId
-    const venueId = venueIdFromPage;
+function buildHasFeatureAccess(tier: Tier): (feature: FeatureKey) => boolean {
+  const tierLimits = TIER_LIMITS[tier];
+  if (!tierLimits) return () => false;
+  return (feature: FeatureKey) => {
+    const key = feature === "customBranding" ? "branding" : feature;
+    const v = tierLimits.features[key as keyof typeof tierLimits.features];
+    if (feature === "kds" || key === "kds") return v !== false;
+    if (typeof v === "boolean") return v;
+    return true;
+  };
+}
 
-    if (!venueId && !allowNoVenue) {
-      // NO REDIRECTS - User requested ZERO sign-in redirects
-      // Return null instead of redirecting
-      return null;
-    }
+/** Read auth from middleware-set headers only. No RPC. */
+export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthContext | null> => {
+  const h = await headers();
+  const userId = h.get("x-user-id");
+  if (!userId) return null;
 
-    // STEP 2: Get unified access context via RPC (single database call)
-    const accessContext = await getAccessContext(venueId || null);
+  const tier = (h.get("x-user-tier") ?? "starter") as Tier;
+  const role = (h.get("x-user-role") ?? "viewer") as UserRole;
+  const venueId = h.get("x-venue-id") ?? "";
 
-    if (!accessContext) {
-      // Server-side auth failed - client-side will handle authentication
-      // With Supabase's official SSR client, this should be very rare
+  return {
+    user: { id: userId, email: h.get("x-user-email") ?? null },
+    venueId,
+    role,
+    tier,
+    hasFeatureAccess: buildHasFeatureAccess(tier),
+  };
+});
 
-      return null;
-    }
-
-    // STEP 3: Create feature access helper
-    const hasFeatureAccess = (feature: FeatureKey): boolean => {
-      const tierLimits = TIER_LIMITS[accessContext.tier];
-      if (!tierLimits) {
-
-        return false;
-      }
-
-      // Handle legacy "customBranding" -> "branding" mapping
-      const featureKey = feature === "customBranding" ? "branding" : feature;
-      const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
-      
-      // For KDS tier (basic/advanced/enterprise), return true if not false (check before boolean check)
-      if (feature === "kds" || featureKey === "kds") {
-        const hasAccess = featureValue !== false;
-
-        return hasAccess;
-      }
-      // For boolean features, return the value directly
-      if (typeof featureValue === "boolean") {
-        return featureValue;
-      }
-      // For analytics and supportLevel, they're always allowed (just different levels)
-      return true;
-    };
-
-    // Get user email if available
-    const supabase = await createServerSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    // All good → return base context
-    return {
-      user: { id: accessContext.user_id, email: user?.email || null },
-      venueId: accessContext.venue_id || "",
-      role: accessContext.role,
-      tier: accessContext.tier,
-      hasFeatureAccess,
-    };
-  }
-);
-
+/** Page auth: headers only + optional requireRole filter. No per-page RPC. */
 export async function requirePageAuth(
-  venueIdFromPage?: string,
+  _venueId?: string,
   options: RequirePageAuthOptions = {}
 ): Promise<PageAuthContext | null> {
-  const base = await getBasePageAuth(venueIdFromPage, options.allowNoVenue ?? false);
-  if (!base) return null;
+  const auth = await getAuthFromMiddlewareHeaders();
+  if (!auth) return null;
 
-  // Role check (if specified) - this IS an authorization boundary (pages may fetch admin data).
-  if (options.requireRole && !options.requireRole.includes(base.role)) {
-    // NO REDIRECTS - User requested ZERO sign-in redirects
-    // Return null instead of redirecting
+  if (options.requireRole && options.requireRole.length > 0 && !options.requireRole.includes(auth.role)) {
     return null;
   }
 
-  // Feature checks should NOT null the context.
-  // Pages can still render an upsell/denied state while showing the correct tier.
-  return base;
+  return auth;
 }
 
-/**
- * Optional page auth - returns null if not authenticated instead of redirecting
- * Useful for pages that can be viewed by unauthenticated users
- */
-export async function getOptionalPageAuth(venueId?: string): Promise<PageAuthContext | null> {
-  try {
-    // Use unified access context via RPC
-    const accessContext = await getAccessContext(venueId || null);
-
-    if (!accessContext) {
-      return null;
-    }
-
-    const tierLimits = TIER_LIMITS[accessContext.tier] || TIER_LIMITS.starter;
-
-    const hasFeatureAccess = (feature: FeatureKey): boolean => {
-      // Handle legacy "customBranding" -> "branding" mapping
-      const featureKey = feature === "customBranding" ? "branding" : feature;
-      const featureValue = tierLimits.features[featureKey as keyof typeof tierLimits.features];
-      // For KDS tier (basic/advanced/enterprise), return true if not false (check before boolean check)
-      if (feature === "kds" || featureKey === "kds") {
-        return featureValue !== false;
-      }
-      // For boolean features, return the value directly
-      if (typeof featureValue === "boolean") {
-        return featureValue;
-      }
-      return true;
-    };
-
-    const supabase = await createServerSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    return {
-      user: { id: accessContext.user_id, email: user?.email || null },
-      venueId: accessContext.venue_id || "",
-      role: accessContext.role,
-      tier: accessContext.tier,
-      hasFeatureAccess,
-    };
-  } catch {
-    return null;
-  }
+/** Alias for getAuthFromMiddlewareHeaders. */
+export async function getOptionalPageAuth(): Promise<PageAuthContext | null> {
+  return getAuthFromMiddlewareHeaders();
 }

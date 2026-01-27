@@ -82,9 +82,10 @@ export async function predictInventoryNeeds(venueId: string): Promise<InventoryP
 
   const urgentItems = predictions.filter((p) => p.daysUntilStockout < 3 && p.recommendedOrder > 0);
 
+  const u = urgentItems[0];
   const summary =
-    urgentItems.length > 0
-      ? `${urgentItems.length} items need ordering soon. Most urgent: ${urgentItems[0].ingredient} (${urgentItems[0].daysUntilStockout} days remaining).`
+    urgentItems.length > 0 && u
+      ? `${urgentItems.length} items need ordering soon. Most urgent: ${u.ingredient} (${u.daysUntilStockout} days remaining).`
       : "All inventory levels are adequate for the next week.";
 
   return {

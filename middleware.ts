@@ -20,19 +20,16 @@ function getSupabaseAnonKey(): string {
   return key;
 }
 
-// Paths that require authentication
+// Paths that require authentication - middleware does ALL auth; routes read x-user-id only
 const protectedPaths = [
   "/dashboard",
   "/api/catalog",
-  // "/api/menu" - PUBLIC: needed for customer ordering without auth
-  // "/api/orders" - PUBLIC: needed for customer order submission without auth
+  "/api/kds", // KDS: middleware auth only; KDS rate limit on routes - no auth/rate-limit errors
   "/api/tables",
   "/api/inventory",
   "/api/staff",
   "/api/ai",
   "/api/feedback",
-  // "/api/analytics/vitals" - PUBLIC: web performance metrics, no auth needed
-  // "/api/auth" - PUBLIC: auth endpoints must be accessible
   "/api/qr",
 ];
 
@@ -40,10 +37,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // CRITICAL SECURITY: Always strip sensitive headers from the incoming request
-  // to prevent header spoofing attacks. These headers should ONLY be set by
-  // this middleware after successful authentication.
   request.headers.delete("x-user-id");
   request.headers.delete("x-user-email");
+  request.headers.delete("x-user-tier");
+  request.headers.delete("x-user-role");
+  request.headers.delete("x-venue-id");
 
   // Skip middleware for health check and public paths
   if (pathname === "/api/health" || !protectedPaths.some((path) => pathname.startsWith(path))) {
@@ -153,25 +151,49 @@ export async function middleware(request: NextRequest) {
 
     // Return response with updated cookies (automatically set by Supabase SSR client)
     // The response object is updated via the set() handler when refreshSession() is called
-    // Create a new response with the updated cookies and request headers
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-user-id", session.user.id);
     requestHeaders.set("x-user-email", session.user.email || "");
-    
-    // Return the response object which has the updated cookies from refreshSession()
-    // and set the request headers for the next handler
     return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
+      request: { headers: requestHeaders },
     });
   }
 
-  // For dashboard pages, NO REDIRECTS - User requested ZERO sign-in redirects
-  // Allow dashboard to load even without session - client-side will handle auth
+  // Dashboard: auth/tier/role from middleware only (get_access_context RPC)
   if (pathname.startsWith("/dashboard")) {
+    if (!session) return response;
 
-    // Don't redirect - let dashboard component handle auth client-side
+    const segments = pathname.split("/").filter(Boolean);
+    const venueSegment = segments[1];
+    if (!venueSegment) return response;
+
+    const normalizedVenueId = venueSegment.startsWith("venue-")
+      ? venueSegment
+      : `venue-${venueSegment}`;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: rpcErr } = await (supabase as any).rpc("get_access_context", {
+        p_venue_id: normalizedVenueId,
+      });
+      if (rpcErr || !data) return response;
+
+      const ctx = data as { user_id?: string; venue_id?: string | null; role?: string; tier?: string };
+      if (!ctx.user_id || !ctx.role) return response;
+
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-user-id", ctx.user_id);
+      requestHeaders.set("x-user-email", session.user.email || "");
+      requestHeaders.set("x-user-tier", ctx.tier ?? "starter");
+      requestHeaders.set("x-user-role", ctx.role);
+      requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
+
+      return NextResponse.next({
+        request: { headers: requestHeaders },
+      });
+    } catch {
+      return response;
+    }
   }
 
   return response;

@@ -169,7 +169,8 @@ class SecurityService {
     const realIP = _request.headers.get("x-real-ip");
 
     if (forwarded) {
-      return forwarded.split(",")[0].trim();
+      const first = forwarded.split(",")[0];
+      return (first ?? forwarded).trim();
     }
 
     if (realIP) {
