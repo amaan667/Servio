@@ -246,9 +246,15 @@ export async function middleware(request: NextRequest) {
           userId: verifyUser.id,
           venueId: normalizedVenueId,
         });
-        // RPC failed - return response without headers so page can handle gracefully
-        // This should NOT happen - RPC must work correctly
-        return response;
+        // RPC failed - set basic headers so page knows user is authenticated
+        // Page will handle missing tier/role gracefully
+        requestHeaders.set("x-user-id", verifyUser.id);
+        requestHeaders.set("x-user-email", session.user.email || "");
+        requestHeaders.set("x-venue-id", normalizedVenueId);
+        // Don't set tier/role - RPC failed, page should handle this
+        return NextResponse.next({
+          request: { headers: requestHeaders },
+        });
       }
 
       if (!data) {
@@ -257,12 +263,19 @@ export async function middleware(request: NextRequest) {
           userId: verifyUser.id,
           venueId: normalizedVenueId,
         });
-        // RPC returned null - user may not have access to venue
-        // Return response without headers so page can handle gracefully
-        return response;
+        // RPC returned null - set basic headers so page knows user is authenticated
+        // Page will handle missing tier/role gracefully
+        requestHeaders.set("x-user-id", verifyUser.id);
+        requestHeaders.set("x-user-email", session.user.email || "");
+        requestHeaders.set("x-venue-id", normalizedVenueId);
+        // Don't set tier/role - RPC returned null, page should handle this
+        return NextResponse.next({
+          request: { headers: requestHeaders },
+        });
       }
 
       // Validate RPC response structure
+      // Validate RPC response structure - must have user_id and role
       const ctx = data as { user_id?: string; venue_id?: string | null; role?: string; tier?: string };
       
       if (!ctx.user_id || !ctx.role) {
@@ -276,12 +289,16 @@ export async function middleware(request: NextRequest) {
           userId: verifyUser.id,
           venueId: normalizedVenueId,
         });
-        // RPC returned invalid data - return response without headers
-        // This should NOT happen - RPC must return correct structure
-        return response;
+        // RPC returned invalid data - set basic headers, page handles missing tier/role
+        requestHeaders.set("x-user-id", verifyUser.id);
+        requestHeaders.set("x-user-email", session.user.email || "");
+        requestHeaders.set("x-venue-id", normalizedVenueId);
+        return NextResponse.next({
+          request: { headers: requestHeaders },
+        });
       }
 
-      // Validate tier is valid
+      // Validate tier is one of the valid values
       const tier = (ctx.tier?.toLowerCase().trim() || "starter");
       if (!["starter", "pro", "enterprise"].includes(tier)) {
         // eslint-disable-next-line no-console
@@ -291,14 +308,21 @@ export async function middleware(request: NextRequest) {
           userId: verifyUser.id,
           venueId: normalizedVenueId,
         });
-        // Invalid tier - return response without headers
-        return response;
+        // Invalid tier - set basic headers with default tier, page can handle
+        requestHeaders.set("x-user-id", ctx.user_id);
+        requestHeaders.set("x-user-email", session.user.email || "");
+        requestHeaders.set("x-user-tier", "starter"); // Default to starter if invalid
+        requestHeaders.set("x-user-role", ctx.role);
+        requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
+        return NextResponse.next({
+          request: { headers: requestHeaders },
+        });
       }
 
-      // RPC succeeded with valid data - set all headers
+      // RPC succeeded with valid data - set all headers with actual values from database
       requestHeaders.set("x-user-id", ctx.user_id);
       requestHeaders.set("x-user-email", session.user.email || "");
-      requestHeaders.set("x-user-tier", tier);
+      requestHeaders.set("x-user-tier", tier); // Use validated tier from database
       requestHeaders.set("x-user-role", ctx.role);
       requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
 
