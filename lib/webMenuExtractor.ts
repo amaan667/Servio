@@ -163,11 +163,9 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     const samplesByCategory: Record<string, CategorySample[]> = {};
     visionItems.forEach((item) => {
       const cat = item.category || "Uncategorized";
-      if (!samplesByCategory[cat]) {
-        samplesByCategory[cat] = [];
-      }
-      if (samplesByCategory[cat].length < 3) {
-        samplesByCategory[cat].push({
+      const bucket = samplesByCategory[cat] ?? (samplesByCategory[cat] = []);
+      if (bucket.length < 3) {
+        bucket.push({
           name: item.name,
           price: item.price,
           hasDescription: !!item.description,
@@ -456,7 +454,9 @@ function mergeExtractedData(
         visionItem.name.toLowerCase().trim(),
         domItem.name_normalized
       );
-      return similarity > 0.8; // 80% similarity threshold
+      // Slightly lower threshold so we don't miss good matches
+      // This helps ensure we still merge in DOM images when names are very similar
+      return similarity >= 0.7;
     });
 
     if (domMatch) {
@@ -487,10 +487,13 @@ function mergeExtractedData(
   // Add DOM-only items that Vision AI missed
   domItems.forEach((domItem) => {
     const exists = merged.some(
-      (m) => calculateSimilarity(m.name_normalized, domItem.name_normalized) > 0.8
+      (m) => calculateSimilarity(m.name_normalized, domItem.name_normalized) >= 0.7
     );
 
-    if (!exists && domItem.name && domItem.price) {
+    // Keep DOM-only items if they have either a price OR an image.
+    // This ensures URL scraping can still contribute images even when
+    // the price is rendered separately or in a non-standard pattern.
+    if (!exists && domItem.name && (domItem.price || domItem.image_url)) {
       merged.push({
         name: domItem.name,
         name_normalized: domItem.name_normalized,
