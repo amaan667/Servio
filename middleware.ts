@@ -199,9 +199,17 @@ export async function middleware(request: NextRequest) {
         return response;
       }
 
+      // Call RPC with proper error handling
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: rpcErr } = await (supabase as any).rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
+      }).catch((catchErr: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error("[MIDDLEWARE] RPC call exception", {
+          error: catchErr instanceof Error ? catchErr.message : String(catchErr),
+          stack: catchErr instanceof Error ? catchErr.stack : undefined,
+        });
+        return { data: null, error: { message: "RPC call failed", code: "RPC_ERROR" } };
       });
 
       // eslint-disable-next-line no-console
@@ -222,38 +230,75 @@ export async function middleware(request: NextRequest) {
         } : null,
       });
 
+      // Always set basic user headers (user-id, email) even if RPC fails
+      // This ensures pages know user is authenticated, even if tier/role unavailable
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-user-id", verifyUser.id);
+      requestHeaders.set("x-user-email", session.user.email || "");
+
       if (rpcErr) {
         // eslint-disable-next-line no-console
-        console.error("[MIDDLEWARE] RPC error details", {
+        console.error("[MIDDLEWARE] RPC error - CRITICAL: get_access_context failed", {
           message: rpcErr.message,
           code: rpcErr.code,
           details: rpcErr.details,
           hint: rpcErr.hint,
+          userId: verifyUser.id,
+          venueId: normalizedVenueId,
         });
+        // RPC failed - return response without headers so page can handle gracefully
+        // This should NOT happen - RPC must work correctly
         return response;
       }
 
       if (!data) {
         // eslint-disable-next-line no-console
-        console.log("[MIDDLEWARE] RPC returned no data (user may not have access to venue)");
+        console.error("[MIDDLEWARE] RPC returned no data - CRITICAL: user may not have access", {
+          userId: verifyUser.id,
+          venueId: normalizedVenueId,
+        });
+        // RPC returned null - user may not have access to venue
+        // Return response without headers so page can handle gracefully
         return response;
       }
 
+      // Validate RPC response structure
       const ctx = data as { user_id?: string; venue_id?: string | null; role?: string; tier?: string };
+      
       if (!ctx.user_id || !ctx.role) {
         // eslint-disable-next-line no-console
-        console.log("[MIDDLEWARE] Missing user_id or role in context", {
+        console.error("[MIDDLEWARE] CRITICAL: RPC returned invalid data structure", {
           hasUserId: !!ctx.user_id,
           hasRole: !!ctx.role,
+          hasTier: !!ctx.tier,
+          hasVenueId: !!ctx.venue_id,
           fullData: ctx,
+          userId: verifyUser.id,
+          venueId: normalizedVenueId,
         });
+        // RPC returned invalid data - return response without headers
+        // This should NOT happen - RPC must return correct structure
         return response;
       }
 
-      const requestHeaders = new Headers(request.headers);
+      // Validate tier is valid
+      const tier = (ctx.tier?.toLowerCase().trim() || "starter");
+      if (!["starter", "pro", "enterprise"].includes(tier)) {
+        // eslint-disable-next-line no-console
+        console.error("[MIDDLEWARE] CRITICAL: RPC returned invalid tier", {
+          tier: ctx.tier,
+          normalizedTier: tier,
+          userId: verifyUser.id,
+          venueId: normalizedVenueId,
+        });
+        // Invalid tier - return response without headers
+        return response;
+      }
+
+      // RPC succeeded with valid data - set all headers
       requestHeaders.set("x-user-id", ctx.user_id);
       requestHeaders.set("x-user-email", session.user.email || "");
-      requestHeaders.set("x-user-tier", ctx.tier ?? "starter");
+      requestHeaders.set("x-user-tier", tier);
       requestHeaders.set("x-user-role", ctx.role);
       requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
 

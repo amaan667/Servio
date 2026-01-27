@@ -397,9 +397,15 @@ export default function KDSClient({
 
   // Initial load - only run once on mount
   useEffect(() => {
-    fetchStations();
-    fetchTickets();
-  }, [venueId]); // Only depend on venueId to prevent infinite loop
+    // Use initial data if available, otherwise fetch
+    if (!initialStations || (Array.isArray(initialStations) && initialStations.length === 0)) {
+      fetchStations();
+    }
+    if (!initialTickets || (Array.isArray(initialTickets) && initialTickets.length === 0)) {
+      fetchTickets();
+    }
+     
+  }, [venueId]); // Only depend on venueId, ignore fetch functions to prevent infinite loop
 
   // Set up realtime subscription with token refresh handling
   useEffect(() => {
