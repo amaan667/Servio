@@ -173,6 +173,17 @@ export class OrderService extends BaseService {
       requires_collection?: boolean;
     }
   ): Promise<Order & { table_auto_created?: boolean; session_id?: string }> {
+    // eslint-disable-next-line no-console
+    console.log("🔄 [OrderService] createOrder called");
+    // eslint-disable-next-line no-console
+    console.log("📋 [OrderService] Input:", {
+      venueId,
+      orderData: {
+        ...orderData,
+        items_count: orderData.items?.length || 0,
+      },
+    });
+
     const supabase = await createSupabaseClient();
 
     // Determine fulfillment_type from source if not provided
@@ -194,35 +205,57 @@ export class OrderService extends BaseService {
       return "online";
     })();
 
+    const insertPayload = {
+      venue_id: venueId,
+      table_number: tableNumber,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      customer_email: orderData.customer_email ?? null,
+      items: orderData.items,
+      total_amount: orderData.total_amount,
+      notes: orderData.notes ?? null,
+      order_status: orderData.order_status || "PLACED",
+      payment_status: orderData.payment_status || "UNPAID",
+      payment_method: orderData.payment_method || "PAY_NOW",
+      payment_mode: paymentMode,
+      source: orderData.source || "qr",
+      fulfillment_type: fulfillmentType,
+      counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
+      qr_type: orderData.qr_type ?? null,
+      requires_collection: orderData.requires_collection ?? false
+    };
+
+    // eslint-disable-next-line no-console
+    console.log("📦 [OrderService] Insert Payload:", JSON.stringify(insertPayload, null, 2));
+    // eslint-disable-next-line no-console
+    console.log("🔄 [OrderService] Executing Supabase insert...");
+
     // Direct insert - simple and reliable
     const { data, error } = await supabase
       .from("orders")
-      .insert({
-        venue_id: venueId,
-        table_number: tableNumber,
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        customer_email: orderData.customer_email ?? null,
-        items: orderData.items,
-        total_amount: orderData.total_amount,
-        notes: orderData.notes ?? null,
-        order_status: orderData.order_status || "PLACED",
-        payment_status: orderData.payment_status || "UNPAID",
-        payment_method: orderData.payment_method || "PAY_NOW",
-        payment_mode: paymentMode,
-        source: orderData.source || "qr",
-        fulfillment_type: fulfillmentType,
-        counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
-        qr_type: orderData.qr_type ?? null,
-        requires_collection: orderData.requires_collection ?? false
-      })
+      .insert(insertPayload)
       .select("*")
       .single();
 
     if (error) {
+      // eslint-disable-next-line no-console
+      console.error("❌ [OrderService] Insert failed:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
       trackOrderError(error, { venueId, action: "createOrder" });
       throw new Error(`Failed to create order: ${error.message}`);
     }
+
+    // eslint-disable-next-line no-console
+    console.log("✅ [OrderService] Order created:", {
+      id: data?.id,
+      order_number: data?.order_number,
+      status: data?.order_status,
+      payment_status: data?.payment_status,
+    });
 
     // Invalidate cache
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);

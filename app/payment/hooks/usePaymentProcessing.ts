@@ -38,6 +38,24 @@ export function usePaymentProcessing() {
     setIsProcessing: (processing: boolean) => void,
     setError: (error: string | null) => void
   ) => {
+    // Detailed console logging
+    console.group("🎯 [PAYMENT] Payment Method Clicked");
+    console.log("⚡ Action:", action);
+    console.log("🏪 Venue ID:", checkoutData.venueId);
+    console.log("🪑 Table Number:", checkoutData.tableNumber);
+    console.log("👤 Customer:", {
+      name: checkoutData.customerName,
+      phone: checkoutData.customerPhone,
+      email: checkoutData.customerEmail,
+    });
+    console.log("🛒 Cart:", {
+      itemCount: checkoutData.cart?.length || 0,
+      items: checkoutData.cart,
+      total: checkoutData.total,
+    });
+    console.log("📋 Full Checkout Data:", JSON.stringify(checkoutData, null, 2));
+    console.groupEnd();
+
     // Log to server (appears in Railway) - fire and forget
     logToServer("info", "PAYMENT_METHOD_SELECTED", {
       action,
@@ -238,7 +256,31 @@ export function usePaymentProcessing() {
           // Silently handle - error logging failed
         });
 
-        // Also log to browser console for debugging
+        // Detailed console logging for debugging
+        console.group("🔵 [PAYMENT] Creating Order");
+        console.log("📋 Payment Action:", action);
+        console.log("📦 Order Data:", JSON.stringify(orderData, null, 2));
+        console.log("🔍 Order Data Validation:", {
+          hasVenueId: !!orderData.venue_id,
+          venueId: orderData.venue_id,
+          hasCustomerName: !!orderData.customer_name,
+          customerName: orderData.customer_name,
+          hasCustomerPhone: !!orderData.customer_phone,
+          customerPhone: orderData.customer_phone,
+          hasItems: Array.isArray(orderData.items) && orderData.items.length > 0,
+          itemsCount: orderData.items?.length || 0,
+          hasTotal: typeof orderData.total_amount === "number" && orderData.total_amount > 0,
+          totalAmount: orderData.total_amount,
+          paymentMethod: orderData.payment_method,
+          paymentMode: orderData.payment_mode,
+          paymentStatus: orderData.payment_status,
+          fulfillmentType: orderData.fulfillment_type,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          source: (orderData as any).source,
+          qrType: orderData.qr_type,
+        });
+        console.log("📤 Sending request to /api/orders...");
+        console.groupEnd();
 
         const createOrderResponse = await fetch("/api/orders", {
           method: "POST",
@@ -246,11 +288,23 @@ export function usePaymentProcessing() {
           body: JSON.stringify(orderData),
         });
 
+        console.group("🟢 [PAYMENT] Order Creation Response");
+        console.log("📊 Status:", createOrderResponse.status, createOrderResponse.statusText);
+        console.log("📋 Headers:", Object.fromEntries(createOrderResponse.headers.entries()));
+        console.groupEnd();
+
         if (!createOrderResponse.ok) {
+          console.group("🔴 [PAYMENT] Order Creation Failed");
+          console.error("❌ Status:", createOrderResponse.status, createOrderResponse.statusText);
+          console.error("🌐 Online:", navigator.onLine);
+          
           // If network error, queue the order
           if (!navigator.onLine || createOrderResponse.status === 0) {
-
+            console.log("📦 Queueing order (offline)...");
             const queueId = await queueOrder(orderData, "/api/orders");
+            console.log("✅ Order queued with ID:", queueId);
+            console.groupEnd();
+            
             toast({
               title: "Order Queued",
               description:
@@ -271,11 +325,13 @@ export function usePaymentProcessing() {
 
           try {
             const responseText = await createOrderResponse.text();
+            console.error("📄 Response Text:", responseText);
 
             if (responseText) {
               try {
                 const errorData = JSON.parse(responseText);
                 fullErrorResponse = errorData;
+                console.error("📋 Parsed Error Data:", JSON.stringify(errorData, null, 2));
 
                 // Handle multiple possible error response formats
                 if (errorData.message && typeof errorData.message === "string") {
@@ -401,11 +457,19 @@ export function usePaymentProcessing() {
           });
 
           // Also log to browser console for debugging
+          console.error("💥 Final Error Message:", errorMessage);
+          console.error("📦 Full Error Response:", fullErrorResponse);
+          console.groupEnd();
 
           throw new Error(errorMessage);
         }
 
         const orderResult = await createOrderResponse.json();
+        console.group("✅ [PAYMENT] Order Created Successfully");
+        console.log("📋 Order Result:", JSON.stringify(orderResult, null, 2));
+        console.log("🆔 Order ID:", orderResult.order?.id);
+        console.log("🔢 Order Number:", orderResult.order?.order_number);
+        console.groupEnd();
 
         // Log success to server (appears in Railway)
         logToServer("info", "ORDER_CREATION_SUCCESS", {
