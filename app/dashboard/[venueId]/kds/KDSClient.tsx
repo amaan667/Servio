@@ -349,13 +349,13 @@ export default function KDSClient({
     };
 
     triggerBackfill();
-  }, [tickets.length, loading, venueId, fetchTickets]);
+  }, [tickets.length, loading, venueId]); // Removed fetchTickets from deps to prevent infinite loop
 
-  // Initial load
+  // Initial load - only run once on mount
   useEffect(() => {
     fetchStations();
     fetchTickets();
-  }, [fetchStations, fetchTickets]);
+  }, [venueId]); // Only depend on venueId to prevent infinite loop
 
   // Set up realtime subscription with token refresh handling
   useEffect(() => {
@@ -577,7 +577,7 @@ export default function KDSClient({
         authSubscription = null;
       }
     };
-  }, [venueId, fetchTickets]);
+  }, [venueId, selectedStation]); // Removed fetchTickets from deps to prevent infinite loop
 
   // Auto-refresh with configurable interval
   useEffect(() => {
@@ -588,7 +588,7 @@ export default function KDSClient({
     }, refreshInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, fetchTickets]);
+  }, [autoRefresh, refreshInterval, venueId, selectedStation]); // Removed fetchTickets from deps to prevent infinite loop
 
   // No loading spinner - show content immediately with empty state
   if (error) {
