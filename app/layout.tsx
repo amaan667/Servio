@@ -138,84 +138,78 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
 
-    // Check if auth cookies exist - try to get session for ALL pages
-    // This ensures dashboard pages get auth state immediately, preventing flicker
-    const hasAuthCookies = allCookies.some(
-      (cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")
-    );
+    // Always attempt to resolve the authenticated user on the server so that
+    // header/navigation can render in the correct auth state on first paint.
+    // This avoids the "public → authed" flicker during hydration.
+    const supabase = await createServerSupabaseReadOnly();
 
-    if (hasAuthCookies) {
-      // Use read-only client in layout to prevent cookie modification errors
-      const supabase = await createServerSupabaseReadOnly();
+    // Use getUser() for secure authentication (validates with Supabase Auth server)
+    // Add timeout to prevent hanging
+    try {
+      const {
+        data: { user: authUser },
+        error,
+      } = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<{ data: { user: null }; error: null }>((resolve) =>
+          setTimeout(() => resolve({ data: { user: null }, error: null }), 1000)
+        ),
+      ]);
 
-      // Use getUser() for secure authentication (validates with Supabase Auth server)
-      // Add timeout to prevent hanging
-      try {
-        const {
-          data: { user: authUser },
-          error,
-        } = await Promise.race([
-          supabase.auth.getUser(),
-          new Promise<{ data: { user: null }; error: null }>((resolve) =>
-            setTimeout(() => resolve({ data: { user: null }, error: null }), 1000)
-          ),
-        ]);
+      if (!error && authUser) {
+        // Fetch primary venue data to prevent navigation flicker
+        let primaryVenueData = null;
+        try {
+          // Get primary venue for immediate navigation availability
+          const [venueResult, staffResult] = await Promise.all([
+            supabase
+              .from("venues")
+              .select("venue_id")
+              .eq("owner_user_id", authUser.id)
+              .order("created_at", { ascending: true })
+              .limit(1),
+            supabase
+              .from("user_venue_roles")
+              .select("role, venue_id")
+              .eq("user_id", authUser.id)
+              .limit(1)
+              .single(),
+          ]);
 
-        if (!error && authUser) {
-          // Fetch primary venue data to prevent navigation flicker
-          let primaryVenueData = null;
-          try {
-            // Get primary venue for immediate navigation availability
-            const [venueResult, staffResult] = await Promise.all([
-              supabase
-                .from("venues")
-                .select("venue_id")
-                .eq("owner_user_id", authUser.id)
-                .order("created_at", { ascending: true })
-                .limit(1),
-              supabase
-                .from("user_venue_roles")
-                .select("role, venue_id")
-                .eq("user_id", authUser.id)
-                .limit(1)
-                .single(),
-            ]);
-
-            if (
-              !venueResult.error &&
-              Array.isArray(venueResult.data) &&
-              venueResult.data.length > 0 &&
-              venueResult.data[0]?.venue_id
-            ) {
-              primaryVenueData = {
-                venueId: venueResult.data[0].venue_id,
-                role: "owner"
-              };
-            } else if (!staffResult.error && staffResult.data?.venue_id && staffResult.data?.role) {
-              primaryVenueData = {
-                venueId: staffResult.data.venue_id,
-                role: staffResult.data.role
-              };
-            }
-          } catch (venueErr) {
-            // Venue fetch failed, continue without venue data
+          if (
+            !venueResult.error &&
+            Array.isArray(venueResult.data) &&
+            venueResult.data.length > 0 &&
+            venueResult.data[0]?.venue_id
+          ) {
+            primaryVenueData = {
+              venueId: venueResult.data[0].venue_id,
+              role: "owner",
+            };
+          } else if (!staffResult.error && staffResult.data?.venue_id && staffResult.data?.role) {
+            primaryVenueData = {
+              venueId: staffResult.data.venue_id,
+              role: staffResult.data.role,
+            };
           }
-
-          // Construct session object from authenticated user with venue data
-          session = {
-            user: authUser,
-            access_token: "", // Not needed for layout, only user info is required
-            refresh_token: "",
-            expires_in: 0,
-            expires_at: undefined,
-            token_type: "bearer",
-            // Add venue data to prevent navigation flicker
-            primaryVenue: primaryVenueData,
-          } as unknown as Session;
+        } catch {
+          // Venue fetch failed, continue without venue data
         }
-      } catch (err) {
-        // Error handled
+
+        // Construct session object from authenticated user with venue data
+        session = {
+          user: authUser,
+          access_token: "", // Not needed for layout, only user info is required
+          refresh_token: "",
+          expires_in: 0,
+          expires_at: undefined,
+          token_type: "bearer",
+          // Add venue data to prevent navigation flicker
+          primaryVenue: primaryVenueData,
+        } as unknown as Session;
       }
+    } catch {
+      // Silent - layout can continue without session
     }
   } catch (err) {
     // Error handled
