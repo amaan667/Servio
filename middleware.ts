@@ -252,17 +252,28 @@ export async function middleware(request: NextRequest) {
       }
 
       // Call RPC with proper error handling
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: rpcErr } = await (supabase as any).rpc("get_access_context", {
-        p_venue_id: normalizedVenueId,
-      }).catch((catchErr: unknown) => {
+      // NOTE: In Edge/middleware, Supabase rpc() returns a promise-like object but does NOT
+      // support chaining .catch() directly in all environments, so we use try/catch around await.
+      let data: { user_id?: string; venue_id?: string | null; role?: string; tier?: string } | null =
+        null;
+      let rpcErr:
+        | { message: string; code?: string; details?: unknown; hint?: unknown }
+        | null = null;
+      try {
+        const result = await supabase.rpc("get_access_context", {
+          p_venue_id: normalizedVenueId,
+        });
+        data = result.data;
+        rpcErr = result.error;
+      } catch (catchErr: unknown) {
         // eslint-disable-next-line no-console
         console.error("[MIDDLEWARE] RPC call exception", {
           error: catchErr instanceof Error ? catchErr.message : String(catchErr),
           stack: catchErr instanceof Error ? catchErr.stack : undefined,
         });
-        return { data: null, error: { message: "RPC call failed", code: "RPC_ERROR" } };
-      });
+        rpcErr = { message: "RPC call failed", code: "RPC_ERROR" };
+        data = null;
+      }
 
       // eslint-disable-next-line no-console
       console.log("[MIDDLEWARE] get_access_context result", {
