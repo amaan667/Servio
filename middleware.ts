@@ -1,24 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import type { CookieOptions } from "@supabase/ssr";
-import { env } from "@/lib/env";
-
-function getSupabaseUrl(): string {
-  const url = env("NEXT_PUBLIC_SUPABASE_URL");
-  if (!url) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL is required");
-  }
-  return url;
-}
-
-function getSupabaseAnonKey(): string {
-  const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  if (!key) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is required");
-  }
-  return key;
-}
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 // Paths that require authentication - middleware does ALL auth; routes read x-user-id only
 const protectedPaths = [
@@ -62,31 +44,15 @@ export async function middleware(request: NextRequest) {
   // If Supabase env is misconfigured:
   // - FAIL CLOSED for protected API routes (security)
   // - Keep dashboard navigation non-blocking (no redirects), but do not inject auth headers
-  let supabase: ReturnType<typeof createServerClient> | null = null;
-  try {
-    supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          // Update response with new cookies - this will be used when we return
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({ name, value: "", ...options });
-        },
-      },
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // eslint-disable-next-line no-console
+    console.error("[MIDDLEWARE] Missing Supabase env vars", {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey,
     });
-  } catch (error) {
-
     // Pilot hardening: never allow protected API routes to proceed without auth infrastructure.
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
@@ -97,22 +63,74 @@ export async function middleware(request: NextRequest) {
         { status: 503 }
       );
     }
-
     // Dashboard: allow to load (client-side can show auth/env error states)
     return response;
   }
+  
+  // Create middleware-specific Supabase client that properly uses request/response cookies
+  // This is CRITICAL: middleware cannot use cookies() from next/headers - must use request.cookies
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        const allCookies = request.cookies.getAll();
+        // eslint-disable-next-line no-console
+        console.log("[MIDDLEWARE] Reading cookies", {
+          count: allCookies.length,
+          names: allCookies.map(c => c.name).filter(n => n.includes("sb-")),
+        });
+        return allCookies;
+      },
+      setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          // Set on request for downstream reads in this request
+          request.cookies.set(name, value);
+          // Set on response to persist to browser
+          response.cookies.set(name, value, {
+            ...options,
+            httpOnly: false, // Must be false for Supabase to read from client
+            sameSite: "lax",
+            secure: true,
+            path: "/",
+          });
+        });
+      },
+    },
+  });
 
   // Get user - use getUser() instead of getSession() for secure authentication
   // getUser() authenticates the data by contacting the Supabase Auth server
   // It also automatically refreshes the session if needed
+  
+  // First, log incoming cookies for debugging
+  const cookieHeader = request.headers.get("cookie") || "";
+  const hasAuthCookies = cookieHeader.includes("sb-") && cookieHeader.includes("auth-token");
+  // eslint-disable-next-line no-console
+  console.log("[MIDDLEWARE] Auth check starting", {
+    pathname,
+    hasAuthCookies,
+    cookiePreview: cookieHeader.slice(0, 200) + (cookieHeader.length > 200 ? "..." : ""),
+  });
+  
   let {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
+  // eslint-disable-next-line no-console
+  console.log("[MIDDLEWARE] getUser() result", {
+    pathname,
+    hasUser: !!user,
+    userId: user?.id,
+    email: user?.email,
+    authError: authError?.message,
+    authErrorCode: authError?.status,
+  });
+
   // If getUser() fails, try to refresh the session
   // This handles stale sessions where the access token expired but refresh token is valid
   if (authError && !user) {
+    // eslint-disable-next-line no-console
+    console.log("[MIDDLEWARE] Attempting session refresh due to auth error");
     try {
       // Try to refresh the session
       // The Supabase SSR client will automatically update cookies via the set() handler
@@ -121,19 +139,42 @@ export async function middleware(request: NextRequest) {
         error: refreshError,
       } = await supabase.auth.refreshSession();
       
+      // eslint-disable-next-line no-console
+      console.log("[MIDDLEWARE] Session refresh result", {
+        hasSession: !!refreshedSession,
+        hasUser: !!refreshedSession?.user,
+        refreshError: refreshError?.message,
+      });
+      
       if (refreshedSession?.user && !refreshError) {
         user = refreshedSession.user;
         authError = null;
+        // eslint-disable-next-line no-console
+        console.log("[MIDDLEWARE] Session refresh succeeded", {
+          userId: user.id,
+          email: user.email,
+        });
         // Response object is automatically updated with new cookies via the set() handler
         // No need to manually update - Supabase SSR client handles it
       }
     } catch (_refreshErr) {
+      // eslint-disable-next-line no-console
+      console.error("[MIDDLEWARE] Session refresh exception", {
+        error: _refreshErr instanceof Error ? _refreshErr.message : String(_refreshErr),
+      });
       // Refresh failed, continue with original error
     }
   }
 
   // If getUser() fails, treat as unauthenticated
   const session = user ? { user } : null;
+  
+  // eslint-disable-next-line no-console
+  console.log("[MIDDLEWARE] Final auth state", {
+    pathname,
+    hasSession: !!session,
+    userId: session?.user?.id,
+  });
 
   // For API routes, inject user info into headers if session exists
   // SIMPLIFIED: Only set user-id/email. Unified handler will extract venueId and call RPC if needed.
@@ -148,23 +189,34 @@ export async function middleware(request: NextRequest) {
       // Note: Tier/role headers are set by unified handler after it extracts venueId
       // This is more reliable than trying to parse venueId from URL patterns here
       
-      return NextResponse.next({
+      // Create new response with updated headers, preserving any cookies set during auth
+      const newResponse = NextResponse.next({
         request: { headers: requestHeaders },
       });
+      // Copy cookies from original response (set by Supabase during token refresh)
+      response.cookies.getAll().forEach(cookie => {
+        newResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return newResponse;
     }
     
     // No session - pass through without headers, let unified handler decide
     // This allows public routes (requireAuth: false) to work
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    return response;
   }
 
   // Dashboard: auth/tier/role from middleware only (get_access_context RPC)
   if (pathname.startsWith("/dashboard")) {
-    if (!session) return response;
+    if (!session) {
+      // eslint-disable-next-line no-console
+      console.error("[MIDDLEWARE] ❌ Dashboard access with NO SESSION", {
+        pathname,
+        hasAuthCookies,
+        authError: authError?.message,
+        timestamp: new Date().toISOString(),
+      });
+      return response;
+    }
 
     const segments = pathname.split("/").filter(Boolean);
     const venueSegment = segments[1];
@@ -252,9 +304,11 @@ export async function middleware(request: NextRequest) {
         requestHeaders.set("x-user-email", session.user.email || "");
         requestHeaders.set("x-venue-id", normalizedVenueId);
         // Don't set tier/role - RPC failed, page should handle this
-        return NextResponse.next({
+        const errResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
+        response.cookies.getAll().forEach(c => errResponse.cookies.set(c.name, c.value));
+        return errResponse;
       }
 
       if (!data) {
@@ -269,9 +323,11 @@ export async function middleware(request: NextRequest) {
         requestHeaders.set("x-user-email", session.user.email || "");
         requestHeaders.set("x-venue-id", normalizedVenueId);
         // Don't set tier/role - RPC returned null, page should handle this
-        return NextResponse.next({
+        const noDataResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
+        response.cookies.getAll().forEach(c => noDataResponse.cookies.set(c.name, c.value));
+        return noDataResponse;
       }
 
       // Validate RPC response structure
@@ -293,9 +349,11 @@ export async function middleware(request: NextRequest) {
         requestHeaders.set("x-user-id", verifyUser.id);
         requestHeaders.set("x-user-email", session.user.email || "");
         requestHeaders.set("x-venue-id", normalizedVenueId);
-        return NextResponse.next({
+        const invalidResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
+        response.cookies.getAll().forEach(c => invalidResponse.cookies.set(c.name, c.value));
+        return invalidResponse;
       }
 
       // Validate tier is one of the valid values
@@ -314,9 +372,11 @@ export async function middleware(request: NextRequest) {
         requestHeaders.set("x-user-tier", "starter"); // Default to starter if invalid
         requestHeaders.set("x-user-role", ctx.role);
         requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
-        return NextResponse.next({
+        const tierResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
+        response.cookies.getAll().forEach(c => tierResponse.cookies.set(c.name, c.value));
+        return tierResponse;
       }
 
       // RPC succeeded with valid data - set all headers with actual values from database
@@ -347,9 +407,12 @@ export async function middleware(request: NextRequest) {
         },
       });
 
-      return NextResponse.next({
+      const successResponse = NextResponse.next({
         request: { headers: requestHeaders },
       });
+      // Preserve any cookies set during auth (e.g., token refresh)
+      response.cookies.getAll().forEach(c => successResponse.cookies.set(c.name, c.value));
+      return successResponse;
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("[MIDDLEWARE] Exception in dashboard auth", {

@@ -4,11 +4,8 @@
  */
 
 import { cache } from "react";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-
 import { type AccessContext, type Tier, type FeatureKey, hasFeatureAccess } from "@/lib/tier-limits";
-import { env } from "@/lib/env";
+import { createServerSupabaseReadOnly } from "@/lib/supabase";
 
 /**
  * Get unified access context via RPC
@@ -18,26 +15,9 @@ import { env } from "@/lib/env";
 export const getAccessContext = cache(
   async (venueId?: string | null): Promise<AccessContext | null> => {
     try {
-      // Use Supabase's official SSR client - this should work reliably
-      const cookieStore = await cookies();
-
-      const supabase = createServerClient(
-        env("NEXT_PUBLIC_SUPABASE_URL")!,
-        env("NEXT_PUBLIC_SUPABASE_ANON_KEY")!,
-        {
-          cookies: {
-            get(name: string) {
-              return cookieStore.get(name)?.value;
-            },
-            set() {
-              // Read-only for access context - don't set cookies
-            },
-            remove() {
-              // Read-only for access context - don't remove cookies
-            },
-          },
-        }
-      );
+      // Use shared server Supabase helper so ALL server-side auth (middleware + RPC)
+      // goes through a single, consistent configuration and cookie handling path.
+      const supabase = await createServerSupabaseReadOnly();
 
       // Get authenticated user - Supabase's built-in method should work reliably
       const {

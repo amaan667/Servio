@@ -202,6 +202,11 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         }
       }
 
+      // Normalize venueId - database and access_context always use "venue-" prefix
+      if (venueId) {
+        venueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      }
+
       // 5. Parse and Validate Body
       let body: TBody = {} as TBody;
       const contentType = req.headers.get("content-type");
@@ -219,7 +224,12 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
       if (!venueId && options.requireVenueAccess && body && typeof body === "object") {
         const bodyObj = body as Record<string, unknown>;
-        venueId = (bodyObj.venueId as string) || (bodyObj.venue_id as string) || null;
+        const bodyVenueId =
+          (bodyObj.venueId as string | undefined) || (bodyObj.venue_id as string | undefined) || null;
+
+        if (bodyVenueId) {
+          venueId = bodyVenueId.startsWith("venue-") ? bodyVenueId : `venue-${bodyVenueId}`;
+        }
       }
 
       // 6. Venue Access & Context
