@@ -63,17 +63,58 @@ export const getAccessContext = cache(
         : null;
 
       // Call RPC function using the authenticated Supabase client
+      // eslint-disable-next-line no-console
+      console.log("[GET-ACCESS-CONTEXT] Calling RPC", {
+        userId: user.id,
+        email: user.email,
+        venueId: normalizedVenueId,
+        timestamp: new Date().toISOString(),
+      });
+
       const { data, error: rpcError } = await supabase.rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
       });
 
-      if (rpcError) {
+      // eslint-disable-next-line no-console
+      console.log("[GET-ACCESS-CONTEXT] RPC result", {
+        hasData: !!data,
+        hasError: !!rpcError,
+        error: rpcError ? {
+          message: rpcError.message,
+          code: rpcError.code,
+          details: rpcError.details,
+          hint: rpcError.hint,
+        } : null,
+        data: data ? {
+          user_id: data.user_id,
+          venue_id: data.venue_id,
+          role: data.role,
+          tier: data.tier,
+        } : null,
+        userId: user.id,
+        venueId: normalizedVenueId,
+      });
 
+      if (rpcError) {
+        // eslint-disable-next-line no-console
+        console.error("[GET-ACCESS-CONTEXT] RPC error", {
+          error: rpcError.message,
+          code: rpcError.code,
+          details: rpcError.details,
+          hint: rpcError.hint,
+          userId: user.id,
+          venueId: normalizedVenueId,
+        });
         return null;
       }
 
       if (!data) {
-
+        // eslint-disable-next-line no-console
+        console.error("[GET-ACCESS-CONTEXT] RPC returned null", {
+          userId: user.id,
+          venueId: normalizedVenueId,
+          normalizedVenueId,
+        });
         return null;
       }
 
