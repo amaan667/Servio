@@ -274,39 +274,50 @@ export default function KDSClient({
   // Update ticket status
   // Derived function - no useCallback needed (React Compiler handles this)
   const updateTicketStatus = async (ticketId: string, status: string) => {
-      try {
-        const { apiClient } = await import("@/lib/api-client");
-        const payload = { ticket_id: ticketId, status, venueId };
+    try {
+      const { apiClient } = await import("@/lib/api-client");
+      const payload = { ticket_id: ticketId, status, venueId };
 
-        const response = await apiClient.patch("/api/kds/tickets", payload);
+      const idempotencyKey = `kds-ticket-${ticketId}-${status}-${Date.now()}`;
 
-        if (!response.ok) {
-          return;
+      const response = await apiClient.patch(
+        "/api/kds/tickets",
+        payload,
+        {
+          params: { venueId },
+          headers: {
+            "x-idempotency-key": idempotencyKey,
+          },
         }
+      );
 
-        const data = await response.json();
-
-        if (data.success) {
-          // Update local state immediately for instant feedback
-          // Real-time handler will also update it, but this provides instant UI feedback
-          setTickets((prev) => {
-            const updatedTicket = data.data?.ticket as KDSTicket | undefined;
-            if (!updatedTicket) return prev;
-            
-            // If ticket is bumped, remove it immediately
-            if (updatedTicket.status === "bumped") {
-              return prev.filter((t) => t.id !== ticketId);
-            }
-            
-            // Otherwise, update the ticket in place
-            return prev.map((t) => (t.id === ticketId ? { ...t, ...updatedTicket } : t));
-          });
-          // Don't refetch - real-time handler will keep it in sync
-        }
-      } catch (error) {
-        // Error handled by UI state
-        setError(error instanceof Error ? error.message : "Failed to update ticket");
+      if (!response.ok) {
+        return;
       }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state immediately for instant feedback
+        // Real-time handler will also update it, but this provides instant UI feedback
+        setTickets((prev) => {
+          const updatedTicket = data.data?.ticket as KDSTicket | undefined;
+          if (!updatedTicket) return prev;
+
+          // If ticket is bumped, remove it immediately
+          if (updatedTicket.status === "bumped") {
+            return prev.filter((t) => t.id !== ticketId);
+          }
+
+          // Otherwise, update the ticket in place
+          return prev.map((t) => (t.id === ticketId ? { ...t, ...updatedTicket } : t));
+        });
+        // Don't refetch - real-time handler will keep it in sync
+      }
+    } catch (error) {
+      // Error handled by UI state
+      setError(error instanceof Error ? error.message : "Failed to update ticket");
+    }
   };
 
   // Bump all ready tickets for an order
@@ -314,11 +325,27 @@ export default function KDSClient({
   const bumpOrder = async (orderId: string) => {
     try {
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.patch("/api/kds/tickets/bulk-update", {
-        orderId,
-        status: "bumped",
-        venueId,
-      });
+
+      // Collect all ready tickets for this order
+      const orderTickets = tickets.filter(
+        (t) => t.order_id === orderId && t.status === "ready"
+      );
+
+      if (orderTickets.length === 0) {
+        return;
+      }
+
+      const response = await apiClient.patch(
+        "/api/kds/tickets/bulk-update",
+        {
+          ticket_ids: orderTickets.map((t) => t.id),
+          status: "bumped",
+          order_id: orderId,
+        },
+        {
+          params: { venueId },
+        }
+      );
 
       const data = await response.json();
 
