@@ -53,6 +53,23 @@ export default function AnalyticsClientPage({
   tier,
   role,
 }: AnalyticsClientPageProps) {
+  // Log immediately in browser console when component mounts
+   
+  console.log("%c[ANALYTICS-CLIENT] ========== COMPONENT MOUNTED ==========", "color: #10b981; font-weight: bold; font-size: 16px;");
+   
+  console.log("%c[ANALYTICS-CLIENT] Auth Info Received from Server", "color: #10b981; font-weight: bold;");
+   
+  console.log({
+    venueId,
+    tier,
+    role,
+    timestamp: new Date().toISOString(),
+  });
+   
+  console.log("%c[ANALYTICS-CLIENT] Full Props", "color: #10b981; font-weight: bold;");
+   
+  console.log({ venueId, tier, role, ordersData, menuData, revenueData });
+
   // Check if user has advanced analytics (Pro+ tier) using centralized helper
   const hasAdvanced = hasAdvancedAnalyticsByTier(tier);
   const analyticsTier = getAnalyticsTierLabel(tier);

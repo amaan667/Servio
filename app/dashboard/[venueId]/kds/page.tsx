@@ -149,14 +149,40 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     // Continue without initial data - client will load it
   }
 
+  // Log all auth information for browser console
+  const authInfo = {
+    hasAuth: !!auth,
+    userId: auth?.user?.id,
+    email: auth?.user?.email,
+    tier: auth?.tier ?? "starter",
+    role: auth?.role ?? "viewer",
+    venueId: auth?.venueId ?? venueId,
+    kdsTier,
+    timestamp: new Date().toISOString(),
+    page: "KDS",
+  };
+
   return (
-    <KDSClientPage
-      venueId={venueId}
-      initialTickets={initialTickets}
-      initialStations={initialStations}
-      tier={auth?.tier ?? "starter"}
-      kdsTier={kdsTier}
-      role={auth?.role ?? "viewer"}
-    />
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            console.log("%c[PLATFORM-AUTH] KDS Page Auth Info", "color: #3b82f6; font-weight: bold; font-size: 14px;");
+            console.log(JSON.stringify(${JSON.stringify(authInfo)}, null, 2));
+            console.log("%c[PLATFORM-AUTH] Full Auth Object", "color: #3b82f6; font-weight: bold;");
+            console.log(${JSON.stringify(authInfo)});
+            window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};
+          `,
+        }}
+      />
+      <KDSClientPage
+        venueId={venueId}
+        initialTickets={initialTickets}
+        initialStations={initialStations}
+        tier={auth?.tier ?? "starter"}
+        kdsTier={kdsTier}
+        role={auth?.role ?? "viewer"}
+      />
+    </>
   );
 }

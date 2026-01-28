@@ -11,6 +11,18 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
     requireRole: ["owner", "manager"],
   }).catch(() => null);
 
+  // Log all auth information for browser console
+  const authInfo = {
+    hasAuth: !!auth,
+    userId: auth?.user?.id,
+    email: auth?.user?.email,
+    tier: auth?.tier ?? "starter",
+    role: auth?.role ?? "viewer",
+    venueId: auth?.venueId ?? venueId,
+    timestamp: new Date().toISOString(),
+    page: "Settings",
+  };
+
   // STEP 2: Now safe to fetch data using admin client
   const supabase = createAdminClient();
 
@@ -145,5 +157,20 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
     userRole: userRole?.role || (isOwner ? "owner" : "staff"),
   };
 
-  return <SettingsClientPage venueId={venueId} initialData={initialData} />;
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            console.log("%c[PLATFORM-AUTH] Settings Page Auth Info", "color: #8b5cf6; font-weight: bold; font-size: 14px;");
+            console.log(JSON.stringify(${JSON.stringify(authInfo)}, null, 2));
+            console.log("%c[PLATFORM-AUTH] Full Auth Object", "color: #8b5cf6; font-weight: bold;");
+            console.log(${JSON.stringify(authInfo)});
+            window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};
+          `,
+        }}
+      />
+      <SettingsClientPage venueId={venueId} initialData={initialData} />
+    </>
+  );
 }

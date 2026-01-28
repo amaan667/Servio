@@ -19,6 +19,20 @@ export const GET = createUnifiedHandler(
     const stationId = req.nextUrl.searchParams.get("station_id") || undefined;
     const status = req.nextUrl.searchParams.get("status") || undefined;
 
+    // Log auth info for debugging
+    const authInfo = {
+      userId: context.user.id,
+      email: context.user.email,
+      tier: context.tier,
+      role: context.role,
+      venueId: context.venueId,
+      timestamp: new Date().toISOString(),
+      endpoint: "/api/kds/tickets",
+    };
+
+    // eslint-disable-next-line no-console
+    console.log("[API-KDS-TICKETS] ========== REQUEST RECEIVED ==========", authInfo);
+
     await kdsService.autoBackfill(venueId);
     const tickets = await kdsService.getTickets(venueId, {
       station_id: stationId,

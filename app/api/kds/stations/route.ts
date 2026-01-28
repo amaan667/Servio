@@ -24,6 +24,20 @@ export const GET = createUnifiedHandler(async (_req: NextRequest, context) => {
   // Get venueId from context (already verified)
   const venueId = context.venueId;
 
+  // Log auth info for debugging - this will show in response headers
+  const authInfo = {
+    userId: context.user.id,
+    email: context.user.email,
+    tier: context.tier,
+    role: context.role,
+    venueId: context.venueId,
+    timestamp: new Date().toISOString(),
+    endpoint: "/api/kds/stations",
+  };
+
+  // eslint-disable-next-line no-console
+  console.log("[API-KDS-STATIONS] ========== REQUEST RECEIVED ==========", authInfo);
+
   if (!venueId) {
     return apiErrors.badRequest("venue_id is required");
   }

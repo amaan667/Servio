@@ -70,20 +70,33 @@ export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthCont
   const tierHeader = h.get("x-user-tier");
   const roleHeader = h.get("x-user-role");
   const venueIdHeader = h.get("x-venue-id");
+  const emailHeader = h.get("x-user-email");
 
+  // Get ALL x- headers for comprehensive logging
+  const allXHeaders = Array.from(h.entries())
+    .filter(([k]) => k.startsWith("x-"))
+    .reduce((acc, [k, v]) => {
+      acc[k] = v;
+      return acc;
+    }, {} as Record<string, string>);
+
+  // Comprehensive logging - this will show in server logs
   // eslint-disable-next-line no-console
-  console.log("[PAGE-AUTH] Reading headers", {
+  console.log("[PAGE-AUTH] ========== READING HEADERS ==========", {
+    timestamp: new Date().toISOString(),
     hasUserId: !!userId,
     userId,
+    email: emailHeader,
     tier: tierHeader,
     role: roleHeader,
     venueId: venueIdHeader,
-    allHeaders: Array.from(h.entries()).filter(([k]) => k.startsWith("x-")),
+    allXHeaders,
+    allHeadersCount: Array.from(h.entries()).length,
   });
 
   if (!userId) {
     // eslint-disable-next-line no-console
-    console.log("[PAGE-AUTH] No x-user-id header found");
+    console.error("[PAGE-AUTH] ❌ NO x-user-id HEADER FOUND - Middleware did not set headers");
     return null;
   }
 
@@ -91,21 +104,26 @@ export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthCont
   const role = (roleHeader ?? "viewer") as UserRole;
   const venueId = venueIdHeader ?? "";
 
-  // eslint-disable-next-line no-console
-  console.log("[PAGE-AUTH] Returning auth context", {
-    userId,
-    tier,
-    role,
-    venueId,
-  });
-
-  return {
-    user: { id: userId, email: h.get("x-user-email") ?? null },
+  const authContext = {
+    user: { id: userId, email: emailHeader ?? null },
     venueId,
     role,
     tier,
     hasFeatureAccess: buildHasFeatureAccess(tier),
   };
+
+  // eslint-disable-next-line no-console
+  console.log("[PAGE-AUTH] ✅ Returning auth context", {
+    userId,
+    email: emailHeader,
+    tier,
+    role,
+    venueId,
+    tierSource: tierHeader ? "header" : "default",
+    roleSource: roleHeader ? "header" : "default",
+  });
+
+  return authContext;
 });
 
 /**

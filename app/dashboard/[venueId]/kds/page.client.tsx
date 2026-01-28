@@ -22,6 +22,26 @@ export default function KDSClientPage({
   kdsTier,
   role,
 }: KDSClientPageProps) {
+  // Log immediately in browser console when wrapper component mounts
+   
+  console.log("%c[KDS-PAGE-CLIENT] ========== WRAPPER MOUNTED ==========", "color: #3b82f6; font-weight: bold; font-size: 16px;");
+   
+  console.log("%c[KDS-PAGE-CLIENT] Props Received from Server", "color: #3b82f6; font-weight: bold;");
+   
+  console.log({
+    venueId,
+    tier,
+    role,
+    kdsTier,
+    hasInitialTickets: !!initialTickets,
+    hasInitialStations: !!initialStations,
+    timestamp: new Date().toISOString(),
+  });
+   
+  console.log("%c[KDS-PAGE-CLIENT] Full Props Object", "color: #3b82f6; font-weight: bold;");
+   
+  console.log({ venueId, initialTickets, initialStations, tier, kdsTier, role });
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
@@ -61,6 +81,7 @@ export default function KDSClientPage({
           initialStations={initialStations || undefined}
           kdsTier={kdsTier}
           tier={tier}
+          role={role}
         />
       </div>
     </div>

@@ -27,16 +27,40 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
 
   const tier = auth?.tier ?? "starter";
   
+  // Log all auth information for browser console
+  const authInfo = {
+    hasAuth: !!auth,
+    userId: auth?.user?.id,
+    email: auth?.user?.email,
+    tier: tier,
+    role: auth?.role ?? "viewer",
+    venueId: auth?.venueId ?? venueId,
+    timestamp: new Date().toISOString(),
+    page: "Analytics",
+  };
 
   return (
-    <AnalyticsClientPage
-      venueId={venueId}
-      ordersData={ordersData}
-      menuData={menuData}
-      revenueData={revenueData}
-      tier={tier}
-      role={auth?.role ?? "viewer"}
-    />
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            console.log("%c[PLATFORM-AUTH] Analytics Page Auth Info", "color: #10b981; font-weight: bold; font-size: 14px;");
+            console.log(JSON.stringify(${JSON.stringify(authInfo)}, null, 2));
+            console.log("%c[PLATFORM-AUTH] Full Auth Object", "color: #10b981; font-weight: bold;");
+            console.log(${JSON.stringify(authInfo)});
+            window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};
+          `,
+        }}
+      />
+      <AnalyticsClientPage
+        venueId={venueId}
+        ordersData={ordersData}
+        menuData={menuData}
+        revenueData={revenueData}
+        tier={tier}
+        role={auth?.role ?? "viewer"}
+      />
+    </>
   );
 }
 

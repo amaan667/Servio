@@ -61,16 +61,27 @@ export default function KDSClient({
   initialStations,
   kdsTier = false,
   tier,
+  role,
 }: KDSClientProps) {
+  // Log immediately in browser console when component mounts
    
-  console.log("[KDS-CLIENT] Component mounted", {
+  console.log("%c[KDS-CLIENT] ========== COMPONENT MOUNTED ==========", "color: #ef4444; font-weight: bold; font-size: 16px;");
+   
+  console.log("%c[KDS-CLIENT] Auth Info Received from Server", "color: #ef4444; font-weight: bold;");
+   
+  console.log({
     venueId,
     kdsTier,
     tier,
+    role,
     hasInitialTickets: !!initialTickets,
     hasInitialStations: !!initialStations,
     timestamp: new Date().toISOString(),
   });
+   
+  console.log("%c[KDS-CLIENT] Full Props", "color: #ef4444; font-weight: bold;");
+   
+  console.log({ venueId, initialTickets, initialStations, kdsTier, tier, role });
   // Cache KDS stations to prevent flicker
   const getCachedStations = () => {
     if (typeof window === "undefined") return [];

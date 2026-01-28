@@ -326,12 +326,25 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("x-user-role", ctx.role);
       requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
 
+      // Comprehensive logging - this will show in server logs
       // eslint-disable-next-line no-console
-      console.log("[MIDDLEWARE] Setting dashboard headers", {
+      console.log("[MIDDLEWARE] ========== SETTING DASHBOARD HEADERS ==========", {
+        timestamp: new Date().toISOString(),
+        pathname,
         userId: ctx.user_id,
-        tier: ctx.tier ?? "starter",
+        email: session.user.email,
+        tier: tier,
+        tierFromRPC: ctx.tier,
         role: ctx.role,
         venueId: ctx.venue_id ?? normalizedVenueId,
+        normalizedVenueId,
+        allHeaders: {
+          "x-user-id": ctx.user_id,
+          "x-user-email": session.user.email || "",
+          "x-user-tier": tier,
+          "x-user-role": ctx.role,
+          "x-venue-id": ctx.venue_id ?? normalizedVenueId,
+        },
       });
 
       return NextResponse.next({

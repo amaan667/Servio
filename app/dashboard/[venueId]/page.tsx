@@ -24,13 +24,24 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   // NO REDIRECTS - User requested ZERO sign-in redirects
   // Auth check is optional - client will handle auth display
   // Dashboard ALWAYS loads - client handles authentication
+  let auth = null;
   try {
-    await requirePageAuth(venueId).catch((_error) => {
-      // Auth errors handled silently - dashboard loads anyway
-      return null;
-    });
+    auth = await requirePageAuth(venueId).catch(() => null);
+  } catch (error) {
+    // Error handled silently
+  }
 
-  } catch (error) { /* Error handled silently */ }
+  // Log all auth information for browser console
+  const authInfo = {
+    hasAuth: !!auth,
+    userId: auth?.user?.id,
+    email: auth?.user?.email,
+    tier: auth?.tier ?? "starter",
+    role: auth?.role ?? "viewer",
+    venueId: auth?.venueId ?? venueId,
+    timestamp: new Date().toISOString(),
+    page: "Dashboard",
+  };
 
   // STEP 2: Fetch initial dashboard data on server (even without auth)
   // Always fetch data - don't block on auth
@@ -163,6 +174,17 @@ export default async function VenuePage({ params }: { params: { venueId: string 
             
             // Log when React starts hydrating
             if (typeof window !== 'undefined' && window.__NEXT_DATA__) { /* Condition handled */ }
+          `,
+        }}
+      />
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            console.log("%c[PLATFORM-AUTH] Dashboard Page Auth Info", "color: #f59e0b; font-weight: bold; font-size: 14px;");
+            console.log(JSON.stringify(${JSON.stringify(authInfo)}, null, 2));
+            console.log("%c[PLATFORM-AUTH] Full Auth Object", "color: #f59e0b; font-weight: bold;");
+            console.log(${JSON.stringify(authInfo)});
+            window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};
           `,
         }}
       />

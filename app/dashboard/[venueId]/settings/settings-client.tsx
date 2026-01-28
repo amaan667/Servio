@@ -29,6 +29,21 @@ interface SettingsPageClientProps {
 }
 
 export default function SettingsPageClient({ venueId, initialData }: SettingsPageClientProps) {
+  // Log immediately in browser console when component mounts
+   
+  console.log("%c[SETTINGS-CLIENT] ========== COMPONENT MOUNTED ==========", "color: #8b5cf6; font-weight: bold; font-size: 16px;");
+   
+  console.log("%c[SETTINGS-CLIENT] Component Props", "color: #8b5cf6; font-weight: bold;");
+   
+  console.log({
+    venueId,
+    hasInitialData: !!initialData,
+    timestamp: new Date().toISOString(),
+  });
+   
+  console.log("%c[SETTINGS-CLIENT] Full Initial Data", "color: #8b5cf6; font-weight: bold;");
+   
+  console.log(initialData);
   const router = useRouter();
   const { user } = useAuthRedirect();
   const { session } = useAuth(); // Get session from AuthProvider
