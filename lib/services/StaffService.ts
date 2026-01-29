@@ -119,6 +119,11 @@ export class StaffService extends BaseService {
     await this.invalidateCachePattern(`staff:*:${venueId}:*`);
     return staff as StaffMember;
   }
+
+  /** Invalidate staff list cache (e.g. after delete). Call from API routes. */
+  async invalidateStaffListCache(): Promise<void> {
+    await this.invalidateCachePattern("staff:*");
+  }
 }
 
 export const staffService = new StaffService();

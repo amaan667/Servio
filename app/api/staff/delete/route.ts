@@ -9,6 +9,7 @@ import {
   ErrorCodes,
 } from "@/lib/api/standard-response";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { staffService } from "@/lib/services/StaffService";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,8 @@ export const POST = withUnifiedAuth(
       const id = idFromBody || idFromQuery;
 
       const normalizedVenueId = normalizeVenueId(context.venueId) ?? context.venueId;
+      const rawVenueId =
+        normalizedVenueId.startsWith("venue-") ? normalizedVenueId.slice(6) : normalizedVenueId;
 
       if (!id) {
         return apiErrors.badRequest("id required");
@@ -40,7 +43,8 @@ export const POST = withUnifiedAuth(
       const supabase = createAdminClient();
 
       // Find by id first (staff.id is globally unique); then verify venue
-      const { data: row, error: selectError } = await supabase
+      let row: { id: string; venue_id: string } | null = null;
+      const { data: rowById, error: selectError } = await supabase
         .from("staff")
         .select("id, venue_id")
         .eq("id", id)
@@ -48,6 +52,19 @@ export const POST = withUnifiedAuth(
 
       if (selectError) {
         return apiErrors.badRequest(selectError.message);
+      }
+
+      row = rowById;
+
+      // If not found by id, try with raw venue_id (no "venue-" prefix) in case DB stores it that way
+      if (!row) {
+        const { data: rowByIdAndRawVenue } = await supabase
+          .from("staff")
+          .select("id, venue_id")
+          .eq("id", id)
+          .eq("venue_id", rawVenueId)
+          .maybeSingle();
+        row = rowByIdAndRawVenue;
       }
 
       if (!row) {
@@ -59,12 +76,18 @@ export const POST = withUnifiedAuth(
           .from("staff")
           .select("id, venue_id")
           .eq("venue_id", context.venueId);
+        const { data: staffWithRawId } = await supabase
+          .from("staff")
+          .select("id, venue_id")
+          .eq("venue_id", rawVenueId);
         const debug = {
           requestedId: id,
           requestedVenueId: normalizedVenueId,
           contextVenueId: context.venueId,
+          rawVenueId,
           staffIdsForNormalizedVenue: (staffWithNormalized ?? []).map((r) => r.id),
           staffIdsForRawVenueId: (staffWithRaw ?? []).map((r) => r.id),
+          staffIdsForRawVenueIdOnly: (staffWithRawId ?? []).map((r) => r.id),
         };
         return errorResponse(ErrorCodes.NOT_FOUND, "Staff member not found", 404, {
           debug,
@@ -86,6 +109,8 @@ export const POST = withUnifiedAuth(
       if (error) {
         return apiErrors.badRequest(error.message);
       }
+
+      await staffService.invalidateStaffListCache();
 
       return success({ success: true });
     } catch (e) {
