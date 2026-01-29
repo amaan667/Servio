@@ -7,9 +7,8 @@ import { success, apiErrors } from "@/lib/api/standard-response";
 export const runtime = "nodejs";
 
 /**
- * Delete (soft-delete) staff member from a venue
- * SECURITY: Uses withUnifiedAuth to enforce venue access and RLS.
- * The authenticated client ensures users can only delete staff from venues they have access to.
+ * Delete staff member from a venue.
+ * Access enforced by withUnifiedAuth (venue access + owner/manager role).
  */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
@@ -24,39 +23,42 @@ export const POST = withUnifiedAuth(
 
       const body = await req.json().catch(() => ({}));
 
-      const { id } = body;
+      const id = typeof body?.id === "string" ? body.id.trim() : "";
 
       if (!id) {
-
         return apiErrors.badRequest("id required");
       }
 
-      // Normalize venueId - database stores with venue- prefix
       const normalizedVenueId = context.venueId.startsWith("venue-")
         ? context.venueId
         : `venue-${context.venueId}`;
 
-      // Use service role client to avoid RLS write failures.
-      // Access is enforced by withUnifiedAuth (venue access + role requirements).
       const supabase = createAdminClient();
 
-      const deleteStart = Date.now();
-      const { data, error } = await supabase
+      // Verify staff exists and belongs to this venue before deleting
+      const { data: existing, error: selectError } = await supabase
+        .from("staff")
+        .select("id")
+        .eq("id", id)
+        .eq("venue_id", normalizedVenueId)
+        .maybeSingle();
+
+      if (selectError) {
+        return apiErrors.badRequest(selectError.message);
+      }
+
+      if (!existing) {
+        return apiErrors.notFound("Staff member not found");
+      }
+
+      const { error } = await supabase
         .from("staff")
         .delete()
         .eq("id", id)
-        .eq("venue_id", normalizedVenueId)
-        .select("*");
-      const deleteTime = Date.now() - deleteStart;
+        .eq("venue_id", normalizedVenueId);
 
       if (error) {
-
         return apiErrors.badRequest(error.message);
-      }
-
-      if (!data || data.length === 0) {
-
-        return apiErrors.notFound("Staff member not found");
       }
 
       return success({ success: true });
