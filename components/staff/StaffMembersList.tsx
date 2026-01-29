@@ -142,6 +142,13 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       const data = await res.json();
 
       if (!res.ok) {
+        // Log full response in browser console for debugging staff delete
+         
+        console.log("[STAFF-DELETE] Error response", {
+          status: res.status,
+          error: data.error,
+          details: data.error?.details,
+        });
         throw new Error(
           data.error?.message || data.error || data.message || "Failed to delete staff member"
         );
