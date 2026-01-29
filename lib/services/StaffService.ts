@@ -28,19 +28,45 @@ export interface StaffShift {
 
 export class StaffService extends BaseService {
   /**
-   * Get all staff for a venue
+   * Get all staff for a venue.
+   * Queries both normalized (venue-xxx) and raw (xxx) venue_id so list stays in sync
+   * with DB regardless of how venue_id was stored (legacy or different code path).
    */
   async getStaff(venueId: string): Promise<StaffMember[]> {
     const cacheKey = this.getCacheKey("staff:list", venueId);
+    const rawVenueId = venueId.startsWith("venue-") ? venueId.slice(6) : venueId;
 
     return this.withCache(
       cacheKey,
       async () => {
         const supabase = await createSupabaseClient();
-        const { data, error } = await supabase.from("staff").select("*").eq("venue_id", venueId);
+        const { data: byNormalized, error: errNorm } = await supabase
+          .from("staff")
+          .select("*")
+          .eq("venue_id", venueId);
+        if (errNorm) throw errNorm;
 
-        if (error) throw error;
-        const rows = (data || []) as Array<Record<string, unknown>>;
+        let byRaw: unknown[] = [];
+        if (rawVenueId !== venueId) {
+          const res = await supabase
+            .from("staff")
+            .select("*")
+            .eq("venue_id", rawVenueId);
+          if (res.error) throw res.error;
+          byRaw = res.data ?? [];
+        }
+
+        const seen = new Set<string>();
+        const rows: Array<Record<string, unknown>> = [];
+        for (const row of (byNormalized ?? []).concat(byRaw)) {
+          const r = row as Record<string, unknown>;
+          const id = r.id as string;
+          if (id && !seen.has(id)) {
+            seen.add(id);
+            rows.push(r);
+          }
+        }
+
         return rows.map((row) => ({
           id: row.id,
           venue_id: row.venue_id,
