@@ -64,7 +64,7 @@ export default function PaymentSuccessPage() {
           }
         }
 
-        // Still not found - try to get orderId from URL params or show user-friendly message
+        // No orderId in URL: create order from checkout session (Pay Now flow)
         const orderIdFromUrl = searchParams?.get("orderId");
         if (orderIdFromUrl) {
           localStorage.removeItem("servio-checkout-data");
@@ -72,7 +72,19 @@ export default function PaymentSuccessPage() {
           return;
         }
 
-        // Last resort: show user-friendly error
+        const createRes = await fetch("/api/orders/create-from-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+        const createData = await createRes.json();
+        const createdOrder = createData?.data?.order;
+        if (createRes.ok && createdOrder?.id) {
+          localStorage.removeItem("servio-checkout-data");
+          window.location.href = `/order-summary?orderId=${createdOrder.id}`;
+          return;
+        }
+
         alert(
           "Payment was successful! However, we couldn't find your order details. Please contact support with this session ID: " +
             sessionId

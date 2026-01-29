@@ -9,21 +9,23 @@ const checkoutSchema = z.object({
   venue_id: z.string(),
   venue_name: z.string().optional(),
   table_number: z.union([z.string(), z.number()]).optional(),
-  order_id: z.string(),
+  order_id: z.string().optional(), // Optional: create order after payment when omitted
   customer_name: z.string().optional().default("Customer"),
-  customer_email: z.string().email().optional(),
+  customer_phone: z.string().optional(),
+  customer_email: z.string().email().optional().or(z.literal("")),
   items: z.array(z.unknown()).optional(),
   source: z.string().optional().default("qr"),
   qr_type: z.string().optional().default("TABLE_FULL_SERVICE"),
 });
 
 /**
- * POST: Create a Stripe Checkout Session for a QR order
+ * POST: Create a Stripe Checkout Session for a QR order.
+ * When order_id is omitted, order is created after payment (success page calls create-from-checkout-session).
  */
 export const POST = createUnifiedHandler(
   async (req, context) => {
     const { body } = context;
-    
+
     const host = req.headers.get("host") || "localhost:3000";
     const protocol = host.includes("localhost") ? "http" : "https";
     const base = `${protocol}://${host}`;
@@ -33,21 +35,32 @@ export const POST = createUnifiedHandler(
       venueName: body.venue_name || "Restaurant",
       venueId: body.venue_id,
       tableNumber: String(body.table_number || "1"),
-      orderId: body.order_id,
+      orderId: body.order_id ?? undefined,
       customerName: body.customer_name || "Customer",
-      customerEmail: body.customer_email || undefined,
+      customerPhone: body.customer_phone,
+      customerEmail:
+        body.customer_email && body.customer_email !== ""
+          ? body.customer_email
+          : undefined,
       items: body.items,
       source: body.source,
       qrType: body.qr_type,
-      successUrl: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${body.order_id}`,
-      cancelUrl: `${base}/payment/cancel?orderId=${body.order_id}&venueId=${body.venue_id}&tableNumber=${body.table_number || "1"}`,
+      successUrl:
+        body.order_id != null
+          ? `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${body.order_id}`
+          : `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl:
+        body.order_id != null
+          ? `${base}/payment/cancel?orderId=${body.order_id}&venueId=${body.venue_id}&tableNumber=${body.table_number || "1"}`
+          : `${base}/payment/cancel?venueId=${body.venue_id}&tableNumber=${body.table_number || "1"}`,
     });
 
     return { id: session.id, url: session.url };
   },
   {
     schema: checkoutSchema,
-    requireAuth: false, // Public QR checkout
+    requireAuth: false,
+    requireVenueAccess: false,
     enforceIdempotency: true,
     autoCase: true,
   }

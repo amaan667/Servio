@@ -113,15 +113,17 @@ export class StripeService extends BaseService {
   }
 
   /**
-   * Create a checkout session for a one-time order payment
+   * Create a checkout session for a one-time order payment.
+   * When orderId is omitted, order is created after payment via create-from-checkout-session.
    */
   async createOrderCheckoutSession(params: {
     amount: number;
     venueName: string;
     venueId: string;
     tableNumber: string;
-    orderId: string;
+    orderId?: string;
     customerName: string;
+    customerPhone?: string;
     customerEmail?: string;
     items?: unknown[];
     source?: string;
@@ -130,6 +132,18 @@ export class StripeService extends BaseService {
     cancelUrl: string;
   }): Promise<Stripe.Checkout.Session> {
     const amountInPence = Math.round(params.amount * 100);
+
+    const metadata: Record<string, string> = {
+      venueId: params.venueId,
+      tableNumber: params.tableNumber,
+      customerName: params.customerName,
+      source: params.source || "qr",
+      qr_type: params.qrType || "TABLE_FULL_SERVICE",
+      items: JSON.stringify(params.items || []).substring(0, 5000),
+      amount: String(params.amount),
+    };
+    if (params.orderId) metadata.orderId = params.orderId;
+    if (params.customerPhone) metadata.customerPhone = params.customerPhone;
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ["card"],
@@ -148,15 +162,7 @@ export class StripeService extends BaseService {
       ],
       mode: "payment",
       customer_email: params.customerEmail,
-      metadata: {
-        orderId: params.orderId,
-        venueId: params.venueId,
-        tableNumber: params.tableNumber,
-        customerName: params.customerName,
-        source: params.source || "qr",
-        qr_type: params.qrType || "TABLE_FULL_SERVICE",
-        items: JSON.stringify(params.items || []).substring(0, 200),
-      },
+      metadata,
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
     };

@@ -98,9 +98,10 @@ export const POST = createUnifiedHandler(
     };
   },
   {
-    requireAuth: false, // Public route for customers
+    requireAuth: false, // Public: customer ordering UI (no login)
+    requireVenueAccess: false, // Venue comes from body.venue_id only
     schema: createOrderSchema,
     rateLimit: RATE_LIMITS.GENERAL,
-    enforceIdempotency: false, // Optional for now, but recommended
+    enforceIdempotency: false,
   }
 );

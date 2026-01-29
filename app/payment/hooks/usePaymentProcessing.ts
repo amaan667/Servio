@@ -403,18 +403,19 @@ export function usePaymentProcessing() {
           throw new Error(errorMessage);
         }
 
-        const orderResult = await createOrderResponse.json();
+        const raw = await createOrderResponse.json();
+        // Unified API returns { success, data: { order, ... } }; support both shapes
+        const order = (raw.data?.order ?? raw.order) as { id?: string; order_number?: string; order_status?: string; payment_status?: string } | undefined;
 
-        // Log success to server (appears in Railway)
         logToServer("info", "ORDER_CREATION_SUCCESS", {
-          orderId: orderResult.order?.id,
-          orderNumber: orderResult.order?.order_number,
-          status: orderResult.order?.order_status,
-          paymentStatus: orderResult.order?.payment_status,
+          orderId: order?.id,
+          orderNumber: order?.order_number,
+          status: order?.order_status,
+          paymentStatus: order?.payment_status,
           action,
         });
 
-        return orderResult;
+        return { order } as { order: { id: string; order_number?: string; order_status?: string; payment_status?: string } };
       };
 
       // Process payment based on selected method
@@ -475,58 +476,29 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
+        // Pay Now: go to Stripe first, then create order on success (no order before checkout)
+        const checkoutPayload = {
+          amount: checkoutData.total,
+          tableNumber: checkoutData.tableNumber,
+          customerName: checkoutData.customerName,
+          customerPhone: checkoutData.customerPhone,
+          items: checkoutData.cart,
+          source: checkoutData.source || "qr",
+          venueName: checkoutData.venueName || "Restaurant",
+          ...(checkoutData.customerEmail && { customerEmail: checkoutData.customerEmail }),
+          venueId: checkoutData.venueId,
+          qr_type: checkoutData.qr_type,
+        };
 
-        let orderId: string;
-
-        // If orderId exists in checkoutData, use existing order instead of creating new one
-        if (checkoutData.orderId) {
-          orderId = checkoutData.orderId;
-
-          // Update existing order to PAY_NOW (will be set to PAID by webhook after payment)
-          const updateResponse = await fetch("/api/orders/payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: checkoutData.orderId,
-              venue_id: checkoutData.venueId,
-              payment_method: "stripe",
-              payment_status: "UNPAID", // Will be updated to PAID by webhook
-            }),
-          });
-
-          if (!updateResponse.ok) {
-            const errorData = await updateResponse.json();
-            throw new Error(errorData.error || "Failed to update order payment method");
-          }
-        } else {
-          // Create order first with UNPAID status
-          const orderResult = await createOrder();
-          orderId = orderResult.order?.id;
-
-          if (!orderId) {
-            throw new Error("Failed to create order before Stripe checkout");
-          }
-        }
-
+        const idempotencyKey = `checkout-${checkoutData.venueId}-${Date.now()}-${checkoutData.total}`;
         let result;
         try {
-          const checkoutPayload = {
-            amount: checkoutData.total,
-            tableNumber: checkoutData.tableNumber,
-            customerName: checkoutData.customerName,
-            customerPhone: checkoutData.customerPhone,
-            orderId: orderId,
-            items: checkoutData.cart,
-            source: checkoutData.source || "qr",
-            venueName: checkoutData.venueName || "Restaurant",
-            ...(checkoutData.customerEmail && { customerEmail: checkoutData.customerEmail }),
-            venueId: checkoutData.venueId,
-            qr_type: checkoutData.qr_type,
-          };
-
           const response = await fetch("/api/checkout", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-idempotency-key": idempotencyKey,
+            },
             body: JSON.stringify(checkoutPayload),
           });
 
