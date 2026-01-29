@@ -29,7 +29,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
           <Clock className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-left truncate">Live Orders</span>
           <span
-            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-white/90 text-servio-purple"
+            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-gray-900 text-white border border-gray-700"
             aria-label={`${live} live orders`}
           >
             {live}
@@ -39,7 +39,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
           <Timer className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-left truncate">Earlier Today</span>
           <span
-            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-white/90 text-servio-purple"
+            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-gray-900 text-white border border-gray-700"
             aria-label={`${earlier} earlier today`}
           >
             {earlier}
@@ -49,7 +49,7 @@ export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
           <History className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-left truncate">History</span>
           <span
-            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-white/90 text-servio-purple"
+            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-gray-900 text-white border border-gray-700"
             aria-label={`${history} history`}
           >
             {history}

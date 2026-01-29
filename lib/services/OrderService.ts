@@ -6,6 +6,7 @@
 import { BaseService } from "./BaseService";
 import { createSupabaseClient } from "@/lib/supabase";
 import { trackOrderError } from "@/lib/monitoring/error-tracking";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export interface OrderItem {
   menu_item_id: string | null;
@@ -398,16 +399,18 @@ export class OrderService extends BaseService {
     let completedCount = 0;
     for (const order of ordersToComplete) {
       try {
-        await supabase.rpc("orders_complete", {
+        const { error: rpcError } = await supabase.rpc("orders_complete", {
           p_order_id: order.id,
           p_venue_id: venueId,
           p_forced: true,
           p_forced_by: null,
           p_forced_reason: "Bulk complete all",
         });
-        // RPC may fail for unpaid orders; we still mark COMPLETED and run cleanup
-      } catch (_rpcErr) {
-        // Continue to mark completed and cleanup
+        if (rpcError) {
+          logger.info("[bulkCompleteOrders] RPC orders_complete", { orderId: order.id, error: rpcError.message });
+        }
+      } catch (rpcErr) {
+        logger.info("[bulkCompleteOrders] RPC exception", { orderId: order.id, err: String(rpcErr) });
       }
       await this.updateOrderStatus(order.id, venueId, "COMPLETED");
       completedCount++;
