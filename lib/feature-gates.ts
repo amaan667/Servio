@@ -31,35 +31,15 @@ export const PREMIUM_FEATURES = {
 } as const;
 
 /**
- * Check if a venue has access to a specific feature
- * SIMPLIFIED: Reads from headers if available (middleware already called RPC)
- * Falls back to RPC only if headers not available
+ * Check if a venue has access to a specific feature via get_access_context RPC.
  */
 export async function checkFeatureAccess(
   venueId: string,
-  requiredTier: SubscriptionTier,
-  requestHeaders?: Headers
+  requiredTier: SubscriptionTier
 ): Promise<FeatureAccess> {
   try {
-    // Try to read from headers first (middleware already called RPC)
-    let tier: SubscriptionTier = "starter";
-    if (requestHeaders) {
-      const headerTier = requestHeaders.get("x-user-tier");
-      if (headerTier && ["starter", "pro", "enterprise"].includes(headerTier)) {
-        tier = headerTier as SubscriptionTier;
-      } else {
-        // Headers not available, fallback to RPC
-        const accessContext = await getAccessContext(venueId);
-        tier = (accessContext?.tier || "starter") as SubscriptionTier;
-      }
-    } else {
-      // No headers, fallback to RPC
-      const accessContext = await getAccessContext(venueId);
-      tier = (accessContext?.tier || "starter") as SubscriptionTier;
-    }
-
-    // Use tier from headers or RPC fallback
-    const currentTier = tier;
+    const accessContext = await getAccessContext(venueId);
+    const currentTier = (accessContext?.tier || "starter") as SubscriptionTier;
 
     const tierHierarchy: Record<SubscriptionTier, number> = {
       starter: 1,

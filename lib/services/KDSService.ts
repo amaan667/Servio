@@ -45,23 +45,7 @@ export class KDSService extends BaseService {
     if (filters?.status) query = query.eq("status", filters.status);
 
     const { data, error } = await query;
-    if (error) {
-      // Fallback for missing lifecycle columns
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from("kds_tickets")
-        .select(`
-          *,
-          kds_stations (id, station_name, station_type, color_code),
-          orders (id, customer_name, order_status, payment_status)
-        `)
-        .eq("venue_id", venueId)
-        .neq("status", "bumped") // Exclude bumped tickets
-        .order("created_at", { ascending: false });
-      
-      if (fallbackError) throw fallbackError;
-      return (fallbackData as unknown as Record<string, unknown>[]) || [];
-    }
-
+    if (error) throw error;
     return (data as unknown as Record<string, unknown>[]) || [];
   }
 

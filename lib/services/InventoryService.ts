@@ -39,17 +39,7 @@ export class InventoryService extends BaseService {
           .eq("venue_id", venueId)
           .order("name", { ascending: true });
 
-        if (error) {
-          // If view doesn't exist, fallback to table
-          const { data: tableData, error: tableError } = await supabase
-            .from("ingredients")
-            .select("*")
-            .eq("venue_id", venueId)
-            .order("name", { ascending: true });
-          
-          if (tableError) throw tableError;
-          return tableData || [];
-        }
+        if (error) throw error;
         return data || [];
       },
       300
@@ -90,18 +80,7 @@ export class InventoryService extends BaseService {
       p_user_id: userId
     });
 
-    if (error) {
-      // Fallback if RPC v2 doesn't exist
-      const { data: item } = await supabase.from("ingredients").select("on_hand").eq("id", ingredientId).single();
-      const current = item?.on_hand || 0;
-      
-      const { error: fallbackError } = await supabase.from("ingredients").update({
-        on_hand: current + amount, // Corrected to add/subtract delta
-        updated_at: new Date().toISOString()
-      }).eq("id", ingredientId).eq("venue_id", venueId);
-      
-      if (fallbackError) throw fallbackError;
-    }
+    if (error) throw error;
 
     await this.invalidateCachePattern(`inventory:*:${venueId}:*`);
   }

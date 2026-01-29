@@ -46,16 +46,13 @@ export interface AuthorizedContext {
 
 /**
  * Verify user has access to venue (owner or staff)
- * SIMPLIFIED: Reads from middleware headers (tier/role) + verifies venue exists
- * No duplicate RPC calls - middleware already called get_access_context
+ * Single path: get_access_context RPC for role/tier (dashboard and API routes).
  */
 export async function verifyVenueAccess(
   venueId: string,
-  userId: string,
-  request?: { headers: Headers }
+  userId: string
 ): Promise<VenueAccess | null> {
   try {
-    // Get venue details
     const supabase = await createSupabaseClient();
     const { data: venue, error: venueError } = await supabase
       .from("venues")
@@ -67,49 +64,26 @@ export async function verifyVenueAccess(
       return null;
     }
 
-    // REQUIRE headers from middleware - no fallback
-    // If headers aren't available, middleware failed and we should know about it
-    if (!request?.headers) {
-      // eslint-disable-next-line no-console
-      console.error("[VERIFY-VENUE-ACCESS] No request headers provided - middleware should have set them");
+    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const { data: ctx, error: rpcError } = await supabase.rpc("get_access_context", {
+      p_venue_id: normalizedVenueId,
+    });
+
+    if (rpcError || !ctx) {
       return null;
     }
 
-    const headerUserId = request.headers.get("x-user-id");
-    const headerRole = request.headers.get("x-user-role");
-    const headerTier = request.headers.get("x-user-tier");
-    const headerVenueId = request.headers.get("x-venue-id");
-
-    // Verify headers are present
-    if (!headerUserId || !headerRole || !headerTier || !headerVenueId) {
-      // eslint-disable-next-line no-console
-      console.error("[VERIFY-VENUE-ACCESS] Missing required headers", {
-        hasUserId: !!headerUserId,
-        hasRole: !!headerRole,
-        hasTier: !!headerTier,
-        hasVenueId: !!headerVenueId,
-      });
-      return null;
-    }
-
-    // Verify user matches
-    if (headerUserId !== userId || headerVenueId !== venueId) {
-      // eslint-disable-next-line no-console
-      console.error("[VERIFY-VENUE-ACCESS] User or venue mismatch", {
-        headerUserId,
-        requestedUserId: userId,
-        headerVenueId,
-        requestedVenueId: venueId,
-      });
+    const rpc = ctx as { user_id?: string; role?: string; tier?: string };
+    if (!rpc.user_id || !rpc.role || rpc.user_id !== userId) {
       return null;
     }
 
     return {
       venue,
       user: { id: userId },
-      role: headerRole,
-      tier: headerTier,
-      venue_ids: [], // Can be enhanced if needed
+      role: rpc.role,
+      tier: (rpc.tier?.toLowerCase()?.trim() || "starter") as string,
+      venue_ids: [],
     };
   } catch (error) {
     return null;

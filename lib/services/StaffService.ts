@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from "./BaseService";
-import { createSupabaseClient } from "@/lib/supabase";
+import { createSupabaseClient, createAdminClient } from "@/lib/supabase";
 
 export interface StaffMember {
   id: string;
@@ -38,41 +38,32 @@ export class StaffService extends BaseService {
       async () => {
         const supabase = await createSupabaseClient();
         const { data, error } = await supabase
-          .from("v_staff_members")
+          .from("staff")
           .select("*")
           .eq("venue_id", venueId);
 
-        if (error) {
-          // Fallback: select from staff only (no profiles join - schema may not have staff→profiles FK)
-          const { data: fallback, error: fallbackError } = await supabase
-            .from("staff")
-            .select("*")
-            .eq("venue_id", venueId);
-
-          if (fallbackError) throw fallbackError;
-          const rows = (fallback || []) as Array<Record<string, unknown>>;
-          return rows.map((row) => ({
-            id: row.id,
-            venue_id: row.venue_id,
-            user_id: row.user_id ?? "",
-            role: row.role ?? "Server",
-            name: row.name ?? null,
-            email: (row.email as string) ?? "",
-            active: row.active !== false,
-            created_at: row.created_at ?? new Date().toISOString(),
-          })) as StaffMember[];
-        }
-        return data || [];
+        if (error) throw error;
+        const rows = (data || []) as Array<Record<string, unknown>>;
+        return rows.map((row) => ({
+          id: row.id,
+          venue_id: row.venue_id,
+          user_id: row.user_id ?? "",
+          role: row.role ?? "Server",
+          name: row.name ?? null,
+          email: (row.email as string) ?? "",
+          active: row.active !== false,
+          created_at: row.created_at ?? new Date().toISOString(),
+        })) as StaffMember[];
       },
       300
     );
   }
 
   /**
-   * Toggle staff active status
+   * Toggle staff active status (uses admin client to satisfy RLS; caller must enforce venue access)
    */
   async toggleStaffStatus(staffId: string, venueId: string, active: boolean): Promise<void> {
-    const supabase = await createSupabaseClient();
+    const supabase = createAdminClient();
     const { error } = await supabase
       .from("staff")
       .update({ active })
@@ -84,7 +75,7 @@ export class StaffService extends BaseService {
   }
 
   /**
-   * Create staff invitation
+   * Create staff invitation (uses admin client to satisfy RLS; caller must enforce venue access)
    */
   async inviteStaff(
     venueId: string,
@@ -92,7 +83,7 @@ export class StaffService extends BaseService {
     role: string,
     invitedBy: string
   ): Promise<Record<string, unknown>> {
-    const supabase = await createSupabaseClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase.from("staff_invitations").insert({
       venue_id: venueId,
       email: email.toLowerCase().trim(),
@@ -108,13 +99,13 @@ export class StaffService extends BaseService {
   }
 
   /**
-   * Add staff member
+   * Add staff member (uses admin client to satisfy RLS; caller must enforce venue access)
    */
   async addStaff(
     venueId: string,
     data: { name: string; role?: string }
   ): Promise<StaffMember> {
-    const supabase = await createSupabaseClient();
+    const supabase = createAdminClient();
     const { data: staff, error } = await supabase
       .from("staff")
       .insert({

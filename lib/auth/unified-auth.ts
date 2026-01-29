@@ -144,7 +144,7 @@ export async function requireAuthAndVenueAccess(
   }
 
   // 3. Venue access check (pass request so it can read headers instead of calling RPC)
-  const access = await verifyVenueAccess(venueId, user.id, request);
+  const access = await verifyVenueAccess(venueId, user.id);
 
   if (!access) {
     return {
@@ -156,10 +156,8 @@ export async function requireAuthAndVenueAccess(
     };
   }
 
-  // 4. Get tier/role from middleware headers (already set by middleware RPC call)
-  // No duplicate RPC - middleware already called get_access_context
-  const tier = request.headers.get("x-user-tier") || access.tier || "starter";
-  const role = request.headers.get("x-user-role") || access.role;
+  const tier = access.tier || "starter";
+  const role = access.role;
 
   return {
     success: true,
@@ -304,7 +302,7 @@ export async function getPageAuthContext(
 } | null> {
   try {
     // Verify venue access (pass headers to avoid duplicate RPC)
-    const access = await verifyVenueAccess(venueId, userId, requestHeaders ? { headers: requestHeaders } : undefined);
+    const access = await verifyVenueAccess(venueId, userId);
     if (!access) {
       return null;
     }

@@ -301,7 +301,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           role,
         });
 
-        const access = await verifyVenueAccess(venueId, user.id, req);
+        const access = await verifyVenueAccess(venueId, user.id);
         
         // eslint-disable-next-line no-console
         console.log("[UNIFIED-HANDLER] Venue access result", {
