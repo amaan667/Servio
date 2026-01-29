@@ -25,13 +25,23 @@ export const POST = withUnifiedAuth(
 
       const id = typeof body?.id === "string" ? body.id.trim() : "";
 
-      if (!id) {
-        return apiErrors.badRequest("id required");
-      }
-
       const normalizedVenueId = context.venueId.startsWith("venue-")
         ? context.venueId
         : `venue-${context.venueId}`;
+
+      // DEBUG: log exactly what we received and what we're querying
+      // eslint-disable-next-line no-console
+      console.log("[STAFF-DELETE] Request", {
+        rawBody: body,
+        parsedId: id,
+        idType: typeof body?.id,
+        contextVenueId: context.venueId,
+        normalizedVenueId,
+      });
+
+      if (!id) {
+        return apiErrors.badRequest("id required");
+      }
 
       const supabase = createAdminClient();
 
@@ -43,11 +53,34 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", normalizedVenueId)
         .maybeSingle();
 
+      // eslint-disable-next-line no-console
+      console.log("[STAFF-DELETE] Select result", {
+        existing,
+        selectError: selectError?.message ?? null,
+        selectCode: selectError?.code ?? null,
+      });
+
       if (selectError) {
         return apiErrors.badRequest(selectError.message);
       }
 
       if (!existing) {
+        // Diagnostic: list all staff for this venue to see what ids/venue_ids exist
+        const { data: allForVenue } = await supabase
+          .from("staff")
+          .select("id, venue_id")
+          .eq("venue_id", normalizedVenueId);
+        const { data: allForVenueNoPrefix } = await supabase
+          .from("staff")
+          .select("id, venue_id")
+          .eq("venue_id", context.venueId);
+        // eslint-disable-next-line no-console
+        console.log("[STAFF-DELETE] Staff member not found – diagnostic", {
+          requestedId: id,
+          requestedVenueId: normalizedVenueId,
+          staffRowsForNormalizedVenue: allForVenue ?? [],
+          staffRowsForRawVenueId: allForVenueNoPrefix ?? [],
+        });
         return apiErrors.notFound("Staff member not found");
       }
 
