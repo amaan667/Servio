@@ -312,8 +312,8 @@ export function OrderCard({
         })) || [],
       total_amount: order.total_amount,
       order_status: order.order_status.toUpperCase() as Order["order_status"],
-      payment_status: normalizePaymentStatus(order.payment.status),
-      payment_method: normalizePaymentMethod(order.payment.mode),
+      payment_status: normalizePaymentStatus(order.payment?.status ?? order.payment_status),
+      payment_method: normalizePaymentMethod(order.payment?.mode ?? order.payment_mode),
       created_at: order.placed_at,
     };
   };
@@ -564,17 +564,11 @@ export function OrderCard({
       );
     }
 
-    // If order is SERVED, check payment status before allowing completion
-    // Only show "Mark Completed" when:
-    // 1. Order status is SERVED
-    // 2. Payment status is PAID (for pay now - instant, for pay later - once Stripe goes through, for pay at till - when staff marks as paid)
+    // If order is SERVED: show "Mark Complete" only when payment is taken (Stripe or staff-confirmed on payments page).
+    // Applies to all order types (table full service, table collection, counter).
     const isServed = orderStatus === "SERVED";
-    if (isServed && isFullService) {
-      // CASE 1: Already paid - can mark completed immediately
-      // Payment status PAID covers:
-      // - Pay Now: Instant (already paid)
-      // - Pay Later: Once Stripe payment goes through
-      // - Pay at Till: When staff marks it as paid
+    if (isServed) {
+      // Paid (Stripe or staff marked paid on payments page) + served → show Mark Complete
       if (isPaid) {
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
@@ -596,7 +590,7 @@ export function OrderCard({
         );
       }
 
-      // CASE 2: Awaiting payment
+      // Served but unpaid: Pay at Till / Pay Later → direct to payments page
       if (paymentMode === "pay_at_till" || paymentMode === "pay_later") {
         return (
           <div className="mt-4 pt-4 border-t border-slate-200">
@@ -625,7 +619,6 @@ export function OrderCard({
           </div>
         );
       }
-
     }
 
     // Default: no actions
@@ -667,9 +660,9 @@ export function OrderCard({
             <div className="flex items-center gap-2 flex-wrap">
               <OrderStatusChip status={order.order_status} />
               {shouldShowUnpaidChip(order) && <PaymentStatusChip status="unpaid" />}
-              {order.payment.status === "paid" && <PaymentStatusChip status="paid" />}
-              {order.payment.status === "failed" && <PaymentStatusChip status="failed" />}
-              {order.payment.status === "refunded" && <PaymentStatusChip status="refunded" />}
+              {order.payment?.status === "paid" && <PaymentStatusChip status="paid" />}
+              {order.payment?.status === "failed" && <PaymentStatusChip status="failed" />}
+              {order.payment?.status === "refunded" && <PaymentStatusChip status="refunded" />}
               {/* Payment Method Badge */}
               {(order.payment_method || order.payment?.method) && (
                 <Badge

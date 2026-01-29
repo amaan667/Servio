@@ -745,11 +745,6 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
   const renderUnpaidOrderCard = (order: PaymentOrder) => {
     const orderNumber = order.id.slice(-6).toUpperCase();
     const date = new Date(order.created_at);
-    const formattedDate = date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
     const formattedTime = date.toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
@@ -758,111 +753,86 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
     const method = String(order.payment_method || "").toUpperCase();
     const isPayLater = method === "PAY_LATER";
     const isServed = order.order_status === "SERVED";
+    const locationLabel = order.table_label || order.counter_label;
 
     return (
-      <Card key={order.id} className="hover:shadow-lg transition-all border-2 border-slate-300">
-        <CardContent className="p-6">
-          {/* Header - POS Style: Clear hierarchy */}
-          <div className="flex items-start justify-between mb-5 pb-4 border-b-2 border-slate-200">
-            <div className="flex-1 min-w-0">
-              {/* Order ID and Time - Top Row */}
-              <div className="flex items-center gap-4 mb-3">
-                <Badge variant="outline" className="text-base font-bold px-4 py-1.5 border-2">
-                  #{orderNumber}
-                </Badge>
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {formattedDate} at {formattedTime}
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-green-600 ml-auto">
-                  £{order.total_amount.toFixed(2)}
-                </div>
-              </div>
-
-              {/* Payment Method and Service Status - Second Row */}
-              <div className="flex items-center gap-2 flex-wrap mb-3">
+      <Card key={order.id} className="border border-slate-200">
+        <CardContent className="p-4">
+          {/* Overview: order ID, time, total, location, customer */}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-slate-900">#{orderNumber}</span>
+                <span className="text-sm text-slate-500">{formattedTime}</span>
                 <Badge
                   variant="secondary"
-                  className={`text-sm font-semibold px-3 py-1.5 ${isPayLater ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
+                  className={`text-xs ${isPayLater ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
                 >
                   {isPayLater ? "Pay Later" : "Pay at Till"}
                 </Badge>
-                {isServed ? (
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-green-200 font-semibold"
-                  >
+                {isServed && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                     Served
                   </Badge>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="bg-yellow-50 text-yellow-700 border-yellow-200 font-semibold"
-                  >
-                    Not Served
-                  </Badge>
                 )}
               </div>
-
-              {/* Customer and Table Info - Third Row */}
-              <div className="space-y-2 text-sm">
-                {order.customer_name && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-slate-600" />
-                    <span className="font-semibold text-slate-900">{order.customer_name}</span>
-                  </div>
-                )}
-                {order.table_label && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-slate-600" />
-                    <span className="font-medium text-slate-700">{order.table_label}</span>
-                  </div>
-                )}
-                {order.counter_label && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-slate-600" />
-                    <span className="font-medium text-slate-700">{order.counter_label}</span>
-                  </div>
-                )}
-              </div>
+              {locationLabel && (
+                <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-600">
+                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{locationLabel}</span>
+                </div>
+              )}
+              {order.customer_name && (
+                <div className="flex items-center gap-1.5 mt-0.5 text-sm text-slate-600">
+                  <User className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{order.customer_name}</span>
+                </div>
+              )}
+            </div>
+            <div className="text-xl font-bold text-slate-900 flex-shrink-0">
+              £{order.total_amount.toFixed(2)}
             </div>
           </div>
 
-          {/* Action Buttons - POS Style: Clear, prominent buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          {/* Primary actions: process payment at till and/or split bill */}
+          <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => handleMarkAsPaid(order.id)}
               disabled={isProcessingPayment === order.id}
-              variant="default"
-              size="lg"
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white font-medium"
             >
               {isProcessingPayment === order.id ? (
                 <>
-                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  <Clock className="h-4 w-4 mr-1.5 animate-spin" />
                   Processing...
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-5 w-5 mr-2" />
+                  <CheckCircle className="h-4 w-4 mr-1.5" />
                   Mark as Paid
                 </>
               )}
             </Button>
-              {!isPayLater && (
+            {!isPayLater && (
               <Button
                 onClick={() => setSelectedOrderForSplit(order)}
                 variant="outline"
-                size="lg"
-                className="flex-1 border-2 font-semibold"
+                size="sm"
+                className="font-medium"
               >
-                <Split className="h-5 w-5 mr-2" />
+                <Split className="h-4 w-4 mr-1.5" />
                 Split Bill
               </Button>
             )}
           </div>
+
+          <a
+            href={venueId ? `/dashboard/${venueId}/live-orders?order=${order.id}` : "#"}
+            className="mt-3 inline-block text-xs text-slate-500 hover:text-slate-700 hover:underline"
+          >
+            View full order in Live Orders
+          </a>
         </CardContent>
       </Card>
     );

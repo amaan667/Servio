@@ -43,14 +43,24 @@ export class StaffService extends BaseService {
           .eq("venue_id", venueId);
 
         if (error) {
-          // Fallback to manual join if view doesn't exist
+          // Fallback: select from staff only (no profiles join - schema may not have staff→profiles FK)
           const { data: fallback, error: fallbackError } = await supabase
             .from("staff")
-            .select("*, profiles!inner(email, full_name)")
+            .select("*")
             .eq("venue_id", venueId);
-          
+
           if (fallbackError) throw fallbackError;
-          return fallback || [];
+          const rows = (fallback || []) as Array<Record<string, unknown>>;
+          return rows.map((row) => ({
+            id: row.id,
+            venue_id: row.venue_id,
+            user_id: row.user_id ?? "",
+            role: row.role ?? "Server",
+            name: row.name ?? null,
+            email: (row.email as string) ?? "",
+            active: row.active !== false,
+            created_at: row.created_at ?? new Date().toISOString(),
+          })) as StaffMember[];
         }
         return data || [];
       },

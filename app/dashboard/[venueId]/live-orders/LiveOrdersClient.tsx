@@ -263,6 +263,12 @@ export default function LiveOrdersClient({
       items?: Array<unknown>;
       created_at?: string;
       venue_id?: string;
+      payment_status?: string;
+      payment_method?: string;
+      qr_type?: string;
+      fulfillment_type?: string;
+      source?: string;
+      requires_collection?: boolean;
       [key: string]: unknown;
     };
     const legacyOrder: LegacyOrder = {
@@ -276,6 +282,12 @@ export default function LiveOrdersClient({
       total_amount: orderData.total_amount || 0,
       items: (orderData.items as LegacyOrder["items"]) || [],
       created_at: orderData.created_at || new Date().toISOString(),
+      payment_status: orderData.payment_status,
+      payment_method: orderData.payment_method,
+      qr_type: orderData.qr_type as LegacyOrder["qr_type"],
+      fulfillment_type: orderData.fulfillment_type as LegacyOrder["fulfillment_type"],
+      source: orderData.source as LegacyOrder["source"],
+      requires_collection: orderData.requires_collection,
     };
     const orderForCard = mapOrderToCardData(legacyOrder, "GBP");
 
